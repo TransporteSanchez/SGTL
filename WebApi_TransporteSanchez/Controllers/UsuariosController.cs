@@ -39,7 +39,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET: api/Usuarios/5
+        // GET: api/Usuarios/{id}
         public string Get(int id)
         {
             return "value";
@@ -50,7 +50,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
         }
 
-        // PUT: api/Usuarios/5
+        // PUT: api/Usuarios/{id}
         public void Put(int id, [FromBody] USUARIOS value)
         {
             using (SGTLEntities db = new SGTLEntities())
@@ -69,7 +69,7 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
 
-        // DELETE: api/Usuarios/5
+        // DELETE: api/Usuarios/{id}
         public IHttpActionResult Delete(int id)
         {
             try
