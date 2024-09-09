@@ -195,12 +195,10 @@
     <Compile Include="Controllers\ClientesController.cs" />
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GruposController.cs" />
-    <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\MenuController.cs" />
     <Compile Include="Controllers\OrigenController.cs" />
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
-    <Compile Include="Controllers\ValuesController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="DESTINO.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
