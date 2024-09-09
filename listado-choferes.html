@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+
+
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <style>
+        .no-outline:focus {
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <!--Barra lateral-->
+        <div id="sidebar">
+
+            <!--Barra lateral activa-->
+
+            <div class="sidebar-wrapper active">
+                <div class="sidebar-header position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="logo">
+                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
+                                    style="width: 240px; height: 160px"></a>
+                        </div>
+                        <div class="sidebar-toggler  x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menú-->
+                <div class="sidebar-menu">
+                    <ul class="menu">
+
+                        <li class="sidebar-item ">
+                            <a href="index.html" class='sidebar-link'>
+                                <i class="bi bi-grid-fill"></i>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                        </li>
+
+                        <li class="sidebar-item active has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>Choferes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item active">
+                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+
+                                </li>
+
+                                <li class="submenu-item  ">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+
+                                </li>
+
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-truck"></i>
+                                <span>Camiones</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-calendar-check"></i>
+                                <span>Viajes</span>
+                            </a>
+
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+
+                                </li>
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-person-workspace"></i>
+                                <span>Clientes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de clientes</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-medical"></i>
+                                <span>Facturación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de facturas</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Usuarios</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-richtext"></i>
+                                <span>Documentación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Manual de usuario</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Otros</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!--Llamado a las opciones del header-->
+
+                        <div id="header-container"></div>
+
+                        <script src="./assets/static/js/header.js"></script>
+
+                        <script>
+                            window.onload = loadHeader();
+                        </script>
+
+                    </div>
+                </nav>
+            </header>
+
+
+
+            <!--Comienzo sección de la tabla-->
+            <section class="section">
+                <div class="card rounded me-4 ms-4 mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title">
+                            Listado de choferes
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="busquedaChoferForm" class="form">
+                            <div class="row">
+                                <div class="col-md-3 mb-3">
+                                    <label for="txtnombre">Nombre</label>
+                                    <input type="text" class="form-control" id="txtnombre" placeholder="Juan">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="txtapellido">Apellido</label>
+                                    <input type="text" class="form-control" id="txtapellido" placeholder="Perez">
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="txtdni">DNI</label>
+                                    <input type="number" class="form-control" id="txtdni"
+                                        data-parsley-restricted-number="true" placeholder="36456778">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="basicInput">Estado</label>
+                                    <div class="form-check">
+                                        <input type="checkbox" value="" class="form-check-input form-check-success"
+                                            id="checkestadoactivo">
+                                        <label class="form-check-label" for="checkestadoactivo">Activo</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input type="checkbox" value="" class="form-check-input form-check-danger"
+                                            id="checkestadoinactivo">
+                                        <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-light mb-4" onclick="buscarChoferes()">Buscar</button>
+                        </form>
+
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="tablaChoferes">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Apellido</th>
+                                        <th>DNI</th>
+                                        <th>Estado</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Contenido llenado dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Paginación -->
+                        <nav>
+                            <ul class="pagination justify-content-end" id="pagination">
+                            </ul>
+                        </nav>
+
+                    </div>
+                </div>
+
+            </section>
+            <!--Fin sección de la tabla-->
+
+
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+
+                <script src="./assets/static/js/footer.js"></script>
+
+
+                <script>
+                    window.onload = function () {
+                        loadFooter();
+
+                    };
+                </script>
+            </footer>
+        </div>
+
+        <!-- Modal Detalles -->
+        <div class="modal fade text-left" id="DetallesChoferModal" tabindex="-1" role="dialog"
+            aria-labelledby="DetallesChofer" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="DetallesChofer">Detalles del chofer</h4>
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body mt-2 mb-4 mx-2">
+                        <div class="container-fluid">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="estado-column" class="form-label">Estado del chofer</label>
+                                        <span id="EstadoActualChofer" readonly></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="first-name-column" class="form-label">Nombre</label>
+                                        <input type="text" id="first-name-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido</label>
+                                        <input type="text" id="last-name-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dni-column" class="form-label">DNI</label>
+                                        <input type="number" id="dni-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cuil-column" class="form-label">CUIL</label>
+                                        <input type="number" id="cuil-column" class="form-control" readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="celphone-column" class="form-label">Teléfono celular</label>
+                                        <input type="number" id="celphone-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phone-column" class="form-label">Teléfono particular</label>
+                                        <input type="number" id="phone-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="email-column" class="form-label">Email</label>
+                                        <input type="email" id="email-column" class="form-control" readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="province-column" class="form-label">Provincia</label>
+                                        <input type="text" id="province-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="local-column" class="form-label">Localidad</label>
+                                        <input type="text" id="local-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="street-column" class="form-label">Calle</label>
+                                        <input type="text" id="street-column" class="form-control" readonly />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="number-column" class="form-label">Altura</label>
+                                        <input type="number" id="number-column" class="form-control" readonly />
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Tabla de Camiones Asignados -->
+                            <div class="mt-4">
+                                <h6>Camión asignado</h6>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <table class="table" id="tablaCamionesAsignados">
+                                            <thead>
+                                                <tr>
+                                                    <th>Dominio</th>
+                                                    <th>Cédula</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Contenido llenado dinámicamente -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/extensions/jquery/jqueryajax.js">
+    </script>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+
+    <!-- Get Activos -->
+    <script>
+        // Esperar a que se cargue completamente la página
+        $(document).ready(function () {
+            // Marcar el checkbox de "Activo" por defecto
+            $('#checkestadoactivo').prop('checked', true);
+
+            // Llamar a la función de búsqueda de choferes al cargar la página
+            buscarChoferes();
+        });
+    </script>
+
+    <!-- Buscador y listar + detalles del chofer -->
+    <script>
+
+        // Validación para que los campos de Nombre y Apellido solo permitan letras
+        document.getElementById('txtnombre').addEventListener('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        document.getElementById('txtapellido').addEventListener('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        // Limita la longitud del número a 8 dígitos
+        document.getElementById('txtdni').addEventListener('input', function (event) {
+
+            if (this.value.length > 8) {
+                this.value = this.value.slice(0, 8);
+            }
+        });
+
+        const pageSize = 6;
+        let currentPage = 1;
+
+        // Función para obtener los nombres de la provincia y la localidad
+        function obtenerNombres(provId, locId) {
+            let nombreProvincia = '';
+            let nombreLocalidad = '';
+
+            // Función para obtener el nombre de la provincia
+            function obtenerNombreProvincia() {
+                return $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}`,
+                    type: 'GET'
+                }).then(function (data) {
+                    nombreProvincia = data.Nombre_Provincia;
+                }).catch(function () {
+                    nombreProvincia = 'Provincia no encontrada';
+                });
+            }
+
+            // Función para obtener el nombre de la localidad
+            function obtenerNombreLocalidad() {
+                let url = `http://localhost:50222/api/Provincias/${provId}/Localidades`;
+                if (locId) {
+                    url += `?locId=${locId}`;
+                }
+                return $.ajax({
+                    url: url,
+                    type: 'GET'
+                }).then(function (data) {
+                    if (Array.isArray(data) && data.length > 0) {
+                        nombreLocalidad = data[0].Nombre_Localidad;
+                    } else {
+                        nombreLocalidad = 'Localidad no encontrada';
+                    }
+                }).catch(function () {
+                    nombreLocalidad = 'Localidad no encontrada';
+                });
+            }
+
+            // Ejecutar ambas solicitudes en paralelo
+            return $.when(obtenerNombreProvincia(), obtenerNombreLocalidad()).then(function () {
+                return {
+                    Nombre_Provincia: nombreProvincia,
+                    Nombre_Localidad: nombreLocalidad
+                };
+            });
+        }
+
+
+
+        var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
+
+        // Función para mostrar los detalles del chofer en el modal
+        function mostrarDetallesChofer(registro) {
+            obtenerNombres(registro.ProvID, registro.LocID).then(nombres => {
+                $('#first-name-column').val(registro.Nombre);
+                $('#last-name-column').val(registro.Apellido);
+                $('#dni-column').val(registro.DNI);
+                $('#cuil-column').val(registro.CUIL);
+                $('#celphone-column').val(registro.TelefonoCelular);
+                $('#phone-column').val(registro.TelefonoFijo);
+                $('#email-column').val(registro.Email);
+                $('#province-column').val(nombres.Nombre_Provincia);
+                $('#local-column').val(nombres.Nombre_Localidad);
+                $('#street-column').val(registro.Calle);
+                $('#number-column').val(registro.AlturaCalle);
+                $('#EstadoActualChofer').text(registro.EstadoChofer);
+                estadoChoferOriginal = registro.EstadoChofer;
+
+                var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
+
+                // Obtener camiones asignados
+                obtenerCamionesAsignados(registro.Chofer_ID);
+
+                $('#DetallesChoferModal').modal('show');
+            }).catch(error => {
+                console.error('Error al obtener nombres de provincia o localidad', error);
+            });
+        }
+
+        // Función para obtener camiones asignados al chofer
+        function obtenerCamionesAsignados(choferID) {
+            $.ajax({
+                url: `http://localhost:50222/api/Choferes/${choferID}/Chofer_Camion`,
+                method: 'GET',
+                success: function (data) {
+                    var tbody = $('#tablaCamionesAsignados tbody');
+                    tbody.empty();
+
+                    if (data.length === 0) {
+                        var row = `<tr>
+                    <td colspan="2" class="text-center">No se encontraron registros</td>
+                </tr>`;
+                        tbody.append(row);
+                    } else {
+                        data.forEach(function (camion) {
+                            var row = `<tr>
+                        <td>${camion.Dominio}</td>
+                        <td>${camion.Cedula}</td>
+                    </tr>`;
+                            tbody.append(row);
+                        });
+                    }
+                },
+                error: function (error) {
+                    console.error('Error al obtener los camiones asignados:', error);
+                }
+            });
+        }
+
+        // Función para realizar la búsqueda de choferes
+        function buscarChoferes(page = 1) {
+            // Obtener los valores de los campos de búsqueda
+            var nombre = $('#txtnombre').val();
+            var apellido = $('#txtapellido').val();
+            var dni = $('#txtdni').val();
+            var estadoActivo = $('#checkestadoactivo').is(':checked');
+            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+
+            var requestData = {
+                nombre: nombre,
+                apellido: apellido,
+                dni: dni,
+                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
+                page: page,
+                pageSize: pageSize
+            };
+
+            // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
+            if (nombre !== '') requestData.nombre = nombre;
+            if (apellido !== '') requestData.apellido = apellido;
+            if (dni !== '') requestData.dni = dni;
+
+            // Agregar el estadoChofer al objeto de datos solo si se selecciona
+            if (estadoActivo || estadoInactivo) {
+                requestData.estadoChofer = '';
+                if (estadoActivo) requestData.estadoChofer += 'Activo,';
+                if (estadoInactivo) requestData.estadoChofer += 'Inactivo,';
+                // Eliminar la última coma si existe
+                requestData.estadoChofer = requestData.estadoChofer.slice(0, -1);
+            }
+
+            // Realizar la solicitud AJAX GET al controlador
+            $.ajax({
+                url: 'http://localhost:50222/api/Choferes/Buscar',
+                type: 'GET',
+                data: requestData,
+                success: function (data) {
+                    // Limpiar la tabla antes de agregar nuevos registros
+                    $('#tablaChoferes tbody').empty();
+
+                    if (data.Results.length === 0) {
+                        $('#tablaChoferes tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
+                    } else {
+                        data.Results.forEach(function (registro) {
+                            var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                            var row = `<tr>
+                    <td>${registro.Nombre}</td>
+                    <td>${registro.Apellido}</td>
+                    <td>${registro.DNI}</td>
+                    <td><span class="badge ${estadoStyle}">${registro.EstadoChofer}</span></td>
+                    <td>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#DetallesChoferModal" data-choferid="${registro.Chofer_ID}">
+                            <i class="bi bi-info-circle"></i> Más detalles
+                        </button>
+                    </td>
+                </tr>`;
+                            $('#tablaChoferes tbody').append(row);
+                        });
+                    }
+                    renderPagination(data.TotalRecords, pageSize, page);
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        // Evento para mostrar el modal de detalles del chofer
+        $('#DetallesChoferModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget);
+            var choferID = button.data('choferid');
+
+            // Obtener detalles del chofer
+            $.ajax({
+                url: `http://localhost:50222/api/Choferes/${choferID}`,
+                method: 'GET',
+                success: function (data) {
+                    mostrarDetallesChofer(data);
+                },
+                error: function (error) {
+                    console.error('Error al obtener los detalles del chofer:', error);
+                }
+            });
+        });
+
+        function renderPagination(totalRecords, pageSize, currentPage) {
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            const paginationContainer = $('#pagination');
+            paginationContainer.empty();
+
+            const prevDisabled = currentPage === 1 ? 'disabled' : '';
+            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+
+            paginationContainer.append(`
+                <li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarChoferes(${currentPage - 1})">
+                        <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                    </a>
+                </li>
+            `);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = currentPage === i ? 'active' : '';
+                paginationContainer.append(`
+                    <li class="page-item ${activeClass}">
+                        <a class="page-link" href="#" onclick="buscarChoferes(${i})">${i}</a>
+                    </li>
+                `);
+            }
+
+            paginationContainer.append(`
+                <li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="#" aria-label="Next" onclick="buscarChoferes(${currentPage + 1})">
+                        <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                </li>
+            `);
+        }
+
+        $(document).ready(function () {
+            // Ejecutar la búsqueda inicial
+            buscarChoferes(currentPage);
+        });
+
+
+
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,192 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+    <Schema Namespace="Transporte_SanchezModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="CAMIONES">
+          <Key>
+            <PropertyRef Name="Camion_ID" />
+          </Key>
+          <Property Name="Camion_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Dominio" Type="nchar" MaxLength="10" Nullable="false" />
+          <Property Name="Marca" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Modelo" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="AñoModelo" Type="int" Nullable="false" />
+          <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="FechaCompra" Type="date" Nullable="false" />
+          <Property Name="FechaITV" Type="date" Nullable="false" />
+          <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
+        </EntityType>
+        <EntityType Name="CHOFERES">
+          <Key>
+            <PropertyRef Name="Chofer_ID" />
+          </Key>
+          <Property Name="Chofer_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="DNI" Type="char" MaxLength="8" Nullable="false" />
+          <Property Name="CUIL" Type="char" MaxLength="11" Nullable="false" />
+          <Property Name="Nombre" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="Apellido" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="TelefonoFijo" Type="char" MaxLength="10" />
+          <Property Name="TelefonoCelular" Type="char" MaxLength="10" Nullable="false" />
+          <Property Name="Email" Type="nvarchar" MaxLength="50" />
+          <Property Name="ProvID" Type="int" Nullable="false" />
+          <Property Name="LocID" Type="int" Nullable="false" />
+          <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="AlturaCalle" Type="char" MaxLength="50" />
+          <Property Name="EstadoChofer" Type="varchar" MaxLength="10" Nullable="false" />
+        </EntityType>
+        <EntityType Name="DESTINO">
+          <Key>
+            <PropertyRef Name="Destino_ID" />
+          </Key>
+          <Property Name="Destino_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+          <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="ProvID" Type="int" Nullable="false" />
+          <Property Name="LocID" Type="int" Nullable="false" />
+          <Property Name="Calle" Type="varchar" MaxLength="50" Nullable="false" />
+          <Property Name="AlturaCalle" Type="char" MaxLength="10" />
+          <Property Name="ClienteID" Type="int" Nullable="false" />
+        </EntityType>
+        <EntityContainer Name="Transporte_SanchezModelStoreContainer">
+          <EntitySet Name="CAMIONES" EntityType="Self.CAMIONES" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="CHOFERES" EntityType="Self.CHOFERES" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="DESTINO" EntityType="Self.DESTINO" Schema="dbo" store:Type="Tables" />
+          </EntityContainer>
+      </Schema></edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="Transporte_SanchezModel" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityContainer Name="Transporte_SanchezEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="CAMIONES" EntityType="Transporte_SanchezModel.CAMIONES" />
+          <EntitySet Name="CHOFERES" EntityType="Transporte_SanchezModel.CHOFERES" />
+          <EntitySet Name="DESTINO" EntityType="Transporte_SanchezModel.DESTINO" />
+          </EntityContainer>
+        <EntityType Name="CAMIONES">
+          <Key>
+            <PropertyRef Name="Camion_ID" />
+          </Key>
+          <Property Name="Dominio" Type="String" MaxLength="10" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Marca" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Modelo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="AñoModelo" Type="Int32" Nullable="false" />
+          <Property Name="Tipo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="NumMotor" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="NumChasis" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="FechaCompra" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Camion_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+        </EntityType>
+        <EntityType Name="CHOFERES">
+          <Key>
+            <PropertyRef Name="Chofer_ID" />
+          </Key>
+          <Property Name="DNI" Type="String" MaxLength="8" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="CUIL" Type="String" MaxLength="11" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Nombre" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Apellido" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="TelefonoFijo" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
+          <Property Name="TelefonoCelular" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Email" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="ProvID" Type="Int32" Nullable="false" />
+          <Property Name="LocID" Type="Int32" Nullable="false" />
+          <Property Name="Calle" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="EstadoChofer" Type="String" MaxLength="10" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="Chofer_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="AlturaCalle" Type="String" MaxLength="50" FixedLength="true" Unicode="false" />
+        </EntityType>
+        <EntityType Name="DESTINO">
+          <Key>
+            <PropertyRef Name="Destino_ID" />
+          </Key>
+          <Property Name="Destino_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
+          <Property Name="Descripcion" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="Calle" Type="String" MaxLength="50" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="ProvID" Type="Int32" Nullable="false" />
+          <Property Name="LocID" Type="Int32" Nullable="false" />
+          <Property Name="AlturaCalle" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
+          <Property Name="ClienteID" Type="Int32" Nullable="false" />
+        </EntityType>
+        </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="Transporte_SanchezModelStoreContainer" CdmEntityContainer="Transporte_SanchezEntities">
+          <EntitySetMapping Name="CAMIONES">
+            <EntityTypeMapping TypeName="Transporte_SanchezModel.CAMIONES">
+              <MappingFragment StoreEntitySet="CAMIONES">
+                <ScalarProperty Name="Camion_ID" ColumnName="Camion_ID" />
+                <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
+                <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
+                <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
+                <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+                <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
+                <ScalarProperty Name="Tipo" ColumnName="Tipo" />
+                <ScalarProperty Name="AñoModelo" ColumnName="AñoModelo" />
+                <ScalarProperty Name="Modelo" ColumnName="Modelo" />
+                <ScalarProperty Name="Marca" ColumnName="Marca" />
+                <ScalarProperty Name="Dominio" ColumnName="Dominio" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="CHOFERES">
+            <EntityTypeMapping TypeName="Transporte_SanchezModel.CHOFERES">
+              <MappingFragment StoreEntitySet="CHOFERES">
+                <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+                <ScalarProperty Name="Chofer_ID" ColumnName="Chofer_ID" />
+                <ScalarProperty Name="EstadoChofer" ColumnName="EstadoChofer" />
+                <ScalarProperty Name="Calle" ColumnName="Calle" />
+                <ScalarProperty Name="LocID" ColumnName="LocID" />
+                <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+                <ScalarProperty Name="Email" ColumnName="Email" />
+                <ScalarProperty Name="TelefonoCelular" ColumnName="TelefonoCelular" />
+                <ScalarProperty Name="TelefonoFijo" ColumnName="TelefonoFijo" />
+                <ScalarProperty Name="Apellido" ColumnName="Apellido" />
+                <ScalarProperty Name="Nombre" ColumnName="Nombre" />
+                <ScalarProperty Name="CUIL" ColumnName="CUIL" />
+                <ScalarProperty Name="DNI" ColumnName="DNI" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="DESTINO">
+            <EntityTypeMapping TypeName="Transporte_SanchezModel.DESTINO">
+              <MappingFragment StoreEntitySet="DESTINO">
+                <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+                <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+                <ScalarProperty Name="LocID" ColumnName="LocID" />
+                <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+                <ScalarProperty Name="Calle" ColumnName="Calle" />
+                <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+                <ScalarProperty Name="Destino_ID" ColumnName="Destino_ID" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="false" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="Ninguno" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+ <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <edmx:Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <!-- Diagram content (shape and connector positions) -->
+    <edmx:Diagrams>
+      <Diagram DiagramId="4fabd95c9d97473fa99e63c2d21c3361" Name="Diagram1" ZoomLevel="69">
+        <EntityTypeShape EntityType="SGTLModel.CAMIONES" Width="1.5" PointX="5.25" PointY="15.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.CHOFER_CAMION" Width="1.5" PointX="7.5" PointY="10.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.CHOFERES" Width="1.5" PointX="5.25" PointY="9.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.CLIENTES" Width="1.5" PointX="3" PointY="5.25" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.DESTINO" Width="1.5" PointX="5.25" PointY="5.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.LOCALIDADES" Width="1.5" PointX="3" PointY="10.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.ORIGEN" Width="1.5" PointX="8.25" PointY="6.5" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.PROFORMAS" Width="1.5" PointX="1" PointY="2.625" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.PROVINCIAS" Width="1.5" PointX="0.75" PointY="7" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.TARIFAS_FIJAS" Width="1.5" PointX="8" PointY="2.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.TARIFAS_KM" Width="1.5" PointX="8.25" PointY="13.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.USUARIOS" Width="1.5" PointX="5" PointY="0.875" IsExpanded="true" />
+        <EntityTypeShape EntityType="SGTLModel.VIAJES" Width="1.5" PointX="10.5" PointY="7" IsExpanded="true" />
+		<EntityTypeShape EntityType="SGTLModel.GRUPOS" Width="1.5" PointX="11.625" PointY="3.5" IsExpanded="true" />
+		<EntityTypeShape EntityType="SGTLModel.GRUPOS_MENU" Width="1.5" PointX="14.125" PointY="7" IsExpanded="true" />
+		<EntityTypeShape EntityType="SGTLModel.GRUPOS_USUARIOS" Width="1.5" PointX="15.25" PointY="0.625" IsExpanded="true" />
+		<EntityTypeShape EntityType="SGTLModel.MENU" Width="1.5" PointX="17.125" PointY="7.125" IsExpanded="true" />
+        <AssociationConnector Association="SGTLModel.FKCamionChofer" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ViajesChofCam" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FKChoferCamion" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FKchoferLoc" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_DESTINO_CLIENTES" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ORIGEN_CLIENTES" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_VIAJES_CLIENTES" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_DESTINO_LOCALIDADES" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_DESTINO_PROVINCIAS" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ViajesDestino" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_LOCALIDADES_PROVINCIAS" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ORIGEN_LOCALIDADES" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ORIGEN_PROVINCIAS" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_ViajesOrigen" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_VIAJES_TARIFAS_FIJAS" ManuallyRouted="false" />
+        <AssociationConnector Association="SGTLModel.FK_VIAJES_TARIFAS_KM" ManuallyRouted="false" />
+		<AssociationConnector Association="SGTLModel.FK_GRUPOS_USUARIOS_USUARIOS" ManuallyRouted="false" />
+		<AssociationConnector Association="SGTLModel.FK_GRUPOS_MENU_MENU" ManuallyRouted="false" />
+		<AssociationConnector Association="SGTLModel.FK_GRUPOS_MENU_GRUPOS" ManuallyRouted="false" />
+		<AssociationConnector Association="SGTLModel.FK_GRUPOS_USUARIOS_GRUPOS" ManuallyRouted="false" />
+      </Diagram>
+    </edmx:Diagrams>
+  </edmx:Designer>
+</edmx:Edmx>

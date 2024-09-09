@@ -1,0 +1,215 @@
+.content {
+    background-color: gray;
+    border-radius: 1rem;
+    display:flex;
+    width: auto;
+    height: auto;
+}
+
+.menu a {
+    margin: 0.3rem;
+    text-align: center;
+    background-color: rgb(72, 52, 202);
+    color: white;
+    text-decoration: none;
+    padding: 1rem;
+    display: block;
+}
+
+.menu {
+    margin: 1rem;
+    text-align: center;
+    padding: 1rem;
+    width: 15rem;
+    
+}
+
+.menu ul{
+    text-align: left;
+}
+
+.menu button {
+    color: rgb(255, 255, 255); 
+    font-size: 16px; 
+    line-height: 16px; 
+    padding: 10px; 
+    border-radius: 5px;
+    font-weight: normal;
+    text-decoration: none; 
+    font-style: normal; 
+    font-variant: normal; 
+    text-transform: none; 
+    background-color: rgb(6, 6, 126);
+    display: inline-block;}
+
+.menu button:hover {
+    background: #1C6EA4; }
+
+.menu button:active {
+    background: #144E75; }
+
+table {
+    font-family: Arial, Helvetica, sans-serif;
+    border-collapse: collapse;
+    width: 98%;
+}
+
+table td,
+table th {
+    border: 1px solid #ddd;
+    padding: 8px;
+}
+
+table tr:nth-child(even) {
+    background-color: #f2f2f2;
+}
+
+/* A revisar*/
+table th {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    text-align: center;
+    background-color: rgb(6, 6, 126);
+    color: white;
+}
+
+body {
+    background-color: rgb(194, 191, 188);
+    color: white;
+    font-family: Arial, Helvetica, sans-serif;
+    width: 95%;
+    height: 95%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+header {
+    height: 7rem;
+    width: auto;
+    border-radius: 1rem;
+    background-color: whitesmoke;
+    margin-bottom: 1%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+header img {
+    margin-left: 2rem;
+    height: 5rem;
+    width: 20rem;
+    padding: 1rem;
+}
+
+main {
+    background-color: rgb(194, 191, 188);
+    color: black;
+    margin: 1rem;
+    width: 100%;
+    height: 100%;
+    float: center;
+    background-image: url(/img/Camioncito.jpg);
+    background-size: cover;
+
+}
+
+main p{
+    text-align: center;
+}
+
+main button{
+    width: 5rem;
+    height: 2rem;
+    margin-left: 90%;
+    margin-top: 2rem;
+}
+
+.main-index {
+    background-image: url(/img/Camioncito.jpg);
+    background-size: cover;
+    text-align: center;
+    padding: 14rem;
+}
+
+footer {
+    margin-top: 1%;
+    margin-left: 20%;
+    margin-right: 20%;
+    text-align: center;
+}
+
+footer p {
+    color: white;
+    font-size: small;
+    font-family: Arial;
+    padding: 0.5rem;
+}
+
+.section {
+    margin-top: 10px;
+    margin-left: 10px;
+    padding: 25px 25px;
+}
+
+form {
+    margin: 1rem;
+    height: auto;
+    width: auto;
+    display: flex;
+    flex-direction: column;
+    background-color: rgba(235, 233, 233, 0.7); 
+    background-color: rgb(235 233 233 / 50%);
+    text-align: center;
+    padding: 25px 25px;
+    box-shadow: 0 5px 10px black;
+}
+
+form .titulo {
+    color: black;
+    font-size: 35px;
+    font-weight: 800;
+    margin-bottom: 30px;
+}
+
+form label {
+    margin-bottom: 35px;
+}
+
+form label .fa-solid {
+    font-size: 20px;
+    margin-right: 10px;
+    color: black;
+}
+
+form p input {
+    outline: none;
+    border: none;
+    color: black;
+    border-bottom: solid 1px rgb(155, 157, 158);
+    padding: 0.5rem;
+    font-size: 18px;
+}
+
+form button {
+    margin-top: 1rem;
+    color: white;
+    border-radius: 1rem;
+    background-color: rgb(65, 66, 66);
+    height: 40px;
+    width: 150px;
+    padding: 10px 15px;
+    cursor: pointer;
+}
+
+.no-outline:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+h2 {
+    text-align: center;
+    text-shadow: 3px 3px 3px white;
+}
+
+.salir h3 {
+    text-align: center;
+}
