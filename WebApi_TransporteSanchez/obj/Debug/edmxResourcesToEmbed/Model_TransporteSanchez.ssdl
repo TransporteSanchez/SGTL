@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="Transporte_SanchezModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+  <EntityType Name="CAMIONES">
+    <Key>
+      <PropertyRef Name="CamionID" />
+    </Key>
+    <Property Name="CamionID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Dominio" Type="nchar" MaxLength="10" />
+    <Property Name="Marca" Type="nvarchar" MaxLength="50" />
+    <Property Name="Modelo" Type="nvarchar" MaxLength="50" />
+    <Property Name="AñoModelo" Type="date" />
+    <Property Name="Tipo" Type="nvarchar" MaxLength="50" />
+    <Property Name="NumMotor" Type="nvarchar" MaxLength="50" />
+    <Property Name="NumChasis" Type="nvarchar" MaxLength="50" />
+    <Property Name="FechaCompra" Type="date" />
+    <Property Name="FechaITV" Type="date" />
+    <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
+  </EntityType>
+  <EntityType Name="CHOFERES">
+    <Key>
+      <PropertyRef Name="ChoferID" />
+    </Key>
+    <Property Name="ChoferID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="DNI" Type="nvarchar" MaxLength="50" />
+    <Property Name="CUIL" Type="nvarchar" MaxLength="50" />
+    <Property Name="Nombre" Type="nvarchar" MaxLength="50" />
+    <Property Name="Apellido" Type="nvarchar" MaxLength="50" />
+    <Property Name="TelefonoFijo" Type="nvarchar" MaxLength="50" />
+    <Property Name="TelefonoCelular" Type="nvarchar" MaxLength="50" />
+    <Property Name="Email" Type="nvarchar" MaxLength="50" />
+    <Property Name="ProvID" Type="int" />
+    <Property Name="LocID" Type="int" />
+    <Property Name="Calle" Type="nvarchar" MaxLength="50" />
+    <Property Name="NumCalle" Type="nvarchar" MaxLength="50" />
+  </EntityType>
+  <EntityContainer Name="Transporte_SanchezModelStoreContainer">
+    <EntitySet Name="CAMIONES" EntityType="Self.CAMIONES" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="CHOFERES" EntityType="Self.CHOFERES" Schema="dbo" store:Type="Tables" />
+  </EntityContainer>
+</Schema>

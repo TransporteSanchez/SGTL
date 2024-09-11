@@ -1,0 +1,212 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="SGTLModelStoreContainer" CdmEntityContainer="SGTLEntities">
+    <EntitySetMapping Name="CAMIONES">
+      <EntityTypeMapping TypeName="SGTLModel.CAMIONES">
+        <MappingFragment StoreEntitySet="CAMIONES">
+          <ScalarProperty Name="Camion_ID" ColumnName="Camion_ID" />
+          <ScalarProperty Name="Dominio" ColumnName="Dominio" />
+          <ScalarProperty Name="Marca" ColumnName="Marca" />
+          <ScalarProperty Name="Modelo" ColumnName="Modelo" />
+          <ScalarProperty Name="AñoModelo" ColumnName="AñoModelo" />
+          <ScalarProperty Name="Tipo" ColumnName="Tipo" />
+          <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
+          <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+          <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
+          <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
+          <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="CHOFER_CAMION">
+      <EntityTypeMapping TypeName="SGTLModel.CHOFER_CAMION">
+        <MappingFragment StoreEntitySet="CHOFER_CAMION">
+          <ScalarProperty Name="ChofCam_ID" ColumnName="ChofCam_ID" />
+          <ScalarProperty Name="CamionID" ColumnName="CamionID" />
+          <ScalarProperty Name="ChoferID" ColumnName="ChoferID" />
+          <ScalarProperty Name="Cedula" ColumnName="Cedula" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="CHOFERES">
+      <EntityTypeMapping TypeName="SGTLModel.CHOFERES">
+        <MappingFragment StoreEntitySet="CHOFERES">
+          <ScalarProperty Name="Chofer_ID" ColumnName="Chofer_ID" />
+          <ScalarProperty Name="DNI" ColumnName="DNI" />
+          <ScalarProperty Name="CUIL" ColumnName="CUIL" />
+          <ScalarProperty Name="Nombre" ColumnName="Nombre" />
+          <ScalarProperty Name="Apellido" ColumnName="Apellido" />
+          <ScalarProperty Name="TelefonoFijo" ColumnName="TelefonoFijo" />
+          <ScalarProperty Name="TelefonoCelular" ColumnName="TelefonoCelular" />
+          <ScalarProperty Name="Email" ColumnName="Email" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+          <ScalarProperty Name="LocID" ColumnName="LocID" />
+          <ScalarProperty Name="Calle" ColumnName="Calle" />
+          <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+          <ScalarProperty Name="EstadoChofer" ColumnName="EstadoChofer" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="CLIENTES">
+      <EntityTypeMapping TypeName="SGTLModel.CLIENTES">
+        <MappingFragment StoreEntitySet="CLIENTES">
+          <ScalarProperty Name="Cliente_ID" ColumnName="Cliente_ID" />
+          <ScalarProperty Name="Razon_Social" ColumnName="Razon_Social" />
+          <ScalarProperty Name="CUIT_Cliente" ColumnName="CUIT_Cliente" />
+          <ScalarProperty Name="Cond_Fiscal" ColumnName="Cond_Fiscal" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+          <ScalarProperty Name="LocID" ColumnName="LocID" />
+          <ScalarProperty Name="Calle" ColumnName="Calle" />
+          <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+          <ScalarProperty Name="Telefono" ColumnName="Telefono" />
+          <ScalarProperty Name="Email" ColumnName="Email" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="DESTINO">
+      <EntityTypeMapping TypeName="SGTLModel.DESTINO">
+        <MappingFragment StoreEntitySet="DESTINO">
+          <ScalarProperty Name="Destino_ID" ColumnName="Destino_ID" />
+          <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+          <ScalarProperty Name="LocID" ColumnName="LocID" />
+          <ScalarProperty Name="Calle" ColumnName="Calle" />
+          <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="LOCALIDADES">
+      <EntityTypeMapping TypeName="SGTLModel.LOCALIDADES">
+        <MappingFragment StoreEntitySet="LOCALIDADES">
+          <ScalarProperty Name="Loc_ID" ColumnName="Loc_ID" />
+          <ScalarProperty Name="Nombre_Localidad" ColumnName="Nombre_Localidad" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="ORIGEN">
+      <EntityTypeMapping TypeName="SGTLModel.ORIGEN">
+        <MappingFragment StoreEntitySet="ORIGEN">
+          <ScalarProperty Name="Origen_ID" ColumnName="Origen_ID" />
+          <ScalarProperty Name="Descripcion" ColumnName="Descripcion" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+          <ScalarProperty Name="LocID" ColumnName="LocID" />
+          <ScalarProperty Name="Calle" ColumnName="Calle" />
+          <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="PROFORMAS">
+      <EntityTypeMapping TypeName="SGTLModel.PROFORMAS">
+        <MappingFragment StoreEntitySet="PROFORMAS">
+          <ScalarProperty Name="Proforma_ID" ColumnName="Proforma_ID" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
+          <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
+          <ScalarProperty Name="ImporteTotal" ColumnName="ImporteTotal" />
+          <ScalarProperty Name="CantidadViajes" ColumnName="CantidadViajes" />
+          <ScalarProperty Name="FechaCreacion" ColumnName="FechaCreacion" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="PROVINCIAS">
+      <EntityTypeMapping TypeName="SGTLModel.PROVINCIAS">
+        <MappingFragment StoreEntitySet="PROVINCIAS">
+          <ScalarProperty Name="Prov_ID" ColumnName="Prov_ID" />
+          <ScalarProperty Name="Nombre_Provincia" ColumnName="Nombre_Provincia" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="TARIFAS_FIJAS">
+      <EntityTypeMapping TypeName="SGTLModel.TARIFAS_FIJAS">
+        <MappingFragment StoreEntitySet="TARIFAS_FIJAS">
+          <ScalarProperty Name="TarifaFija_ID" ColumnName="TarifaFija_ID" />
+          <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
+          <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
+          <ScalarProperty Name="ValorRuta" ColumnName="ValorRuta" />
+          <ScalarProperty Name="ValorVueltaVacio" ColumnName="ValorVueltaVacio" />
+          <ScalarProperty Name="ValorFijoNeto" ColumnName="ValorFijoNeto" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="OrigenID" ColumnName="OrigenID" />
+          <ScalarProperty Name="DestinoID" ColumnName="DestinoID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="TARIFAS_KM">
+      <EntityTypeMapping TypeName="SGTLModel.TARIFAS_KM">
+        <MappingFragment StoreEntitySet="TARIFAS_KM">
+          <ScalarProperty Name="TarifaKm_ID" ColumnName="TarifaKm_ID" />
+          <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
+          <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
+          <ScalarProperty Name="ValorKm" ColumnName="ValorKm" />
+          <ScalarProperty Name="MinKm" ColumnName="MinKm" />
+          <ScalarProperty Name="MaxKm" ColumnName="MaxKm" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="USUARIOS">
+      <EntityTypeMapping TypeName="SGTLModel.USUARIOS">
+        <MappingFragment StoreEntitySet="USUARIOS">
+          <ScalarProperty Name="Usuario_ID" ColumnName="Usuario_ID" />
+          <ScalarProperty Name="Nombre_Usuario" ColumnName="Nombre_Usuario" />
+          <ScalarProperty Name="Contraseña" ColumnName="Contraseña" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="GRUPOS_USUARIOS">
+      <EntityTypeMapping TypeName="SGTLModel.GRUPOS_USUARIOS">
+        <MappingFragment StoreEntitySet="GRUPOS_USUARIOS">
+          <ScalarProperty Name="GrupoUsu_ID" ColumnName="GrupoUsu_ID" />
+          <ScalarProperty Name="GrupoID" ColumnName="GrupoID" />
+          <ScalarProperty Name="UsuarioID" ColumnName="UsuarioID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="GRUPOS">
+      <EntityTypeMapping TypeName="SGTLModel.GRUPOS">
+        <MappingFragment StoreEntitySet="GRUPOS">
+          <ScalarProperty Name="Grupo_ID" ColumnName="Grupo_ID" />
+          <ScalarProperty Name="Grupo_Nombre" ColumnName="Grupo_Nombre" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="GRUPOS_MENU">
+      <EntityTypeMapping TypeName="SGTLModel.GRUPOS_MENU">
+        <MappingFragment StoreEntitySet="GRUPOS_MENU">
+          <ScalarProperty Name="GrupoMenu_ID" ColumnName="GrupoMenu_ID" />
+          <ScalarProperty Name="GrupoID" ColumnName="GrupoID" />
+          <ScalarProperty Name="MenuID" ColumnName="MenuID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="MENU">
+      <EntityTypeMapping TypeName="SGTLModel.MENU">
+        <MappingFragment StoreEntitySet="MENU">
+          <ScalarProperty Name="Menu_ID" ColumnName="Menu_ID" />
+          <ScalarProperty Name="Menu_Nombre" ColumnName="Menu_Nombre" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="VIAJES">
+      <EntityTypeMapping TypeName="SGTLModel.VIAJES">
+        <MappingFragment StoreEntitySet="VIAJES">
+          <ScalarProperty Name="Viaje_ID" ColumnName="Viaje_ID" />
+          <ScalarProperty Name="OrigenID" ColumnName="OrigenID" />
+          <ScalarProperty Name="DestinoID" ColumnName="DestinoID" />
+          <ScalarProperty Name="Distancia_KM" ColumnName="Distancia_KM" />
+          <ScalarProperty Name="Num_Remito" ColumnName="Num_Remito" />
+          <ScalarProperty Name="Num_de_Carga" ColumnName="Num_de_Carga" />
+          <ScalarProperty Name="Fecha_Inicio" ColumnName="Fecha_Inicio" />
+          <ScalarProperty Name="Fecha_Fin" ColumnName="Fecha_Fin" />
+          <ScalarProperty Name="ChofCamID" ColumnName="ChofCamID" />
+          <ScalarProperty Name="TarifaFijaID" ColumnName="TarifaFijaID" />
+          <ScalarProperty Name="TarifaKmID" ColumnName="TarifaKmID" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+  </EntityContainerMapping>
+</Mapping>

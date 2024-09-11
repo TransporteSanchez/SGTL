@@ -1,0 +1,532 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Schema Namespace="SGTLModel.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+  <EntityType Name="CAMIONES">
+    <Key>
+      <PropertyRef Name="Camion_ID" />
+    </Key>
+    <Property Name="Camion_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Dominio" Type="nchar" MaxLength="10" Nullable="false" />
+    <Property Name="Marca" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="Modelo" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="AñoModelo" Type="nchar" MaxLength="4" Nullable="false" />
+    <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="FechaCompra" Type="date" Nullable="false" />
+    <Property Name="FechaITV" Type="date" Nullable="false" />
+    <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
+  </EntityType>
+  <EntityType Name="CHOFER_CAMION">
+    <Key>
+      <PropertyRef Name="ChofCam_ID" />
+    </Key>
+    <Property Name="ChofCam_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="CamionID" Type="int" Nullable="false" />
+    <Property Name="ChoferID" Type="int" Nullable="false" />
+    <Property Name="Cedula" Type="nchar" MaxLength="20" Nullable="false" />
+  </EntityType>
+  <EntityType Name="CHOFERES">
+    <Key>
+      <PropertyRef Name="Chofer_ID" />
+    </Key>
+    <Property Name="Chofer_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="DNI" Type="char" MaxLength="8" Nullable="false" />
+    <Property Name="CUIL" Type="char" MaxLength="11" Nullable="false" />
+    <Property Name="Nombre" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="Apellido" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="TelefonoFijo" Type="char" MaxLength="10" />
+    <Property Name="TelefonoCelular" Type="char" MaxLength="10" Nullable="false" />
+    <Property Name="Email" Type="nvarchar" MaxLength="50" />
+    <Property Name="ProvID" Type="int" Nullable="false" />
+    <Property Name="LocID" Type="int" Nullable="false" />
+    <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="AlturaCalle" Type="char" MaxLength="10" />
+    <Property Name="EstadoChofer" Type="varchar" MaxLength="10" Nullable="false" />
+  </EntityType>
+  <EntityType Name="CLIENTES">
+    <Key>
+      <PropertyRef Name="Cliente_ID" />
+    </Key>
+    <Property Name="Cliente_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Razon_Social" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="CUIT_Cliente" Type="char" MaxLength="11" Nullable="false" />
+    <Property Name="Cond_Fiscal" Type="int" Nullable="false" />
+    <Property Name="ProvID" Type="int" Nullable="false" />
+    <Property Name="LocID" Type="int" Nullable="false" />
+    <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="AlturaCalle" Type="char" MaxLength="10" />
+    <Property Name="Telefono" Type="char" MaxLength="10" />
+    <Property Name="Email" Type="nvarchar" MaxLength="50" />
+  </EntityType>
+  <EntityType Name="DESTINO">
+    <Key>
+      <PropertyRef Name="Destino_ID" />
+    </Key>
+    <Property Name="Destino_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="ProvID" Type="int" Nullable="false" />
+    <Property Name="LocID" Type="int" Nullable="false" />
+    <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="AlturaCalle" Type="char" MaxLength="10" />
+    <Property Name="ClienteID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="LOCALIDADES">
+    <Key>
+      <PropertyRef Name="Loc_ID" />
+    </Key>
+    <Property Name="Loc_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Nombre_Localidad" Type="varchar" MaxLength="50" Nullable="false" />
+    <Property Name="ProvID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="ORIGEN">
+    <Key>
+      <PropertyRef Name="Origen_ID" />
+    </Key>
+    <Property Name="Origen_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Descripcion" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="ProvID" Type="int" Nullable="false" />
+    <Property Name="LocID" Type="int" Nullable="false" />
+    <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="AlturaCalle" Type="char" MaxLength="10" />
+    <Property Name="ClienteID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="PROFORMAS">
+    <Key>
+      <PropertyRef Name="Proforma_ID" />
+    </Key>
+    <Property Name="Proforma_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="ClienteID" Type="int" />
+    <Property Name="FechaDesde" Type="date" />
+    <Property Name="FechaHasta" Type="date" />
+    <Property Name="ImporteTotal" Type="decimal" Precision="18" Scale="2" />
+    <Property Name="CantidadViajes" Type="char" MaxLength="10" />
+    <Property Name="FechaCreacion" Type="date" />
+  </EntityType>
+  <EntityType Name="PROVINCIAS">
+    <Key>
+      <PropertyRef Name="Prov_ID" />
+    </Key>
+    <Property Name="Prov_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Nombre_Provincia" Type="nvarchar" MaxLength="50" Nullable="false" />
+  </EntityType>
+  <EntityType Name="TARIFAS_FIJAS">
+    <Key>
+      <PropertyRef Name="TarifaFija_ID" />
+    </Key>
+    <Property Name="TarifaFija_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="FechaDesde" Type="date" Nullable="false" />
+    <Property Name="FechaHasta" Type="date" Nullable="false" />
+    <Property Name="ValorRuta" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+    <Property Name="ValorVueltaVacio" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+    <Property Name="ValorFijoNeto" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+    <Property Name="ClienteID" Type="int" Nullable="false" />
+    <Property Name="OrigenID" Type="int" Nullable="false" />
+    <Property Name="DestinoID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="TARIFAS_KM">
+    <Key>
+      <PropertyRef Name="TarifaKm_ID" />
+    </Key>
+    <Property Name="TarifaKm_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="FechaDesde" Type="date" Nullable="false" />
+    <Property Name="FechaHasta" Type="date" Nullable="false" />
+    <Property Name="ValorKm" Type="decimal" Precision="18" Scale="2" Nullable="false" />
+    <Property Name="MinKm" Type="char" MaxLength="10" Nullable="false" />
+    <Property Name="MaxKm" Type="char" MaxLength="10" Nullable="false" />
+  </EntityType>
+  <EntityType Name="USUARIOS">
+    <Key>
+      <PropertyRef Name="Usuario_ID" />
+    </Key>
+    <Property Name="Usuario_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Nombre_Usuario" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="Contraseña" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+  </EntityType>
+  <EntityType Name="GRUPOS_USUARIOS">
+    <Key>
+      <PropertyRef Name="GrupoUsu_ID" />
+    </Key>
+    <Property Name="GrupoUsu_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="GrupoID" Type="int" Nullable="false" />
+    <Property Name="UsuarioID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="GRUPOS_MENU">
+    <Key>
+      <PropertyRef Name="GrupoMenu_ID" />
+    </Key>
+    <Property Name="GrupoMenu_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="GrupoID" Type="int" Nullable="false" />
+    <Property Name="MenuID" Type="int" Nullable="false" />
+  </EntityType>
+  <EntityType Name="MENU">
+    <Key>
+      <PropertyRef Name="Menu_ID" />
+    </Key>
+    <Property Name="Menu_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Menu_Nombre" Type="nvarchar" Nullable="false" />
+  </EntityType>
+  <EntityType Name="GRUPOS">
+    <Key>
+      <PropertyRef Name="Grupo_ID" />
+    </Key>
+    <Property Name="Grupo_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Grupo_Nombre" Type="nvarchar" Nullable="false" />
+  </EntityType>
+  <EntityType Name="VIAJES">
+    <Key>
+      <PropertyRef Name="Viaje_ID" />
+    </Key>
+    <Property Name="Viaje_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="OrigenID" Type="int" Nullable="false" />
+    <Property Name="DestinoID" Type="int" Nullable="false" />
+    <Property Name="Distancia_KM" Type="nchar" MaxLength="20" Nullable="false" />
+    <Property Name="Num_Remito" Type="nchar" MaxLength="20" Nullable="false" />
+    <Property Name="Num_de_Carga" Type="nchar" MaxLength="20" Nullable="false" />
+    <Property Name="Fecha_Inicio" Type="datetime" Nullable="false" />
+    <Property Name="Fecha_Fin" Type="datetime" Nullable="false" />
+    <Property Name="ChofCamID" Type="int" Nullable="false" />
+    <Property Name="TarifaFijaID" Type="int" />
+    <Property Name="TarifaKmID" Type="int" />
+    <Property Name="ClienteID" Type="int" />
+  </EntityType>
+  <Association Name="FK_DESTINO_CLIENTES">
+    <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="1" />
+    <End Role="DESTINO" Type="Self.DESTINO" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CLIENTES">
+        <PropertyRef Name="Cliente_ID" />
+      </Principal>
+      <Dependent Role="DESTINO">
+        <PropertyRef Name="ClienteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_DESTINO_LOCALIDADES">
+    <End Role="LOCALIDADES" Type="Self.LOCALIDADES" Multiplicity="1" />
+    <End Role="DESTINO" Type="Self.DESTINO" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="LOCALIDADES">
+        <PropertyRef Name="Loc_ID" />
+      </Principal>
+      <Dependent Role="DESTINO">
+        <PropertyRef Name="LocID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_DESTINO_PROVINCIAS">
+    <End Role="PROVINCIAS" Type="Self.PROVINCIAS" Multiplicity="1" />
+    <End Role="DESTINO" Type="Self.DESTINO" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="PROVINCIAS">
+        <PropertyRef Name="Prov_ID" />
+      </Principal>
+      <Dependent Role="DESTINO">
+        <PropertyRef Name="ProvID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_LOCALIDADES_PROVINCIAS">
+    <End Role="PROVINCIAS" Type="Self.PROVINCIAS" Multiplicity="1" />
+    <End Role="LOCALIDADES" Type="Self.LOCALIDADES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="PROVINCIAS">
+        <PropertyRef Name="Prov_ID" />
+      </Principal>
+      <Dependent Role="LOCALIDADES">
+        <PropertyRef Name="ProvID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ORIGEN_CLIENTES">
+    <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="1" />
+    <End Role="ORIGEN" Type="Self.ORIGEN" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CLIENTES">
+        <PropertyRef Name="Cliente_ID" />
+      </Principal>
+      <Dependent Role="ORIGEN">
+        <PropertyRef Name="ClienteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ORIGEN_LOCALIDADES">
+    <End Role="LOCALIDADES" Type="Self.LOCALIDADES" Multiplicity="1" />
+    <End Role="ORIGEN" Type="Self.ORIGEN" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="LOCALIDADES">
+        <PropertyRef Name="Loc_ID" />
+      </Principal>
+      <Dependent Role="ORIGEN">
+        <PropertyRef Name="LocID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ORIGEN_PROVINCIAS">
+    <End Role="PROVINCIAS" Type="Self.PROVINCIAS" Multiplicity="1" />
+    <End Role="ORIGEN" Type="Self.ORIGEN" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="PROVINCIAS">
+        <PropertyRef Name="Prov_ID" />
+      </Principal>
+      <Dependent Role="ORIGEN">
+        <PropertyRef Name="ProvID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_VIAJES_CLIENTES">
+    <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="0..1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CLIENTES">
+        <PropertyRef Name="Cliente_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="ClienteID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_VIAJES_TARIFAS_FIJAS">
+    <End Role="TARIFAS_FIJAS" Type="Self.TARIFAS_FIJAS" Multiplicity="0..1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="TARIFAS_FIJAS">
+        <PropertyRef Name="TarifaFija_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="TarifaFijaID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_VIAJES_TARIFAS_KM">
+    <End Role="TARIFAS_KM" Type="Self.TARIFAS_KM" Multiplicity="0..1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="TARIFAS_KM">
+        <PropertyRef Name="TarifaKm_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="TarifaKmID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ViajesChofCam">
+    <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CHOFER_CAMION">
+        <PropertyRef Name="ChofCam_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="ChofCamID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ViajesDestino">
+    <End Role="DESTINO" Type="Self.DESTINO" Multiplicity="1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="DESTINO">
+        <PropertyRef Name="Destino_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="DestinoID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_ViajesOrigen">
+    <End Role="ORIGEN" Type="Self.ORIGEN" Multiplicity="1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="ORIGEN">
+        <PropertyRef Name="Origen_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="OrigenID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_GRUPOS_USUARIOS_USUARIOS">
+    <End Role="USUARIOS" Type="Self.USUARIOS" Multiplicity="1" />
+    <End Role="GRUPOS_USUARIOS" Type="Self.GRUPOS_USUARIOS" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="USUARIOS">
+        <PropertyRef Name="Usuario_ID" />
+      </Principal>
+      <Dependent Role="GRUPOS_USUARIOS">
+        <PropertyRef Name="UsuarioID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_GRUPOS_MENU_MENU">
+    <End Role="MENU" Type="Self.MENU" Multiplicity="1" />
+    <End Role="GRUPOS_MENU" Type="Self.GRUPOS_MENU" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="MENU">
+        <PropertyRef Name="Menu_ID" />
+      </Principal>
+      <Dependent Role="GRUPOS_MENU">
+        <PropertyRef Name="MenuID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_GRUPOS_MENU_GRUPOS">
+    <End Role="GRUPOS" Type="Self.GRUPOS" Multiplicity="1" />
+    <End Role="GRUPOS_MENU" Type="Self.GRUPOS_MENU" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="GRUPOS">
+        <PropertyRef Name="Grupo_ID" />
+      </Principal>
+      <Dependent Role="GRUPOS_MENU">
+        <PropertyRef Name="GrupoID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_GRUPOS_USUARIOS_GRUPOS">
+    <End Role="GRUPOS" Type="Self.GRUPOS" Multiplicity="1" />
+    <End Role="GRUPOS_USUARIOS" Type="Self.GRUPOS_USUARIOS" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="GRUPOS">
+        <PropertyRef Name="Grupo_ID" />
+      </Principal>
+      <Dependent Role="GRUPOS_USUARIOS">
+        <PropertyRef Name="GrupoID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FKCamionChofer">
+    <End Role="CAMIONES" Type="Self.CAMIONES" Multiplicity="1" />
+    <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CAMIONES">
+        <PropertyRef Name="Camion_ID" />
+      </Principal>
+      <Dependent Role="CHOFER_CAMION">
+        <PropertyRef Name="CamionID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FKChoferCamion">
+    <End Role="CHOFERES" Type="Self.CHOFERES" Multiplicity="1" />
+    <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CHOFERES">
+        <PropertyRef Name="Chofer_ID" />
+      </Principal>
+      <Dependent Role="CHOFER_CAMION">
+        <PropertyRef Name="ChoferID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FKchoferLoc">
+    <End Role="LOCALIDADES" Type="Self.LOCALIDADES" Multiplicity="1" />
+    <End Role="CHOFERES" Type="Self.CHOFERES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="LOCALIDADES">
+        <PropertyRef Name="Loc_ID" />
+      </Principal>
+      <Dependent Role="CHOFERES">
+        <PropertyRef Name="LocID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <EntityContainer Name="SGTLModelStoreContainer">
+    <EntitySet Name="CAMIONES" EntityType="Self.CAMIONES" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="CHOFER_CAMION" EntityType="Self.CHOFER_CAMION" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="CHOFERES" EntityType="Self.CHOFERES" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="CLIENTES" EntityType="Self.CLIENTES" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="DESTINO" EntityType="Self.DESTINO" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="LOCALIDADES" EntityType="Self.LOCALIDADES" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="ORIGEN" EntityType="Self.ORIGEN" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="PROFORMAS" EntityType="Self.PROFORMAS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="PROVINCIAS" EntityType="Self.PROVINCIAS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="TARIFAS_FIJAS" EntityType="Self.TARIFAS_FIJAS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="TARIFAS_KM" EntityType="Self.TARIFAS_KM" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="USUARIOS" EntityType="Self.USUARIOS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="GRUPOS_USUARIOS" EntityType="Self.GRUPOS_USUARIOS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="GRUPOS" EntityType="Self.GRUPOS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="GRUPOS_MENU" EntityType="Self.GRUPOS_MENU" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="MENU" EntityType="Self.MENU" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="VIAJES" EntityType="Self.VIAJES" Schema="dbo" store:Type="Tables" />
+    <AssociationSet Name="FK_DESTINO_CLIENTES" Association="Self.FK_DESTINO_CLIENTES">
+      <End Role="CLIENTES" EntitySet="CLIENTES" />
+      <End Role="DESTINO" EntitySet="DESTINO" />
+    </AssociationSet>
+    <AssociationSet Name="FK_DESTINO_LOCALIDADES" Association="Self.FK_DESTINO_LOCALIDADES">
+      <End Role="LOCALIDADES" EntitySet="LOCALIDADES" />
+      <End Role="DESTINO" EntitySet="DESTINO" />
+    </AssociationSet>
+    <AssociationSet Name="FK_DESTINO_PROVINCIAS" Association="Self.FK_DESTINO_PROVINCIAS">
+      <End Role="PROVINCIAS" EntitySet="PROVINCIAS" />
+      <End Role="DESTINO" EntitySet="DESTINO" />
+    </AssociationSet>
+    <AssociationSet Name="FK_LOCALIDADES_PROVINCIAS" Association="Self.FK_LOCALIDADES_PROVINCIAS">
+      <End Role="PROVINCIAS" EntitySet="PROVINCIAS" />
+      <End Role="LOCALIDADES" EntitySet="LOCALIDADES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ORIGEN_CLIENTES" Association="Self.FK_ORIGEN_CLIENTES">
+      <End Role="CLIENTES" EntitySet="CLIENTES" />
+      <End Role="ORIGEN" EntitySet="ORIGEN" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ORIGEN_LOCALIDADES" Association="Self.FK_ORIGEN_LOCALIDADES">
+      <End Role="LOCALIDADES" EntitySet="LOCALIDADES" />
+      <End Role="ORIGEN" EntitySet="ORIGEN" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ORIGEN_PROVINCIAS" Association="Self.FK_ORIGEN_PROVINCIAS">
+      <End Role="PROVINCIAS" EntitySet="PROVINCIAS" />
+      <End Role="ORIGEN" EntitySet="ORIGEN" />
+    </AssociationSet>
+    <AssociationSet Name="FK_VIAJES_CLIENTES" Association="Self.FK_VIAJES_CLIENTES">
+      <End Role="CLIENTES" EntitySet="CLIENTES" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_VIAJES_TARIFAS_FIJAS" Association="Self.FK_VIAJES_TARIFAS_FIJAS">
+      <End Role="TARIFAS_FIJAS" EntitySet="TARIFAS_FIJAS" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_VIAJES_TARIFAS_KM" Association="Self.FK_VIAJES_TARIFAS_KM">
+      <End Role="TARIFAS_KM" EntitySet="TARIFAS_KM" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ViajesChofCam" Association="Self.FK_ViajesChofCam">
+      <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ViajesDestino" Association="Self.FK_ViajesDestino">
+      <End Role="DESTINO" EntitySet="DESTINO" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_ViajesOrigen" Association="Self.FK_ViajesOrigen">
+      <End Role="ORIGEN" EntitySet="ORIGEN" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_GRUPOS_USUARIOS_USUARIOS" Association="Self.FK_GRUPOS_USUARIOS_USUARIOS">
+      <End Role="USUARIOS" EntitySet="USUARIOS" />
+      <End Role="GRUPOS_USUARIOS" EntitySet="GRUPOS_USUARIOS" />
+    </AssociationSet>
+    <AssociationSet Name="FK_GRUPOS_MENU_MENU" Association="Self.FK_GRUPOS_MENU_MENU">
+      <End Role="MENU" EntitySet="MENU" />
+      <End Role="GRUPOS_MENU" EntitySet="GRUPOS_MENU" />
+    </AssociationSet>
+    <AssociationSet Name="FK_GRUPOS_MENU_GRUPOS" Association="Self.FK_GRUPOS_MENU_GRUPOS">
+      <End Role="GRUPOS" EntitySet="GRUPOS" />
+      <End Role="GRUPOS_MENU" EntitySet="GRUPOS_MENU" />
+    </AssociationSet>
+    <AssociationSet Name="FK_GRUPOS_USUARIOS_GRUPOS" Association="Self.FK_GRUPOS_USUARIOS_GRUPOS">
+      <End Role="GRUPOS" EntitySet="GRUPOS" />
+      <End Role="GRUPOS_USUARIOS" EntitySet="GRUPOS_USUARIOS" />
+    </AssociationSet>
+    <AssociationSet Name="FKCamionChofer" Association="Self.FKCamionChofer">
+      <End Role="CAMIONES" EntitySet="CAMIONES" />
+      <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
+    </AssociationSet>
+    <AssociationSet Name="FKChoferCamion" Association="Self.FKChoferCamion">
+      <End Role="CHOFERES" EntitySet="CHOFERES" />
+      <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
+    </AssociationSet>
+    <AssociationSet Name="FKchoferLoc" Association="Self.FKchoferLoc">
+      <End Role="LOCALIDADES" EntitySet="LOCALIDADES" />
+      <End Role="CHOFERES" EntitySet="CHOFERES" />
+    </AssociationSet>
+  </EntityContainer>
+</Schema>
