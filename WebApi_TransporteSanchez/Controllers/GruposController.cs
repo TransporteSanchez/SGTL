@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity;
+using System.Data.Entity.Validation;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -18,73 +20,151 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // GET: api/Usuarios
-        public List<GruposDto> Get()
+        public IHttpActionResult Get()
         {
-            using (SGTLEntities db = new SGTLEntities())
-            {
-                var grupos = db.GRUPOS.Select(u => new GruposDto
-                {
-                    Grupo_ID = u.Grupo_ID,
-                    Grupo_Nombre = u.Grupo_Nombre,
-                }).ToList();
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                return grupos;
-            }
-        }
-
-        // GET: api/Usuarios/5
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST: api/Usuarios
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT: api/Usuarios/5
-        public void Put(int id, [FromBody] GRUPOS value)
-        {
-            using (SGTLEntities db = new SGTLEntities())
-            {
-                GRUPOS oitem = db.GRUPOS.Find(id);
-
-                oitem.Grupo_Nombre = value.Grupo_Nombre;
-
-                db.Entry(oitem).State = System.Data.Entity.EntityState.Modified;
-                db.SaveChanges();
-            }
-        }
-
-
-        // DELETE: api/Usuarios/5
-        public IHttpActionResult Delete(int id)
-        {
             try
             {
-                using (SGTLEntities db = new SGTLEntities())
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
-                    // Buscar el Grupo por ID
-                    GRUPOS oitem = db.GRUPOS.Find(id);
-
-                    if (oitem == null)
+                    var grupos = db.Set<GRUPOS>().Select(u => new GruposDto
                     {
-                        return NotFound(); // Retorna 404 si no se encuentra el GRUPO con el ID especificado
-                    }
+                        Grupo_ID = u.Grupo_ID,
+                        Grupo_Nombre = u.Grupo_Nombre,
+                    }).ToList();
 
-                    //Eliminar el GRUPO encontrado
-                    db.GRUPOS.Remove(oitem);
-                    db.SaveChanges();
-
-                    return Ok(); // Retorna 200 OK si la eliminación fue exitosa
-
+                    return Ok(grupos); // Retorna 200 con la lista de grupos
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
             }
             catch (Exception ex)
             {
                 return InternalServerError(ex); // Retorna 500 en caso de error interno
             }
         }
+
+        // GET: api/Usuarios/{id}
+        public IHttpActionResult Get(int id)
+        {
+            // Lógica futura aquí, pero agrega la conexión dinámica y el manejo de errores como en el método anterior
+            return Ok("value");
+        }
+
+        // POST: api/Usuarios
+        public IHttpActionResult Post([FromBody] string value)
+        {
+            // Lógica futura aquí, pero agrega la conexión dinámica y el manejo de errores como en el método anterior
+            return Ok();
+        }
+
+        // PUT: api/Usuarios/{id}
+        public IHttpActionResult Put(int id, [FromBody] GRUPOS value)
+        {
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                {
+                    GRUPOS oitem = db.Set<GRUPOS>().Find(id);
+
+                    if (oitem == null)
+                    {
+                        return NotFound(); // Retorna 404 si no se encuentra el grupo con el ID especificado
+                    }
+
+                    oitem.Grupo_Nombre = value.Grupo_Nombre;
+
+                    db.Entry(oitem).State = System.Data.Entity.EntityState.Modified;
+                    db.SaveChanges();
+
+                    return Ok(); // Retorna 200 OK si la actualización fue exitosa
+                }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex); // Retorna 500 en caso de error interno
+            }
+        }
+
+        // DELETE: api/Usuarios/{id}
+        public IHttpActionResult Delete(int id)
+        {
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                {
+                    // Buscar el Grupo por ID
+                    GRUPOS oitem = db.Set<GRUPOS>().Find(id);
+
+                    if (oitem == null)
+                    {
+                        return NotFound(); // Retorna 404 si no se encuentra el GRUPO con el ID especificado
+                    }
+
+                    // Eliminar el GRUPO encontrado
+                    db.Set<GRUPOS>().Remove(oitem);
+                    db.SaveChanges();
+
+                    return Ok(); // Retorna 200 OK si la eliminación fue exitosa
+                }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex); // Retorna 500 en caso de error interno
+            }
+        }
+
+
     }
 }
