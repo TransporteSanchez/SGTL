@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+
+
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar">
+
+            <!--Barra lateral activa-->
+
+            <div class="sidebar-wrapper active">
+                <div class="sidebar-header position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="logo">
+                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
+                                    style="width: 240px; height: 160px"></a>
+                        </div>
+                        <div class="sidebar-toggler  x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menú-->
+                <div class="sidebar-menu">
+                    <ul class="menu">
+
+                        <li class="sidebar-item ">
+                            <a href="index.html" class='sidebar-link'>
+                                <i class="bi bi-grid-fill"></i>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                        </li>
+
+                        <li class="sidebar-item has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>Choferes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+
+                                </li>
+
+                                <li class="submenu-item active">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+
+                                </li>
+
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-truck"></i>
+                                <span>Camiones</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-calendar-check"></i>
+                                <span>Viajes</span>
+                            </a>
+
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+
+                                </li>
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-person-workspace"></i>
+                                <span>Clientes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de clientes</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-medical"></i>
+                                <span>Facturación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de facturas</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Usuarios</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-richtext"></i>
+                                <span>Documentación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Manual de usuario</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Otros</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!--Llamado a las opciones del header-->
+
+                        <div id="header-container"></div>
+
+                        <script src="./assets/static/js/header.js"></script>
+
+                        <script>
+                            window.onload = loadHeader();
+                        </script>
+
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+
+                <!--Comienzo sección de la tabla-->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+
+                            <!--Notificaciones-->
+
+                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
+                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
+                                    <div class="d-flex">
+                                        <div class="toast-body">
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                                            data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <h5 class="card-title">
+                                Gestión de contenido
+                            </h5>
+                        </div>
+
+                        <div class="card-body">
+                            <form id="settings">
+                                <div class="container mt-5">
+
+                                    <!-- Logo Upload -->
+                                    <div class="mb-3">
+                                        <label for="logoInput">Logo (URL):</label>
+                                        <input type="text" id="logoInput" placeholder="URL del logo">
+                                    </div>
+
+                                    <!-- Background Color Selection -->
+                                    <div class="mb-3">
+                                        <label for="backgroundColorInput">Color de Fondo:</label>
+                                        <input type="color" id="backgroundColorInput">
+                                    </div>
+
+                                    <!-- Menu Color Selection -->
+                                    <div class="mb-3">
+                                        <label for="menuColorInput">Color del Menú:</label>
+                                        <input type="color" id="menuColorInput">
+                                    </div>
+
+                                    <!-- Footer Content -->
+                                    <div class="mb-3">
+                                        <label for="footerContentInput">Contenido del Footer:</label>
+                                        <textarea id="footerContentInput"
+                                            placeholder="Escribe el contenido del footer"></textarea>
+                                    </div>
+
+                                    <!-- Save Button -->
+                                    <div class="d-grid gap-2">
+                                        <button id="saveSettingsBtn">Guardar Cambios</button>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <!-- <h2>Vista Previa</h2>
+                            <div id="preview">
+                                <div id="previewHeader">
+                                    <img id="previewLogo" src="#" alt="Logo">
+                                    <h3 id="previewName"></h3>
+                                </div>
+                                <nav id="previewMenu">Menú</nav>
+                                <footer id="previewFooter"></footer>
+                            </div> -->
+
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <!--Fin sección de la tabla-->
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+
+                <script src="./assets/static/js/footer.js"></script>
+
+
+                <script>
+                    window.onload = function () {
+                        loadFooter();
+
+                    };
+                </script>
+            </footer>
+
+        </div>
+
+    </div>
+
+
+    <!--Scripts-->
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+
+    <script>
+
+document.getElementById('saveSettingsBtn').addEventListener('click', async function () {
+    // Captura los valores de los inputs
+    const logo = document.getElementById('logoInput').value;
+    const backgroundColor = document.getElementById('backgroundColorInput').value;
+    const menuColor = document.getElementById('menuColorInput').value;
+    const footerContent = document.getElementById('footerContentInput').value;
+
+    // Crea un objeto JSON con los datos
+    const settingsData = {
+        Logo: logo,
+        ColorFondo: backgroundColor,
+        ColorBotonesMenu: menuColor,
+        ContenidoPiePagina: footerContent,
+        Fecha_Modi: new Date().toISOString(), 
+        Usu_Modi: 'usuario' // Reemplaza 'usuario' con el usuario que corresponde
+    };
+
+    try {
+        // Envía el objeto JSON a tu API usando PUT
+        const response = await fetch('http://localhost:50222/api/GestionContenido/1', {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(settingsData)
+        });
+
+        // Verifica si la respuesta fue exitosa
+        if (!response.ok) {
+            const errorData = await response.text(); // Obtener texto en vez de JSON para manejo de errores
+            throw new Error(`Error en la petición: ${errorData}`); // Muestra información detallada del error
+        }
+
+        // Manejo de la respuesta JSON si es válida
+        const data = await response.json().catch(() => ({})); // Manejo de JSON vacío
+        console.log('Configuración actualizada:', data);
+        alert('Cambios guardados exitosamente');
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Hubo un error al guardar los cambios: ' + error.message);
+    }
+});
+
+
+
+
+
+    </script>
+
+</body>
+
+</html>
