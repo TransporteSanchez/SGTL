@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+  <EntityContainerMapping StorageEntityContainer="Transporte_SanchezModelStoreContainer" CdmEntityContainer="Transporte_SanchezEntities">
+    <EntitySetMapping Name="CHOFERES">
+      <EntityTypeMapping TypeName="Transporte_SanchezModel.CHOFERES">
+        <MappingFragment StoreEntitySet="CHOFERES">
+          <ScalarProperty Name="NumCalle" ColumnName="NumCalle" />
+          <ScalarProperty Name="Calle" ColumnName="Calle" />
+          <ScalarProperty Name="LocID" ColumnName="LocID" />
+          <ScalarProperty Name="ProvID" ColumnName="ProvID" />
+          <ScalarProperty Name="Email" ColumnName="Email" />
+          <ScalarProperty Name="TelefonoCelular" ColumnName="TelefonoCelular" />
+          <ScalarProperty Name="TelefonoFijo" ColumnName="TelefonoFijo" />
+          <ScalarProperty Name="Apellido" ColumnName="Apellido" />
+          <ScalarProperty Name="Nombre" ColumnName="Nombre" />
+          <ScalarProperty Name="CUIL" ColumnName="CUIL" />
+          <ScalarProperty Name="DNI" ColumnName="DNI" />
+          <ScalarProperty Name="ChoferID" ColumnName="ChoferID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="CAMIONES">
+      <EntityTypeMapping TypeName="Transporte_SanchezModel.CAMIONES">
+        <MappingFragment StoreEntitySet="CAMIONES">
+          <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
+          <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
+          <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
+          <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+          <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
+          <ScalarProperty Name="Tipo" ColumnName="Tipo" />
+          <ScalarProperty Name="AñoModelo" ColumnName="AñoModelo" />
+          <ScalarProperty Name="Modelo" ColumnName="Modelo" />
+          <ScalarProperty Name="Marca" ColumnName="Marca" />
+          <ScalarProperty Name="Dominio" ColumnName="Dominio" />
+          <ScalarProperty Name="CamionID" ColumnName="CamionID" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+  </EntityContainerMapping>
+</Mapping>
