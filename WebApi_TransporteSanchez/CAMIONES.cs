@@ -18,6 +18,7 @@ namespace WebApi_TransporteSanchez
         public CAMIONES()
         {
             this.CHOFER_CAMION = new HashSet<CHOFER_CAMION>();
+            this.VIAJES = new HashSet<VIAJES>();
         }
     
         public int Camion_ID { get; set; }
@@ -31,8 +32,14 @@ namespace WebApi_TransporteSanchez
         public System.DateTime FechaCompra { get; set; }
         public System.DateTime FechaITV { get; set; }
         public string EquipoFrio { get; set; }
+        public System.DateTime Fecha_Alta { get; set; }
+        public string Usu_Alta { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
     
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<CHOFER_CAMION> CHOFER_CAMION { get; set; }
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
+        public virtual ICollection<VIAJES> VIAJES { get; set; }
     }
 }

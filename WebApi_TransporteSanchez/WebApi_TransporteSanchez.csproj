@@ -190,10 +190,12 @@
     <Compile Include="CLIENTES.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="ConfigurationManager.cs" />
     <Compile Include="Controllers\CamionesController.cs" />
     <Compile Include="Controllers\ChoferesController.cs" />
     <Compile Include="Controllers\ClientesController.cs" />
     <Compile Include="Controllers\DestinoController.cs" />
+    <Compile Include="Controllers\GestionContenidoController.cs" />
     <Compile Include="Controllers\GruposController.cs" />
     <Compile Include="Controllers\MenuController.cs" />
     <Compile Include="Controllers\OrigenController.cs" />
@@ -201,6 +203,9 @@
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="DESTINO.cs">
+      <DependentUpon>SGTL.tt</DependentUpon>
+    </Compile>
+    <Compile Include="GESTION_CONTENIDO.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
     <Compile Include="Global.asax.cs">
@@ -330,6 +335,7 @@
   <ItemGroup>
     <Folder Include="App_Data\" />
     <Folder Include="Models\" />
+    <Folder Include="Views\GestionContenido\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff2" />

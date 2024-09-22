@@ -22,12 +22,18 @@ namespace WebApi_TransporteSanchez
         public string Num_de_Carga { get; set; }
         public System.DateTime Fecha_Inicio { get; set; }
         public System.DateTime Fecha_Fin { get; set; }
-        public int ChofCamID { get; set; }
+        public int ChoferID { get; set; }
         public int TarifaFijaID { get; set; }
         public int TarifaKmID { get; set; }
         public int ClienteID { get; set; }
+        public int CamionID { get; set; }
+        public System.DateTime Fecha_Alta { get; set; }
+        public string Usu_Alta { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
     
-        public virtual CHOFER_CAMION CHOFER_CAMION { get; set; }
+        public virtual CHOFERES CHOFERES { get; set; }
+        public virtual CAMIONES CAMIONES { get; set; }
         public virtual CLIENTES CLIENTES { get; set; }
         public virtual DESTINO DESTINO { get; set; }
         public virtual ORIGEN ORIGEN { get; set; }

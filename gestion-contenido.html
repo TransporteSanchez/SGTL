@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Entidad</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Gestor de Entidad</h1>
+        
+        <form id="entityForm">
+            <label for="logo">Logo de la Empresa:</label>
+            <input type="file" id="logo" accept="image/*" required>
+            <img id="logoPreview" src="#" alt="Previsualización del Logo" style="display: none; max-width: 50px; max-height: 50px;">
+
+            <label for="name">Nombre de la Entidad:</label>
+            <input type="text" id="name" placeholder="Nombre de la Entidad" required>
+
+            <label for="bgColor">Color de Fondo:</label>
+            <input type="color" id="bgColor" required>
+
+            <label for="menuColor">Color del Menú:</label>
+            <input type="color" id="menuColor" required>
+
+            <label for="footerContent">Contenido del Footer:</label>
+            <textarea id="footerContent" placeholder="Contenido del Footer" required></textarea>
+
+            <button type="submit">Guardar Configuración</button>
+        </form>
+
+        <h2>Vista Previa</h2>
+        <div id="preview">
+            <div id="previewHeader">
+                <img id="previewLogo" src="#" alt="Logo">
+                <h3 id="previewName"></h3>
+            </div>
+            <nav id="previewMenu">Menú</nav>
+            <footer id="previewFooter"></footer>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

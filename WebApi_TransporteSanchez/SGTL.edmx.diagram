@@ -42,6 +42,7 @@
 		<AssociationConnector Association="SGTLModel.FK_GRUPOS_MENU_MENU" ManuallyRouted="false" />
 		<AssociationConnector Association="SGTLModel.FK_GRUPOS_MENU_GRUPOS" ManuallyRouted="false" />
 		<AssociationConnector Association="SGTLModel.FK_GRUPOS_USUARIOS_GRUPOS" ManuallyRouted="false" />
+        <EntityTypeShape EntityType="SGTLModel.GESTION_CONTENIDO" Width="2.625" PointX="16.375" PointY="3.75" />
       </Diagram>
     </edmx:Diagrams>
   </edmx:Designer>

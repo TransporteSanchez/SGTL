@@ -12,14 +12,14 @@ namespace WebApi_TransporteSanchez
     using System;
     using System.Collections.Generic;
     
-    public partial class CHOFER_CAMION
+    public partial class GESTION_CONTENIDO
     {
-        public int ChofCam_ID { get; set; }
-        public int CamionID { get; set; }
-        public int ChoferID { get; set; }
-        public string Cedula { get; set; }
-    
-        public virtual CAMIONES CAMIONES { get; set; }
-        public virtual CHOFERES CHOFERES { get; set; }
+        public int GestionContenido_ID { get; set; }
+        public string Logo { get; set; }
+        public string ColorFondo { get; set; }
+        public string ColorBotonesMenu { get; set; }
+        public string ContenidoPiePagina { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
     }
 }
