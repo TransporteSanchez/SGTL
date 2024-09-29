@@ -17,6 +17,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    
 </head>
 
 <body>
@@ -258,75 +259,41 @@
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-
-                            <!--Notificaciones-->
-
-                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
-                                    <div class="d-flex">
-                                        <div class="toast-body">
-                                        </div>
-                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                    </div>
-                                </div>
-                            </div>
-
-
-
-                            <h5 class="card-title">
-                                Gestión de contenido
-                            </h5>
+                            <h4 class="card-title">Gestión de contenido</h4>
                         </div>
-
                         <div class="card-body">
-                            <form id="settings">
-                                <div class="container mt-5">
-
-                                    <!-- Logo Upload -->
-                                    <div class="mb-3">
-                                        <label for="logoInput">Logo (URL):</label>
-                                        <input type="text" id="logoInput" placeholder="URL del logo">
+                            <form id="settings" class="form form-horizontal">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="logoInput">Logo (URL)</label>
                                     </div>
-
-                                    <!-- Background Color Selection -->
-                                    <div class="mb-3">
-                                        <label for="backgroundColorInput">Color de Fondo:</label>
-                                        <input type="color" id="backgroundColorInput">
+                                    <div class="col-md-8 form-group">
+                                        <input type="text" id="logoInput" class="form-control" name="logoInput" placeholder="URL del logo">
                                     </div>
-
-                                    <!-- Menu Color Selection -->
-                                    <div class="mb-3">
-                                        <label for="menuColorInput">Color del Menú:</label>
-                                        <input type="color" id="menuColorInput">
+                                    <div class="col-md-4">
+                                        <label for="backgroundColorInput">Color de Fondo</label>
                                     </div>
-
-                                    <!-- Footer Content -->
-                                    <div class="mb-3">
-                                        <label for="footerContentInput">Contenido del Footer:</label>
-                                        <textarea id="footerContentInput"
-                                            placeholder="Escribe el contenido del footer"></textarea>
+                                    <div class="col-md-8 form-group">
+                                        <input type="color" id="backgroundColorInput" class="form-control" name="backgroundColorInput">
                                     </div>
-
-                                    <!-- Save Button -->
-                                    <div class="d-grid gap-2">
-                                        <button id="saveSettingsBtn">Guardar Cambios</button>
+                                    <div class="col-md-4">
+                                        <label for="menuColorInput">Color del Menú</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <input type="color" id="menuColorInput" class="form-control" name="menuColorInput">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="footerContentInput">Contenido del pie de página</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <textarea id="footerContentInput" class="form-control" name="footerContentInput" placeholder="Escribe el contenido del pie de página" rows="3"></textarea>
+                                    </div>
+                                    <div class="col-sm-12 d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary me-1 mb-1" id="saveSettingsBtn">Confirmar</button>
+                                        <button type="reset" class="btn btn-light-secondary me-1 mb-1">Restablecer</button>
                                     </div>
                                 </div>
                             </form>
-
-                            <!-- <h2>Vista Previa</h2>
-                            <div id="preview">
-                                <div id="previewHeader">
-                                    <img id="previewLogo" src="#" alt="Logo">
-                                    <h3 id="previewName"></h3>
-                                </div>
-                                <nav id="previewMenu">Menú</nav>
-                                <footer id="previewFooter"></footer>
-                            </div> -->
-
-
                         </div>
                     </div>
                 </section>
