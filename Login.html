@@ -3,51 +3,193 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css" integrity="sha512-MV7K8+y+gLIBoVD59lQIYicR65iaqukzvf/nwasF0nqhPay5w/9lJmVM2hMDcnK1OnMGCdVK+iQrJ7lzPJQd1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <link rel="stylesheet" href="css/login.css">
+    <!-- Estilos reutilizados -->
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css' rel='stylesheet'>
+    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 
-    <title>TRANSPORTE SANCHEZ</title>
-
-    <script>
-        function login() {
-            const username = document.getElementById('username');
-            const password = document.getElementById('password');
-
-            if (username.value === 'mferrando' && password.value === 'sistemas3') {
-                window.location.href = 'Index.html';
-            } else {
-                alert('Usuario o contraseña incorrecto');
-            }
+    <style>
+        /* Estilos personalizados */
+        .left-section {
+            background-color: #c7e4e4;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
         }
-    </script>
+
+        .left-section img {
+            max-width: 200px;
+        }
+
+        .left-section h1 {
+            margin-top: 20px;
+            font-size: 2.5rem;
+        }
+
+        .right-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            border-radius: 10px;
+            padding: 40px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group-text {
+            cursor: pointer;
+            /* Cambiar el cursor al pasar sobre el ícono */
+        }
+    </style>
 </head>
 
 <body>
-    <div class="login">
-        <form action="" class="formulario">
-            <img class="imagen" src="img/LogoSanchez.png" alt="Transporte Sanchez">
-            <h1 class="titulo">BIENVENIDO</h1>
-            <label>
-                <i class="fa-solid fa-user"></i>|
-                <input placeholder="USUARIO" type="text" id="username">
-            </label>
-            <label>
-                <i class="fa-solid fa-lock"></i>
-                <input placeholder="CLAVE" type="password" id="password">
-            </label>
-            <a href="#" class="link">¿Olvidó su contraseña?</a>
-            <div>
-                <button id="button" onclick="login()" type="button">INICIAR SESIÓN</button>
+    <div class="container-fluid">
+        <div class="row vh-100">
+            <!-- Sección izquierda -->
+            <div class="col-lg-6 left-section d-none d-lg-flex">
+                <div class="text-center">
+                    <img src="./assets/compiled/svg/ts-logo2.svg" alt="Logo" style="width: 500px;">
+                    <h1></h1>
+                    <p></p>
+                </div>
             </div>
-        </form>
+
+            <!-- Sección derecha -->
+            <div class="col-lg-6 right-section">
+                <div class="login-card card">
+                    <div class="text-center mb-4">
+                        <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" style="width: 200px;">
+                    </div>
+                    <h5 class="text-center mb-4">Iniciar sesión</h5>
+                    <!-- Formulario -->
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="username" class="form-label">Usuario</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                                <input type="text" class="form-control" id="username" name="username"
+                                    placeholder="Ingrese su usuario">
+                            </div>
+                            <small id="userError" class="text-danger" style="display:none;">El usuario no puede estar
+                                vacío</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label">Contraseña</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                                <input type="password" class="form-control" id="password" name="password"
+                                    placeholder="Ingrese su contraseña">
+                                <span class="input-group-text" id="togglePassword" onclick="togglePassword()">
+                                    <i class="fa fa-eye" id="eyeIcon"></i>
+                                </span>
+                            </div>
+                            <small id="passError" class="text-danger" style="display:none;">La contraseña no puede estar
+                                vacía</small>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Entrar</button>
+                        </div>
+                    </form>
+
+                    <script>
+                        function togglePassword() {
+                            const passwordInput = document.getElementById('password');
+                            const eyeIcon = document.getElementById('eyeIcon');
+
+                            if (passwordInput.type === 'password') {
+                                passwordInput.type = 'text';
+                                eyeIcon.classList.remove('fa-eye');
+                                eyeIcon.classList.add('fa-eye-slash');
+                            } else {
+                                passwordInput.type = 'password';
+                                eyeIcon.classList.remove('fa-eye-slash');
+                                eyeIcon.classList.add('fa-eye');
+                            }
+                        }
+
+                        document.getElementById('loginForm').addEventListener('submit', function (event) {
+                            event.preventDefault(); // Evita el envío del formulario
+
+                            // Obtener los valores ingresados
+                            const username = document.getElementById('username').value.trim();
+                            const password = document.getElementById('password').value.trim();
+
+                            // Variables para manejar errores
+                            let valid = true;
+
+                            // Validación del campo usuario
+                            if (!username) {
+                                document.getElementById('userError').style.display = 'block';
+                                valid = false;
+                            } else {
+                                document.getElementById('userError').style.display = 'none';
+                            }
+
+                            // Validación del campo contraseña
+                            if (!password) {
+                                document.getElementById('passError').style.display = 'block';
+                                valid = false;
+                            } else {
+                                document.getElementById('passError').style.display = 'none';
+                            }
+
+                            // Si ambos campos son válidos, realizar la solicitud a la API
+                            if (valid) {
+                                fetch('http://localhost:50222/api/login', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                    },
+                                    body: JSON.stringify({
+                                        Nombre_Usuario: username,
+                                        Contraseña: password
+                                    })
+                                })
+                                    .then(response => {
+                                        if (response.ok) {
+                                            return response.json(); // Si la respuesta es exitosa, convertirla a JSON
+                                        } else if (response.status === 401) {
+                                            throw new Error('Credenciales incorrectas');
+                                        } else {
+                                            throw new Error('Ocurrió un error en el servidor');
+                                        }
+                                    })
+                                    .then(data => {
+                                        alert(data.message); // Mostrar mensaje de éxito
+                                        // Redirigir al usuario a la página principal o dashboard
+                                        window.location.href = 'index.html';
+                                    })
+                                    .catch(error => {
+                                        alert(error.message); // Mostrar el mensaje de error
+                                    });
+                            }
+                        });
+
+                    </script>
+
+                    <div class="text-center mt-4">
+                        <small><a>2024 © Integra Analistas</a></small>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <footer>
-        <p>&copy; 2023 - Integra Analistas</p>
-    </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
