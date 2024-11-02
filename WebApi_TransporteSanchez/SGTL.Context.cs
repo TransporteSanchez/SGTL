@@ -42,5 +42,6 @@ namespace WebApi_TransporteSanchez
         public virtual DbSet<GRUPOS_MENU> GRUPOS_MENU { get; set; }
         public virtual DbSet<MENU> MENU { get; set; }
         public virtual DbSet<VIAJES> VIAJES { get; set; }
+        public virtual DbSet<GESTION_CONTENIDO> GESTION_CONTENIDO { get; set; }
     }
 }

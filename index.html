@@ -5,7 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <style>
+        /* Estilo para ocultar el contenido por defecto */
+        #app {
+            display: none;
+            /* Ocultar el contenido de la aplicación por defecto */
+        }
 
+        /* Estilo para centrar el spinner de carga */
+        #loading-message {
+            position: fixed;
+            /* Posiciona el mensaje de carga en el medio de la pantalla */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Centra el div */
+            z-index: 9999;
+            /* Asegúrate de que esté por encima de otros elementos */
+        }
+    </style>
 
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -26,6 +44,15 @@
 </head>
 
 <body>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+
+
     <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
         <div id="sidebar">
@@ -36,11 +63,15 @@
                 <div class="sidebar-header position-relative">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="logo">
-                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                    style="width: 240px; height: 160px"></a>
+                            <a href="index.html">
+                                <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo"
+                                    style="width: 240px; height: 160px">
+                            </a>
                         </div>
-                        <div class="sidebar-toggler  x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        <div class="sidebar-toggler x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block">
+                                <i class="bi bi-x bi-middle"></i>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -49,12 +80,11 @@
                 <div class="sidebar-menu">
                     <ul class="menu">
 
-                        <li class="sidebar-item active ">
+                        <li class="sidebar-item active">
                             <a href="index.html" class='sidebar-link'>
                                 <i class="bi bi-grid-fill"></i>
                                 <span>Dashboard</span>
                             </a>
-
 
                         </li>
 
@@ -220,6 +250,14 @@
 
                         </li>
 
+                        <li class="sidebar-item">
+                            <a href="gestion-contenido.html" class='sidebar-link'>
+                                <i class="bi bi-columns"></i>
+                                <span>Gestionar contenido</span>
+                            </a>
+
+                        </li>
+
                     </ul>
                 </div>
             </div>
@@ -230,36 +268,22 @@
 
             <!--Header-->
             <header>
-
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
                         <a href="#" class="burger-btn d-block">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
-
-                        <!--btn para expandir Menú lateral-->
-
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
-
-                        <!--Llamado a las opciones del header-->
-
                         <div id="header-container"></div>
-
                         <script src="./assets/static/js/header.js"></script>
-
-                        <script>
-                            window.onload = loadHeader();
-                        </script>
-
                     </div>
                 </nav>
-
-
             </header>
+
             <div id="main-content">
 
                 <!--Contenido de la página-->
@@ -287,7 +311,8 @@
                         <div class="col-md-8 col-sm-12">
                         </div>
 
-                        <div class="col-lg-3 col-md-4 mb-4"> <!-- Define el tamaño de la columna para diferentes pantallas -->
+                        <div class="col-lg-3 col-md-4 mb-4">
+                            <!-- Define el tamaño de la columna para diferentes pantallas -->
                             <div class="card rounded custom-card">
                                 <div class="card-header">
                                     <h5 class="mb-0">Camiones</h5>
@@ -306,49 +331,17 @@
                                         </span>
                                     </div>
                                 </div>
-                                
+
                             </div>
                         </div>
                     </div>
                 </div>
 
-
-                <!-- <div class="page-content">
-                    <section class="row">
-                        <div class="col-6 col-lg-3">
-                            <div class="card mb-4 rounded">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Choferes</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div id="chart-choferes"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6 col-lg-5 offset-lg-4">
-                            <div class="card rounded">
-                                <div class="card-body">
-                                    <div id='calendar'></div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div> -->
-
                 <!--Footer-->
 
                 <footer>
                     <div id="footer-container"></div>
-
                     <script src="./assets/static/js/footer.js"></script>
-
-
-                    <script>
-                        window.onload = function () {
-                            loadFooter();
-
-                        };
-                    </script>
                 </footer>
 
             </div>
@@ -366,47 +359,175 @@
         <script src='https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/locale/es.js'></script>
 
         <script>
-            $(document).ready(function () {
+            window.onload = function () {
+                // Mostrar el mensaje de carga
+                const loadingMessage = document.getElementById('loading-message');
+                loadingMessage.style.display = 'block';
+
+                // Ocultar el contenido de la aplicación
+                document.getElementById('app').style.display = 'none';
+
+                // Cargar primero el header
+                window.loadHeader();
+
+                // Cargar luego el footer
+                window.loadFooter();
+
+                // Carga los ajustes desde la API
+                loadSettings().then(() => {
+                    // Oculta el mensaje de carga
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block'; // Muestra el contenido de la aplicación
+                }).catch(() => {
+                    // Maneja el error si la carga falla
+                    document.getElementById('loading-message').innerText = 'Error al cargar los datos.';
+                });
+            };
+
+            // Función para cargar la configuración de la API de gestión de contenido
+            async function loadSettings() {
+                console.log('Llamando a la API de Gestión de Contenido...');
+
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                return new Promise((resolve, reject) => {
+                    xhr.onload = function () {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const data = JSON.parse(xhr.responseText);
+                            console.log('Respuesta de la API:', data); // Verifica la estructura de la respuesta
+
+                            // Ahora accedemos directamente al objeto
+                            if (data) {
+                                const logoUrl = data.Logo;
+                                const colorFondo = data.ColorFondo;
+                                const colorBotonesMenu = data.ColorBotonesMenu;
+                                const contenidoPiePagina = data.ContenidoPiePagina;
+
+                                console.log('URL del nuevo logo:', logoUrl);
+
+                                // Actualizar logo
+                                const logoElement = document.querySelector('.sidebar-header .logo img');
+                                if (logoElement && logoUrl) {
+                                    logoElement.src = logoUrl;
+                                    console.log('Logo actualizado a:', logoElement.src);
+                                } else {
+                                    // Valor por defecto si no se obtuvo de la API
+                                    logoElement.src = './assets/compiled/svg/ts-logo-text.svg';
+                                }
+
+                                // Cambiar color de fondo
+                                document.body.style.backgroundColor = colorFondo || '#D3E8DE'; // Valor por defecto
+
+                                // Actualizar botones del menú
+                                const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+                                botonesMenu.forEach(button => {
+                                    button.style.backgroundColor = colorBotonesMenu || '#198754'; // Valor por defecto
+                                });
+
+                                // Actualizar contenido del pie de página
+                                const footerContentElement = document.querySelector('.footer p');
+                                if (footerContentElement && contenidoPiePagina) {
+                                    footerContentElement.innerHTML = contenidoPiePagina;
+                                } else {
+                                    footerContentElement.innerHTML = '2024 &copy; Integra Analistas'; // Valor por defecto
+                                }
+
+                                resolve(); // Resolviendo la promesa
+                            } else {
+                                console.error('La respuesta de la API no contiene los datos esperados.');
+                                reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                            }
+                        } else {
+                            console.error('Error en la petición:', xhr.statusText);
+                            reject(new Error('Error en la carga de la API'));
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        console.error('Error al cargar la configuración de la API.');
+                        reject(new Error('Error de red'));
+                    };
+
+                    xhr.send();
+                });
+            }
+
+            // Llama a la función y maneja el resultado
+            loadSettings()
+                .then(() => {
+                    console.log('Configuración cargada correctamente.');
+                })
+                .catch(error => {
+                    console.error('Error al cargar la configuración:', error);
+                });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                // Mostrar el mensaje de carga
+                const loadingMessage = document.getElementById('loading-message');
+                loadingMessage.style.display = 'block';
+
+                // Ocultar el contenido de la aplicación
+                document.getElementById('app').style.display = 'none';
+
                 // Llamada a la API para obtener los datos de los choferes
                 $.ajax({
                     url: 'http://localhost:50222/api/Choferes',
                     method: 'GET',
                     dataType: 'json',
                     success: function (data) {
-                        // Procesar los datos para contar los choferes activos e inactivos
                         var totalChoferes = data.length;
                         var activos = data.filter(function (chofer) {
                             return chofer.EstadoChofer === 'Activo';
                         }).length;
                         var inactivos = totalChoferes - activos;
 
-                        // Configurar los datos para el gráfico
-                        var options = {
-                            chart: {
-                                type: 'donut'
-                            },
-                            series: [activos, inactivos],
-                            labels: ['Activos', 'Inactivos'],
-                            colors: ['#1abc9c', '#e74c3c'],
-                            responsive: [{
-                                breakpoint: 480,
-                                options: {
-                                    chart: {
-                                        width: 200
-                                    },
-                                    legend: {
-                                        position: 'bottom'
+                        if (totalChoferes > 0) {
+                            var options = {
+                                chart: {
+                                    type: 'donut'
+                                },
+                                series: [activos, inactivos],
+                                labels: ['Activos', 'Inactivos'],
+                                colors: ['#1abc9c', '#e74c3c'],
+                                responsive: [{
+                                    breakpoint: 480,
+                                    options: {
+                                        chart: {
+                                            width: 200
+                                        },
+                                        legend: {
+                                            position: 'bottom'
+                                        }
                                     }
-                                }
-                            }]
-                        };
+                                }]
+                            };
 
-                        // Renderizar el gráfico usando ApexCharts
-                        var chart = new ApexCharts(document.querySelector("#chart-choferes"), options);
-                        chart.render();
+                            var chart = new ApexCharts(document.querySelector("#chart-choferes"), options);
+                            chart.render();
+                        } else {
+                            // Mostrar mensaje de no registros
+                            document.querySelector("#chart-choferes").innerHTML = '<p>No se encontraron registros</p>';
+                        }
+
+                        // Ocultar el mensaje de carga y mostrar el contenido
+                        loadingMessage.style.display = 'none';
+                        document.getElementById('app').style.display = 'block';
                     },
                     error: function (err) {
-                        console.error('Error al obtener los datos de los choferes:', err);
+                        if (err.status === 404) {
+                            console.warn('No se encontraron choferes, mostrando mensaje.');
+
+                            // Mostrar mensaje de no registros
+                            document.querySelector("#chart-choferes").innerHTML = '<p>No se encontraron registros</p>';
+
+                            // Ocultar el mensaje de carga y mostrar el contenido
+                            loadingMessage.style.display = 'none';
+                            document.getElementById('app').style.display = 'block';
+                        } else {
+                            console.error('Error al obtener los datos de los choferes:', err);
+                            loadingMessage.innerText = 'Error al cargar los datos de los choferes.';
+                        }
                     }
                 });
 
@@ -416,43 +537,31 @@
                     method: 'GET',
                     dataType: 'json',
                     success: function (data) {
-                        // Procesar los datos para contar el total de camiones
                         var totalCamiones = data.length;
-
-                        // Actualizar el valor en el HTML
-                        $("#total-camiones").text(totalCamiones);
+                        $("#total-camiones").text(totalCamiones); // Mostrar la cantidad real de camiones
                     },
                     error: function (err) {
-                        console.error('Error al obtener los datos de los camiones:', err);
+                        if (err.status === 404) {
+                            console.warn('No se encontraron camiones, mostrando 0 en el contador.');
+
+                            // Si no se encuentran camiones (404), mostrar 0 en el contador
+                            $("#total-camiones").text(0);
+                        } else {
+                            console.error('Error al obtener los datos de los camiones:', err);
+                            loadingMessage.innerText = 'Error al cargar los datos de los camiones.';
+                        }
                     }
                 });
+
             });
+
+
         </script>
 
 
-        <!-- <script>
-            $(document).ready(function () {
-                $('#calendar').fullCalendar({
-                    header: {
-                        left: 'prev,next today',
-                        center: 'title',
-                        right: 'month'
-                    },
-                    locale: 'es',
-                    firstDay: 1,
-                    defaultView: 'month',
-                    defaultDate: moment().format('YYYY-MM-DD'),
-                    navLinks: true,
-                    editable: true,
-                    eventLimit: true,
-                    aspectRatio: 1.2, // Relación de aspecto para ajustar el alto del calendario
-                    contentHeight: 250, // Altura automática según el contenido
-                    handleWindowResize: true, // Ajustar automáticamente al cambiar el tamaño de la ventana
 
-                });
 
-            });
-        </script> -->
+
     </div>
 </body>
 

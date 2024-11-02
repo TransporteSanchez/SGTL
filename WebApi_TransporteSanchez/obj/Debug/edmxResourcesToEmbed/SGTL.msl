@@ -15,6 +15,10 @@
           <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
           <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
           <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -44,6 +48,10 @@
           <ScalarProperty Name="Calle" ColumnName="Calle" />
           <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
           <ScalarProperty Name="EstadoChofer" ColumnName="EstadoChofer" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -120,17 +128,17 @@
       </EntityTypeMapping>
     </EntitySetMapping>
     <EntitySetMapping Name="TARIFAS_FIJAS">
-      <EntityTypeMapping TypeName="SGTLModel.TARIFAS_FIJAS">
+      <EntityTypeMapping TypeName="IsTypeOf(SGTLModel.TARIFAS_FIJAS)">
         <MappingFragment StoreEntitySet="TARIFAS_FIJAS">
           <ScalarProperty Name="TarifaFija_ID" ColumnName="TarifaFija_ID" />
-          <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
-          <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
-          <ScalarProperty Name="ValorRuta" ColumnName="ValorRuta" />
-          <ScalarProperty Name="ValorVueltaVacio" ColumnName="ValorVueltaVacio" />
-          <ScalarProperty Name="ValorFijoNeto" ColumnName="ValorFijoNeto" />
-          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
-          <ScalarProperty Name="OrigenID" ColumnName="OrigenID" />
           <ScalarProperty Name="DestinoID" ColumnName="DestinoID" />
+          <ScalarProperty Name="OrigenID" ColumnName="OrigenID" />
+          <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="ValorFijoNeto" ColumnName="ValorFijoNeto" />
+          <ScalarProperty Name="ValorVueltaVacio" ColumnName="ValorVueltaVacio" />
+          <ScalarProperty Name="ValorRuta" ColumnName="ValorRuta" />
+          <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
+          <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -150,9 +158,12 @@
       <EntityTypeMapping TypeName="SGTLModel.USUARIOS">
         <MappingFragment StoreEntitySet="USUARIOS">
           <ScalarProperty Name="Usuario_ID" ColumnName="Usuario_ID" />
+          <ScalarProperty Name="Nombre" ColumnName="Nombre" />
+          <ScalarProperty Name="Apellido" ColumnName="Apellido" />
           <ScalarProperty Name="Nombre_Usuario" ColumnName="Nombre_Usuario" />
           <ScalarProperty Name="Contraseña" ColumnName="Contraseña" />
           <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Rol" ColumnName="Rol" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -166,7 +177,7 @@
       </EntityTypeMapping>
     </EntitySetMapping>
     <EntitySetMapping Name="GRUPOS">
-      <EntityTypeMapping TypeName="SGTLModel.GRUPOS">
+      <EntityTypeMapping TypeName="IsTypeOf(SGTLModel.GRUPOS)">
         <MappingFragment StoreEntitySet="GRUPOS">
           <ScalarProperty Name="Grupo_ID" ColumnName="Grupo_ID" />
           <ScalarProperty Name="Grupo_Nombre" ColumnName="Grupo_Nombre" />
@@ -201,10 +212,28 @@
           <ScalarProperty Name="Num_de_Carga" ColumnName="Num_de_Carga" />
           <ScalarProperty Name="Fecha_Inicio" ColumnName="Fecha_Inicio" />
           <ScalarProperty Name="Fecha_Fin" ColumnName="Fecha_Fin" />
-          <ScalarProperty Name="ChofCamID" ColumnName="ChofCamID" />
+          <ScalarProperty Name="ChoferID" ColumnName="ChoferID" />
           <ScalarProperty Name="TarifaFijaID" ColumnName="TarifaFijaID" />
           <ScalarProperty Name="TarifaKmID" ColumnName="TarifaKmID" />
           <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="CamionID" ColumnName="CamionID" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
+        </MappingFragment>
+      </EntityTypeMapping>
+    </EntitySetMapping>
+    <EntitySetMapping Name="GESTION_CONTENIDO">
+      <EntityTypeMapping TypeName="IsTypeOf(SGTLModel.GESTION_CONTENIDO)" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <MappingFragment StoreEntitySet="GESTION_CONTENIDO">
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="ContenidoPiePagina" ColumnName="ContenidoPiePagina" />
+          <ScalarProperty Name="ColorBotonesMenu" ColumnName="ColorBotonesMenu" />
+          <ScalarProperty Name="ColorFondo" ColumnName="ColorFondo" />
+          <ScalarProperty Name="Logo" ColumnName="Logo" />
+          <ScalarProperty Name="GestionContenido_ID" ColumnName="GestionContenido_ID" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>

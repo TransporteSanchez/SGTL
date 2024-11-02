@@ -15,6 +15,10 @@
     <Property Name="FechaCompra" Type="date" Nullable="false" />
     <Property Name="FechaITV" Type="date" Nullable="false" />
     <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
+    <Property Name="Fecha_Alta" Type="date" Nullable="false" />
+    <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
+    <Property Name="Fecha_Modi" Type="date" Nullable="false" />
+    <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
   </EntityType>
   <EntityType Name="CHOFER_CAMION">
     <Key>
@@ -42,6 +46,10 @@
     <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="AlturaCalle" Type="char" MaxLength="10" />
     <Property Name="EstadoChofer" Type="varchar" MaxLength="10" Nullable="false" />
+    <Property Name="Fecha_Alta" Type="date" Nullable="false" />
+    <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
+    <Property Name="Fecha_Modi" Type="date" Nullable="false" />
+    <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
   </EntityType>
   <EntityType Name="CLIENTES">
     <Key>
@@ -102,6 +110,18 @@
     <Property Name="CantidadViajes" Type="char" MaxLength="10" />
     <Property Name="FechaCreacion" Type="date" />
   </EntityType>
+  <EntityType Name="GESTION_CONTENIDO">
+    <Key>
+      <PropertyRef Name="GestionContenido_ID" />
+    </Key>
+    <Property Name="GestionContenido_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Logo" Type="varchar" MaxLength="255" />
+    <Property Name="ColorFondo" Type="varchar" MaxLength="50" />
+    <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="50" />
+    <Property Name="ContenidoPiePagina" Type="varchar" MaxLength="100" />
+    <Property Name="Fecha_Modi" Type="date" Nullable="false" />
+    <Property Name="Usu_Modi" Type="varchar" MaxLength="20" />
+  </EntityType>
   <EntityType Name="PROVINCIAS">
     <Key>
       <PropertyRef Name="Prov_ID" />
@@ -139,9 +159,12 @@
       <PropertyRef Name="Usuario_ID" />
     </Key>
     <Property Name="Usuario_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
+    <Property Name="Nombre" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="Apellido" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="Nombre_Usuario" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="Contraseña" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+    <Property Name="Rol" Type="varchar" Nullable="true" />
   </EntityType>
   <EntityType Name="GRUPOS_USUARIOS">
     <Key>
@@ -185,10 +208,15 @@
     <Property Name="Num_de_Carga" Type="nchar" MaxLength="20" Nullable="false" />
     <Property Name="Fecha_Inicio" Type="datetime" Nullable="false" />
     <Property Name="Fecha_Fin" Type="datetime" Nullable="false" />
-    <Property Name="ChofCamID" Type="int" Nullable="false" />
-    <Property Name="TarifaFijaID" Type="int" />
-    <Property Name="TarifaKmID" Type="int" />
-    <Property Name="ClienteID" Type="int" />
+    <Property Name="ChoferID" Type="int" Nullable="false" />
+    <Property Name="TarifaFijaID" Type="int" Nullable="false" />
+    <Property Name="TarifaKmID" Type="int" Nullable="false" />
+    <Property Name="ClienteID" Type="int" Nullable="false" />
+    <Property Name="CamionID" Type="int" Nullable="false" />
+    <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+    <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
+    <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+    <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
   </EntityType>
   <Association Name="FK_DESTINO_CLIENTES">
     <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="1" />
@@ -275,7 +303,7 @@
     </ReferentialConstraint>
   </Association>
   <Association Name="FK_VIAJES_CLIENTES">
-    <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="0..1" />
+    <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
       <Principal Role="CLIENTES">
@@ -287,7 +315,7 @@
     </ReferentialConstraint>
   </Association>
   <Association Name="FK_VIAJES_TARIFAS_FIJAS">
-    <End Role="TARIFAS_FIJAS" Type="Self.TARIFAS_FIJAS" Multiplicity="0..1" />
+    <End Role="TARIFAS_FIJAS" Type="Self.TARIFAS_FIJAS" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
       <Principal Role="TARIFAS_FIJAS">
@@ -299,7 +327,7 @@
     </ReferentialConstraint>
   </Association>
   <Association Name="FK_VIAJES_TARIFAS_KM">
-    <End Role="TARIFAS_KM" Type="Self.TARIFAS_KM" Multiplicity="0..1" />
+    <End Role="TARIFAS_KM" Type="Self.TARIFAS_KM" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
       <Principal Role="TARIFAS_KM">
@@ -310,19 +338,31 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FK_ViajesChofCam">
-    <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="1" />
+  <Association Name="FK_VIAJES_CHOFERES">
+    <End Role="CHOFERES" Type="Self.CHOFERES" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
-      <Principal Role="CHOFER_CAMION">
-        <PropertyRef Name="ChofCam_ID" />
+      <Principal Role="CHOFERES">
+        <PropertyRef Name="Chofer_ID" />
       </Principal>
       <Dependent Role="VIAJES">
-        <PropertyRef Name="ChofCamID" />
+        <PropertyRef Name="ChoferID" />
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FK_ViajesDestino">
+  <Association Name="FK_VIAJES_CAMIONES">
+    <End Role="CAMIONES" Type="Self.CAMIONES" Multiplicity="1" />
+    <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
+    <ReferentialConstraint>
+      <Principal Role="CAMIONES">
+        <PropertyRef Name="Camion_ID" />
+      </Principal>
+      <Dependent Role="VIAJES">
+        <PropertyRef Name="CamionID" />
+      </Dependent>
+    </ReferentialConstraint>
+  </Association>
+  <Association Name="FK_VIAJES_DESTINO">
     <End Role="DESTINO" Type="Self.DESTINO" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
@@ -334,7 +374,7 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FK_ViajesOrigen">
+  <Association Name="FK_VIAJES_ORIGEN">
     <End Role="ORIGEN" Type="Self.ORIGEN" Multiplicity="1" />
     <End Role="VIAJES" Type="Self.VIAJES" Multiplicity="*" />
     <ReferentialConstraint>
@@ -394,7 +434,7 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FKCamionChofer">
+  <Association Name="FK_CHOFER_CAMION_CAMIONES">
     <End Role="CAMIONES" Type="Self.CAMIONES" Multiplicity="1" />
     <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="*" />
     <ReferentialConstraint>
@@ -406,7 +446,7 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FKChoferCamion">
+  <Association Name="FK_CHOFER_CAMION_CHOFERES">
     <End Role="CHOFERES" Type="Self.CHOFERES" Multiplicity="1" />
     <End Role="CHOFER_CAMION" Type="Self.CHOFER_CAMION" Multiplicity="*" />
     <ReferentialConstraint>
@@ -418,7 +458,7 @@
       </Dependent>
     </ReferentialConstraint>
   </Association>
-  <Association Name="FKchoferLoc">
+  <Association Name="FK_CHOFERES_LOCALIDADES">
     <End Role="LOCALIDADES" Type="Self.LOCALIDADES" Multiplicity="1" />
     <End Role="CHOFERES" Type="Self.CHOFERES" Multiplicity="*" />
     <ReferentialConstraint>
@@ -439,6 +479,7 @@
     <EntitySet Name="LOCALIDADES" EntityType="Self.LOCALIDADES" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="ORIGEN" EntityType="Self.ORIGEN" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="PROFORMAS" EntityType="Self.PROFORMAS" Schema="dbo" store:Type="Tables" />
+    <EntitySet Name="GESTION_CONTENIDO" EntityType="Self.GESTION_CONTENIDO" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="PROVINCIAS" EntityType="Self.PROVINCIAS" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="TARIFAS_FIJAS" EntityType="Self.TARIFAS_FIJAS" Schema="dbo" store:Type="Tables" />
     <EntitySet Name="TARIFAS_KM" EntityType="Self.TARIFAS_KM" Schema="dbo" store:Type="Tables" />
@@ -488,15 +529,19 @@
       <End Role="TARIFAS_KM" EntitySet="TARIFAS_KM" />
       <End Role="VIAJES" EntitySet="VIAJES" />
     </AssociationSet>
-    <AssociationSet Name="FK_ViajesChofCam" Association="Self.FK_ViajesChofCam">
-      <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
+    <AssociationSet Name="FK_VIAJES_CHOFERES" Association="Self.FK_VIAJES_CHOFERES">
+      <End Role="CHOFERES" EntitySet="CHOFERES" />
       <End Role="VIAJES" EntitySet="VIAJES" />
     </AssociationSet>
-    <AssociationSet Name="FK_ViajesDestino" Association="Self.FK_ViajesDestino">
+    <AssociationSet Name="FK_VIAJES_CAMIONES" Association="Self.FK_VIAJES_CAMIONES">
+      <End Role="CAMIONES" EntitySet="CAMIONES" />
+      <End Role="VIAJES" EntitySet="VIAJES" />
+    </AssociationSet>
+    <AssociationSet Name="FK_VIAJES_DESTINO" Association="Self.FK_VIAJES_DESTINO">
       <End Role="DESTINO" EntitySet="DESTINO" />
       <End Role="VIAJES" EntitySet="VIAJES" />
     </AssociationSet>
-    <AssociationSet Name="FK_ViajesOrigen" Association="Self.FK_ViajesOrigen">
+    <AssociationSet Name="FK_VIAJES_ORIGEN" Association="Self.FK_VIAJES_ORIGEN">
       <End Role="ORIGEN" EntitySet="ORIGEN" />
       <End Role="VIAJES" EntitySet="VIAJES" />
     </AssociationSet>
@@ -516,15 +561,15 @@
       <End Role="GRUPOS" EntitySet="GRUPOS" />
       <End Role="GRUPOS_USUARIOS" EntitySet="GRUPOS_USUARIOS" />
     </AssociationSet>
-    <AssociationSet Name="FKCamionChofer" Association="Self.FKCamionChofer">
+    <AssociationSet Name="FK_CHOFER_CAMION_CAMIONES" Association="Self.FK_CHOFER_CAMION_CAMIONES">
       <End Role="CAMIONES" EntitySet="CAMIONES" />
       <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
     </AssociationSet>
-    <AssociationSet Name="FKChoferCamion" Association="Self.FKChoferCamion">
+    <AssociationSet Name="FK_CHOFER_CAMION_CHOFERES" Association="Self.FK_CHOFER_CAMION_CHOFERES">
       <End Role="CHOFERES" EntitySet="CHOFERES" />
       <End Role="CHOFER_CAMION" EntitySet="CHOFER_CAMION" />
     </AssociationSet>
-    <AssociationSet Name="FKchoferLoc" Association="Self.FKchoferLoc">
+    <AssociationSet Name="FK_CHOFERES_LOCALIDADES" Association="Self.FK_CHOFERES_LOCALIDADES">
       <End Role="LOCALIDADES" EntitySet="LOCALIDADES" />
       <End Role="CHOFERES" EntitySet="CHOFERES" />
     </AssociationSet>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <style>
+        /* Estilo para ocultar el contenido por defecto */
+        #app {
+            display: none;
+            /* Ocultar el contenido de la aplicación por defecto */
+        }
+
+        /* Estilo para centrar el spinner de carga */
+        #loading-message {
+            position: fixed;
+            /* Posiciona el mensaje de carga en el medio de la pantalla */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            /* Centra el div */
+            z-index: 9999;
+            /* Asegúrate de que esté por encima de otros elementos */
+        }
+    </style>
+
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+
+</head>
+
+<body>
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar">
+
+            <!--Barra lateral activa-->
+
+            <div class="sidebar-wrapper active">
+                <div class="sidebar-header position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="logo">
+                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
+                                    style="width: 240px; height: 160px"></a>
+                        </div>
+                        <div class="sidebar-toggler  x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menú-->
+                <div class="sidebar-menu">
+                    <ul class="menu">
+
+                        <li class="sidebar-item ">
+                            <a href="index.html" class='sidebar-link'>
+                                <i class="bi bi-grid-fill"></i>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                        </li>
+
+                        <li class="sidebar-item has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>Choferes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+
+                                </li>
+
+                                <li class="submenu-item active">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+
+                                </li>
+
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-truck"></i>
+                                <span>Camiones</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-calendar-check"></i>
+                                <span>Viajes</span>
+                            </a>
+
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+
+                                </li>
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-person-workspace"></i>
+                                <span>Clientes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de clientes</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-medical"></i>
+                                <span>Facturación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listado de facturas</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Usuarios</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-richtext"></i>
+                                <span>Documentación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Manual de usuario</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Otros</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item active">
+                            <a href="gestion-contenido.html" class='sidebar-link'>
+                                <i class="bi bi-columns"></i>
+                                <span>Gestionar contenido</span>
+                            </a>
+
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+
+                <!--Notificaciones-->
+
+                <!-- Notificación de éxito -->
+                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                    <div class="toast align-items-center text-white bg-success border-0" role="alert" id="alert-success"
+                        aria-live="assertive" aria-atomic="true" style="display: none;">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                Cambios guardados exitosamente
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                                aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notificación de error -->
+                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                    <div class="toast align-items-center text-white bg-danger border-0" role="alert" id="alert-error"
+                        aria-live="assertive" aria-atomic="true" style="display: none;">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                Ocurrió un error al guardar los cambios
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                                aria-label="Close"></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Comienzo sección de la tabla-->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <h4 class="card-title">Gestionar contenido</h4>
+                        </div>
+                        <div class="card-body">
+                            <form id="settings" class="form form-horizontal">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label for="logoInput">Logo (URL)</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <input type="text" id="logoInput" class="form-control" name="logoInput"
+                                            placeholder="URL del logo">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="backgroundColorInput">Color de fondo</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <input type="color" id="backgroundColorInput" class="form-control"
+                                            name="backgroundColorInput">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="menuColorInput">Color del menú</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <input type="color" id="menuColorInput" class="form-control"
+                                            name="menuColorInput">
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label for="footerContentInput">Contenido del pie de página</label>
+                                    </div>
+                                    <div class="col-md-8 form-group">
+                                        <textarea id="footerContentInput" class="form-control" name="footerContentInput"
+                                            placeholder="Escribe el contenido del pie de página" rows="3"></textarea>
+                                    </div>
+                                    <div class="col-sm-12 d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-primary me-1 mb-1"
+                                            id="saveSettingsBtn">Confirmar</button>
+                                        <button type="button" class="btn btn-light-secondary me-1 mb-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#confirmarRestablecerModal">Restablecer</button>
+
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <!--Fin sección de la tabla-->
+
+            <!-- Modal de confirmación de restablecimiento -->
+            <div class="modal fade text-left" id="confirmarRestablecerModal" tabindex="-1" role="dialog"
+                aria-labelledby="confirmarRestablecerLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="confirmarRestablecerLabel">Confirmar actualización de contenido
+                            </h5>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                                <i data-feather="x"></i>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            ¿Estás seguro que querés restablecer esta página a su diseño por defecto?
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                                <span class="d-none d-sm-block">Cancelar</span>
+                            </button>
+                            <button type="button" class="btn btn-primary ms-1" onclick="resetForm()">
+                                <span class="d-none d-sm-block">Confirmar</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Footer -->
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+
+        </div>
+
+    </div>
+
+
+    <!--Scripts-->
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+
+    <script>
+
+        window.onload = function () {
+            // Mostrar el mensaje de carga
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+
+            // Ocultar el contenido de la aplicación
+            document.getElementById('app').style.display = 'none';
+
+            // Cargar primero el header
+            window.loadHeader();
+
+            // Cargar luego el footer
+            window.loadFooter();
+
+            // Carga los ajustes desde la API
+            loadSettings().then(() => {
+                // Oculta el mensaje de carga
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block'; // Muestra el contenido de la aplicación
+            }).catch(() => {
+                // Maneja el error si la carga falla
+                loadingMessage.style.display = 'none';
+                document.getElementById('loading-message').innerText = 'Error al cargar los datos.';
+            });
+        };
+
+        // Función para cargar la configuración de la API de gestión de contenido
+        async function loadSettings() {
+            console.log('Llamando a la API de Gestión de Contenido...');
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+            return new Promise((resolve, reject) => {
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        console.log('Respuesta de la API:', data); // Verifica la estructura de la respuesta
+
+                        if (data) {
+                            const logoUrl = data.Logo;
+                            const colorFondo = data.ColorFondo;
+                            const colorBotonesMenu = data.ColorBotonesMenu;
+                            const contenidoPiePagina = data.ContenidoPiePagina;
+
+                            // Actualizar formulario
+                            document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+                            document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
+                            document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
+                            document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
+
+                            // Aplicar los estilos a la página
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            loadDefaultValues();
+                            showErrorToast();
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else if (xhr.status === 404 || xhr.status === 500) {
+                        console.error(`Error ${xhr.status}: ${xhr.statusText}`);
+                        showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                        reject(new Error(`Error ${xhr.status}`));
+                    } else {
+                        console.error('Error en la petición:', xhr.responseText);
+                        showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                        reject(new Error('Error en la petición'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    loadDefaultValues();
+                    showErrorToast();
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+
+        // Función para aplicar los estilos obtenidos de la API
+        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+            // Actualizar logo
+            const logoElement = document.querySelector('.sidebar-header .logo img');
+            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+
+            // Cambiar color de fondo
+            document.body.style.backgroundColor = colorFondo || '#D3E8DE';
+
+            // Actualizar botones del menú
+            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+            botonesMenu.forEach(button => {
+                button.style.backgroundColor = colorBotonesMenu || '#198754';
+            });
+
+            // Actualizar contenido del pie de página
+            const footerContentElement = document.querySelector('.footer p');
+            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+        }
+
+        // Evento para manejar el envío de datos al API (Confirmar)
+        document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
+            event.preventDefault();
+
+            // Mostrar el mensaje de carga
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+
+            // Ocultar la aplicación mientras se guarda
+            document.getElementById('app').style.display = 'none';
+
+            // Captura los valores de los inputs
+            const logo = document.getElementById('logoInput').value;
+            const backgroundColor = document.getElementById('backgroundColorInput').value;
+            const menuColor = document.getElementById('menuColorInput').value;
+            const footerContent = document.getElementById('footerContentInput').value;
+
+            // Crea un objeto JSON con los datos
+            const settingsData = {
+                Logo: logo,
+                ColorFondo: backgroundColor,
+                ColorBotonesMenu: menuColor,
+                ContenidoPiePagina: footerContent,
+                Fecha_Modi: new Date().toISOString(),
+                Usu_Modi: 'usuario' // Reemplaza 'usuario' con el usuario que corresponde
+            };
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const data = JSON.parse(xhr.responseText);
+                    console.log('Configuración actualizada:', data);
+
+                    // Mostrar la notificación de éxito
+                    const toastSuccess = document.getElementById('alert-success');
+                    const toastBootstrap = new bootstrap.Toast(toastSuccess);
+                    toastSuccess.style.display = 'block';
+                    toastBootstrap.show();
+
+                    // Limpiar los inputs
+                    document.getElementById('logoInput').value = '';
+                    document.getElementById('backgroundColorInput').value = '';
+                    document.getElementById('menuColorInput').value = '';
+                    document.getElementById('footerContentInput').value = '';
+
+                    // Recargar la página
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else if (xhr.status === 400) {
+                    handleValidationErrors(JSON.parse(xhr.responseText));
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+                } else if (xhr.status === 404 || xhr.status === 500) {
+                    console.error(`Error ${xhr.status}: ${xhr.statusText}`);
+                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+                } else {
+                    console.error('Error en la petición:', xhr.responseText);
+                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('Error de conexión');
+                showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+            };
+
+            xhr.send(JSON.stringify(settingsData));
+        });
+
+        // Función para mostrar la notificación de error personalizada
+        function showErrorToast(message = "Ocurrió un error al actualizar el contenido de la página") {
+            const toastError = document.getElementById('alert-error');
+            toastError.querySelector('.toast-body').textContent = message;
+            const toastBootstrap = new bootstrap.Toast(toastError);
+            toastError.style.display = 'block';
+            toastBootstrap.show();
+        }
+
+        // Función para manejar los errores de validación (400 Bad Request)
+        function handleValidationErrors(errors) {
+            errors.forEach(error => {
+                console.error(`Error de validación: ${error}`);
+                // Puedes mostrar el error debajo del input correspondiente si es necesario
+            });
+            showErrorToast("Existen errores de validación. Revisa los campos e intenta nuevamente.");
+        }
+
+        // Función para cargar valores por defecto en el formulario y en la página
+        function loadDefaultValues() {
+            console.log('Cargando valores por defecto...');
+            document.getElementById('logoInput').value = './assets/compiled/svg/ts-logo-text.svg';
+            document.getElementById('backgroundColorInput').value = '#D3E8DE';
+            document.getElementById('menuColorInput').value = '#198754';
+            document.getElementById('footerContentInput').value = '2024 &copy; Integra Analistas';
+
+            // Aplicar los valores por defecto a la página
+            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#D3E8DE', '#198754', '2024 &copy; Integra Analistas');
+        }
+
+        // Función para restablecer los valores por defecto y realizar un PUT a la API
+        function resetForm() {
+            // Mostrar el mensaje de carga
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+
+            const defaultLogo = './assets/compiled/svg/ts-logo-text.svg';
+            const defaultColorFondo = '#D3E8DE';
+            const defaultColorBotonesMenu = '#198754';
+            const defaultContenidoPiePagina = '2024 &copy; Integra Analistas';
+
+            document.getElementById('logoInput').value = defaultLogo;
+            document.getElementById('backgroundColorInput').value = defaultColorFondo;
+            document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
+            document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
+
+            const settingsData = {
+                Logo: defaultLogo,
+                ColorFondo: defaultColorFondo,
+                ColorBotonesMenu: defaultColorBotonesMenu,
+                ContenidoPiePagina: defaultContenidoPiePagina,
+                Fecha_Modi: new Date().toISOString(),
+                Usu_Modi: 'usuario'
+            };
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+
+            xhr.onload = function () {
+                if (xhr.status >= 200 && xhr.status < 300) {
+                    const toastSuccess = document.getElementById('alert-success');
+                    const toastBootstrap = new bootstrap.Toast(toastSuccess);
+                    toastSuccess.style.display = 'block';
+                    toastBootstrap.show();
+
+                    const modalElement = document.getElementById('confirmarRestablecerModal');
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    modal.hide();
+
+                    // Recargar la página después de mostrar el toast
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                } else {
+                    console.error('Error al guardar los valores por defecto:', xhr.responseText);
+                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                    loadingMessage.style.display = 'none';
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error('Error de conexión al intentar guardar los valores por defecto.');
+                showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                loadingMessage.style.display = 'none';
+            };
+
+            xhr.send(JSON.stringify(settingsData));
+        }
+
+    </script>
+
+
+
+</body>
+
+</html>

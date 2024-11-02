@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Entity.Validation;
+using System.Data.Entity;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -20,11 +22,14 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Provincias
         public IHttpActionResult Get()
         {
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
             try
             {
-                using (SGTLEntities db = new SGTLEntities())
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
-                    var provincias = db.PROVINCIAS
+                    var provincias = db.Set<PROVINCIAS>()
                         .Select(p => new {
                             Prov_ID = p.Prov_ID,
                             Nombre_Provincia = p.Nombre_Provincia
@@ -33,29 +38,46 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (provincias == null || !provincias.Any())
                     {
-                        return NotFound();
+                        return NotFound(); // Retorna 404 si no se encuentran provincias
                     }
 
-                    return Ok(provincias);
+                    return Ok(provincias); // Retorna 200 con la lista de provincias
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(ex); // Retorna 500 en caso de error interno
             }
         }
 
         // GET: api/Provincias/{provId}
-
         [HttpGet]
         [Route("api/Provincias/{provId}")]
         public IHttpActionResult GetProvinciaById(int provId)
         {
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
             try
             {
-                using (SGTLEntities db = new SGTLEntities())
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
-                    var provincia = db.PROVINCIAS
+                    var provincia = db.Set<PROVINCIAS>()
                         .Where(p => p.Prov_ID == provId)
                         .Select(p => new {
                             Prov_ID = p.Prov_ID,
@@ -65,29 +87,46 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (provincia == null)
                     {
-                        return NotFound();
+                        return NotFound(); // Retorna 404 si no se encuentra la provincia
                     }
 
-                    return Ok(provincia);
+                    return Ok(provincia); // Retorna 200 con la provincia encontrada
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(ex); // Retorna 500 en caso de error interno
             }
         }
-
 
         // GET: api/Provincias/{provId}/Localidades
         [HttpGet]
         [Route("api/Provincias/{provId}/Localidades")]
         public IHttpActionResult GetLocalidades(int provId, int? locId = null)
         {
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
             try
             {
-                using (SGTLEntities db = new SGTLEntities())
+                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
-                    IQueryable<LocalidadDto> query = db.LOCALIDADES
+                    IQueryable<LocalidadDto> query = db.Set<LOCALIDADES>()
                         .Where(l => l.ProvID == provId)
                         .Select(l => new LocalidadDto
                         {
@@ -106,17 +145,33 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (localidades == null || !localidades.Any())
                     {
-                        return NotFound();
+                        return NotFound(); // Retorna 404 si no se encuentran localidades
                     }
 
-                    return Ok(localidades);
+                    return Ok(localidades); // Retorna 200 con la lista de localidades
                 }
+            }
+            catch (DbEntityValidationException ex)
+            {
+                // Manejo de errores de validación
+                var validationErrors = new List<string>();
+
+                foreach (var validationResult in ex.EntityValidationErrors)
+                {
+                    foreach (var error in validationResult.ValidationErrors)
+                    {
+                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                    }
+                }
+
+                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(ex); // Retorna 500 en caso de error interno
             }
         }
+
 
 
 
