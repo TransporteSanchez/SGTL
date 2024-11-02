@@ -1,22 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data.Entity;
-using System.Data.Entity.Infrastructure;
-using System.Data.Entity.Validation;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
-using System.Security.Cryptography;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Data.Entity;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 using System.Web.Http;
-
+using System.Net;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
-
-    [RoutePrefix("api/auth")]  // Configuración de la ruta base
-    public class AutenticacionController : ApiController
+    [Route("api/login")]
+    public class LoginController : ApiController
     {
+        private readonly IConfiguration _config;
+
+        public LoginController(IConfiguration config)
+        {
+            _config = config;
+        }
 
         // Clase que representa la solicitud de inicio de sesión
         public class LoginRequestDTO
@@ -25,59 +29,109 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Contraseña { get; set; }
         }
 
-
-        // Acción para el inicio de sesión
         [HttpPost]
-        [Route("login")]  // Ruta específica para la acción de login
-
-        public IHttpActionResult Login([FromBody] LoginRequestDTO request)
+        public IHttpActionResult Login(LoginRequestDTO userLogin)
         {
+            var validationErrors = new List<string>();
 
-            if (request == null || string.IsNullOrEmpty(request.Nombre_Usuario) || string.IsNullOrEmpty(request.Contraseña))
+            // Validación básica de los campos de entrada
+            if (userLogin == null)
             {
-                return BadRequest("Usuario o contraseña no pueden estar vacíos.");
+                validationErrors.Add("Error: El objeto de solicitud es nulo.");
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(userLogin.Nombre_Usuario))
+                    validationErrors.Add("Propiedad: Nombre_Usuario, Error: El nombre de usuario es obligatorio.");
+
+                if (string.IsNullOrEmpty(userLogin.Contraseña))
+                    validationErrors.Add("Propiedad: Contraseña, Error: La contraseña es obligatoria.");
             }
 
-            // Buscar al usuario por Nombre_Usuario en la base de datos
-
-            // Usar el contexto de la base de datos para buscar al usuario
-
-            using (SGTLEntities db = new SGTLEntities())
+            if (validationErrors.Count > 0)
             {
-                var usuario = db.USUARIOS.SingleOrDefault(u => u.Nombre_Usuario == request.Nombre_Usuario);
-                //var usuario = db.USUARIOS.SingleOrDefault(u => u.Nombre_Usuario == request.Nombre_Usuario && u.Contraseña == request.Contraseña);
-
-                // Usuario no encontrado
-
-                if (usuario == null)
-                {
-                    return Content(HttpStatusCode.Unauthorized, "Usuario no encontrado.");
-                }
-
-                // Verificar la contraseña (suponiendo que la contraseña está almacenada en un formato cifrado)
-                if (!VerifyPassword(request.Contraseña, usuario.Contraseña))
-
-                // Contraseña incorrecta
-                {
-                    return Content(HttpStatusCode.Unauthorized, "Contraseña incorrecta.");
-                }
-
-                // Retornar un resultado exitoso con los detalles del usuario
-                return Ok(new { message = "Inicio de sesión exitoso", usuario = usuario });
-
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
 
+            var user = Authenticate(userLogin);
+
+            if (user != null)
+            {
+                try
+                {
+                    // Crear el Token
+                    var token = Generate(user);
+
+                    return Ok("Usuario logueado. Token: " + token);
+                }
+                catch (ArgumentException ex)
+                {
+                    validationErrors.Add($"Propiedad: SymmetricSecurityKey, Error: {ex.Message}");
+                    return Content(HttpStatusCode.BadRequest, validationErrors);
+                }
+                catch (Exception ex)
+                {
+                    validationErrors.Add($"Error inesperado: {ex.Message}");
+                    return Content(HttpStatusCode.InternalServerError, validationErrors);
+                }
+            }
+
+            return Content(HttpStatusCode.NotFound, new List<string> { "Usuario no encontrado" });
         }
 
-        // Método para verificar la contraseña cifrada
-        private bool VerifyPassword(string password, string hashedPassword)
+        private USUARIOS Authenticate(LoginRequestDTO userLogin)
         {
-            using (var sha256 = SHA256.Create())
+            // Obtener la cadena de conexión dinámica
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            using (var db = new DbContext(connectionString))
             {
-                var hashedInputPassword = Convert.ToBase64String(sha256.ComputeHash(Encoding.UTF8.GetBytes(password)));
-                return hashedInputPassword == hashedPassword;
+                // Buscar al usuario por Nombre_Usuario y Contraseña
+                var currentUser = db.Set<USUARIOS>()
+                    .FirstOrDefault(user => user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower()
+                    && user.Contraseña == userLogin.Contraseña);
+
+                return currentUser;
             }
+        }
+
+        private string Generate(USUARIOS user)
+        {
+            var validationErrors = new List<string>(); // Lista para almacenar errores de validación
+
+            // Validar que la clave de JWT no esté vacía o sea nula
+            string jwtKey = _config["Jwt:key"];
+            if (string.IsNullOrEmpty(jwtKey))
+            {
+                validationErrors.Add("Propiedad: Jwt:key, Error: La clave JWT no está configurada o es nula.");
+            }
+
+            if (validationErrors.Count > 0)
+            {
+                throw new ArgumentException(string.Join(", ", validationErrors));
+            }
+
+            // Crear la clave de seguridad
+            var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var credentials = new SigningCredentials(securitykey, SecurityAlgorithms.HmacSha256);
+
+            // Crear los Claims
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
+                new Claim(ClaimTypes.Name, user.Nombre),
+                new Claim(ClaimTypes.Surname, user.Apellido)
+            };
+
+            // Crear el Token
+            var token = new JwtSecurityToken(
+                            _config["Jwt:Issuer"],
+                            _config["Jwt:Audience"],
+                            claims,
+                            expires: DateTime.Now.AddMinutes(60),
+                            signingCredentials: credentials);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }
-

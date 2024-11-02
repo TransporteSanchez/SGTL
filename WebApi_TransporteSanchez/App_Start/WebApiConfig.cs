@@ -13,6 +13,7 @@ namespace WebApi_TransporteSanchez
             // Configuración y servicios de API web
 
             var cors = new EnableCorsAttribute("*", "*", "GET,POST,PUT,DELETE");
+            cors.SupportsCredentials = true;
 
             config.EnableCors(cors);
 

@@ -138,11 +138,11 @@
     </Key>
     <Property Name="GestionContenido_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
     <Property Name="Logo" Type="String" MaxLength="255" FixedLength="true" Unicode="false" />
-    <Property Name="ColorFondo" Type="String" MaxLength="7" FixedLength="true" Unicode="false" />
-    <Property Name="ColorBotonesMenu" Type="String" MaxLength="7" FixedLength="true" Unicode="false" />
+    <Property Name="ColorFondo" Type="String" MaxLength="50" FixedLength="true" Unicode="false" />
+    <Property Name="ColorBotonesMenu" Type="String" MaxLength="50" FixedLength="true" Unicode="false" />
     <Property Name="ContenidoPiePagina" Type="String" MaxLength="100" FixedLength="true" Unicode="false" />
     <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
-    <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
+    <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="false" />
   </EntityType>
   <EntityType Name="PROVINCIAS">
     <Key>

@@ -28,7 +28,8 @@
                 <a href="#" data-bs-toggle="dropdown" aria-expanded="false">
                     <div class="user-menu d-flex align-items-center">
                         <div class="user-name text-end me-3 d-flex align-items-center">
-                            <h6 class="mb-0 text-gray-600">Claudia Sanchez</h6>
+                            <h6 class="mb-0 text-gray-600">Bienvenido, <span id="usernameDisplay"></span></h6>
+                            <!-- <h6 class="mb-0 text-gray-600">Claudia Sanchez</h6>  -->
                             <!-- <p class="mb-0 text-sm text-gray-600">Administrador</p> -->
                         </div>
                         <div class="user-img d-flex align-items-center">
@@ -38,20 +39,73 @@
                         </div>
                     </div>
                 </a>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton" style="min-width: 11rem;">
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton"
+                    style="min-width: 11rem;">
                     <li>
-                        <h6 class="dropdown-header">¡Hola Claudia!</h6>
+                        <h6 class="dropdown-header">¡Hola!</h6>
                     </li>
-                    <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-person me-2"></i> Mi perfil</a></li>
-                    <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-gear me-2"></i> Opciones</a></li>
+                    <!-- <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-person me-2"></i> Mi perfil</a></li> -->
+                    <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-gear me-2"></i> Cambiar
+                            Contraseña</a></li>
                     <hr class="dropdown-divider">
-                    <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
+                    <!-- <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li> -->
+                    <li><a class="dropdown-item" href="#" id="logoutBtn"><i
+                                class="icon-mid bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
                 </ul>
             </div>
         </div>
-        
 
     </header>
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Obtener el nombre del usuario desde localStorage
+            const username = localStorage.getItem('username');
+
+            // Mostrar el nombre del usuario en la clase user-name si está disponible
+            if (username) {
+                document.getElementById('usernameDisplay').textContent = username;
+            }
+        });
+
+        document.getElementById('logoutBtn').addEventListener('click', function (event) {
+            event.preventDefault();
+
+            console.log('Botón de cierre de sesión clicado');
+
+            // Crea una instancia de XMLHttpRequest
+            var xhr = new XMLHttpRequest();
+
+            // Configura la solicitud
+            xhr.open('POST', 'http://localhost:50222/api/logout/logout', true);
+            xhr.withCredentials = true; // Incluye las cookies de autenticación
+
+            // Configura el encabezado
+            xhr.setRequestHeader('Accept', 'application/json');
+
+            // Maneja la respuesta
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) { // 4: La solicitud ha sido completada
+                    if (xhr.status === 200) {
+                        // Redirige a la página de login si la solicitud fue exitosa
+                        window.location.href = "LoginNew.html";
+                    } else {
+                        alert('Error al cerrar sesión');
+                    }
+                }
+            };
+
+            // Maneja errores de la solicitud
+            xhr.onerror = function () {
+                console.error('Error al realizar la solicitud');
+            };
+
+            // Envía la solicitud
+            xhr.send();
+        });
+    </script>
+
 
 </body>
 
