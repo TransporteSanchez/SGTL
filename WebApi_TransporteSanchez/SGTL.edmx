@@ -121,11 +121,11 @@
           </Key>
           <Property Name="GestionContenido_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Logo" Type="varchar" MaxLength="255" />
-          <Property Name="ColorFondo" Type="varchar" MaxLength="7" />
-          <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="7" />
+          <Property Name="ColorFondo" Type="varchar" MaxLength="50" />
+          <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="50" />
           <Property Name="ContenidoPiePagina" Type="varchar" MaxLength="100" />
           <Property Name="Fecha_Modi" Type="date" Nullable="false" />
-          <Property Name="Usu_Modi" Type="varchar" MaxLength="10" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" />
         </EntityType>
         <EntityType Name="PROVINCIAS">
           <Key>
@@ -721,11 +721,11 @@
           </Key>
           <Property Name="GestionContenido_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Logo" Type="String" MaxLength="255" FixedLength="true" Unicode="false" />
-          <Property Name="ColorFondo" Type="String" MaxLength="7" FixedLength="true" Unicode="false" />
-          <Property Name="ColorBotonesMenu" Type="String" MaxLength="7" FixedLength="true" Unicode="false" />
+          <Property Name="ColorFondo" Type="String" MaxLength="50" FixedLength="true" Unicode="false" />
+          <Property Name="ColorBotonesMenu" Type="String" MaxLength="50" FixedLength="true" Unicode="false" />
           <Property Name="ContenidoPiePagina" Type="String" MaxLength="100" FixedLength="true" Unicode="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="false" />
         </EntityType>
         <EntityType Name="PROVINCIAS">
           <Key>

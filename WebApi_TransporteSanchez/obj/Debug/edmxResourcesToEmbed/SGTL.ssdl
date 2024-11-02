@@ -116,11 +116,11 @@
     </Key>
     <Property Name="GestionContenido_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
     <Property Name="Logo" Type="varchar" MaxLength="255" />
-    <Property Name="ColorFondo" Type="varchar" MaxLength="7" />
-    <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="7" />
+    <Property Name="ColorFondo" Type="varchar" MaxLength="50" />
+    <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="50" />
     <Property Name="ContenidoPiePagina" Type="varchar" MaxLength="100" />
     <Property Name="Fecha_Modi" Type="date" Nullable="false" />
-    <Property Name="Usu_Modi" Type="varchar" MaxLength="10" />
+    <Property Name="Usu_Modi" Type="varchar" MaxLength="20" />
   </EntityType>
   <EntityType Name="PROVINCIAS">
     <Key>
