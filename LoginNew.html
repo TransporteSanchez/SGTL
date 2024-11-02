@@ -106,6 +106,7 @@
                     </form>
 
                     <script>
+
                         function togglePassword() {
                             const passwordInput = document.getElementById('password');
                             const eyeIcon = document.getElementById('eyeIcon');
@@ -170,6 +171,9 @@
                                     })
                                     .then(data => {
                                         alert(data.message); // Mostrar mensaje de éxito
+                                        // Almacenar el nombre del usuario en localStorage
+                                        localStorage.setItem('username', username);
+                                        console.log('Usuario guardado en localStorage:', localStorage.getItem('username'));
                                         // Redirigir al usuario a la página principal o dashboard
                                         window.location.href = 'Index.html';
                                     })
