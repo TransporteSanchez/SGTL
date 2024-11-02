@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Login - Proyecto</title>
 
     <!-- Estilos reutilizados -->
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
@@ -106,6 +106,7 @@
                     </form>
 
                     <script>
+
                         function togglePassword() {
                             const passwordInput = document.getElementById('password');
                             const eyeIcon = document.getElementById('eyeIcon');
@@ -149,7 +150,7 @@
 
                             // Si ambos campos son válidos, realizar la solicitud a la API
                             if (valid) {
-                                fetch('http://localhost:50222/api/login', {
+                                fetch('http://localhost:50222/api/login/login', {
                                     method: 'POST',
                                     headers: {
                                         'Content-Type': 'application/json',
@@ -170,8 +171,11 @@
                                     })
                                     .then(data => {
                                         alert(data.message); // Mostrar mensaje de éxito
+                                        // Almacenar el nombre del usuario en localStorage
+                                        localStorage.setItem('username', username);
+                                        console.log('Usuario guardado en localStorage:', localStorage.getItem('username'));
                                         // Redirigir al usuario a la página principal o dashboard
-                                        window.location.href = 'index.html';
+                                        window.location.href = 'Index.html';
                                     })
                                     .catch(error => {
                                         alert(error.message); // Mostrar el mensaje de error
