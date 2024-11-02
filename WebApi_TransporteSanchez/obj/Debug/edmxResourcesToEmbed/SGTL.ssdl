@@ -164,6 +164,7 @@
     <Property Name="Nombre_Usuario" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="Contraseña" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+    <Property Name="Rol" Type="varchar" Nullable="true" />
   </EntityType>
   <EntityType Name="GRUPOS_USUARIOS">
     <Key>

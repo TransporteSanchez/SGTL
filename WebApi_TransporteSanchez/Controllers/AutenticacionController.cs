@@ -100,8 +100,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var validationErrors = new List<string>(); // Lista para almacenar errores de validación
 
             // Validar que la clave de JWT no esté vacía o sea nula
-            string jwtKey = _config["Jwt:key"];
-            if (string.IsNullOrEmpty(jwtKey))
+            if (string.IsNullOrEmpty(JwtConfig.SecretKey))
             {
                 validationErrors.Add("Propiedad: Jwt:key, Error: La clave JWT no está configurada o es nula.");
             }
@@ -112,7 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
 
             // Crear la clave de seguridad
-            var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
+            var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey));
             var credentials = new SigningCredentials(securitykey, SecurityAlgorithms.HmacSha256);
 
             // Crear los Claims
@@ -120,7 +119,9 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
                 new Claim(ClaimTypes.Name, user.Nombre),
-                new Claim(ClaimTypes.Surname, user.Apellido)
+                new Claim(ClaimTypes.Surname, user.Apellido),
+                new Claim(ClaimTypes.Role, user.Rol)
+
             };
 
             // Crear el Token
@@ -128,7 +129,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             _config["Jwt:Issuer"],
                             _config["Jwt:Audience"],
                             claims,
-                            expires: DateTime.Now.AddMinutes(60),
+                            expires: DateTime.Now.AddMinutes(JwtConfig.ExpirationMinutes),
                             signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
