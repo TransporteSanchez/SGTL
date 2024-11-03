@@ -27,114 +27,149 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public string Nombre_Usuario { get; set; }
             public string Contraseña { get; set; }
+        }
 
+        // Clase que representa la respuesta de inicio de sesión
+        public class LoginResponseDTO
+        {
+            public string Token { get; set; }
+            public string Nombre_Usuario { get; set; }
             public string Rol { get; set; }
         }
 
         [HttpPost]
         public IHttpActionResult Login(LoginRequestDTO userLogin)
         {
-            var validationErrors = new List<string>();
-
-            // Validación básica de los campos de entrada
-            if (userLogin == null)
+            // Validar que el objeto de solicitud y los campos no sean nulos o vacíos
+            if (userLogin == null || string.IsNullOrEmpty(userLogin.Nombre_Usuario) || string.IsNullOrEmpty(userLogin.Contraseña))
             {
-                validationErrors.Add("Error: El objeto de solicitud es nulo.");
+                return Content(HttpStatusCode.BadRequest, new { error = "El nombre de usuario y la contraseña son obligatorios." });
+            }
+
+            var validationErrors = new Dictionary<string, string>();
+
+            // Verificar si el usuario existe en la base de datos
+            var userExists = UserExists(userLogin.Nombre_Usuario);
+
+            // Verificar si la contraseña es correcta (independientemente del usuario)
+            var isPasswordValid = IsPasswordValid(userLogin.Contraseña);
+
+            if (!userExists)
+            {
+                // Caso: Usuario no existe
+                if (isPasswordValid)
+                {
+                    // La contraseña es correcta, pero el usuario es incorrecto
+                    validationErrors["Nombre_Usuario"] = "Usuario incorrecto";
+                }
+                else
+                {
+                    // Ambos son incorrectos
+                    validationErrors["General"] = "Usuario y contraseña incorrectos";
+                }
             }
             else
             {
-                if (string.IsNullOrEmpty(userLogin.Nombre_Usuario))
-                    validationErrors.Add("Propiedad: Nombre_Usuario, Error: El nombre de usuario es obligatorio.");
+                // Usuario existe, verificar si la contraseña coincide con este usuario específico
+                var user = Authenticate(userLogin);
+                if (user == null)
+                {
+                    // Usuario existe pero la contraseña es incorrecta
+                    validationErrors["Contraseña"] = "Contraseña incorrecta";
+                }
+                else
+                {
+                    // Usuario y contraseña son correctos, generar el token
+                    try
+                    {
+                        var token = Generate(user);
 
-                if (string.IsNullOrEmpty(userLogin.Contraseña))
-                    validationErrors.Add("Propiedad: Contraseña, Error: La contraseña es obligatoria.");
+                        var response = new LoginResponseDTO
+                        {
+                            Token = token,
+                            Nombre_Usuario = user.Nombre_Usuario,
+                            Rol = user.Rol
+                        };
+
+                        return Ok(response);
+                    }
+                    catch (Exception ex)
+                    {
+                        return Content(HttpStatusCode.InternalServerError, new { error = $"Error inesperado: {ex.Message}" });
+                    }
+                }
             }
 
+            // Devolver los errores de validación con un estado 401 Unauthorized
             if (validationErrors.Count > 0)
             {
-                return Content(HttpStatusCode.BadRequest, validationErrors);
+                return Content(HttpStatusCode.Unauthorized, validationErrors);
             }
 
-            var user = Authenticate(userLogin);
-
-            if (user != null)
-            {
-                try
-                {
-                    // Crear el Token
-                    var token = Generate(user);
-
-                    return Ok("Usuario logueado. Token: " + token);
-                }
-                catch (ArgumentException ex)
-                {
-                    validationErrors.Add($"Propiedad: SymmetricSecurityKey, Error: {ex.Message}");
-                    return Content(HttpStatusCode.BadRequest, validationErrors);
-                }
-                catch (Exception ex)
-                {
-                    validationErrors.Add($"Error inesperado: {ex.Message}");
-                    return Content(HttpStatusCode.InternalServerError, validationErrors);
-                }
-            }
-
-            return Content(HttpStatusCode.NotFound, new List<string> { "Usuario no encontrado" });
+            return Ok();
         }
 
-        private USUARIOS Authenticate(LoginRequestDTO userLogin)
+        // Método para verificar si el usuario existe en la base de datos
+        private bool UserExists(string nombreUsuario)
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
             using (var db = new DbContext(connectionString))
             {
-                // Buscar al usuario por Nombre_Usuario y Contraseña
-                var currentUser = db.Set<USUARIOS>()
-                    .FirstOrDefault(user => user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower()
-                    && user.Contraseña == userLogin.Contraseña);
+                return db.Set<USUARIOS>().Any(user => user.Nombre_Usuario.ToLower() == nombreUsuario.ToLower());
+            }
+        }
 
-                return currentUser;
+        // Método para verificar si la contraseña es correcta para algún usuario (sin importar el nombre de usuario)
+        private bool IsPasswordValid(string password)
+        {
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            using (var db = new DbContext(connectionString))
+            {
+                return db.Set<USUARIOS>().Any(user => user.Contraseña == password);
+            }
+        }
+
+        // Método para autenticar un usuario específico por nombre de usuario y contraseña
+        private USUARIOS Authenticate(LoginRequestDTO userLogin)
+        {
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            using (var db = new DbContext(connectionString))
+            {
+                return db.Set<USUARIOS>().FirstOrDefault(user =>
+                    user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower() &&
+                    user.Contraseña == userLogin.Contraseña);
             }
         }
 
         private string Generate(USUARIOS user)
         {
-            var validationErrors = new List<string>(); // Lista para almacenar errores de validación
-
-            // Validar que la clave de JWT no esté vacía o sea nula
             if (string.IsNullOrEmpty(JwtConfig.SecretKey))
-            {
-                validationErrors.Add("Propiedad: Jwt:key, Error: La clave JWT no está configurada o es nula.");
-            }
+                throw new ArgumentException("La clave JWT no está configurada o es nula.");
 
-            if (validationErrors.Count > 0)
-            {
-                throw new ArgumentException(string.Join(", ", validationErrors));
-            }
-
-            // Crear la clave de seguridad
             var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey));
             var credentials = new SigningCredentials(securitykey, SecurityAlgorithms.HmacSha256);
 
             // Crear los Claims
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
-                new Claim(ClaimTypes.Name, user.Nombre),
-                new Claim(ClaimTypes.Surname, user.Apellido),
-                new Claim(ClaimTypes.Role, user.Rol)
+        new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
+        new Claim(ClaimTypes.Name, user.Nombre),
+        new Claim(ClaimTypes.Surname, user.Apellido),
+        new Claim(ClaimTypes.Role, user.Rol)
+    };
 
-            };
-
-            // Crear el Token
             var token = new JwtSecurityToken(
-                            _config["Jwt:Issuer"],
-                            _config["Jwt:Audience"],
-                            claims,
-                            expires: DateTime.Now.AddMinutes(JwtConfig.ExpirationMinutes),
-                            signingCredentials: credentials);
+                JwtConfig.Issuer,
+                JwtConfig.Audience,
+                claims,
+                expires: DateTime.Now.AddMinutes(JwtConfig.ExpirationMinutes),
+                signingCredentials: credentials);
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
+
+
+
+
     }
 }
