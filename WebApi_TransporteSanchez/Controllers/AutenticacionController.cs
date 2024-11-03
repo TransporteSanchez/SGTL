@@ -27,6 +27,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public string Nombre_Usuario { get; set; }
             public string Contraseña { get; set; }
+
+            public string Rol { get; set; }
         }
 
         [HttpPost]
