@@ -1,39 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Net.Http;
+﻿using System.Collections.Generic;
 using System.Web.Http;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Web;
+using Microsoft.IdentityModel.Tokens;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
+    [Route("api/logout")]
     public class LogoutController : ApiController
     {
-        // GET: api/Logout
-        public IEnumerable<string> Get()
+        [HttpPost]
+        public IHttpActionResult Logout()
         {
-            return new string[] { "value1", "value2" };
-        }
-
-        // GET: api/Logout/5
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST: api/Logout
-        public void Post([FromBody]string value)
-        {
-        }
-
-        // PUT: api/Logout/5
-        public void Put(int id, [FromBody]string value)
-        {
-        }
-
-        // DELETE: api/Logout/5
-        public void Delete(int id)
-        {
+            // Aquí solo indicamos que el logout fue exitoso
+            return Ok(new { message = "Sesión cerrada correctamente." });
         }
     }
 }

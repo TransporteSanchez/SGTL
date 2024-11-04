@@ -34,6 +34,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public string Token { get; set; }
             public string Nombre_Usuario { get; set; }
+            public string Nombre { get; set; } // Agregar campo Nombre
+            public string Apellido { get; set; } // Agregar campo Apellido
             public string Rol { get; set; }
         }
 
@@ -60,12 +62,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 if (isPasswordValid)
                 {
                     // La contraseña es correcta, pero el usuario es incorrecto
-                    validationErrors["Nombre_Usuario"] = "Usuario incorrecto";
+                    validationErrors["Nombre_Usuario"] = "Usuario incorrecto.";
                 }
                 else
                 {
                     // Ambos son incorrectos
-                    validationErrors["General"] = "Usuario y contraseña incorrectos";
+                    validationErrors["General"] = "Usuario y contraseña incorrectos.";
                 }
             }
             else
@@ -75,7 +77,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 if (user == null)
                 {
                     // Usuario existe pero la contraseña es incorrecta
-                    validationErrors["Contraseña"] = "Contraseña incorrecta";
+                    validationErrors["Contraseña"] = "Contraseña incorrecta.";
                 }
                 else
                 {
@@ -88,6 +90,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         {
                             Token = token,
                             Nombre_Usuario = user.Nombre_Usuario,
+                            Nombre = user.Nombre, // Incluir Nombre en la respuesta
+                            Apellido = user.Apellido, // Incluir Apellido en la respuesta
                             Rol = user.Rol
                         };
 
@@ -152,11 +156,11 @@ namespace WebApi_TransporteSanchez.Controllers
             // Crear los Claims
             var claims = new[]
             {
-        new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
-        new Claim(ClaimTypes.Name, user.Nombre),
-        new Claim(ClaimTypes.Surname, user.Apellido),
-        new Claim(ClaimTypes.Role, user.Rol)
-    };
+                new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
+                new Claim(ClaimTypes.Name, user.Nombre),
+                new Claim(ClaimTypes.Surname, user.Apellido),
+                new Claim(ClaimTypes.Role, user.Rol)
+            };
 
             var token = new JwtSecurityToken(
                 JwtConfig.Issuer,
@@ -167,9 +171,5 @@ namespace WebApi_TransporteSanchez.Controllers
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
-
-
-
-
     }
 }
