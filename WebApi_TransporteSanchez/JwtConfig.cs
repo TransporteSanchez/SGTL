@@ -7,9 +7,9 @@ namespace WebApi_TransporteSanchez
 {
     public static class JwtConfig
     {
-
-      public const string SecretKey = "7aqmj&/Sk)l)FOJUN3f5"; // Cambia esto por una clave segura y larga.
-      public const int ExpirationMinutes = 30; // Tiempo de expiración del token en minutos.
-
+        public const string SecretKey = "7aqmj&/Sk)l)FOJUN3f5JHD98shkd7@!skd*+Hms78kL";
+        public const string Issuer = "*";
+        public const string Audience = "*";
+        public const int ExpirationMinutes = 30;
     }
 }

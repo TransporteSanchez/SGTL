@@ -26,7 +26,8 @@ namespace WebApi_TransporteSanchez
         public string Nombre_Usuario { get; set; }
         public string Contraseña { get; set; }
         public System.DateTime Fecha_Alta { get; set; }
-    
+        public string Rol { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<GRUPOS_USUARIOS> GRUPOS_USUARIOS { get; set; }
     }

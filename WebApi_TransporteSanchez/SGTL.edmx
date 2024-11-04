@@ -169,6 +169,7 @@
           <Property Name="Nombre_Usuario" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="Contraseña" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Rol" Type="varchar" Nullable="true" />
         </EntityType>
         <EntityType Name="GRUPOS_USUARIOS">
           <Key>
@@ -774,6 +775,7 @@
           <Property Name="Nombre_Usuario" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Contraseña" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="3" />
+          <Property Name="Rol" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="true" />
           <NavigationProperty Name="GRUPOS_USUARIOS" Relationship="Self.FK_GRUPOS_USUARIOS_USUARIOS" FromRole="USUARIOS" ToRole="GRUPOS_USUARIOS" />
         </EntityType>
         <EntityType Name="GRUPOS_USUARIOS">
@@ -1366,6 +1368,7 @@
                 <ScalarProperty Name="Nombre_Usuario" ColumnName="Nombre_Usuario" />
                 <ScalarProperty Name="Contraseña" ColumnName="Contraseña" />
                 <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Rol" ColumnName="Rol" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
