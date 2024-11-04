@@ -4,24 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Proyecto</title>
-
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
     <!-- Estilos reutilizados -->
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css' rel='stylesheet'>
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 
     <style>
         /* Estilos personalizados */
         .left-section {
-            background-color: #c7e4e4;
             color: white;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
+            background-color: #c7e4e4; /* Color de fondo por defecto */
         }
 
         .left-section img {
@@ -37,6 +34,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            background-color: #ffffff; /* Fondo blanco para la sección derecha */
         }
 
         .login-card {
@@ -44,12 +42,26 @@
             max-width: 400px;
             border-radius: 10px;
             padding: 40px;
-            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            position: relative;
         }
 
         .input-group-text {
             cursor: pointer;
-            /* Cambiar el cursor al pasar sobre el ícono */
+        }
+
+        .loading-spinner {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-size: 0.875em;
+            display: none;
         }
     </style>
 </head>
@@ -60,9 +72,21 @@
             <!-- Sección izquierda -->
             <div class="col-lg-6 left-section d-none d-lg-flex">
                 <div class="text-center">
-                    <img src="./assets/compiled/svg/ts-logo2.svg" alt="Logo" style="width: 500px;">
-                    <h1></h1>
-                    <p></p>
+                    <img id="logoIzquierdo" src="./assets/compiled/svg/ts-logo2.svg" alt="Logo Izquierdo" style="width: 500px;">
+                </div>
+            </div>
+
+            <!-- Notificación de error -->
+            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                <div class="toast align-items-center text-white bg-danger border-0" role="alert" id="alert-error"
+                    aria-live="assertive" aria-atomic="true" style="display: none;">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            Ocurrió un error al iniciar sesión
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                            aria-label="Close"></button>
+                    </div>
                 </div>
             </div>
 
@@ -70,7 +94,7 @@
             <div class="col-lg-6 right-section">
                 <div class="login-card card">
                     <div class="text-center mb-4">
-                        <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" style="width: 200px;">
+                        <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo Derecho" style="width: 200px;">
                     </div>
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
                     <!-- Formulario -->
@@ -82,8 +106,7 @@
                                 <input type="text" class="form-control" id="username" name="username"
                                     placeholder="Ingrese su usuario">
                             </div>
-                            <small id="userError" class="text-danger" style="display:none;">El usuario no puede estar
-                                vacío</small>
+                            <small id="userError" class="error-message"></small>
                         </div>
 
                         <div class="mb-3">
@@ -96,104 +119,241 @@
                                     <i class="fa fa-eye" id="eyeIcon"></i>
                                 </span>
                             </div>
-                            <small id="passError" class="text-danger" style="display:none;">La contraseña no puede estar
-                                vacía</small>
+                            <small id="passError" class="error-message"></small>
                         </div>
+
+                        <small id="generalError" class="error-message text-center mb-3 d-block" style="display: none;"></small>
 
                         <div class="d-grid">
                             <button type="submit" class="btn btn-primary">Entrar</button>
                         </div>
                     </form>
 
-                    <script>
+                    <!-- Loading Spinner -->
+                    <div class="loading-spinner" id="loadingSpinner">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando...</span>
+                        </div>
+                    </div>
 
-                        function togglePassword() {
-                            const passwordInput = document.getElementById('password');
-                            const eyeIcon = document.getElementById('eyeIcon');
-
-                            if (passwordInput.type === 'password') {
-                                passwordInput.type = 'text';
-                                eyeIcon.classList.remove('fa-eye');
-                                eyeIcon.classList.add('fa-eye-slash');
-                            } else {
-                                passwordInput.type = 'password';
-                                eyeIcon.classList.remove('fa-eye-slash');
-                                eyeIcon.classList.add('fa-eye');
-                            }
-                        }
-
-                        document.getElementById('loginForm').addEventListener('submit', function (event) {
-                            event.preventDefault(); // Evita el envío del formulario
-
-                            // Obtener los valores ingresados
-                            const username = document.getElementById('username').value.trim();
-                            const password = document.getElementById('password').value.trim();
-
-                            // Variables para manejar errores
-                            let valid = true;
-
-                            // Validación del campo usuario
-                            if (!username) {
-                                document.getElementById('userError').style.display = 'block';
-                                valid = false;
-                            } else {
-                                document.getElementById('userError').style.display = 'none';
-                            }
-
-                            // Validación del campo contraseña
-                            if (!password) {
-                                document.getElementById('passError').style.display = 'block';
-                                valid = false;
-                            } else {
-                                document.getElementById('passError').style.display = 'none';
-                            }
-
-                            // Si ambos campos son válidos, realizar la solicitud a la API
-                            if (valid) {
-                                fetch('http://localhost:50222/api/login/login', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        Nombre_Usuario: username,
-                                        Contraseña: password
-                                    })
-                                })
-                                    .then(response => {
-                                        if (response.ok) {
-                                            return response.json(); // Si la respuesta es exitosa, convertirla a JSON
-                                        } else if (response.status === 401) {
-                                            throw new Error('Credenciales incorrectas');
-                                        } else {
-                                            throw new Error('Ocurrió un error en el servidor');
-                                        }
-                                    })
-                                    .then(data => {
-                                        alert(data.message); // Mostrar mensaje de éxito
-                                        // Almacenar el nombre del usuario en localStorage
-                                        localStorage.setItem('username', username);
-                                        console.log('Usuario guardado en localStorage:', localStorage.getItem('username'));
-                                        // Redirigir al usuario a la página principal o dashboard
-                                        window.location.href = 'Index.html';
-                                    })
-                                    .catch(error => {
-                                        alert(error.message); // Mostrar el mensaje de error
-                                    });
-                            }
-                        });
-
-                    </script>
-
-                    <div class="text-center mt-4">
-                        <small><a>2024 © Integra Analistas</a></small>
+                    <div class="text-center mt-4" id="footerContent">
+                        <small>2024 © Integra Analistas</small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Librería de Bootstrap -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Función para alternar visibilidad de la contraseña
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eyeIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Mostrar u ocultar el spinner de carga
+        function showLoadingSpinner(show) {
+            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
+        }
+
+        // Cargar contenido de la API GestionContenido usando XHR
+        function loadContent() {
+            showLoadingSpinner(true);
+
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", "http://localhost:50222/api/GestionContenido/1", true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {  // La solicitud ha terminado
+                    if (xhr.status === 200) {  // Estado exitoso
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            console.log("Respuesta completa de GestionContenido:", data);
+
+                            // Verificar si la respuesta es un objeto o un array
+                            let content;
+                            if (Array.isArray(data) && data.length > 0) {
+                                content = data[0];
+                            } else if (typeof data === 'object') {
+                                content = data;
+                            } else {
+                                console.error("Formato de respuesta inesperado:", data);
+                                throw new Error("Formato de respuesta inesperado");
+                            }
+
+                            console.log("Contenido recibido:", content);
+
+                            // Asignar Logo tanto al logo izquierdo como al derecho
+                            if (content.Logo) {
+                                document.getElementById('logoIzquierdo').src = content.Logo;
+                                document.getElementById('logoDerecho').src = content.Logo;
+                                console.log("Logo asignado:", content.Logo);
+                            } else {
+                                console.warn("Logo no está disponible.");
+                                document.getElementById('logoIzquierdo').src = './assets/compiled/svg/default-logo.svg';
+                                document.getElementById('logoDerecho').src = './assets/compiled/svg/default-logo.svg';
+                            }
+
+                            // Asignar ColorFondo si existe
+                            if (content.ColorFondo) {
+                                document.querySelector('.left-section').style.backgroundColor = content.ColorFondo;
+                                console.log("ColorFondo asignado:", content.ColorFondo);
+                            } else {
+                                console.warn("ColorFondo no está disponible.");
+                            }
+
+                            // Asignar ContenidoPiePagina si existe
+                            if (content.ContenidoPiePagina) {
+                                document.getElementById('footerContent').innerHTML = content.ContenidoPiePagina;
+                                console.log("ContenidoPiePagina asignado:", content.ContenidoPiePagina);
+                            } else {
+                                console.warn("ContenidoPiePagina no está disponible.");
+                            }
+                        } catch (e) {
+                            console.error("Error al parsear la respuesta JSON:", e);
+                            mostrarToastError();
+                        }
+                    } else {
+                        console.error("Error al cargar el contenido. Estado HTTP:", xhr.status);
+                        mostrarToastError();
+                    }
+                    showLoadingSpinner(false);
+                }
+            };
+
+            xhr.onerror = function () {
+                console.error("Error de red al intentar conectar con la API GestionContenido.");
+                mostrarToastError();
+                showLoadingSpinner(false);
+            };
+
+            xhr.send();
+        }
+
+        // Mostrar una notificación de error usando Bootstrap Toast
+        function mostrarToastError() {
+            const toastEl = document.getElementById('alert-error');
+            toastEl.style.display = 'block';
+            const toast = new bootstrap.Toast(toastEl);
+            toast.show();
+        }
+
+        // Llamada a la API al cargar la página
+        window.onload = loadContent;
+
+        // Gestión del formulario de login
+        document.getElementById('loginForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            // Obtener los valores ingresados
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            // Limpiar mensajes de error previos
+            document.getElementById('userError').style.display = 'none';
+            document.getElementById('userError').textContent = '';
+            document.getElementById('passError').style.display = 'none';
+            document.getElementById('passError').textContent = '';
+            document.getElementById('generalError').style.display = 'none';
+            document.getElementById('generalError').textContent = '';
+
+            if (username && password) {
+                showLoadingSpinner(true);
+
+                const xhrLogin = new XMLHttpRequest();
+                xhrLogin.open("POST", "http://localhost:50222/api/login", true);
+                xhrLogin.setRequestHeader("Content-Type", "application/json");
+
+                xhrLogin.onreadystatechange = function () {
+                    if (xhrLogin.readyState === 4) {  // La solicitud ha terminado
+                        showLoadingSpinner(false);
+                        if (xhrLogin.status === 200) {  // Estado exitoso
+                            try {
+                                const data = JSON.parse(xhrLogin.responseText);
+                                console.log("Respuesta de login exitoso:", data);
+
+                                // Guardar token, rol, usuario, nombre y apellido en localStorage
+                                localStorage.setItem('token', data.Token);
+                                localStorage.setItem('username', data.Nombre_Usuario);
+                                localStorage.setItem('userRole', data.Rol);
+                                localStorage.setItem('nombre', data.Nombre);
+                                localStorage.setItem('apellido', data.Apellido);
+
+                                // Redirigir al usuario al dashboard
+                                window.location.href = 'index.html';
+                            } catch (e) {
+                                console.error("Error al parsear la respuesta JSON de login:", e);
+                                mostrarToastError();
+                            }
+                        } else if (xhrLogin.status === 401) {  // Error de autenticación
+                            try {
+                                const errorData = JSON.parse(xhrLogin.responseText);
+                                console.log("Errores de autenticación:", errorData);
+
+                                // Mostrar errores específicos
+                                if (errorData.Nombre_Usuario) {
+                                    document.getElementById('userError').textContent = errorData.Nombre_Usuario;
+                                    document.getElementById('userError').style.display = 'block';
+                                }
+                                if (errorData.Contraseña) {
+                                    document.getElementById('passError').textContent = errorData.Contraseña;
+                                    document.getElementById('passError').style.display = 'block';
+                                }
+                                if (errorData.General) {
+                                    document.getElementById('generalError').textContent = errorData.General;
+                                    document.getElementById('generalError').style.display = 'block';
+                                }
+                            } catch (e) {
+                                console.error("Error al parsear la respuesta JSON de error de login:", e);
+                                mostrarToastError();
+                            }
+                        } else {  // Otros errores
+                            console.error("Error al iniciar sesión. Estado HTTP:", xhrLogin.status);
+                            mostrarToastError();
+                        }
+                    }
+                };
+
+                xhrLogin.onerror = function () {
+                    console.error("Error de red al intentar conectar con la API de login.");
+                    mostrarToastError();
+                    showLoadingSpinner(false);
+                };
+
+                const requestBody = JSON.stringify({
+                    Nombre_Usuario: username,
+                    Contraseña: password
+                });
+
+                console.log("Enviando solicitud a la API de login con:", requestBody);
+                xhrLogin.send(requestBody);
+            } else {
+                // Mostrar mensajes de error si los campos están vacíos
+                if (!username) {
+                    document.getElementById('userError').textContent = 'El usuario es requerido.';
+                    document.getElementById('userError').style.display = 'block';
+                }
+                if (!password) {
+                    document.getElementById('passError').textContent = 'La contraseña es requerida.';
+                    document.getElementById('passError').style.display = 'block';
+                }
+            }
+        });
+    </script>
+
 </body>
 
 </html>

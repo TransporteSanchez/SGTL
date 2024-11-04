@@ -6,6 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
+    <style>
+        #app {
+            display: none;
+        }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
 
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -21,6 +34,13 @@
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
     <div id="app">
         <div id="sidebar">
 
@@ -140,7 +160,7 @@
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                    <a href="gestion-clientes.html" class="submenu-link">Gestión de clientes</a>
                                 </li>
 
                             </ul>
@@ -215,7 +235,7 @@
                         </li>
 
                         <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link'>
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
                                 <i class="bi bi-columns"></i>
                                 <span>Gestionar contenido</span>
                             </a>
@@ -250,10 +270,6 @@
                         <div id="header-container"></div>
 
                         <script src="./assets/static/js/header.js"></script>
-
-                        <script>
-                            window.onload = loadHeader();
-                        </script>
 
                     </div>
                 </nav>
@@ -349,26 +365,17 @@
             </div>
 
             <!--Fin sección de la tabla-->
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
         </div>
 
-
-        <!--Footer-->
-
-        <footer>
-            <div id="footer-container"></div>
-
-            <script src="./assets/static/js/footer.js"></script>
-
-
-            <script>
-                window.onload = function () {
-                    loadFooter();
-
-                };
-            </script>
-        </footer>
     </div>
-    </div>
+
 
     <!-- Alta Modal -->
     <div class="modal fade text-left" id="ModalAltaViaje" tabindex="-1" role="dialog"
@@ -469,7 +476,7 @@
     </div>
 
 
-  
+
 
     <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
@@ -478,8 +485,172 @@
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
 
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+    
+            // Cargar header, footer y configuración
+            window.loadHeader();
+            window.loadFooter();
+    
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
+        };
+    
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+    
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+    
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+    
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+    
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+    
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+    
+                xhr.send();
+            });
+        }
+    
+        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+            const logoElement = document.querySelector('.sidebar-header .logo img');
+            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
 
+            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
+            favicon.rel = 'shortcut icon';
+            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
+            document.head.appendChild(favicon);
 
+            // Color de fondo general
+            document.body.style.backgroundColor = colorFondo || '#198754';
+
+            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            const dynamicStyle = document.createElement('style');
+            dynamicStyle.innerHTML = `
+        /* Estilo para items activos en el submenú */
+        .submenu-item.active .submenu-link {
+            color: ${colorFondo || '#198754'} !important;
+            font-weight: bold;
+        }
+
+        /* Color en hover para enlaces del submenú */
+        .submenu-item .submenu-link:hover,
+        .submenu-item .submenu-link:focus {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el botón burger */
+        .burger-btn i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el botón burger */
+        .burger-btn:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+    `;
+            document.head.appendChild(dynamicStyle);
+
+            // Aplicar color de fondo al enlace activo en el menú principal
+            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+            botonesMenu.forEach(button => {
+                button.style.backgroundColor = colorBotonesMenu || '#198754';
+            });
+
+            // Configuración del contenido en el pie de página
+            const footerContentElement = document.querySelector('.footer p');
+            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+        }
+
+        // Lógica de logout y carga de nombre de usuario en el header
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem('token');
+    
+            if (!token) {
+                window.location.href = 'login.html';
+            } else {
+                const nombre = localStorage.getItem('nombre');
+                const apellido = localStorage.getItem('apellido');
+                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
+    
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function (event) {
+                        event.preventDefault();
+    
+                        fetch('http://localhost:50222/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + token
+                            }
+                        }).then(response => {
+                            if (response.ok) {
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('nombre');
+                                localStorage.removeItem('apellido');
+                                localStorage.removeItem('userRole');
+                                window.location.href = 'login.html';
+                            } else {
+                                alert('Error al cerrar sesión');
+                            }
+                        }).catch(error => {
+                            console.error('Error al realizar la solicitud de logout:', error);
+                            alert('Error al cerrar sesión');
+                        });
+                    });
+                }
+            }
+        });
+    </script>
 </body>
 
 
