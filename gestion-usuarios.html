@@ -1,0 +1,1506 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+
+    <style>
+        #app {
+            display: none;
+        }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+</head>
+
+<body>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar">
+
+            <!--Barra lateral activa-->
+
+            <div class="sidebar-wrapper active">
+                <div class="sidebar-header position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="logo">
+                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
+                                    style="width: 240px; height: 160px"></a>
+                        </div>
+                        <div class="sidebar-toggler  x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menú-->
+                <div class="sidebar-menu">
+                    <ul class="menu">
+
+                        <li class="sidebar-item ">
+                            <a href="index.html" class='sidebar-link'>
+                                <i class="bi bi-grid-fill"></i>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                        </li>
+
+                        <li class="sidebar-item  active has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>usuarioes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-usuarioes.html" class="submenu-link">Listar usuarioes</a>
+
+                                </li>
+
+                                <li class="submenu-item active">
+                                    <a href="gestion-usuarioes.html" class="submenu-link">Gestionar usuarioes</a>
+
+                                </li>
+
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-truck"></i>
+                                <span>Camiones</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-calendar-check"></i>
+                                <span>Viajes</span>
+                            </a>
+
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
+
+                                </li>
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-person-workspace"></i>
+                                <span>Clientes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listar clientes</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-medical"></i>
+                                <span>Facturación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listar facturas</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Usuarios</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestionar grupos</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-richtext"></i>
+                                <span>Documentación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Manual de usuario</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Otros</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item">
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
+                                <i class="bi bi-columns"></i>
+                                <span>Gestionar contenido</span>
+                            </a>
+
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!--Llamado a las opciones del header-->
+
+                        <div id="header-container"></div>
+
+                        <script src="./assets/static/js/header.js"></script>
+
+
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+
+                <!--Comienzo sección de la tabla-->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+
+                            <!--Notificaciones de Alta, Editar, Eliminar y Activar/Inactivar-->
+
+                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
+                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
+                                    <div class="d-flex">
+                                        <div class="toast-body">
+                                        </div>
+                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
+                                            data-bs-dismiss="toast" aria-label="Close"></button>
+                                    </div>
+                                </div>
+                            </div>
+
+
+
+                            <h5 class="card-title">
+                                Gestionar usuarios
+                            </h5>
+                        </div>
+
+                        <div class="card-body">
+                            <form id="busquedaUsuarioForm" class="form">
+                                <div class="row">
+                                    <!-- Columna Izquierda -->
+                                    <div class="col-md-6 mb-4">
+                                        <fieldset class="border p-3">
+                                            <div class="col-md-6 mb-4">
+                                                <li class="d-inline-block me-2 mb-1">
+                                                    <label for="txtdni">Nombre_Usuario</label>
+                                                </li>
+                                                <input type="text" class="form-control" id="txtnombreusuario"
+                                                    data-parsley-restricted-number="true" placeholder="fgodoy">
+                                            </div>
+                                            <div class="col-md-12 mb-4">
+                                                <li class="d-inline-block me-2 mb-1">
+                                                    <label for="basicInput">Estado</label>
+                                                </li>
+                                                <div class="form-check-label">
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox"
+                                                            class="form-check-input form-check-success"
+                                                            id="checkestadoactivo">
+                                                        <label class="form-check-label"
+                                                            for="checkestadoactivo">Activo</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox"
+                                                            class="form-check-input form-check-danger"
+                                                            id="checkestadoinactivo">
+                                                        <label class="form-check-label"
+                                                            for="checkestadoinactivo">Inactivo</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-12 mb-4">
+                                                <button type="button" class="btn btn-light"
+                                                    onclick="buscarusuarioes()">Buscar</button>
+                                            </div>
+                                        </fieldset>
+                                    </div>
+                                    <!-- Columna Derecha -->
+                                    <div class="col-md-6 mb-4">
+                                        <div class="row">
+                                            <div class="col-md-12 mb-4">
+                                                <div class="buttons">
+                                                    <a href="#" class="btn icon icon-left btn-success"
+                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaUsuario">
+                                                        <i data-feather="check-circle"></i> Alta
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="tablaUsuarios">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre</th>
+                                            <th>Apellido</th>
+                                            <th>Nombre_Usuario</th>
+                                            <th>Rol</th>
+                                            <th>Estado</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginación -->
+                            <nav>
+                                <ul class="pagination justify-content-end" id="pagination">
+                                </ul>
+                            </nav>
+
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <!--Fin sección de la tabla-->
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+
+                <script src="./assets/static/js/footer.js"></script>
+
+            </footer>
+
+        </div>
+
+        <!-- Modal Alta -->
+        <div class="modal fade text-left" id="ModalAltaUsuario" tabindex="-1" role="dialog"
+            aria-labelledby="AltaUsuarioModallabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="AltaUsuarioModallabel">Alta de usuario</h4>
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body mt-2 mb-4 mx-2">
+                        <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger"
+                            style="display: none;" role="alert">
+                        </div>
+                        <form class="form" id="FormAltaUsuario">
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="first-name-column" class="form-label">Nombre <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="first-name-column" class="form-control"
+                                            placeholder="Facundo" name="fname-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="last-name-column" class="form-control"
+                                            placeholder="Godoy" name="lname-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="user-name-column" class="form-label">Nombre_Usuario <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="last-name-column" class="form-control"
+                                            placeholder="fgodoy" name="lname-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="password-column" class="form-label">Contraseña <span class="text-danger">
+                                                *</span></label>
+                                        <input type="number" id="password-column" class="form-control"
+                                            placeholder="Contraseña alfanumérica" name="c-column"
+                                            data-parsley-restricted-number="true" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="celphone-column" class="form-label">Rol
+                                            celular <span class="text-danger"> *</span></label>
+                                        <input type="number" id="celphone-column" class="form-control" name="cel-column"
+                                            placeholder="Cód. área sin 0 + cel. sin 15" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                                    <i class="bx bx-x d-block d-sm-none"></i>
+                                    <span class="d-none d-sm-block">Cancelar</span>
+                                </button>
+                                <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
+                                    <i class="bx bx-check d-block d-sm-none"></i>
+                                    <span class="d-none d-sm-block">Confirmar</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Edit-->
+        <div class="modal fade text-left" id="editarUsuarioModal" tabindex="-1" role="dialog"
+            aria-labelledby="editarUsuarioModallabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title" id="editarUsuarioModallabel">Editar datos del usuario</h4>
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+
+                    <div class="modal-body mt-2 mb-4 mx-2">
+                        <div id="alertaCompletaCamposEdicion" class="alert alert-light-danger color-danger"
+                            style="display: none;" role="alert">
+                        </div>
+                        <form class="form" id="FormEditarUsuario">
+                            <div class="row">
+                                <div class="form-group">
+                                    <label for="estado-column" class="form-label">Estado del usuario</label>
+                                    <span id="EstadoActualusuario" readonly></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="first-name-column" class="form-label">Nombre<span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="editarNombre" class="form-control" placeholder="Juan"
+                                            name="fname-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido<span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="editarApellido" class="form-control" placeholder="Perez"
+                                            name="lname-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="dni-column" class="form-label">DNI<span class="text-danger">
+                                                *</span></label>
+                                        <input type="number" id="editarNombreUsuario" class="form-control"
+                                            placeholder="DNI sin puntos ni espacios" name="c-column"
+                                            data-parsley-restricted-number="true" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="cuil-column" class="form-label">CUIL<span class="text-danger">
+                                                *</span></label>
+                                        <input type="number" id="editarCUIL" class="form-control"
+                                            placeholder="Cuil sin guiones" name="c-column"
+                                            data-parsley-restricted-number="true" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="celphone-column" class="form-label">Teléfono
+                                            celular<span class="text-danger"> *</span></label>
+                                        <input type="number" id="editarcelular" class="form-control" name="cel-column"
+                                            placeholder="Cód. área sin 0 + cel. sin 15" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="phone-floating" class="form-label">Teléfono
+                                            particular</label>
+                                        <input type="number" id="editarTelefono" class="form-control" name="ph-floating"
+                                            placeholder="Cód. área sin 0 + teléfono" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editaremail" class="form-label">Email</label>
+                                        <input type="email" id="editaremail" class="form-control" name="editaremail"
+                                            placeholder="minombre@correo.com" />
+                                        <div id="emailErrorEdicion" class="invalid-feedback">Tu email debe incluir @.
+                                            Ejemplo:
+                                            minombre@correo.com</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editarprovincia" class="form-label">Provincia<span
+                                                class="text-danger"> *</span></label>
+                                        <select id="editarprovincia" class="form-control form-select">
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editarlocalidad" class="form-label">Localidad<span
+                                                class="text-danger"> *</span></label>
+                                        <select id="editarlocalidad" class="form-control form-select" disabled>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editarcalle" class="form-label">Calle<span class="text-danger">
+                                                *</span></label>
+                                        <input type="text" id="editarcalle" class="form-control"
+                                            placeholder="Av. Faraday" name="s-column" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="editaraltura" class="form-label">Altura</label>
+                                        <input type="text" id="editaraltura" class="form-control"
+                                            placeholder="999 o S/N" name="num-column" />
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Cancelar</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary ms-1" id="confirmarEdicion">
+                            <i class="bx bx-check d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Confirmar</span>
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación de eliminación -->
+        <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
+            aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmarEliminarLabel">Confirmar eliminación</h5>
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ¿Estás seguro que querés eliminar este usuario de forma definitiva?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Cancelar</span>
+                        </button>
+                        <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarusuario()">
+                            <i class="bx bx-check d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Confirmar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de confirmación de cambio de estado -->
+        <div class="modal fade text-left" id="confirmarActivarDesactivarModal" tabindex="-1" role="dialog"
+            aria-labelledby="confirmarActivarDesactivarLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="confirmarActivarDesactivarLabel">Confirmar cambio de estado
+                        </h5>
+                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                            <i data-feather="x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="confirmarActivarDesactivarBody">
+                        <!-- Este texto se actualizará dinámicamente -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                            <i class="bx bx-x d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Cancelar</span>
+                        </button>
+                        <button type="button" class="btn btn-secondary ms-1"
+                            onclick="confirmarActivarDesactivarusuario()">
+                            <i class="bx bx-check d-block d-sm-none"></i>
+                            <span class="d-none d-sm-block">Confirmar</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+
+    <!--Scripts-->
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+
+
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+    
+            // Cargar header, footer y configuración
+            window.loadHeader();
+            window.loadFooter();
+    
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
+        };
+    
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+    
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+    
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+    
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+    
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+    
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+    
+                xhr.send();
+            });
+        }
+    
+        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+            const logoElement = document.querySelector('.sidebar-header .logo img');
+            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+
+            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
+            favicon.rel = 'shortcut icon';
+            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
+            document.head.appendChild(favicon);
+
+            // Color de fondo general
+            document.body.style.backgroundColor = colorFondo || '#198754';
+
+            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            const dynamicStyle = document.createElement('style');
+            dynamicStyle.innerHTML = `
+        /* Estilo para items activos en el submenú */
+        .submenu-item.active .submenu-link {
+            color: ${colorFondo || '#198754'} !important;
+            font-weight: bold;
+        }
+
+        /* Color en hover para enlaces del submenú */
+        .submenu-item .submenu-link:hover,
+        .submenu-item .submenu-link:focus {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el botón burger */
+        .burger-btn i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el botón burger */
+        .burger-btn:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+    `;
+            document.head.appendChild(dynamicStyle);
+
+            // Aplicar color de fondo al enlace activo en el menú principal
+            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+            botonesMenu.forEach(button => {
+                button.style.backgroundColor = colorBotonesMenu || '#198754';
+            });
+
+            // Configuración del contenido en el pie de página
+            const footerContentElement = document.querySelector('.footer p');
+            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+        }
+    
+        // Lógica de logout y carga de nombre de usuario en el header
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem('token');
+    
+            if (!token) {
+                window.location.href = 'login.html';
+            } else {
+                const nombre = localStorage.getItem('nombre');
+                const apellido = localStorage.getItem('apellido');
+                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
+    
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function (event) {
+                        event.preventDefault();
+    
+                        fetch('http://localhost:50222/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + token
+                            }
+                        }).then(response => {
+                            if (response.ok) {
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('nombre');
+                                localStorage.removeItem('apellido');
+                                localStorage.removeItem('userRole');
+                                window.location.href = 'login.html';
+                            } else {
+                                alert('Error al cerrar sesión');
+                            }
+                        }).catch(error => {
+                            console.error('Error al realizar la solicitud de logout:', error);
+                            alert('Error al cerrar sesión');
+                        });
+                    });
+                }
+            }
+        });
+    </script>
+
+    <!-- Get Activos -->
+    <script>
+        // Esperar a que se cargue completamente la página
+        $(document).ready(function () {
+            // Marcar el checkbox de "Activo" por defecto
+            $('#checkestadoactivo').prop('checked', true);
+
+            // Llamar a la función de búsqueda de usuarioes al cargar la página
+            buscarusuarioes();
+        });
+    </script>
+
+    <!-- Buscador y listar -->
+    <script>
+        // Limita la longitud del DNI a 8 dígitos
+        document.getElementById('txtdni').addEventListener('input', function (event) {
+
+            if (this.value.length > 8) {
+                this.value = this.value.slice(0, 8);
+            }
+        });
+
+        // Constantes para el paginado
+        const pageSize = 6;
+        let currentPage = 1;
+
+        // Función para realizar la búsqueda de usuarioes con paginación
+        function buscarusuarioes(page = 1) {
+            // Obtener los valores de los campos de búsqueda
+            var dni = $('#txtdni').val();
+            var estadoActivo = $('#checkestadoactivo').is(':checked');
+            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+
+            // Construir el objeto de datos para enviar en la solicitud AJAX
+            var requestData = {
+                dni: dni,
+                estadousuario: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
+                page: page,
+                pageSize: pageSize
+            };
+
+            // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
+            if (dni !== '') requestData.dni = dni;
+
+            // Agregar el estadousuario al objeto de datos solo si se selecciona
+            if (estadoActivo || estadoInactivo) {
+                requestData.estadousuario = '';
+                if (estadoActivo) requestData.estadousuario += 'Activo,';
+                if (estadoInactivo) requestData.estadousuario += 'Inactivo,';
+                // Eliminar la última coma si existe
+                requestData.estadousuario = requestData.estadousuario.slice(0, -1);
+            }
+
+            // Realizar la solicitud AJAX GET al controlador
+            $.ajax({
+                url: 'http://localhost:50222/api/usuarios/Buscar',
+                type: 'GET',
+                data: requestData,
+                success: function (data) {
+                    // Limpiar la tabla antes de agregar nuevos registros
+                    $('#tablausuarioes tbody').empty();
+
+                    // Verificar si hay resultados
+                    if (data.Results.length === 0) {
+                        // Mostrar mensaje de que no se encontraron registros
+                        $('#tablausuarioes tbody').html('<tr><td colspan="6" class="text-center">No se encontraron registros</td></tr>');
+                    } else {
+                        // Iterar sobre los registros recibidos y agregarlos a la tabla
+                        data.Results.forEach(function (registro) {
+                            var textoBoton = registro.Estadousuario === 'Activo' ? 'Inactivar' : 'Activar';
+                            var row = '<tr><td>' + registro.Nombre + '</td><td>' + registro.Apellido + '</td><td>' + registro.DNI + '</td><td><span class="badge estado-usuario ' + (registro.Estadousuario === 'Activo' ? 'bg-success' : 'bg-danger') + '">' + registro.Estadousuario + '</span></td>';
+                            row += '<td><button class="btn btn-primary" onclick="editarusuario(' + registro.usuario_ID + ')" data-bs-toggle="modal" data-bs-target="#editarUsuarioModal"><i class="bi bi-pencil me-2"></i>Editar</button>';
+                            row += '<button class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#confirmarEliminarModal" onclick="setEliminarusuarioId(' + registro.usuario_ID + ')"><i class="bi bi-trash me-2"></i>Eliminar</button>';
+                            row += '<button class="btn btn-light ms-1" data-bs-toggle="modal" data-bs-target="#confirmarActivarDesactivarModal" onclick="setActivarDesactivarusuario(' + registro.usuario_ID + ', \'' + registro.Estadousuario + '\')"><i class="bi bi-exclamation-circle me-2"></i>' + textoBoton + '</button></td></tr>';
+                            $('#tablausuarioes tbody').append(row);
+                        });
+                    }
+
+                    // Renderizar la paginación
+                    renderPagination(data.TotalRecords, pageSize, page);
+                },
+                error: function (xhr, status, error) {
+                    // Manejar errores de la solicitud
+                    console.error(error);
+                }
+            });
+
+        }
+
+        // Función para renderizar la paginación
+        function renderPagination(totalRecords, pageSize, currentPage) {
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            const paginationContainer = $('#pagination');
+            paginationContainer.empty();
+
+            const prevDisabled = currentPage === 1 ? 'disabled' : '';
+            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+
+            paginationContainer.append(`
+            <li class="page-item ${prevDisabled}">
+                <a class="page-link" href="#" aria-label="Previous" onclick="buscarusuarioes(${currentPage - 1})">
+                    <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                </a>
+            </li>
+        `);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = currentPage === i ? 'active' : '';
+                paginationContainer.append(`
+                <li class="page-item ${activeClass}">
+                    <a class="page-link" href="#" onclick="buscarusuarioes(${i})">${i}</a>
+                </li>
+            `);
+            }
+
+            paginationContainer.append(`
+            <li class="page-item ${nextDisabled}">
+                <a class="page-link" href="#" aria-label="Next" onclick="buscarusuarioes(${currentPage + 1})">
+                    <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                </a>
+            </li>
+        `);
+        }
+
+        $(document).ready(function () {
+            // Ejecutar la búsqueda inicial al cargar la página
+            buscarusuarioes(currentPage);
+        });
+
+    </script>
+
+    <!-- Editor -->
+    <script>
+
+        // Validación para que los campos de Nombre y Apellido solo permitan letras y espacios
+        $('#editarNombre').on('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        $('#editarApellido').on('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        // Limita la longitud del DNI a 8 dígitos
+        $('#editarNombreUsuario').on('input', function (event) {
+            if (this.value.length > 8) {
+                this.value = this.value.slice(0, 8);
+            }
+        });
+
+        // Limita la longitud del CUIL a 11 dígitos
+        $('#editarCUIL').on('input', function (event) {
+            if (this.value.length > 11) {
+                this.value = this.value.slice(0, 11);
+            }
+        });
+
+        // Limita la longitud del Teléfono a 10 dígitos
+        $('#editarTelefono, #editarcelular').on('input', function (event) {
+            if (this.value.length > 10) {
+                this.value = this.value.slice(0, 10);
+            }
+        });
+
+        // Validación email
+        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        $('#editaremail').on('input', function () {
+            var email = $(this).val();
+
+            if (email.trim() !== '' && !emailRegex.test(email)) {
+                $('#emailErrorEdicion').css('display', 'block');
+            } else {
+                $('#emailErrorEdicion').css('display', 'none');
+            }
+        });
+
+        // Función para mostrar el toast de éxito con mensaje dinámico
+        function mostrarToastExito(mensaje) {
+            var toastElement = $('#alert-success');
+            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
+            toastElement.show(); // Mostrar el toast
+
+            var toast = new bootstrap.Toast(toastElement[0]);
+            toast.show(); // Mostrar el toast usando Bootstrap
+
+            setTimeout(function () {
+                toast.hide(); // Ocultar el toast después de unos segundos
+            }, 5000); // Mostrar por 5 segundos
+        }
+
+        var estadousuarioOriginal;  // Variable global para almacenar el valor original de Estadousuario
+
+        // Función para cargar los datos del usuario al hacer clic en el botón "Editar"
+        function consultarPorID(event) {
+            var id = $(event.target).closest('tr').data('usuario_ID');
+            editarusuario(id);
+        }
+
+        // Función para cargar los datos del usuario en el modal de edición
+        function editarusuario(id) {
+            $.ajax({
+                url: 'http://localhost:50222/api/usuarios/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#editarNombre').val(data.Nombre);
+                    $('#editarApellido').val(data.Apellido);
+                    $('#editarNombreUsuario').val(data.DNI);
+                    $('#editarCUIL').val(data.CUIL);
+                    $('#editarTelefono').val(data.TelefonoFijo);
+                    $('#editarcelular').val(data.TelefonoCelular);
+                    $('#editaremail').val(data.Email);
+                    $('#editarcalle').val(data.Calle);
+                    $('#editaraltura').val(data.AlturaCalle);
+                    $('#EstadoActualusuario').text(data.Estadousuario);
+                    estadousuarioOriginal = data.Estadousuario;
+
+                    // Cargar y seleccionar la provincia actual del usuario
+                    cargarProvinciasEdicion(function () {
+                        $('#editarprovincia').val(data.ProvID);
+                        // Cargar y seleccionar la localidad actual del usuario
+                        cargarLocalidadesEdicion(data.ProvID, function () {
+                            $('#editarlocalidad').val(data.LocID);
+                        });
+                    });
+
+                    var estadoStyle = data.Estadousuario === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                    $('#EstadoActualusuario').removeClass().addClass(estadoStyle);
+
+                    $('#confirmarEdicion').attr('usuario_ID', id);
+
+                    // No validar al cargar los datos del usuario, solo al interactuar o enviar
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        // Función para cargar las provincias en el selector de editar usuario
+        function cargarProvinciasEdicion(callback) {
+            $.ajax({
+                url: 'http://localhost:50222/api/Provincias',
+                type: 'GET',
+                success: function (data) {
+                    var select = $('#editarprovincia');
+                    select.empty();
+                    select.append('<option value="">Seleccione una provincia</option>');
+                    data.forEach(function (provincia) {
+                        select.append('<option value="' + provincia.Prov_ID + '">' + provincia.Nombre_Provincia + '</option>');
+                    });
+                    if (typeof callback === 'function') callback();
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        // Función para cargar las localidades en el selector de editar usuario
+        function cargarLocalidadesEdicion(provinciaId, callback) {
+            var select = $('#editarlocalidad');
+            select.empty();
+
+            if (!provinciaId) {
+                select.prop('disabled', true);
+                select.append('<option value="">Seleccione una localidad</option>');
+                if (typeof callback === 'function') callback();
+                return;
+            }
+
+            $.ajax({
+                url: 'http://localhost:50222/api/Provincias/' + provinciaId + '/Localidades',
+                type: 'GET',
+                success: function (data) {
+                    select.prop('disabled', false);
+                    select.append('<option value="">Seleccione una localidad</option>');
+                    data.forEach(function (localidad) {
+                        select.append('<option value="' + localidad.Loc_ID + '">' + localidad.Nombre_Localidad + '</option>');
+                    });
+                    if (typeof callback === 'function') callback();
+                },
+                error: function (xhr, status, error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        // Evento change para actualizar las localidades al cambiar la provincia seleccionada
+        $('#editarprovincia').on('change', function () {
+            var provinciaId = $(this).val();
+            cargarLocalidadesEdicion(provinciaId);
+            if (!provinciaId) {
+                $('#editarlocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
+            }
+            validarCampos(); // Validar los campos al cambiar la provincia
+        });
+
+        // Validación de campos requeridos solo al intentar confirmar
+        function validarCampos() {
+            var nombre = $('#editarNombre').val();
+            var apellido = $('#editarApellido').val();
+            var dni = $('#editarNombreUsuario').val();
+            var cuil = $('#editarCUIL').val();
+            var telefono = $('#editarTelefono').val();
+            var celphone = $('#editarcelular').val();
+            var provincia = $('#editarprovincia').val();
+            var localidad = $('#editarlocalidad').val();
+            var calle = $('#editarcalle').val();
+
+            // Validar que todos los campos requeridos estén completos
+            if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
+                $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
+                $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
+            } else {
+                $('#alertaCompletaCamposEdicion').hide(); // Ocultar la alerta si todos los campos están completos
+                $('#confirmarEdicion').prop('disabled', false); // Habilitar el botón de confirmación
+            }
+        }
+
+        // Evento input para validar campos requeridos solo cuando el usuario interactúa
+        $('#editarNombre, #editarApellido, #editarNombreUsuario, #editarCUIL, #editarTelefono, #editarcelular, #editarprovincia, #editarlocalidad, #editarcalle').on('input change', function () {
+            validarCampos();
+        });
+
+        // Evento click para confirmar la edición de los detalles del usuario
+        $('#confirmarEdicion').on('click', function (event) {
+            event.preventDefault();
+
+            var id = $(this).attr('usuario_ID');
+            var nombre = $('#editarNombre').val();
+            var apellido = $('#editarApellido').val();
+            var dni = $('#editarNombreUsuario').val();
+            var cuil = $('#editarCUIL').val();
+            var telefono = $('#editarTelefono').val();
+            var celphone = $('#editarcelular').val();
+            var email = $('#editaremail').val();
+            var provincia = $('#editarprovincia').val();
+            var localidad = $('#editarlocalidad').val();
+            var calle = $('#editarcalle').val();
+            var altura = $('#editaraltura').val();
+
+            // Validar que todos los campos requeridos estén completos
+            if (!nombre || !apellido || ! || !cuil || !celphone || !provincia || !localidad || !calle) {
+                $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
+                $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
+                return; // Detener la ejecución del evento si algún campo requerido no está completo
+            } else {
+                $('#alertaCompletaCamposEdicion').hide(); // Ocultar la alerta si todos los campos están completos
+            }
+
+            // Validar el formato de email si el campo no está vacío
+            if (email && !emailRegex.test(email)) {
+                $('#emailErrorEdicion').css('display', 'block');
+                return; // Detener la ejecución del evento si el email no es válido
+            } else {
+                $('#emailErrorEdicion').css('display', 'none');
+            }
+
+            var nuevousuario = {
+                Nombre: nombre,
+                Apellido: apellido,
+                NombreUsuario: NombreUsuario,
+                Contraseña: Contraseña,
+                Rol: Rol,
+                Estadousuario: celphone,
+            };
+
+            $.ajax({
+                url: 'http://localhost:50222/api/usuarios/' + id,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(nuevousuario),
+                success: function (response) {
+                    console.log('usuario actualizado correctamente:', response);
+                    mostrarToastExito('Los datos del usuario se actualizaron exitosamente'); // Mostrar el toast con mensaje de éxito
+                    $('#editarUsuarioModal').modal('hide');
+                    actualizarEstadoCheckbox(); // Actualizar el estado del checkbox según el nuevo estado del usuario
+                    buscarusuarioes(); // Actualizar la lista de usuarioes en la pantalla
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al actualizar el usuario:', error);
+                    // Mostrar alerta de error en caso de fallo en la solicitud PUT
+                    alert('Error al actualizar el usuario. Por favor, intenta nuevamente.');
+                }
+            });
+        });
+
+        // Función para actualizar el estado del checkbox según el nuevo estado del usuario
+        function actualizarEstadoCheckbox() {
+            if (estadousuarioOriginal === 'Activo') {
+                $('#checkestadoactivo').prop('checked', true);
+                $('#checkestadoinactivo').prop('checked', false);
+            } else {
+                $('#checkestadoactivo').prop('checked', false);
+                $('#checkestadoinactivo').prop('checked', true);
+            }
+        }
+
+        // Limpiar el formulario y las validaciones cuando se cierra el modal
+        $('#editarUsuarioModal').on('hidden.bs.modal', function () {
+            $('#FormEditarUsuario')[0].reset();
+            $('#alertaCompletaCamposEdicion').hide();
+            $('#emailErrorEdicion').hide();
+            $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón al cerrar el modal
+        });
+
+        // Esperar a que se cargue completamente la página
+        $(document).ready(function () {
+            buscarusuarioes(); // Llamar a la función de búsqueda de usuarioes al cargar la página
+        });
+
+    </script>
+
+
+
+    <!-- Alta -->
+    <script>
+
+        // Validación para que los campos de Nombre, Apellido y Nombre de Usuario solo permitan letras
+        document.getElementById('first-name-column').addEventListener('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        document.getElementById('last-name-column').addEventListener('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        document.getElementById('user-name-column').addEventListener('input', function (event) {
+            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+        });
+
+        // Limita la longitud de la contraseña 20 dígitos
+        document.getElementById('password-column').addEventListener('input', function (event) {
+            if (this.value.length > 8) {
+                this.value = this.value.slice(0, 20);
+            }
+        });
+
+
+        // Función para mostrar el toast de éxito con mensaje dinámico
+        function mostrarToastExito(mensaje) {
+            var toastElement = $('#alert-success');
+            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
+            toastElement.show(); // Mostrar el toast
+            var toast = new bootstrap.Toast(toastElement[0]);
+            toast.show(); // Mostrar el toast usando Bootstrap
+            setTimeout(function () {
+                toast.hide(); // Ocultar el toast después de unos segundos
+            }, 5000); // Mostrar por 5 segundos
+        }
+
+
+        // Función para validar campos requeridos y habilitar el botón de confirmación
+        function validateRequiredFields() {
+            var nombre = $('#first-name-column').val();
+            var apellido = $('#last-name-column').val();
+            var NombreUsuario = $('#user-name-column').val();
+            var Contraseña = $('#password-column').val();
+            var Rol = $('#rol-column').val();
+            var estado = $('#estado-column').val();
+
+            // Verificar que todos los campos requeridos estén completos
+            if (!nombre || !apellido || !NombreUsuario || !Contraseña || !Rol || !estado) {
+                $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show(); // Mostrar el mensaje de alerta
+                $('#confirmarBtn').prop('disabled', true); // Deshabilitar el botón de confirmación
+            } else {
+                $('#alertaCompletaCampos').hide(); // Ocultar el mensaje de alerta si todos los campos están completos
+                // Validar el formato de email si el campo no está vacío
+                if (email && !emailRegex.test(email)) {
+                    $('#emailError').css('display', 'block');
+                    $('#confirmarBtn').prop('disabled', true);
+                } else {
+                    $('#emailError').css('display', 'none');
+                    $('#confirmarBtn').prop('disabled', false); // Habilitar el botón si todos los campos son válidos
+                }
+            }
+        }
+
+        // Validación de campos completos + Alta de usuario
+        $('#confirmarBtn').on('click', function (event) {
+            event.preventDefault(); // Prevenir el comportamiento predeterminado del botón para que sólo cierre el modal cuando sea un proceso exitoso
+
+            // Llamar a la función de validación
+            validateRequiredFields();
+
+            // Verificar si el botón está deshabilitado
+            if ($('#confirmarBtn').prop('disabled')) {
+                return; // Detener la ejecución de la función si el botón está deshabilitado
+            }
+
+            // Obtener los valores ingresados en los campos del formulario
+            var nombre = $('#first-name-column').val();
+            var apellido = $('#last-name-column').val();
+            var NombreUsuario = $('#user-name-column').val();
+            var Contraseña = $('#password-column').val();
+            var Rol = $('#rol-column').val();
+            var estado = $('#estado-column').val();
+
+            // Crear un objeto JSON con los valores obtenidos
+            var nuevousuario = {
+                "Nombre": nombre,
+                "Apellido": apellido,
+                "NombreUsuario": NombreUsuario,
+                "Contraseña": Contraseña,
+                "Rol": Rol,
+                "Estadousuario": "Activo"
+            };
+
+            // Realizar una solicitud AJAX POST para guardar el nuevo usuario
+            $.ajax({
+                url: 'http://localhost:50222/api/usuarios',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(nuevousuario),
+                success: function (response) {
+                    console.log('usuario agregado correctamente:', response); // Mensaje en consola
+                    mostrarToastExito('El usuario se dió de alta exitosamente'); // Mostrar el toast con mensaje de éxito
+                    $('#ModalAltaUsuario').modal('hide'); // Cerrar el modal solo si la operación es exitosa
+                    // Esperar a que se cargue completamente la página
+                    $(document).ready(function () {
+                        buscarusuarioes(); // Llamar a la función de búsqueda de usuarioes al cargar la página
+                    });
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al agregar el usuario:', error); // Mensaje de error en consola
+                }
+            });
+        });
+
+        // Cuando se cierra el modal, limpiar los controles del formulario y las validaciones
+        $('#ModalAltaUsuario').on('hidden.bs.modal', function () {
+            // Resetear el formulario
+            $('#FormAltaUsuario')[0].reset();
+            // Ocultar el mensaje de alerta
+            $('#alertaCompletaCampos').hide();
+            // Limpiar el estado de las validaciones
+            $('#emailError').css('display', 'none');
+            // Resetear los selects de provincia y localidad
+            $('#province-select').empty();
+            $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+            // Habilitar el botón de confirmación
+            $('#confirmarBtn').prop('disabled', false);
+        });
+
+        // Validar campos en tiempo real mientras se completan
+        $('#first-name-column, #last-name-column, #dni-column, #cuil-column, #phone-floating, #celphone-column, #email-id-column, #province-select, #location-select, #street-column').on('input change', function () {
+            validateRequiredFields();
+        });
+    </script>
+
+
+    <!--Eliminar-->
+    <script>
+
+        // Función para mostrar el toast de éxito con mensaje dinámico
+        function mostrarToastExito(mensaje) {
+            var toastElement = $('#alert-success');
+            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
+            toastElement.show(); // Mostrar el toast
+
+            var toast = new bootstrap.Toast(toastElement[0]);
+            toast.show(); // Mostrar el toast usando Bootstrap
+
+            setTimeout(function () {
+                toast.hide(); // Ocultar el toast después de unos segundos
+            }, 5000); // Mostrar por 5 segundos
+        }
+
+        var usuarioIdAEliminar;
+
+        // Función para establecer el ID del camión a eliminar
+        function setEliminarusuarioId(id) {
+            usuarioIdAEliminar = id;
+        }
+
+        // Función para confirmar la eliminación del camión
+        function confirmarEliminarusuario() {
+            if (usuarioIdAEliminar) {
+                $.ajax({
+                    url: 'http://localhost:50222/api/usuarios/' + usuarioIdAEliminar,
+                    type: 'DELETE',
+                    success: function (response) {
+                        console.log('usuario eliminado correctamente:', response);
+                        mostrarToastExito('El usuario se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
+                        $('#confirmarEliminarModal').modal('hide');
+                        // Recargar o actualizar la tabla después de la eliminación
+                        // Puede que necesites volver a cargar la tabla con una nueva solicitud AJAX
+                        buscarusuarioes();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error(error);
+                    }
+                });
+            }
+        }
+
+    </script>
+
+    <!--Activar/Desactivar usuario-->
+    <script>
+
+        // Función para mostrar el toast de éxito con mensaje dinámico
+        function mostrarToastExito(mensaje) {
+            var toastElement = $('#alert-success');
+            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
+            toastElement.show(); // Mostrar el toast
+
+            var toast = new bootstrap.Toast(toastElement[0]);
+            toast.show(); // Mostrar el toast usando Bootstrap
+
+            setTimeout(function () {
+                toast.hide(); // Ocultar el toast después de unos segundos
+            }, 5000); // Mostrar por 5 segundos
+        }
+
+        var usuarioIdACambiarEstado;
+        var estadoActualusuario;
+
+        // Función para establecer el ID del usuario y el estado actual
+        function setActivarDesactivarusuario(id, estadoActual) {
+            usuarioIdACambiarEstado = id;
+            estadoActualusuario = estadoActual;
+
+            var nuevoEstado = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
+            var mensaje = '¿Estás seguro de que deseas cambiar el estado de este usuario a ' + nuevoEstado + '?';
+
+            $('#confirmarActivarDesactivarBody').text(mensaje);
+        }
+
+        // Función para confirmar el cambio de estado del usuario
+        function confirmarActivarDesactivarusuario() {
+            if (usuarioIdACambiarEstado) {
+                var nuevoEstado = estadoActualusuario === 'Activo' ? 'Inactivo' : 'Activo';
+
+                // Realizar una solicitud PUT para actualizar solo el campo Estadousuario
+                $.ajax({
+                    url: 'http://localhost:50222/api/usuarios/Estadousuario/' + usuarioIdACambiarEstado,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ Estadousuario: nuevoEstado }),
+                    success: function (response) {
+                        $('#confirmarActivarDesactivarModal').modal('hide');
+                        // Actualizar solo el campo Estadousuario en la fila correspondiente
+                        $('#tablausuarioes tbody tr[data-usuario_ID="' + usuarioIdACambiarEstado + '"] .estado-usuario').text(nuevoEstado); // Actualizar el texto del estado
+                        // Alternar clases de color (opcional)
+                        $('#tablausuarioes tbody tr[data-usuario_ID="' + usuarioIdACambiarEstado + '"] .estado-usuario').toggleClass('bg-success bg-danger');
+                        console.log('Estado del usuario actualizado correctamente:', response);
+                        mostrarToastExito('El cambio de estado del usuario se realizó exitosamente');
+                        // Mostrar el checkbox correspondiente según el nuevo estado
+                        $('#checkestadoactivo').prop('checked', true);
+
+                        // Llamar a la función buscarusuarioes para actualizar la lista de usuarioes después de cambiar el estado
+                        buscarusuarioes();
+                    },
+                    error: function (xhr, status, error) {
+                        // Manejar errores de la solicitud
+                        console.error('Error al actualizar el estado del usuario:', error);
+                    }
+                });
+            }
+        }
+
+
+
+
+
+    </script>
+
+
+
+
+</body>
+
+</html>
