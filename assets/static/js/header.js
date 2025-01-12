@@ -76,7 +76,7 @@ function setupUserInfo() {
     logoutBtn.addEventListener('click', function(event) {
       event.preventDefault();
 
-      fetch('http://localhost:50222/api/logout', {
+      fetch('http://sgtl.sytes.net:98/api/logout', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + token
@@ -105,7 +105,7 @@ function setupUserInfo() {
 function loadDynamicBackgroundColor() {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", "http://localhost:50222/api/GestionContenido/1", true);
+    xhr.open("GET", "http://sgtl.sytes.net:98/api/GestionContenido/1", true);
 
     xhr.onload = function() {
       if (xhr.status === 200) {
