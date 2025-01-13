@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
     <style>
         #app {
@@ -479,11 +479,11 @@
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
-    
+
             // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
-    
+
             loadSettings()
                 .then(() => {
                     adjustVisibilityBasedOnRole();
@@ -495,29 +495,29 @@
                     loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
                 });
         };
-    
+
         function adjustVisibilityBasedOnRole() {
             const userRole = localStorage.getItem('userRole');
             const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-    
+
             if (userRole && userRole.toLowerCase() === 'admin') {
                 gestionarContenidoBtn.style.display = 'block';
             } else {
                 gestionarContenidoBtn.style.display = 'none';
             }
         }
-    
+
         async function loadSettings() {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-    
+
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
                         const data = JSON.parse(xhr.responseText);
                         if (data) {
                             const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-    
+
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
                         } else {
@@ -529,16 +529,18 @@
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
-    
+
                 xhr.onerror = function () {
                     console.error('Error al cargar la configuración de la API.');
                     reject(new Error('Error de red'));
                 };
-    
+
                 xhr.send();
             });
         }
-    
+
+        // Aplicar estilos en distintos componentes de la página
+
         function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
             const logoElement = document.querySelector('.sidebar-header .logo img');
             logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
@@ -551,70 +553,65 @@
             // Color de fondo general
             document.body.style.backgroundColor = colorFondo || '#198754';
 
-            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            // Crear estilo CSS dinámico para color de texto en hover y activo
             const dynamicStyle = document.createElement('style');
             dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el submenú */
+        /* Estilo para items activos en el menú */
+        .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
-            color: ${colorFondo || '#198754'} !important;
-            font-weight: bold;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Color en hover para enlaces del submenú */
-        .submenu-item .submenu-link:hover,
-        .submenu-item .submenu-link:focus {
-            color: ${colorFondo || '#198754'} !important;
+        /* Hover en las opciones del menú */
+        .submenu-item .submenu-link:hover {
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Estilo para el botón burger */
+        /* Estilo para el botón hamburguesa */
         .burger-btn i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Hover en el botón burger */
+        /* Hover en el botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Estilo para el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Hover en el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
     `;
             document.head.appendChild(dynamicStyle);
 
-            // Aplicar color de fondo al enlace activo en el menú principal
-            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
-            botonesMenu.forEach(button => {
-                button.style.backgroundColor = colorBotonesMenu || '#198754';
-            });
-
             // Configuración del contenido en el pie de página
             const footerContentElement = document.querySelector('.footer p');
-            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            if (footerContentElement) {
+                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            }
         }
 
         // Lógica de logout y carga de nombre de usuario en el header
         document.addEventListener("DOMContentLoaded", function () {
             const token = localStorage.getItem('token');
-    
+
             if (!token) {
                 window.location.href = 'login.html';
             } else {
                 const nombre = localStorage.getItem('nombre');
                 const apellido = localStorage.getItem('apellido');
                 document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-    
+
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', function (event) {
                         event.preventDefault();
-    
+
                         fetch('http://localhost:50222/api/logout', {
                             method: 'POST',
                             headers: {
@@ -675,7 +672,7 @@
         const pageSize = 6;
         let currentPage = 1;
 
-        // Función para obtener los nombres de la provincia y la localidad
+        // Función para obtener los nombres de la provincia y localidad
         function obtenerNombres(provId, locId) {
             let nombreProvincia = '';
             let nombreLocalidad = '';
@@ -738,14 +735,13 @@
                 $('#province-column').val(nombres.Nombre_Provincia);
                 $('#local-column').val(nombres.Nombre_Localidad);
                 $('#street-column').val(registro.Calle);
-                $('#number-column').val(registro.AlturaCalle);
+                $('#number-column').val(registro.AlturaCalle.trim());
                 $('#EstadoActualChofer').text(registro.EstadoChofer);
                 estadoChoferOriginal = registro.EstadoChofer;
 
                 var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
                 $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
 
-                // Obtener camiones asignados
                 obtenerCamionesAsignados(registro.Chofer_ID);
 
                 $('#DetallesChoferModal').modal('show');
@@ -753,6 +749,7 @@
                 console.error('Error al obtener nombres de provincia o localidad', error);
             });
         }
+
 
         // Función para obtener camiones asignados al chofer
         function obtenerCamionesAsignados(choferID) {

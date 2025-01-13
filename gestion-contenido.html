@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
     <style>
         /* Estilo para ocultar el contenido por defecto */
         #app {
@@ -90,7 +90,7 @@
 
                                 </li>
 
-                                <li class="submenu-item active">
+                                <li class="submenu-item">
                                     <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
@@ -322,7 +322,7 @@
                                     </div>
                                     <div class="col-md-8 form-group">
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
-                                               placeholder="URL del logo">
+                                            placeholder="URL del logo">
                                     </div>
                                     <div class="col-md-4">
                                         <label for="backgroundColorInput">Color de fondo</label>
@@ -414,10 +414,10 @@
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
-    
+
             window.loadHeader();
             window.loadFooter();
-    
+
             loadSettings().then(() => {
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -426,30 +426,30 @@
                 document.getElementById('loading-message').innerText = 'Error al cargar los datos.';
             });
         };
-    
+
         async function loadSettings() {
             console.log('Llamando a la API de Gestión de Contenido...');
-    
+
             const xhr = new XMLHttpRequest();
             xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-    
+
             return new Promise((resolve, reject) => {
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
                         const data = JSON.parse(xhr.responseText);
                         console.log('Respuesta de la API:', data);
-    
+
                         if (data) {
                             const logoUrl = data.Logo;
                             const colorFondo = data.ColorFondo;
                             const colorBotonesMenu = data.ColorBotonesMenu;
                             const contenidoPiePagina = data.ContenidoPiePagina;
-    
+
                             document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
                             document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
                             document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
                             document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
-    
+
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
                         } else {
@@ -464,17 +464,20 @@
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
-    
+
                 xhr.onerror = function () {
                     console.error('Error al cargar la configuración de la API.');
                     loadDefaultValues();
                     showErrorToast();
                     reject(new Error('Error de red'));
                 };
-    
+
                 xhr.send();
             });
         }
+
+        // Aplicar estilos en distintos componentes de la página
+
         function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
             const logoElement = document.querySelector('.sidebar-header .logo img');
             logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
@@ -487,69 +490,66 @@
             // Color de fondo general
             document.body.style.backgroundColor = colorFondo || '#198754';
 
-            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            // Crear estilo CSS dinámico para color de texto en hover y activo
             const dynamicStyle = document.createElement('style');
             dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el submenú */
+        /* Estilo para items activos en el menú */
+        .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
-            color: ${colorFondo || '#198754'} !important;
-            font-weight: bold;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Color en hover para enlaces del submenú */
-        .submenu-item .submenu-link:hover,
-        .submenu-item .submenu-link:focus {
-            color: ${colorFondo || '#198754'} !important;
+        /* Hover en las opciones del menú */
+        .submenu-item .submenu-link:hover {
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Estilo para el botón burger */
+        /* Estilo para el botón hamburguesa */
         .burger-btn i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Hover en el botón burger */
+        /* Hover en el botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Estilo para el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Hover en el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
     `;
             document.head.appendChild(dynamicStyle);
 
-            // Aplicar color de fondo al enlace activo en el menú principal
-            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
-            botonesMenu.forEach(button => {
-                button.style.backgroundColor = colorBotonesMenu || '#198754';
-            });
-
             // Configuración del contenido en el pie de página
             const footerContentElement = document.querySelector('.footer p');
-            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            if (footerContentElement) {
+                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            }
         }
-    
+         
+        // Confirmar cambios de gestión de conten
+
         document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
             event.preventDefault();
-    
+
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
-    
+
             const logo = document.getElementById('logoInput').value;
             const backgroundColor = document.getElementById('backgroundColorInput').value;
             const menuColor = document.getElementById('menuColorInput').value;
             const footerContent = document.getElementById('footerContentInput').value;
-    
+
             // Obtener el nombre de usuario desde localStorage
             const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
-    
+
             const settingsData = {
                 Logo: logo,
                 ColorFondo: backgroundColor,
@@ -558,23 +558,23 @@
                 Fecha_Modi: new Date().toISOString(),
                 Usu_Modi: usuarioModificador // Asigna el nombre de usuario al campo Usu_Modi
             };
-    
+
             const xhr = new XMLHttpRequest();
             xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
-    
+
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const toastSuccess = document.getElementById('alert-success');
                     const toastBootstrap = new bootstrap.Toast(toastSuccess);
                     toastSuccess.style.display = 'block';
                     toastBootstrap.show();
-    
+
                     document.getElementById('logoInput').value = '';
                     document.getElementById('backgroundColorInput').value = '';
                     document.getElementById('menuColorInput').value = '';
                     document.getElementById('footerContentInput').value = '';
-    
+
                     setTimeout(() => {
                         location.reload();
                     }, 2000);
@@ -584,44 +584,45 @@
                     document.getElementById('app').style.display = 'block';
                 }
             };
-    
+
             xhr.onerror = function () {
                 showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             };
-    
+
             xhr.send(JSON.stringify(settingsData));
         });
-    
+
         function loadDefaultValues() {
             console.log('Cargando valores por defecto...');
             document.getElementById('logoInput').value = './assets/compiled/svg/ts-logo-text.svg';
-            document.getElementById('backgroundColorInput').value = '#D3E8DE';
+            document.getElementById('backgroundColorInput').value = '#b6d8c7';
             document.getElementById('menuColorInput').value = '#198754';
-            document.getElementById('footerContentInput').value = '2024 &copy; Integra Analistas';
-    
-            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#D3E8DE', '#198754', '2024 &copy; Integra Analistas');
+            document.getElementById('footerContentInput').value = '2025 &copy; Integra Analistas';
+
+            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#b6d8c7', '#198754', '2025 &copy; Integra Analistas');
         }
 
         // Obtener el nombre de usuario desde localStorage
         const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
-    
+
         function resetForm() {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
-    
+            document.getElementById('app').style.display = 'none';
+
             const defaultLogo = './assets/compiled/svg/ts-logo-text.svg';
             const defaultFavicon = './assets/compiled/svg/ts-icon.svg';
-            const defaultColorFondo = '#D3E8DE';
+            const defaultColorFondo = '#b6d8c7';
             const defaultColorBotonesMenu = '#198754';
-            const defaultContenidoPiePagina = '2024 &copy; Integra Analistas';
-    
+            const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
+
             document.getElementById('logoInput').value = defaultLogo;
             document.getElementById('backgroundColorInput').value = defaultColorFondo;
             document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
             document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
-    
+
             const settingsData = {
                 Logo: defaultLogo,
                 ColorFondo: defaultColorFondo,
@@ -630,22 +631,22 @@
                 Fecha_Modi: new Date().toISOString(),
                 Usu_Modi: usuarioModificador // Asigna el nombre de usuario
             };
-    
+
             const xhr = new XMLHttpRequest();
             xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
             xhr.setRequestHeader('Content-Type', 'application/json');
-    
+
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
                     const toastSuccess = document.getElementById('alert-success');
                     const toastBootstrap = new bootstrap.Toast(toastSuccess);
                     toastSuccess.style.display = 'block';
                     toastBootstrap.show();
-    
+
                     const modalElement = document.getElementById('confirmarRestablecerModal');
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     modal.hide();
-    
+
                     setTimeout(() => {
                         location.reload();
                     }, 2000);
@@ -654,23 +655,23 @@
                     loadingMessage.style.display = 'none';
                 }
             };
-    
+
             xhr.onerror = function () {
                 showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
                 loadingMessage.style.display = 'none';
             };
-    
+
             xhr.send(JSON.stringify(settingsData));
-    
+
             applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
-    
+
             const favicon = document.querySelector('link[rel="shortcut icon"]');
             if (favicon) {
                 favicon.href = defaultFavicon;
             }
         }
     </script>
-    
+
 
 
 

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
     <style>
         #app {
@@ -467,9 +467,10 @@
                                         <label for="email-id-column" class="form-label">Email</label>
                                         <input type="email" id="email-id-column" class="form-control"
                                             name="email-id-column" placeholder="minombre@correo.com" />
-                                        <div id="emailError" class="invalid-feedback">Tu email debe incluir @.
+                                        <div id="emailError" class="invalid-feedback">Tu email debe incluir @ + el
+                                            dominio de tu correo.
                                             Ejemplo:
-                                            minombre@correo.com</div>
+                                            minombre@gmail.com</div>
 
                                     </div>
                                 </div>
@@ -535,9 +536,17 @@
                         </div>
                         <form class="form" id="FormEditarChofer">
                             <div class="row">
-                                <div class="form-group">
-                                    <label for="estado-column" class="form-label">Estado del chofer</label>
-                                    <span id="EstadoActualChofer" readonly></span>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="estado-column" class="form-label">Estado del chofer</label>
+                                        <span id="EstadoActualChofer" readonly></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="FechaAltaChofer" class="form-label">Fecha de alta</label>
+                                        <input type="datetime" id="FechaAltaChofer" class="form-control" readonly />
+                                    </div>
                                 </div>
                             </div>
                             <div class="row">
@@ -710,11 +719,11 @@
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
-    
+
             // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
-    
+
             loadSettings()
                 .then(() => {
                     adjustVisibilityBasedOnRole();
@@ -726,29 +735,29 @@
                     loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
                 });
         };
-    
+
         function adjustVisibilityBasedOnRole() {
             const userRole = localStorage.getItem('userRole');
             const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-    
+
             if (userRole && userRole.toLowerCase() === 'admin') {
                 gestionarContenidoBtn.style.display = 'block';
             } else {
                 gestionarContenidoBtn.style.display = 'none';
             }
         }
-    
+
         async function loadSettings() {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-    
+
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
                         const data = JSON.parse(xhr.responseText);
                         if (data) {
                             const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-    
+
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
                         } else {
@@ -760,16 +769,18 @@
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
-    
+
                 xhr.onerror = function () {
                     console.error('Error al cargar la configuración de la API.');
                     reject(new Error('Error de red'));
                 };
-    
+
                 xhr.send();
             });
         }
-    
+
+        // Aplicar estilos en distintos componentes de la página
+
         function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
             const logoElement = document.querySelector('.sidebar-header .logo img');
             logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
@@ -782,70 +793,65 @@
             // Color de fondo general
             document.body.style.backgroundColor = colorFondo || '#198754';
 
-            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            // Crear estilo CSS dinámico para color de texto en hover y activo
             const dynamicStyle = document.createElement('style');
             dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el submenú */
+        /* Estilo para items activos en el menú */
+        .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
-            color: ${colorFondo || '#198754'} !important;
-            font-weight: bold;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Color en hover para enlaces del submenú */
-        .submenu-item .submenu-link:hover,
-        .submenu-item .submenu-link:focus {
-            color: ${colorFondo || '#198754'} !important;
+        /* Hover en las opciones del menú */
+        .submenu-item .submenu-link:hover {
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Estilo para el botón burger */
+        /* Estilo para el botón hamburguesa */
         .burger-btn i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Hover en el botón burger */
+        /* Hover en el botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Estilo para el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Hover en el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
     `;
             document.head.appendChild(dynamicStyle);
 
-            // Aplicar color de fondo al enlace activo en el menú principal
-            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
-            botonesMenu.forEach(button => {
-                button.style.backgroundColor = colorBotonesMenu || '#198754';
-            });
-
             // Configuración del contenido en el pie de página
             const footerContentElement = document.querySelector('.footer p');
-            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            if (footerContentElement) {
+                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            }
         }
-    
+
         // Lógica de logout y carga de nombre de usuario en el header
         document.addEventListener("DOMContentLoaded", function () {
             const token = localStorage.getItem('token');
-    
+
             if (!token) {
                 window.location.href = 'login.html';
             } else {
                 const nombre = localStorage.getItem('nombre');
                 const apellido = localStorage.getItem('apellido');
                 document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-    
+
                 const logoutBtn = document.getElementById('logoutBtn');
                 if (logoutBtn) {
                     logoutBtn.addEventListener('click', function (event) {
                         event.preventDefault();
-    
+
                         fetch('http://localhost:50222/api/logout', {
                             method: 'POST',
                             headers: {
@@ -1073,9 +1079,10 @@
         // Función para cargar los datos del chofer en el modal de edición
         function editarChofer(id) {
             $.ajax({
-                url: 'http://localhost:50222/api/Choferes/' + id,
+                url: `http://localhost:50222/api/Choferes/${id}`,
                 type: 'GET',
                 success: function (data) {
+                    // Asignar valores a los campos
                     $('#editarNombre').val(data.Nombre);
                     $('#editarApellido').val(data.Apellido);
                     $('#editarDNI').val(data.DNI);
@@ -1085,30 +1092,48 @@
                     $('#editaremail').val(data.Email);
                     $('#editarcalle').val(data.Calle);
                     $('#editaraltura').val(data.AlturaCalle);
-                    $('#EstadoActualChofer').text(data.EstadoChofer);
-                    estadoChoferOriginal = data.EstadoChofer;
 
-                    // Cargar y seleccionar la provincia actual del chofer
+                    // Estado del chofer
+                    $('#EstadoActualChofer').text(data.EstadoChofer);
+                    var estadoStyle = data.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                    $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
+
+                    // Formatear la fecha de alta y asignarla
+                    const fechaAlta = formatFechaUTC3(data.Fecha_Alta); // Formato personalizado
+                    $('#FechaAltaChofer').val(fechaAlta);
+
+                    // Cargar provincias y localidades
                     cargarProvinciasEdicion(function () {
                         $('#editarprovincia').val(data.ProvID);
-                        // Cargar y seleccionar la localidad actual del chofer
                         cargarLocalidadesEdicion(data.ProvID, function () {
                             $('#editarlocalidad').val(data.LocID);
                         });
                     });
 
-                    var estadoStyle = data.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-                    $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
-
+                    // Vincular el ID del chofer al botón de confirmación
                     $('#confirmarEdicion').attr('Chofer_ID', id);
-
-                    // No validar al cargar los datos del chofer, solo al interactuar o enviar
                 },
                 error: function (xhr, status, error) {
-                    console.error(error);
+                    console.error('Error al cargar los datos del chofer:', error);
                 }
             });
         }
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+
 
         // Función para cargar las provincias en el selector de editar chofer
         function cargarProvinciasEdicion(callback) {
@@ -1230,7 +1255,14 @@
                 $('#emailErrorEdicion').css('display', 'none');
             }
 
-            var nuevoChofer = {
+            // Obtener la fecha y hora actual en formato ISO
+            const fechaHoraActual = new Date().toISOString();
+
+            // Obtener el usuario logueado desde localStorage
+            const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+
+            // Crear el objeto con los datos actualizados del chofer
+            var choferActualizado = {
                 Nombre: nombre,
                 Apellido: apellido,
                 DNI: dni,
@@ -1242,24 +1274,24 @@
                 LocID: localidad,
                 Calle: calle,
                 AlturaCalle: altura,
-                EstadoChofer: estadoChoferOriginal
+                Fecha_Modi: fechaHoraActual, // Fecha y hora actual
+                Usu_Modi: usuarioLogueado, // Usuario logueado
             };
 
+            // Realizar la solicitud PUT para actualizar los datos del chofer
             $.ajax({
                 url: 'http://localhost:50222/api/Choferes/' + id,
                 type: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify(nuevoChofer),
+                data: JSON.stringify(choferActualizado),
                 success: function (response) {
                     console.log('Chofer actualizado correctamente:', response);
-                    mostrarToastExito('Los datos del chofer se actualizaron exitosamente'); // Mostrar el toast con mensaje de éxito
+                    mostrarToastExito('Los datos del chofer se actualizaron exitosamente');
                     $('#editarChoferModal').modal('hide');
-                    actualizarEstadoCheckbox(); // Actualizar el estado del checkbox según el nuevo estado del chofer
-                    buscarChoferes(); // Actualizar la lista de choferes en la pantalla
+                    buscarChoferes(); // Actualizar la lista de choferes
                 },
                 error: function (xhr, status, error) {
                     console.error('Error al actualizar el chofer:', error);
-                    // Mostrar alerta de error en caso de fallo en la solicitud PUT
                     alert('Error al actualizar el chofer. Por favor, intenta nuevamente.');
                 }
             });
@@ -1472,20 +1504,31 @@
             var calle = $('#street-column').val();
             var altura = $('#number-column').val();
 
-            // Crear un objeto JSON con los valores obtenidos
-            var nuevoChofer = {
-                "Nombre": nombre,
-                "Apellido": apellido,
-                "DNI": dni,
-                "CUIL": cuil,
-                "TelefonoFijo": telefonoFijo,
-                "TelefonoCelular": telefonoCelular,
-                "Email": email,
-                "ProvID": provinciaId,
-                "LocID": localidadId,
-                "Calle": calle,
-                "AlturaCalle": altura,
-                "EstadoChofer": "Activo"
+            // Obtener la fecha y hora actual en formato ISO
+            const fechaHoraActual = new Date().toISOString();
+
+            // Obtener el usuario logueado desde localStorage
+            const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+
+            // Crear el objeto con los datos del chofer
+            const nuevoChofer = {
+                Nombre: nombre,
+                Apellido: apellido,
+                DNI: dni,
+                CUIL: cuil,
+                TelefonoFijo: telefonoFijo,
+                TelefonoCelular: telefonoCelular,
+                Email: email,
+                ProvID: provinciaId,
+                LocID: localidadId,
+                Calle: calle,
+                AlturaCalle: altura,
+                EstadoChofer: "Activo",
+                Fecha_Alta: fechaHoraActual, // Fecha y hora actual
+                Usu_Alta: usuarioLogueado, // Usuario logueado
+                Fecha_Modi: fechaHoraActual,
+                Usu_Modi: usuarioLogueado
+
             };
 
             // Realizar una solicitud AJAX POST para guardar el nuevo chofer
@@ -1643,13 +1686,7 @@
         }
 
 
-
-
-
     </script>
-
-
-
 
 </body>
 

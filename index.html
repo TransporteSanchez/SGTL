@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
     <style>
         /* Estilo para ocultar el contenido por defecto */
         #app {
@@ -287,9 +287,9 @@
             <div id="main-content">
 
                 <!--Contenido de la página-->
-                <div class="page-heading mt-4 mb-4">
+               <!--  <div class="page-heading mt-4 mb-4">
                     <h3>¡Bienvenido!</h3>
-                </div>
+                </div> -->
 
                 <div class="page-content">
                     <div class="row">
@@ -299,7 +299,9 @@
                         <div class="col-md-4 col-sm-12">
                             <div class="card mb-4 rounded custom-card">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Choferes</h5>
+                                    <h5 class="card-title">
+                                        Choferes
+                                    </h5>
                                 </div>
                                 <div class="card-body">
                                     <div id="chart-choferes"></div>
@@ -315,14 +317,16 @@
                             <!-- Define el tamaño de la columna para diferentes pantallas -->
                             <div class="card rounded custom-card">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Camiones</h5>
+                                    <h5 class="card-title">
+                                        Camiones
+                                    </h5>
                                 </div>
                                 <div class="card-body">
                                     <div class="d-flex align-items-center">
                                         <!-- Número total de camiones -->
-                                        <span class="h4 mb-0 p-2">
+                                        <h5 class="card-title mb-0 p-2">
                                             <span id="total-camiones"></span>
-                                        </span>
+                                        </h5>
                                         <!-- Icono de camión con fondo y margen -->
                                         <span class="h4 mb-0 p-2">
                                             <div class="stats-icon green p-2">
@@ -426,7 +430,9 @@
                 });
             }
 
-            function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+            // Aplicar estilos en distintos componentes de la página
+
+        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
             const logoElement = document.querySelector('.sidebar-header .logo img');
             logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
 
@@ -438,52 +444,47 @@
             // Color de fondo general
             document.body.style.backgroundColor = colorFondo || '#198754';
 
-            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            // Crear estilo CSS dinámico para color de texto en hover y activo
             const dynamicStyle = document.createElement('style');
             dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el submenú */
+        /* Estilo para items activos en el menú */
+        .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
-            color: ${colorFondo || '#198754'} !important;
-            font-weight: bold;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Color en hover para enlaces del submenú */
-        .submenu-item .submenu-link:hover,
-        .submenu-item .submenu-link:focus {
-            color: ${colorFondo || '#198754'} !important;
+        /* Hover en las opciones del menú */
+        .submenu-item .submenu-link:hover {
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Estilo para el botón burger */
+        /* Estilo para el botón hamburguesa */
         .burger-btn i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* Hover en el botón burger */
+        /* Hover en el botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Estilo para el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
 
         /* Hover en el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler:hover i {
-            color: ${colorFondo || '#198754'} !important;
+            color: ${colorBotonesMenu || '#198754'} !important;
         }
     `;
             document.head.appendChild(dynamicStyle);
 
-            // Aplicar color de fondo al enlace activo en el menú principal
-            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
-            botonesMenu.forEach(button => {
-                button.style.backgroundColor = colorBotonesMenu || '#198754';
-            });
-
             // Configuración del contenido en el pie de página
             const footerContentElement = document.querySelector('.footer p');
-            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            if (footerContentElement) {
+                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            }
         }
 
             // Cargar gráfico de choferes
