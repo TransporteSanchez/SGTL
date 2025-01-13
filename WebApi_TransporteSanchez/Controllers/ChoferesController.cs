@@ -28,6 +28,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
             public string EstadoChofer { get; set; }
+            public DateTime Fecha_Alta { get; set; } 
+            public string Usu_Alta { get; set; }
+            public DateTime Fecha_Modi { get; set; } 
+            public string Usu_Modi { get; set; } 
 
         }
 
@@ -54,8 +58,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         ProvID = c.ProvID,
                         LocID = c.LocID,
                         Calle = c.Calle,
-                        AlturaCalle = c.AlturaCalle,
-                        EstadoChofer = c.EstadoChofer
+                        AlturaCalle = c.AlturaCalle.Trim(),
+                        EstadoChofer = c.EstadoChofer,
+                        Fecha_Alta = c.Fecha_Alta,
+                        Usu_Alta = c.Usu_Alta,
+                        Fecha_Modi = c.Fecha_Modi,
+                        Usu_Modi = c.Usu_Modi
                     }).ToList();
 
                     if (olist == null || !olist.Any())
@@ -125,8 +133,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         ProvID = chofer.ProvID,
                         LocID = chofer.LocID,
                         Calle = chofer.Calle,
-                        AlturaCalle = chofer.AlturaCalle,
-                        EstadoChofer = chofer.EstadoChofer
+                        AlturaCalle = chofer.AlturaCalle.Trim(),
+                        EstadoChofer = chofer.EstadoChofer,
+                        Fecha_Alta = chofer.Fecha_Alta,
+                        Usu_Alta = chofer.Usu_Alta,
+                        Fecha_Modi = chofer.Fecha_Modi,
+                        Usu_Modi = chofer.Usu_Modi
                     };
 
                     return Ok(choferDto); // Retorna 200 con los datos del chofer encontrado
@@ -215,8 +227,12 @@ namespace WebApi_TransporteSanchez.Controllers
                             ProvID = c.ProvID,
                             LocID = c.LocID,
                             Calle = c.Calle,
-                            AlturaCalle = c.AlturaCalle,
-                            EstadoChofer = c.EstadoChofer
+                            AlturaCalle = c.AlturaCalle.Trim(),
+                            EstadoChofer = c.EstadoChofer,
+                            Fecha_Alta = c.Fecha_Alta,
+                            Usu_Alta = c.Usu_Alta,
+                            Fecha_Modi = c.Fecha_Modi,
+                            Usu_Modi = c.Usu_Modi
                         })
                         .ToList();
 
@@ -425,7 +441,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         LocID = choferDto.LocID,
                         Calle = choferDto.Calle,
                         AlturaCalle = choferDto.AlturaCalle?.Trim(),
-                        EstadoChofer = choferDto.EstadoChofer
+                        EstadoChofer = choferDto.EstadoChofer,
+                        Fecha_Alta = choferDto.Fecha_Alta,
+                        Usu_Alta = choferDto.Usu_Alta,
+                        Fecha_Modi = choferDto.Fecha_Modi,
+                        Usu_Modi = choferDto.Usu_Modi
                     };
 
                     // Agregar la entidad al contexto
@@ -501,7 +521,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 chofer.LocID = choferDto.LocID;
                 chofer.Calle = choferDto.Calle;
                 chofer.AlturaCalle = choferDto.AlturaCalle?.Trim();
-                chofer.EstadoChofer = choferDto.EstadoChofer;
+                chofer.Fecha_Modi = choferDto.Fecha_Modi;
+                chofer.Usu_Modi = choferDto.Usu_Modi;
 
                 // Marcar la entidad como modificada
                 db.Entry(chofer).State = System.Data.Entity.EntityState.Modified;
