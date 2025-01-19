@@ -175,7 +175,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Choferes/Buscar
         [HttpGet]
         [Route("api/Choferes/Buscar")]
-        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, int page = 1, int pageSize = 8)
+        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
         {
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -207,6 +207,17 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         var estados = estadoChofer.Split(',');
                         query = query.Where(c => estados.Contains(c.EstadoChofer));
+                    }
+
+                    // Filtrar por fecha de alta
+                    if (fechaDesde.HasValue)
+                    {
+                        query = query.Where(c => c.Fecha_Alta >= fechaDesde.Value);
+                    }
+
+                    if (fechaHasta.HasValue)
+                    {
+                        query = query.Where(c => c.Fecha_Alta <= fechaHasta.Value);
                     }
 
                     var totalRecords = query.Count();
@@ -245,12 +256,10 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda.", ex));
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -261,15 +270,13 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
-
-
 
 
         // GET: api/Choferes/{choferID}/Chofer_Camion
@@ -401,6 +408,61 @@ namespace WebApi_TransporteSanchez.Controllers
             [Required]
             public string EstadoChofer { get; set; }
         }
+
+
+        // GET: Validación DNI
+        [HttpGet]
+        [Route("api/Choferes/ValidarDNI/{dni}/{id?}")]
+        public IHttpActionResult GetDNIExists(string dni, int? id = null)
+        {
+            try
+            {
+                string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+                using (var db = new DbContext(connectionString))
+                {
+                    var choferConDni = db.Set<CHOFERES>().FirstOrDefault(c => c.DNI == dni);
+
+                    if (choferConDni != null)
+                    {
+                        // Si es edición y el DNI pertenece al mismo chofer, permitirlo
+                        if (id.HasValue && choferConDni.Chofer_ID == id.Value)
+                        {
+                            return Ok(new
+                            {
+                                codigo = "DNI_permitido",
+                                mensaje = "El DNI pertenece al mismo chofer, es válido."
+                            });
+                        }
+
+                        // Si el DNI pertenece a otro chofer, devolver error
+                        return Ok(new
+                        {
+                            codigo = "DNI_registrado",
+                            mensaje = "El DNI ya se encuentra registrado con otro chofer."
+                        });
+                    }
+
+                    // Si no se encuentra el DNI en la base de datos, es válido para alta
+                    return Ok(new
+                    {
+                        codigo = "DNI_no_registrado",
+                        mensaje = "El DNI no se encuentra registrado, es válido."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new
+                {
+                    codigo = "error_verificacion",
+                    mensaje = "Error al verificar el DNI.",
+                    detalles = ex.Message
+                });
+            }
+        }
+
+
 
         // POST: api/Choferes
         public IHttpActionResult Post([FromBody] ChoferDto choferDto)
