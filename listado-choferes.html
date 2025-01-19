@@ -18,6 +18,42 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaChoferes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaChoferes th,
+        #tablaChoferes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaChoferes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+
+        .no-outline:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 1px solid #ced4da !important;
+            /* Mantiene el borde original */
+            background-color: #f8f9fa !important;
+            /* Mantiene el color de fondo original */
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -29,6 +65,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <style>
         .no-outline:focus {
             outline: none;
@@ -281,9 +318,6 @@
                 </nav>
             </header>
 
-
-
-            <!--Comienzo sección de la tabla-->
             <section class="section">
                 <div class="card rounded me-4 ms-4 mt-4">
                     <div class="card-header">
@@ -292,42 +326,57 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador -->
                         <form id="busquedaChoferForm" class="form">
                             <div class="row">
-                                <div class="col-md-3 mb-3">
+                                <!-- Primera columna: Nombre y Apellido -->
+                                <div class="col-md-3 mb-4">
                                     <label for="txtnombre">Nombre</label>
-                                    <input type="text" class="form-control" id="txtnombre" placeholder="Juan">
-                                </div>
-                                <div class="col-md-3 mb-3">
+                                    <input type="text" class="form-control mb-4" id="txtnombre" placeholder="Juan">
                                     <label for="txtapellido">Apellido</label>
                                     <input type="text" class="form-control" id="txtapellido" placeholder="Perez">
                                 </div>
-                                <div class="col-md-3 mb-3">
+
+                                <!-- Segunda columna: DNI y Estado -->
+                                <div class="col-md-3 mb-4">
                                     <label for="txtdni">DNI</label>
-                                    <input type="number" class="form-control" id="txtdni"
-                                        data-parsley-restricted-number="true" placeholder="36456778">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="basicInput">Estado</label>
+                                    <input type="number" class="form-control mb-4" id="txtdni" placeholder="36456778">
+                                    <label>Estado</label>
                                     <div class="form-check">
-                                        <input type="checkbox" value="" class="form-check-input form-check-success"
+                                        <input type="checkbox" class="form-check-input form-check-success"
                                             id="checkestadoactivo">
                                         <label class="form-check-label" for="checkestadoactivo">Activo</label>
                                     </div>
                                     <div class="form-check">
-                                        <input type="checkbox" value="" class="form-check-input form-check-danger"
+                                        <input type="checkbox" class="form-check-input form-check-danger"
                                             id="checkestadoinactivo">
                                         <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
                                     </div>
                                 </div>
+
+                                <!-- Tercera columna: Fecha de Alta -->
+                                <div class="col-md-3 mb-4">
+                                    <label for="fechaRango">Fecha de alta</label>
+                                    <input type="text" class="form-control" id="fechaRango" placeholder="Desde y hasta">
+                                </div>
+
+                                <!-- Cuarta columna: Botón Buscar -->
+                                <div class="col-md-3 mb-3 mt-4">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-light"
+                                        onclick="buscarChoferes()">Buscar</button>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-light mb-4" onclick="buscarChoferes()">Buscar</button>
                         </form>
+
+                        <!-- Tabla -->
 
                         <div class="table-responsive">
                             <table class="table table-striped" id="tablaChoferes">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
+                                        <th>Fecha de Alta</th>
                                         <th>Nombre</th>
                                         <th>Apellido</th>
                                         <th>DNI</th>
@@ -351,7 +400,6 @@
                 </div>
 
             </section>
-            <!--Fin sección de la tabla-->
 
             <!--Footer-->
 
@@ -377,62 +425,99 @@
                     <div class="modal-body mt-2 mb-4 mx-2">
                         <div class="container-fluid">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="estado-column" class="form-label">Estado del chofer</label>
                                         <span id="EstadoActualChofer" readonly></span>
                                     </div>
                                 </div>
+                                <div class="col-md-4 col-12">
+                                    <label for="fecha-column" class="form-label">Fecha de alta</label>
+                                    <span id="FechaAltaChofer" class="badge bg-secondary"></span>
+                                </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre</label>
-                                        <input type="text" id="first-name-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido</label>
-                                        <input type="text" id="last-name-column" class="form-control" readonly />
-                                    </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="dni-column" class="form-label">DNI</label>
-                                        <input type="number" id="dni-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cuil-column" class="form-label">CUIL</label>
-                                        <input type="number" id="cuil-column" class="form-control" readonly />
+                                        <input type="number" id="dni-column" class="form-control no-outline" readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="celphone-column" class="form-label">Teléfono celular</label>
-                                        <input type="number" id="celphone-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone-column" class="form-label">Teléfono particular</label>
-                                        <input type="number" id="phone-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="email-column" class="form-label">Email</label>
-                                        <input type="email" id="email-column" class="form-control" readonly />
+                                        <input type="number" id="celphone-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="province-column" class="form-label">Provincia</label>
-                                        <input type="text" id="province-column" class="form-control" readonly />
+                                        <input type="text" id="province-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="cuil-column" class="form-label">CUIL</label>
+                                        <input type="number" id="cuil-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="phone-column" class="form-label">Teléfono particular</label>
+                                        <input type="number" id="phone-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="local-column" class="form-label">Localidad</label>
-                                        <input type="text" id="local-column" class="form-control" readonly />
+                                        <input type="text" id="local-column" class="form-control no-outline" readonly />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="first-name-column" class="form-label">Nombre</label>
+                                        <input type="text" id="first-name-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="email-column" class="form-label">Email</label>
+                                        <input type="email" id="email-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="street-column" class="form-label">Calle</label>
-                                        <input type="text" id="street-column" class="form-control" readonly />
+                                        <input type="text" id="street-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido</label>
+                                        <input type="text" id="last-name-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="number-column" class="form-label">Altura</label>
-                                        <input type="number" id="number-column" class="form-control" readonly />
+                                        <input type="number" id="number-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
                             </div>
@@ -462,8 +547,6 @@
             </div>
         </div>
 
-
-
     </div>
 
     <!-- Scripts -->
@@ -472,6 +555,9 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -664,8 +750,18 @@
         // Limita la longitud del número a 8 dígitos
         document.getElementById('txtdni').addEventListener('input', function (event) {
 
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
+
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
+            }
+        });
+
+        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
+        $('#txtnombre, #txtapellido, #txtdni, #fechaRango').on('input', function () {
+            if ($(this).val().trim() === '') {
+                buscarChoferes(1);
             }
         });
 
@@ -718,6 +814,34 @@
             });
         }
 
+        // Datepicker con rango de fechas
+        $(document).ready(function () {
+            $('#fechaRango').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Borrar',
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
+
+            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+            });
+
+            $('#fechaRango').on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+            });
+        });
 
 
         var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
@@ -742,6 +866,10 @@
                 var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
                 $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
 
+                // Formatear la fecha de alta
+                const fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+                $('#FechaAltaChofer').text(fechaAltaFormateada);
+
                 obtenerCamionesAsignados(registro.Chofer_ID);
 
                 $('#DetallesChoferModal').modal('show');
@@ -750,6 +878,21 @@
             });
         }
 
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            if (!isoDate) return 'Fecha no disponible';
+
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
 
         // Función para obtener camiones asignados al chofer
         function obtenerCamionesAsignados(choferID) {
@@ -783,17 +926,30 @@
 
         // Función para realizar la búsqueda de choferes
         function buscarChoferes(page = 1) {
-            // Obtener los valores de los campos de búsqueda
             var nombre = $('#txtnombre').val();
             var apellido = $('#txtapellido').val();
             var dni = $('#txtdni').val();
+            var fechaRango = $('#fechaRango').val();
             var estadoActivo = $('#checkestadoactivo').is(':checked');
             var estadoInactivo = $('#checkestadoinactivo').is(':checked');
 
+            let fechaDesde = null;
+            let fechaHasta = null;
+
+            if (fechaRango) {
+                let fechas = fechaRango.split(' - ');
+                if (fechas.length === 2) {
+                    fechaDesde = moment(fechas[0], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 00:00:00.000';
+                    fechaHasta = moment(fechas[1], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 23:59:59.999';
+                }
+            }
+
             var requestData = {
-                nombre: nombre,
-                apellido: apellido,
-                dni: dni,
+                nombre: nombre || null,
+                apellido: apellido || null,
+                dni: dni || null,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
                 estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
                 page: page,
                 pageSize: pageSize
@@ -803,6 +959,8 @@
             if (nombre !== '') requestData.nombre = nombre;
             if (apellido !== '') requestData.apellido = apellido;
             if (dni !== '') requestData.dni = dni;
+            if (fechaDesde !== '') requestData.fechaDesde = fechaDesde;
+            if (fechaHasta !== '') requestData.fechaHasta = fechaHasta;
 
             // Agregar el estadoChofer al objeto de datos solo si se selecciona
             if (estadoActivo || estadoInactivo) {
@@ -823,11 +981,17 @@
                     $('#tablaChoferes tbody').empty();
 
                     if (data.Results.length === 0) {
-                        $('#tablaChoferes tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaChoferes tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (registro) {
+
+                            // Formatear la fecha de alta
+                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+
                             var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
                             var row = `<tr>
+                    <td>${registro.Chofer_ID}</td>
+                    <td>${fechaAltaFormateada}</td>
                     <td>${registro.Nombre}</td>
                     <td>${registro.Apellido}</td>
                     <td>${registro.DNI}</td>
@@ -847,6 +1011,20 @@
                     console.error(error);
                 }
             });
+        }
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
 
         // Evento para mostrar el modal de detalles del chofer
@@ -905,8 +1083,6 @@
             // Ejecutar la búsqueda inicial
             buscarChoferes(currentPage);
         });
-
-
 
 
     </script>

@@ -18,6 +18,33 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaChoferes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaChoferes th,
+        #tablaChoferes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaChoferes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -297,78 +324,69 @@
                                 </div>
                             </div>
 
-
-
                             <h5 class="card-title">
                                 Gestionar choferes
                             </h5>
                         </div>
 
                         <div class="card-body">
-                            <form id="busquedaChoferForm" class="form">
-                                <div class="row">
-                                    <!-- Columna Izquierda -->
-                                    <div class="col-md-6 mb-4">
-                                        <fieldset class="border p-3">
-                                            <div class="col-md-6 mb-4">
-                                                <li class="d-inline-block me-2 mb-1">
+                            <div class="row">
+                                <!-- Columna izquierda - Filtro de búsqueda -->
+                                <div class="col-md-6">
+                                    <fieldset class="border p-4">
+                                        <form id="busquedaChoferForm" class="form">
+                                            <!-- Primera fila -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
                                                     <label for="txtdni">DNI</label>
-                                                </li>
-                                                <input type="number" class="form-control" id="txtdni"
-                                                    data-parsley-restricted-number="true" placeholder="36456778">
-                                            </div>
-                                            <div class="col-md-12 mb-4">
-                                                <li class="d-inline-block me-2 mb-1">
-                                                    <label for="basicInput">Estado</label>
-                                                </li>
-                                                <div class="form-check-label">
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox"
-                                                            class="form-check-input form-check-success"
-                                                            id="checkestadoactivo">
-                                                        <label class="form-check-label"
-                                                            for="checkestadoactivo">Activo</label>
-                                                    </div>
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox"
-                                                            class="form-check-input form-check-danger"
-                                                            id="checkestadoinactivo">
-                                                        <label class="form-check-label"
-                                                            for="checkestadoinactivo">Inactivo</label>
-                                                    </div>
+                                                    <input type="number" class="form-control" id="txtdni"
+                                                        placeholder="36456778">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="fechaRango">Fecha de Alta</label>
+                                                    <input type="text" class="form-control" id="fechaRango"
+                                                        placeholder="Desde y hasta">
                                                 </div>
                                             </div>
-                                            <div class="col-md-12 mb-4">
-                                                <button type="button" class="btn btn-light"
-                                                    onclick="buscarChoferes()">Buscar</button>
-                                            </div>
-                                        </fieldset>
-                                    </div>
-                                    <!-- Columna Derecha -->
-                                    <div class="col-md-6 mb-4">
-                                        <div class="row">
-                                            <div class="col-md-12 mb-4">
-                                                <div class="buttons">
-                                                    <a href="#" class="btn icon icon-left btn-success"
-                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaChofer">
-                                                        <i data-feather="check-circle"></i> Alta
-                                                    </a>
+                                            <!-- Segunda fila -->
+                                            <div class="row mb-3 align-items-center">
+                                                <div class="col-md-6 d-flex align-items-center">
+                                                    <label class="me-3">Estado</label>
+                                                    <div class="form-check me-3">
+                                                        <input type="checkbox" class="form-check-input form-check-success" id="checkestadoactivo">
+                                                        <label class="form-check-label" for="checkestadoactivo">Activo</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input type="checkbox" class="form-check-input form-check-danger" id="checkestadoinactivo">
+                                                        <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6 text-end">
+                                                    <button type="button" class="btn btn-light" onclick="buscarChoferes()">Buscar</button>
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                        </form>
+                                    </fieldset>
                                 </div>
-                            </form>
 
-                            <div class="table-responsive">
+                                <!-- Columna derecha - Botón registrar chofer -->
+                                <div class="col-md-6 text-start">
+                                    <a href="#" class="btn icon icon-left btn-success" data-bs-toggle="modal" data-bs-target="#ModalAltaChofer">
+                                        <i data-feather="check-circle"></i> Registrar chofer
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="table-responsive mt-4">
                                 <table class="table table-striped" id="tablaChoferes">
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
+                                            <th>Fecha de Alta</th>
                                             <th>Nombre</th>
                                             <th>Apellido</th>
                                             <th>DNI</th>
                                             <th>Estado</th>
-                                            <th>Acciones</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -409,7 +427,7 @@
             <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="AltaChoferModallabel">Alta de chofer</h4>
+                        <h4 class="modal-title" id="AltaChoferModallabel">Registrar chofer nuevo</h4>
                         <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                             <i data-feather="x"></i>
                         </button>
@@ -423,24 +441,33 @@
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="first-name-column" class="form-control"
-                                            placeholder="Juan" name="fname-column" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="last-name-column" class="form-control"
-                                            placeholder="Perez" name="lname-column" />
-                                    </div>
-                                    <div class="form-group">
                                         <label for="dni-column" class="form-label">DNI <span class="text-danger">
                                                 *</span></label>
                                         <input type="number" id="dni-column" class="form-control"
-                                            placeholder="DNI sin puntos ni espacios" name="c-column"
+                                            placeholder="DNI sin puntos ni espacios" name="dni-column"
                                             data-parsley-restricted-number="true" />
+                                        <div id="dniError" class="invalid-feedback" style="display: none;"></div>
                                     </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="celphone-column" class="form-label">Teléfono celular <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="number" id="celphone-column" class="form-control" name="cel-column"
+                                            placeholder="Cód. área sin 0 + cel. sin 15" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="province-select" class="form-label">Provincia <span
+                                                class="text-danger"> *</span></label>
+                                        <select id="province-select" class="form-control form-select"
+                                            name="p-column"></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="cuil-column" class="form-label">CUIL <span class="text-danger">
                                                 *</span></label>
@@ -451,48 +478,58 @@
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono
-                                            celular <span class="text-danger"> *</span></label>
-                                        <input type="number" id="celphone-column" class="form-control" name="cel-column"
-                                            placeholder="Cód. área sin 0 + cel. sin 15" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone-floating" class="form-label">Teléfono
-                                            particular</label>
+                                        <label for="phone-floating" class="form-label">Teléfono particular</label>
                                         <input type="number" id="phone-floating" class="form-control" name="ph-floating"
                                             placeholder="Cód. área sin 0 + teléfono" />
                                     </div>
-
-                                    <div class="form-group">
-                                        <label for="email-id-column" class="form-label">Email</label>
-                                        <input type="email" id="email-id-column" class="form-control"
-                                            name="email-id-column" placeholder="minombre@correo.com" />
-                                        <div id="emailError" class="invalid-feedback">Tu email debe incluir @ + el
-                                            dominio de tu correo.
-                                            Ejemplo:
-                                            minombre@gmail.com</div>
-
-                                    </div>
                                 </div>
                                 <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="province-select" class="form-label">Provincia <span
-                                                class="text-danger"> *</span></label>
-                                        <select id="province-select" class="form-control form-select"
-                                            name="p-column"></select>
-                                    </div>
                                     <div class="form-group">
                                         <label for="location-select" class="form-label">Localidad <span
                                                 class="text-danger"> *</span></label>
                                         <select id="location-select" class="form-control form-select" name="l-column"
                                             disabled></select>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="street-column" class="form-label">Calle<span class="text-danger">
+                                        <label for="first-name-column" class="form-label">Nombre <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="first-name-column" class="form-control"
+                                            placeholder="Juan" name="fname-column" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="email-id-column" class="form-label">Email</label>
+                                        <input type="email" id="email-id-column" class="form-control"
+                                            name="email-id-column" placeholder="minombre@correo.com" />
+                                        <div id="emailError" class="invalid-feedback" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="street-column" class="form-label">Calle <span class="text-danger">
                                                 *</span></label>
                                         <input type="text" id="street-column" class="form-control"
                                             placeholder="Av. Faraday" name="s-column" />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido <span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="last-name-column" class="form-control"
+                                            placeholder="Perez" name="lname-column" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="number-column" class="form-label">Altura</label>
                                         <input type="number" id="number-column" class="form-control"
@@ -500,17 +537,16 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="modal-footer">
-                                <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                                    <i class="bx bx-x d-block d-sm-none"></i>
-                                    <span class="d-none d-sm-block">Cancelar</span>
-                                </button>
-                                <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
-                                    <i class="bx bx-check d-block d-sm-none"></i>
-                                    <span class="d-none d-sm-block">Confirmar</span>
-                                </button>
-                            </div>
                         </form>
+
+                    </div>
+                    <div class="modal-footer">
+                        <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                            <span class="d-none d-sm-block">Cancelar</span>
+                        </button>
+                        <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
+                            <span class="d-none d-sm-block">Confirmar</span>
+                        </button>
                     </div>
 
 
@@ -543,86 +579,100 @@
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="FechaAltaChofer" class="form-label">Fecha de alta</label>
-                                        <input type="datetime" id="FechaAltaChofer" class="form-control" readonly />
-                                    </div>
+                                    <label for="fecha-column" class="form-label">Fecha de alta</label>
+                                    <span id="FechaAltaChofer" class="badge bg-secondary"></span>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre<span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="editarNombre" class="form-control" placeholder="Juan"
-                                            name="fname-column" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido<span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="editarApellido" class="form-control" placeholder="Perez"
-                                            name="lname-column" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="dni-column" class="form-label">DNI<span class="text-danger">
+                                        <label for="editarDNI" class="form-label">DNI<span class="text-danger">
                                                 *</span></label>
                                         <input type="number" id="editarDNI" class="form-control"
-                                            placeholder="DNI sin puntos ni espacios" name="c-column"
-                                            data-parsley-restricted-number="true" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="cuil-column" class="form-label">CUIL<span class="text-danger">
-                                                *</span></label>
-                                        <input type="number" id="editarCUIL" class="form-control"
-                                            placeholder="Cuil sin guiones" name="c-column"
-                                            data-parsley-restricted-number="true" />
+                                            placeholder="DNI sin puntos ni espacios" name="dni-column" />
+                                        <div id="editarDniError" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono
-                                            celular<span class="text-danger"> *</span></label>
+                                        <label for="editarcelular" class="form-label">Teléfono celular<span
+                                                class="text-danger"> *</span></label>
                                         <input type="number" id="editarcelular" class="form-control" name="cel-column"
                                             placeholder="Cód. área sin 0 + cel. sin 15" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="phone-floating" class="form-label">Teléfono
-                                            particular</label>
-                                        <input type="number" id="editarTelefono" class="form-control" name="ph-floating"
-                                            placeholder="Cód. área sin 0 + teléfono" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="editaremail" class="form-label">Email</label>
-                                        <input type="email" id="editaremail" class="form-control" name="editaremail"
-                                            placeholder="minombre@correo.com" />
-                                        <div id="emailErrorEdicion" class="invalid-feedback">Tu email debe incluir @.
-                                            Ejemplo:
-                                            minombre@correo.com</div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="editarprovincia" class="form-label">Provincia<span
                                                 class="text-danger"> *</span></label>
-                                        <select id="editarprovincia" class="form-control form-select">
-                                        </select>
+                                        <select id="editarprovincia" class="form-control form-select"></select>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editarCUIL" class="form-label">CUIL<span class="text-danger">
+                                                *</span></label>
+                                        <input type="number" id="editarCUIL" class="form-control"
+                                            placeholder="Cuil sin guiones" name="cuil-column" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editarTelefono" class="form-label">Teléfono particular</label>
+                                        <input type="number" id="editarTelefono" class="form-control"
+                                            placeholder="Cód. área sin 0 + tel." />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="editarlocalidad" class="form-label">Localidad<span
                                                 class="text-danger"> *</span></label>
-                                        <select id="editarlocalidad" class="form-control form-select" disabled>
-                                        </select>
+                                        <select id="editarlocalidad" class="form-control form-select" disabled></select>
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editarNombre" class="form-label">Nombre<span class="text-danger">
+                                                *</span></label>
+                                        <input type="text" id="editarNombre" class="form-control" placeholder="Juan" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editaremail" class="form-label">Email</label>
+                                        <input type="email" id="editaremail" class="form-control"
+                                            placeholder="minombre@correo.com" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="editarcalle" class="form-label">Calle<span class="text-danger">
                                                 *</span></label>
                                         <input type="text" id="editarcalle" class="form-control"
-                                            placeholder="Av. Faraday" name="s-column" />
+                                            placeholder="Av. Faraday" />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="editarApellido" class="form-label">Apellido<span
+                                                class="text-danger"> *</span></label>
+                                        <input type="text" id="editarApellido" class="form-control"
+                                            placeholder="Perez" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="editaraltura" class="form-label">Altura</label>
                                         <input type="text" id="editaraltura" class="form-control"
-                                            placeholder="999 o S/N" name="num-column" />
+                                            placeholder="999 o S/N" />
                                     </div>
                                 </div>
                             </div>
@@ -630,18 +680,16 @@
                     </div>
                     <div class="modal-footer">
                         <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                            <i class="bx bx-x d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Cancelar</span>
                         </button>
                         <button type="submit" class="btn btn-primary ms-1" id="confirmarEdicion">
-                            <i class="bx bx-check d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Confirmar</span>
                         </button>
                     </div>
-
                 </div>
             </div>
         </div>
+
 
         <!-- Modal de confirmación de eliminación -->
         <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
@@ -893,7 +941,10 @@
     <script>
         // Limita la longitud del DNI a 8 dígitos
         document.getElementById('txtdni').addEventListener('input', function (event) {
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
 
+            // Limita la longitud
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
             }
@@ -942,15 +993,39 @@
                     // Verificar si hay resultados
                     if (data.Results.length === 0) {
                         // Mostrar mensaje de que no se encontraron registros
-                        $('#tablaChoferes tbody').html('<tr><td colspan="6" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaChoferes tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         // Iterar sobre los registros recibidos y agregarlos a la tabla
                         data.Results.forEach(function (registro) {
                             var textoBoton = registro.EstadoChofer === 'Activo' ? 'Inactivar' : 'Activar';
-                            var row = '<tr><td>' + registro.Nombre + '</td><td>' + registro.Apellido + '</td><td>' + registro.DNI + '</td><td><span class="badge estado-chofer ' + (registro.EstadoChofer === 'Activo' ? 'bg-success' : 'bg-danger') + '">' + registro.EstadoChofer + '</span></td>';
-                            row += '<td><button class="btn btn-primary" onclick="editarChofer(' + registro.Chofer_ID + ')" data-bs-toggle="modal" data-bs-target="#editarChoferModal"><i class="bi bi-pencil me-2"></i>Editar</button>';
-                            row += '<button class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#confirmarEliminarModal" onclick="setEliminarChoferId(' + registro.Chofer_ID + ')"><i class="bi bi-trash me-2"></i>Eliminar</button>';
-                            row += '<button class="btn btn-light ms-1" data-bs-toggle="modal" data-bs-target="#confirmarActivarDesactivarModal" onclick="setActivarDesactivarChofer(' + registro.Chofer_ID + ', \'' + registro.EstadoChofer + '\')"><i class="bi bi-exclamation-circle me-2"></i>' + textoBoton + '</button></td></tr>';
+
+                            // Formatear la fecha de alta
+                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+
+                            var row = `
+                    <tr>
+                        <td>${registro.Chofer_ID}</td>
+                        <td>${fechaAltaFormateada}</td>
+                        <td>${registro.Nombre}</td>
+                        <td>${registro.Apellido}</td>
+                        <td>${registro.DNI}</td>
+                        <td>
+                            <span class="badge estado-chofer ${registro.EstadoChofer === 'Activo' ? 'bg-success' : 'bg-danger'}">
+                                ${registro.EstadoChofer}
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-primary" onclick="editarChofer(${registro.Chofer_ID})" data-bs-toggle="modal" data-bs-target="#editarChoferModal">
+                                <i class="bi bi-pencil me-2"></i>Editar
+                            </button>
+                            <button class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#confirmarEliminarModal" onclick="setEliminarChoferId(${registro.Chofer_ID})">
+                                <i class="bi bi-trash me-2"></i>Eliminar
+                            </button>
+                            <button class="btn btn-light ms-1" data-bs-toggle="modal" data-bs-target="#confirmarActivarDesactivarModal" onclick="setActivarDesactivarChofer(${registro.Chofer_ID}, '${registro.EstadoChofer}')">
+                                <i class="bi bi-exclamation-circle me-2"></i>${textoBoton}
+                            </button>
+                        </td>
+                    </tr>`;
                             $('#tablaChoferes tbody').append(row);
                         });
                     }
@@ -964,6 +1039,20 @@
                 }
             });
 
+        }
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
 
         // Función para renderizar la paginación
@@ -1022,6 +1111,9 @@
 
         // Limita la longitud del DNI a 8 dígitos
         $('#editarDNI').on('input', function (event) {
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
+
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
             }
@@ -1029,6 +1121,9 @@
 
         // Limita la longitud del CUIL a 11 dígitos
         $('#editarCUIL').on('input', function (event) {
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
+
             if (this.value.length > 11) {
                 this.value = this.value.slice(0, 11);
             }
@@ -1100,7 +1195,7 @@
 
                     // Formatear la fecha de alta y asignarla
                     const fechaAlta = formatFechaUTC3(data.Fecha_Alta); // Formato personalizado
-                    $('#FechaAltaChofer').val(fechaAlta);
+                    $('#FechaAltaChofer').text(fechaAlta);
 
                     // Cargar provincias y localidades
                     cargarProvinciasEdicion(function () {
@@ -1208,7 +1303,7 @@
 
             // Validar que todos los campos requeridos estén completos
             if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
-                $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
+                $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos *').show();
                 $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
             } else {
                 $('#alertaCompletaCamposEdicion').hide(); // Ocultar la alerta si todos los campos están completos
@@ -1323,11 +1418,8 @@
 
     </script>
 
-
-
     <!-- Alta -->
     <script>
-
         // Validación para que los campos de Nombre y Apellido solo permitan letras
         document.getElementById('first-name-column').addEventListener('input', function (event) {
             this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
@@ -1337,57 +1429,75 @@
             this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
         });
 
-        // Limita la longitud del DNI a 8 dígitos
         document.getElementById('dni-column').addEventListener('input', function (event) {
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
+
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
             }
         });
 
-        // Limita la longitud del CUIL a 11 dígitos
         document.getElementById('cuil-column').addEventListener('input', function (event) {
+            // Remueve cualquier caracter que no sea del 1 al 9
+            this.value = this.value.replace(/[^1-9]/g, '');
+
             if (this.value.length > 11) {
                 this.value = this.value.slice(0, 11);
             }
         });
 
-        // Limita la longitud del Telefono a 10 dígitos
+        // Limita la longitud del Teléfono a 10 dígitos
         document.getElementById('celphone-column').addEventListener('input', function (event) {
             if (this.value.length > 10) {
                 this.value = this.value.slice(0, 10);
             }
         });
 
-        // Limita la longitud del Telefono a 10 dígitos
         document.getElementById('phone-floating').addEventListener('input', function (event) {
             if (this.value.length > 10) {
                 this.value = this.value.slice(0, 10);
             }
         });
 
-        // Expresión regular para validar el formato de email
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        // Validación del email al salir del campo y eliminar el mensaje de error si el input está vacío
+        $('#email-id-column').on('blur', function () {
+            validarEmail($(this).val());
+        });
 
         $('#email-id-column').on('input', function () {
-            var email = $(this).val();
-
-            if (email.trim() !== '' && !emailRegex.test(email)) {
-                $('#emailError').css('display', 'block');
-            } else {
-                $('#emailError').css('display', 'none');
+            if ($(this).val().trim() === '') {
+                $('#email-id-column').removeClass('is-invalid');
+                $('#emailError').text('Debe incluir @ y el dominio del correo.').hide();
             }
         });
 
+        function validarEmail(email) {
+            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (email.trim() === '') {
+                $('#email-id-column').removeClass('is-invalid');
+                $('#emailError').hide();
+                return;
+            }
+
+            if (!emailRegex.test(email)) {
+                $('#email-id-column').addClass('is-invalid');
+                $('#emailError').text('Debe incluir @ y el dominio del correo.').show();
+            } else {
+                $('#email-id-column').removeClass('is-invalid');
+                $('#emailError').hide();
+            }
+        }
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
+            toastElement.find('.toast-body').text(mensaje);
+            toastElement.show();
             var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
+            toast.show();
             setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+                toast.hide();
+            }, 5000);
         }
 
         // Cargar las provincias al abrir el modal
@@ -1403,8 +1513,6 @@
             } else {
                 $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
             }
-            // Revalidar campos al cambiar provincia
-            validateRequiredFields();
         });
 
         function cargarProvincias() {
@@ -1419,7 +1527,6 @@
                         select.append('<option value="' + provincia.Prov_ID + '">' + provincia.Nombre_Provincia + '</option>');
                     });
 
-                    // Resetear y deshabilitar el select de localidades, mostrando la opción predeterminada
                     var localidadSelect = $('#location-select');
                     localidadSelect.empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
                 },
@@ -1448,50 +1555,39 @@
             });
         }
 
-        // Función para validar campos requeridos y habilitar el botón de confirmación
+        // Validación de campos completos solo al hacer clic en el botón Confirmar
         function validateRequiredFields() {
             var nombre = $('#first-name-column').val();
             var apellido = $('#last-name-column').val();
             var dni = $('#dni-column').val();
             var cuil = $('#cuil-column').val();
-            var telefonoFijo = $('#phone-floating').val();
             var telefonoCelular = $('#celphone-column').val();
-            var email = $('#email-id-column').val();
             var provinciaId = $('#province-select').val();
             var localidadId = $('#location-select').val();
             var calle = $('#street-column').val();
-            var altura = $('#number-column').val();
 
-            // Verificar que todos los campos requeridos estén completos
             if (!nombre || !apellido || !dni || !cuil || !telefonoCelular || !provinciaId || !localidadId || !calle) {
-                $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show(); // Mostrar el mensaje de alerta
-                $('#confirmarBtn').prop('disabled', true); // Deshabilitar el botón de confirmación
-            } else {
-                $('#alertaCompletaCampos').hide(); // Ocultar el mensaje de alerta si todos los campos están completos
-                // Validar el formato de email si el campo no está vacío
-                if (email && !emailRegex.test(email)) {
-                    $('#emailError').css('display', 'block');
-                    $('#confirmarBtn').prop('disabled', true);
-                } else {
-                    $('#emailError').css('display', 'none');
-                    $('#confirmarBtn').prop('disabled', false); // Habilitar el botón si todos los campos son válidos
-                }
+                $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show();
+                return false;
             }
+
+            $('#alertaCompletaCampos').hide(); // Ocultar el mensaje si todos los campos están completos
+            return true;
         }
 
-        // Validación de campos completos + Alta de Chofer
+        // Ocultar el mensaje de error al empezar a escribir en los campos
+        $('#first-name-column, #last-name-column, #dni-column, #cuil-column, #celphone-column, #province-select, #location-select, #street-column').on('input change', function () {
+            $('#alertaCompletaCampos').hide();
+        });
+
+        // Evento click para confirmar el alta del chofer
         $('#confirmarBtn').on('click', function (event) {
-            event.preventDefault(); // Prevenir el comportamiento predeterminado del botón para que sólo cierre el modal cuando sea un proceso exitoso
+            event.preventDefault();
 
-            // Llamar a la función de validación
-            validateRequiredFields();
-
-            // Verificar si el botón está deshabilitado
-            if ($('#confirmarBtn').prop('disabled')) {
-                return; // Detener la ejecución de la función si el botón está deshabilitado
+            if (!validateRequiredFields()) {
+                return;
             }
 
-            // Obtener los valores ingresados en los campos del formulario
             var nombre = $('#first-name-column').val();
             var apellido = $('#last-name-column').val();
             var dni = $('#dni-column').val();
@@ -1504,13 +1600,9 @@
             var calle = $('#street-column').val();
             var altura = $('#number-column').val();
 
-            // Obtener la fecha y hora actual en formato ISO
             const fechaHoraActual = new Date().toISOString();
-
-            // Obtener el usuario logueado desde localStorage
             const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
 
-            // Crear el objeto con los datos del chofer
             const nuevoChofer = {
                 Nombre: nombre,
                 Apellido: apellido,
@@ -1524,53 +1616,133 @@
                 Calle: calle,
                 AlturaCalle: altura,
                 EstadoChofer: "Activo",
-                Fecha_Alta: fechaHoraActual, // Fecha y hora actual
-                Usu_Alta: usuarioLogueado, // Usuario logueado
+                Fecha_Alta: fechaHoraActual,
+                Usu_Alta: usuarioLogueado,
                 Fecha_Modi: fechaHoraActual,
                 Usu_Modi: usuarioLogueado
-
             };
 
-            // Realizar una solicitud AJAX POST para guardar el nuevo chofer
             $.ajax({
                 url: 'http://localhost:50222/api/Choferes',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(nuevoChofer),
                 success: function (response) {
-                    console.log('Chofer agregado correctamente:', response); // Mensaje en consola
-                    mostrarToastExito('El chofer se dió de alta exitosamente'); // Mostrar el toast con mensaje de éxito
-                    $('#ModalAltaChofer').modal('hide'); // Cerrar el modal solo si la operación es exitosa
-                    // Esperar a que se cargue completamente la página
-                    $(document).ready(function () {
-                        buscarChoferes(); // Llamar a la función de búsqueda de choferes al cargar la página
-                    });
+                    mostrarToastExito('El chofer se dió de alta exitosamente');
+                    $('#ModalAltaChofer').modal('hide');
+                    buscarChoferes();
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error al agregar el chofer:', error); // Mensaje de error en consola
+                    console.error('Error al agregar el chofer:', error);
                 }
             });
         });
 
-        // Cuando se cierra el modal, limpiar los controles del formulario y las validaciones
         $('#ModalAltaChofer').on('hidden.bs.modal', function () {
-            // Resetear el formulario
             $('#FormAltaChofer')[0].reset();
-            // Ocultar el mensaje de alerta
             $('#alertaCompletaCampos').hide();
-            // Limpiar el estado de las validaciones
             $('#emailError').css('display', 'none');
-            // Resetear los selects de provincia y localidad
+            $('#dniError').css('display', 'none');
+            $('#email-id-column').removeClass('is-invalid'); // Elimina la clase de error del email
             $('#province-select').empty();
             $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-            // Habilitar el botón de confirmación
+        });
+
+    </script>
+
+    <!-- Validación DNI en formularios -->
+    <script>
+        // Validación del DNI en los formularios de alta y edición
+        function validarDNI(dniInput, errorContainer, successContainer, button, choferId = null) {
+            var dni = dniInput.val().trim();
+            if (dni === '') {
+                dniInput.removeClass('is-invalid is-valid');
+                errorContainer.hide();
+                successContainer.hide();
+                button.prop('disabled', false);
+                return;
+            }
+
+            // Construir la URL dependiendo de si es edición o alta
+            var url = choferId
+                ? `http://localhost:50222/api/Choferes/ValidarDNI/${dni}/${choferId}`
+                : `http://localhost:50222/api/Choferes/ValidarDNI/${dni}`;
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (response) {
+                    if (response.codigo === 'DNI_registrado') {
+                        dniInput.removeClass('is-valid').addClass('is-invalid');
+                        errorContainer.text(response.mensaje).show();
+                        successContainer.hide();
+                        button.prop('disabled', true);
+                    } else if (response.codigo === 'DNI_permitido' || response.codigo === 'DNI_no_registrado') {
+                        dniInput.removeClass('is-invalid').addClass('is-valid');
+                        errorContainer.hide();
+                        successContainer.text('DNI válido').show();
+                        button.prop('disabled', false);
+                    } else {
+                        dniInput.removeClass('is-valid').addClass('is-invalid');
+                        errorContainer.text('Error desconocido al validar el DNI.').show();
+                        successContainer.hide();
+                        button.prop('disabled', true);
+                    }
+                },
+                error: function (xhr) {
+                    let errorMsg = 'Error al validar el DNI. Intente nuevamente.';
+                    if (xhr.responseJSON && xhr.responseJSON.mensaje) {
+                        errorMsg = xhr.responseJSON.mensaje;
+                    }
+                    dniInput.removeClass('is-valid').addClass('is-invalid');
+                    errorContainer.text(errorMsg).show();
+                    successContainer.hide();
+                    button.prop('disabled', true);
+                }
+            });
+        }
+
+        // Eventos para el formulario de alta
+        $('#dni-column').on('blur', function () {
+            validarDNI($('#dni-column'), $('#dniError'), $('#dniSuccess'), $('#confirmarBtn'));
+        });
+
+        // Eventos para el formulario de edición
+        $('#editarDNI').on('blur', function () {
+            var choferId = $('#confirmarEdicion').attr('Chofer_ID'); // Obtener el ID del chofer en edición
+            validarDNI($('#editarDNI'), $('#editarDniError'), $('#editarDniSuccess'), $('#confirmarEdicion'), choferId);
+        });
+
+        // Limpiar mensajes de error o éxito al modificar el input
+        $('#dni-column, #editarDNI').on('input', function () {
+            $(this).removeClass('is-invalid is-valid');
+            if ($(this).attr('id') === 'dni-column') {
+                $('#dniError').hide();
+                $('#dniSuccess').hide();
+                $('#confirmarBtn').prop('disabled', false);
+            } else {
+                $('#editarDniError').hide();
+                $('#editarDniSuccess').hide();
+                $('#confirmarEdicion').prop('disabled', false);
+            }
+        });
+
+        // Limpiar controles al cerrar el modal de alta
+        $('#ModalAltaChofer').on('hidden.bs.modal', function () {
+            $('#dni-column').val('').removeClass('is-invalid is-valid');
+            $('#dniError').hide();
+            $('#dniSuccess').hide();
             $('#confirmarBtn').prop('disabled', false);
         });
 
-        // Validar campos en tiempo real mientras se completan
-        $('#first-name-column, #last-name-column, #dni-column, #cuil-column, #phone-floating, #celphone-column, #email-id-column, #province-select, #location-select, #street-column').on('input change', function () {
-            validateRequiredFields();
+        // Limpiar controles al cerrar el modal de edición
+        $('#editarChoferModal').on('hidden.bs.modal', function () {
+            $('#editarDNI').val('').removeClass('is-invalid is-valid');
+            $('#editarDniError').hide();
+            $('#editarDniSuccess').hide();
+            $('#confirmarEdicion').prop('disabled', false);
         });
+
     </script>
 
 
