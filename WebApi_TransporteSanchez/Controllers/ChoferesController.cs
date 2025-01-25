@@ -28,6 +28,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
             public string EstadoChofer { get; set; }
+            public DateTime Fecha_Alta { get; set; } 
+            public string Usu_Alta { get; set; }
+            public DateTime Fecha_Modi { get; set; } 
+            public string Usu_Modi { get; set; } 
 
         }
 
@@ -54,8 +58,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         ProvID = c.ProvID,
                         LocID = c.LocID,
                         Calle = c.Calle,
-                        AlturaCalle = c.AlturaCalle,
-                        EstadoChofer = c.EstadoChofer
+                        AlturaCalle = c.AlturaCalle.Trim(),
+                        EstadoChofer = c.EstadoChofer,
+                        Fecha_Alta = c.Fecha_Alta,
+                        Usu_Alta = c.Usu_Alta,
+                        Fecha_Modi = c.Fecha_Modi,
+                        Usu_Modi = c.Usu_Modi
                     }).ToList();
 
                     if (olist == null || !olist.Any())
@@ -125,8 +133,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         ProvID = chofer.ProvID,
                         LocID = chofer.LocID,
                         Calle = chofer.Calle,
-                        AlturaCalle = chofer.AlturaCalle,
-                        EstadoChofer = chofer.EstadoChofer
+                        AlturaCalle = chofer.AlturaCalle.Trim(),
+                        EstadoChofer = chofer.EstadoChofer,
+                        Fecha_Alta = chofer.Fecha_Alta,
+                        Usu_Alta = chofer.Usu_Alta,
+                        Fecha_Modi = chofer.Fecha_Modi,
+                        Usu_Modi = chofer.Usu_Modi
                     };
 
                     return Ok(choferDto); // Retorna 200 con los datos del chofer encontrado
@@ -163,7 +175,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Choferes/Buscar
         [HttpGet]
         [Route("api/Choferes/Buscar")]
-        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, int page = 1, int pageSize = 8)
+        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
         {
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -197,6 +209,17 @@ namespace WebApi_TransporteSanchez.Controllers
                         query = query.Where(c => estados.Contains(c.EstadoChofer));
                     }
 
+                    // Filtrar por fecha de alta
+                    if (fechaDesde.HasValue)
+                    {
+                        query = query.Where(c => c.Fecha_Alta >= fechaDesde.Value);
+                    }
+
+                    if (fechaHasta.HasValue)
+                    {
+                        query = query.Where(c => c.Fecha_Alta <= fechaHasta.Value);
+                    }
+
                     var totalRecords = query.Count();
                     var results = query
                         .OrderBy(c => c.Nombre)
@@ -215,8 +238,12 @@ namespace WebApi_TransporteSanchez.Controllers
                             ProvID = c.ProvID,
                             LocID = c.LocID,
                             Calle = c.Calle,
-                            AlturaCalle = c.AlturaCalle,
-                            EstadoChofer = c.EstadoChofer
+                            AlturaCalle = c.AlturaCalle.Trim(),
+                            EstadoChofer = c.EstadoChofer,
+                            Fecha_Alta = c.Fecha_Alta,
+                            Usu_Alta = c.Usu_Alta,
+                            Fecha_Modi = c.Fecha_Modi,
+                            Usu_Modi = c.Usu_Modi
                         })
                         .ToList();
 
@@ -229,12 +256,10 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda.", ex));
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -245,15 +270,13 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
-
-
 
 
         // GET: api/Choferes/{choferID}/Chofer_Camion
@@ -386,6 +409,61 @@ namespace WebApi_TransporteSanchez.Controllers
             public string EstadoChofer { get; set; }
         }
 
+
+        // GET: Validación DNI
+        [HttpGet]
+        [Route("api/Choferes/ValidarDNI/{dni}/{id?}")]
+        public IHttpActionResult GetDNIExists(string dni, int? id = null)
+        {
+            try
+            {
+                string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+                using (var db = new DbContext(connectionString))
+                {
+                    var choferConDni = db.Set<CHOFERES>().FirstOrDefault(c => c.DNI == dni);
+
+                    if (choferConDni != null)
+                    {
+                        // Si es edición y el DNI pertenece al mismo chofer, permitirlo
+                        if (id.HasValue && choferConDni.Chofer_ID == id.Value)
+                        {
+                            return Ok(new
+                            {
+                                codigo = "DNI_permitido",
+                                mensaje = "El DNI pertenece al mismo chofer, es válido."
+                            });
+                        }
+
+                        // Si el DNI pertenece a otro chofer, devolver error
+                        return Ok(new
+                        {
+                            codigo = "DNI_registrado",
+                            mensaje = "El DNI ya se encuentra registrado con otro chofer."
+                        });
+                    }
+
+                    // Si no se encuentra el DNI en la base de datos, es válido para alta
+                    return Ok(new
+                    {
+                        codigo = "DNI_no_registrado",
+                        mensaje = "El DNI no se encuentra registrado, es válido."
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new
+                {
+                    codigo = "error_verificacion",
+                    mensaje = "Error al verificar el DNI.",
+                    detalles = ex.Message
+                });
+            }
+        }
+
+
+
         // POST: api/Choferes
         public IHttpActionResult Post([FromBody] ChoferDto choferDto)
         {
@@ -425,7 +503,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         LocID = choferDto.LocID,
                         Calle = choferDto.Calle,
                         AlturaCalle = choferDto.AlturaCalle?.Trim(),
-                        EstadoChofer = choferDto.EstadoChofer
+                        EstadoChofer = choferDto.EstadoChofer,
+                        Fecha_Alta = choferDto.Fecha_Alta,
+                        Usu_Alta = choferDto.Usu_Alta,
+                        Fecha_Modi = choferDto.Fecha_Modi,
+                        Usu_Modi = choferDto.Usu_Modi
                     };
 
                     // Agregar la entidad al contexto
@@ -501,7 +583,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 chofer.LocID = choferDto.LocID;
                 chofer.Calle = choferDto.Calle;
                 chofer.AlturaCalle = choferDto.AlturaCalle?.Trim();
-                chofer.EstadoChofer = choferDto.EstadoChofer;
+                chofer.Fecha_Modi = choferDto.Fecha_Modi;
+                chofer.Usu_Modi = choferDto.Usu_Modi;
 
                 // Marcar la entidad como modificada
                 db.Entry(chofer).State = System.Data.Entity.EntityState.Modified;
