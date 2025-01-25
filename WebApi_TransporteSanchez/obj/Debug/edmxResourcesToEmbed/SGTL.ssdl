@@ -50,6 +50,7 @@
     <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
     <Property Name="Fecha_Modi" Type="date" Nullable="false" />
     <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
+    <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
   </EntityType>
   <EntityType Name="CLIENTES">
     <Key>
