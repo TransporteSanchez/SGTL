@@ -24,6 +24,7 @@
           <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
           <Property Name="Fecha_Modi" Type="date" Nullable="false" />
           <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
         </EntityType>
         <EntityType Name="CHOFER_CAMION">
           <Key>
@@ -604,6 +605,7 @@
           <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
           <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CAMIONES" FromRole="CAMIONES" ToRole="CHOFER_CAMION" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="CAMIONES" ToRole="VIAJES" />
         </EntityType>
@@ -1226,6 +1228,7 @@
                 <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
                 <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
                 <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
+                <ScalarProperty Name="Fecha_Eliminar" ColumnName="Fecha_Eliminar" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
