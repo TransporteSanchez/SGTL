@@ -318,6 +318,19 @@
                 </nav>
             </header>
 
+            <!-- Notificación de error -->
+            <div id="toastError"
+                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
+                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
+                <div class="d-flex">
+                    <div id="toastErrorMessage" class="toast-body">
+                        <!-- Mensaje dinámico se inserta acá -->
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+
             <section class="section">
                 <div class="card rounded me-4 ms-4 mt-4">
                     <div class="card-header">
@@ -357,14 +370,23 @@
                                 <!-- Tercera columna: Fecha de Alta -->
                                 <div class="col-md-3 mb-4">
                                     <label for="fechaRango">Fecha de alta</label>
-                                    <input type="text" class="form-control" id="fechaRango" placeholder="Desde y hasta">
+                                    <input type="text" class="form-control mb-4" id="fechaRango"
+                                        placeholder="Desde y hasta">
                                 </div>
 
-                                <!-- Cuarta columna: Botón Buscar -->
-                                <div class="col-md-3 mb-3 mt-4">
-                                    <label>&nbsp;</label>
+                                <!-- Cuarta columna: Buscar -->
+                                <div class="col-md-2 mb-4 mt-4">
                                     <button type="button" class="btn btn-light"
                                         onclick="buscarChoferes()">Buscar</button>
+                                </div>
+
+                                <!-- Quinta columna: Botón Generar Reporte -->
+                                <div class="col-md-1 mb-3 mt-4 text-end">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                        <i class="bi bi-download"></i>
+                                    </button>
                                 </div>
                             </div>
                         </form>
@@ -381,7 +403,7 @@
                                         <th>Apellido</th>
                                         <th>DNI</th>
                                         <th>Estado</th>
-                                        <th></th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -427,30 +449,30 @@
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="estado-column" class="form-label">Estado del chofer</label>
+                                        <h6>Estado del chofer</h6>
                                         <span id="EstadoActualChofer" readonly></span>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
-                                    <label for="fecha-column" class="form-label">Fecha de alta</label>
+                                    <h6>Fecha de alta</h6>
                                     <span id="FechaAltaChofer" class="badge bg-secondary"></span>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 col-12">
+                                <div class="col-md-4 col-12 mt-4">
                                     <div class="form-group">
                                         <label for="dni-column" class="form-label">DNI</label>
                                         <input type="number" id="dni-column" class="form-control no-outline" readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4 col-12">
+                                <div class="col-md-4 col-12 mt-4">
                                     <div class="form-group">
                                         <label for="celphone-column" class="form-label">Teléfono celular</label>
                                         <input type="number" id="celphone-column" class="form-control no-outline"
                                             readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4 col-12">
+                                <div class="col-md-4 col-12 mt-4">
                                     <div class="form-group">
                                         <label for="province-column" class="form-label">Provincia</label>
                                         <input type="text" id="province-column" class="form-control no-outline"
@@ -558,6 +580,23 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Inicializa tooltips en todos los elementos estáticos
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Aplica tooltips a elementos dinámicamente agregados en la tabla
+            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            // Opcional: Ocultar tooltips al salir
+            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+        });
+    </script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -750,8 +789,8 @@
         // Limita la longitud del número a 8 dígitos
         document.getElementById('txtdni').addEventListener('input', function (event) {
 
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
@@ -761,7 +800,7 @@
         // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
         $('#txtnombre, #txtapellido, #txtdni, #fechaRango').on('input', function () {
             if ($(this).val().trim() === '') {
-                buscarChoferes(1);
+                buscarChoferes(currentPage);
             }
         });
 
@@ -859,7 +898,7 @@
                 $('#province-column').val(nombres.Nombre_Provincia);
                 $('#local-column').val(nombres.Nombre_Localidad);
                 $('#street-column').val(registro.Calle);
-                $('#number-column').val(registro.AlturaCalle.trim());
+                $('#number-column').val(registro.AlturaCalle ? registro.AlturaCalle.trim() : '');
                 $('#EstadoActualChofer').text(registro.EstadoChofer);
                 estadoChoferOriginal = registro.EstadoChofer;
 
@@ -997,9 +1036,14 @@
                     <td>${registro.DNI}</td>
                     <td><span class="badge ${estadoStyle}">${registro.EstadoChofer}</span></td>
                     <td>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#DetallesChoferModal" data-choferid="${registro.Chofer_ID}">
-                            <i class="bi bi-info-circle"></i> Más detalles
-                        </button>
+                            <button class="btn btn-primary btn-detalle"
+                                data-choferid="${registro.Chofer_ID}"
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="top" 
+                                title="Más detalles"
+                                onclick="abrirModal('${registro.Chofer_ID}')">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
                     </td>
                 </tr>`;
                             $('#tablaChoferes tbody').append(row);
@@ -1009,6 +1053,22 @@
                 },
                 error: function (xhr, status, error) {
                     console.error(error);
+                }
+            });
+        }
+
+        function abrirModal(choferID) {
+            // Obtener detalles del chofer antes de mostrar el modal
+            $.ajax({
+                url: `http://localhost:50222/api/Choferes/${choferID}`,
+                method: 'GET',
+                success: function (data) {
+                    mostrarDetallesChofer(data);
+                    var modal = new bootstrap.Modal(document.getElementById('DetallesChoferModal'));
+                    modal.show();
+                },
+                error: function (error) {
+                    console.error('Error al obtener los detalles del chofer:', error);
                 }
             });
         }
@@ -1026,24 +1086,6 @@
 
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
-
-        // Evento para mostrar el modal de detalles del chofer
-        $('#DetallesChoferModal').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget);
-            var choferID = button.data('choferid');
-
-            // Obtener detalles del chofer
-            $.ajax({
-                url: `http://localhost:50222/api/Choferes/${choferID}`,
-                method: 'GET',
-                success: function (data) {
-                    mostrarDetallesChofer(data);
-                },
-                error: function (error) {
-                    console.error('Error al obtener los detalles del chofer:', error);
-                }
-            });
-        });
 
         function renderPagination(totalRecords, pageSize, currentPage) {
             const totalPages = Math.ceil(totalRecords / pageSize);
@@ -1087,6 +1129,163 @@
 
     </script>
 
+    <!-- Generar reporte csv -->
+    <script>
+        async function generarReporteCSV() {
+            var dni = $('#txtdni').val() || '';
+            var nombre = $('#txtnombre').val().trim() || '';
+            var apellido = $('#txtapellido').val().trim() || '';
+            var estadoActivo = $('#checkestadoactivo').is(':checked');
+            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+            var fechaDesde = $('#fechaRango').data('start') || null;
+            var fechaHasta = $('#fechaRango').data('end') || null;
+
+            var requestData = {
+                dni: dni,
+                nombre: nombre || null,
+                apellido: apellido || null,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
+                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' :
+                    estadoActivo ? 'Activo' :
+                        estadoInactivo ? 'Inactivo' : '',
+                page: currentPage,
+                pageSize: pageSize
+            };
+
+            try {
+                const response = await $.ajax({
+                    url: 'http://localhost:50222/api/Choferes/Buscar',
+                    type: 'GET',
+                    data: requestData
+                });
+
+                if (response.Results.length === 0) {
+                    mostrarToastError('No se encontraron registros para generar el reporte.');
+                    return;
+                }
+
+                // Obtener nombres de provincia y localidad para cada registro
+                const registrosConProvincias = await Promise.all(response.Results.map(async (registro) => {
+                    registro.Provincia = await obtenerNombreProvincia(registro.ProvID);
+                    registro.Localidad = await obtenerNombreLocalidad(registro.ProvID, registro.LocID);
+                    return registro;
+                }));
+
+                generarCSV(registrosConProvincias);
+            } catch (error) {
+                console.error('Error al generar el reporte:', error);
+                mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
+            }
+        }
+
+        // Función para mostrar un toast de error con mensaje dinámico
+        function mostrarToastError(mensaje) {
+            $('#toastErrorMessage').text(mensaje);
+            const toast = new bootstrap.Toast(document.getElementById('toastError'));
+            toast.show();
+        }
+
+        // Función para obtener el nombre de la provincia usando la API
+        async function obtenerNombreProvincia(provId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}`,
+                    type: 'GET'
+                });
+                return data.Nombre_Provincia || 'Provincia no encontrada';
+            } catch (error) {
+                console.error(`Error obteniendo la provincia con ID ${provId}:`, error);
+                return 'Provincia no encontrada';
+            }
+        }
+
+        // Función para obtener el nombre de la localidad usando la API
+        async function obtenerNombreLocalidad(provId, locId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
+                    type: 'GET'
+                });
+
+                if (Array.isArray(data) && data.length > 0) {
+                    return data[0].Nombre_Localidad;
+                } else {
+                    return 'Localidad no encontrada';
+                }
+            } catch (error) {
+                console.error(`Error obteniendo la localidad con ProvID ${provId} y LocID ${locId}:`, error);
+                return 'Localidad no encontrada';
+            }
+        }
+
+        // Función para generar el CSV con codificación UTF-8 con BOM
+        function generarCSV(data) {
+            // Definir las columnas del CSV con nombres personalizados
+            const headers = [
+                'Chofer_ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
+                'Telefono fijo', 'Telefono celular', 'Email',
+                'Provincia', 'Localidad', 'Calle', 'Altura',
+                'Estado del chofer', 'Fecha de alta',
+                'Usuario de alta', 'Fecha de modificación', 'Usuario de modificación'
+            ];
+
+            let csvContent = headers.join(";") + "\n";
+
+            data.forEach(function (registro) {
+                let row = [
+                    registro.Chofer_ID,
+                    registro.DNI,
+                    registro.CUIL,
+                    registro.Nombre,
+                    registro.Apellido,
+                    registro.TelefonoFijo || '',
+                    registro.TelefonoCelular || '',
+                    registro.Email || '',
+                    registro.Provincia,
+                    registro.Localidad,
+                    registro.Calle || '',
+                    registro.AlturaCalle || '',
+                    registro.EstadoChofer,
+                    formatFechaUTC3(registro.Fecha_Alta),
+                    registro.Usu_Alta || '',
+                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
+                    registro.Usu_Modi || ''
+                ];
+
+                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+            });
+
+            // Agregar el BOM al inicio para asegurar la codificación UTF-8
+            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+
+            let url = URL.createObjectURL(blob);
+
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "Listado_Choferes.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            if (!isoDate) return '';
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+    </script>
 
 </body>
 

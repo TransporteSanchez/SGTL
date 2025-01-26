@@ -56,6 +56,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
 <body>
@@ -353,16 +354,23 @@
                                                 <div class="col-md-6 d-flex align-items-center">
                                                     <label class="me-3">Estado</label>
                                                     <div class="form-check me-3">
-                                                        <input type="checkbox" class="form-check-input form-check-success" id="checkestadoactivo">
-                                                        <label class="form-check-label" for="checkestadoactivo">Activo</label>
+                                                        <input type="checkbox"
+                                                            class="form-check-input form-check-success"
+                                                            id="checkestadoactivo">
+                                                        <label class="form-check-label"
+                                                            for="checkestadoactivo">Activo</label>
                                                     </div>
                                                     <div class="form-check">
-                                                        <input type="checkbox" class="form-check-input form-check-danger" id="checkestadoinactivo">
-                                                        <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
+                                                        <input type="checkbox"
+                                                            class="form-check-input form-check-danger"
+                                                            id="checkestadoinactivo">
+                                                        <label class="form-check-label"
+                                                            for="checkestadoinactivo">Inactivo</label>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6 text-end">
-                                                    <button type="button" class="btn btn-light" onclick="buscarChoferes()">Buscar</button>
+                                                    <button type="button" class="btn btn-light"
+                                                        onclick="buscarChoferes()">Buscar</button>
                                                 </div>
                                             </div>
                                         </form>
@@ -370,40 +378,46 @@
                                 </div>
 
                                 <!-- Columna derecha - Botón registrar chofer -->
-                                <div class="col-md-6 text-start">
-                                    <a href="#" class="btn icon icon-left btn-success" data-bs-toggle="modal" data-bs-target="#ModalAltaChofer">
-                                        <i data-feather="check-circle"></i> Registrar chofer
-                                    </a>
+                                <div class="col-md-6 text-end">
+                                    <button type="button" class="btn btn-success" onclick="abrirModalAltaChofer()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar chofer">
+                                        <i class="bi bi-person"></i>
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                        <i class="bi bi-download"></i>
+                                    </button>
                                 </div>
+                                <div class="table-responsive mt-4">
+                                    <table class="table table-striped" id="tablaChoferes">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Fecha de Alta</th>
+                                                <th>Nombre</th>
+                                                <th>Apellido</th>
+                                                <th>DNI</th>
+                                                <th>Estado</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Paginación -->
+                                <nav>
+                                    <ul class="pagination justify-content-end" id="pagination">
+                                    </ul>
+                                </nav>
+
+
                             </div>
-                            <div class="table-responsive mt-4">
-                                <table class="table table-striped" id="tablaChoferes">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Fecha de Alta</th>
-                                            <th>Nombre</th>
-                                            <th>Apellido</th>
-                                            <th>DNI</th>
-                                            <th>Estado</th>
-                                            <th></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <!-- Paginación -->
-                            <nav>
-                                <ul class="pagination justify-content-end" id="pagination">
-                                </ul>
-                            </nav>
-
-
                         </div>
-                    </div>
                 </section>
             </div>
 
@@ -725,8 +739,7 @@
             <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="confirmarActivarDesactivarLabel">Confirmar cambio de estado
-                        </h5>
+                        <h5 class="modal-title" id="confirmarActivarDesactivarLabel">Confirmar cambio de estado</h5>
                         <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                             <i data-feather="x"></i>
                         </button>
@@ -756,10 +769,40 @@
     <!--Scripts-->
 
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
+
+    <!-- Manejo de tooltips -->
+    <script>
+        $(document).ready(function () {
+            // Inicializa tooltips en todos los elementos estáticos
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Aplica tooltips a elementos dinámicamente agregados en la tabla
+            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+
+            // Manejo específico para tooltips en botones deshabilitados
+            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+        });
+
+    </script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -941,13 +984,49 @@
     <script>
         // Limita la longitud del DNI a 8 dígitos
         document.getElementById('txtdni').addEventListener('input', function (event) {
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             // Limita la longitud
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
             }
+        });
+
+        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
+        $('#txtdni, #fechaRango').on('input', function () {
+            if ($(this).val().trim() === '') {
+                buscarChoferes(currentPage);
+            }
+        });
+
+        // Configuración del datepicker para el rango de fechas
+        $(document).ready(function () {
+            $('#fechaRango').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Borrar',
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
+
+            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+            });
+
+            $('#fechaRango').on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+            });
         });
 
         // Constantes para el paginado
@@ -958,12 +1037,25 @@
         function buscarChoferes(page = 1) {
             // Obtener los valores de los campos de búsqueda
             var dni = $('#txtdni').val();
+            var fechaRango = $('#fechaRango').val();
             var estadoActivo = $('#checkestadoactivo').is(':checked');
             var estadoInactivo = $('#checkestadoinactivo').is(':checked');
 
+            let fechaDesde = null;
+            let fechaHasta = null;
+
+            if (fechaRango) {
+                let fechas = fechaRango.split(' - ');
+                if (fechas.length === 2) {
+                    fechaDesde = moment(fechas[0], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 00:00:00.000';
+                    fechaHasta = moment(fechas[1], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 23:59:59.999';
+                }
+            }
             // Construir el objeto de datos para enviar en la solicitud AJAX
             var requestData = {
                 dni: dni,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
                 estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
                 page: page,
                 pageSize: pageSize
@@ -1014,17 +1106,35 @@
                                 ${registro.EstadoChofer}
                             </span>
                         </td>
-                        <td>
-                            <button class="btn btn-primary" onclick="editarChofer(${registro.Chofer_ID})" data-bs-toggle="modal" data-bs-target="#editarChoferModal">
-                                <i class="bi bi-pencil me-2"></i>Editar
-                            </button>
-                            <button class="btn btn-danger ms-1" data-bs-toggle="modal" data-bs-target="#confirmarEliminarModal" onclick="setEliminarChoferId(${registro.Chofer_ID})">
-                                <i class="bi bi-trash me-2"></i>Eliminar
-                            </button>
-                            <button class="btn btn-light ms-1" data-bs-toggle="modal" data-bs-target="#confirmarActivarDesactivarModal" onclick="setActivarDesactivarChofer(${registro.Chofer_ID}, '${registro.EstadoChofer}')">
-                                <i class="bi bi-exclamation-circle me-2"></i>${textoBoton}
-                            </button>
-                        </td>
+                         <td>
+        <button class="btn btn-primary btn-detalle"
+            data-choferid="${registro.Chofer_ID}"
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top" 
+            title="Editar"
+            onclick="abrirModalEdicion('${registro.Chofer_ID}')">
+            <i class="bi bi-pencil"></i>
+        </button>
+
+        <span data-bs-toggle="tooltip" data-bs-placement="top"
+        title="${registro.EstadoChofer === 'Activo' ? 'No es posible eliminar un chofer activo' : 'Eliminar'}">
+            <button class="btn btn-danger btn-eliminar ms-1 ${registro.EstadoChofer === 'Activo' ? 'disabled' : ''}" 
+                data-choferid="${registro.Chofer_ID}" 
+                onclick="abrirModalEliminar('${registro.Chofer_ID}', '${registro.EstadoChofer}')">
+                <i class="bi bi-trash"></i>
+            </button>
+        </span>
+
+        <button class="btn btn-light btn-activar-inactivar ms-1"
+            data-choferid="${registro.Chofer_ID}"
+            data-estado="${registro.EstadoChofer}"
+            data-bs-toggle="tooltip" 
+            data-bs-placement="top"
+            title="${registro.EstadoChofer === 'Activo' ? 'Inactivar' : 'Activar'}"
+            onclick="abrirModalEstado('${registro.Chofer_ID}')">
+            <i class="bi bi-arrow-repeat"></i>
+        </button>
+                    </td>
                     </tr>`;
                             $('#tablaChoferes tbody').append(row);
                         });
@@ -1111,8 +1221,8 @@
 
         // Limita la longitud del DNI a 8 dígitos
         $('#editarDNI').on('input', function (event) {
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
@@ -1121,8 +1231,8 @@
 
         // Limita la longitud del CUIL a 11 dígitos
         $('#editarCUIL').on('input', function (event) {
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             if (this.value.length > 11) {
                 this.value = this.value.slice(0, 11);
@@ -1165,11 +1275,17 @@
 
         var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
 
-        // Función para cargar los datos del chofer al hacer clic en el botón "Editar"
-        function consultarPorID(event) {
-            var id = $(event.target).closest('tr').data('Chofer_ID');
-            editarChofer(id);
+        // Función para abrir el modal de edición desde un botón
+        function abrirModalEdicion(choferId) {
+            editarChofer(choferId);  // Llamada a la función existente para cargar los datos
+            $('#editarChoferModal').modal('show');
         }
+
+        // Evento de clic para abrir el modal de edición cuando se hace clic en el botón de editar
+        $(document).on('click', '.btn-editar', function () {
+            var choferId = $(this).data('choferid');
+            abrirModalEdicion(choferId);
+        });
 
         // Función para cargar los datos del chofer en el modal de edición
         function editarChofer(id) {
@@ -1420,6 +1536,253 @@
 
     <!-- Alta -->
     <script>
+        $(document).ready(function () {
+            // Selección de los campos requeridos
+            const camposRequeridos = [
+                '#first-name-column',
+                '#last-name-column',
+                '#dni-column',
+                '#cuil-column',
+                '#celphone-column',
+                '#province-select',
+                '#location-select',
+                '#street-column',
+                '#email-id-column'
+            ];
+    
+            // Función para abrir el modal de alta de choferes
+            window.abrirModalAltaChofer = function () {
+                $('#ModalAltaChofer').modal('show');
+                cargarProvincias();
+    
+                // Limpiar posibles mensajes de error o validaciones previas
+                $('#FormAltaChofer')[0].reset();
+                $('#alertaCompletaCampos').hide();
+                $('.invalid-feedback').hide();
+                $('.is-invalid').removeClass('is-invalid');
+            };
+    
+            // Validación para los campos de Nombre y Apellido
+            $('#first-name-column, #last-name-column').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+    
+            // Validación para DNI y CUIL (solo números y longitud específica)
+            $('#dni-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            });
+    
+            $('#cuil-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            });
+    
+            // Validación de teléfono fijo y celular (solo números y longitud específica)
+            $('#celphone-column, #phone-floating').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+            });
+    
+            // Validación del email
+            $('#email-id-column').on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#emailError'),
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    'Debe incluir @ y el dominio del correo.',
+                    100
+                );
+            });
+    
+            $('#email-id-column').on('input', function () {
+                if ($(this).val().trim() === '') {
+                    $('#email-id-column').removeClass('is-invalid');
+                    $('#emailError').hide();
+                }
+            });
+    
+            // Cargar provincias al abrir el modal
+            function cargarProvincias() {
+                $.ajax({
+                    url: 'http://localhost:50222/api/Provincias',
+                    type: 'GET',
+                    success: function (data) {
+                        var select = $('#province-select');
+                        select.empty().append('<option value="">Seleccione una provincia</option>');
+                        data.forEach(function (provincia) {
+                            select.append(`<option value="${provincia.Prov_ID}">${provincia.Nombre_Provincia}</option>`);
+                        });
+    
+                        $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al cargar provincias:', error);
+                    }
+                });
+            }
+    
+            // Cargar localidades según la provincia seleccionada
+            $('#province-select').change(function () {
+                var provinciaId = $(this).val();
+                if (provinciaId) {
+                    cargarLocalidades(provinciaId);
+                } else {
+                    $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                }
+            });
+    
+            function cargarLocalidades(provinciaId) {
+                $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provinciaId}/Localidades`,
+                    type: 'GET',
+                    success: function (data) {
+                        var select = $('#location-select');
+                        select.empty().append('<option value="">Seleccione una localidad</option>');
+                        data.forEach(function (localidad) {
+                            select.append(`<option value="${localidad.Loc_ID}">${localidad.Nombre_Localidad}</option>`);
+                        });
+                        select.prop('disabled', false);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al cargar localidades:', error);
+                    }
+                });
+            }
+    
+            // Función para validar campos requeridos
+            function validarCamposRequeridos() {
+                let camposIncompletos = false;
+                camposRequeridos.forEach(function (campo) {
+                    const input = $(campo);
+                    if (input.val().trim() === '') {
+                        input.addClass('is-invalid');
+                        camposIncompletos = true;
+                    } else {
+                        input.removeClass('is-invalid');
+                    }
+                });
+    
+                if (camposIncompletos) {
+                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                } else {
+                    $('#alertaCompletaCampos').hide();
+                }
+    
+                return !camposIncompletos;
+            }
+    
+            // Función para validar un campo individual
+            function validarCampoIndividual(input) {
+                if (input.val().trim() === '') {
+                    input.addClass('is-invalid');
+                } else {
+                    input.removeClass('is-invalid');
+                    input.trigger('blur');
+                }
+            }
+    
+            // Función genérica para validar campos
+            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
+                var valor = input.val().trim().slice(0, maxLength);
+                input.val(valor);
+    
+                if (valor === '') {
+                    input.removeClass('is-invalid is-valid');
+                    errorContainer.hide();
+                    return;
+                }
+    
+                if (!regex.test(valor)) {
+                    input.addClass('is-invalid');
+                    errorContainer.text(mensajeError).show();
+                } else {
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    errorContainer.hide();
+                }
+            }
+    
+            // Limpiar validaciones al cerrar el modal
+            $('#ModalAltaChofer').on('hidden.bs.modal', function () {
+                camposRequeridos.forEach(function (campo) {
+                    $(campo).val('').removeClass('is-invalid is-valid');
+                });
+                $('.invalid-feedback').hide();
+                $('#alertaCompletaCampos').hide();
+            });
+    
+            // Evento al hacer clic en el botón "Confirmar"
+            $('#confirmarBtn').on('click', function (event) {
+                event.preventDefault();
+                let camposValidos = true;
+    
+                camposRequeridos.forEach(function (campo) {
+                    const input = $(campo);
+                    validarCampoIndividual(input);
+                    if (input.hasClass('is-invalid')) {
+                        camposValidos = false;
+                    }
+                });
+    
+                if (camposValidos) {
+                    registrarChofer();
+                } else {
+                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                }
+            });
+    
+            // Función para registrar el chofer
+            function registrarChofer() {
+                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+                const fechaHoraActual = new Date().toISOString();
+    
+                const nuevoChofer = {
+                    Nombre: $('#first-name-column').val().trim(),
+                    Apellido: $('#last-name-column').val().trim(),
+                    DNI: $('#dni-column').val().trim(),
+                    CUIL: $('#cuil-column').val().trim(),
+                    TelefonoFijo: $('#phone-floating').val().trim(),
+                    TelefonoCelular: $('#celphone-column').val().trim(),
+                    Email: $('#email-id-column').val().trim(),
+                    ProvID: $('#province-select').val(),
+                    LocID: $('#location-select').val(),
+                    Calle: $('#street-column').val().trim(),
+                    AlturaCalle: $('#number-column').val().trim(),
+                    EstadoChofer: "Activo",
+                    Fecha_Alta: fechaHoraActual,
+                    Usu_Alta: usuarioLogueado,
+                    Fecha_Modi: fechaHoraActual,
+                    Usu_Modi: usuarioLogueado
+                };
+    
+                $.ajax({
+                    url: 'http://localhost:50222/api/Choferes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(nuevoChofer),
+                    success: function (response) {
+                        mostrarToastExito('El chofer se registró exitosamente');
+                        $('#ModalAltaChofer').modal('hide');
+                        buscarChoferes();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al agregar el chofer:', error);
+                    }
+                });
+            }
+    
+            function mostrarToastExito(mensaje) {
+                var toastElement = $('#alert-success');
+                toastElement.find('.toast-body').text(mensaje);
+                toastElement.show();
+                var toast = new bootstrap.Toast(toastElement[0]);
+                toast.show();
+                setTimeout(function () {
+                    toast.hide();
+                }, 5000);
+            }
+        });
+    </script>
+    
+   <!--  <script>
+
         // Validación para que los campos de Nombre y Apellido solo permitan letras
         document.getElementById('first-name-column').addEventListener('input', function (event) {
             this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
@@ -1430,8 +1793,8 @@
         });
 
         document.getElementById('dni-column').addEventListener('input', function (event) {
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
@@ -1439,8 +1802,8 @@
         });
 
         document.getElementById('cuil-column').addEventListener('input', function (event) {
-            // Remueve cualquier caracter que no sea del 1 al 9
-            this.value = this.value.replace(/[^1-9]/g, '');
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
 
             if (this.value.length > 11) {
                 this.value = this.value.slice(0, 11);
@@ -1500,20 +1863,35 @@
             }, 5000);
         }
 
-        // Cargar las provincias al abrir el modal
-        $('#ModalAltaChofer').on('show.bs.modal', function () {
-            cargarProvincias();
-        });
+        function abrirModalAltaChofer() {
 
-        // Cargar las localidades cuando se selecciona una provincia
-        $('#province-select').change(function () {
-            var provinciaId = $(this).val();
-            if (provinciaId) {
-                cargarLocalidades(provinciaId);
-            } else {
-                $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-            }
-        });
+            // Cargar las provincias al abrir el modal
+            $('#ModalAltaChofer').on('show.bs.modal', function () {
+                cargarProvincias();
+            });
+
+            $('#ModalAltaChofer').modal('show');
+
+            // Cargar las localidades cuando se selecciona una provincia
+            $('#province-select').change(function () {
+                var provinciaId = $(this).val();
+                if (provinciaId) {
+                    cargarLocalidades(provinciaId);
+                } else {
+                    $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                }
+            });
+
+            // Limpiar posibles mensajes de error o validaciones previas
+            $('#FormAltaChofer')[0].reset();
+            $('#alertaCompletaCampos').hide();
+            $('#emailError').css('display', 'none');
+            $('#dniError').css('display', 'none');
+            $('#email-id-column').removeClass('is-invalid');
+            $('#province-select').empty();
+            $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+
+        }
 
         function cargarProvincias() {
             $.ajax({
@@ -1628,7 +2006,7 @@
                 contentType: 'application/json',
                 data: JSON.stringify(nuevoChofer),
                 success: function (response) {
-                    mostrarToastExito('El chofer se dió de alta exitosamente');
+                    mostrarToastExito('El chofer se registró exitosamente');
                     $('#ModalAltaChofer').modal('hide');
                     buscarChoferes();
                 },
@@ -1648,7 +2026,7 @@
             $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
         });
 
-    </script>
+    </script> -->
 
     <!-- Validación DNI en formularios -->
     <script>
@@ -1749,43 +2127,52 @@
     <!--Eliminar-->
     <script>
 
+        // Variable global para almacenar el ID del chofer a eliminar
+        var choferIdAEliminar;
+
+        // Función para abrir el modal de eliminación y establecer el ID del chofer
+        function abrirModalEliminar(choferId, estadoChofer) {
+            if (estadoChofer === 'Activo') {
+                return; // No abrir el modal si el chofer está activo
+            }
+            choferIdAEliminar = choferId;
+            $('#confirmarEliminarModal').modal('show');
+        }
+
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
+            toastElement.find('.toast-body').text(mensaje);
+            toastElement.show();
 
             var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
+            toast.show();
 
             setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+                toast.hide();
+            }, 5000);
         }
 
-        var choferIdAEliminar;
-
-        // Función para establecer el ID del camión a eliminar
-        function setEliminarChoferId(id) {
-            choferIdAEliminar = id;
-        }
-
-        // Función para confirmar la eliminación del camión
+        // Función para confirmar la eliminación del chofer
         function confirmarEliminarChofer() {
             if (choferIdAEliminar) {
+                var usuarioLogueado = localStorage.getItem('username') || "Desconocido"; // Si no se encuentra, usar "Desconocido"
+
                 $.ajax({
-                    url: 'http://localhost:50222/api/Choferes/' + choferIdAEliminar,
-                    type: 'DELETE',
+                    url: 'http://localhost:50222/api/Choferes/Eliminar/' + choferIdAEliminar,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        Usu_Modi: usuarioLogueado
+                    }),
                     success: function (response) {
-                        console.log('Chofer eliminado correctamente:', response);
-                        mostrarToastExito('El chofer se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
+                        console.log('Chofer marcado como eliminado:', response);
+                        mostrarToastExito('El chofer se eliminó exitosamente.');
                         $('#confirmarEliminarModal').modal('hide');
-                        // Recargar o actualizar la tabla después de la eliminación
-                        // Puede que necesites volver a cargar la tabla con una nueva solicitud AJAX
-                        buscarChoferes();
+                        buscarChoferes(); // Recargar o actualizar la tabla después de la eliminación
                     },
                     error: function (xhr, status, error) {
-                        console.error(error);
+                        console.error('Error al eliminar el chofer:', xhr.responseText || error);
                     }
                 });
             }
@@ -1796,67 +2183,216 @@
     <!--Activar/Desactivar chofer-->
     <script>
 
-        // Función para mostrar el toast de éxito con mensaje dinámico
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
+        // Función para abrir el modal de activación/inactivación desde el botón
+        $(document).on('click', '.btn-activar-inactivar', function () {
+            var choferId = $(this).data('choferid');
+            var estadoActual = $(this).data('estado').trim(); // Obtener estado actual del chofer
 
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
+            // Determinar el nuevo estado (opuesto al actual)
+            var nuevoEstado = (estadoActual === 'Activo') ? 'Inactivo' : 'Activo';
 
-            setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
-        }
+            // Guardar el ID y el nuevo estado globalmente para su uso posterior
+            choferIdACambiarEstado = choferId;
+            estadoChoferNuevo = nuevoEstado;
 
-        var choferIdACambiarEstado;
-        var estadoActualChofer;
+            // Mostrar mensaje de confirmación con el nuevo estado
+            var mensaje = `¿Estás seguro de que deseas cambiar el estado del chofer a <strong>${nuevoEstado}</strong>?`;
+            $('#confirmarActivarDesactivarBody').html(mensaje);
 
-        // Función para establecer el ID del chofer y el estado actual
-        function setActivarDesactivarChofer(id, estadoActual) {
-            choferIdACambiarEstado = id;
-            estadoActualChofer = estadoActual;
-
-            var nuevoEstado = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
-            var mensaje = '¿Estás seguro de que deseas cambiar el estado de este chofer a ' + nuevoEstado + '?';
-
-            $('#confirmarActivarDesactivarBody').text(mensaje);
-        }
+            // Mostrar el modal de confirmación
+            $('#confirmarActivarDesactivarModal').modal('show');
+        });
 
         // Función para confirmar el cambio de estado del chofer
         function confirmarActivarDesactivarChofer() {
-            if (choferIdACambiarEstado) {
-                var nuevoEstado = estadoActualChofer === 'Activo' ? 'Inactivo' : 'Activo';
+            if (!choferIdACambiarEstado) {
+                console.error('ID del chofer no encontrado');
+                return;
+            }
 
-                // Realizar una solicitud PUT para actualizar solo el campo EstadoChofer
-                $.ajax({
-                    url: 'http://localhost:50222/api/Choferes/EstadoChofer/' + choferIdACambiarEstado,
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ EstadoChofer: nuevoEstado }),
-                    success: function (response) {
-                        $('#confirmarActivarDesactivarModal').modal('hide');
-                        // Actualizar solo el campo EstadoChofer en la fila correspondiente
-                        $('#tablaChoferes tbody tr[data-Chofer_ID="' + choferIdACambiarEstado + '"] .estado-chofer').text(nuevoEstado); // Actualizar el texto del estado
-                        // Alternar clases de color (opcional)
-                        $('#tablaChoferes tbody tr[data-Chofer_ID="' + choferIdACambiarEstado + '"] .estado-chofer').toggleClass('bg-success bg-danger');
-                        console.log('Estado del chofer actualizado correctamente:', response);
-                        mostrarToastExito('El cambio de estado del chofer se realizó exitosamente');
-                        // Mostrar el checkbox correspondiente según el nuevo estado
-                        $('#checkestadoactivo').prop('checked', true);
+            var datosActualizacion = {
+                EstadoChofer: estadoChoferNuevo // Nuevo estado a enviar a la API
+            };
 
-                        // Llamar a la función buscarChoferes para actualizar la lista de choferes después de cambiar el estado
-                        buscarChoferes();
-                    },
-                    error: function (xhr, status, error) {
-                        // Manejar errores de la solicitud
-                        console.error('Error al actualizar el estado del chofer:', error);
-                    }
+            $.ajax({
+                url: `http://localhost:50222/api/Choferes/EstadoChofer/${choferIdACambiarEstado}`,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(datosActualizacion),
+                success: function () {
+                    $('#confirmarActivarDesactivarModal').modal('hide');
+
+                    // Actualizar la fila de la tabla con el nuevo estado
+                    var filaChofer = $(`#tablaChoferes tbody tr[data-choferid='${choferIdACambiarEstado}']`);
+                    filaChofer.find('.estado-chofer').text(estadoChoferNuevo);
+                    filaChofer.find('.estado-chofer').removeClass('bg-success bg-danger')
+                        .addClass(estadoChoferNuevo === 'Activo' ? 'bg-success' : 'bg-danger');
+
+                    // Actualizar el tooltip del botón con el nuevo estado
+                    var boton = $(`button[data-choferid='${choferIdACambiarEstado}']`);
+                    boton.data('estado', estadoChoferNuevo);
+                    boton.attr('title', estadoChoferNuevo === 'Activo' ? 'Inactivar' : 'Activar')
+                        .tooltip('dispose')  // Destruir el tooltip actual
+                        .tooltip();  // Volver a inicializar con el nuevo título
+
+                    mostrarToastExito(`El chofer ha sido cambiado a estado ${estadoChoferNuevo}.`);
+
+                    // Refrescar la lista de choferes si es necesario
+                    buscarChoferes();
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al actualizar el estado del chofer:', error);
+                    alert('Error al cambiar el estado del chofer. Intenta nuevamente.');
+                }
+            });
+        }
+
+    </script>
+
+    <!-- Generar reporte csv -->
+    <script>
+        async function generarReporteCSV() {
+            var dni = $('#txtdni').val() || '';
+            var estadoActivo = $('#checkestadoactivo').is(':checked');
+            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+            var fechaDesde = $('#fechaRango').data('start') || null;
+            var fechaHasta = $('#fechaRango').data('end') || null;
+
+            var requestData = {
+                dni: dni,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
+                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' :
+                    estadoActivo ? 'Activo' :
+                        estadoInactivo ? 'Inactivo' : '',
+                page: currentPage,
+                pageSize: pageSize
+            };
+
+            try {
+                const response = await $.ajax({
+                    url: 'http://localhost:50222/api/Choferes/Buscar',
+                    type: 'GET',
+                    data: requestData
                 });
+
+                if (response.Results.length === 0) {
+                    alert('No se encontraron registros para generar el reporte.');
+                    return;
+                }
+
+                // Obtener nombres de provincia y localidad para cada registro
+                const registrosConProvincias = await Promise.all(response.Results.map(async (registro) => {
+                    registro.Provincia = await obtenerNombreProvincia(registro.ProvID);
+                    registro.Localidad = await obtenerNombreLocalidad(registro.ProvID, registro.LocID);
+                    return registro;
+                }));
+
+                generarCSV(registrosConProvincias);
+            } catch (error) {
+                console.error('Error al generar el reporte:', error);
+                alert('Error al generar el reporte. Inténtelo de nuevo más tarde.');
             }
         }
 
+        // Función para obtener el nombre de la provincia usando la API
+        async function obtenerNombreProvincia(provId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}`,
+                    type: 'GET'
+                });
+                return data.Nombre_Provincia || 'Provincia no encontrada';
+            } catch (error) {
+                console.error(`Error obteniendo la provincia con ID ${provId}:`, error);
+                return 'Provincia no encontrada';
+            }
+        }
+
+        // Función para obtener el nombre de la localidad usando la API
+        async function obtenerNombreLocalidad(provId, locId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
+                    type: 'GET'
+                });
+
+                if (Array.isArray(data) && data.length > 0) {
+                    return data[0].Nombre_Localidad;
+                } else {
+                    return 'Localidad no encontrada';
+                }
+            } catch (error) {
+                console.error(`Error obteniendo la localidad con ProvID ${provId} y LocID ${locId}:`, error);
+                return 'Localidad no encontrada';
+            }
+        }
+
+        // Función para generar el CSV con codificación UTF-8 con BOM
+        function generarCSV(data) {
+            // Definir las columnas del CSV con nombres personalizados
+            const headers = [
+                'Chofer_ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
+                'Telefono fijo', 'Telefono celular', 'Email',
+                'Provincia', 'Localidad', 'Calle', 'Altura',
+                'Estado del chofer', 'Fecha de alta',
+                'Usuario de alta', 'Fecha de modificación', 'Usuario de modificación'
+            ];
+
+            let csvContent = headers.join(";") + "\n";
+
+            data.forEach(function (registro) {
+                let row = [
+                    registro.Chofer_ID,
+                    registro.DNI,
+                    registro.CUIL,
+                    registro.Nombre,
+                    registro.Apellido,
+                    registro.TelefonoFijo || '',
+                    registro.TelefonoCelular || '',
+                    registro.Email || '',
+                    registro.Provincia,
+                    registro.Localidad,
+                    registro.Calle || '',
+                    registro.AlturaCalle || '',
+                    registro.EstadoChofer,
+                    formatFechaUTC3(registro.Fecha_Alta),
+                    registro.Usu_Alta || '',
+                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
+                    registro.Usu_Modi || ''
+                ];
+
+                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+            });
+
+            // Agregar el BOM al inicio para asegurar la codificación UTF-8
+            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+
+            let url = URL.createObjectURL(blob);
+
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "Listado_Choferes.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            if (!isoDate) return '';
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
 
     </script>
 
