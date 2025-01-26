@@ -381,7 +381,8 @@
                                 <div class="col-md-6 text-end">
                                     <button type="button" class="btn btn-success" onclick="abrirModalAltaChofer()"
                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar chofer">
-                                        <i class="bi bi-person-plus"></i>
+                                        <i class="bi bi-person"></i>
+                                        <i class="bi bi-plus"></i>
                                     </button>
                                     <label>&nbsp;</label>
                                     <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
@@ -768,7 +769,6 @@
     <!--Scripts-->
 
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
@@ -996,7 +996,7 @@
         // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
         $('#txtdni, #fechaRango').on('input', function () {
             if ($(this).val().trim() === '') {
-                buscarChoferes(1);
+                buscarChoferes(currentPage);
             }
         });
 
@@ -1536,6 +1536,252 @@
 
     <!-- Alta -->
     <script>
+        $(document).ready(function () {
+            // Selección de los campos requeridos
+            const camposRequeridos = [
+                '#first-name-column',
+                '#last-name-column',
+                '#dni-column',
+                '#cuil-column',
+                '#celphone-column',
+                '#province-select',
+                '#location-select',
+                '#street-column',
+                '#email-id-column'
+            ];
+    
+            // Función para abrir el modal de alta de choferes
+            window.abrirModalAltaChofer = function () {
+                $('#ModalAltaChofer').modal('show');
+                cargarProvincias();
+    
+                // Limpiar posibles mensajes de error o validaciones previas
+                $('#FormAltaChofer')[0].reset();
+                $('#alertaCompletaCampos').hide();
+                $('.invalid-feedback').hide();
+                $('.is-invalid').removeClass('is-invalid');
+            };
+    
+            // Validación para los campos de Nombre y Apellido
+            $('#first-name-column, #last-name-column').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+    
+            // Validación para DNI y CUIL (solo números y longitud específica)
+            $('#dni-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            });
+    
+            $('#cuil-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            });
+    
+            // Validación de teléfono fijo y celular (solo números y longitud específica)
+            $('#celphone-column, #phone-floating').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+            });
+    
+            // Validación del email
+            $('#email-id-column').on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#emailError'),
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    'Debe incluir @ y el dominio del correo.',
+                    100
+                );
+            });
+    
+            $('#email-id-column').on('input', function () {
+                if ($(this).val().trim() === '') {
+                    $('#email-id-column').removeClass('is-invalid');
+                    $('#emailError').hide();
+                }
+            });
+    
+            // Cargar provincias al abrir el modal
+            function cargarProvincias() {
+                $.ajax({
+                    url: 'http://localhost:50222/api/Provincias',
+                    type: 'GET',
+                    success: function (data) {
+                        var select = $('#province-select');
+                        select.empty().append('<option value="">Seleccione una provincia</option>');
+                        data.forEach(function (provincia) {
+                            select.append(`<option value="${provincia.Prov_ID}">${provincia.Nombre_Provincia}</option>`);
+                        });
+    
+                        $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al cargar provincias:', error);
+                    }
+                });
+            }
+    
+            // Cargar localidades según la provincia seleccionada
+            $('#province-select').change(function () {
+                var provinciaId = $(this).val();
+                if (provinciaId) {
+                    cargarLocalidades(provinciaId);
+                } else {
+                    $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                }
+            });
+    
+            function cargarLocalidades(provinciaId) {
+                $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provinciaId}/Localidades`,
+                    type: 'GET',
+                    success: function (data) {
+                        var select = $('#location-select');
+                        select.empty().append('<option value="">Seleccione una localidad</option>');
+                        data.forEach(function (localidad) {
+                            select.append(`<option value="${localidad.Loc_ID}">${localidad.Nombre_Localidad}</option>`);
+                        });
+                        select.prop('disabled', false);
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al cargar localidades:', error);
+                    }
+                });
+            }
+    
+            // Función para validar campos requeridos
+            function validarCamposRequeridos() {
+                let camposIncompletos = false;
+                camposRequeridos.forEach(function (campo) {
+                    const input = $(campo);
+                    if (input.val().trim() === '') {
+                        input.addClass('is-invalid');
+                        camposIncompletos = true;
+                    } else {
+                        input.removeClass('is-invalid');
+                    }
+                });
+    
+                if (camposIncompletos) {
+                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                } else {
+                    $('#alertaCompletaCampos').hide();
+                }
+    
+                return !camposIncompletos;
+            }
+    
+            // Función para validar un campo individual
+            function validarCampoIndividual(input) {
+                if (input.val().trim() === '') {
+                    input.addClass('is-invalid');
+                } else {
+                    input.removeClass('is-invalid');
+                    input.trigger('blur');
+                }
+            }
+    
+            // Función genérica para validar campos
+            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
+                var valor = input.val().trim().slice(0, maxLength);
+                input.val(valor);
+    
+                if (valor === '') {
+                    input.removeClass('is-invalid is-valid');
+                    errorContainer.hide();
+                    return;
+                }
+    
+                if (!regex.test(valor)) {
+                    input.addClass('is-invalid');
+                    errorContainer.text(mensajeError).show();
+                } else {
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    errorContainer.hide();
+                }
+            }
+    
+            // Limpiar validaciones al cerrar el modal
+            $('#ModalAltaChofer').on('hidden.bs.modal', function () {
+                camposRequeridos.forEach(function (campo) {
+                    $(campo).val('').removeClass('is-invalid is-valid');
+                });
+                $('.invalid-feedback').hide();
+                $('#alertaCompletaCampos').hide();
+            });
+    
+            // Evento al hacer clic en el botón "Confirmar"
+            $('#confirmarBtn').on('click', function (event) {
+                event.preventDefault();
+                let camposValidos = true;
+    
+                camposRequeridos.forEach(function (campo) {
+                    const input = $(campo);
+                    validarCampoIndividual(input);
+                    if (input.hasClass('is-invalid')) {
+                        camposValidos = false;
+                    }
+                });
+    
+                if (camposValidos) {
+                    registrarChofer();
+                } else {
+                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                }
+            });
+    
+            // Función para registrar el chofer
+            function registrarChofer() {
+                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+                const fechaHoraActual = new Date().toISOString();
+    
+                const nuevoChofer = {
+                    Nombre: $('#first-name-column').val().trim(),
+                    Apellido: $('#last-name-column').val().trim(),
+                    DNI: $('#dni-column').val().trim(),
+                    CUIL: $('#cuil-column').val().trim(),
+                    TelefonoFijo: $('#phone-floating').val().trim(),
+                    TelefonoCelular: $('#celphone-column').val().trim(),
+                    Email: $('#email-id-column').val().trim(),
+                    ProvID: $('#province-select').val(),
+                    LocID: $('#location-select').val(),
+                    Calle: $('#street-column').val().trim(),
+                    AlturaCalle: $('#number-column').val().trim(),
+                    EstadoChofer: "Activo",
+                    Fecha_Alta: fechaHoraActual,
+                    Usu_Alta: usuarioLogueado,
+                    Fecha_Modi: fechaHoraActual,
+                    Usu_Modi: usuarioLogueado
+                };
+    
+                $.ajax({
+                    url: 'http://localhost:50222/api/Choferes',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(nuevoChofer),
+                    success: function (response) {
+                        mostrarToastExito('El chofer se registró exitosamente');
+                        $('#ModalAltaChofer').modal('hide');
+                        buscarChoferes();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al agregar el chofer:', error);
+                    }
+                });
+            }
+    
+            function mostrarToastExito(mensaje) {
+                var toastElement = $('#alert-success');
+                toastElement.find('.toast-body').text(mensaje);
+                toastElement.show();
+                var toast = new bootstrap.Toast(toastElement[0]);
+                toast.show();
+                setTimeout(function () {
+                    toast.hide();
+                }, 5000);
+            }
+        });
+    </script>
+    
+   <!--  <script>
 
         // Validación para que los campos de Nombre y Apellido solo permitan letras
         document.getElementById('first-name-column').addEventListener('input', function (event) {
@@ -1780,7 +2026,7 @@
             $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
         });
 
-    </script>
+    </script> -->
 
     <!-- Validación DNI en formularios -->
     <script>
@@ -2149,7 +2395,6 @@
         }
 
     </script>
-
 
 </body>
 

@@ -18,6 +18,47 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
+
+        #tablaCamiones tbody tr td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaCamiones {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaCamiones th,
+        #tablaCamiones td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaCamiones th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+
+        .no-outline:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 1px solid #ced4da !important;
+            /* Mantiene el borde original */
+            background-color: #f8f9fa !important;
+            /* Mantiene el color de fondo original */
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -29,6 +70,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
 <body>
@@ -273,6 +315,19 @@
                 </nav>
             </header>
 
+            <!-- Notificación de error -->
+            <div id="toastError"
+                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
+                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
+                <div class="d-flex">
+                    <div id="toastErrorMessage" class="toast-body">
+                        <!-- Mensaje dinámico se inserta acá -->
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
+
             <div class="page-heading">
 
                 <!--Comienzo sección de la tabla-->
@@ -286,33 +341,52 @@
                         <div class="card-body">
                             <form id="busquedaCamionForm" class="form">
                                 <div class="row">
-                                    <div class="col-md-3 mb-3">
-                                        <li class="d-inline-block me-2 mb-1">
-                                            <label for="dominioinput">Dominio</label>
-                                        </li>
+                                    <!-- Campo de dominio -->
+                                    <div class="col-md-3 mb-4">
+                                        <label for="dominioinput">Dominio</label>
                                         <input type="text" class="form-control" id="dominioinput"
                                             placeholder="ABC123 o AB123CD">
                                     </div>
+
+                                    <!-- Campo de fecha de alta -->
+                                    <div class="col-md-3 mb-4">
+                                        <label for="fechaRangoCamion">Fecha de alta</label>
+                                        <input type="text" class="form-control" id="fechaRangoCamion"
+                                            placeholder="Desde y hasta">
+                                    </div>
+
+                                    <div class="col-md-3 mb-4 d-flex align-items-end">
+                                        <button type="button" class="btn btn-light"
+                                            onclick="buscarCamiones()">Buscar</button>
+                                    </div>
+
+                                    <!-- Botón Generar Reporte -->
+                                    <div class="col-md-3 mb-4 mt-4 text-end">
+                                        <label>&nbsp;</label>
+                                        <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                            data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <button type="button" class="btn btn-light mb-4"
-                                    onclick="buscarCamiones()">Buscar</button>
                             </form>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="tablaCamiones">
                                     <thead>
                                         <tr>
+                                            <th>ID</th>
+                                            <th>Fecha de Alta</th>
                                             <th>Dominio</th>
                                             <th>Marca</th>
                                             <th>Modelo</th>
-                                            <th></th>
+                                            <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-
+                                        <!-- Contenido llenado dinámicamente -->
                                     </tbody>
                                 </table>
                             </div>
-
                             <!-- Paginación -->
                             <nav>
                                 <ul class="pagination justify-content-end" id="pagination">
@@ -350,48 +424,56 @@
                     <div class="modal-body mt-2 mb-4 mx-2">
                         <div class="container-fluid">
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4 col-12">
+                                    <h6>Fecha de alta</h6>
+                                    <span id="modalFechaAlta" class="badge bg-secondary"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mt-4">
                                     <div class="form-group">
                                         <label for="modalDominio" class="form-label">Dominio</label>
-                                        <input type="text" id="modalDominio" class="form-control" readonly>
+                                        <input type="text" id="modalDominio" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalMarca" class="form-label">Marca</label>
-                                        <input type="text" id="modalMarca" class="form-control" readonly>
+                                        <input type="text" id="modalMarca" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalModelo" class="form-label">Modelo</label>
-                                        <input type="text" id="modalModelo" class="form-control" readonly>
+                                        <input type="text" id="modalModelo" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalAñoModelo" class="form-label">Año del modelo</label>
-                                        <input type="text" id="modalAñoModelo" class="form-control" readonly>
+                                        <input type="text" id="modalAñoModelo" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalTipo" class="form-label">Tipo</label>
-                                        <input type="text" id="modalTipo" class="form-control" readonly>
+                                        <input type="text" id="modalTipo" class="form-control no-outline" readonly>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 mt-4">
                                     <div class="form-group">
                                         <label for="modalNumMotor" class="form-label">Número de motor</label>
-                                        <input type="text" id="modalNumMotor" class="form-control" readonly>
+                                        <input type="text" id="modalNumMotor" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalNumChasis" class="form-label">Número de chasis</label>
-                                        <input type="text" id="modalNumChasis" class="form-control" readonly>
+                                        <input type="text" id="modalNumChasis" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalFechaCompra" class="form-label">Fecha de compra</label>
-                                        <input type="text" id="modalFechaCompra" class="form-control" readonly>
+                                        <input type="text" id="modalFechaCompra" class="form-control no-outline"
+                                            readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalFechaITV" class="form-label">Fecha de ITV</label>
-                                        <input type="text" id="modalFechaITV" class="form-control" readonly>
+                                        <input type="text" id="modalFechaITV" class="form-control no-outline" readonly>
                                     </div>
                                     <div class="form-group">
                                         <label for="modalEquipoFrio" class="form-label">Equipo de frío</label>
-                                        <input type="text" id="modalEquipoFrio" class="form-control" readonly>
+                                        <input type="text" id="modalEquipoFrio" class="form-control no-outline"
+                                            readonly>
                                     </div>
                                 </div>
                                 <!-- Tabla de Choferes Asignados -->
@@ -429,6 +511,9 @@
         <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
         <script src="assets/compiled/js/app.js"></script>
         <script src="assets/static/js/components/sidebar.js"></script>
+        <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
         <!-- Carga de diseño y roles -->
         <script>
@@ -436,11 +521,11 @@
                 const loadingMessage = document.getElementById('loading-message');
                 loadingMessage.style.display = 'block';
                 document.getElementById('app').style.display = 'none';
-        
+
                 // Cargar header, footer y configuración
                 window.loadHeader();
                 window.loadFooter();
-        
+
                 loadSettings()
                     .then(() => {
                         adjustVisibilityBasedOnRole();
@@ -452,29 +537,29 @@
                         loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
                     });
             };
-        
+
             function adjustVisibilityBasedOnRole() {
                 const userRole = localStorage.getItem('userRole');
                 const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-        
+
                 if (userRole && userRole.toLowerCase() === 'admin') {
                     gestionarContenidoBtn.style.display = 'block';
                 } else {
                     gestionarContenidoBtn.style.display = 'none';
                 }
             }
-        
+
             async function loadSettings() {
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
                     xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-        
+
                     xhr.onload = function () {
                         if (xhr.status >= 200 && xhr.status < 300) {
                             const data = JSON.parse(xhr.responseText);
                             if (data) {
                                 const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-        
+
                                 applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                                 resolve();
                             } else {
@@ -486,33 +571,33 @@
                             reject(new Error('Error en la carga de la API'));
                         }
                     };
-        
+
                     xhr.onerror = function () {
                         console.error('Error al cargar la configuración de la API.');
                         reject(new Error('Error de red'));
                     };
-        
+
                     xhr.send();
                 });
             }
-        
+
             // Aplicar estilos en distintos componentes de la página
 
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+            function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+                const logoElement = document.querySelector('.sidebar-header .logo img');
+                logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
 
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
+                const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
+                favicon.rel = 'shortcut icon';
+                favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
+                document.head.appendChild(favicon);
 
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
+                // Color de fondo general
+                document.body.style.backgroundColor = colorFondo || '#198754';
 
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
+                // Crear estilo CSS dinámico para color de texto en hover y activo
+                const dynamicStyle = document.createElement('style');
+                dynamicStyle.innerHTML = `
         /* Estilo para items activos en el menú */
         .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
@@ -544,31 +629,31 @@
             color: ${colorBotonesMenu || '#198754'} !important;
         }
     `;
-            document.head.appendChild(dynamicStyle);
+                document.head.appendChild(dynamicStyle);
 
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+                // Configuración del contenido en el pie de página
+                const footerContentElement = document.querySelector('.footer p');
+                if (footerContentElement) {
+                    footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+                }
             }
-        }
 
             // Lógica de logout y carga de nombre de usuario en el header
             document.addEventListener("DOMContentLoaded", function () {
                 const token = localStorage.getItem('token');
-        
+
                 if (!token) {
                     window.location.href = 'login.html';
                 } else {
                     const nombre = localStorage.getItem('nombre');
                     const apellido = localStorage.getItem('apellido');
                     document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-        
+
                     const logoutBtn = document.getElementById('logoutBtn');
                     if (logoutBtn) {
                         logoutBtn.addEventListener('click', function (event) {
                             event.preventDefault();
-        
+
                             fetch('http://localhost:50222/api/logout', {
                                 method: 'POST',
                                 headers: {
@@ -594,13 +679,12 @@
             });
         </script>
 
-
         <!-- Buscador y Listar -->
         <script>
 
             // Validación para el campo Dominio que solo permita números y letras hasta 7 caracteres
             $('#dominioinput').on('input', function (event) {
-                this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
                 if (this.value.length > 7) {
                     this.value = this.value.slice(0, 7);
                 }
@@ -609,7 +693,55 @@
             const pageSize = 6;
             let currentPage = 1;
 
+            // Datepicker para el filtro de fecha de alta
+            $(document).ready(function () {
+                $('#fechaRangoCamion').daterangepicker({
+                    autoUpdateInput: false,
+                    locale: {
+                        cancelLabel: 'Borrar',
+                        format: 'DD/MM/YYYY',
+                        applyLabel: 'Aplicar',
+                        cancelLabel: 'Cancelar',
+                        daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                        monthNames: [
+                            'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                            'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                        ]
+                    }
+                });
+
+                $('#fechaRangoCamion').on('apply.daterangepicker', function (ev, picker) {
+                    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                    $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                    $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                });
+
+                $('#fechaRangoCamion').on('cancel.daterangepicker', function () {
+                    $(this).val('');
+                    $(this).removeData('start').removeData('end');
+                    buscarCamiones(currentPage);
+                });
+
+                // Evento para detectar cambios en el campo de dominio
+                $('#dominioinput').on('input', function () {
+                    if ($(this).val().trim() === '') {
+                        buscarCamiones(currentPage);
+                    }
+                });
+
+                // Detectar cuando se borra manualmente el contenido del datepicker y buscar sin filtro
+                $('#fechaRangoCamion').on('input', function () {
+                    if ($(this).val().trim() === '') {
+                        $(this).removeData('start').removeData('end');
+                        buscarCamiones(currentPage);
+                    }
+                });
+                buscarCamiones(currentPage);
+            });
+
+            // Función para formatear la fecha en DD/MM/YYYY
             function formatearFecha(fecha) {
+                if (!fecha) return 'Fecha no disponible';
                 const fechaObj = new Date(fecha);
                 const dia = String(fechaObj.getDate()).padStart(2, '0');
                 const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
@@ -618,7 +750,7 @@
             }
 
             // Función para mostrar los detalles del camión en el modal
-            function mostrarDetalles(registro) {
+            function mostrarDetallesCamion(registro) {
                 $('#modalDominio').val(registro.Dominio.trim());
                 $('#modalMarca').val(registro.Marca);
                 $('#modalModelo').val(registro.Modelo);
@@ -629,25 +761,27 @@
                 $('#modalFechaCompra').val(formatearFecha(registro.FechaCompra));
                 $('#modalFechaITV').val(formatearFecha(registro.FechaITV));
                 $('#modalEquipoFrio').val(registro.EquipoFrio);
+
+                var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+                $('#modalFechaAlta').text(fechaAltaFormateada);
             }
 
-            $('#DetallesCamionModal').on('show.bs.modal', function (event) {
-                var button = $(event.relatedTarget);
-                var camionID = button.data('camionid');
-
-                // Obtener detalles del camión
+            // Función para obtener los detalles y choferes del camión cuando se abre el modal
+            function abrirModalDetalles(camionID) {
                 $.ajax({
                     url: `http://localhost:50222/api/Camiones/${camionID}`,
                     method: 'GET',
                     success: function (data) {
-                        mostrarDetalles(data);
+                        mostrarDetallesCamion(data);
+                        var modal = new bootstrap.Modal(document.getElementById('DetallesCamionModal'));
+                        modal.show();
                     },
-                    error: function (error) {
-                        console.error('Error al obtener los detalles del camión:', error);
+                    error: function (xhr) {
+                        console.error('Error al obtener los detalles del camión:', xhr);
+                        alert('Hubo un problema al obtener los detalles del camión. Intenta nuevamente.');
                     }
                 });
 
-                // Obtener choferes asignados
                 $.ajax({
                     url: `http://localhost:50222/api/Camiones/${camionID}/Chofer_Camion`,
                     method: 'GET',
@@ -656,9 +790,7 @@
                         tbody.empty();
 
                         if (data.length === 0) {
-                            var row = `<tr>
-                    <td colspan="3" class="text-center">No se encontaron registros</td>
-                </tr>`;
+                            var row = `<tr><td colspan="3" class="text-center">No se encontraron registros</td></tr>`;
                             tbody.append(row);
                         } else {
                             data.forEach(function (chofer) {
@@ -671,23 +803,34 @@
                             });
                         }
                     },
-                    error: function (error) {
-                        console.error('Error al obtener los choferes asignados:', error);
+                    error: function (xhr) {
+                        var tbody = $('#tablaChoferesAsignados tbody');
+                        tbody.empty();
+
+                        if (xhr.status === 404) {
+                            var row = `<tr><td colspan="3" class="text-center">No se encontraron registros</td></tr>`;
+                            tbody.append(row);
+                        } else {
+                            console.error('Error al obtener los choferes asignados:', xhr);
+                            alert('Error al obtener los choferes asignados.');
+                        }
                     }
                 });
-            });
+            }
 
             // Función para realizar la búsqueda de camiones
             function buscarCamiones(page = 1) {
-                var dominio = $('#dominioinput').val();
+                var dominio = $('#dominioinput').val().trim();
+                var fechaDesde = $('#fechaRangoCamion').data('start') || null;
+                var fechaHasta = $('#fechaRangoCamion').data('end') || null;
 
                 var requestData = {
-                    dominio: dominio,
+                    dominio: dominio || null,
+                    fechaDesde: fechaDesde,
+                    fechaHasta: fechaHasta,
                     page: page,
                     pageSize: pageSize
                 };
-
-                if (dominio !== '') requestData.dominio = dominio;
 
                 $.ajax({
                     url: 'http://localhost:50222/api/Camiones/Buscar',
@@ -696,22 +839,32 @@
                     success: function (data) {
                         $('#tablaCamiones tbody').empty();
                         if (data.Results.length === 0) {
-                            $('#tablaCamiones tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
+                            $('#tablaCamiones tbody').html('<tr><td colspan="6" class="text-center">No se encontraron registros</td></tr>');
                         } else {
                             data.Results.forEach(function (registro) {
-                                $('#tablaCamiones tbody').append(`
+                                var row = `
                         <tr>
+                            <td>${registro.Camion_ID}</td>
+                            <td>${formatFechaUTC3(registro.Fecha_Alta)}</td>
                             <td>${registro.Dominio.trim()}</td>
                             <td>${registro.Marca}</td>
                             <td>${registro.Modelo}</td>
                             <td>
-                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#DetallesCamionModal" data-camionid="${registro.Camion_ID}">
-                                    <i class="bi bi-info-circle"></i> Más detalles
+                                <button class="btn btn-primary btn-sm" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Más detalles" 
+                                    onclick="abrirModalDetalles(${registro.Camion_ID})">
+                                    <i class="bi bi-info-circle"></i>
                                 </button>
                             </td>
-                        </tr>
-                    `);
+                        </tr>`;
+                                $('#tablaCamiones tbody').append(row);
                             });
+
+                            // Inicializar tooltips después de renderizar la tabla
+                            $('[data-bs-toggle="tooltip"]').tooltip();
+
                         }
                         renderPagination(data.TotalRecords, pageSize, page);
                     },
@@ -719,6 +872,21 @@
                         console.error(error);
                     }
                 });
+            }
+
+            // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+            function formatFechaUTC3(isoDate) {
+                if (!isoDate) return '';
+                const date = new Date(isoDate);
+                const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+                const day = String(utc3Date.getDate()).padStart(2, '0');
+                const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+                const year = utc3Date.getFullYear();
+                const hours = String(utc3Date.getHours()).padStart(2, '0');
+                const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
             }
 
             function renderPagination(totalRecords, pageSize, currentPage) {
@@ -760,8 +928,125 @@
             });
 
 
+
         </script>
 
+        <!-- Generar reporte csv -->
+        <script>
+            async function generarReporteCSV() {
+                var dominio = $('#dominioinput').val().trim() || '';
+                var fechaDesde = $('#fechaRangoCamion').data('start') || null;
+                var fechaHasta = $('#fechaRangoCamion').data('end') || null;
+
+                var requestData = {
+                    dominio: dominio || null,
+                    fechaDesde: fechaDesde || null,
+                    fechaHasta: fechaHasta || null,
+                    page: currentPage,
+                    pageSize: pageSize
+                };
+
+                try {
+                    const response = await $.ajax({
+                        url: 'http://localhost:50222/api/Camiones/Buscar',
+                        type: 'GET',
+                        data: requestData
+                    });
+
+                    if (response.Results.length === 0) {
+                        mostrarToastError('No se encontraron registros para generar el reporte.');
+                        return;
+                    }
+
+                    generarCSV(response.Results);
+                } catch (error) {
+                    console.error('Error al generar el reporte:', error);
+                    mostrarToastError('Ocurrió un error al generar el reporte. Intentá de nuevo más tarde.');
+                }
+            }
+
+            // Función para mostrar un toast de error con mensaje dinámico
+            function mostrarToastError(mensaje) {
+                $('#toastErrorMessage').text(mensaje);
+                const toast = new bootstrap.Toast(document.getElementById('toastError'));
+                toast.show();
+            }
+
+            // Función para generar el CSV con codificación UTF-8 con BOM
+            function generarCSV(data) {
+                // Definir las columnas del CSV con nombres personalizados
+                const headers = [
+                    'Camion_ID', 'Dominio', 'Marca', 'Modelo', 'Año Modelo',
+                    'Tipo', 'Número de Motor', 'Número de Chasis',
+                    'Fecha de Compra', 'Fecha de ITV', 'Equipo Frío',
+                    'Fecha de Alta', 'Usuario de Alta', 'Fecha de Modificación', 'Usuario de Modificación'
+                ];
+
+                let csvContent = headers.join(";") + "\n";
+
+                data.forEach(function (registro) {
+                    let row = [
+                        registro.Camion_ID,
+                        registro.Dominio.trim(),
+                        registro.Marca || '',
+                        registro.Modelo || '',
+                        registro.AñoModelo || '',
+                        registro.Tipo || '',
+                        registro.NumMotor || '',
+                        registro.NumChasis || '',
+                        formatFechaDDMMYYYY(registro.FechaCompra),
+                        formatFechaDDMMYYYY(registro.FechaITV),
+                        registro.EquipoFrio || '',
+                        formatFechaUTC3(registro.Fecha_Alta),
+                        registro.Usu_Alta || '',
+                        registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
+                        registro.Usu_Modi || ''
+                    ];
+
+                    csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+                });
+
+                // Agregar el BOM al inicio para asegurar la codificación UTF-8
+                let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+
+                let url = URL.createObjectURL(blob);
+
+                let a = document.createElement("a");
+                a.href = url;
+                a.download = "Listado_Camiones.csv";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            // Función para formatear la fecha en DD-MM-YYYY sin hora y minuto
+            function formatFechaDDMMYYYY(isoDate) {
+                if (!isoDate) return '';
+                const date = new Date(isoDate);
+
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = date.getFullYear();
+
+                return `${day}-${month}-${year}`;
+            }
+
+            // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+            function formatFechaUTC3(isoDate) {
+                if (!isoDate) return '';
+                const date = new Date(isoDate);
+                const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+                const day = String(utc3Date.getDate()).padStart(2, '0');
+                const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+                const year = utc3Date.getFullYear();
+                const hours = String(utc3Date.getHours()).padStart(2, '0');
+                const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+                return `${day}/${month}/${year} ${hours}:${minutes}`;
+            }
+
+        </script>
 
 </body>
 
