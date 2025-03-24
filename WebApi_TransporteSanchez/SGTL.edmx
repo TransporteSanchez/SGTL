@@ -17,6 +17,7 @@
           <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="EstadoCamion" Type="varchar" MaxLength="10" Nullable="false" />
           <Property Name="FechaCompra" Type="date" Nullable="false" />
           <Property Name="FechaITV" Type="date" Nullable="false" />
           <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
@@ -596,6 +597,7 @@
           <Property Name="Tipo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="NumMotor" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="NumChasis" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="EstadoCamion" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="FechaCompra" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
@@ -1217,6 +1219,7 @@
                 <ScalarProperty Name="Tipo" ColumnName="Tipo" />
                 <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
                 <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+                <ScalarProperty Name="EstadoCamion" ColumnName="EstadoCamion" />
                 <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
                 <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
                 <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />

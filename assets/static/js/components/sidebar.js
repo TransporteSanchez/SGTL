@@ -1,5 +1,4 @@
-import isDesktop from '../helper/isDesktop'
-
+import isDesktop from '../helper/isDesktop.js'
 
 /**
  * Calculate nested children height in sidebar menu

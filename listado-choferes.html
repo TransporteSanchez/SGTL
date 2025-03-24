@@ -6,7 +6,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
+    <style>
+        #app {
+            display: none;
+        }
 
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaChoferes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaChoferes th,
+        #tablaChoferes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaChoferes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+
+        .no-outline:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 1px solid #ced4da !important;
+            /* Mantiene el borde original */
+            background-color: #f8f9fa !important;
+            /* Mantiene el color de fondo original */
+        }
+    </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="shortcut icon"
@@ -17,6 +65,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <style>
         .no-outline:focus {
             outline: none;
@@ -27,6 +76,13 @@
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
     <div id="app">
         <!--Barra lateral-->
         <div id="sidebar">
@@ -68,12 +124,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item active">
-                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
 
                                 </li>
 
                                 <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
 
@@ -92,12 +148,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
                                 </li>
 
                             </ul>
@@ -113,19 +169,19 @@
 
                             <ul class="submenu">
                                 <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
 
                                 </li>
                             </ul>
@@ -142,12 +198,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de clientes</a>
+                                    <a href="#" class="submenu-link">Listar clientes</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                    <a href="#" class="submenu-link">Gestionar clientes</a>
                                 </li>
 
                             </ul>
@@ -164,12 +220,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de facturas</a>
+                                    <a href="#" class="submenu-link">Listar facturas</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
                                 </li>
 
                             </ul>
@@ -186,12 +242,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                    <a href="#" class="submenu-link">Gestionar grupos</a>
                                 </li>
 
                             </ul>
@@ -222,7 +278,7 @@
                         </li>
 
                         <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link'>
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
                                 <i class="bi bi-columns"></i>
                                 <span>Gestionar contenido</span>
                             </a>
@@ -258,66 +314,96 @@
 
                         <script src="./assets/static/js/header.js"></script>
 
-                        <script>
-                            window.onload = loadHeader();
-                        </script>
-
                     </div>
                 </nav>
             </header>
 
+            <!-- Notificación de error -->
+            <div id="toastError"
+                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
+                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
+                <div class="d-flex">
+                    <div id="toastErrorMessage" class="toast-body">
+                        <!-- Mensaje dinámico se inserta acá -->
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
+                        aria-label="Close"></button>
+                </div>
+            </div>
 
-
-            <!--Comienzo sección de la tabla-->
             <section class="section">
                 <div class="card rounded me-4 ms-4 mt-4">
                     <div class="card-header">
                         <h5 class="card-title">
-                            Listado de choferes
+                            Listar choferes
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Buscador -->
                         <form id="busquedaChoferForm" class="form">
                             <div class="row">
-                                <div class="col-md-3 mb-3">
+                                <!-- Primera columna: Nombre y Apellido -->
+                                <div class="col-md-3 mb-4">
                                     <label for="txtnombre">Nombre</label>
-                                    <input type="text" class="form-control" id="txtnombre" placeholder="Juan">
-                                </div>
-                                <div class="col-md-3 mb-3">
+                                    <input type="text" class="form-control mb-4" id="txtnombre" placeholder="Juan">
                                     <label for="txtapellido">Apellido</label>
                                     <input type="text" class="form-control" id="txtapellido" placeholder="Perez">
                                 </div>
-                                <div class="col-md-3 mb-3">
+
+                                <!-- Segunda columna: DNI y Estado -->
+                                <div class="col-md-3 mb-4">
                                     <label for="txtdni">DNI</label>
-                                    <input type="number" class="form-control" id="txtdni"
-                                        data-parsley-restricted-number="true" placeholder="36456778">
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="basicInput">Estado</label>
+                                    <input type="number" class="form-control mb-4" id="txtdni" placeholder="36456778">
+                                    <label>Estado</label>
                                     <div class="form-check">
-                                        <input type="checkbox" value="" class="form-check-input form-check-success"
+                                        <input type="checkbox" class="form-check-input form-check-success"
                                             id="checkestadoactivo">
                                         <label class="form-check-label" for="checkestadoactivo">Activo</label>
                                     </div>
                                     <div class="form-check">
-                                        <input type="checkbox" value="" class="form-check-input form-check-danger"
+                                        <input type="checkbox" class="form-check-input form-check-danger"
                                             id="checkestadoinactivo">
                                         <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
                                     </div>
                                 </div>
+
+                                <!-- Tercera columna: Fecha de Alta -->
+                                <div class="col-md-3 mb-4">
+                                    <label for="fechaRango">Fecha de alta</label>
+                                    <input type="text" class="form-control mb-4" id="fechaRango"
+                                        placeholder="Desde y hasta">
+                                </div>
+
+                                <!-- Cuarta columna: Buscar -->
+                                <div class="col-md-2 mb-4 mt-4">
+                                    <button type="button" class="btn btn-light"
+                                        onclick="buscarChoferes()">Buscar</button>
+                                </div>
+
+                                <!-- Quinta columna: Botón Generar Reporte -->
+                                <div class="col-md-1 mb-3 mt-4 text-end">
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                </div>
                             </div>
-                            <button type="button" class="btn btn-light mb-4" onclick="buscarChoferes()">Buscar</button>
                         </form>
+
+                        <!-- Tabla -->
 
                         <div class="table-responsive">
                             <table class="table table-striped" id="tablaChoferes">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
+                                        <th>Fecha de alta</th>
                                         <th>Nombre</th>
                                         <th>Apellido</th>
                                         <th>DNI</th>
                                         <th>Estado</th>
-                                        <th></th>
+                                        <th>Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -336,9 +422,6 @@
                 </div>
 
             </section>
-            <!--Fin sección de la tabla-->
-
-
 
             <!--Footer-->
 
@@ -347,13 +430,6 @@
 
                 <script src="./assets/static/js/footer.js"></script>
 
-
-                <script>
-                    window.onload = function () {
-                        loadFooter();
-
-                    };
-                </script>
             </footer>
         </div>
 
@@ -371,62 +447,99 @@
                     <div class="modal-body mt-2 mb-4 mx-2">
                         <div class="container-fluid">
                             <div class="row">
-                                <div class="col-md-4">
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="estado-column" class="form-label">Estado del chofer</label>
+                                        <h6>Estado del chofer</h6>
                                         <span id="EstadoActualChofer" readonly></span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <h6>Fecha de alta</h6>
+                                    <span id="FechaAltaChofer" class="badge bg-secondary"></span>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12 mt-4">
+                                    <div class="form-group">
+                                        <label for="dni-column" class="form-label">DNI</label>
+                                        <input type="number" id="dni-column" class="form-control no-outline" readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12 mt-4">
+                                    <div class="form-group">
+                                        <label for="celphone-column" class="form-label">Teléfono celular</label>
+                                        <input type="number" id="celphone-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12 mt-4">
+                                    <div class="form-group">
+                                        <label for="province-column" class="form-label">Provincia</label>
+                                        <input type="text" id="province-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre</label>
-                                        <input type="text" id="first-name-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido</label>
-                                        <input type="text" id="last-name-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="dni-column" class="form-label">DNI</label>
-                                        <input type="number" id="dni-column" class="form-control" readonly />
-                                    </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="cuil-column" class="form-label">CUIL</label>
-                                        <input type="number" id="cuil-column" class="form-control" readonly />
+                                        <input type="number" id="cuil-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono celular</label>
-                                        <input type="number" id="celphone-column" class="form-control" readonly />
-                                    </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="phone-column" class="form-label">Teléfono particular</label>
-                                        <input type="number" id="phone-column" class="form-control" readonly />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="email-column" class="form-label">Email</label>
-                                        <input type="email" id="email-column" class="form-control" readonly />
+                                        <input type="number" id="phone-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="province-column" class="form-label">Provincia</label>
-                                        <input type="text" id="province-column" class="form-control" readonly />
-                                    </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="local-column" class="form-label">Localidad</label>
-                                        <input type="text" id="local-column" class="form-control" readonly />
+                                        <input type="text" id="local-column" class="form-control no-outline" readonly />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="first-name-column" class="form-label">Nombre</label>
+                                        <input type="text" id="first-name-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="email-column" class="form-label">Email</label>
+                                        <input type="email" id="email-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="street-column" class="form-label">Calle</label>
-                                        <input type="text" id="street-column" class="form-control" readonly />
+                                        <input type="text" id="street-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="last-name-column" class="form-label">Apellido</label>
+                                        <input type="text" id="last-name-column" class="form-control no-outline"
+                                            readonly />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                </div>
+                                <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="number-column" class="form-label">Altura</label>
-                                        <input type="number" id="number-column" class="form-control" readonly />
+                                        <input type="number" id="number-column" class="form-control no-outline"
+                                            readonly />
                                     </div>
                                 </div>
                             </div>
@@ -456,8 +569,6 @@
             </div>
         </div>
 
-
-
     </div>
 
     <!-- Scripts -->
@@ -465,7 +576,95 @@
     </script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Inicializa tooltips en todos los elementos estáticos
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Aplica tooltips a elementos dinámicamente agregados en la tabla
+            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            // Opcional: Ocultar tooltips al salir
+            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+        });
+    </script>
+
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            // Cargar header, footer y configuración
+            window.loadHeader();
+            window.loadFooter();
+
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
+        };
+
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+
+    </script>
 
     <!-- Get Activos -->
     <script>
@@ -494,15 +693,25 @@
         // Limita la longitud del número a 8 dígitos
         document.getElementById('txtdni').addEventListener('input', function (event) {
 
+            // Remueve cualquier caracter que no sea del 0 al 9
+            this.value = this.value.replace(/[^0-9]/g, '');
+
             if (this.value.length > 8) {
                 this.value = this.value.slice(0, 8);
+            }
+        });
+
+        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
+        $('#txtnombre, #txtapellido, #txtdni, #fechaRango').on('input', function () {
+            if ($(this).val().trim() === '') {
+                buscarChoferes(currentPage);
             }
         });
 
         const pageSize = 6;
         let currentPage = 1;
 
-        // Función para obtener los nombres de la provincia y la localidad
+        // Función para obtener los nombres de la provincia y localidad
         function obtenerNombres(provId, locId) {
             let nombreProvincia = '';
             let nombreLocalidad = '';
@@ -548,6 +757,34 @@
             });
         }
 
+        // Datepicker con rango de fechas
+        $(document).ready(function () {
+            $('#fechaRango').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Borrar',
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
+
+            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+            });
+
+            $('#fechaRango').on('cancel.daterangepicker', function (ev, picker) {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+            });
+        });
 
 
         var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
@@ -565,20 +802,39 @@
                 $('#province-column').val(nombres.Nombre_Provincia);
                 $('#local-column').val(nombres.Nombre_Localidad);
                 $('#street-column').val(registro.Calle);
-                $('#number-column').val(registro.AlturaCalle);
+                $('#number-column').val(registro.AlturaCalle ? registro.AlturaCalle.trim() : '');
                 $('#EstadoActualChofer').text(registro.EstadoChofer);
                 estadoChoferOriginal = registro.EstadoChofer;
 
                 var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
                 $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
 
-                // Obtener camiones asignados
+                // Formatear la fecha de alta
+                const fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+                $('#FechaAltaChofer').text(fechaAltaFormateada);
+
                 obtenerCamionesAsignados(registro.Chofer_ID);
 
                 $('#DetallesChoferModal').modal('show');
             }).catch(error => {
                 console.error('Error al obtener nombres de provincia o localidad', error);
             });
+        }
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            if (!isoDate) return 'Fecha no disponible';
+
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
 
         // Función para obtener camiones asignados al chofer
@@ -613,17 +869,30 @@
 
         // Función para realizar la búsqueda de choferes
         function buscarChoferes(page = 1) {
-            // Obtener los valores de los campos de búsqueda
             var nombre = $('#txtnombre').val();
             var apellido = $('#txtapellido').val();
             var dni = $('#txtdni').val();
+            var fechaRango = $('#fechaRango').val();
             var estadoActivo = $('#checkestadoactivo').is(':checked');
             var estadoInactivo = $('#checkestadoinactivo').is(':checked');
 
+            let fechaDesde = null;
+            let fechaHasta = null;
+
+            if (fechaRango) {
+                let fechas = fechaRango.split(' - ');
+                if (fechas.length === 2) {
+                    fechaDesde = moment(fechas[0], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 00:00:00.000';
+                    fechaHasta = moment(fechas[1], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 23:59:59.999';
+                }
+            }
+
             var requestData = {
-                nombre: nombre,
-                apellido: apellido,
-                dni: dni,
+                nombre: nombre || null,
+                apellido: apellido || null,
+                dni: dni || null,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
                 estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
                 page: page,
                 pageSize: pageSize
@@ -633,6 +902,8 @@
             if (nombre !== '') requestData.nombre = nombre;
             if (apellido !== '') requestData.apellido = apellido;
             if (dni !== '') requestData.dni = dni;
+            if (fechaDesde !== '') requestData.fechaDesde = fechaDesde;
+            if (fechaHasta !== '') requestData.fechaHasta = fechaHasta;
 
             // Agregar el estadoChofer al objeto de datos solo si se selecciona
             if (estadoActivo || estadoInactivo) {
@@ -653,19 +924,30 @@
                     $('#tablaChoferes tbody').empty();
 
                     if (data.Results.length === 0) {
-                        $('#tablaChoferes tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaChoferes tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (registro) {
+
+                            // Formatear la fecha de alta
+                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
+
                             var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
                             var row = `<tr>
+                    <td>${registro.Chofer_ID}</td>
+                    <td>${fechaAltaFormateada}</td>
                     <td>${registro.Nombre}</td>
                     <td>${registro.Apellido}</td>
                     <td>${registro.DNI}</td>
                     <td><span class="badge ${estadoStyle}">${registro.EstadoChofer}</span></td>
                     <td>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#DetallesChoferModal" data-choferid="${registro.Chofer_ID}">
-                            <i class="bi bi-info-circle"></i> Más detalles
-                        </button>
+                            <button class="btn btn-primary btn-detalle"
+                                data-choferid="${registro.Chofer_ID}"
+                                data-bs-toggle="tooltip" 
+                                data-bs-placement="top" 
+                                title="Más detalles"
+                                onclick="abrirModal('${registro.Chofer_ID}')">
+                                <i class="bi bi-info-circle"></i>
+                            </button>
                     </td>
                 </tr>`;
                             $('#tablaChoferes tbody').append(row);
@@ -679,23 +961,35 @@
             });
         }
 
-        // Evento para mostrar el modal de detalles del chofer
-        $('#DetallesChoferModal').on('show.bs.modal', function (event) {
-            var button = $(event.relatedTarget);
-            var choferID = button.data('choferid');
-
-            // Obtener detalles del chofer
+        function abrirModal(choferID) {
+            // Obtener detalles del chofer antes de mostrar el modal
             $.ajax({
                 url: `http://localhost:50222/api/Choferes/${choferID}`,
                 method: 'GET',
                 success: function (data) {
                     mostrarDetallesChofer(data);
+                    var modal = new bootstrap.Modal(document.getElementById('DetallesChoferModal'));
+                    modal.show();
                 },
                 error: function (error) {
                     console.error('Error al obtener los detalles del chofer:', error);
                 }
             });
-        });
+        }
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
 
         function renderPagination(totalRecords, pageSize, currentPage) {
             const totalPages = Math.ceil(totalRecords / pageSize);
@@ -737,10 +1031,165 @@
         });
 
 
-
-
     </script>
 
+    <!-- Generar reporte csv -->
+    <script>
+        async function generarReporteCSV() {
+            var dni = $('#txtdni').val() || '';
+            var nombre = $('#txtnombre').val().trim() || '';
+            var apellido = $('#txtapellido').val().trim() || '';
+            var estadoActivo = $('#checkestadoactivo').is(':checked');
+            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+            var fechaDesde = $('#fechaRango').data('start') || null;
+            var fechaHasta = $('#fechaRango').data('end') || null;
+
+            var requestData = {
+                dni: dni,
+                nombre: nombre || null,
+                apellido: apellido || null,
+                fechaDesde: fechaDesde || null,
+                fechaHasta: fechaHasta || null,
+                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' :
+                    estadoActivo ? 'Activo' :
+                        estadoInactivo ? 'Inactivo' : '',
+                page: currentPage,
+                pageSize: pageSize
+            };
+
+            try {
+                const response = await $.ajax({
+                    url: 'http://localhost:50222/api/Choferes/Buscar',
+                    type: 'GET',
+                    data: requestData
+                });
+
+                if (response.Results.length === 0) {
+                    mostrarToastError('No se encontraron registros para generar el reporte.');
+                    return;
+                }
+
+                // Obtener nombres de provincia y localidad para cada registro
+                const registrosConProvincias = await Promise.all(response.Results.map(async (registro) => {
+                    registro.Provincia = await obtenerNombreProvincia(registro.ProvID);
+                    registro.Localidad = await obtenerNombreLocalidad(registro.ProvID, registro.LocID);
+                    return registro;
+                }));
+
+                generarCSV(registrosConProvincias);
+            } catch (error) {
+                console.error('Error al generar el reporte:', error);
+                mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
+            }
+        }
+
+        // Función para mostrar un toast de error con mensaje dinámico
+        function mostrarToastError(mensaje) {
+            $('#toastErrorMessage').text(mensaje);
+            const toast = new bootstrap.Toast(document.getElementById('toastError'));
+            toast.show();
+        }
+
+        // Función para obtener el nombre de la provincia usando la API
+        async function obtenerNombreProvincia(provId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}`,
+                    type: 'GET'
+                });
+                return data.Nombre_Provincia || 'Provincia no encontrada';
+            } catch (error) {
+                console.error(`Error obteniendo la provincia con ID ${provId}:`, error);
+                return 'Provincia no encontrada';
+            }
+        }
+
+        // Función para obtener el nombre de la localidad usando la API
+        async function obtenerNombreLocalidad(provId, locId) {
+            try {
+                const data = await $.ajax({
+                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
+                    type: 'GET'
+                });
+
+                if (Array.isArray(data) && data.length > 0) {
+                    return data[0].Nombre_Localidad;
+                } else {
+                    return 'Localidad no encontrada';
+                }
+            } catch (error) {
+                console.error(`Error obteniendo la localidad con ProvID ${provId} y LocID ${locId}:`, error);
+                return 'Localidad no encontrada';
+            }
+        }
+
+        // Función para generar el CSV con codificación UTF-8 con BOM
+        function generarCSV(data) {
+            // Definir las columnas del CSV con nombres personalizados
+            const headers = [
+                'Chofer_ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
+                'Telefono fijo', 'Telefono celular', 'Email',
+                'Provincia', 'Localidad', 'Calle', 'Altura',
+                'Estado del chofer', 'Fecha de alta',
+                'Usuario de alta', 'Fecha de modificación', 'Usuario de modificación'
+            ];
+
+            let csvContent = headers.join(";") + "\n";
+
+            data.forEach(function (registro) {
+                let row = [
+                    registro.Chofer_ID,
+                    registro.DNI,
+                    registro.CUIL,
+                    registro.Nombre,
+                    registro.Apellido,
+                    registro.TelefonoFijo || '',
+                    registro.TelefonoCelular || '',
+                    registro.Email || '',
+                    registro.Provincia,
+                    registro.Localidad,
+                    registro.Calle || '',
+                    registro.AlturaCalle || '',
+                    registro.EstadoChofer,
+                    formatFechaUTC3(registro.Fecha_Alta),
+                    registro.Usu_Alta || '',
+                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
+                    registro.Usu_Modi || ''
+                ];
+
+                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+            });
+
+            // Agregar el BOM al inicio para asegurar la codificación UTF-8
+            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+
+            let url = URL.createObjectURL(blob);
+
+            let a = document.createElement("a");
+            a.href = url;
+            a.download = "Listado_Choferes.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+
+        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
+        function formatFechaUTC3(isoDate) {
+            if (!isoDate) return '';
+            const date = new Date(isoDate);
+            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
+
+            const day = String(utc3Date.getDate()).padStart(2, '0');
+            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
+            const year = utc3Date.getFullYear();
+            const hours = String(utc3Date.getHours()).padStart(2, '0');
+            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
+
+            return `${day}/${month}/${year} ${hours}:${minutes}`;
+        }
+
+    </script>
 
 </body>
 

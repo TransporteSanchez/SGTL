@@ -12,6 +12,7 @@
     <Property Name="Tipo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
     <Property Name="NumMotor" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
     <Property Name="NumChasis" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+    <Property Name="EstadoCamion" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="FechaCompra" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />

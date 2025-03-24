@@ -86,12 +86,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
 
                                 </li>
 
-                                <li class="submenu-item active">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+                                <li class="submenu-item">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
 
@@ -110,12 +110,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
                                 </li>
 
                             </ul>
@@ -131,19 +131,19 @@
 
                             <ul class="submenu">
                                 <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
 
                                 </li>
                             </ul>
@@ -160,12 +160,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de clientes</a>
+                                    <a href="#" class="submenu-link">Listar clientes</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
                                 </li>
 
                             </ul>
@@ -182,12 +182,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de facturas</a>
+                                    <a href="#" class="submenu-link">Listar facturas</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
                                 </li>
 
                             </ul>
@@ -204,12 +204,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                    <a href="#" class="submenu-link">Gestionar grupos</a>
                                 </li>
 
                             </ul>
@@ -240,7 +240,7 @@
                         </li>
 
                         <li class="sidebar-item active">
-                            <a href="gestion-contenido.html" class='sidebar-link'>
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
                                 <i class="bi bi-columns"></i>
                                 <span>Gestionar contenido</span>
                             </a>
@@ -317,40 +317,40 @@
                         <div class="card-body">
                             <form id="settings" class="form form-horizontal">
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="logoInput">Logo (URL)</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
                                             placeholder="URL del logo">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="backgroundColorInput">Color de fondo</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="color" id="backgroundColorInput" class="form-control"
                                             name="backgroundColorInput">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="menuColorInput">Color del menú</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="color" id="menuColorInput" class="form-control"
                                             name="menuColorInput">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="footerContentInput">Contenido del pie de página</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <textarea id="footerContentInput" class="form-control" name="footerContentInput"
                                             placeholder="Escribe el contenido del pie de página" rows="3"></textarea>
                                     </div>
                                     <div class="col-sm-12 d-flex justify-content-end">
-                                        <button type="submit" class="btn btn-primary me-1 mb-1"
-                                            id="saveSettingsBtn">Confirmar</button>
                                         <button type="button" class="btn btn-light-secondary me-1 mb-1"
                                             data-bs-toggle="modal"
                                             data-bs-target="#confirmarRestablecerModal">Restablecer</button>
+                                        <button type="submit" class="btn btn-primary mb-1"
+                                            id="saveSettingsBtn">Confirmar</button>
 
                                     </div>
                                 </div>
@@ -407,37 +407,26 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
 
     <script>
-
         window.onload = function () {
-            // Mostrar el mensaje de carga
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
-
-            // Ocultar el contenido de la aplicación
             document.getElementById('app').style.display = 'none';
 
-            // Cargar primero el header
             window.loadHeader();
-
-            // Cargar luego el footer
             window.loadFooter();
 
-            // Carga los ajustes desde la API
             loadSettings().then(() => {
-                // Oculta el mensaje de carga
                 loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block'; // Muestra el contenido de la aplicación
+                document.getElementById('app').style.display = 'block';
             }).catch(() => {
-                // Maneja el error si la carga falla
                 loadingMessage.style.display = 'none';
                 document.getElementById('loading-message').innerText = 'Error al cargar los datos.';
             });
         };
 
-        // Función para cargar la configuración de la API de gestión de contenido
         async function loadSettings() {
             console.log('Llamando a la API de Gestión de Contenido...');
 
@@ -448,7 +437,7 @@
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
                         const data = JSON.parse(xhr.responseText);
-                        console.log('Respuesta de la API:', data); // Verifica la estructura de la respuesta
+                        console.log('Respuesta de la API:', data);
 
                         if (data) {
                             const logoUrl = data.Logo;
@@ -456,15 +445,12 @@
                             const colorBotonesMenu = data.ColorBotonesMenu;
                             const contenidoPiePagina = data.ContenidoPiePagina;
 
-                            // Actualizar formulario
                             document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
                             document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
                             document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
                             document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
 
-                            // Aplicar los estilos a la página
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-
                             resolve();
                         } else {
                             console.error('La respuesta de la API no contiene los datos esperados.');
@@ -472,14 +458,10 @@
                             showErrorToast();
                             reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
                         }
-                    } else if (xhr.status === 404 || xhr.status === 500) {
-                        console.error(`Error ${xhr.status}: ${xhr.statusText}`);
-                        showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
-                        reject(new Error(`Error ${xhr.status}`));
                     } else {
-                        console.error('Error en la petición:', xhr.responseText);
+                        console.error('Error en la petición:', xhr.statusText);
                         showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
-                        reject(new Error('Error en la petición'));
+                        reject(new Error('Error en la carga de la API'));
                     }
                 };
 
@@ -494,51 +476,31 @@
             });
         }
 
-        // Función para aplicar los estilos obtenidos de la API
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            // Actualizar logo
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+       
+        // Confirmar cambios de gestión de contenido
 
-            // Cambiar color de fondo
-            document.body.style.backgroundColor = colorFondo || '#D3E8DE';
-
-            // Actualizar botones del menú
-            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
-            botonesMenu.forEach(button => {
-                button.style.backgroundColor = colorBotonesMenu || '#198754';
-            });
-
-            // Actualizar contenido del pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-        }
-
-        // Evento para manejar el envío de datos al API (Confirmar)
         document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
             event.preventDefault();
 
-            // Mostrar el mensaje de carga
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
-
-            // Ocultar la aplicación mientras se guarda
             document.getElementById('app').style.display = 'none';
 
-            // Captura los valores de los inputs
             const logo = document.getElementById('logoInput').value;
             const backgroundColor = document.getElementById('backgroundColorInput').value;
             const menuColor = document.getElementById('menuColorInput').value;
             const footerContent = document.getElementById('footerContentInput').value;
 
-            // Crea un objeto JSON con los datos
+            // Obtener el nombre de usuario desde localStorage
+            const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
+
             const settingsData = {
                 Logo: logo,
                 ColorFondo: backgroundColor,
                 ColorBotonesMenu: menuColor,
                 ContenidoPiePagina: footerContent,
                 Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: 'usuario' // Reemplaza 'usuario' con el usuario que corresponde
+                Usu_Modi: usuarioModificador // Asigna el nombre de usuario al campo Usu_Modi
             };
 
             const xhr = new XMLHttpRequest();
@@ -547,92 +509,58 @@
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const data = JSON.parse(xhr.responseText);
-                    console.log('Configuración actualizada:', data);
-
-                    // Mostrar la notificación de éxito
                     const toastSuccess = document.getElementById('alert-success');
                     const toastBootstrap = new bootstrap.Toast(toastSuccess);
                     toastSuccess.style.display = 'block';
                     toastBootstrap.show();
 
-                    // Limpiar los inputs
                     document.getElementById('logoInput').value = '';
                     document.getElementById('backgroundColorInput').value = '';
                     document.getElementById('menuColorInput').value = '';
                     document.getElementById('footerContentInput').value = '';
 
-                    // Recargar la página
                     setTimeout(() => {
                         location.reload();
                     }, 2000);
-                } else if (xhr.status === 400) {
+                } else {
                     handleValidationErrors(JSON.parse(xhr.responseText));
                     loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
-                } else if (xhr.status === 404 || xhr.status === 500) {
-                    console.error(`Error ${xhr.status}: ${xhr.statusText}`);
-                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
-                } else {
-                    console.error('Error en la petición:', xhr.responseText);
-                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+                    document.getElementById('app').style.display = 'block';
                 }
             };
 
             xhr.onerror = function () {
-                console.error('Error de conexión');
                 showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
                 loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block'; // Mostrar la aplicación si hay error
+                document.getElementById('app').style.display = 'block';
             };
 
             xhr.send(JSON.stringify(settingsData));
         });
 
-        // Función para mostrar la notificación de error personalizada
-        function showErrorToast(message = "Ocurrió un error al actualizar el contenido de la página") {
-            const toastError = document.getElementById('alert-error');
-            toastError.querySelector('.toast-body').textContent = message;
-            const toastBootstrap = new bootstrap.Toast(toastError);
-            toastError.style.display = 'block';
-            toastBootstrap.show();
-        }
-
-        // Función para manejar los errores de validación (400 Bad Request)
-        function handleValidationErrors(errors) {
-            errors.forEach(error => {
-                console.error(`Error de validación: ${error}`);
-                // Puedes mostrar el error debajo del input correspondiente si es necesario
-            });
-            showErrorToast("Existen errores de validación. Revisa los campos e intenta nuevamente.");
-        }
-
-        // Función para cargar valores por defecto en el formulario y en la página
         function loadDefaultValues() {
             console.log('Cargando valores por defecto...');
             document.getElementById('logoInput').value = './assets/compiled/svg/ts-logo-text.svg';
-            document.getElementById('backgroundColorInput').value = '#D3E8DE';
+            document.getElementById('backgroundColorInput').value = '#b6d8c7';
             document.getElementById('menuColorInput').value = '#198754';
-            document.getElementById('footerContentInput').value = '2024 &copy; Integra Analistas';
+            document.getElementById('footerContentInput').value = '2025 &copy; Integra Analistas';
 
-            // Aplicar los valores por defecto a la página
-            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#D3E8DE', '#198754', '2024 &copy; Integra Analistas');
+            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#b6d8c7', '#198754', '2025 &copy; Integra Analistas');
         }
 
-        // Función para restablecer los valores por defecto y realizar un PUT a la API
+        // Obtener el nombre de usuario desde localStorage
+        const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
+
         function resetForm() {
-            // Mostrar el mensaje de carga
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
 
             const defaultLogo = './assets/compiled/svg/ts-logo-text.svg';
-            const defaultColorFondo = '#D3E8DE';
+            const defaultFavicon = './assets/compiled/svg/ts-icon.svg';
+            const defaultColorFondo = '#b6d8c7';
             const defaultColorBotonesMenu = '#198754';
-            const defaultContenidoPiePagina = '2024 &copy; Integra Analistas';
+            const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
 
             document.getElementById('logoInput').value = defaultLogo;
             document.getElementById('backgroundColorInput').value = defaultColorFondo;
@@ -645,7 +573,7 @@
                 ColorBotonesMenu: defaultColorBotonesMenu,
                 ContenidoPiePagina: defaultContenidoPiePagina,
                 Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: 'usuario'
+                Usu_Modi: usuarioModificador // Asigna el nombre de usuario
             };
 
             const xhr = new XMLHttpRequest();
@@ -663,27 +591,32 @@
                     const modal = bootstrap.Modal.getInstance(modalElement);
                     modal.hide();
 
-                    // Recargar la página después de mostrar el toast
                     setTimeout(() => {
                         location.reload();
                     }, 2000);
                 } else {
-                    console.error('Error al guardar los valores por defecto:', xhr.responseText);
                     showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
                     loadingMessage.style.display = 'none';
                 }
             };
 
             xhr.onerror = function () {
-                console.error('Error de conexión al intentar guardar los valores por defecto.');
                 showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
                 loadingMessage.style.display = 'none';
             };
 
             xhr.send(JSON.stringify(settingsData));
-        }
 
+            applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
+
+            const favicon = document.querySelector('link[rel="shortcut icon"]');
+            if (favicon) {
+                favicon.href = defaultFavicon;
+            }
+        }
     </script>
+
+
 
 
 

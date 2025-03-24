@@ -6,12 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
+    <style>
+        #app {
+            display: none;
+        }
 
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="shortcut icon"
-          href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
-          type="image/png">
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
 
 
 
@@ -21,6 +33,13 @@
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
     <div id="app">
         <div id="sidebar">
 
@@ -32,7 +51,7 @@
                         <div class="logo">
                             <a href="index.html">
                                 <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                     style="width: 240px; height: 160px">
+                                    style="width: 240px; height: 160px">
                             </a>
                         </div>
                         <div class="sidebar-toggler  x">
@@ -63,12 +82,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
 
                                 </li>
 
                                 <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
 
@@ -78,7 +97,7 @@
 
                         </li>
 
-                        <li class="sidebar-item active  has-sub">
+                        <li class="sidebar-item has-sub">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-truck"></i>
                                 <span>Camiones</span>
@@ -87,12 +106,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listado de Camiones</a>
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
 
                                 </li>
 
                                 <li class="submenu-item active">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de Camiones</a>
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
                                 </li>
 
                             </ul>
@@ -108,19 +127,19 @@
 
                             <ul class="submenu">
                                 <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
 
                                 </li>
                             </ul>
@@ -128,7 +147,7 @@
 
                         </li>
 
-                        <li class="sidebar-item  has-sub">
+                        <li class="sidebar-item  has-sub active">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-person-workspace"></i>
                                 <span>Clientes</span>
@@ -137,12 +156,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de clientes</a>
+                                    <a href="#" class="submenu-link">Listar clientes</a>
 
                                 </li>
 
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                <li class="submenu-item active">
+                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
                                 </li>
 
                             </ul>
@@ -159,12 +178,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de facturas</a>
+                                    <a href="#" class="submenu-link">Listar facturas</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
                                 </li>
 
                             </ul>
@@ -181,12 +200,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                    <a href="#" class="submenu-link">Gestionar grupos</a>
                                 </li>
 
                             </ul>
@@ -217,7 +236,7 @@
                         </li>
 
                         <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link'>
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
                                 <i class="bi bi-columns"></i>
                                 <span>Gestionar contenido</span>
                             </a>
@@ -242,8 +261,8 @@
                         <!--btn para expandir Menú lateral-->
 
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                                aria-expanded="false" aria-label="Toggle navigation">
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
 
@@ -253,9 +272,6 @@
 
                         <script src="./assets/static/js/header.js"></script>
 
-                        <script>
-                            window.onload = loadHeader();
-                        </script>
 
                     </div>
                 </nav>
@@ -272,19 +288,19 @@
 
                             <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
                                 <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                     id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
+                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
                                     <div class="d-flex">
                                         <div class="toast-body">
                                         </div>
                                         <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                                data-bs-dismiss="toast" aria-label="Close"></button>
+                                            data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
                                 </div>
                             </div>
 
 
                             <h5 class="card-title">
-                                Gestión de clientes
+                                Gestionar clientes
                             </h5>
                         </div>
 
@@ -298,12 +314,11 @@
                                                 <li class="d-inline-block me-2 mb-1">
                                                     <label for="CUITinput">CUIT</label>
                                                 </li>
-                                                <input type="text" class="form-control" id="CUITinput"
-                                                       placeholder="ABC123 o AB123CD">
+                                                <input type="text" class="form-control" id="CUITinput" placeholder="">
                                             </div>
                                             <div class="col-md-12 mb-4">
                                                 <button type="button" class="btn btn-light mb-4"
-                                                        onclick="buscarClientes()">
+                                                    onclick="buscarClientes()">
                                                     Buscar
                                                 </button>
                                             </div>
@@ -315,7 +330,7 @@
                                             <div class="col-md-12 mb-4">
                                                 <div class="buttons">
                                                     <a href="#" class="btn icon icon-left btn-success"
-                                                       data-bs-toggle="modal" data-bs-target="#ModalAltaCliente">
+                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaCliente">
                                                         <i data-feather="check-circle"></i> Alta
                                                     </a>
                                                 </div>
@@ -359,20 +374,13 @@
 
             <script src="./assets/static/js/footer.js"></script>
 
-
-            <script>
-                window.onload = function () {
-                    loadFooter();
-
-                };
-            </script>
         </footer>
     </div>
     </div>
 
     <!-- Alta Modal -->
     <div class="modal fade text-left" id="#ModalAltaCliente" tabindex="-1" role="dialog"
-         aria-labelledby="ModalAltaClientelabel" aria-hidden="true">
+        aria-labelledby="ModalAltaClientelabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -383,7 +391,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
-                         role="alert">
+                        role="alert">
                     </div>
                     <form class="form" id="FormAltaCliente">
                         <div class="row">
@@ -395,7 +403,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="txtCUIT_Cliente" class="form-control"
-                                           placeholder="ABC123 o AB123CD" name="cuit-column" />
+                                        placeholder="ABC123 o AB123CD" name="cuit-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtRazon_Social" class="form-label">
@@ -403,8 +411,8 @@
                                             *
                                         </span>
                                     </label>
-                                    <input type="text" id="txtRazon_Social" class="form-control" placeholder="Razon Social"
-                                           name="m-column" />
+                                    <input type="text" id="txtRazon_Social" class="form-control"
+                                        placeholder="Razon Social" name="m-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtModelo" class="form-label">
@@ -413,7 +421,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="txtModelo" class="form-control" placeholder="17.250 E"
-                                           name="mo-column" />
+                                        name="mo-column" />
                                 </div>
                             </div>
                             <div class="col-md-4 col-12">
@@ -422,7 +430,7 @@
                                         Año del modelo <span class="text-danger"> *</span>
                                     </label>
                                     <input type="number" id="txtañoModelo" class="form-control" name="y-column"
-                                           placeholder="2006" data-parsley-required="false" />
+                                        placeholder="2006" data-parsley-required="false" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtTipo" class="form-label">
@@ -431,7 +439,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="txtTipo" class="form-control" name="ty-column"
-                                           placeholder="Vehículo de carga" />
+                                        placeholder="Vehículo de carga" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtnumMotor" class="form-label">
@@ -439,7 +447,7 @@
                                         motor<span class="text-danger"> *</span>
                                     </label>
                                     <input type="text" id="txtnumMotor" class="form-control" name="nm-column"
-                                           placeholder="K4MJ999AB99999999" data-parsley-required="true" />
+                                        placeholder="K4MJ999AB99999999" data-parsley-required="true" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtnumChasis" class="form-label">
@@ -447,7 +455,7 @@
                                         chasis<span class="text-danger"> *</span>
                                     </label>
                                     <input type="text" id="txtnumChasis" class="form-control" name="nc-column"
-                                           placeholder="9CDN8247CR2401010" />
+                                        placeholder="9CDN8247CR2401010" />
                                 </div>
                             </div>
                             <div class="col-md-4 col-12">
@@ -457,7 +465,7 @@
                                         compra<span class="text-danger"> *</span>
                                     </label>
                                     <input type="date" id="txtfechaCompra" class="form-control" placeholder="01/01/2000"
-                                           name="dc-column" />
+                                        name="dc-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtfechaITV" class="form-label">
@@ -465,7 +473,7 @@
                                         ITV<span class="text-danger"> *</span>
                                     </label>
                                     <input type="date" id="txtfechaITV" class="form-control" placeholder="01/01/2000"
-                                           name="di-column" />
+                                        name="di-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="txtequipoFrio" class="form-label">
@@ -473,7 +481,7 @@
                                         frío
                                     </label>
                                     <input type="text" id="txtequipoFrio" class="form-control"
-                                           placeholder="Caja cerrada isotérmica" name="e-column" />
+                                        placeholder="Caja cerrada isotérmica" name="e-column" />
                                 </div>
                             </div>
                         </div>
@@ -495,7 +503,7 @@
 
     <!-- Edit Modal -->
     <div class="modal fade text-left" id="editarClienteModal" tabindex="-1" role="dialog"
-         aria-labelledby="editarClienteModallabel" aria-hidden="true">
+        aria-labelledby="editarClienteModallabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -506,7 +514,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="alertaCompletaCamposEdicion" class="alert alert-light-danger color-danger"
-                         style="display: none;" role="alert">
+                        style="display: none;" role="alert">
                     </div>
                     <form class="form" id="FormEditarCliente">
                         <div class="row">
@@ -518,7 +526,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="editarDominio" class="form-control"
-                                           placeholder="ABC123 o AB123CD" name="dom-column" />
+                                        placeholder="ABC123 o AB123CD" name="dom-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarMarca" class="form-label">
@@ -527,7 +535,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="editarMarca" class="form-control" placeholder="Renault"
-                                           name="m-column" />
+                                        name="m-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarModelo" class="form-label">
@@ -536,7 +544,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="editarModelo" class="form-control" placeholder="17.250 E"
-                                           name="mo-column" />
+                                        name="mo-column" />
                                 </div>
                             </div>
                             <div class="col-md-4 col-12">
@@ -545,7 +553,7 @@
                                         Año del modelo <span class="text-danger"> *</span>
                                     </label>
                                     <input type="number" id="editarañoModelo" class="form-control" name="y-column"
-                                           placeholder="2006" data-parsley-required="false" />
+                                        placeholder="2006" data-parsley-required="false" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarTipo" class="form-label">
@@ -554,7 +562,7 @@
                                         </span>
                                     </label>
                                     <input type="text" id="editarTipo" class="form-control" name="ty-column"
-                                           placeholder="Vehículo de carga" />
+                                        placeholder="Vehículo de carga" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarnumMotor" class="form-label">
@@ -562,7 +570,7 @@
                                         motor<span class="text-danger"> *</span>
                                     </label>
                                     <input type="text" id="editarnumMotor" class="form-control" name="nm-column"
-                                           placeholder="K4MJ999AB99999999" data-parsley-required="true" />
+                                        placeholder="K4MJ999AB99999999" data-parsley-required="true" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarnumChasis" class="form-label">
@@ -570,7 +578,7 @@
                                         chasis<span class="text-danger"> *</span>
                                     </label>
                                     <input type="text" id="editarnumChasis" class="form-control" name="nc-column"
-                                           placeholder="9CDN8247CR2401010" />
+                                        placeholder="9CDN8247CR2401010" />
                                 </div>
                             </div>
                             <div class="col-md-4 col-12">
@@ -580,7 +588,7 @@
                                         compra<span class="text-danger"> *</span>
                                     </label>
                                     <input type="date" id="editarfechaCompra" class="form-control"
-                                           placeholder="01/01/2000" name="dc-column" />
+                                        placeholder="01/01/2000" name="dc-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarfechaITV" class="form-label">
@@ -588,7 +596,7 @@
                                         ITV<span class="text-danger"> *</span>
                                     </label>
                                     <input type="date" id="editarfechaITV" class="form-control" placeholder="01/01/2000"
-                                           name="di-column" />
+                                        name="di-column" />
                                 </div>
                                 <div class="form-group">
                                     <label for="editarequipoFrio" class="form-label">
@@ -596,7 +604,7 @@
                                         frío
                                     </label>
                                     <input type="text" id="editarequipoFrio" class="form-control"
-                                           placeholder="Caja cerrada isotérmica" name="e-column" />
+                                        placeholder="Caja cerrada isotérmica" name="e-column" />
                                 </div>
                             </div>
                         </div>
@@ -618,7 +626,7 @@
 
     <!-- Modal de confirmación de eliminación -->
     <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
-         aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
+        aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header">
@@ -650,6 +658,75 @@
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            // Cargar header, footer y configuración
+            window.loadHeader();
+            window.loadFooter();
+
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
+        };
+
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+
+    </script>
 
     <!-- Buscador y listar -->
     <script>

@@ -12,6 +12,7 @@
           <ScalarProperty Name="Tipo" ColumnName="Tipo" />
           <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
           <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+          <ScalarProperty Name="EstadoCamion" ColumnName="EstadoCamion" />
           <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
           <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
           <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />

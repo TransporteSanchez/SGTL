@@ -12,6 +12,7 @@
     <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="EstadoCamion" Type="varchar" MaxLength="10" Nullable="false" />
     <Property Name="FechaCompra" Type="date" Nullable="false" />
     <Property Name="FechaITV" Type="date" Nullable="false" />
     <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />

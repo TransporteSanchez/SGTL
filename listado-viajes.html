@@ -4,9 +4,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
 
+    <style>
+        #app {
+            display: none;
+        }
 
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="shortcut icon"
@@ -21,6 +33,13 @@
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
     <div id="app">
         <div id="sidebar">
 
@@ -32,7 +51,7 @@
                         <div class="logo">
                             <a href="index.html">
                                 <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                     style="width: 240px; height: 160px">
+                                    style="width: 240px; height: 160px">
                             </a>
                         </div>
                         <div class="sidebar-toggler  x">
@@ -63,12 +82,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listado de choferes</a>
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
 
                                 </li>
 
                                 <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestión de choferes</a>
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
 
@@ -87,12 +106,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listado de camiones</a>
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestión de camiones</a>
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
                                 </li>
 
                             </ul>
@@ -108,19 +127,19 @@
 
                             <ul class="submenu">
                                 <li class="submenu-item active">
-                                    <a href="listado-viajes.html" class="submenu-link">Listado de viajes</a>
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestión de viajes</a>
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de orígenes y destinos</a>
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
 
                                 </li>
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de tarifas</a>
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
 
                                 </li>
                             </ul>
@@ -137,12 +156,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de clientes</a>
+                                    <a href="#" class="submenu-link">Listar clientes</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de clientes</a>
+                                    <a href="#" class="submenu-link">Gestionar clientes</a>
                                 </li>
 
                             </ul>
@@ -159,12 +178,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listado de facturas</a>
+                                    <a href="#" class="submenu-link">Listar facturas</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de facturas</a>
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
                                 </li>
 
                             </ul>
@@ -181,12 +200,12 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestión de usuarios</a>
+                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestión de grupos</a>
+                                    <a href="#" class="submenu-link">Gestionar grupos</a>
                                 </li>
 
                             </ul>
@@ -217,7 +236,7 @@
                         </li>
 
                         <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link'>
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
                                 <i class="bi bi-columns"></i>
                                 <span>Gestionar contenido</span>
                             </a>
@@ -253,10 +272,6 @@
 
                         <script src="./assets/static/js/header.js"></script>
 
-                        <script>
-                            window.onload = loadHeader();
-                        </script>
-
                     </div>
                 </nav>
             </header>
@@ -268,7 +283,7 @@
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
                             <h5 class="card-title">
-                                Listado de viajes
+                                Listar viajes
                             </h5>
                         </div>
                         <div class="card-body">
@@ -314,7 +329,6 @@
                 <!--Fin sección de la tabla-->
             </div>
 
-
             <!--Footer-->
 
             <footer>
@@ -322,12 +336,6 @@
 
                 <script src="./assets/static/js/footer.js"></script>
 
-
-                <script>
-                    window.onload = function () {
-                        loadFooter();
-
-                    };
                 </script>
             </footer>
         </div>
@@ -411,7 +419,75 @@
         <script src="assets/extensions/jquery/jqueryajax.js"></script>
         <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
         <script src="assets/compiled/js/app.js"></script>
-        <script src="assets/static/js/components/sidebar.js"></script>
+        <script src="./assets/static/gestionContenido.js"></script>
+
+        <!-- Carga de diseño y roles -->
+        <script>
+            window.onload = function () {
+                const loadingMessage = document.getElementById('loading-message');
+                loadingMessage.style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+        
+                // Cargar header, footer y configuración
+                window.loadHeader();
+                window.loadFooter();
+        
+                loadSettings()
+                    .then(() => {
+                        adjustVisibilityBasedOnRole();
+                        loadingMessage.style.display = 'none';
+                        document.getElementById('app').style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Error al cargar el header, footer o los datos:', error);
+                        loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                    });
+            };
+        
+            function adjustVisibilityBasedOnRole() {
+                const userRole = localStorage.getItem('userRole');
+                const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+        
+                if (userRole && userRole.toLowerCase() === 'admin') {
+                    gestionarContenidoBtn.style.display = 'block';
+                } else {
+                    gestionarContenidoBtn.style.display = 'none';
+                }
+            }
+        
+            async function loadSettings() {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+        
+                    xhr.onload = function () {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data) {
+                                const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+        
+                                applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                                resolve();
+                            } else {
+                                console.error('La respuesta de la API no contiene los datos esperados.');
+                                reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                            }
+                        } else {
+                            console.error('Error en la petición:', xhr.statusText);
+                            reject(new Error('Error en la carga de la API'));
+                        }
+                    };
+        
+                    xhr.onerror = function () {
+                        console.error('Error al cargar la configuración de la API.');
+                        reject(new Error('Error de red'));
+                    };
+        
+                    xhr.send();
+                });
+            }
+        
+        </script>
 
         <!-- Buscador y Listar -->
         <script>
