@@ -12,6 +12,7 @@
           <ScalarProperty Name="Tipo" ColumnName="Tipo" />
           <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
           <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+          <ScalarProperty Name="EstadoCamion" ColumnName="EstadoCamion" />
           <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
           <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
           <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
@@ -19,7 +20,6 @@
           <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
           <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
           <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
-          <ScalarProperty Name="Fecha_Eliminar" ColumnName="Fecha_Eliminar" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -53,7 +53,6 @@
           <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
           <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
           <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
-          <ScalarProperty Name="Fecha_Eliminar" ColumnName="Fecha_Eliminar" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>

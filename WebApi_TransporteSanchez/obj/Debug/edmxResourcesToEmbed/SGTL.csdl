@@ -12,6 +12,7 @@
     <Property Name="Tipo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
     <Property Name="NumMotor" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
     <Property Name="NumChasis" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+    <Property Name="EstadoCamion" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="FechaCompra" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
@@ -19,7 +20,6 @@
     <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
-    <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
     <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CAMIONES" FromRole="CAMIONES" ToRole="CHOFER_CAMION" />
     <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="CAMIONES" ToRole="VIAJES" />
   </EntityType>
@@ -55,7 +55,6 @@
     <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
-    <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
     <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CHOFERES" FromRole="CHOFERES" ToRole="CHOFER_CAMION" />
     <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_CHOFERES_LOCALIDADES" FromRole="CHOFERES" ToRole="LOCALIDADES" />
     <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CHOFERES" FromRole="CHOFERES" ToRole="VIAJES" />

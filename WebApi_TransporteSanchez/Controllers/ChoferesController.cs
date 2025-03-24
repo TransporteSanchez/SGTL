@@ -32,21 +32,19 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public DateTime Fecha_Modi { get; set; } 
             public string Usu_Modi { get; set; }
-            public DateTime? Fecha_Eliminar { get; set; }
         }
 
         // GET: api/Choferes
         public IHttpActionResult Get()
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new DbContext(connectionString))
                 {
                     var olist = db.Set<CHOFERES>()
-                                  .Where(c => c.Fecha_Eliminar == null || c.Fecha_Eliminar == DateTime.MinValue)
+                                  .Where(c => c.EstadoChofer != "Eliminado") // No se devuelven los choferes eliminados
                                   .Select(c => new ChoferDto
                                   {
                                       Chofer_ID = c.Chofer_ID,
@@ -66,15 +64,14 @@ namespace WebApi_TransporteSanchez.Controllers
                                       Usu_Alta = c.Usu_Alta,
                                       Fecha_Modi = c.Fecha_Modi,
                                       Usu_Modi = c.Usu_Modi,
-                                      Fecha_Eliminar = c.Fecha_Eliminar
                                   }).ToList();
 
                     if (olist == null || !olist.Any())
                     {
-                        return NotFound(); // Retorna 404 si no se encuentran registros
+                        return NotFound();
                     }
 
-                    return Ok(olist); // Retorna 200 con la lista de choferes
+                    return Ok(olist);
                 }
             }
             catch (DbUpdateException ex)
@@ -100,7 +97,6 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
 
-
         // GET: api/Choferes/{id}
         public IHttpActionResult Get(int id)
         {
@@ -111,7 +107,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(connectionString))
                 {
                     var chofer = db.Set<CHOFERES>()
-                                   .Where(c => c.Chofer_ID == id && (c.Fecha_Eliminar == null || c.Fecha_Eliminar == DateTime.MinValue))
+                                   .Where(c => c.Chofer_ID == id && c.EstadoChofer != "Eliminado") 
                                    .Select(c => new ChoferDto
                                    {
                                        Chofer_ID = c.Chofer_ID,
@@ -131,7 +127,6 @@ namespace WebApi_TransporteSanchez.Controllers
                                        Usu_Alta = c.Usu_Alta,
                                        Fecha_Modi = c.Fecha_Modi,
                                        Usu_Modi = c.Usu_Modi,
-                                       Fecha_Eliminar = c.Fecha_Eliminar
                                    }).FirstOrDefault();
 
                     if (chofer == null)
@@ -164,21 +159,22 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+
         // GET: api/Choferes/Buscar
         [HttpGet]
         [Route("api/Choferes/Buscar")]
         public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                // Usar DbContext directamente con la cadena de conexión personalizada
                 using (var db = new DbContext(connectionString))
                 {
-                    // Consultar los choferes en la base de datos, excluyendo los eliminados
-                    var query = db.Set<CHOFERES>().Where(c => c.Fecha_Eliminar == null).AsQueryable();
+                    // 👇 Reemplazo de la condición original
+                    var query = db.Set<CHOFERES>()
+                                  .Where(c => c.EstadoChofer != "Eliminado") 
+                                  .AsQueryable();
 
                     if (!string.IsNullOrEmpty(nombre))
                     {
@@ -201,7 +197,6 @@ namespace WebApi_TransporteSanchez.Controllers
                         query = query.Where(c => estados.Contains(c.EstadoChofer));
                     }
 
-                    // Filtrar por fecha de alta
                     if (fechaDesde.HasValue)
                     {
                         query = query.Where(c => c.Fecha_Alta >= fechaDesde.Value);
@@ -213,6 +208,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
                     var totalRecords = query.Count();
+
                     var results = query
                         .OrderBy(c => c.Nombre)
                         .Skip((page - 1) * pageSize)
@@ -236,7 +232,6 @@ namespace WebApi_TransporteSanchez.Controllers
                             Usu_Alta = c.Usu_Alta,
                             Fecha_Modi = c.Fecha_Modi,
                             Usu_Modi = c.Usu_Modi,
-                            Fecha_Eliminar = c.Fecha_Eliminar
                         })
                         .ToList();
 
@@ -272,12 +267,12 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
 
+
         // GET: api/Choferes/{choferID}/Chofer_Camion
         [HttpGet]
         [Route("api/Choferes/{choferID}/Chofer_Camion")]
         public IHttpActionResult GetChoferesByCamion(int choferID)
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
@@ -288,7 +283,7 @@ namespace WebApi_TransporteSanchez.Controllers
                                    join c in db.Set<CAMIONES>() on cc.CamionID equals c.Camion_ID
                                    join ch in db.Set<CHOFERES>() on cc.ChoferID equals ch.Chofer_ID
                                    where cc.ChoferID == choferID
-                                   && (ch.Fecha_Eliminar == null || ch.Fecha_Eliminar == DateTime.MinValue)
+                                   && ch.EstadoChofer != "Eliminado" 
                                    select new
                                    {
                                        c.Camion_ID,
@@ -296,9 +291,8 @@ namespace WebApi_TransporteSanchez.Controllers
                                        cc.Cedula,
                                    };
 
-                    var result = camiones.ToList(); // Convertir a lista
+                    var result = camiones.ToList();
 
-                    // Retorna 200 con la lista de camiones (puede ser vacía)
                     return Ok(result);
                 }
             }
@@ -322,15 +316,15 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
 
+
         // PUT: api/Choferes/EstadoChofer/{id}
         [HttpPut]
         [Route("api/Choferes/EstadoChofer/{id}")]
         public IHttpActionResult PutEstadoChofer(int id, [FromBody] EstadoChoferUpdateModel model)
         {
-            // Verificar si el modelo es válido
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+                return BadRequest(ModelState);
             }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -339,20 +333,23 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(connectionString))
                 {
-                    // Buscar la entidad CHOFERES por id
                     var chofer = db.Set<CHOFERES>().Find(id);
 
                     if (chofer == null)
                     {
-                        return NotFound(); // Retorna 404 si no se encuentra el chofer con el id especificado
+                        return NotFound();
                     }
 
                     var validationErrors = new List<object>();
 
-                    // Validar si el chofer tiene una fecha de eliminación
-                    if (chofer.Fecha_Eliminar != null && chofer.Fecha_Eliminar != DateTime.MinValue)
+                    // Validar que el chofer no se encuentre eliminado
+                    if (chofer.EstadoChofer == "Eliminado")
                     {
-                        validationErrors.Add(new { PropertyName = "Fecha_Eliminar", ErrorMessage = "No se puede cambiar el estado de un chofer eliminado." });
+                        validationErrors.Add(new
+                        {
+                            PropertyName = "EstadoChofer",
+                            ErrorMessage = "No se puede cambiar el estado de un chofer eliminado."
+                        });
                     }
 
                     if (validationErrors.Any())
@@ -360,50 +357,51 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Content(HttpStatusCode.BadRequest, validationErrors);
                     }
 
-                    // Actualizar solo el campo EstadoChofer
                     chofer.EstadoChofer = model.EstadoChofer;
+                    chofer.Fecha_Modi = DateTime.Now;
+                    chofer.Usu_Modi = model.Usu_Modi;
 
-                    // Deshabilitar validaciones automáticas para otras propiedades
                     db.Configuration.ValidateOnSaveEnabled = false;
-
-                    // Intentar guardar los cambios en la base de datos
                     db.SaveChanges();
-                    return Ok(); // Retorna 200 OK si la actualización fue exitosa
+
+                    return Ok();
                 }
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                // Manejo de errores de concurrencia
-                return Content(HttpStatusCode.Conflict, new { Message = "La actualización falló debido a un conflicto de concurrencia.", Details = ex.Message }); // Retorna 409 en caso de conflicto
+                return Content(HttpStatusCode.Conflict, new
+                {
+                    Message = "La actualización falló debido a un conflicto de concurrencia.",
+                    Details = ex.Message
+                });
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación de entidad
                 var validationErrors = ex.EntityValidationErrors
                     .SelectMany(e => e.ValidationErrors)
                     .Select(e => new { e.PropertyName, e.ErrorMessage })
                     .ToList();
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 con los errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores de actualización en la base de datos
-                var errorMessage = ex.InnerException?.Message ?? ex.Message; // Captura el mensaje de error detallado
-
-                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage))); // Retorna 500 en caso de error de actualización
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage)));
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
+
 
         // Modelo para la actualización de EstadoChofer
         public class EstadoChoferUpdateModel
         {
             [Required]
             public string EstadoChofer { get; set; }
+            public string Usu_Modi { get; set; }
         }
 
 
@@ -433,8 +431,8 @@ namespace WebApi_TransporteSanchez.Controllers
                             });
                         }
 
-                        // Si el chofer es existente pero está eliminado, considerarlo como no registrado
-                        if (choferConDni.Fecha_Eliminar != null && choferConDni.Fecha_Eliminar != DateTime.MinValue)
+                        // Si el chofer está eliminado, permitirlo
+                        if (choferConDni.EstadoChofer == "Eliminado")
                         {
                             return Ok(new
                             {
@@ -443,7 +441,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             });
                         }
 
-                        // Si el DNI pertenece a otro chofer existente no eliminado, devolver error
+                        // Si el DNI pertenece a otro chofer no eliminado, no permitirlo
                         return Ok(new
                         {
                             codigo = "DNI_registrado",
@@ -469,6 +467,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 });
             }
         }
+
 
 
         // POST: api/Choferes
@@ -578,10 +577,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 var validationErrors = new List<object>();
 
-                // Validar si el chofer tiene un valor en Fecha_Eliminar (no nulo ni vacío)
-                if (chofer.Fecha_Eliminar != null && chofer.Fecha_Eliminar != DateTime.MinValue)
+                // Validar si el chofer está eliminado
+                if (chofer.EstadoChofer == "Eliminado")
                 {
-                    validationErrors.Add(new { PropertyName = "Fecha_Eliminar", ErrorMessage = "No se puede editar un chofer eliminado." });
+                    validationErrors.Add(new { PropertyName = "EstadoChofer", ErrorMessage = "No se puede editar un chofer eliminado." });
                 }
 
                 if (validationErrors.Any())
@@ -644,10 +643,9 @@ namespace WebApi_TransporteSanchez.Controllers
         [Route("api/Choferes/Eliminar/{id}")]
         public IHttpActionResult EliminarChofer(int id, [FromBody] EliminarChoferModel model)
         {
-            // Verificar si el modelo es válido
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+                return BadRequest(ModelState);
             }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -656,23 +654,22 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(connectionString))
                 {
-                    // Buscar la entidad CHOFERES por id
                     var chofer = db.Set<CHOFERES>().Find(id);
 
                     if (chofer == null)
                     {
-                        return NotFound(); // Retorna 404 si no se encuentra el chofer con el id especificado
+                        return NotFound();
                     }
 
                     var validationErrors = new List<object>();
 
-                    // Validar si el chofer ya tiene una fecha de eliminación
-                    if (chofer.Fecha_Eliminar != null && chofer.Fecha_Eliminar != DateTime.MinValue)
+                    // Validar si ya está eliminado
+                    if (chofer.EstadoChofer == "Eliminado")
                     {
-                        validationErrors.Add(new { PropertyName = "Fecha_Eliminar", ErrorMessage = "El chofer ya se encuentra eliminado." });
+                        validationErrors.Add(new { PropertyName = "EstadoChofer", ErrorMessage = "El chofer ya se encuentra eliminado." });
                     }
 
-                    // Validar si el chofer está activo
+                    // Validar si está activo
                     if (chofer.EstadoChofer == "Activo")
                     {
                         validationErrors.Add(new { PropertyName = "EstadoChofer", ErrorMessage = "No se puede eliminar un chofer activo. Inactívelo primero." });
@@ -683,47 +680,46 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Content(HttpStatusCode.BadRequest, validationErrors);
                     }
 
-                    // Establecer la fecha de eliminación y la fecha de modificación como la fecha actual
+                    // Actualizar estado y metadatos de modificación
                     DateTime fechaActual = DateTime.Now;
-                    chofer.Fecha_Eliminar = fechaActual;
+                    chofer.EstadoChofer = "Eliminado";
                     chofer.Fecha_Modi = fechaActual;
-                    chofer.Usu_Modi = model.Usu_Modi;  // Actualizar el usuario que realiza la eliminación
+                    chofer.Usu_Modi = model.Usu_Modi;
 
-                    // Deshabilitar validaciones automáticas para otras propiedades
                     db.Configuration.ValidateOnSaveEnabled = false;
-
-                    // Intentar guardar los cambios en la base de datos
                     db.SaveChanges();
-                    return Ok("El chofer se eliminó exitosamente."); // Retorna 200 OK si la eliminación fue exitosa
+
+                    return Ok("El chofer fue eliminado correctamente.");
                 }
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                // Manejo de errores de concurrencia
-                return Content(HttpStatusCode.Conflict, new { Message = "La eliminación falló debido a un conflicto de concurrencia.", Details = ex.Message }); // Retorna 409 en caso de conflicto
+                return Content(HttpStatusCode.Conflict, new
+                {
+                    Message = "La eliminación falló debido a un conflicto de concurrencia.",
+                    Details = ex.Message
+                });
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación de entidad
                 var validationErrors = ex.EntityValidationErrors
                     .SelectMany(e => e.ValidationErrors)
                     .Select(e => new { e.PropertyName, e.ErrorMessage })
                     .ToList();
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 con los errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores de actualización en la base de datos
-                var errorMessage = ex.InnerException?.Message ?? ex.Message; // Captura el mensaje de error detallado
-
-                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage))); // Retorna 500 en caso de error de actualización
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage)));
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
+
 
         // Modelo para la actualización de eliminación de chofer
         public class EliminarChoferModel

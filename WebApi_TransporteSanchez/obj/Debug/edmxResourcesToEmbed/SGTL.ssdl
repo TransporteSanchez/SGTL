@@ -12,6 +12,7 @@
     <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
     <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+    <Property Name="EstadoCamion" Type="varchar" MaxLength="10" Nullable="false" />
     <Property Name="FechaCompra" Type="date" Nullable="false" />
     <Property Name="FechaITV" Type="date" Nullable="false" />
     <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
@@ -19,7 +20,6 @@
     <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
     <Property Name="Fecha_Modi" Type="date" Nullable="false" />
     <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
-    <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
   </EntityType>
   <EntityType Name="CHOFER_CAMION">
     <Key>
@@ -51,7 +51,6 @@
     <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
     <Property Name="Fecha_Modi" Type="date" Nullable="false" />
     <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
-    <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
   </EntityType>
   <EntityType Name="CLIENTES">
     <Key>

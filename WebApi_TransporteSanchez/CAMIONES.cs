@@ -36,7 +36,7 @@ namespace WebApi_TransporteSanchez
         public string Usu_Alta { get; set; }
         public System.DateTime Fecha_Modi { get; set; }
         public string Usu_Modi { get; set; }
-        public System.DateTime? Fecha_Eliminar { get; set; }
+        public string EstadoCamion { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<CHOFER_CAMION> CHOFER_CAMION { get; set; }

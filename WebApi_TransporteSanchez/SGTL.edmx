@@ -17,6 +17,7 @@
           <Property Name="Tipo" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="NumMotor" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="NumChasis" Type="nvarchar" MaxLength="50" Nullable="false" />
+          <Property Name="EstadoCamion" Type="varchar" MaxLength="10" Nullable="false" />
           <Property Name="FechaCompra" Type="date" Nullable="false" />
           <Property Name="FechaITV" Type="date" Nullable="false" />
           <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
@@ -24,7 +25,6 @@
           <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
           <Property Name="Fecha_Modi" Type="date" Nullable="false" />
           <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
-          <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
         </EntityType>
         <EntityType Name="CHOFER_CAMION">
           <Key>
@@ -56,7 +56,6 @@
           <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
           <Property Name="Fecha_Modi" Type="date" Nullable="false" />
           <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
-          <Property Name="Fecha_Eliminar" Type="date" Nullable="true" />
         </EntityType>
         <EntityType Name="CLIENTES">
           <Key>
@@ -598,6 +597,7 @@
           <Property Name="Tipo" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="NumMotor" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="NumChasis" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
+          <Property Name="EstadoCamion" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="FechaCompra" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
@@ -605,7 +605,6 @@
           <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
-          <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
           <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CAMIONES" FromRole="CAMIONES" ToRole="CHOFER_CAMION" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="CAMIONES" ToRole="VIAJES" />
         </EntityType>
@@ -641,7 +640,6 @@
           <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
-          <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />  
           <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CHOFERES" FromRole="CHOFERES" ToRole="CHOFER_CAMION" />
           <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_CHOFERES_LOCALIDADES" FromRole="CHOFERES" ToRole="LOCALIDADES" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CHOFERES" FromRole="CHOFERES" ToRole="VIAJES" />
@@ -1221,6 +1219,7 @@
                 <ScalarProperty Name="Tipo" ColumnName="Tipo" />
                 <ScalarProperty Name="NumMotor" ColumnName="NumMotor" />
                 <ScalarProperty Name="NumChasis" ColumnName="NumChasis" />
+                <ScalarProperty Name="EstadoCamion" ColumnName="EstadoCamion" />
                 <ScalarProperty Name="FechaCompra" ColumnName="FechaCompra" />
                 <ScalarProperty Name="FechaITV" ColumnName="FechaITV" />
                 <ScalarProperty Name="EquipoFrio" ColumnName="EquipoFrio" />
@@ -1228,7 +1227,6 @@
                 <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
                 <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
                 <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
-                <ScalarProperty Name="Fecha_Eliminar" ColumnName="Fecha_Eliminar" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1262,7 +1260,6 @@
                 <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
                 <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
                 <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
-                <ScalarProperty Name="Fecha_Eliminar" ColumnName="Fecha_Eliminar" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>

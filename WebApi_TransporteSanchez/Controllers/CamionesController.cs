@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
@@ -24,6 +25,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Tipo { get; set; }
             public string NumMotor { get; set; }
             public string NumChasis { get; set; }
+            public string EstadoCamion { get; set; }
             public DateTime FechaCompra { get; set; }
             public DateTime FechaITV { get; set; }
             public string EquipoFrio { get; set; }
@@ -31,7 +33,6 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
-            public DateTime? Fecha_Eliminar { get; set; }
         }
 
         // GET: api/Camiones
@@ -45,7 +46,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var camiones = db.Set<CAMIONES>()
-                        .Where(c => c.Fecha_Eliminar == null || c.Fecha_Eliminar == DateTime.MinValue) // Filtro de Fecha_Eliminar
+                        .Where(c => c.EstadoCamion != "Eliminado")
                         .Select(c => new CamionDTO
                         {
                             Camion_ID = c.Camion_ID,
@@ -56,6 +57,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             Tipo = c.Tipo,
                             NumMotor = c.NumMotor,
                             NumChasis = c.NumChasis,
+                            EstadoCamion = c.EstadoCamion,
                             FechaCompra = c.FechaCompra,
                             FechaITV = c.FechaITV,
                             EquipoFrio = c.EquipoFrio,
@@ -63,7 +65,6 @@ namespace WebApi_TransporteSanchez.Controllers
                             Usu_Alta = c.Usu_Alta,
                             Fecha_Modi = c.Fecha_Modi,
                             Usu_Modi = c.Usu_Modi,
-                            Fecha_Eliminar = c.Fecha_Eliminar
                         }).ToList();
 
                     if (camiones == null || !camiones.Any())
@@ -110,7 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(connectionString))
                 {
-                    var query = db.Set<CAMIONES>().Where(c => c.Fecha_Eliminar == null || c.Fecha_Eliminar == DateTime.MinValue);
+                    var query = db.Set<CAMIONES>().Where(c => c.EstadoCamion != "Eliminado");
 
                     // Filtro por dominio si se proporciona
                     if (!string.IsNullOrEmpty(dominio))
@@ -146,6 +147,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             Tipo = c.Tipo,
                             NumMotor = c.NumMotor,
                             NumChasis = c.NumChasis,
+                            EstadoCamion = c.EstadoCamion,
                             FechaCompra = c.FechaCompra,
                             FechaITV = c.FechaITV,
                             EquipoFrio = c.EquipoFrio,
@@ -153,7 +155,6 @@ namespace WebApi_TransporteSanchez.Controllers
                             Usu_Alta = c.Usu_Alta,
                             Fecha_Modi = c.Fecha_Modi,
                             Usu_Modi = c.Usu_Modi,
-                            Fecha_Eliminar = c.Fecha_Eliminar
                         })
                         .ToList();
 
@@ -199,7 +200,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(connectionString))
                 {
                     var camion = db.Set<CAMIONES>()
-                        .Where(c => c.Camion_ID == id && (c.Fecha_Eliminar == null || c.Fecha_Eliminar == DateTime.MinValue))
+                        .Where(c => c.Camion_ID == id && c.EstadoCamion != "Eliminado")
                         .FirstOrDefault();
 
                     if (camion == null)
@@ -217,6 +218,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         Tipo = camion.Tipo,
                         NumMotor = camion.NumMotor,
                         NumChasis = camion.NumChasis,
+                        EstadoCamion = camion.EstadoCamion,
                         FechaCompra = camion.FechaCompra,
                         FechaITV = camion.FechaITV,
                         EquipoFrio = camion.EquipoFrio,
@@ -224,7 +226,6 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Alta = camion.Usu_Alta,
                         Fecha_Modi = camion.Fecha_Modi,
                         Usu_Modi = camion.Usu_Modi,
-                        Fecha_Eliminar = camion.Fecha_Eliminar
                     };
 
                     return Ok(camionDto);
@@ -271,7 +272,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var choferes = from cc in db.Set<CHOFER_CAMION>()
                                    join c in db.Set<CHOFERES>() on cc.ChoferID equals c.Chofer_ID
                                    join cam in db.Set<CAMIONES>() on cc.CamionID equals cam.Camion_ID
-                                   where cc.CamionID == camionID && (cam.Fecha_Eliminar == null || cam.Fecha_Eliminar == DateTime.MinValue)
+                                   where cc.CamionID == camionID && cam.EstadoCamion != "Eliminado"
                                    select new
                                    {
                                        c.Chofer_ID,
@@ -395,10 +396,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 var validationErrors = new List<object>();
 
-                // Validar si el camión tiene un valor en Fecha_Eliminar (no nulo ni vacío)
-                if (camion.Fecha_Eliminar != null && camion.Fecha_Eliminar != DateTime.MinValue)
+                // Validar si el camión está eliminado
+                if (camion.EstadoCamion == "Eliminado")
                 {
-                    validationErrors.Add(new { PropertyName = "Fecha_Eliminar", ErrorMessage = "No se puede editar un camión eliminado." });
+                    validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "No se puede editar un camión eliminado." });
                 }
 
                 if (validationErrors.Any())
@@ -455,6 +456,89 @@ namespace WebApi_TransporteSanchez.Controllers
                 }
             }
         }
+
+        // PUT: api/Camiones/Eliminar/{id}
+        [HttpPut]
+        [Route("api/Camiones/Eliminar/{id}")]
+        public IHttpActionResult EliminarCamion(int id, [FromBody] EliminarCamionModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new DbContext(connectionString))
+                {
+                    var camion = db.Set<CAMIONES>().Find(id);
+
+                    if (camion == null)
+                    {
+                        return NotFound();
+                    }
+
+                    var validationErrors = new List<object>();
+
+                    // Validar si ya está eliminado
+                    if (camion.EstadoCamion == "Eliminado")
+                    {
+                        validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "El camión ya se encuentra eliminado." });
+                    }
+
+
+                    if (validationErrors.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, validationErrors);
+                    }
+
+                    // Marcar como eliminado
+                    camion.EstadoCamion = "Eliminado";
+                    camion.Fecha_Modi = DateTime.Now;
+                    camion.Usu_Modi = model.Usu_Modi;
+
+                    db.Configuration.ValidateOnSaveEnabled = false;
+                    db.SaveChanges();
+
+                    return Ok("El camión fue eliminado correctamente.");
+                }
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                return Content(HttpStatusCode.Conflict, new
+                {
+                    Message = "La eliminación falló debido a un conflicto de concurrencia.",
+                    Details = ex.Message
+                });
+            }
+            catch (DbEntityValidationException ex)
+            {
+                var validationErrors = ex.EntityValidationErrors
+                    .SelectMany(e => e.ValidationErrors)
+                    .Select(e => new { e.PropertyName, e.ErrorMessage })
+                    .ToList();
+
+                return Content(HttpStatusCode.BadRequest, validationErrors);
+            }
+            catch (DbUpdateException ex)
+            {
+                var errorMessage = ex.InnerException?.Message ?? ex.Message;
+                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage)));
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+        }
+
+        public class EliminarCamionModel
+        {
+            [Required]
+            public string Usu_Modi { get; set; }
+        }
+
 
 
 
