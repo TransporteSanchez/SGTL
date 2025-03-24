@@ -201,11 +201,11 @@
                                     <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
                                 </li>
 
-                                <li class="submenu-item active">
+                                <li class="submenu-item">
                                     <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
                                 </li>
 
-                                <li class="submenu-item ">
+                                <li class="submenu-item active">
                                     <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a>
                                 </li>
 
@@ -303,47 +303,32 @@
 
 
                             <h5 class="card-title">
-                                Gestionar usuarios
+                                Gestionar grupos y permisos
                             </h5>
                         </div>
 
                         <div class="card-body">
-                            <form id="busquedaUsuarioForm" class="form">
+                            <form id="busquedaGrupoForm" class="form">
                                 <div class="row">
                                     <!-- Columna Izquierda -->
                                     <div class="col-md-6 mb-4">
                                         <fieldset class="border p-3">
                                             <div class="col-md-6 mb-4">
                                                 <li class="d-inline-block me-2 mb-1">
-                                                    <label for="txtnombreusuario">Nombre_Usuario</label>
+                                                    <label for="txtnombreGrupo">Grupo</label>
                                                 </li>
-                                                <input type="text" class="form-control" id="txtnombreusuario"
-                                                    data-parsley-restricted-number="true" placeholder="fgodoy">
+                                                <input type="text" class="form-control" id="txtnombreGrupo"
+                                                    data-parsley-restricted-number="true" placeholder="Administradores">
                                             </div>
                                             <div class="col-md-12 mb-4">
                                                 <li class="d-inline-block me-2 mb-1">
                                                     <label for="basicInput">Estado</label>
                                                 </li>
-                                                <div class="form-check-label">
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox"
-                                                            class="form-check-input form-check-success"
-                                                            id="checkestadoactivo">
-                                                        <label class="form-check-label"
-                                                            for="checkestadoactivo">Activo</label>
-                                                    </div>
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox"
-                                                            class="form-check-input form-check-danger"
-                                                            id="checkestadoinactivo">
-                                                        <label class="form-check-label"
-                                                            for="checkestadoinactivo">Inactivo</label>
-                                                    </div>
                                                 </div>
                                             </div>
                                             <div class="col-md-12 mb-4">
                                                 <button type="button" class="btn btn-light"
-                                                    onclick="buscarusuarioes()">Buscar</button>
+                                                    onclick="buscargrupo()">Buscar</button>
                                             </div>
                                         </fieldset>
                                     </div>
@@ -353,7 +338,7 @@
                                             <div class="col-md-12 mb-4">
                                                 <div class="buttons">
                                                     <a href="#" class="btn icon icon-left btn-success"
-                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaUsuario">
+                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaGrupo">
                                                         <i data-feather="check-circle"></i> Alta
                                                     </a>
                                                 </div>
@@ -364,13 +349,10 @@
                             </form>
 
                             <div class="table-responsive">
-                                <table class="table table-striped" id="tablaUsuarios">
+                                <table class="table table-striped" id="tablaGrupos">
                                     <thead>
                                         <tr>
-                                            <th>Nombre de usuario</th>
-                                            <th>Nombre</th>
-                                            <th>Apellido</th>
-                                            <th>Estado</th>
+                                            <th>Grupo</th>
                                             <th></th>
                                         </tr>
                                     </thead>
@@ -407,12 +389,12 @@
         </div>
 
         <!-- Modal Alta -->
-        <div class="modal fade text-left" id="ModalAltaUsuario" tabindex="-1" role="dialog"
-            aria-labelledby="AltaUsuarioModallabel" aria-hidden="true">
+        <div class="modal fade text-left" id="#ModalAltaGrupo" tabindex="-1" role="dialog"
+            aria-labelledby="AltaGrupoModallabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="AltaUsuarioModallabel">Alta de usuario</h4>
+                        <h4 class="modal-title" id="AltaGrupoModallabel">Alta de grupo</h4>
                         <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                             <i data-feather="x"></i>
                         </button>
@@ -422,43 +404,15 @@
                         <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger"
                             style="display: none;" role="alert">
                         </div>
-                        <form class="form" id="FormAltaUsuario">
+                        <form class="form" id="FormAltaGrupo">
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre <span
+                                        <label for="group-column" class="form-label">Grupo <span
                                                 class="text-danger"> *</span></label>
-                                        <input type="text" id="first-name-column" class="form-control"
-                                            placeholder="Facundo" name="fname-column" />
+                                        <input type="text" id="group-column" class="form-control"
+                                            placeholder="Administradores" name="fname-column" />
                                     </div>
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="last-name-column" class="form-control"
-                                            placeholder="Godoy" name="lname-column" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="user-name-column" class="form-label">Nombre_Usuario <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="user-name-column" class="form-control"
-                                            placeholder="fgodoy" name="user-column" />
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="password-column" class="form-label">Contraseña <span class="text-danger">
-                                                *</span></label>
-                                        <input type="text" id="password-column" class="form-control"
-                                            placeholder="Contraseña alfanumérica" name="c-column"
-                                            data-parsley-restricted-number="true" />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="rol-column" class="form-label">Rol <span class="text-danger"> 
-                                                *</span></label>
-                                        <input type="text" id="rol-column" class="form-control" name="rol-column"
-                                            placeholder="Ingresar rol de usuario." />
-                                    </div>
-                                </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
@@ -1253,15 +1207,10 @@
 
         // Función para validar campos requeridos y habilitar el botón de confirmación
         function validateRequiredFields() {
-            var nombre = $('#first-name-column').val();
-            var apellido = $('#last-name-column').val();
-            var NombreUsuario = $('#user-name-column').val();
-            var Contraseña = $('#password-column').val();
-            var Rol = $('#rol-column').val();
-            var estado = $('#estado-column').val();
+            var nombregrupo = $('#group-name-column').val();
 
             // Verificar que todos los campos requeridos estén completos
-            if (!nombre || !apellido || !NombreUsuario || !Contraseña || !Rol || !estado) {
+            if (!nombre grupo ) {
                 $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show(); // Mostrar el mensaje de alerta
                 $('#confirmarBtn').prop('disabled', true); // Deshabilitar el botón de confirmación
             } else {

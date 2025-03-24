@@ -11,7 +11,7 @@ namespace WebApi_TransporteSanchez
 {
     using System;
     using System.Collections.Generic;
-    
+
     public partial class USUARIOS
     {
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2214:DoNotCallOverridableMethodsInConstructors")]
@@ -19,7 +19,7 @@ namespace WebApi_TransporteSanchez
         {
             this.GRUPOS_USUARIOS = new HashSet<GRUPOS_USUARIOS>();
         }
-    
+
         public int Usuario_ID { get; set; }
         public string Nombre { get; set; }
         public string Apellido { get; set; }
@@ -27,6 +27,7 @@ namespace WebApi_TransporteSanchez
         public string Contraseña { get; set; }
         public System.DateTime Fecha_Alta { get; set; }
         public string Rol { get; set; }
+        public string EstadoUsuario { get; set; }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<GRUPOS_USUARIOS> GRUPOS_USUARIOS { get; set; }

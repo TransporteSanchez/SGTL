@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+
+    <style>
+        #app {
+            display: none;
+        }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+</head>
+
+<body>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar">
+
+            <!--Barra lateral activa-->
+
+            <div class="sidebar-wrapper active">
+                <div class="sidebar-header position-relative">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="logo">
+                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
+                                    style="width: 240px; height: 160px"></a>
+                        </div>
+                        <div class="sidebar-toggler  x">
+                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menú-->
+                <div class="sidebar-menu">
+                    <ul class="menu">
+
+                        <li class="sidebar-item ">
+                            <a href="index.html" class='sidebar-link'>
+                                <i class="bi bi-grid-fill"></i>
+                                <span>Dashboard</span>
+                            </a>
+
+
+                        </li>
+
+                        <li class="sidebar-item has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-person"></i>
+                                <span>Choferes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
+
+                                </li>
+
+                                <li class="submenu-item">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
+
+                                </li>
+
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-truck"></i>
+                                <span>Camiones</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-calendar-check"></i>
+                                <span>Viajes</span>
+                            </a>
+
+                            <ul class="submenu">
+                                <li class="submenu-item">
+                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
+
+                                </li>
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
+
+                                </li>
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-person-workspace"></i>
+                                <span>Clientes</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listar clientes</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-medical"></i>
+                                <span>Facturación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Listar facturas</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Gestionar facturas</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item active has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-people-fill"></i>
+                                <span>Usuarios</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item active">
+                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
+                                </li>
+
+                                <li class="submenu-item">
+                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item  has-sub">
+                            <a href="#" class='sidebar-link'>
+                                <i class="bi bi-file-earmark-richtext"></i>
+                                <span>Documentación</span>
+                            </a>
+
+                            <ul class="submenu">
+
+                                <li class="submenu-item">
+                                    <a href="#" class="submenu-link">Manual de usuario</a>
+
+                                </li>
+
+                                <li class="submenu-item ">
+                                    <a href="#" class="submenu-link">Otros</a>
+                                </li>
+
+                            </ul>
+
+
+                        </li>
+
+                        <li class="sidebar-item">
+                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
+                                <i class="bi bi-columns"></i>
+                                <span>Gestionar contenido</span>
+                            </a>
+
+                        </li>
+
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!--Llamado a las opciones del header-->
+
+                        <div id="header-container"></div>
+
+                        <script src="./assets/static/js/header.js"></script>
+
+
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+
+                <!--Comienzo sección de la tabla-->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title">
+                                Listar usuarios
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <form id="busquedaUsuarioForm" class="form">
+                                <div class="row">
+                                    <div class="col-md-3 mb-3">
+                                        <label for="txtuser-name-column">Nombre de usuario</label>
+                                        <input type="text" class="form-control" id="txtuser-name-column"
+                                            placeholder="jperez">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="txtfirst-name-column">Nombre</label>
+                                        <input type="text" class="form-control" id="txtfirst-name-column"
+                                            placeholder="Juan">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label for="txtlast-name-column">Apellido</label>
+                                        <input type="text" class="form-control" id="txtlast-name-column"
+                                            placeholder="Perez">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="basicInput">Estado</label>
+                                        <div class="form-check">
+                                            <input type="checkbox" value="" class="form-check-input form-check-success"
+                                                id="checkestadoactivo">
+                                            <label class="form-check-label" for="checkestadoactivo">Activo</label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input type="checkbox" value="" class="form-check-input form-check-danger"
+                                                id="checkestadoinactivo">
+                                            <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-light mb-4"
+                                    onclick="buscarUsuarios()">Buscar</button>
+                            </form>
+
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="tablaUsuarios">
+                                    <thead>
+                                        <tr>
+                                            <th>Nombre de usuario</th>
+                                            <th>Nombre</th>
+                                            <th>Apellido</th>
+                                            <th>Estado</th>
+                                            <th></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Contenido llenado dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginación -->
+                            <nav>
+                                <ul class="pagination justify-content-end" id="pagination">
+                                </ul>
+                            </nav>
+
+
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+
+            <!--Fin sección de la tabla-->
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+
+                <script src="./assets/static/js/footer.js"></script>
+
+            </footer>
+
+        </div>
+
+        <!-- Modal Detalles del Usuario -->
+        <div class="modal fade text-left" id="DetallesUsuarioModal" tabindex="-1" role="dialog"
+            aria-labelledby="DetallesUsuario" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title fw-bold text-primary" id="DetallesUsuario">Detalles del usuario</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Estado del Usuario -->
+                        <div class="border p-3">
+                            <label class="fw-bold">Estado del usuario</label>
+                            <span id="EstadoUsuario" class="badge bg-success">Activo</span>
+                        </div>
+
+                        <!-- Grupos Asignados -->
+                        <div class="border p-3 mt-3">
+                            <label class="fw-bold">Grupos asignados</label>
+                            <ul id="GruposAsignados" class="list-group">
+                                <li class="list-group-item">Facturación</li>
+                                <li class="list-group-item">Administrativo</li>
+                            </ul>
+                        </div>
+
+                        <!-- Permisos Asignados -->
+                        <div class="border p-3 mt-3">
+                            <label class="fw-bold">Permisos asignados por grupo</label>
+                            <div id="PermisosPorGrupo">
+                                <div class="mt-2">
+                                    <h6 class="fw-bold">Facturación</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">Listar facturas</li>
+                                        <li class="list-group-item">Gestionar facturas</li>
+                                    </ul>
+                                </div>
+                                <div class="mt-2">
+                                    <h6 class="fw-bold">Administrativo</h6>
+                                    <ul class="list-group">
+                                        <li class="list-group-item">Listar viajes</li>
+                                        <li class="list-group-item">Gestionar viajes</li>
+                                        <li class="list-group-item">Gestionar orígenes y destinos</li>
+                                        <li class="list-group-item">Gestionar tarifas</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Scripts -->
+        <script src="assets/extensions/jquery/jqueryajax.js"></script>
+        <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+        <script src="assets/compiled/js/app.js"></script>
+        <script src="assets/static/js/components/sidebar.js"></script>
+
+        <!-- Carga de diseño y roles -->
+        <script>
+            window.onload = function () {
+                const loadingMessage = document.getElementById('loading-message');
+                loadingMessage.style.display = 'block';
+                document.getElementById('app').style.display = 'none';
+
+                // Cargar header, footer y configuración
+                window.loadHeader();
+                window.loadFooter();
+
+                loadSettings()
+                    .then(() => {
+                        adjustVisibilityBasedOnRole();
+                        loadingMessage.style.display = 'none';
+                        document.getElementById('app').style.display = 'block';
+                    })
+                    .catch((error) => {
+                        console.error('Error al cargar el header, footer o los datos:', error);
+                        loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                    });
+            };
+
+            function adjustVisibilityBasedOnRole() {
+                const userRole = localStorage.getItem('userRole');
+                const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+
+                if (userRole && userRole.toLowerCase() === 'admin') {
+                    gestionarContenidoBtn.style.display = 'block';
+                } else {
+                    gestionarContenidoBtn.style.display = 'none';
+                }
+            }
+
+            async function loadSettings() {
+                return new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                    xhr.onload = function () {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data) {
+                                const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
+                                applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                                resolve();
+                            } else {
+                                console.error('La respuesta de la API no contiene los datos esperados.');
+                                reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                            }
+                        } else {
+                            console.error('Error en la petición:', xhr.statusText);
+                            reject(new Error('Error en la carga de la API'));
+                        }
+                    };
+
+                    xhr.onerror = function () {
+                        console.error('Error al cargar la configuración de la API.');
+                        reject(new Error('Error de red'));
+                    };
+
+                    xhr.send();
+                });
+            }
+
+            function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+                const logoElement = document.querySelector('.sidebar-header .logo img');
+                logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+
+                const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
+                favicon.rel = 'shortcut icon';
+                favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
+                document.head.appendChild(favicon);
+
+                // Color de fondo general
+                document.body.style.backgroundColor = colorFondo || '#198754';
+
+                // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+                const dynamicStyle = document.createElement('style');
+                dynamicStyle.innerHTML = `
+        /* Estilo para items activos en el submenú */
+        .submenu-item.active .submenu-link {
+            color: ${colorFondo || '#198754'} !important;
+            font-weight: bold;
+        }
+
+        /* Color en hover para enlaces del submenú */
+        .submenu-item .submenu-link:hover,
+        .submenu-item .submenu-link:focus {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el botón burger */
+        .burger-btn i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el botón burger */
+        .burger-btn:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+    `;
+                document.head.appendChild(dynamicStyle);
+
+                // Aplicar color de fondo al enlace activo en el menú principal
+                const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+                botonesMenu.forEach(button => {
+                    button.style.backgroundColor = colorBotonesMenu || '#198754';
+                });
+
+                // Configuración del contenido en el pie de página
+                const footerContentElement = document.querySelector('.footer p');
+                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+            }
+
+            // Lógica de logout y carga de nombre de usuario en el header
+            document.addEventListener("DOMContentLoaded", function () {
+                const token = localStorage.getItem('token');
+
+                if (!token) {
+                    window.location.href = 'login.html';
+                } else {
+                    const nombre = localStorage.getItem('nombre');
+                    const apellido = localStorage.getItem('apellido');
+                    document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
+
+                    const logoutBtn = document.getElementById('logoutBtn');
+                    if (logoutBtn) {
+                        logoutBtn.addEventListener('click', function (event) {
+                            event.preventDefault();
+
+                            fetch('http://localhost:50222/api/logout', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token
+                                }
+                            }).then(response => {
+                                if (response.ok) {
+                                    localStorage.removeItem('token');
+                                    localStorage.removeItem('nombre');
+                                    localStorage.removeItem('apellido');
+                                    localStorage.removeItem('userRole');
+                                    window.location.href = 'login.html';
+                                } else {
+                                    alert('Error al cerrar sesión');
+                                }
+                            }).catch(error => {
+                                console.error('Error al realizar la solicitud de logout:', error);
+                                alert('Error al cerrar sesión');
+                            });
+                        });
+                    }
+                }
+            });
+        </script>
+
+        <!-- Get Activos -->
+        <script>
+            // Esperar a que se cargue completamente la página
+            $(document).ready(function () {
+                // Marcar el checkbox de "Activo" por defecto
+                $('#checkestadoactivo').prop('checked', true);
+
+                // Llamar a la función de búsqueda de Usuarios al cargar la página
+                buscarUsuarios();
+            });
+        </script>
+
+        <!-- Buscador y listar + detalles del usuario -->
+        <script>
+
+            // Validación para que los campos de Nombre y Apellido solo permitan letras
+            document.getElementById('txtuser-name-column').addEventListener('input', function (event) {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+
+            document.getElementById('txtfirst-name-column').addEventListener('input', function (event) {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+
+            document.getElementById('txtlast-name-column').addEventListener('input', function (event) {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+
+            const pageSize = 6;
+            let currentPage = 1;
+
+            var estadoUsuarioOriginal;  // Variable global para almacenar el valor original de EstadoUsuario
+
+            // Función para mostrar los detalles del usuario en el modal
+            function mostrarDetallesUsuario(registro) {
+                obtenerNombres(registro.ProvID, registro.LocID).then(nombres => {
+                    $('#first-name-column').val(registro.Nombre);
+                    $('#last-name-column').val(registro.Apellido);
+                    $('#dni-column').val(registro.DNI);
+                    $('#cuil-column').val(registro.CUIL);
+                    $('#celphone-column').val(registro.TelefonoCelular);
+                    $('#phone-column').val(registro.TelefonoFijo);
+                    $('#email-column').val(registro.Email);
+                    $('#province-column').val(nombres.Nombre_Provincia);
+                    $('#local-column').val(nombres.Nombre_Localidad);
+                    $('#street-column').val(registro.Calle);
+                    $('#number-column').val(registro.AlturaCalle);
+                    $('#EstadoActualChofer').text(registro.EstadoChofer);
+                    estadoChoferOriginal = registro.EstadoChofer;
+
+                    var estadoStyle = registro.EstadoUsuario === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                    $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
+
+                    // Obtener camiones asignados
+                    obtenerCamionesAsignados(registro.Chofer_ID);
+
+                    $('#DetallesChoferModal').modal('show');
+                }).catch(error => {
+                    console.error('Error al obtener nombres de provincia o localidad', error);
+                });
+            }
+
+            // Función para realizar la búsqueda de usuarios
+            function buscarUsuarios(page = 1) {
+                // Obtener los valores de los campos de búsqueda
+                var Nombre_Usuario = $('#txtuser-name-column').val();
+                var nombre = $('#txtfirst-name-column').val();
+                var apellido = $('#txtlast-name-column').val();
+                var estadoActivo = $('#checkestadoactivo').is(':checked');
+                var estadoInactivo = $('#checkestadoinactivo').is(':checked');
+
+                // Construir el parámetro EstadoUsuario correctamente
+                var EstadoUsuario = '';
+                if (estadoActivo && estadoInactivo) {
+                    EstadoUsuario = 'Activo,Inactivo';  // Ambos seleccionados
+                } else if (estadoActivo) {
+                    EstadoUsuario = 'Activo'; // Solo activos
+                } else if (estadoInactivo) {
+                    EstadoUsuario = 'Inactivo'; // Solo inactivos
+                } else {
+                    EstadoUsuario = ''; // Ninguno seleccionado, no enviar filtro
+                }
+
+                // Construir el objeto de datos para la solicitud
+                var requestData = {
+                    Nombre_Usuario: Nombre_Usuario,
+                    nombre: nombre,
+                    apellido: apellido,
+                    EstadoUsuario: EstadoUsuario,
+                    page: page,
+                    pageSize: pageSize
+                };
+
+                console.log("Enviando datos al servidor:", requestData);
+
+
+                // Realizar la solicitud AJAX GET al controlador
+                $.ajax({
+                    url: 'http://localhost:50222/api/Usuarios/Buscar',
+                    type: 'GET',
+                    data: requestData,
+                    success: function (data) {
+                        console.log("Datos devueltos por la API:", data);
+                        $('#tablaUsuarios tbody').empty();
+
+                        if (!data.Results || data.Results.length === 0) {
+                            $('#tablaUsuarios tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
+                        } else {
+                            data.Results.forEach(function (registro) {
+                                var estadoStyle = registro.EstadoUsuario === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
+                                var row = `<tr>
+                        <td>${registro.Nombre_Usuario}</td>
+                        <td>${registro.Nombre}</td>
+                        <td>${registro.Apellido}</td>
+                        <td><span class="${estadoStyle}">${registro.EstadoUsuario}</span></td>
+                        <td>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#DetallesUsuarioModal" data-usuarioid="${registro.Usuario_ID}">
+                                <i class="bi bi-info-circle"></i> Más detalles
+                            </button>
+                        </td>
+                    </tr>`;
+                                $('#tablaUsuarios tbody').append(row);
+                            });
+                        }
+
+                        if (typeof renderPagination === "function") {
+                            renderPagination(data.TotalRecords, pageSize, page);
+                        }
+                    },
+                    error: function (xhr, status, error) {
+                        console.error("Error en la búsqueda de usuarios:", error);
+                    }
+                });
+            }
+
+            // Evento para mostrar el modal de detalles del Usuario
+            $('#DetallesUsuarioModal').on('show.bs.modal', function (event) {
+                var button = $(event.relatedTarget);
+                var UsuarioID = button.data('usuarioid');
+
+                // Obtener detalles del Usuario
+                $.ajax({
+                    url: `http://localhost:50222/api/Usuarios/${UsuarioID}`,
+                    method: 'GET',
+                    success: function (data) {
+                        mostrarDetallesUsuario(data);
+                    },
+                    error: function (error) {
+                        console.error('Error al obtener los detalles del usuario:', error);
+                    }
+                });
+            });
+
+            function renderPagination(totalRecords, pageSize, currentPage) {
+                const totalPages = Math.ceil(totalRecords / pageSize);
+                const paginationContainer = $('#pagination');
+                paginationContainer.empty();
+
+                const prevDisabled = currentPage === 1 ? 'disabled' : '';
+                const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+
+                paginationContainer.append(`
+                <li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarUsuarios(${currentPage - 1})">
+                        <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
+                    </a>
+                </li>
+            `);
+
+                for (let i = 1; i <= totalPages; i++) {
+                    const activeClass = currentPage === i ? 'active' : '';
+                    paginationContainer.append(`
+                    <li class="page-item ${activeClass}">
+                        <a class="page-link" href="#" onclick="buscarUsuarios(${i})">${i}</a>
+                    </li>
+                `);
+                }
+
+                paginationContainer.append(`
+                <li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="#" aria-label="Next" onclick="buscarUsuarios(${currentPage + 1})">
+                        <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
+                    </a>
+                </li>
+            `);
+            }
+
+            $(document).ready(function () {
+                // Ejecutar la búsqueda inicial
+                buscarUsuarios(currentPage);
+            });
+
+
+
+
+        </script>
+
+
+</body>
+
+</html>
