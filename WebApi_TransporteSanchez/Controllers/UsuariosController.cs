@@ -29,6 +29,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+
         }
 
         // GET: api/Usuarios
@@ -55,6 +56,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             EstadoUsuario = u.EstadoUsuario,
                             Usu_Modi = u.Usu_Modi,
                             Fecha_Modi = u.Fecha_Modi
+
                         })
                         .ToList();
 
@@ -142,7 +144,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             Usu_Alta = u.Usu_Alta,
                             Rol = u.Rol,
                             Fecha_Modi = u.Fecha_Modi,
-                            Usu_Modi = u.Usu_Modi   
+                            Usu_Modi = u.Usu_Modi,   
 
                         })
                         .ToList();
