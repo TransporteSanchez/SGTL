@@ -19,6 +19,7 @@
     <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+    <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
     <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CAMIONES" FromRole="CAMIONES" ToRole="CHOFER_CAMION" />
     <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="CAMIONES" ToRole="VIAJES" />
   </EntityType>
@@ -54,6 +55,7 @@
     <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
     <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
     <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+    <Property Name="Fecha_Eliminar" Type="DateTime" Nullable="true" Precision="0" />
     <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CHOFERES" FromRole="CHOFERES" ToRole="CHOFER_CAMION" />
     <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_CHOFERES_LOCALIDADES" FromRole="CHOFERES" ToRole="LOCALIDADES" />
     <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CHOFERES" FromRole="CHOFERES" ToRole="VIAJES" />
