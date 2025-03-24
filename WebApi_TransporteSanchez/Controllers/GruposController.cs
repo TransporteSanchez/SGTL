@@ -16,6 +16,10 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public int Grupo_ID { get; set; }
             public string Grupo_Nombre { get; set; }
+            public System.DateTime Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public System.DateTime Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
 
         }
 
@@ -33,6 +37,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         Grupo_ID = u.Grupo_ID,
                         Grupo_Nombre = u.Grupo_Nombre,
+                        Fecha_Alta = u.Fecha_Alta,
+                        Usu_Alta = u.Usu_Alta,
+                        Fecha_Modi = u.Fecha_Modi,
+                        Usu_Modi = u.Usu_Modi
                     }).ToList();
 
                     return Ok(grupos); // Retorna 200 con la lista de grupos

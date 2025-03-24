@@ -69,6 +69,10 @@
           <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
           <ScalarProperty Name="Telefono" ColumnName="Telefono" />
           <ScalarProperty Name="Email" ColumnName="Email" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -82,6 +86,10 @@
           <ScalarProperty Name="Calle" ColumnName="Calle" />
           <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
           <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -104,6 +112,10 @@
           <ScalarProperty Name="Calle" ColumnName="Calle" />
           <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
           <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -140,6 +152,10 @@
           <ScalarProperty Name="ValorRuta" ColumnName="ValorRuta" />
           <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
           <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -152,6 +168,10 @@
           <ScalarProperty Name="ValorKm" ColumnName="ValorKm" />
           <ScalarProperty Name="MinKm" ColumnName="MinKm" />
           <ScalarProperty Name="MaxKm" ColumnName="MaxKm" />
+          <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -165,6 +185,10 @@
           <ScalarProperty Name="Contraseña" ColumnName="Contraseña" />
           <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
           <ScalarProperty Name="Rol" ColumnName="Rol" />
+          <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+          <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+          <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
+          <ScalarProperty Name="EstadoUsuario" ColumnName="EstadoUsuario" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>
@@ -199,6 +223,7 @@
         <MappingFragment StoreEntitySet="MENU">
           <ScalarProperty Name="Menu_ID" ColumnName="Menu_ID" />
           <ScalarProperty Name="Menu_Nombre" ColumnName="Menu_Nombre" />
+          <ScalarProperty Name="Menu_Principal" ColumnName="Menu_Principal" />
         </MappingFragment>
       </EntityTypeMapping>
     </EntitySetMapping>

@@ -25,6 +25,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public string AlturaCalle { get; set; }
             public string Telefono { get; set; }
             public string Email { get; set; }
+            public System.DateTime Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public System.DateTime Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
 
         }
 
@@ -49,7 +53,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         Calle = c.Calle,
                         AlturaCalle = c.AlturaCalle,
                         Telefono = c.Telefono,
-                        Email = c.Email
+                        Email = c.Email,
+                        Fecha_Alta = c.Fecha_Alta,
+                        Usu_Alta = c.Usu_Alta,
+                        Fecha_Modi = c.Fecha_Modi,
+                        Usu_Modi = c.Usu_Modi
+
                     }).ToList();
 
                     if (olist == null || !olist.Any())
@@ -114,7 +123,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         Calle = cliente.Calle,
                         AlturaCalle = cliente.AlturaCalle,
                         Telefono = cliente.Telefono,
-                        Email = cliente.Email
+                        Email = cliente.Email,
+                        Fecha_Alta = cliente.Fecha_Alta,
+                        Usu_Alta = cliente.Usu_Alta,
+                        Fecha_Modi = cliente.Fecha_Modi,
+                        Usu_Modi = cliente.Usu_Modi
                     };
 
                     return Ok(clienteDto); // Retorna 200 con los datos del cliente encontrado
@@ -185,7 +198,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         Calle = clienteDto.Calle,
                         AlturaCalle = clienteDto.AlturaCalle,
                         Telefono = clienteDto.Telefono,
-                        Email = clienteDto.Email
+                        Email = clienteDto.Email,
+                        Fecha_Alta = clienteDto.Fecha_Alta,
+                        Usu_Alta = clienteDto.Usu_Alta,
+                        Fecha_Modi = clienteDto.Fecha_Modi,
+                        Usu_Modi = clienteDto.Usu_Modi
                     };
 
                     // Agregar la entidad al contexto y guardar cambios
@@ -249,6 +266,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     oitem.AlturaCalle = value.AlturaCalle;
                     oitem.Telefono = value.Telefono;
                     oitem.Email = value.Email;
+                    oitem.Fecha_Alta = value.Fecha_Alta;
+                    oitem.Usu_Alta = value.Usu_Alta;
+                    oitem.Fecha_Modi = value.Fecha_Modi;
+                    oitem.Usu_Modi = value.Usu_Modi;
 
                     db.Entry(oitem).State = System.Data.Entity.EntityState.Modified;
 

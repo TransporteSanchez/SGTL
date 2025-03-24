@@ -20,6 +20,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
             public int ClienteID { get; set; }
+            public System.DateTime Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public System.DateTime Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
 
         }
 
@@ -42,6 +46,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         Calle = c.Calle,
                         AlturaCalle = c.AlturaCalle,
                         ClienteID = c.ClienteID,
+                        Fecha_Alta = c.Fecha_Alta,
+                        Usu_Alta = c.Usu_Alta,
+                        Fecha_Modi = c.Fecha_Modi,
+                        Usu_Modi = c.Usu_Modi
+
                     }).ToList();
 
                     if (olist == null || !olist.Any())

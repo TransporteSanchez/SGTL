@@ -26,6 +26,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public int TarifaFijaID { get; set; }
             public int TarifaKmID { get; set; }
             public int ClienteID { get; set; }
+            public System.DateTime Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public System.DateTime Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
 
         }
 
@@ -53,6 +57,10 @@ namespace WebApi_TransporteSanchez.Controllers
                             TarifaFijaID = c.TarifaFijaID,
                             TarifaKmID = c.TarifaKmID,
                             ClienteID = c.ClienteID,
+                            Fecha_Alta = c.Fecha_Alta,
+                            Usu_Alta = c.Usu_Alta,
+                            Fecha_Modi = c.Fecha_Modi,
+                            Usu_Modi = c.Usu_Modi
                         })
                         .ToList();
 
