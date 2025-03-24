@@ -317,40 +317,40 @@
                         <div class="card-body">
                             <form id="settings" class="form form-horizontal">
                                 <div class="row">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="logoInput">Logo (URL)</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
                                             placeholder="URL del logo">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="backgroundColorInput">Color de fondo</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="color" id="backgroundColorInput" class="form-control"
                                             name="backgroundColorInput">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="menuColorInput">Color del menú</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <input type="color" id="menuColorInput" class="form-control"
                                             name="menuColorInput">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="footerContentInput">Contenido del pie de página</label>
                                     </div>
-                                    <div class="col-md-8 form-group">
+                                    <div class="col-md-9 form-group">
                                         <textarea id="footerContentInput" class="form-control" name="footerContentInput"
                                             placeholder="Escribe el contenido del pie de página" rows="3"></textarea>
                                     </div>
                                     <div class="col-sm-12 d-flex justify-content-end">
-                                        <button type="submit" class="btn btn-primary me-1 mb-1"
-                                            id="saveSettingsBtn">Confirmar</button>
                                         <button type="button" class="btn btn-light-secondary me-1 mb-1"
                                             data-bs-toggle="modal"
                                             data-bs-target="#confirmarRestablecerModal">Restablecer</button>
+                                        <button type="submit" class="btn btn-primary mb-1"
+                                            id="saveSettingsBtn">Confirmar</button>
 
                                     </div>
                                 </div>
@@ -407,7 +407,7 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
 
     <script>
         window.onload = function () {
@@ -476,64 +476,8 @@
             });
         }
 
-        // Aplicar estilos en distintos componentes de la página
-
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-            }
-        }
-         
-        // Confirmar cambios de gestión de conten
+       
+        // Confirmar cambios de gestión de contenido
 
         document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
             event.preventDefault();

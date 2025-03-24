@@ -344,7 +344,7 @@
                                                         placeholder="36456778">
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label for="fechaRango">Fecha de Alta</label>
+                                                    <label for="fechaRango">Fecha de alta</label>
                                                     <input type="text" class="form-control" id="fechaRango"
                                                         placeholder="Desde y hasta">
                                                 </div>
@@ -395,7 +395,7 @@
                                         <thead>
                                             <tr>
                                                 <th>ID</th>
-                                                <th>Fecha de Alta</th>
+                                                <th>Fecha de alta</th>
                                                 <th>Nombre</th>
                                                 <th>Apellido</th>
                                                 <th>DNI</th>
@@ -460,7 +460,7 @@
                                         <input type="number" id="dni-column" class="form-control"
                                             placeholder="DNI sin puntos ni espacios" name="dni-column"
                                             data-parsley-restricted-number="true" />
-                                        <div id="dniError" class="invalid-feedback" style="display: none;"></div>
+                                        <div id="dni-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
@@ -488,6 +488,7 @@
                                         <input type="number" id="cuil-column" class="form-control"
                                             placeholder="CUIL sin guiones" name="c-column"
                                             data-parsley-restricted-number="true" />
+                                        <div id="cuil-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
@@ -770,11 +771,11 @@
 
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
 
 
     <!-- Manejo de tooltips -->
@@ -870,102 +871,6 @@
             });
         }
 
-        // Aplicar estilos en distintos componentes de la página
-
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-            }
-        }
-
-        // Lógica de logout y carga de nombre de usuario en el header
-        document.addEventListener("DOMContentLoaded", function () {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                window.location.href = 'login.html';
-            } else {
-                const nombre = localStorage.getItem('nombre');
-                const apellido = localStorage.getItem('apellido');
-                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function (event) {
-                        event.preventDefault();
-
-                        fetch('http://localhost:50222/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
-                        }).then(response => {
-                            if (response.ok) {
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('nombre');
-                                localStorage.removeItem('apellido');
-                                localStorage.removeItem('userRole');
-                                window.location.href = 'login.html';
-                            } else {
-                                alert('Error al cerrar sesión');
-                            }
-                        }).catch(error => {
-                            console.error('Error al realizar la solicitud de logout:', error);
-                            alert('Error al cerrar sesión');
-                        });
-                    });
-                }
-            }
-        });
     </script>
 
     <!-- Get Activos -->
@@ -1549,56 +1454,20 @@
                 '#street-column',
                 '#email-id-column'
             ];
-    
+
             // Función para abrir el modal de alta de choferes
             window.abrirModalAltaChofer = function () {
                 $('#ModalAltaChofer').modal('show');
                 cargarProvincias();
-    
+
                 // Limpiar posibles mensajes de error o validaciones previas
                 $('#FormAltaChofer')[0].reset();
                 $('#alertaCompletaCampos').hide();
                 $('.invalid-feedback').hide();
                 $('.is-invalid').removeClass('is-invalid');
             };
-    
-            // Validación para los campos de Nombre y Apellido
-            $('#first-name-column, #last-name-column').on('input', function () {
-                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-            });
-    
-            // Validación para DNI y CUIL (solo números y longitud específica)
-            $('#dni-column').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
-            });
-    
-            $('#cuil-column').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
-            });
-    
-            // Validación de teléfono fijo y celular (solo números y longitud específica)
-            $('#celphone-column, #phone-floating').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
-            });
-    
-            // Validación del email
-            $('#email-id-column').on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#emailError'),
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    'Debe incluir @ y el dominio del correo.',
-                    100
-                );
-            });
-    
-            $('#email-id-column').on('input', function () {
-                if ($(this).val().trim() === '') {
-                    $('#email-id-column').removeClass('is-invalid');
-                    $('#emailError').hide();
-                }
-            });
-    
+
+
             // Cargar provincias al abrir el modal
             function cargarProvincias() {
                 $.ajax({
@@ -1610,7 +1479,7 @@
                         data.forEach(function (provincia) {
                             select.append(`<option value="${provincia.Prov_ID}">${provincia.Nombre_Provincia}</option>`);
                         });
-    
+
                         $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
                     },
                     error: function (xhr, status, error) {
@@ -1618,7 +1487,7 @@
                     }
                 });
             }
-    
+
             // Cargar localidades según la provincia seleccionada
             $('#province-select').change(function () {
                 var provinciaId = $(this).val();
@@ -1628,7 +1497,7 @@
                     $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
                 }
             });
-    
+
             function cargarLocalidades(provinciaId) {
                 $.ajax({
                     url: `http://localhost:50222/api/Provincias/${provinciaId}/Localidades`,
@@ -1646,7 +1515,7 @@
                     }
                 });
             }
-    
+
             // Función para validar campos requeridos
             function validarCamposRequeridos() {
                 let camposIncompletos = false;
@@ -1659,16 +1528,16 @@
                         input.removeClass('is-invalid');
                     }
                 });
-    
+
                 if (camposIncompletos) {
                     $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
                 } else {
                     $('#alertaCompletaCampos').hide();
                 }
-    
+
                 return !camposIncompletos;
             }
-    
+
             // Función para validar un campo individual
             function validarCampoIndividual(input) {
                 if (input.val().trim() === '') {
@@ -1678,27 +1547,119 @@
                     input.trigger('blur');
                 }
             }
-    
-            // Función genérica para validar campos
-            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
-                var valor = input.val().trim().slice(0, maxLength);
-                input.val(valor);
-    
+
+            // Función genérica para validar campos con control de longitud mínima y exacta
+            function validarCampo(input, errorContainer, regex, mensajeError, minLength = 0, exactLength = null, soloNumeros = false) {
+                var valor = input.val().trim();
+
+                // Si el campo es solo de números, limpiamos caracteres no numéricos
+                if (soloNumeros) {
+                    valor = valor.replace(/[^0-9]/g, '');
+                }
+
+                // Recortar al máximo permitido (exactLength si está definido, sino minLength)
+                input.val(valor.slice(0, exactLength || minLength));
+
+                // Verifica si el campo está vacío
                 if (valor === '') {
                     input.removeClass('is-invalid is-valid');
                     errorContainer.hide();
                     return;
                 }
-    
+
+                // Verificar longitud mínima y exacta
+                if ((minLength && valor.length < minLength) || (exactLength && valor.length !== exactLength)) {
+                    input.addClass('is-invalid');
+                    input.removeClass('is-valid'); // Asegura que no se marque como válido
+                    errorContainer.text(mensajeError).show();
+                    return; // Evita seguir con la regex si ya es inválido
+                }
+
+                // Validar con regex (si es necesario)
                 if (!regex.test(valor)) {
                     input.addClass('is-invalid');
+                    input.removeClass('is-valid');
                     errorContainer.text(mensajeError).show();
                 } else {
                     input.removeClass('is-invalid').addClass('is-valid');
                     errorContainer.hide();
                 }
             }
-    
+
+            // Ocultar alerta y errores cuando se empieza a escribir en cualquier campo
+            camposRequeridos.forEach(function (campo) {
+                $(campo).on('input', function () {
+                    // Ocultar la alerta de campos incompletos
+                    $('#alertaCompletaCampos').hide();
+
+                    // Remover errores de todos los campos
+                    camposRequeridos.forEach(function (c) {
+                        $(c).removeClass('is-invalid');
+                    });
+
+                    // Ocultar todos los mensajes de error
+                    $('.invalid-feedback, .invalid-feedback-date').hide();
+                });
+            });
+
+            // Validación para los campos de Nombre y Apellido
+            $('#first-name-column, #last-name-column').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            });
+
+            // Validación para DNI (mínimo 7 caracteres, máximo 8)
+            $('#dni-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            }).on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#dni-error'),
+                    /^[0-9]{7,8}$/, // Regex corregido para verificar entre 7 y 8 caracteres
+                    'Debe incluir entre 7 y 8 caracteres.',
+                    7, // Mínimo 7 caracteres
+                    8, // Máximo 8 caracteres
+                    true // Solo números
+                );
+            });
+
+            // Validación para CUIL (exactamente 11 caracteres)
+            $('#cuil-column').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
+            }).on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#cuil-error'),
+                    /^[0-9]{11}$/, // Regex corregido para verificar exactamente 11 caracteres
+                    'Debe incluir 11 caracteres.',
+                    11, // Mínimo 11 caracteres
+                    11, // Exactamente 11 caracteres
+                    true // Solo números
+                );
+            });
+
+            // Validación de teléfono fijo y celular (solo números y longitud específica)
+            $('#celphone-column, #phone-floating').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
+            });
+
+            // Validación del email
+            $('#email-id-column').on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#emailError'),
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    'Debe incluir @ y el dominio del correo.',
+                    100
+                );
+            });
+
+            $('#email-id-column').on('input', function () {
+                if ($(this).val().trim() === '') {
+                    $('#email-id-column').removeClass('is-invalid');
+                    $('#emailError').hide();
+                }
+            });
+
             // Limpiar validaciones al cerrar el modal
             $('#ModalAltaChofer').on('hidden.bs.modal', function () {
                 camposRequeridos.forEach(function (campo) {
@@ -1707,12 +1668,12 @@
                 $('.invalid-feedback').hide();
                 $('#alertaCompletaCampos').hide();
             });
-    
+
             // Evento al hacer clic en el botón "Confirmar"
             $('#confirmarBtn').on('click', function (event) {
                 event.preventDefault();
                 let camposValidos = true;
-    
+
                 camposRequeridos.forEach(function (campo) {
                     const input = $(campo);
                     validarCampoIndividual(input);
@@ -1720,19 +1681,19 @@
                         camposValidos = false;
                     }
                 });
-    
+
                 if (camposValidos) {
                     registrarChofer();
                 } else {
                     $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
                 }
             });
-    
+
             // Función para registrar el chofer
             function registrarChofer() {
                 const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
                 const fechaHoraActual = new Date().toISOString();
-    
+
                 const nuevoChofer = {
                     Nombre: $('#first-name-column').val().trim(),
                     Apellido: $('#last-name-column').val().trim(),
@@ -1751,7 +1712,7 @@
                     Fecha_Modi: fechaHoraActual,
                     Usu_Modi: usuarioLogueado
                 };
-    
+
                 $.ajax({
                     url: 'http://localhost:50222/api/Choferes',
                     type: 'POST',
@@ -1767,7 +1728,7 @@
                     }
                 });
             }
-    
+
             function mostrarToastExito(mensaje) {
                 var toastElement = $('#alert-success');
                 toastElement.find('.toast-body').text(mensaje);
@@ -1780,265 +1741,20 @@
             }
         });
     </script>
-    
-   <!--  <script>
-
-        // Validación para que los campos de Nombre y Apellido solo permitan letras
-        document.getElementById('first-name-column').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('last-name-column').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('dni-column').addEventListener('input', function (event) {
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
-            }
-        });
-
-        document.getElementById('cuil-column').addEventListener('input', function (event) {
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 11) {
-                this.value = this.value.slice(0, 11);
-            }
-        });
-
-        // Limita la longitud del Teléfono a 10 dígitos
-        document.getElementById('celphone-column').addEventListener('input', function (event) {
-            if (this.value.length > 10) {
-                this.value = this.value.slice(0, 10);
-            }
-        });
-
-        document.getElementById('phone-floating').addEventListener('input', function (event) {
-            if (this.value.length > 10) {
-                this.value = this.value.slice(0, 10);
-            }
-        });
-
-        // Validación del email al salir del campo y eliminar el mensaje de error si el input está vacío
-        $('#email-id-column').on('blur', function () {
-            validarEmail($(this).val());
-        });
-
-        $('#email-id-column').on('input', function () {
-            if ($(this).val().trim() === '') {
-                $('#email-id-column').removeClass('is-invalid');
-                $('#emailError').text('Debe incluir @ y el dominio del correo.').hide();
-            }
-        });
-
-        function validarEmail(email) {
-            var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (email.trim() === '') {
-                $('#email-id-column').removeClass('is-invalid');
-                $('#emailError').hide();
-                return;
-            }
-
-            if (!emailRegex.test(email)) {
-                $('#email-id-column').addClass('is-invalid');
-                $('#emailError').text('Debe incluir @ y el dominio del correo.').show();
-            } else {
-                $('#email-id-column').removeClass('is-invalid');
-                $('#emailError').hide();
-            }
-        }
-        // Función para mostrar el toast de éxito con mensaje dinámico
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje);
-            toastElement.show();
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show();
-            setTimeout(function () {
-                toast.hide();
-            }, 5000);
-        }
-
-        function abrirModalAltaChofer() {
-
-            // Cargar las provincias al abrir el modal
-            $('#ModalAltaChofer').on('show.bs.modal', function () {
-                cargarProvincias();
-            });
-
-            $('#ModalAltaChofer').modal('show');
-
-            // Cargar las localidades cuando se selecciona una provincia
-            $('#province-select').change(function () {
-                var provinciaId = $(this).val();
-                if (provinciaId) {
-                    cargarLocalidades(provinciaId);
-                } else {
-                    $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-                }
-            });
-
-            // Limpiar posibles mensajes de error o validaciones previas
-            $('#FormAltaChofer')[0].reset();
-            $('#alertaCompletaCampos').hide();
-            $('#emailError').css('display', 'none');
-            $('#dniError').css('display', 'none');
-            $('#email-id-column').removeClass('is-invalid');
-            $('#province-select').empty();
-            $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-
-        }
-
-        function cargarProvincias() {
-            $.ajax({
-                url: 'http://localhost:50222/api/Provincias',
-                type: 'GET',
-                success: function (data) {
-                    var select = $('#province-select');
-                    select.empty();
-                    select.append('<option value="">Seleccione una provincia</option>');
-                    data.forEach(function (provincia) {
-                        select.append('<option value="' + provincia.Prov_ID + '">' + provincia.Nombre_Provincia + '</option>');
-                    });
-
-                    var localidadSelect = $('#location-select');
-                    localidadSelect.empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-                },
-                error: function (xhr, status, error) {
-                    console.error(error);
-                }
-            });
-        }
-
-        function cargarLocalidades(provinciaId) {
-            $.ajax({
-                url: 'http://localhost:50222/api/Provincias/' + provinciaId + '/Localidades',
-                type: 'GET',
-                success: function (data) {
-                    var select = $('#location-select');
-                    select.empty();
-                    select.append('<option value="">Seleccione una localidad</option>');
-                    data.forEach(function (localidad) {
-                        select.append('<option value="' + localidad.Loc_ID + '">' + localidad.Nombre_Localidad + '</option>');
-                    });
-                    select.prop('disabled', false);
-                },
-                error: function (xhr, status, error) {
-                    console.error(error);
-                }
-            });
-        }
-
-        // Validación de campos completos solo al hacer clic en el botón Confirmar
-        function validateRequiredFields() {
-            var nombre = $('#first-name-column').val();
-            var apellido = $('#last-name-column').val();
-            var dni = $('#dni-column').val();
-            var cuil = $('#cuil-column').val();
-            var telefonoCelular = $('#celphone-column').val();
-            var provinciaId = $('#province-select').val();
-            var localidadId = $('#location-select').val();
-            var calle = $('#street-column').val();
-
-            if (!nombre || !apellido || !dni || !cuil || !telefonoCelular || !provinciaId || !localidadId || !calle) {
-                $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show();
-                return false;
-            }
-
-            $('#alertaCompletaCampos').hide(); // Ocultar el mensaje si todos los campos están completos
-            return true;
-        }
-
-        // Ocultar el mensaje de error al empezar a escribir en los campos
-        $('#first-name-column, #last-name-column, #dni-column, #cuil-column, #celphone-column, #province-select, #location-select, #street-column').on('input change', function () {
-            $('#alertaCompletaCampos').hide();
-        });
-
-        // Evento click para confirmar el alta del chofer
-        $('#confirmarBtn').on('click', function (event) {
-            event.preventDefault();
-
-            if (!validateRequiredFields()) {
-                return;
-            }
-
-            var nombre = $('#first-name-column').val();
-            var apellido = $('#last-name-column').val();
-            var dni = $('#dni-column').val();
-            var cuil = $('#cuil-column').val();
-            var telefonoFijo = $('#phone-floating').val();
-            var telefonoCelular = $('#celphone-column').val();
-            var email = $('#email-id-column').val();
-            var provinciaId = $('#province-select').val();
-            var localidadId = $('#location-select').val();
-            var calle = $('#street-column').val();
-            var altura = $('#number-column').val();
-
-            const fechaHoraActual = new Date().toISOString();
-            const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
-
-            const nuevoChofer = {
-                Nombre: nombre,
-                Apellido: apellido,
-                DNI: dni,
-                CUIL: cuil,
-                TelefonoFijo: telefonoFijo,
-                TelefonoCelular: telefonoCelular,
-                Email: email,
-                ProvID: provinciaId,
-                LocID: localidadId,
-                Calle: calle,
-                AlturaCalle: altura,
-                EstadoChofer: "Activo",
-                Fecha_Alta: fechaHoraActual,
-                Usu_Alta: usuarioLogueado,
-                Fecha_Modi: fechaHoraActual,
-                Usu_Modi: usuarioLogueado
-            };
-
-            $.ajax({
-                url: 'http://localhost:50222/api/Choferes',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(nuevoChofer),
-                success: function (response) {
-                    mostrarToastExito('El chofer se registró exitosamente');
-                    $('#ModalAltaChofer').modal('hide');
-                    buscarChoferes();
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error al agregar el chofer:', error);
-                }
-            });
-        });
-
-        $('#ModalAltaChofer').on('hidden.bs.modal', function () {
-            $('#FormAltaChofer')[0].reset();
-            $('#alertaCompletaCampos').hide();
-            $('#emailError').css('display', 'none');
-            $('#dniError').css('display', 'none');
-            $('#email-id-column').removeClass('is-invalid'); // Elimina la clase de error del email
-            $('#province-select').empty();
-            $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-        });
-
-    </script> -->
 
     <!-- Validación DNI en formularios -->
     <script>
         // Validación del DNI en los formularios de alta y edición
         function validarDNI(dniInput, errorContainer, successContainer, button, choferId = null) {
-            var dni = dniInput.val().trim();
-            if (dni === '') {
-                dniInput.removeClass('is-invalid is-valid');
-                errorContainer.hide();
+            var dni = dniInput.val().trim().replace(/[^0-9]/g, ''); // Asegura que solo sean números
+            dniInput.val(dni.slice(0, 8)); // Recorta el DNI a 8 caracteres máximo
+
+            // Si el DNI tiene menos de 7 caracteres, mostrar el error y detener la validación
+            if (dni.length < 7) {
+                dniInput.removeClass('is-valid').addClass('is-invalid');
+                errorContainer.text('El DNI debe tener entre 7 y 8 caracteres.').show();
                 successContainer.hide();
-                button.prop('disabled', false);
-                return;
+                return; // No continuar con la validación en la base de datos
             }
 
             // Construir la URL dependiendo de si es edición o alta
@@ -2093,16 +1809,15 @@
 
         // Limpiar mensajes de error o éxito al modificar el input
         $('#dni-column, #editarDNI').on('input', function () {
-            $(this).removeClass('is-invalid is-valid');
-            if ($(this).attr('id') === 'dni-column') {
-                $('#dniError').hide();
-                $('#dniSuccess').hide();
-                $('#confirmarBtn').prop('disabled', false);
-            } else {
-                $('#editarDniError').hide();
-                $('#editarDniSuccess').hide();
-                $('#confirmarEdicion').prop('disabled', false);
-            }
+            var input = $(this);
+            var errorContainer = input.attr('id') === 'dni-column' ? $('#dniError') : $('#editarDniError');
+            var successContainer = input.attr('id') === 'dni-column' ? $('#dniSuccess') : $('#editarDniSuccess');
+            var button = input.attr('id') === 'dni-column' ? $('#confirmarBtn') : $('#confirmarEdicion');
+
+            input.removeClass('is-invalid is-valid');
+            errorContainer.hide();
+            successContainer.hide();
+            button.prop('disabled', false);
         });
 
         // Limpiar controles al cerrar el modal de alta
@@ -2120,9 +1835,7 @@
             $('#editarDniSuccess').hide();
             $('#confirmarEdicion').prop('disabled', false);
         });
-
     </script>
-
 
     <!--Eliminar-->
     <script>
