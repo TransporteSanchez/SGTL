@@ -1236,6 +1236,7 @@
                     NumMotor: $('#txtnumMotor').val().trim(),
                     NumChasis: $('#txtnumChasis').val().trim(),
                     EquipoFrio: $('#txtequipoFrio').val().trim(),
+                    EstadoCamion: 'Activo',
                     Fecha_Alta: fechaHoraActual,
                     Usu_Alta: usuarioLogueado,
                     Fecha_Modi: fechaHoraActual,
@@ -1517,6 +1518,17 @@
     <!--Eliminar-->
     <script>
 
+        var camionIdAEliminar;
+
+        // Función para abrir el modal y establecer el ID del camión
+        function abrirModalEliminarCamion(camionId, estadoCamion) {
+            if (estadoCamion === 'Activo') {
+                return; // No permitir eliminar si el camión está activo
+            }
+            camionIdAEliminar = camionId;
+            $('#confirmarEliminarModal').modal('show');
+        }
+
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
@@ -1531,28 +1543,26 @@
             }, 5000); // Mostrar por 5 segundos
         }
 
-        var camionIdAEliminar;
-
-        // Función para establecer el ID del camión a eliminar
-        function setEliminarCamionId(id) {
-            camionIdAEliminar = id;
-        }
-
         // Función para confirmar la eliminación del camión
         function confirmarEliminarCamion() {
             if (camionIdAEliminar) {
+                var usuarioLogueado = localStorage.getItem('username') || "Desconocido";
+
                 $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/' + camionIdAEliminar,
-                    type: 'DELETE',
+                    url: 'http://localhost:50222/api/Camiones/Eliminar/' + camionIdAEliminar,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        Usu_Modi: usuarioLogueado
+                    }),
                     success: function (response) {
-                        console.log('Camión eliminado correctamente:', response);
-                        mostrarToastExito('El camión se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
+                        console.log('Camión marcado como eliminado:', response);
+                        mostrarToastExito('El camión se eliminó exitosamente.');
                         $('#confirmarEliminarModal').modal('hide');
-                        // Recargar o actualizar la tabla después de la eliminación
-                        buscarCamiones();
+                        buscarCamiones(); // Refrescar la tabla
                     },
                     error: function (xhr, status, error) {
-                        console.error(error);
+                        console.error('Error al eliminar el camión:', xhr.responseText || error);
                     }
                 });
             }
