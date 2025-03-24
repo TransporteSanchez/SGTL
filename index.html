@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 
@@ -25,7 +24,6 @@
             /* Asegúrate de que esté por encima de otros elementos */
 
         }
-
     </style>
 
 
@@ -287,7 +285,7 @@
             <div id="main-content">
 
                 <!--Contenido de la página-->
-               <!--  <div class="page-heading mt-4 mb-4">
+                <!--  <div class="page-heading mt-4 mb-4">
                     <h3>¡Bienvenido!</h3>
                 </div> -->
 
@@ -361,6 +359,7 @@
         <script src='assets/extensions/jquery/moment.min.js'></script>
         <script src='assets/extensions/fullcalendar/fullcalendar.min.js'></script>
         <script src='https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/locale/es.js'></script>
+        <script src="./assets/static/gestionContenido.js"></script>
 
         <script>
             window.onload = function () {
@@ -430,62 +429,6 @@
                 });
             }
 
-            // Aplicar estilos en distintos componentes de la página
-
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-            }
-        }
 
             // Cargar gráfico de choferes
             function loadChoferesChart() {
@@ -555,6 +498,7 @@
                 });
             }
         </script>
+
 
 
 

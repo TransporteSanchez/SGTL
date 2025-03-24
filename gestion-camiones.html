@@ -381,7 +381,7 @@
 
                                                 <!-- Input Fecha de Alta -->
                                                 <div class="col-md-6 mb-3">
-                                                    <label for="fechaRango">Fecha de Alta</label>
+                                                    <label for="fechaRango">Fecha de alta</label>
                                                     <input type="text" class="form-control" id="fechaRango"
                                                         placeholder="Desde y hasta">
                                                 </div>
@@ -697,11 +697,11 @@
     <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Comportamiento tooltip -->
     <script>
@@ -796,102 +796,7 @@
             });
         }
 
-        // Aplicar estilos en distintos componentes de la página
 
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-            }
-        }
-
-        // Lógica de logout y carga de nombre de usuario en el header
-        document.addEventListener("DOMContentLoaded", function () {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                window.location.href = 'login.html';
-            } else {
-                const nombre = localStorage.getItem('nombre');
-                const apellido = localStorage.getItem('apellido');
-                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function (event) {
-                        event.preventDefault();
-
-                        fetch('http://localhost:50222/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
-                        }).then(response => {
-                            if (response.ok) {
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('nombre');
-                                localStorage.removeItem('apellido');
-                                localStorage.removeItem('userRole');
-                                window.location.href = 'login.html';
-                            } else {
-                                alert('Error al cerrar sesión');
-                            }
-                        }).catch(error => {
-                            console.error('Error al realizar la solicitud de logout:', error);
-                            alert('Error al cerrar sesión');
-                        });
-                    });
-                }
-            }
-        });
     </script>
 
     <!-- Buscador y listar -->
@@ -1331,6 +1236,7 @@
                     NumMotor: $('#txtnumMotor').val().trim(),
                     NumChasis: $('#txtnumChasis').val().trim(),
                     EquipoFrio: $('#txtequipoFrio').val().trim(),
+                    EstadoCamion: 'Activo',
                     Fecha_Alta: fechaHoraActual,
                     Usu_Alta: usuarioLogueado,
                     Fecha_Modi: fechaHoraActual,
@@ -1612,6 +1518,17 @@
     <!--Eliminar-->
     <script>
 
+        var camionIdAEliminar;
+
+        // Función para abrir el modal y establecer el ID del camión
+        function abrirModalEliminarCamion(camionId, estadoCamion) {
+            if (estadoCamion === 'Activo') {
+                return; // No permitir eliminar si el camión está activo
+            }
+            camionIdAEliminar = camionId;
+            $('#confirmarEliminarModal').modal('show');
+        }
+
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
@@ -1626,28 +1543,26 @@
             }, 5000); // Mostrar por 5 segundos
         }
 
-        var camionIdAEliminar;
-
-        // Función para establecer el ID del camión a eliminar
-        function setEliminarCamionId(id) {
-            camionIdAEliminar = id;
-        }
-
         // Función para confirmar la eliminación del camión
         function confirmarEliminarCamion() {
             if (camionIdAEliminar) {
+                var usuarioLogueado = localStorage.getItem('username') || "Desconocido";
+
                 $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/' + camionIdAEliminar,
-                    type: 'DELETE',
+                    url: 'http://localhost:50222/api/Camiones/Eliminar/' + camionIdAEliminar,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        Usu_Modi: usuarioLogueado
+                    }),
                     success: function (response) {
-                        console.log('Camión eliminado correctamente:', response);
-                        mostrarToastExito('El camión se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
+                        console.log('Camión marcado como eliminado:', response);
+                        mostrarToastExito('El camión se eliminó exitosamente.');
                         $('#confirmarEliminarModal').modal('hide');
-                        // Recargar o actualizar la tabla después de la eliminación
-                        buscarCamiones();
+                        buscarCamiones(); // Refrescar la tabla
                     },
                     error: function (xhr, status, error) {
-                        console.error(error);
+                        console.error('Error al eliminar el camión:', xhr.responseText || error);
                     }
                 });
             }
@@ -1746,15 +1661,15 @@
 
         // Función para formatear la fecha en DD-MM-YYYY sin hora y minuto
         function formatFechaDDMMYYYY(isoDate) {
-                if (!isoDate) return '';
-                const date = new Date(isoDate);
+            if (!isoDate) return '';
+            const date = new Date(isoDate);
 
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = date.getFullYear();
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
 
-                return `${day}-${month}-${year}`;
-            }
+            return `${day}-${month}-${year}`;
+        }
 
         // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
         function formatFechaUTC3(isoDate) {

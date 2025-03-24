@@ -36,12 +36,12 @@ function setupUserInfo() {
   }
 
   // Obtener y aplicar el color de fondo de la API `GestionContenido`
-  loadDynamicBackgroundColor().then(colorFondo => {
+  loadDynamicBackgroundColor().then(menuColor => {
     // Si hay token, carga la información del usuario
     const nombre = localStorage.getItem('nombre');
     const apellido = localStorage.getItem('apellido');
     const usernameDisplay = document.getElementById('usernameDisplay');
-    const userInitialsContainer = document.getElementById('userInitials'); // Asegúrate de tener este div en el HTML
+    const userInitialsContainer = document.getElementById('userInitials'); 
 
     if (usernameDisplay && nombre && apellido) {
       usernameDisplay.textContent = `${nombre} ${apellido}`;
@@ -57,7 +57,7 @@ function setupUserInfo() {
         userInitialsContainer.style.justifyContent = 'center';
         userInitialsContainer.style.width = '40px';
         userInitialsContainer.style.height = '40px';
-        userInitialsContainer.style.backgroundColor = colorFondo || '#007bff'; // Fondo dinámico desde la API o color por defecto
+        userInitialsContainer.style.backgroundColor = menuColor || '#007bff'; // Fondo dinámico desde la API o color por defecto
         userInitialsContainer.style.color = '#fff'; // Color del texto de las iniciales
         userInitialsContainer.style.borderRadius = '50%';
         userInitialsContainer.style.fontWeight = 'bold';
@@ -111,8 +111,8 @@ function loadDynamicBackgroundColor() {
       if (xhr.status === 200) {
         try {
           const data = JSON.parse(xhr.responseText);
-          console.log("Color de fondo recibido desde la API:", data.ColorFondo);
-          resolve(data.ColorFondo); // Devolver el color de fondo recibido
+          console.log("Color de fondo recibido desde la API:", data.ColorBotonesMenu);
+          resolve(data.ColorBotonesMenu); // Devolver el color de fondo recibido
         } catch (e) {
           console.error("Error al parsear la respuesta JSON:", e);
           reject(e);

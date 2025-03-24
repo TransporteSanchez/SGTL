@@ -1,1 +1,3 @@
-export default (window) => window.innerWidth > 1200;
+export default function isDesktop() {
+    return window.innerWidth > 1024;
+}
