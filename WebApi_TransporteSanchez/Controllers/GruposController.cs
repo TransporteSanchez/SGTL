@@ -23,7 +23,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         }
 
-        // GET: api/Usuarios
+        // GET: api/Grupos
         public IHttpActionResult Get()
         {
             // Obtener la cadena de conexión dinámica
@@ -31,9 +31,13 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new DbContext(connectionString))
                 {
-                    var grupos = db.Set<GRUPOS>().Select(u => new GruposDto
+                    // Primero traemos los datos como entidades
+                    var entidadesGrupos = db.Set<GRUPOS>().ToList();
+
+                    // Después hacemos la proyección a DTO en memoria
+                    var grupos = entidadesGrupos.Select(u => new GruposDto
                     {
                         Grupo_ID = u.Grupo_ID,
                         Grupo_Nombre = u.Grupo_Nombre,
@@ -43,12 +47,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Modi = u.Usu_Modi
                     }).ToList();
 
-                    return Ok(grupos); // Retorna 200 con la lista de grupos
+                    return Ok(grupos);
                 }
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -59,29 +62,29 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
-        // GET: api/Usuarios/{id}
+        // GET: api/Grupos/{id}
         public IHttpActionResult Get(int id)
         {
             // Lógica futura aquí, pero agrega la conexión dinámica y el manejo de errores como en el método anterior
             return Ok("value");
         }
 
-        // POST: api/Usuarios
+        // POST: api/Grupos
         public IHttpActionResult Post([FromBody] string value)
         {
             // Lógica futura aquí, pero agrega la conexión dinámica y el manejo de errores como en el método anterior
             return Ok();
         }
 
-        // PUT: api/Usuarios/{id}
+        // PUT: api/Grupos/{id}
         public IHttpActionResult Put(int id, [FromBody] GRUPOS value)
         {
             // Obtener la cadena de conexión dinámica
@@ -127,7 +130,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // DELETE: api/Usuarios/{id}
+        // DELETE: api/Grupos/{id}
         public IHttpActionResult Delete(int id)
         {
             // Obtener la cadena de conexión dinámica
