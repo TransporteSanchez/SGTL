@@ -258,7 +258,8 @@
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a>
+                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y
+                                        permisos</a>
                                 </li>
 
                             </ul>
@@ -592,6 +593,7 @@
                                             *</span></label>
                                     <input type="text" id="editarDominio" class="form-control"
                                         placeholder="ABC123 o AB123CD" name="dom-column" />
+                                    <div id="dominioErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="editarMarca" class="form-label">Marca<span class="text-danger">
@@ -612,6 +614,7 @@
                                             class="text-danger"> *</span></label>
                                     <input type="number" id="editarañoModelo" class="form-control" name="y-column"
                                         placeholder="2006" data-parsley-required="false" />
+                                    <div id="añoModeloErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="editarTipo" class="form-label">Tipo<span class="text-danger">
@@ -624,12 +627,14 @@
                                         motor<span class="text-danger"> *</span></label>
                                     <input type="text" id="editarnumMotor" class="form-control" name="nm-column"
                                         placeholder="K4MJ999AB99999999" data-parsley-required="true" />
+                                    <div id="motorErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="editarnumChasis" class="form-label">Número de
                                         chasis<span class="text-danger"> *</span></label>
                                     <input type="text" id="editarnumChasis" class="form-control" name="nc-column"
                                         placeholder="9CDN8247CR2401010" />
+                                    <div id="chasisErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                             </div>
                             <div class="col-md-4 col-12">
@@ -638,12 +643,15 @@
                                         compra<span class="text-danger"> *</span></label>
                                     <input type="date" id="editarfechaCompra" class="form-control"
                                         placeholder="01/01/2000" name="dc-column" />
+                                    <div id="fechaCompraErrorEdit" class="invalid-feedback" style="display: none;">
+                                    </div>
                                 </div>
                                 <div class="form-group">
                                     <label for="editarfechaITV" class="form-label">Fecha de
                                         ITV<span class="text-danger"> *</span></label>
                                     <input type="date" id="editarfechaITV" class="form-control" placeholder="01/01/2000"
                                         name="di-column" />
+                                    <div id="fechaITVErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="editarequipoFrio" class="form-label">Equipo de
@@ -703,7 +711,6 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Comportamiento tooltip -->
@@ -1144,28 +1151,51 @@
 
             $('#txtnumMotor, #txtnumChasis').on('input', function () {
                 var maxLength = 17;
-                var valor = $(this).val().toUpperCase().slice(0, maxLength);
+                var valor = $(this).val();
+
+                // Eliminar caracteres especiales (solo letras y números)
+                valor = valor.replace(/[^a-zA-Z0-9]/g, '');
+
+                // Convertir a mayúsculas y limitar longitud
+                valor = valor.toUpperCase().slice(0, maxLength);
+
                 $(this).val(valor);
             });
 
             $('#txtnumMotor').on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#motorError'),
-                    /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{1,17}$/,
-                    'El número de motor debe incluir letras y números.',
-                    17
-                );
+                const $input = $(this);
+                const $error = $('#motorError');
+                const valor = $input.val().trim();
+                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{8,17}$/; // mínimo 8, máximo 17
+
+                if (valor.length < 8 || valor.length > 17) {
+                    $error.text('El número de motor debe tener entre 8 y 17 caracteres.').show();
+                    $input.addClass('is-invalid');
+                } else if (!regex.test(valor)) {
+                    $error.text('El número de motor debe incluir letras y números.').show();
+                    $input.addClass('is-invalid');
+                } else {
+                    $error.hide();
+                    $input.removeClass('is-invalid').addClass('is-valid');
+                }
             });
 
             $('#txtnumChasis').on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#chasisError'),
-                    /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{1,17}$/,
-                    'El número de chasis debe incluir letras y números.',
-                    17
-                );
+                const $input = $(this);
+                const $error = $('#chasisError');
+                const valor = $input.val().trim();
+                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{17}$/;
+
+                if (valor.length < 17) {
+                    $error.text('El número de chasis debe tener 17 caracteres.').show();
+                    $input.addClass('is-invalid');
+                } else if (!regex.test(valor)) {
+                    $error.text('El número de chasis debe incluir letras y números.').show();
+                    $input.addClass('is-invalid');
+                } else {
+                    $error.hide();
+                    $input.removeClass('is-invalid').addClass('is-valid');
+                }
             });
 
             // Validación de fechas con mensajes personalizados
@@ -1206,21 +1236,32 @@
 
             // Evento al hacer clic en el botón "Confirmar"
             $('#confirmarBtn').on('click', function () {
-                let camposValidos = true;
+                let tieneCamposVacios = false;
+                let tieneErrores = false;
 
                 camposRequeridos.forEach(function (campo) {
                     const input = $(campo);
                     validarCampoIndividual(input);
+                    if (input.val().trim() === '') {
+                        tieneCamposVacios = true;
+                    }
                     if (input.hasClass('is-invalid') || input.hasClass('is-invalid-date')) {
-                        camposValidos = false;
+                        tieneErrores = true;
                     }
                 });
 
-                if (camposValidos) {
-                    registrarCamion();
-                } else {
+                if (tieneCamposVacios) {
                     $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                    return;
+                } else {
+                    $('#alertaCompletaCampos').hide();
                 }
+
+                if (tieneErrores) {
+                    return;
+                }
+
+                registrarCamion();
             });
 
             // Función para registrar el camión
@@ -1298,6 +1339,7 @@
 
     <!-- Editor -->
     <script>
+
         // Función para formatear fechas del formato ISO al formato YYYY-MM-DD
         function formatDateForInput(isoDate) {
             var date = new Date(isoDate);
@@ -1338,184 +1380,250 @@
             });
         }
 
-        // Función para validar todos los campos y mostrar el mensaje de error correspondiente
-        function validateAllFields() {
-            var dominio = $('#editarDominio').val();
-            var marca = $('#editarMarca').val();
-            var modelo = $('#editarModelo').val();
-            var añomodelo = $('#editarañoModelo').val();
-            var tipo = $('#editarTipo').val();
-            var motor = $('#editarnumMotor').val();
-            var chasis = $('#editarnumChasis').val();
-            var fechacompra = $('#editarfechaCompra').val();
-            var fechaitv = $('#editarfechaITV').val();
+        // Función para validar todos los campos al cargar datos
+        $(document).ready(function () {
+            // Lista de campos requeridos en edición
+            const camposEdicion = [
+                '#editarDominio',
+                '#editarMarca',
+                '#editarModelo',
+                '#editarañoModelo',
+                '#editarTipo',
+                '#editarfechaCompra',
+                '#editarfechaITV',
+                '#editarnumMotor',
+                '#editarnumChasis'
+            ];
 
-            var currentYear = new Date().getFullYear();
-            var fechaCompra = new Date(fechacompra);
-            var fechaITV = new Date(fechaitv);
+            // Mostrar error solo si un campo está vacío al confirmar
+            function validarCamposRequeridosEdicion() {
+                let camposIncompletos = false;
 
-            var errorMessage = '';
-            var isValid = true;
+                camposEdicion.forEach(function (campo) {
+                    const input = $(campo);
+                    if (input.val().trim() === '') {
+                        input.addClass('is-invalid');
+                        camposIncompletos = true;
+                    }
+                });
 
-            if (!dominio || !marca || !modelo || !añomodelo || !tipo || !motor || !chasis || !fechacompra || !fechaitv) {
-                errorMessage = 'Por favor, completa todos los campos requeridos *';
-                isValid = false;
-            } else if (añomodelo > currentYear) {
-                errorMessage = 'El año del modelo no puede ser mayor al año actual (' + currentYear + ')';
-                isValid = false;
-            } else if (fechaCompra > new Date()) {
-                errorMessage = 'La fecha de compra no puede ser una fecha futura';
-                isValid = false;
-            } else if (fechaITV > new Date()) {
-                errorMessage = 'La fecha del ITV no puede ser una fecha futura';
-                isValid = false;
+                if (camposIncompletos) {
+                    $('#alertaCompletaCamposEdicion')
+                        .text('Por favor, completá todos los campos requeridos.')
+                        .show();
+                } else {
+                    $('#alertaCompletaCamposEdicion').hide();
+                }
+
+                return !camposIncompletos;
             }
 
-            if (isValid) {
-                $('#alertaCompletaCamposEdicion').hide();
-                $('#confirmarEdicion').prop('disabled', false);
-            } else {
-                $('#alertaCompletaCamposEdicion').text(errorMessage).show();
-                $('#confirmarEdicion').prop('disabled', true);
-            }
-        }
-
-        // Eventos para validación en tiempo real
-        $('#editarañoModelo').on('input', function () {
-            var currentYear = new Date().getFullYear();
-            var value = this.value;
-
-            // Limitar la entrada a 4 dígitos
-            if (value.length > 4) {
-                this.value = value.slice(0, 4);
+            // Validar un campo individual (como en alta)
+            function validarCampoIndividual(input) {
+                if (input.val().trim() === '') {
+                    input.addClass('is-invalid');
+                } else {
+                    input.removeClass('is-invalid');
+                    input.trigger('blur'); // Activar validación específica
+                }
             }
 
-            // Solo considerar los primeros 4 dígitos para la validación
-            var enteredYear = parseInt(this.value, 10);
+            // Ocultar alerta y errores cuando se empieza a escribir en cualquier campo
+            camposEdicion.forEach(function (campo) {
+                $(campo).on('input', function () {
+                    // Ocultar la alerta de campos incompletos
+                    $('#alertaCompletaCamposEdicion').hide();
 
-            if (enteredYear > currentYear) {
-                $('#alertaCompletaCamposEdicion').text('El año del modelo no puede ser mayor al año actual (' + currentYear + ')').show();
-                $('#confirmarEdicion').prop('disabled', true);
-            } else {
-                validateAllFields();
-            }
-        });
+                    // Remover errores de todos los campos
+                    camposEdicion.forEach(function (c) {
+                        $(c).removeClass('is-invalid');
+                    });
 
-        $('#editarDominio').on('input', function () {
-            this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
-            if (this.value.length > 7) {
-                this.value = this.value.slice(0, 7);
-            }
-            validateAllFields();
-        });
+                    // Ocultar todos los mensajes de error
+                    $('.invalid-feedback, .invalid-feedback-date').hide();
+                });
+            });
 
-        $('#editarMarca').on('input', function () {
-            validateAllFields();
-        });
+            // Validar fechas en blur (compra e ITV)
+            function validarFecha(input, errorContainer, mensajeFormato, mensajeFuturo) {
+                const valorFecha = input.val().trim();
+                const esValida = /^\d{4}-\d{2}-\d{2}$/.test(valorFecha);
+                const esFutura = new Date(valorFecha) > new Date();
 
-        $('#editarModelo').on('input', function () {
-            validateAllFields();
-        });
-
-        $('#editarTipo').on('input', function () {
-            validateAllFields();
-        });
-
-        $('#editarnumMotor').on('input', function () {
-            this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
-            if (this.value.length > 17) {
-                this.value = this.value.slice(0, 17);
-            }
-            validateAllFields();
-        });
-
-        $('#editarnumChasis').on('input', function () {
-            this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
-            if (this.value.length > 17) {
-                this.value = this.value.slice(0, 17);
-            }
-            validateAllFields();
-        });
-
-        $('#editarfechaCompra').on('change', function () {
-            validateAllFields();
-        });
-
-        $('#editarfechaITV').on('change', function () {
-            validateAllFields();
-        });
-
-        // Evento click para confirmar la edición de los detalles del camión
-        $('#confirmarEdicion').on('click', function (event) {
-            event.preventDefault();
-
-            validateAllFields();
-
-            if ($('#confirmarEdicion').prop('disabled')) {
-                return;
+                if (!esValida) {
+                    input.addClass('is-invalid');
+                    errorContainer.text(mensajeFormato).show();
+                } else if (esFutura) {
+                    input.addClass('is-invalid');
+                    errorContainer.text(mensajeFuturo).show();
+                } else {
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    errorContainer.hide();
+                }
             }
 
-            var id = $(this).attr('Camion_ID');
-            var dominio = $('#editarDominio').val();
-            var marca = $('#editarMarca').val();
-            var modelo = $('#editarModelo').val();
-            var añomodelo = $('#editarañoModelo').val();
-            var tipo = $('#editarTipo').val();
-            var motor = $('#editarnumMotor').val();
-            var chasis = $('#editarnumChasis').val();
-            var fechacompra = $('#editarfechaCompra').val();
-            var fechaitv = $('#editarfechaITV').val();
-            var equipofrio = $('#editarequipoFrio').val();
+            $('#editarfechaCompra').on('blur', function () {
+                validarFecha($(this), $('#fechaCompraErrorEdit'), 'La fecha de compra no tiene un formato válido (DD-MM-YYYY).', 'La fecha de compra no puede ser futura.');
+            });
 
-            var nuevoCamion = {
-                Dominio: dominio,
-                Marca: marca,
-                Modelo: modelo,
-                AñoModelo: añomodelo,
-                Tipo: tipo,
-                NumMotor: motor,
-                NumChasis: chasis,
-                FechaCompra: fechacompra,
-                FechaITV: fechaitv,
-                EquipoFrio: equipofrio,
-            };
+            $('#editarfechaITV').on('blur', function () {
+                validarFecha($(this), $('#fechaITVErrorEdit'), 'La fecha de ITV no tiene un formato válido (DD-MM-YYYY).', 'La fecha de ITV no puede ser futura.');
+            });
 
-            $.ajax({
-                url: 'http://localhost:50222/api/Camiones/' + id,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(nuevoCamion),
-                success: function (response) {
-                    console.log('Camión actualizado correctamente:', response);
-                    mostrarToastExito('Los datos del camión se actualizaron exitosamente');
-                    $('#editarCamionModal').modal('hide');
-                    buscarCamiones(); // Actualizar la lista de camiones en la pantalla
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error al actualizar el camión:', error);
-                    alert('Error al actualizar el camión. Por favor, intenta nuevamente.');
+            // Dominio (input + blur)
+            $('#editarDominio').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 7);
+            }).on('blur', function () {
+                validarCampo(
+                    $(this),
+                    $('#dominioErrorEdit'),
+                    /^[A-Z]{2}[0-9]{3}[A-Z]{2}$|^[A-Z]{3}[0-9]{3}$/,
+                    'El dominio debe tener el formato AA123CC o AAA123.',
+                    7
+                );
+            });
+
+            // Motor (input + blur)
+            $('#editarnumMotor').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17);
+            }).on('blur', function () {
+                const valor = $(this).val().trim();
+                const $error = $('#motorErrorEdit');
+                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{8,17}$/;
+
+                if (valor.length < 8 || valor.length > 17) {
+                    $error.text('El número de motor debe tener entre 8 y 17 caracteres.').show();
+                    $(this).addClass('is-invalid');
+                } else if (!regex.test(valor)) {
+                    $error.text('El número de motor debe incluir letras y números.').show();
+                    $(this).addClass('is-invalid');
+                } else {
+                    $error.hide();
+                    $(this).removeClass('is-invalid').addClass('is-valid');
                 }
             });
+
+            // Chasis (input + blur)
+            $('#editarnumChasis').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17);
+            }).on('blur', function () {
+                const valor = $(this).val().trim();
+                const $error = $('#chasisErrorEdit');
+                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{17}$/;
+
+                if (valor.length !== 17) {
+                    $error.text('El número de chasis debe tener 17 caracteres.').show();
+                    $(this).addClass('is-invalid');
+                } else if (!regex.test(valor)) {
+                    $error.text('El número de chasis debe incluir letras y números.').show();
+                    $(this).addClass('is-invalid');
+                } else {
+                    $error.hide();
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                }
+            });
+
+            // Validar año modelo (solo en blur)
+            $('#editarañoModelo').on('blur', function () {
+                const currentYear = new Date().getFullYear();
+                const value = $(this).val().trim();
+                const $error = $('#añoModeloErrorEdit');
+
+                if (value && (!/^\d{4}$/.test(value) || parseInt(value) > currentYear)) {
+                    $(this).addClass('is-invalid');
+                    $error.text('El año del modelo no puede ser mayor al actual.').show();
+                } else {
+                    $(this).removeClass('is-invalid').addClass('is-valid');
+                    $error.hide();
+                }
+            });
+
+            // Confirmar edición
+            $('#confirmarEdicion').on('click', function (event) {
+                event.preventDefault();
+
+                let tieneCamposVacios = false;
+                let tieneErrores = false;
+
+                camposEdicion.forEach(function (campo) {
+                    const input = $(campo);
+                    validarCampoIndividual(input);
+                    if (input.val().trim() === '') {
+                        tieneCamposVacios = true;
+                    }
+                    if (input.hasClass('is-invalid')) {
+                        tieneErrores = true;
+                    }
+                });
+
+                if (tieneCamposVacios) {
+                    $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos.').show();
+                    return;
+                } else {
+                    $('#alertaCompletaCamposEdicion').hide();
+                }
+
+                if (tieneErrores) {
+                    return;
+                }
+
+                const id = $(this).attr('Camion_ID');
+                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+                const fechaHoraActual = new Date().toISOString();
+
+                const nuevoCamion = {
+                    Dominio: $('#editarDominio').val(),
+                    Marca: $('#editarMarca').val(),
+                    Modelo: $('#editarModelo').val(),
+                    AñoModelo: $('#editarañoModelo').val(),
+                    Tipo: $('#editarTipo').val(),
+                    NumMotor: $('#editarnumMotor').val(),
+                    NumChasis: $('#editarnumChasis').val(),
+                    FechaCompra: $('#editarfechaCompra').val(),
+                    FechaITV: $('#editarfechaITV').val(),
+                    EquipoFrio: $('#editarequipoFrio').val(),
+                    Fecha_Modi: fechaHoraActual,
+                    Usu_Modi: usuarioLogueado
+                };
+
+                $.ajax({
+                    url: 'http://localhost:50222/api/Camiones/' + id,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(nuevoCamion),
+                    success: function (response) {
+                        mostrarToastExito('Los datos del camión se actualizaron exitosamente.');
+                        $('#editarCamionModal').modal('hide');
+                        buscarCamiones();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al actualizar el camión:', error);
+                        alert('Error al actualizar el camión. Por favor, intenta nuevamente.');
+                    }
+                });
+            });
+
+            // Función genérica para validar formato
+            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
+                var valor = input.val().trim().toUpperCase().slice(0, maxLength);
+                input.val(valor);
+
+                if (valor === '') {
+                    input.removeClass('is-invalid is-valid');
+                    errorContainer.hide();
+                    return;
+                }
+
+                if (!regex.test(valor)) {
+                    input.removeClass('is-valid').addClass('is-invalid');
+                    errorContainer.text(mensajeError).show();
+                } else {
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    errorContainer.hide();
+                }
+            }
         });
 
-        // Limpiar el formulario y las validaciones cuando se cierra el modal
-        $('#editarCamionModal').on('hidden.bs.modal', function () {
-            $('#FormEditarCamion')[0].reset();
-            $('#alertaCompletaCamposEdicion').hide();
-            $('#confirmarEdicion').prop('disabled', false);
-        });
-
-        // Función para mostrar el toast de éxito con mensaje dinámico
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje);
-            toastElement.show();
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show();
-            setTimeout(function () {
-                toast.hide();
-            }, 5000);
-        }
     </script>
 
     <!--Eliminar-->

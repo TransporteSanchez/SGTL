@@ -7,7 +7,7 @@
     <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
 
     <style>
-        #app {
+         #app {
             display: none;
         }
 
@@ -17,6 +17,26 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 9999;
+        }
+
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+
+        .no-outline:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 1px solid #ced4da !important;
+            /* Mantiene el borde original */
+            background-color: #f8f9fa !important;
+            /* Mantiene el color de fondo original */
         }
     </style>
 
@@ -662,7 +682,6 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/components/sidebar.js"></script>
 
 
     <!-- Carga de diseño y roles -->
@@ -839,7 +858,7 @@
             // Marcar el checkbox de "Activo" por defecto
             $('#checkestadoactivo').prop('checked', true);
 
-            // Llamar a la función de búsqueda de usuarioes al cargar la página
+            // Llamar a la función de búsqueda de usuarios al cargar la página
             buscarusuarios();
         });
     </script>
