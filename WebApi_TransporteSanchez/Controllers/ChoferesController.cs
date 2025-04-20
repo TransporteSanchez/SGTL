@@ -210,7 +210,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var totalRecords = query.Count();
 
                     var results = query
-                        .OrderBy(c => c.Nombre)
+                        .OrderByDescending(c => c.Chofer_ID)
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
                         .Select(c => new ChoferDto
