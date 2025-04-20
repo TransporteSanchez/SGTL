@@ -26,7 +26,11 @@ namespace WebApi_TransporteSanchez
         public decimal ValorKm { get; set; }
         public string MinKm { get; set; }
         public string MaxKm { get; set; }
-    
+        public System.DateTime Fecha_Alta { get; set; }
+        public string Usu_Alta { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<VIAJES> VIAJES { get; set; }
     }

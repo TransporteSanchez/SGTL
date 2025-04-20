@@ -315,9 +315,9 @@
                                         <fieldset class="border p-3">
                                             <div class="col-md-6 mb-4">
                                                 <li class="d-inline-block me-2 mb-1">
-                                                    <label for="txtnombreGrupo">Grupo</label>
+                                                    <label for="txtnombregrupo">Grupo</label>
                                                 </li>
-                                                <input type="text" class="form-control" id="txtnombreGrupo"
+                                                <input type="text" class="form-control" id="txtnombregrupo"
                                                     data-parsley-restricted-number="true" placeholder="Administradores">
                                             </div>
                                             <div class="col-md-12 mb-4">
@@ -352,8 +352,8 @@
                                 <table class="table table-striped" id="tablaGrupos">
                                     <thead>
                                         <tr>
-                                            <th>Grupo</th>
-                                            <th></th>
+                                            <th>Nombre del Grupo</th>
+                                            <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -408,11 +408,12 @@
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="group-column" class="form-label">Grupo <span
+                                        <label for="group-column" class="form-label">nombregrupo <span
                                                 class="text-danger"> *</span></label>
                                         <input type="text" id="group-column" class="form-control"
                                             placeholder="Administradores" name="fname-column" />
                                     </div>
+                                </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
@@ -1171,23 +1172,8 @@
     <script>
 
         // Validación para que los campos de Nombre, Apellido y Nombre de Usuario solo permitan letras
-        document.getElementById('first-name-column').addEventListener('input', function (event) {
+        document.getElementById('group-column').addEventListener('input', function (event) {
             this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('last-name-column').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('user-name-column').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        // Limita la longitud de la contraseña 20 dígitos
-        document.getElementById('password-column').addEventListener('input', function (event) {
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 20);
-            }
         });
 
 
@@ -1209,7 +1195,7 @@
             var nombregrupo = $('#group-name-column').val();
 
             // Verificar que todos los campos requeridos estén completos
-            if (!nombre grupo ) {
+            if (!nombregrupo ) {
                 $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show(); // Mostrar el mensaje de alerta
                 $('#confirmarBtn').prop('disabled', true); // Deshabilitar el botón de confirmación
             } else {
@@ -1225,7 +1211,7 @@
             }
         }
 
-        // Validación de campos completos + Alta de usuario
+        // Validación de campos completos + Alta de grupo
         $('#confirmarBtn').on('click', function (event) {
             event.preventDefault(); // Prevenir el comportamiento predeterminado del botón para que sólo cierre el modal cuando sea un proceso exitoso
 
@@ -1238,61 +1224,47 @@
             }
 
             // Obtener los valores ingresados en los campos del formulario
-            var nombre = $('#first-name-column').val();
-            var apellido = $('#last-name-column').val();
-            var NombreUsuario = $('#user-name-column').val();
-            var Contraseña = $('#password-column').val();
-            var Rol = $('#rol-column').val();
-            var estado = $('#estado-column').val();
+            var nombregrupo = $('#group-column').val();
 
             // Crear un objeto JSON con los valores obtenidos
-            var nuevousuario = {
-                "Nombre": nombre,
-                "Apellido": apellido,
-                "NombreUsuario": NombreUsuario,
-                "Contraseña": Contraseña,
-                "Rol": Rol,
-                "Estadousuario": "Activo"
+            var nuevogrupo = {
+                "nombregrupo": nombregrupo
             };
 
-            // Realizar una solicitud AJAX POST para guardar el nuevo usuario
+            // Realizar una solicitud AJAX POST para guardar el nuevo grupo
             $.ajax({
-                url: 'http://localhost:50222/api/usuarios',
+                url: 'http://localhost:50222/api/grupos',
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify(nuevousuario),
+                data: JSON.stringify(nuevogrupo),
                 success: function (response) {
-                    console.log('usuario agregado correctamente:', response); // Mensaje en consola
-                    mostrarToastExito('El usuario se dió de alta exitosamente'); // Mostrar el toast con mensaje de éxito
-                    $('#ModalAltaUsuario').modal('hide'); // Cerrar el modal solo si la operación es exitosa
+                    console.log('grupo agregado correctamente:', response); // Mensaje en consola
+                    mostrarToastExito('El grupo se dió de alta exitosamente'); // Mostrar el toast con mensaje de éxito
+                    $('#ModalAltaGrupo').modal('hide'); // Cerrar el modal solo si la operación es exitosa
                     // Esperar a que se cargue completamente la página
                     $(document).ready(function () {
-                        buscarusuarioes(); // Llamar a la función de búsqueda de usuarioes al cargar la página
+                        buscargrupoes(); // Llamar a la función de búsqueda de usuarioes al cargar la página
                     });
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error al agregar el usuario:', error); // Mensaje de error en consola
+                    console.error('Error al agregar el grupo:', error); // Mensaje de error en consola
                 }
             });
         });
 
         // Cuando se cierra el modal, limpiar los controles del formulario y las validaciones
-        $('#ModalAltaUsuario').on('hidden.bs.modal', function () {
+        $('#ModalAltaGrupo').on('hidden.bs.modal', function () {
             // Resetear el formulario
-            $('#FormAltaUsuario')[0].reset();
+            $('#FormAltaGrupo')[0].reset();
             // Ocultar el mensaje de alerta
             $('#alertaCompletaCampos').hide();
             // Limpiar el estado de las validaciones
-            $('#emailError').css('display', 'none');
-            // Resetear los selects de provincia y localidad
-            $('#province-select').empty();
-            $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
             // Habilitar el botón de confirmación
             $('#confirmarBtn').prop('disabled', false);
         });
 
         // Validar campos en tiempo real mientras se completan
-        $('#first-name-column, #last-name-column, #dni-column, #cuil-column, #phone-floating, #celphone-column, #email-id-column, #province-select, #location-select, #street-column').on('input change', function () {
+        $('#group-column').on('input change', function () {
             validateRequiredFields();
         });
     </script>
@@ -1315,26 +1287,26 @@
             }, 5000); // Mostrar por 5 segundos
         }
 
-        var usuarioIdAEliminar;
+        var grupoIdAEliminar;
 
         // Función para establecer el ID del camión a eliminar
-        function setEliminarusuarioId(id) {
-            usuarioIdAEliminar = id;
+        function setEliminargrupoId(id) {
+            grupoIdAEliminar = id;
         }
 
         // Función para confirmar la eliminación del camión
-        function confirmarEliminarusuario() {
-            if (usuarioIdAEliminar) {
+        function confirmarEliminargrupo() {
+            if (grupoIdAEliminar) {
                 $.ajax({
-                    url: 'http://localhost:50222/api/usuarios/' + usuarioIdAEliminar,
+                    url: 'http://localhost:50222/api/grupos/' + grupoIdAEliminar,
                     type: 'DELETE',
                     success: function (response) {
-                        console.log('usuario eliminado correctamente:', response);
-                        mostrarToastExito('El usuario se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
+                        console.log('grupo eliminado correctamente:', response);
+                        mostrarToastExito('El grupo se eliminó exitosamente'); // Mostrar el toast con mensaje de éxito
                         $('#confirmarEliminarModal').modal('hide');
                         // Recargar o actualizar la tabla después de la eliminación
                         // Puede que necesites volver a cargar la tabla con una nueva solicitud AJAX
-                        buscarusuarioes();
+                        buscargrupoes();
                     },
                     error: function (xhr, status, error) {
                         console.error(error);
@@ -1344,74 +1316,6 @@
         }
 
     </script>
-
-    <!--Activar/Desactivar usuario-->
-    <script>
-
-        // Función para mostrar el toast de éxito con mensaje dinámico
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
-
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
-
-            setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
-        }
-
-        var usuarioIdACambiarEstado;
-        var estadoActualusuario;
-
-        // Función para establecer el ID del usuario y el estado actual
-        function setActivarDesactivarusuario(id, estadoActual) {
-            usuarioIdACambiarEstado = id;
-            estadoActualusuario = estadoActual;
-
-            var nuevoEstado = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
-            var mensaje = '¿Estás seguro de que deseas cambiar el estado de este usuario a ' + nuevoEstado + '?';
-
-            $('#confirmarActivarDesactivarBody').text(mensaje);
-        }
-
-        // Función para confirmar el cambio de estado del usuario
-        function confirmarActivarDesactivarusuario() {
-            if (usuarioIdACambiarEstado) {
-                var nuevoEstado = estadoActualusuario === 'Activo' ? 'Inactivo' : 'Activo';
-
-                // Realizar una solicitud PUT para actualizar solo el campo Estadousuario
-                $.ajax({
-                    url: 'http://localhost:50222/api/usuarios/Estadousuario/' + usuarioIdACambiarEstado,
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify({ Estadousuario: nuevoEstado }),
-                    success: function (response) {
-                        $('#confirmarActivarDesactivarModal').modal('hide');
-                        // Actualizar solo el campo Estadousuario en la fila correspondiente
-                        $('#tablausuarioes tbody tr[data-usuario_ID="' + usuarioIdACambiarEstado + '"] .estado-usuario').text(nuevoEstado); // Actualizar el texto del estado
-                        // Alternar clases de color (opcional)
-                        $('#tablausuarioes tbody tr[data-usuario_ID="' + usuarioIdACambiarEstado + '"] .estado-usuario').toggleClass('bg-success bg-danger');
-                        console.log('Estado del usuario actualizado correctamente:', response);
-                        mostrarToastExito('El cambio de estado del usuario se realizó exitosamente');
-                        // Mostrar el checkbox correspondiente según el nuevo estado
-                        $('#checkestadoactivo').prop('checked', true);
-
-                        // Llamar a la función buscarusuarioes para actualizar la lista de usuarioes después de cambiar el estado
-                        buscarusuarioes();
-                    },
-                    error: function (xhr, status, error) {
-                        // Manejar errores de la solicitud
-                        console.error('Error al actualizar el estado del usuario:', error);
-                    }
-                });
-            }
-        }
-
-
-
-
 
     </script>
 

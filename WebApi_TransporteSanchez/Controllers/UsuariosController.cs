@@ -26,6 +26,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime Fecha_Alta { get; set; }
             public string Rol { get; set; }
             public string EstadoUsuario { get; set; }
+            public string Usu_Alta { get; set; }
+            public System.DateTime Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
+
         }
 
         // GET: api/Usuarios
@@ -47,8 +51,12 @@ namespace WebApi_TransporteSanchez.Controllers
                             Nombre_Usuario = u.Nombre_Usuario,
                             Contraseña = u.Contraseña,
                             Fecha_Alta = u.Fecha_Alta,
+                            Usu_Alta = u.Usu_Alta,
                             Rol = u.Rol,
-                            EstadoUsuario = u.EstadoUsuario
+                            EstadoUsuario = u.EstadoUsuario,
+                            Usu_Modi = u.Usu_Modi,
+                            Fecha_Modi = u.Fecha_Modi
+
                         })
                         .ToList();
 
@@ -132,7 +140,11 @@ namespace WebApi_TransporteSanchez.Controllers
                             Nombre_Usuario = u.Nombre_Usuario,
                             Contraseña = u.Contraseña,
                             EstadoUsuario = u.EstadoUsuario,
-                            Fecha_Alta = u.Fecha_Alta
+                            Fecha_Alta = u.Fecha_Alta,
+                            Usu_Alta = u.Usu_Alta,
+                            Rol = u.Rol,
+                            Fecha_Modi = u.Fecha_Modi,
+                            Usu_Modi = u.Usu_Modi,   
 
                         })
                         .ToList();
@@ -261,7 +273,14 @@ namespace WebApi_TransporteSanchez.Controllers
                             Apellido = u.Apellido,
                             Nombre_Usuario = u.Nombre_Usuario,
                             Contraseña = u.Contraseña,
-                            Fecha_Alta = u.Fecha_Alta
+                            Fecha_Alta = u.Fecha_Alta,
+                            Usu_Alta = u.Usu_Alta,
+                            Rol = u.Rol,
+                            EstadoUsuario = u.EstadoUsuario,
+                            Usu_Modi = u.Usu_Modi,
+                            Fecha_Modi = u.Fecha_Modi
+
+
                         })
                         .FirstOrDefault();
 

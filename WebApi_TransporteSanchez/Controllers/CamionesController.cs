@@ -134,7 +134,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var totalRecords = query.Count();
 
                     var results = query
-                        .OrderBy(c => c.Camion_ID)
+                        .OrderByDescending(c => c.Camion_ID)
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
                         .Select(c => new
@@ -327,6 +327,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         FechaCompra = camionDto.FechaCompra,
                         FechaITV = camionDto.FechaITV,
                         EquipoFrio = camionDto.EquipoFrio,
+                        EstadoCamion = camionDto.EstadoCamion,
                         Fecha_Alta = camionDto.Fecha_Alta,
                         Usu_Alta = camionDto.Usu_Alta,
                         Fecha_Modi = camionDto.Fecha_Modi,
@@ -418,8 +419,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 camion.FechaCompra = camionDto.FechaCompra;
                 camion.FechaITV = camionDto.FechaITV;
                 camion.EquipoFrio = camionDto.EquipoFrio;
-                camion.Fecha_Alta = camionDto.Fecha_Alta;
-                camion.Usu_Alta = camionDto.Usu_Alta;
                 camion.Fecha_Modi = camionDto.Fecha_Modi;
                 camion.Usu_Modi = camionDto.Usu_Modi;
 

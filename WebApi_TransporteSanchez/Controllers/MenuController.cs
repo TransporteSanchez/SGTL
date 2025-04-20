@@ -16,6 +16,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public int Menu_ID { get; set; }
             public string Menu_Nombre { get; set; }
+            public int Menu_Principal { get; set; }
 
         }
 
@@ -33,6 +34,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         Menu_ID = u.Menu_ID,
                         Menu_Nombre = u.Menu_Nombre,
+                        Menu_Principal = u.Menu_Principal,
                     }).ToList();
 
                     return Ok(menu); // Retorna 200 con la lista de menús
