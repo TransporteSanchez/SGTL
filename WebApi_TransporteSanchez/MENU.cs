@@ -22,7 +22,8 @@ namespace WebApi_TransporteSanchez
     
         public int Menu_ID { get; set; }
         public string Menu_Nombre { get; set; }
-    
+        public int Menu_Principal { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<GRUPOS_MENU> GRUPOS_MENU { get; set; }
     }

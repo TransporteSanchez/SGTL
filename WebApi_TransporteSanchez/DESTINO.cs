@@ -27,7 +27,11 @@ namespace WebApi_TransporteSanchez
         public string Calle { get; set; }
         public string AlturaCalle { get; set; }
         public int ClienteID { get; set; }
-    
+        public System.DateTime Fecha_Alta { get; set; }
+        public string Usu_Alta { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
+
         public virtual CLIENTES CLIENTES { get; set; }
         public virtual LOCALIDADES LOCALIDADES { get; set; }
         public virtual PROVINCIAS PROVINCIAS { get; set; }

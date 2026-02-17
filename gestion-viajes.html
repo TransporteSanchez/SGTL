@@ -18,6 +18,33 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaViajes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaViajes th,
+        #tablaViajes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaViajes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
     </style>
 
 
@@ -30,6 +57,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
 <body>
@@ -199,12 +227,16 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
+                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
+                                </li>
 
+                                <li class="submenu-item active">
+                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar grupos</a>
+                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y
+                                        permisos</a>
                                 </li>
 
                             </ul>
@@ -303,63 +335,83 @@
                         </div>
 
                         <div class="card-body">
-                            <form id="busquedaCamionForm" class="form">
-                                <div class="row">
-                                    <!-- Columna Izquierda -->
-                                    <div class="col-md-6 mb-4">
-                                        <fieldset class="border p-3">
-                                            <div class="col-md-6 mb-3">
-                                                <li class="d-inline-block me-2 mb-1">
+                            <div class="row">
+                                <!-- Columna izquierda - Filtros -->
+                                <div class="col-md-6">
+                                    <fieldset class="border p-4">
+                                        <form id="busquedaViajeForm" class="form">
+                                            <!-- Fila 1 -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
                                                     <label for="idviajeinput">Número de viaje</label>
-                                                </li>
-                                                <input type="number" class="form-control" id="idviajeinput"
-                                                    placeholder="123">
-                                            </div>
-                                            <div class="col-md-12 mb-4">
-                                                <button type="button" class="btn btn-light mb-4"
-                                                    onclick="buscarViajes()">Buscar</button>
-                                            </div>
-                                        </fieldset>
-                                    </div>
-                                    <!-- Columna Derecha -->
-                                    <div class="col-md-6 mb-4">
-                                        <div class="row">
-                                            <div class="col-md-12 mb-4">
-                                                <div class="buttons">
-                                                    <a href="#" class="btn icon icon-left btn-success"
-                                                        data-bs-toggle="modal" data-bs-target="#ModalAltaViaje">
-                                                        <i data-feather="check-circle"></i> Alta
-                                                    </a>
+                                                    <input type="number" class="form-control" id="idviajeinput"
+                                                        placeholder="123">
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="fechaRangoInicioViaje">Fecha de inicio</label>
+                                                    <input type="text" class="form-control" id="fechaRangoInicioViaje"
+                                                        placeholder="Desde y hasta">
                                                 </div>
                                             </div>
-                                        </div>
-                                    </div>
+                                            <!-- Fila 2 -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="fechaRangoFinViaje">Fecha de fin</label>
+                                                    <input type="text" class="form-control" id="fechaRangoFinViaje"
+                                                        placeholder="Desde y hasta">
+                                                </div>
+                                                <div class="col-md-6 d-flex justify-content-end align-items-end">
+                                                    <button type="button" class="btn btn-light"
+                                                        onclick="buscarViajes()">Buscar</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </fieldset>
                                 </div>
-                            </form>
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="tablaViajes">
-                                    <thead>
-                                        <tr>
-                                            <th>Número de viaje</th>
-                                            <th>Origen</th>
-                                            <th>Destino</th>
-                                            <th>Número de remito</th>
-                                            <th>Cantidad de KM</th>
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
 
-                                    </tbody>
-                                </table>
+                                <!-- Columna derecha - Alta y reporte -->
+                                <div class="col-md-6 text-end">
+                                    <button type="button" class="btn btn-success" onclick="abrirModalAltaViaje()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar viaje">
+                                        <i class="bi bi-calendar-check"></i>
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <label>&nbsp;</label>
+                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                        <i class="bi bi-download"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Tabla de resultados -->
+                                <div class="table-responsive mt-4">
+                                    <table class="table table-striped" id="tablaViajes">
+                                        <thead>
+                                            <tr>
+                                                <th>Número de viaje</th>
+                                                <th>Fecha de inicio</th>
+                                                <th>Fecha de fin</th>
+                                                <th>Origen</th>
+                                                <th>Destino</th>
+                                                <th>Número de remito</th>
+                                                <th>Cantidad de KM</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Contenido dinámico -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Paginación -->
+                                <nav>
+                                    <ul class="pagination justify-content-end" id="pagination">
+                                    </ul>
+                                </nav>
                             </div>
-
-                            <!-- Paginación -->
-                            <nav>
-                                <ul class="pagination justify-content-end" id="pagination">
-                                </ul>
-                            </nav>
                         </div>
+
                     </div>
                 </section>
             </div>
@@ -393,7 +445,6 @@
                         role="alert">
                     </div>
                     <form class="form" id="FormAltaViaje">
-                        <!-- Row 1 -->
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="clienteSelect" class="form-label">Cliente</label>
@@ -405,7 +456,6 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- Row 2 -->
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="origenSelect" class="form-label">Origen</label>
@@ -421,7 +471,6 @@
                                 <input type="datetime-local" class="form-control" id="fechaInicio" name="fechaInicio">
                             </div>
                         </div>
-                        <!-- Row 3 -->
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="destinoSelect" class="form-label">Destino</label>
@@ -437,7 +486,6 @@
                                 <input type="datetime-local" class="form-control" id="fechaFin" name="fechaFin">
                             </div>
                         </div>
-                        <!-- Row 4 -->
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="tipoTarifaSelect" class="form-label">Tipo de tarifa</label>
@@ -448,7 +496,6 @@
                                 </select>
                             </div>
                         </div>
-                        <!-- Row 5 -->
                         <div class="row mb-3">
                             <div class="col-md-4">
                                 <label for="numeroRemito" class="form-label">Número de remito</label>
@@ -476,14 +523,14 @@
     </div>
 
 
-
-
     <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -553,6 +600,220 @@
         }
 
     </script>
+
+    <!-- Comportamiento tooltip -->
+    <script>
+        $(document).ready(function () {
+            // Inicializa tooltips en todos los elementos estáticos
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Aplica tooltips a elementos dinámicamente agregados en la tabla
+            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+
+            // Manejo específico para tooltips en botones deshabilitados
+            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+        });
+
+    </script>
+
+    <!-- Buscador y Listar + Acciones -->
+    <script>
+        const pageSize = 6;
+        let currentPage = 1;
+
+        // Datepicker para el filtro de fecha de inicio de viaje
+        $('#fechaRangoInicioViaje').daterangepicker({
+            autoUpdateInput: false,
+            locale: {
+                cancelLabel: 'Borrar',
+                format: 'DD/MM/YYYY',
+                applyLabel: 'Aplicar',
+                cancelLabel: 'Cancelar',
+                daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                monthNames: [
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ]
+            }
+        });
+
+        $('#fechaRangoInicioViaje').on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+            $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+            $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+        });
+
+        $('#fechaRangoInicioViaje').on('cancel.daterangepicker input', function () {
+            $(this).val('');
+            $(this).removeData('start').removeData('end');
+            buscarViajes(currentPage);
+        });
+
+        // Datepicker para el filtro de fecha de fin de viaje
+        $('#fechaRangoFinViaje').daterangepicker({
+            autoUpdateInput: false,
+            locale: {
+                cancelLabel: 'Borrar',
+                format: 'DD/MM/YYYY',
+                applyLabel: 'Aplicar',
+                cancelLabel: 'Cancelar',
+                daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                monthNames: [
+                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                ]
+            }
+        });
+
+        $('#fechaRangoFinViaje').on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+            $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+            $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+        });
+
+        $('#fechaRangoFinViaje').on('cancel.daterangepicker input', function () {
+            $(this).val('');
+            $(this).removeData('start').removeData('end');
+            buscarViajes(currentPage);
+        });
+
+
+        function formatearFecha(fecha) {
+            if (!fecha) return '';
+            const fechaObj = new Date(fecha);
+            const dia = String(fechaObj.getDate()).padStart(2, '0');
+            const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
+            const anio = fechaObj.getFullYear();
+            return `${dia}/${mes}/${anio}`;
+        }
+
+        function buscarViajes(page = 1) {
+            const idViaje = $('#idviajeinput').val().trim();
+            const fechaDesde = $('#fechaRangoInicioViaje').data('start') || null;
+            const fechaHasta = $('#fechaRangoInicioViaje').data('end') || null;
+
+            const requestData = {
+                idViaje: idViaje || null,
+                fechaDesde,
+                fechaHasta,
+                page,
+                pageSize
+            };
+
+            $.ajax({
+                url: 'http://localhost:50222/api/Viajes/Buscar',
+                type: 'GET',
+                data: requestData,
+                success: function (data) {
+                    const tbody = $('#tablaViajes tbody');
+                    tbody.empty();
+
+                    if (data.Results.length === 0) {
+                        tbody.html('<tr><td colspan="8" class="text-center">No se encontraron registros</td></tr>');
+                    } else {
+                        data.Results.forEach(function (viaje) {
+                            const row = `
+                                <tr>
+                                    <td>${viaje.Viaje_ID}</td>
+                                    <td>${formatearFecha(viaje.Fecha_Inicio)}</td>
+                                    <td>${formatearFecha(viaje.Fecha_Fin)}</td>
+                                    <td>${viaje.Origen}</td>
+                                    <td>${viaje.Destino}</td>
+                                    <td>${viaje.Num_Remito}</td>
+                                    <td>${viaje.Distancia_KM}</td>
+                                    <td>
+                <button class="btn btn-primary btn-sm"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="Editar"
+                    onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
+                    <i class="bi bi-pencil"></i>
+                </button>
+
+                <span data-bs-toggle="tooltip" data-bs-placement="top"
+                      title="${viaje.Estado === 'Activo' ? 'No se puede eliminar un viaje activo' : 'Eliminar'}">
+                    <button class="btn btn-danger btn-sm ms-1 ${viaje.Estado === 'Activo' ? 'disabled' : ''}"
+                        onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}', '${viaje.Estado}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </span>
+
+                <button class="btn btn-light btn-sm ms-1"
+                    data-bs-toggle="tooltip"
+                    data-bs-placement="top"
+                    title="${viaje.Estado === 'Activo' ? 'Inactivar' : 'Activar'}"
+                    onclick="abrirModalEstadoViaje('${viaje.Viaje_ID}', '${viaje.Estado}')">
+                    <i class="bi bi-arrow-repeat"></i>
+                </button>
+            </td>
+                                </tr>
+                            `;
+                            tbody.append(row);
+                        });
+                    }
+
+                    renderPagination(data.TotalRecords, pageSize, page);
+                },
+                error: function (xhr) {
+                    console.error('Error al buscar viajes:', xhr);
+                }
+            });
+        }
+
+        function renderPagination(totalRecords, pageSize, currentPage) {
+            const totalPages = Math.ceil(totalRecords / pageSize);
+            const paginationContainer = $('#pagination');
+            paginationContainer.empty();
+
+            const prevDisabled = currentPage === 1 ? 'disabled' : '';
+            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+
+            paginationContainer.append(`
+                <li class="page-item ${prevDisabled}">
+                    <a class="page-link" href="#" onclick="buscarViajes(${currentPage - 1})">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+            `);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const activeClass = currentPage === i ? 'active' : '';
+                paginationContainer.append(`
+                    <li class="page-item ${activeClass}">
+                        <a class="page-link" href="#" onclick="buscarViajes(${i})">${i}</a>
+                    </li>
+                `);
+            }
+
+            paginationContainer.append(`
+                <li class="page-item ${nextDisabled}">
+                    <a class="page-link" href="#" onclick="buscarViajes(${currentPage + 1})">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            `);
+        }
+
+        $(document).ready(function () {
+            buscarViajes(currentPage);
+        });
+
+    </script>
+
+    <!-- Alta -->
+
 </body>
 
 

@@ -61,7 +61,7 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
             color: ${colorBotonesMenu || '#198754'} !important;
         }
 
-        /* ✅ Nuevo: Aplica color al submenu-item activo */
+        /* Aplica color al submenu-item activo */
         .submenu-item.active .submenu-link {
             color: ${colorBotonesMenu || '#198754'} !important;
             font-weight: bold;

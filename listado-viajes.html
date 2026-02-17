@@ -18,6 +18,33 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaViajes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaViajes th,
+        #tablaViajes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaViajes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -29,6 +56,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
 <body>
@@ -288,31 +316,60 @@
                         </div>
                         <div class="card-body">
                             <form id="busquedaViajeForm" class="form">
-                                <div class="row">
-                                    <div class="col-md-3 mb-3">
-                                        <li class="d-inline-block me-2 mb-1">
+                                <div class="d-flex flex-wrap justify-content-between align-items-end mb-3">
+                                    <div class="d-flex flex-wrap">
+                                        <!-- Campo de id de viaje -->
+                                        <div class="me-3 mb-3">
                                             <label for="idviajeinput">Número de viaje</label>
-                                        </li>
-                                        <input type="number" class="form-control" id="idviajeinput" placeholder="123">
+                                            <input type="number" class="form-control" id="idviajeinput"
+                                                placeholder="1234">
+                                        </div>
+                                        <!-- Campo de fecha de inicio -->
+                                        <div class="me-3 mb-3">
+                                            <label for="fechaRangoInicioViaje">Fecha de inicio</label>
+                                            <input type="text" class="form-control" id="fechaRangoInicioViaje"
+                                                placeholder="Desde y hasta">
+                                        </div>
+                                        <!-- Campo de fecha de fin -->
+                                        <div class="me-3 mb-3">
+                                            <label for="fechaRangoFinViaje">Fecha de fin</label>
+                                            <input type="text" class="form-control" id="fechaRangoFinViaje"
+                                                placeholder="Desde y hasta">
+                                        </div>
+                                        <!-- Botón Buscar -->
+                                        <div class="mb-3">
+                                            <label>&nbsp;</label>
+                                            <button type="button" class="btn btn-light d-block"
+                                                onclick="buscarViajes()">Buscar</button>
+                                        </div>
+                                    </div>
+                                    <!-- Botón Generar Reporte -->
+                                    <div class="mb-3">
+                                        <label>&nbsp;</label>
+                                        <button type="button" class="btn btn-secondary d-block"
+                                            onclick="generarReporteCSV()" data-bs-toggle="tooltip"
+                                            data-bs-placement="top" title="Generar reporte">
+                                            <i class="bi bi-download"></i>
+                                        </button>
                                     </div>
                                 </div>
-                                <button type="button" class="btn btn-light mb-4"
-                                    onclick="buscarViajes()">Buscar</button>
                             </form>
                             <div class="table-responsive">
                                 <table class="table table-striped" id="tablaViajes">
                                     <thead>
                                         <tr>
                                             <th>Número de viaje</th>
+                                            <th>Fecha de inicio</th>
+                                            <th>Fecha de fin</th>
                                             <th>Origen</th>
                                             <th>Destino</th>
                                             <th>Número de remito</th>
                                             <th>Cantidad de KM</th>
-                                            <th></th>
+                                            <th>Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-
+                                        <!-- Contenido llenado dinámicamente -->
                                     </tbody>
                                 </table>
                             </div>
@@ -419,7 +476,37 @@
         <script src="assets/extensions/jquery/jqueryajax.js"></script>
         <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
         <script src="assets/compiled/js/app.js"></script>
+        <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+        <script type="text/javascript"
+            src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
         <script src="./assets/static/gestionContenido.js"></script>
+
+        <!-- Comportamiento tooltip -->
+        <script>
+            $(document).ready(function () {
+                // Inicializa tooltips en todos los elementos estáticos
+                $('[data-bs-toggle="tooltip"]').tooltip();
+
+                // Aplica tooltips a elementos dinámicamente agregados en la tabla
+                $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                    $(this).tooltip('show');
+                });
+
+                $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                    $(this).tooltip('hide');
+                });
+
+                // Manejo específico para tooltips en botones deshabilitados
+                $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
+                    $(this).tooltip('show');
+                });
+
+                $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
+                    $(this).tooltip('hide');
+                });
+            });
+
+        </script>
 
         <!-- Carga de diseño y roles -->
         <script>
@@ -427,11 +514,11 @@
                 const loadingMessage = document.getElementById('loading-message');
                 loadingMessage.style.display = 'block';
                 document.getElementById('app').style.display = 'none';
-        
+
                 // Cargar header, footer y configuración
                 window.loadHeader();
                 window.loadFooter();
-        
+
                 loadSettings()
                     .then(() => {
                         adjustVisibilityBasedOnRole();
@@ -443,29 +530,29 @@
                         loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
                     });
             };
-        
+
             function adjustVisibilityBasedOnRole() {
                 const userRole = localStorage.getItem('userRole');
                 const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-        
+
                 if (userRole && userRole.toLowerCase() === 'admin') {
                     gestionarContenidoBtn.style.display = 'block';
                 } else {
                     gestionarContenidoBtn.style.display = 'none';
                 }
             }
-        
+
             async function loadSettings() {
                 return new Promise((resolve, reject) => {
                     const xhr = new XMLHttpRequest();
                     xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-        
+
                     xhr.onload = function () {
                         if (xhr.status >= 200 && xhr.status < 300) {
                             const data = JSON.parse(xhr.responseText);
                             if (data) {
                                 const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-        
+
                                 applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                                 resolve();
                             } else {
@@ -477,26 +564,82 @@
                             reject(new Error('Error en la carga de la API'));
                         }
                     };
-        
+
                     xhr.onerror = function () {
                         console.error('Error al cargar la configuración de la API.');
                         reject(new Error('Error de red'));
                     };
-        
+
                     xhr.send();
                 });
             }
-        
+
         </script>
 
         <!-- Buscador y Listar -->
         <script>
-
-
             const pageSize = 6;
             let currentPage = 1;
 
+            // Datepicker para el filtro de fecha de inicio de viaje
+            $('#fechaRangoInicioViaje').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Borrar',
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
+
+            $('#fechaRangoInicioViaje').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('#fechaRangoInicioViaje').on('cancel.daterangepicker input', function () {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+                buscarViajes(currentPage);
+            });
+
+            // Datepicker para el filtro de fecha de fin de viaje
+            $('#fechaRangoFinViaje').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Borrar',
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Cancelar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
+
+            $('#fechaRangoFinViaje').on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+            });
+
+            $('#fechaRangoFinViaje').on('cancel.daterangepicker input', function () {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+                buscarViajes(currentPage);
+            });
+
+
             function formatearFecha(fecha) {
+                if (!fecha) return '';
                 const fechaObj = new Date(fecha);
                 const dia = String(fechaObj.getDate()).padStart(2, '0');
                 const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
@@ -504,74 +647,71 @@
                 return `${dia}/${mes}/${anio}`;
             }
 
-
-            // Función para mostrar los detalles del viaje en el modal
-            function mostrarDetalles(registro) {
-                $('#modalIDviaje').val(registro.Viaje_ID);
-                $('#modalOrigen').val(registro.OrigenID);
-                $('#modalDestino').val(registro.DestinoID);
-                $('#modalDistanciakm').val(registro.Distancia_KM);
-                $('#modalNumRemito').val(registro.Num_Remito);
-                $('#modalNumCarga').val(registro.Num_de_Carga);
-                $('#modalFechaInicio').val(formatearFecha(registro.Fecha_Inicio));
-                $('#modalFechaFin').val(formatearFecha(registro.Fecha_Fin));
-                $('#modalTarifaFija').val(registro.TarifaFijaID);
-                $('#modalTarifaKM').val(registro.TarifaKmID);
-                $('#modalChoferCamion').val(registro.ChofCamID);
-                $('#modalCliente').val(registro.ClienteID);
+            function mostrarDetallesViaje(viaje) {
+                $('#modalIDviaje').val(viaje.Viaje_ID);
+                $('#modalOrigen').val(viaje.OrigenID);
+                $('#modalDestino').val(viaje.DestinoID);
+                $('#modalDistanciakm').val(viaje.Distancia_KM);
+                $('#modalNumRemito').val(viaje.Num_Remito);
+                $('#modalNumCarga').val(viaje.Num_de_Carga);
+                $('#modalFechaInicio').val(formatearFecha(viaje.Fecha_Inicio));
+                $('#modalFechaFin').val(formatearFecha(viaje.Fecha_Fin));
+                $('#modalTarifaFija').val(viaje.TarifaFijaID);
+                $('#modalTarifaKM').val(viaje.TarifaKmID);
+                $('#modalChoferCamion').val(viaje.ChofCamID);
+                $('#modalCliente').val(viaje.ClienteID);
                 $('#DetallesViajeModal').modal('show');
             }
 
-            // Función para formatear la fecha en formato DD/MM/AAAA
-            function formatearFecha(fecha) {
-                const fechaObj = new Date(fecha);
-                const dia = String(fechaObj.getDate()).padStart(2, '0');
-                const mes = String(fechaObj.getMonth() + 1).padStart(2, '0');
-                const anio = fechaObj.getFullYear();
-                return `${dia}/${mes}/${anio}`;
-            }
+            function buscarViajes(page = 1) {
+                const idViaje = $('#idviajeinput').val().trim();
+                const fechaDesde = $('#fechaRangoInicioViaje').data('start') || null;
+                const fechaHasta = $('#fechaRangoInicioViaje').data('end') || null;
 
-
-            // Función para realizar la búsqueda de camiones
-            function buscarCamiones(page = 1) {
-                // Obtener el valor del campo de búsqueda
-                var dominio = $('#dominioinput').val();
-
-                var requestData = {
-                    dominio: dominio,
-                    page: page,
-                    pageSize: pageSize
+                const requestData = {
+                    idViaje: idViaje || null,
+                    fechaDesde,
+                    fechaHasta,
+                    page,
+                    pageSize
                 };
 
-                // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
-                if (dominio !== '') requestData.dominio = dominio;
-
-                // Realizar la solicitud AJAX GET al controlador
                 $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/Buscar',
+                    url: 'http://localhost:50222/api/Viajes/Buscar',
                     type: 'GET',
                     data: requestData,
                     success: function (data) {
-                        // Limpiar la tabla antes de agregar nuevos registros
-                        $('#tablaCamiones tbody').empty();
+                        const tbody = $('#tablaViajes tbody');
+                        tbody.empty();
+
                         if (data.Results.length === 0) {
-                            $('#tablaCamiones tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
+                            tbody.html('<tr><td colspan="8" class="text-center">No se encontraron registros</td></tr>');
                         } else {
-                            data.Results.forEach(function (registro) {
-                                $('#tablaCamiones tbody').append(`
-                        <tr>
-                            <td>${registro.Dominio.trim()}</td>
-                            <td>${registro.Marca}</td>
-                            <td>${registro.Modelo}</td>
-                            <td><button class="btn btn-primary" onclick='mostrarDetalles(${JSON.stringify(registro)})'><i class="bi bi-info-circle"></i> Más detalles</button></td>
-                        </tr>
-                    `);
+                            data.Results.forEach(function (viaje) {
+                                const row = `
+                                    <tr>
+                                        <td>${viaje.Viaje_ID}</td>
+                                        <td>${formatearFecha(viaje.Fecha_Inicio)}</td>
+                                        <td>${formatearFecha(viaje.Fecha_Fin)}</td>
+                                        <td>${viaje.Origen}</td>
+                                        <td>${viaje.Destino}</td>
+                                        <td>${viaje.Num_Remito}</td>
+                                        <td>${viaje.Distancia_KM}</td>
+                                        <td>
+                                            <button class="btn btn-primary btn-sm" onclick='mostrarDetallesViaje(${JSON.stringify(viaje)})'>
+                                                <i class="bi bi-info-circle"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `;
+                                tbody.append(row);
                             });
                         }
+
                         renderPagination(data.TotalRecords, pageSize, page);
                     },
-                    error: function (xhr, status, error) {
-                        console.error(error);
+                    error: function (xhr) {
+                        console.error('Error al buscar viajes:', xhr);
                     }
                 });
             }
@@ -585,39 +725,36 @@
                 const nextDisabled = currentPage === totalPages ? 'disabled' : '';
 
                 paginationContainer.append(`
-        <li class="page-item ${prevDisabled}">
-            <a class="page-link" href="#" aria-label="Previous" onclick="buscarCamiones(${currentPage - 1})">
-                <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-            </a>
-        </li>
-    `);
+                    <li class="page-item ${prevDisabled}">
+                        <a class="page-link" href="#" onclick="buscarViajes(${currentPage - 1})">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                `);
 
                 for (let i = 1; i <= totalPages; i++) {
                     const activeClass = currentPage === i ? 'active' : '';
                     paginationContainer.append(`
-            <li class="page-item ${activeClass}">
-                <a class="page-link" href="#" onclick="buscarCamiones(${i})">${i}</a>
-            </li>
-        `);
+                        <li class="page-item ${activeClass}">
+                            <a class="page-link" href="#" onclick="buscarViajes(${i})">${i}</a>
+                        </li>
+                    `);
                 }
 
                 paginationContainer.append(`
-        <li class="page-item ${nextDisabled}">
-            <a class="page-link" href="#" aria-label="Next" onclick="buscarCamiones(${currentPage + 1})">
-                <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-            </a>
-        </li>
-    `);
+                    <li class="page-item ${nextDisabled}">
+                        <a class="page-link" href="#" onclick="buscarViajes(${currentPage + 1})">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                `);
             }
 
             $(document).ready(function () {
-                // Ejecutar la búsqueda inicial
-                buscarCamiones(currentPage);
+                buscarViajes(currentPage);
             });
-
-
+            
         </script>
-
 
 </body>
 

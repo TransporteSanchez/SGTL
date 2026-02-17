@@ -32,7 +32,11 @@ namespace WebApi_TransporteSanchez
         public string AlturaCalle { get; set; }
         public string Telefono { get; set; }
         public string Email { get; set; }
-    
+        public System.DateTime Fecha_Alta { get; set; }
+        public string Usu_Alta { get; set; }
+        public System.DateTime Fecha_Modi { get; set; }
+        public string Usu_Modi { get; set; }
+
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]
         public virtual ICollection<DESTINO> DESTINO { get; set; }
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Usage", "CA2227:CollectionPropertiesShouldBeReadOnly")]

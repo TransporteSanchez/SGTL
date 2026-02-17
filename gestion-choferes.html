@@ -45,6 +45,18 @@
         .pagination {
             justify-content: center;
         }
+
+        .invalid-feedback {
+            display: block !important;
+            font-size: 0.875rem;
+            color: #dc3545;
+        }
+
+        .no-click {
+            pointer-events: none;
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -226,12 +238,17 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
+                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
+                                </li>
+
+                                <li class="submenu-item">
+                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
 
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar grupos</a>
+                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y
+                                        permisos</a>
                                 </li>
 
                             </ul>
@@ -455,54 +472,58 @@
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="dni-column" class="form-label">DNI <span class="text-danger">
+                                        <label for="altaDNI" class="form-label">DNI <span class="text-danger">
                                                 *</span></label>
-                                        <input type="number" id="dni-column" class="form-control"
-                                            placeholder="DNI sin puntos ni espacios" name="dni-column"
+                                        <input type="number" id="altaDNI" class="form-control"
+                                            placeholder="DNI sin puntos ni espacios" name="altaDNI"
                                             data-parsley-restricted-number="true" />
-                                        <div id="dni-error" class="invalid-feedback" style="display: none;"></div>
+                                        <div id="altaDNI-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono celular <span
+                                        <label for="altaCelular" class="form-label">Teléfono celular <span
                                                 class="text-danger"> *</span></label>
-                                        <input type="number" id="celphone-column" class="form-control" name="cel-column"
+                                        <input type="number" id="altaCelular" class="form-control" name="altaCelular"
                                             placeholder="Cód. área sin 0 + cel. sin 15" />
+                                        <div id="altaCelular-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="province-select" class="form-label">Provincia <span
+                                        <label for="altaProvincia" class="form-label">Provincia <span
                                                 class="text-danger"> *</span></label>
-                                        <select id="province-select" class="form-control form-select"
-                                            name="p-column"></select>
+                                        <select id="altaProvincia" class="form-control form-select"
+                                            name="altaProvincia"></select>
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="cuil-column" class="form-label">CUIL <span class="text-danger">
+                                        <label for="altaCUIL" class="form-label">CUIL <span class="text-danger">
                                                 *</span></label>
-                                        <input type="number" id="cuil-column" class="form-control"
-                                            placeholder="CUIL sin guiones" name="c-column"
+                                        <input type="number" id="altaCUIL" class="form-control"
+                                            placeholder="CUIL sin guiones" name="altaCUIL"
                                             data-parsley-restricted-number="true" />
-                                        <div id="cuil-error" class="invalid-feedback" style="display: none;"></div>
+                                        <div id="altaCUIL-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="phone-floating" class="form-label">Teléfono particular</label>
-                                        <input type="number" id="phone-floating" class="form-control" name="ph-floating"
+                                        <label for="altaTelefono" class="form-label">Teléfono particular</label>
+                                        <input type="number" id="altaTelefono" class="form-control" name="altaTelefono"
                                             placeholder="Cód. área sin 0 + teléfono" />
+                                        <div id="altaTelefono-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="location-select" class="form-label">Localidad <span
+                                        <label for="altaLocalidad" class="form-label">Localidad <span
                                                 class="text-danger"> *</span></label>
-                                        <select id="location-select" class="form-control form-select" name="l-column"
+                                        <select id="altaLocalidad" class="form-control form-select" name="altaLocalidad"
                                             disabled></select>
                                     </div>
                                 </div>
@@ -510,45 +531,45 @@
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="first-name-column" class="form-control"
-                                            placeholder="Juan" name="fname-column" />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="email-id-column" class="form-label">Email</label>
-                                        <input type="email" id="email-id-column" class="form-control"
-                                            name="email-id-column" placeholder="minombre@correo.com" />
-                                        <div id="emailError" class="invalid-feedback" style="display: none;"></div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="street-column" class="form-label">Calle <span class="text-danger">
+                                        <label for="altaNombre" class="form-label">Nombre <span class="text-danger">
                                                 *</span></label>
-                                        <input type="text" id="street-column" class="form-control"
-                                            placeholder="Av. Faraday" name="s-column" />
+                                        <input type="text" id="altaNombre" class="form-control" placeholder="Juan"
+                                            name="altaNombre" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="altaEmail" class="form-label">Email</label>
+                                        <input type="email" id="altaEmail" class="form-control" name="altaEmail"
+                                            placeholder="minombre@correo.com" />
+                                        <div id="altaEmail-error" class="invalid-feedback" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="altaCalle" class="form-label">Calle <span class="text-danger">
+                                                *</span></label>
+                                        <input type="text" id="altaCalle" class="form-control" placeholder="Av. Faraday"
+                                            name="altaCalle" />
                                     </div>
                                 </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido <span
-                                                class="text-danger"> *</span></label>
-                                        <input type="text" id="last-name-column" class="form-control"
-                                            placeholder="Perez" name="lname-column" />
+                                        <label for="altaApellido" class="form-label">Apellido <span class="text-danger">
+                                                *</span></label>
+                                        <input type="text" id="altaApellido" class="form-control" placeholder="Perez"
+                                            name="altaApellido" />
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="number-column" class="form-label">Altura</label>
-                                        <input type="number" id="number-column" class="form-control"
-                                            placeholder="0 o 999" name="num-column" />
+                                        <label for="altaCalleAltura" class="form-label">Altura</label>
+                                        <input type="number" id="altaCalleAltura" class="form-control"
+                                            placeholder="0 o 999" name="altaCalleAltura" />
                                     </div>
                                 </div>
                             </div>
@@ -604,23 +625,25 @@
                                         <label for="editarDNI" class="form-label">DNI<span class="text-danger">
                                                 *</span></label>
                                         <input type="number" id="editarDNI" class="form-control"
-                                            placeholder="DNI sin puntos ni espacios" name="dni-column" />
-                                        <div id="editarDniError" class="invalid-feedback" style="display: none;"></div>
+                                            placeholder="DNI sin puntos ni espacios" name="editarDNI" />
+                                        <div id="editarDNI-error" class="invalid-feedback"></div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editarcelular" class="form-label">Teléfono celular<span
+                                        <label for="editarCelular" class="form-label">Teléfono celular<span
                                                 class="text-danger"> *</span></label>
-                                        <input type="number" id="editarcelular" class="form-control" name="cel-column"
-                                            placeholder="Cód. área sin 0 + cel. sin 15" />
+                                        <input type="number" id="editarCelular" class="form-control"
+                                            name="editarCelular" placeholder="Cód. área sin 0 + cel. sin 15" />
+                                        <div id="editarCelular-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editarprovincia" class="form-label">Provincia<span
+                                        <label for="editarProvincia" class="form-label">Provincia<span
                                                 class="text-danger"> *</span></label>
-                                        <select id="editarprovincia" class="form-control form-select"></select>
+                                        <select id="editarProvincia" class="form-control form-select"></select>
                                     </div>
                                 </div>
                             </div>
@@ -630,7 +653,9 @@
                                         <label for="editarCUIL" class="form-label">CUIL<span class="text-danger">
                                                 *</span></label>
                                         <input type="number" id="editarCUIL" class="form-control"
-                                            placeholder="Cuil sin guiones" name="cuil-column" />
+                                            placeholder="Cuil sin guiones" name="editarCUIL" />
+                                        <div id="editarCUIL-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
@@ -638,13 +663,15 @@
                                         <label for="editarTelefono" class="form-label">Teléfono particular</label>
                                         <input type="number" id="editarTelefono" class="form-control"
                                             placeholder="Cód. área sin 0 + tel." />
+                                        <div id="editarTelefono-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editarlocalidad" class="form-label">Localidad<span
+                                        <label for="editarLocalidad" class="form-label">Localidad<span
                                                 class="text-danger"> *</span></label>
-                                        <select id="editarlocalidad" class="form-control form-select" disabled></select>
+                                        <select id="editarLocalidad" class="form-control form-select" disabled></select>
                                     </div>
                                 </div>
                             </div>
@@ -658,16 +685,18 @@
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editaremail" class="form-label">Email</label>
-                                        <input type="email" id="editaremail" class="form-control"
+                                        <label for="editarEmail" class="form-label">Email</label>
+                                        <input type="email" id="editarEmail" class="form-control"
                                             placeholder="minombre@correo.com" />
+                                        <div id="editarEmail-error" class="invalid-feedback" style="display: none;">
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editarcalle" class="form-label">Calle<span class="text-danger">
+                                        <label for="editarCalle" class="form-label">Calle<span class="text-danger">
                                                 *</span></label>
-                                        <input type="text" id="editarcalle" class="form-control"
+                                        <input type="text" id="editarCalle" class="form-control"
                                             placeholder="Av. Faraday" />
                                     </div>
                                 </div>
@@ -685,8 +714,8 @@
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="editaraltura" class="form-label">Altura</label>
-                                        <input type="text" id="editaraltura" class="form-control"
+                                        <label for="editarCalleAltura" class="form-label">Altura</label>
+                                        <input type="text" id="editarCalleAltura" class="form-control"
                                             placeholder="999 o S/N" />
                                     </div>
                                 </div>
@@ -768,14 +797,14 @@
 
 
     <!--Scripts-->
-
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/validacionesChofer.js"></script>
 
 
     <!-- Manejo de tooltips -->
@@ -1115,68 +1144,25 @@
     <!-- Editor -->
     <script>
 
-        // Validación para que los campos de Nombre y Apellido solo permitan letras y espacios
-        $('#editarNombre').on('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        $('#editarApellido').on('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        // Limita la longitud del DNI a 8 dígitos
-        $('#editarDNI').on('input', function (event) {
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
-            }
-        });
-
-        // Limita la longitud del CUIL a 11 dígitos
-        $('#editarCUIL').on('input', function (event) {
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 11) {
-                this.value = this.value.slice(0, 11);
-            }
-        });
-
-        // Limita la longitud del Teléfono a 10 dígitos
-        $('#editarTelefono, #editarcelular').on('input', function (event) {
-            if (this.value.length > 10) {
-                this.value = this.value.slice(0, 10);
-            }
-        });
-
-        // Validación email
-        var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-        $('#editaremail').on('input', function () {
-            var email = $(this).val();
-
-            if (email.trim() !== '' && !emailRegex.test(email)) {
-                $('#emailErrorEdicion').css('display', 'block');
-            } else {
-                $('#emailErrorEdicion').css('display', 'none');
-            }
-        });
-
-        // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
 
+            // Ocultar antes por si está visible
+            toastElement.hide();
+
+            // Establecer el texto actualizado
+            toastElement.find('.toast-body').text(mensaje);
+
+            // Mostrar con Bootstrap
             var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
+            toast.show();
 
+            // Ocultar manualmente luego de 5 segundos
             setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+                toast.hide();
+            }, 5000);
         }
+
 
         var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
 
@@ -1184,6 +1170,7 @@
         function abrirModalEdicion(choferId) {
             editarChofer(choferId);  // Llamada a la función existente para cargar los datos
             $('#editarChoferModal').modal('show');
+            $('#confirmarEdicion').prop('disabled', false);
         }
 
         // Evento de clic para abrir el modal de edición cuando se hace clic en el botón de editar
@@ -1204,10 +1191,10 @@
                     $('#editarDNI').val(data.DNI);
                     $('#editarCUIL').val(data.CUIL);
                     $('#editarTelefono').val(data.TelefonoFijo);
-                    $('#editarcelular').val(data.TelefonoCelular);
-                    $('#editaremail').val(data.Email);
-                    $('#editarcalle').val(data.Calle);
-                    $('#editaraltura').val(data.AlturaCalle);
+                    $('#editarCelular').val(data.TelefonoCelular);
+                    $('#editarEmail').val(data.Email);
+                    $('#editarCalle').val(data.Calle);
+                    $('#editarCalleAltura').val(data.AlturaCalle);
 
                     // Estado del chofer
                     $('#EstadoActualChofer').text(data.EstadoChofer);
@@ -1220,9 +1207,9 @@
 
                     // Cargar provincias y localidades
                     cargarProvinciasEdicion(function () {
-                        $('#editarprovincia').val(data.ProvID);
+                        $('#editarProvincia').val(data.ProvID);
                         cargarLocalidadesEdicion(data.ProvID, function () {
-                            $('#editarlocalidad').val(data.LocID);
+                            $('#editarLocalidad').val(data.LocID);
                         });
                     });
 
@@ -1249,15 +1236,13 @@
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
 
-
-
         // Función para cargar las provincias en el selector de editar chofer
         function cargarProvinciasEdicion(callback) {
             $.ajax({
                 url: 'http://localhost:50222/api/Provincias',
                 type: 'GET',
                 success: function (data) {
-                    var select = $('#editarprovincia');
+                    var select = $('#editarProvincia');
                     select.empty();
                     select.append('<option value="">Seleccione una provincia</option>');
                     data.forEach(function (provincia) {
@@ -1273,7 +1258,7 @@
 
         // Función para cargar las localidades en el selector de editar chofer
         function cargarLocalidadesEdicion(provinciaId, callback) {
-            var select = $('#editarlocalidad');
+            var select = $('#editarLocalidad');
             select.empty();
 
             if (!provinciaId) {
@@ -1301,411 +1286,655 @@
         }
 
         // Evento change para actualizar las localidades al cambiar la provincia seleccionada
-        $('#editarprovincia').on('change', function () {
+        $('#editarProvincia').on('change', function () {
             var provinciaId = $(this).val();
             cargarLocalidadesEdicion(provinciaId);
             if (!provinciaId) {
-                $('#editarlocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
+                $('#editarLocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
             }
             validarCampos(); // Validar los campos al cambiar la provincia
         });
 
-        // Validación de campos requeridos solo al intentar confirmar
-        function validarCampos() {
-            var nombre = $('#editarNombre').val();
-            var apellido = $('#editarApellido').val();
-            var dni = $('#editarDNI').val();
-            var cuil = $('#editarCUIL').val();
-            var telefono = $('#editarTelefono').val();
-            var celphone = $('#editarcelular').val();
-            var provincia = $('#editarprovincia').val();
-            var localidad = $('#editarlocalidad').val();
-            var calle = $('#editarcalle').val();
-
-            // Validar que todos los campos requeridos estén completos
-            if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
-                $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos *').show();
-                $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
-            } else {
-                $('#alertaCompletaCamposEdicion').hide(); // Ocultar la alerta si todos los campos están completos
-                $('#confirmarEdicion').prop('disabled', false); // Habilitar el botón de confirmación
-            }
-        }
-
-        // Evento input para validar campos requeridos solo cuando el usuario interactúa
-        $('#editarNombre, #editarApellido, #editarDNI, #editarCUIL, #editarTelefono, #editarcelular, #editarprovincia, #editarlocalidad, #editarcalle').on('input change', function () {
-            validarCampos();
-        });
-
-        // Evento click para confirmar la edición de los detalles del chofer
-        $('#confirmarEdicion').on('click', function (event) {
-            event.preventDefault();
-
-            var id = $(this).attr('Chofer_ID');
-            var nombre = $('#editarNombre').val();
-            var apellido = $('#editarApellido').val();
-            var dni = $('#editarDNI').val();
-            var cuil = $('#editarCUIL').val();
-            var telefono = $('#editarTelefono').val();
-            var celphone = $('#editarcelular').val();
-            var email = $('#editaremail').val();
-            var provincia = $('#editarprovincia').val();
-            var localidad = $('#editarlocalidad').val();
-            var calle = $('#editarcalle').val();
-            var altura = $('#editaraltura').val();
-
-            // Validar que todos los campos requeridos estén completos
-            if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
-                $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
-                $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
-                return; // Detener la ejecución del evento si algún campo requerido no está completo
-            } else {
-                $('#alertaCompletaCamposEdicion').hide(); // Ocultar la alerta si todos los campos están completos
-            }
-
-            // Validar el formato de email si el campo no está vacío
-            if (email && !emailRegex.test(email)) {
-                $('#emailErrorEdicion').css('display', 'block');
-                return; // Detener la ejecución del evento si el email no es válido
-            } else {
-                $('#emailErrorEdicion').css('display', 'none');
-            }
-
-            // Obtener la fecha y hora actual en formato ISO
-            const fechaHoraActual = new Date().toISOString();
-
-            // Obtener el usuario logueado desde localStorage
-            const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
-
-            // Crear el objeto con los datos actualizados del chofer
-            var choferActualizado = {
-                Nombre: nombre,
-                Apellido: apellido,
-                DNI: dni,
-                CUIL: cuil,
-                TelefonoFijo: telefono,
-                TelefonoCelular: celphone,
-                Email: email,
-                ProvID: provincia,
-                LocID: localidad,
-                Calle: calle,
-                AlturaCalle: altura,
-                Fecha_Modi: fechaHoraActual, // Fecha y hora actual
-                Usu_Modi: usuarioLogueado, // Usuario logueado
-            };
-
-            // Realizar la solicitud PUT para actualizar los datos del chofer
-            $.ajax({
-                url: 'http://localhost:50222/api/Choferes/' + id,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(choferActualizado),
-                success: function (response) {
-                    console.log('Chofer actualizado correctamente:', response);
-                    mostrarToastExito('Los datos del chofer se actualizaron exitosamente');
-                    $('#editarChoferModal').modal('hide');
-                    buscarChoferes(); // Actualizar la lista de choferes
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error al actualizar el chofer:', error);
-                    alert('Error al actualizar el chofer. Por favor, intenta nuevamente.');
-                }
-            });
-        });
-
-        // Función para actualizar el estado del checkbox según el nuevo estado del chofer
-        function actualizarEstadoCheckbox() {
-            if (estadoChoferOriginal === 'Activo') {
-                $('#checkestadoactivo').prop('checked', true);
-                $('#checkestadoinactivo').prop('checked', false);
-            } else {
-                $('#checkestadoactivo').prop('checked', false);
-                $('#checkestadoinactivo').prop('checked', true);
-            }
-        }
-
-        // Limpiar el formulario y las validaciones cuando se cierra el modal
-        $('#editarChoferModal').on('hidden.bs.modal', function () {
-            $('#FormEditarChofer')[0].reset();
-            $('#alertaCompletaCamposEdicion').hide();
-            $('#emailErrorEdicion').hide();
-            $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón al cerrar el modal
-        });
-
-        // Esperar a que se cargue completamente la página
+        // Ejecución de las validaciones + actualización de los datos del chofer
         $(document).ready(function () {
-            buscarChoferes(); // Llamar a la función de búsqueda de choferes al cargar la página
+
+            const camposRequeridos = camposRequeridosChofer.edicion;
+            const tipoFormulario = 'editar';
+            const camposValidacion = equivalenciasCamposChofer;
+            const reglas = reglasValidacionChofer;
+
+            // Función que detecta el id del input y devuelve la clave correspondiente
+            function obtenerClaveDesdeInputID(inputID) {
+                for (const clave in equivalenciasCamposChofer) {
+                    if (equivalenciasCamposChofer[clave].includes(`#${inputID}`)) {
+                        return clave;
+                    }
+                }
+                return null;
+            }
+
+            //Limpiar alerta de campos requeridos cuando se completan
+            camposRequeridos.forEach(function (selector) {
+                $(selector).on('input', function () {
+                    if ($(this).hasClass('is-invalid')) {
+                        $(this).removeClass('is-invalid');
+                        const inputID = $(this).attr('id');
+                        const clave = obtenerClaveDesdeInputID(inputID);
+                        if (clave && reglas[clave]) {
+                            const tipo = inputID.includes('editar') ? 'editar' : 'alta';
+                            const errorSelector = typeof reglas[clave].error === 'object' ? reglas[clave].error[tipo] : reglas[clave].error;
+                            $(errorSelector).hide();
+                        }
+                    }
+
+                    // Ocultar alerta general si ya están todos los campos completos
+                    const incompletos = camposRequeridos.some(sel => $(sel).val().trim() === '');
+                    if (!incompletos) {
+                        $('#alertaCompletaCamposEdicion').hide();
+                    }
+                });
+            });
+
+
+            // Función genérica para validar campos con control de longitud, regex y errores visuales
+            function validarCampo(input, errorMap, regex, mensaje, minLength = 0, exactLength = null, soloNumeros = false) {
+                var valor = input.val().trim();
+                console.log('🔍 Validando campo:', input.attr('id'), 'valor:', valor);
+
+                // Detectar si el campo es de alta o edición
+                const tipo = input.attr('id').includes('editar') ? 'editar' : 'alta';
+
+                // Si errorMap es objeto, tomar el selector correcto, si es string, usarlo directo
+                const errorSelector = (typeof errorMap === 'object') ? errorMap[tipo] : errorMap;
+                const errorContainer = errorSelector ? $(errorSelector) : null;
+
+                if (!errorContainer || errorContainer.length === 0) {
+                    console.error('❌ No se encontró el contenedor de error para:', errorSelector);
+                    return;
+                }
+
+                // Si es campo numérico, limpiar no numéricos y recortar
+                if (soloNumeros) {
+                    valor = valor.replace(/[^0-9]/g, '');
+                    if (exactLength || minLength) {
+                        valor = valor.slice(0, exactLength || minLength);
+                    }
+                    input.val(valor);
+                } else if (exactLength) {
+                    // Si tiene longitud exacta, recortar si se excede
+                    if (valor.length > exactLength) {
+                        valor = valor.slice(0, exactLength);
+                        input.val(valor);
+                    }
+                }
+
+                if (valor === '') {
+                    console.log('⚠ Campo vacío');
+                    input.removeClass('is-invalid is-valid');
+                    errorContainer.text('').hide(); // Oculta el mensaje y limpia el texto
+                    return;
+                }
+
+                if ((minLength && valor.length < minLength) || (exactLength && valor.length !== exactLength)) {
+                    console.log('❌ No cumple con la longitud mínima');
+                    input.addClass('is-invalid');
+                    input.removeClass('is-valid');
+                    console.log('🧪 Mensaje que se va a mostrar:', mensaje);
+                    errorContainer.text(mensaje).css('display', 'block');
+                    console.log('📢 Mostrando mensaje en:', errorContainer.attr('id'), '=>', mensaje);
+                    return;
+                }
+
+                if (!regex.test(valor)) {
+                    console.log('❌ Regex inválida');
+                    input.addClass('is-invalid');
+                    input.removeClass('is-valid');
+                    errorContainer.text(mensaje).css('display', 'block');
+                } else {
+                    console.log('✅ Campo válido');
+                    input.removeClass('is-invalid').addClass('is-valid');
+                    errorContainer.hide();
+                }
+            }
+
+
+            // Función para permitir solo números al usar el teclado
+            function permitirSoloNumeros(e) {
+                const key = e.key;
+
+                // Permitir solo números del 0 al 9
+                if (/^[0-9]$/.test(key)) return;
+
+                // Permitir teclas especiales
+                const teclasPermitidas = [
+                    'Backspace', 'Delete', 'Tab', 'Escape', 'Enter',
+                    'ArrowLeft', 'ArrowRight', 'Home', 'End'
+                ];
+
+                if (teclasPermitidas.includes(key)) return;
+
+                // Bloquear todo lo demás
+                e.preventDefault();
+            }
+
+            // Valida todos los campos con las reglas y equivalencias del json
+            function validarTodosLosCampos() {
+                let hayErrores = false;
+
+                for (const campo in camposValidacion) {
+                    const selector = camposValidacion[campo].find(id => id.includes(tipoFormulario));
+                    const regla = reglas[campo];
+
+                    if (!regla || !selector) continue;
+
+                    const input = $(selector);
+                    validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+
+                    if (input.hasClass('is-invalid')) hayErrores = true;
+                }
+
+                return hayErrores;
+            }
+
+            // Asignar eventos blur e input para validar cada campo al salir o escribir
+            for (const campo in camposValidacion) {
+                const selector = camposValidacion[campo].find(id => id.includes(tipoFormulario));
+                const regla = reglas[campo];
+
+                if (!regla || !selector) continue;
+
+                console.log('Asignando validación a:', selector, 'con regla:', regla);
+
+                $(selector)
+                    .on('blur', function () {
+                        validarCampo($(this), regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                    })
+                    .on('input', function () {
+                        const input = $(this);
+                        const inputID = input.attr('id');
+                        const clave = obtenerClaveDesdeInputID(inputID);
+                        const regla = clave && reglas[clave] ? reglas[clave] : null;
+
+                        if (!regla) return;
+
+                        const tipo = inputID.includes('editar') ? 'editar' : 'alta';
+                        const errorSelector = typeof regla.error === 'object' ? regla.error[tipo] : regla.error;
+
+                        //Siempre que empieza a escribir, limpiamos validaciones
+                        input.removeClass('is-invalid is-valid');
+                        $(errorSelector).text('').hide();
+                    });
+
+            }
+
+            // Aplicar reglas a los campos definidos en equivalencias del json
+            for (const campo in reglasValidacionChofer) {
+                const regla = reglasValidacionChofer[campo];
+                const equivalencias = equivalenciasCamposChofer[campo] || [];
+
+                equivalencias.forEach(selector => {
+                    // Validar letras y espacios si tiene una regex específica
+                    if (['nombre', 'apellido'].includes(campo) && regla.regex && !regla.soloNumeros) {
+                        $(selector).on('input', function () {
+                            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+                        });
+                    }
+
+                    // Aplicar solo números en tiempo real
+                    if (regla.soloNumeros) {
+                        $(selector).on('keydown', permitirSoloNumeros);
+                    }
+
+                    if (regla.max) {
+                        $(selector).on('input', function () {
+                            if (this.value.length > regla.max) {
+                                this.value = this.value.slice(0, regla.max);
+                            }
+                        });
+                    }
+                });
+            }
+
+            // Botón del formulario de edición
+            $('#confirmarEdicion').on('click', function (event) {
+                event.preventDefault();
+
+                let tieneCamposVacios = false;
+                let hayErrores = false;
+
+                // Validar campos requeridos y aplicar reglas
+                camposRequeridos.forEach(function (selector) {
+                    const input = $(selector);
+                    const valor = input.val().trim();
+                    const inputID = input.attr('id');
+                    const clave = obtenerClaveDesdeInputID(inputID);
+                    const regla = clave && reglas[clave] ? reglas[clave] : null;
+
+                    if (valor === '') {
+                        tieneCamposVacios = true;
+                        input.addClass('is-invalid');
+
+                        // Ocultar feedback de validación si aplica
+                        if (regla) {
+                            const tipo = inputID.includes('editar') ? 'editar' : 'alta';
+                            const errorSelector = typeof regla.error === 'object' ? regla.error[tipo] : regla.error;
+                            $(errorSelector).hide();
+                        }
+                    } else {
+                        input.removeClass('is-invalid');
+
+                        if (regla) {
+                            validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+
+                            if (input.hasClass('is-invalid')) {
+                                hayErrores = true;
+                            }
+                        }
+                    }
+                });
+
+                // Extra: validar también todos los campos con reglas (aunque no sean requeridos)
+                for (const campo in reglas) {
+                    const regla = reglas[campo];
+                    const selector = equivalenciasCamposChofer[campo]?.find(id => id.includes('editar'));
+                    if (!selector) continue;
+
+                    const input = $(selector);
+                    const valor = input.val().trim();
+
+                    // Solo validar si hay contenido (evitamos validaciones de campos vacíos no requeridos)
+                    if (valor !== '') {
+                        validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                        if (input.hasClass('is-invalid')) hayErrores = true;
+                    }
+                }
+
+                // Mostrar/ocultar alerta general de campos vacíos
+                if (tieneCamposVacios) {
+                    $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos *').show();
+                } else {
+                    $('#alertaCompletaCamposEdicion').hide();
+                }
+
+                // Detener si hay campos vacíos o errores de validación
+                if (tieneCamposVacios || hayErrores) return;
+
+                // Si todo está bien, proceder a guardar los cambios
+                var id = $(this).attr('Chofer_ID');
+                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
+                const fechaHoraActual = new Date().toISOString();
+
+                var choferActualizado = {
+                    Nombre: $('#editarNombre').val().trim(),
+                    Apellido: $('#editarApellido').val().trim(),
+                    DNI: $('#editarDNI').val().trim(),
+                    CUIL: $('#editarCUIL').val().trim(),
+                    TelefonoFijo: $('#editarTelefono').val().trim(),
+                    TelefonoCelular: $('#editarCelular').val().trim(),
+                    Email: $('#editarEmail').val().trim(),
+                    ProvID: $('#editarProvincia').val(),
+                    LocID: $('#editarLocalidad').val(),
+                    Calle: $('#editarCalle').val().trim(),
+                    AlturaCalle: $('#editarCalleAltura').val().trim(),
+                    Fecha_Modi: fechaHoraActual,
+                    Usu_Modi: usuarioLogueado
+                };
+
+                $.ajax({
+                    url: 'http://localhost:50222/api/Choferes/' + id,
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(choferActualizado),
+                    success: function (response) {
+                        mostrarToastExito('Los datos del chofer se actualizaron exitosamente.');
+                        $('#editarChoferModal').modal('hide');
+                        buscarChoferes();
+                    },
+                    error: function (xhr, status, error) {
+                        console.error('Error al actualizar el chofer:', error);
+                        alert('Error al actualizar el chofer. Por favor, intenta nuevamente.');
+                    }
+                });
+            });
+
+            // Función para actualizar el estado del checkbox según el nuevo estado del chofer
+            function actualizarEstadoCheckbox() {
+                if (estadoChoferOriginal === 'Activo') {
+                    $('#checkestadoactivo').prop('checked', true);
+                    $('#checkestadoinactivo').prop('checked', false);
+                } else {
+                    $('#checkestadoactivo').prop('checked', false);
+                    $('#checkestadoinactivo').prop('checked', true);
+                }
+            }
+
+            // Limpiar el formulario y las validaciones cuando se cierra el modal
+            $('#editarChoferModal').on('hidden.bs.modal', function () {
+                const form = $('#FormEditarChofer');
+
+                form[0].reset();
+
+                // Ocultar mensajes y quitar estilos de validación
+                form.find('.is-invalid').removeClass('is-invalid');
+                form.find('.is-valid').removeClass('is-valid');
+
+                // Ocultar feedbacks y limpiar texto de error
+                form.find('.invalid-feedback').each(function () {
+                    $(this).text('').hide();
+                });
+
+                form.find('.valid-feedback').each(function () {
+                    $(this).text('').hide();
+                });
+
+                // Ocultar alerta general
+                $('#alertaCompletaCamposEdicion').hide();
+
+                // Desactivar botón de confirmar
+                $('#confirmarEdicion').prop('disabled', true);
+            });
+
+            // Inicializar búsqueda al cargar la página
+            buscarChoferes();
+
+
         });
 
     </script>
 
     <!-- Alta -->
     <script>
-        $(document).ready(function () {
-            // Selección de los campos requeridos
-            const camposRequeridos = [
-                '#first-name-column',
-                '#last-name-column',
-                '#dni-column',
-                '#cuil-column',
-                '#celphone-column',
-                '#province-select',
-                '#location-select',
-                '#street-column',
-                '#email-id-column'
-            ];
 
-            // Función para abrir el modal de alta de choferes
-            window.abrirModalAltaChofer = function () {
-                $('#ModalAltaChofer').modal('show');
-                cargarProvincias();
+        // Función para mostrar el toast de éxito con mensaje dinámico
+        function mostrarToastExito(mensaje) {
+            var toastElement = $('#alert-success');
 
-                // Limpiar posibles mensajes de error o validaciones previas
-                $('#FormAltaChofer')[0].reset();
-                $('#alertaCompletaCampos').hide();
-                $('.invalid-feedback').hide();
-                $('.is-invalid').removeClass('is-invalid');
-            };
+            // Ocultar antes por si está visible
+            toastElement.hide();
+
+            // Establecer el texto actualizado
+            toastElement.find('.toast-body').text(mensaje);
+
+            // Mostrar con Bootstrap
+            var toast = new bootstrap.Toast(toastElement[0]);
+            toast.show();
+
+            // Ocultar manualmente luego de 5 segundos
+            setTimeout(function () {
+                toast.hide();
+            }, 5000);
+        }
 
 
-            // Cargar provincias al abrir el modal
-            function cargarProvincias() {
-                $.ajax({
-                    url: 'http://localhost:50222/api/Provincias',
-                    type: 'GET',
-                    success: function (data) {
-                        var select = $('#province-select');
-                        select.empty().append('<option value="">Seleccione una provincia</option>');
-                        data.forEach(function (provincia) {
-                            select.append(`<option value="${provincia.Prov_ID}">${provincia.Nombre_Provincia}</option>`);
-                        });
+        // Función para abrir el modal de alta de choferes
+        window.abrirModalAltaChofer = function () {
+            $('#ModalAltaChofer').modal('show');
+            cargarProvinciasAlta();
 
-                        $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error al cargar provincias:', error);
-                    }
-                });
-            }
+            // Limpiar posibles mensajes de error o validaciones previas
+            const form = $('#FormAltaChofer');
+            form[0].reset();
+            form.find('.is-invalid').removeClass('is-invalid');
+            form.find('.is-valid').removeClass('is-valid');
+            form.find('.invalid-feedback').hide().text('');
+            $('#alertaCompletaCampos').hide();
+            $('#confirmarBtn').prop('disabled', false);
+        };
 
-            // Cargar localidades según la provincia seleccionada
-            $('#province-select').change(function () {
-                var provinciaId = $(this).val();
-                if (provinciaId) {
-                    cargarLocalidades(provinciaId);
-                } else {
-                    $('#location-select').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+        // Cargar provincias al abrir el modal
+        function cargarProvinciasAlta() {
+            $.ajax({
+                url: 'http://localhost:50222/api/Provincias',
+                type: 'GET',
+                success: function (data) {
+                    var select = $('#altaProvincia');
+                    select.empty().append('<option value="">Seleccione una provincia</option>');
+                    data.forEach(function (provincia) {
+                        select.append(`<option value="${provincia.Prov_ID}">${provincia.Nombre_Provincia}</option>`);
+                    });
+
+                    $('#altaLocalidad').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al cargar provincias:', error);
                 }
             });
+        }
 
-            function cargarLocalidades(provinciaId) {
-                $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provinciaId}/Localidades`,
-                    type: 'GET',
-                    success: function (data) {
-                        var select = $('#location-select');
-                        select.empty().append('<option value="">Seleccione una localidad</option>');
-                        data.forEach(function (localidad) {
-                            select.append(`<option value="${localidad.Loc_ID}">${localidad.Nombre_Localidad}</option>`);
-                        });
-                        select.prop('disabled', false);
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error al cargar localidades:', error);
-                    }
-                });
+        // Cargar localidades según la provincia seleccionada
+        $('#altaProvincia').change(function () {
+            var provinciaId = $(this).val();
+            if (provinciaId) {
+                cargarLocalidadesAlta(provinciaId);
+            } else {
+                $('#altaLocalidad').empty().append('<option value="">Seleccione una localidad</option>').prop('disabled', true);
             }
+        });
 
-            // Función para validar campos requeridos
-            function validarCamposRequeridos() {
-                let camposIncompletos = false;
-                camposRequeridos.forEach(function (campo) {
-                    const input = $(campo);
-                    if (input.val().trim() === '') {
-                        input.addClass('is-invalid');
-                        camposIncompletos = true;
-                    } else {
-                        input.removeClass('is-invalid');
-                    }
-                });
-
-                if (camposIncompletos) {
-                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
-                } else {
-                    $('#alertaCompletaCampos').hide();
+        function cargarLocalidadesAlta(provinciaId) {
+            $.ajax({
+                url: `http://localhost:50222/api/Provincias/${provinciaId}/Localidades`,
+                type: 'GET',
+                success: function (data) {
+                    var select = $('#altaLocalidad');
+                    select.empty().append('<option value="">Seleccione una localidad</option>');
+                    data.forEach(function (localidad) {
+                        select.append(`<option value="${localidad.Loc_ID}">${localidad.Nombre_Localidad}</option>`);
+                    });
+                    select.prop('disabled', false);
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al cargar localidades:', error);
                 }
+            });
+        }
 
-                return !camposIncompletos;
-            }
+        // Ejecución de las validaciones + alta de chofer
+        $(document).ready(function () {
+            const tipoFormulario = 'alta';
+            const camposRequeridos = camposRequeridosChofer.alta;
+            const camposValidacion = equivalenciasCamposChofer;
+            const reglas = reglasValidacionChofer;
 
-            // Función para validar un campo individual
-            function validarCampoIndividual(input) {
-                if (input.val().trim() === '') {
-                    input.addClass('is-invalid');
-                } else {
-                    input.removeClass('is-invalid');
-                    input.trigger('blur');
+            // Función que detecta el id del input y devuelve la clave correspondiente
+            function obtenerClaveDesdeInputID(inputID) {
+                for (const clave in equivalenciasCamposChofer) {
+                    if (equivalenciasCamposChofer[clave].includes(`#${inputID}`)) {
+                        return clave;
+                    }
                 }
+                return null;
             }
 
-            // Función genérica para validar campos con control de longitud mínima y exacta
-            function validarCampo(input, errorContainer, regex, mensajeError, minLength = 0, exactLength = null, soloNumeros = false) {
+            // Función genérica para validar campos con control de longitud, regex y errores visuales
+            function validarCampo(input, errorMap, regex, mensaje, minLength = 0, exactLength = null, soloNumeros = false) {
                 var valor = input.val().trim();
+                console.log('🔍 Validando campo:', input.attr('id'), 'valor:', valor);
 
-                // Si el campo es solo de números, limpiamos caracteres no numéricos
-                if (soloNumeros) {
-                    valor = valor.replace(/[^0-9]/g, '');
-                }
+                // Detectar si el campo es de alta o edición
+                const tipo = input.attr('id').includes('editar') ? 'editar' : 'alta';
 
-                // Recortar al máximo permitido (exactLength si está definido, sino minLength)
-                input.val(valor.slice(0, exactLength || minLength));
+                // Si errorMap es objeto, tomar el selector correcto, si es string, usarlo directo
+                const errorSelector = (typeof errorMap === 'object') ? errorMap[tipo] : errorMap;
+                const errorContainer = errorSelector ? $(errorSelector) : null;
 
-                // Verifica si el campo está vacío
-                if (valor === '') {
-                    input.removeClass('is-invalid is-valid');
-                    errorContainer.hide();
+                if (!errorContainer || errorContainer.length === 0) {
+                    console.error('❌ No se encontró el contenedor de error para:', errorSelector);
                     return;
                 }
 
-                // Verificar longitud mínima y exacta
-                if ((minLength && valor.length < minLength) || (exactLength && valor.length !== exactLength)) {
-                    input.addClass('is-invalid');
-                    input.removeClass('is-valid'); // Asegura que no se marque como válido
-                    errorContainer.text(mensajeError).show();
-                    return; // Evita seguir con la regex si ya es inválido
+                // Si es campo numérico, limpiar no numéricos y recortar
+                if (soloNumeros) {
+                    valor = valor.replace(/[^0-9]/g, '');
+                    if (exactLength || minLength) {
+                        valor = valor.slice(0, exactLength || minLength);
+                    }
+                    input.val(valor);
+                } else if (exactLength && valor.length > exactLength) {
+                    valor = valor.slice(0, exactLength);
+                    input.val(valor);
                 }
 
-                // Validar con regex (si es necesario)
+                if (valor === '') {
+                    input.removeClass('is-invalid is-valid');
+                    errorContainer.text('').hide();
+                    return;
+                }
+
+                if ((minLength && valor.length < minLength) || (exactLength && valor.length !== exactLength)) {
+                    console.log('❌ No cumple con la longitud mínima');
+                    input.addClass('is-invalid').removeClass('is-valid');
+                    console.log('🧪 Mensaje que se va a mostrar:', mensaje);
+                    errorContainer.text(mensaje).css('display', 'block');
+                    console.log('📢 Mostrando mensaje en:', errorContainer.attr('id'), '=>', mensaje);
+                    return;
+                }
+
                 if (!regex.test(valor)) {
-                    input.addClass('is-invalid');
-                    input.removeClass('is-valid');
-                    errorContainer.text(mensajeError).show();
+                    console.log('❌ Regex inválida');
+                    input.addClass('is-invalid').removeClass('is-valid');
+                    errorContainer.text(mensaje).css('display', 'block');
                 } else {
+                    console.log('✅ Campo válido');
                     input.removeClass('is-invalid').addClass('is-valid');
                     errorContainer.hide();
                 }
             }
 
-            // Ocultar alerta y errores cuando se empieza a escribir en cualquier campo
-            camposRequeridos.forEach(function (campo) {
-                $(campo).on('input', function () {
-                    // Ocultar la alerta de campos incompletos
-                    $('#alertaCompletaCampos').hide();
+            //Limpiar alerta de campos requeridos cuando se completan
+            camposRequeridos.forEach(function (selector) {
+                $(selector).on('input', function () {
+                    if ($(this).hasClass('is-invalid')) {
+                        $(this).removeClass('is-invalid');
+                        const inputID = $(this).attr('id');
+                        const clave = obtenerClaveDesdeInputID(inputID);
+                        if (clave && reglas[clave]) {
+                            const errorSelector = typeof reglas[clave].error === 'object' ? reglas[clave].error[tipoFormulario] : reglas[clave].error;
+                            $(errorSelector).hide();
+                        }
+                    }
 
-                    // Remover errores de todos los campos
-                    camposRequeridos.forEach(function (c) {
-                        $(c).removeClass('is-invalid');
+                    const incompletos = camposRequeridos.some(sel => $(sel).val().trim() === '');
+                    if (!incompletos) $('#alertaCompletaCampos').hide();
+                });
+            });
+
+            for (const campo in camposValidacion) {
+                const selector = camposValidacion[campo].find(id => id.includes(tipoFormulario));
+                const regla = reglas[campo];
+                if (!regla || !selector) continue;
+
+                $(selector)
+                    .on('blur', function () {
+                        validarCampo($(this), regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                    })
+                    .on('input', function () {
+                        const input = $(this);
+                        const inputID = input.attr('id');
+                        const clave = obtenerClaveDesdeInputID(inputID);
+                        const regla = clave && reglas[clave] ? reglas[clave] : null;
+                        if (!regla) return;
+
+                        const errorSelector = typeof regla.error === 'object' ? regla.error[tipoFormulario] : regla.error;
+                        input.removeClass('is-invalid is-valid');
+                        $(errorSelector).text('').hide();
                     });
+            }
 
-                    // Ocultar todos los mensajes de error
-                    $('.invalid-feedback, .invalid-feedback-date').hide();
+            for (const campo in reglas) {
+                const regla = reglas[campo];
+                const equivalencias = camposValidacion[campo] || [];
+                equivalencias.forEach(selector => {
+                    if (['nombre', 'apellido'].includes(campo) && !regla.soloNumeros) {
+                        $(selector).on('input', function () {
+                            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+                        });
+                    }
+                    if (regla.soloNumeros) {
+                        $(selector).on('keydown', function (e) {
+                            if (!/^[0-9]$/.test(e.key) && !['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) {
+                                e.preventDefault();
+                            }
+                        });
+                    }
+                    if (regla.max) {
+                        $(selector).on('input', function () {
+                            if (this.value.length > regla.max) {
+                                this.value = this.value.slice(0, regla.max);
+                            }
+                        });
+                    }
                 });
-            });
+            }
 
-            // Validación para los campos de Nombre y Apellido
-            $('#first-name-column, #last-name-column').on('input', function () {
-                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-            });
-
-            // Validación para DNI (mínimo 7 caracteres, máximo 8)
-            $('#dni-column').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
-            }).on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#dni-error'),
-                    /^[0-9]{7,8}$/, // Regex corregido para verificar entre 7 y 8 caracteres
-                    'Debe incluir entre 7 y 8 caracteres.',
-                    7, // Mínimo 7 caracteres
-                    8, // Máximo 8 caracteres
-                    true // Solo números
-                );
-            });
-
-            // Validación para CUIL (exactamente 11 caracteres)
-            $('#cuil-column').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 11);
-            }).on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#cuil-error'),
-                    /^[0-9]{11}$/, // Regex corregido para verificar exactamente 11 caracteres
-                    'Debe incluir 11 caracteres.',
-                    11, // Mínimo 11 caracteres
-                    11, // Exactamente 11 caracteres
-                    true // Solo números
-                );
-            });
-
-            // Validación de teléfono fijo y celular (solo números y longitud específica)
-            $('#celphone-column, #phone-floating').on('input', function () {
-                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 10);
-            });
-
-            // Validación del email
-            $('#email-id-column').on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#emailError'),
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    'Debe incluir @ y el dominio del correo.',
-                    100
-                );
-            });
-
-            $('#email-id-column').on('input', function () {
-                if ($(this).val().trim() === '') {
-                    $('#email-id-column').removeClass('is-invalid');
-                    $('#emailError').hide();
-                }
-            });
-
-            // Limpiar validaciones al cerrar el modal
-            $('#ModalAltaChofer').on('hidden.bs.modal', function () {
-                camposRequeridos.forEach(function (campo) {
-                    $(campo).val('').removeClass('is-invalid is-valid');
-                });
-                $('.invalid-feedback').hide();
-                $('#alertaCompletaCampos').hide();
-            });
-
-            // Evento al hacer clic en el botón "Confirmar"
             $('#confirmarBtn').on('click', function (event) {
                 event.preventDefault();
-                let camposValidos = true;
 
-                camposRequeridos.forEach(function (campo) {
-                    const input = $(campo);
-                    validarCampoIndividual(input);
-                    if (input.hasClass('is-invalid')) {
-                        camposValidos = false;
+                let tieneCamposVacios = false;
+                let hayErrores = false;
+
+                camposRequeridos.forEach(function (selector) {
+                    const input = $(selector);
+                    const valor = input.val().trim();
+                    const inputID = input.attr('id');
+                    const clave = obtenerClaveDesdeInputID(inputID);
+                    const regla = clave && reglas[clave] ? reglas[clave] : null;
+
+                    if (valor === '') {
+                        tieneCamposVacios = true;
+                        input.addClass('is-invalid');
+                        if (regla) {
+                            const errorSelector = typeof regla.error === 'object' ? regla.error[tipoFormulario] : regla.error;
+                            $(errorSelector).hide();
+                        }
+                    } else {
+                        input.removeClass('is-invalid');
+                        if (regla) {
+                            validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                            if (input.hasClass('is-invalid')) hayErrores = true;
+                        }
                     }
                 });
 
-                if (camposValidos) {
-                    registrarChofer();
-                } else {
-                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
+                for (const campo in reglas) {
+                    const regla = reglas[campo];
+                    const selector = camposValidacion[campo]?.find(id => id.includes('alta'));
+                    if (!selector) continue;
+                    const input = $(selector);
+                    const valor = input.val().trim();
+                    if (valor !== '') {
+                        validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                        if (input.hasClass('is-invalid')) hayErrores = true;
+                    }
                 }
+
+                if (tieneCamposVacios) {
+                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show();
+                } else {
+                    $('#alertaCompletaCampos').hide();
+                }
+
+                if (tieneCamposVacios || hayErrores) return;
+
+                registrarChofer();
             });
 
-            // Función para registrar el chofer
             function registrarChofer() {
                 const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
                 const fechaHoraActual = new Date().toISOString();
 
                 const nuevoChofer = {
-                    Nombre: $('#first-name-column').val().trim(),
-                    Apellido: $('#last-name-column').val().trim(),
-                    DNI: $('#dni-column').val().trim(),
-                    CUIL: $('#cuil-column').val().trim(),
-                    TelefonoFijo: $('#phone-floating').val().trim(),
-                    TelefonoCelular: $('#celphone-column').val().trim(),
-                    Email: $('#email-id-column').val().trim(),
-                    ProvID: $('#province-select').val(),
-                    LocID: $('#location-select').val(),
-                    Calle: $('#street-column').val().trim(),
-                    AlturaCalle: $('#number-column').val().trim(),
+                    Nombre: $('#altaNombre').val().trim(),
+                    Apellido: $('#altaApellido').val().trim(),
+                    DNI: $('#altaDNI').val().trim(),
+                    CUIL: $('#altaCUIL').val().trim(),
+                    TelefonoFijo: $('#altaTelefono').val().trim(),
+                    TelefonoCelular: $('#altaCelular').val().trim(),
+                    Email: $('#altaEmail').val().trim(),
+                    ProvID: $('#altaProvincia').val(),
+                    LocID: $('#altaLocalidad').val(),
+                    Calle: $('#altaCalle').val().trim(),
+                    AlturaCalle: $('#altaCalleAltura').val().trim(),
                     EstadoChofer: "Activo",
                     Fecha_Alta: fechaHoraActual,
                     Usu_Alta: usuarioLogueado,
@@ -1718,8 +1947,8 @@
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(nuevoChofer),
-                    success: function (response) {
-                        mostrarToastExito('El chofer se registró exitosamente');
+                    success: function () {
+                        mostrarToastExito('El chofer se registró exitosamente.');
                         $('#ModalAltaChofer').modal('hide');
                         buscarChoferes();
                     },
@@ -1729,17 +1958,17 @@
                 });
             }
 
-            function mostrarToastExito(mensaje) {
-                var toastElement = $('#alert-success');
-                toastElement.find('.toast-body').text(mensaje);
-                toastElement.show();
-                var toast = new bootstrap.Toast(toastElement[0]);
-                toast.show();
-                setTimeout(function () {
-                    toast.hide();
-                }, 5000);
-            }
+            $('#ModalAltaChofer').on('hidden.bs.modal', function () {
+                const form = $('#FormAltaChofer');
+                form[0].reset();
+                form.find('.is-invalid').removeClass('is-invalid');
+                form.find('.is-valid').removeClass('is-valid');
+                form.find('.invalid-feedback, .valid-feedback').hide();
+                $('#alertaCompletaCampos').hide();
+                $('#confirmarBtn').prop('disabled', false);
+            });
         });
+
     </script>
 
     <!-- Validación DNI en formularios -->
@@ -1749,14 +1978,10 @@
             var dni = dniInput.val().trim().replace(/[^0-9]/g, ''); // Asegura que solo sean números
             dniInput.val(dni.slice(0, 8)); // Recorta el DNI a 8 caracteres máximo
 
-            // Si el DNI tiene menos de 7 caracteres, mostrar el error y detener la validación
-            if (dni.length < 7) {
-                dniInput.removeClass('is-valid').addClass('is-invalid');
-                errorContainer.text('El DNI debe tener entre 7 y 8 caracteres.').show();
-                successContainer.hide();
-                return; // No continuar con la validación en la base de datos
+            // Validar solo si el DNI tiene 7 u 8 caracteres
+            if (dni.length < 7 || dni.length > 8) {
+                return; // no hacer nada, el otro script se encarga de mostrar errores de longitud
             }
-
             // Construir la URL dependiendo de si es edición o alta
             var url = choferId
                 ? `http://localhost:50222/api/Choferes/ValidarDNI/${dni}/${choferId}`
@@ -1797,42 +2022,42 @@
         }
 
         // Eventos para el formulario de alta
-        $('#dni-column').on('blur', function () {
-            validarDNI($('#dni-column'), $('#dniError'), $('#dniSuccess'), $('#confirmarBtn'));
+        $('#altaDNI').on('blur', function () {
+            validarDNI($('#altaDNI'), $('#altaDNI-error'), $('#dni-success'), $('#confirmarBtn'));
         });
 
         // Eventos para el formulario de edición
         $('#editarDNI').on('blur', function () {
             var choferId = $('#confirmarEdicion').attr('Chofer_ID'); // Obtener el ID del chofer en edición
-            validarDNI($('#editarDNI'), $('#editarDniError'), $('#editarDniSuccess'), $('#confirmarEdicion'), choferId);
+            validarDNI($('#editarDNI'), $('#editarDNI-error'), $('#dni-success'), $('#confirmarEdicion'), choferId);
         });
 
         // Limpiar mensajes de error o éxito al modificar el input
-        $('#dni-column, #editarDNI').on('input', function () {
-            var input = $(this);
-            var errorContainer = input.attr('id') === 'dni-column' ? $('#dniError') : $('#editarDniError');
-            var successContainer = input.attr('id') === 'dni-column' ? $('#dniSuccess') : $('#editarDniSuccess');
-            var button = input.attr('id') === 'dni-column' ? $('#confirmarBtn') : $('#confirmarEdicion');
+        $('#altaDNI, #editarDNI').on('input', function () {
+            var id = $(this).attr('id'); // 'altaDNI' o 'editarDNI'
+            var tipo = id.includes('editar') ? 'editar' : 'alta';
 
-            input.removeClass('is-invalid is-valid');
-            errorContainer.hide();
-            successContainer.hide();
+            var button = tipo === 'alta' ? $('#confirmarBtn') : $('#confirmarEdicion');
+            var errorId = tipo === 'alta' ? '#altaDNI-error' : '#editarDNI-error';
+            var successId = tipo === 'alta' ? '#dni-success' : '#dni-success';
+
+            $(this).removeClass('is-invalid is-valid');
+            $(errorId).hide();
+            $(successId).hide();
             button.prop('disabled', false);
         });
 
         // Limpiar controles al cerrar el modal de alta
         $('#ModalAltaChofer').on('hidden.bs.modal', function () {
-            $('#dni-column').val('').removeClass('is-invalid is-valid');
-            $('#dniError').hide();
-            $('#dniSuccess').hide();
+            $('#altaDNI').val('').removeClass('is-invalid is-valid');
+            $('#altaDNI-error, #dni-success').hide();
             $('#confirmarBtn').prop('disabled', false);
         });
 
         // Limpiar controles al cerrar el modal de edición
         $('#editarChoferModal').on('hidden.bs.modal', function () {
             $('#editarDNI').val('').removeClass('is-invalid is-valid');
-            $('#editarDniError').hide();
-            $('#editarDniSuccess').hide();
+            $('#editarDNI-error, #dni-success').hide();
             $('#confirmarEdicion').prop('disabled', false);
         });
     </script>

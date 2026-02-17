@@ -4,10 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
 
     <style>
-        #app {
+         #app {
             display: none;
         }
 
@@ -17,6 +17,26 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 9999;
+        }
+
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+
+        .no-outline:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: 1px solid #ced4da !important;
+            /* Mantiene el borde original */
+            background-color: #f8f9fa !important;
+            /* Mantiene el color de fondo original */
         }
     </style>
 
@@ -71,21 +91,21 @@
 
                         </li>
 
-                        <li class="sidebar-item  active has-sub">
+                        <li class="sidebar-item has-sub">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-file-earmark-person"></i>
-                                <span>usuarioes</span>
+                                <span>Choferes</span>
                             </a>
 
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="listado-usuarioes.html" class="submenu-link">Listar usuarioes</a>
+                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
 
                                 </li>
 
-                                <li class="submenu-item active">
-                                    <a href="gestion-usuarioes.html" class="submenu-link">Gestionar usuarioes</a>
+                                <li class="submenu-item">
+                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
 
                                 </li>
 
@@ -189,7 +209,7 @@
 
                         </li>
 
-                        <li class="sidebar-item  has-sub">
+                        <li class="sidebar-item active has-sub">
                             <a href="#" class='sidebar-link'>
                                 <i class="bi bi-people-fill"></i>
                                 <span>Usuarios</span>
@@ -198,12 +218,15 @@
                             <ul class="submenu">
 
                                 <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
+                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
+                                </li>
 
+                                <li class="submenu-item active">
+                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
                                 </li>
 
                                 <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar grupos</a>
+                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a>
                                 </li>
 
                             </ul>
@@ -312,7 +335,7 @@
                                         <fieldset class="border p-3">
                                             <div class="col-md-6 mb-4">
                                                 <li class="d-inline-block me-2 mb-1">
-                                                    <label for="txtdni">Nombre_Usuario</label>
+                                                    <label for="txtnombreusuario">Nombre_Usuario</label>
                                                 </li>
                                                 <input type="text" class="form-control" id="txtnombreusuario"
                                                     data-parsley-restricted-number="true" placeholder="fgodoy">
@@ -364,11 +387,11 @@
                                 <table class="table table-striped" id="tablaUsuarios">
                                     <thead>
                                         <tr>
+                                            <th>Nombre de usuario</th>
                                             <th>Nombre</th>
                                             <th>Apellido</th>
-                                            <th>Nombre_Usuario</th>
-                                            <th>Rol</th>
                                             <th>Estado</th>
+                                            <th></th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -437,23 +460,23 @@
                                     <div class="form-group">
                                         <label for="user-name-column" class="form-label">Nombre_Usuario <span
                                                 class="text-danger"> *</span></label>
-                                        <input type="text" id="last-name-column" class="form-control"
-                                            placeholder="fgodoy" name="lname-column" />
+                                        <input type="text" id="user-name-column" class="form-control"
+                                            placeholder="fgodoy" name="user-column" />
                                     </div>
                                     <div class="form-group">
                                         <label for="password-column" class="form-label">Contraseña <span class="text-danger">
                                                 *</span></label>
-                                        <input type="number" id="password-column" class="form-control"
+                                        <input type="text" id="password-column" class="form-control"
                                             placeholder="Contraseña alfanumérica" name="c-column"
                                             data-parsley-restricted-number="true" />
                                     </div>
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Rol
-                                            celular <span class="text-danger"> *</span></label>
-                                        <input type="number" id="celphone-column" class="form-control" name="cel-column"
-                                            placeholder="Cód. área sin 0 + cel. sin 15" />
+                                        <label for="rol-column" class="form-label">Rol <span class="text-danger"> 
+                                                *</span></label>
+                                        <input type="text" id="rol-column" class="form-control" name="rol-column"
+                                            placeholder="Ingresar rol de usuario." />
                                     </div>
                                 </div>
                             </div>
@@ -659,7 +682,6 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="./assets/static/gestionContenido.js"></script>
 
 
     <!-- Carga de diseño y roles -->
@@ -728,6 +750,105 @@
             });
         }
     
+        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
+            const logoElement = document.querySelector('.sidebar-header .logo img');
+            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+
+            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
+            favicon.rel = 'shortcut icon';
+            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
+            document.head.appendChild(favicon);
+
+            // Color de fondo general
+            document.body.style.backgroundColor = colorFondo || '#198754';
+
+            // Crear estilo CSS dinámico para submenu-item active, hover, burger, y sidebar-toggler
+            const dynamicStyle = document.createElement('style');
+            dynamicStyle.innerHTML = `
+        /* Estilo para items activos en el submenú */
+        .submenu-item.active .submenu-link {
+            color: ${colorFondo || '#198754'} !important;
+            font-weight: bold;
+        }
+
+        /* Color en hover para enlaces del submenú */
+        .submenu-item .submenu-link:hover,
+        .submenu-item .submenu-link:focus {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el botón burger */
+        .burger-btn i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el botón burger */
+        .burger-btn:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Estilo para el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+
+        /* Hover en el ícono de cerrar (sidebar-toggler) */
+        .sidebar-toggler:hover i {
+            color: ${colorFondo || '#198754'} !important;
+        }
+    `;
+            document.head.appendChild(dynamicStyle);
+
+            // Aplicar color de fondo al enlace activo en el menú principal
+            const botonesMenu = document.querySelectorAll('.sidebar-item.active .sidebar-link');
+            botonesMenu.forEach(button => {
+                button.style.backgroundColor = colorBotonesMenu || '#198754';
+            });
+
+            // Configuración del contenido en el pie de página
+            const footerContentElement = document.querySelector('.footer p');
+            footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+        }
+    
+        // Lógica de logout y carga de nombre de usuario en el header
+        document.addEventListener("DOMContentLoaded", function () {
+            const token = localStorage.getItem('token');
+    
+            if (!token) {
+                window.location.href = 'login.html';
+            } else {
+                const nombre = localStorage.getItem('nombre');
+                const apellido = localStorage.getItem('apellido');
+                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
+    
+                const logoutBtn = document.getElementById('logoutBtn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', function (event) {
+                        event.preventDefault();
+    
+                        fetch('http://localhost:50222/api/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + token
+                            }
+                        }).then(response => {
+                            if (response.ok) {
+                                localStorage.removeItem('token');
+                                localStorage.removeItem('nombre');
+                                localStorage.removeItem('apellido');
+                                localStorage.removeItem('userRole');
+                                window.location.href = 'login.html';
+                            } else {
+                                alert('Error al cerrar sesión');
+                            }
+                        }).catch(error => {
+                            console.error('Error al realizar la solicitud de logout:', error);
+                            alert('Error al cerrar sesión');
+                        });
+                    });
+                }
+            }
+        });
     </script>
 
     <!-- Get Activos -->
@@ -737,8 +858,8 @@
             // Marcar el checkbox de "Activo" por defecto
             $('#checkestadoactivo').prop('checked', true);
 
-            // Llamar a la función de búsqueda de usuarioes al cargar la página
-            buscarusuarioes();
+            // Llamar a la función de búsqueda de usuarios al cargar la página
+            buscarusuarios();
         });
     </script>
 
@@ -757,7 +878,7 @@
         let currentPage = 1;
 
         // Función para realizar la búsqueda de usuarioes con paginación
-        function buscarusuarioes(page = 1) {
+        function buscarusuarios(page = 1) {
             // Obtener los valores de los campos de búsqueda
             var dni = $('#txtdni').val();
             var estadoActivo = $('#checkestadoactivo').is(':checked');
@@ -873,27 +994,7 @@
             this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
         });
 
-        // Limita la longitud del DNI a 8 dígitos
-        $('#editarNombreUsuario').on('input', function (event) {
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
-            }
-        });
-
-        // Limita la longitud del CUIL a 11 dígitos
-        $('#editarCUIL').on('input', function (event) {
-            if (this.value.length > 11) {
-                this.value = this.value.slice(0, 11);
-            }
-        });
-
-        // Limita la longitud del Teléfono a 10 dígitos
-        $('#editarTelefono, #editarcelular').on('input', function (event) {
-            if (this.value.length > 10) {
-                this.value = this.value.slice(0, 10);
-            }
-        });
-
+       
         // Validación email
         var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -938,12 +1039,6 @@
                     $('#editarNombre').val(data.Nombre);
                     $('#editarApellido').val(data.Apellido);
                     $('#editarNombreUsuario').val(data.DNI);
-                    $('#editarCUIL').val(data.CUIL);
-                    $('#editarTelefono').val(data.TelefonoFijo);
-                    $('#editarcelular').val(data.TelefonoCelular);
-                    $('#editaremail').val(data.Email);
-                    $('#editarcalle').val(data.Calle);
-                    $('#editaraltura').val(data.AlturaCalle);
                     $('#EstadoActualusuario').text(data.Estadousuario);
                     estadousuarioOriginal = data.Estadousuario;
 
@@ -1041,7 +1136,7 @@
             var calle = $('#editarcalle').val();
 
             // Validar que todos los campos requeridos estén completos
-            if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
+            if (!nombre || !apellido || !NombreUsuario  || !localidad || !calle) {
                 $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
                 $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
             } else {
@@ -1063,17 +1158,9 @@
             var nombre = $('#editarNombre').val();
             var apellido = $('#editarApellido').val();
             var dni = $('#editarNombreUsuario').val();
-            var cuil = $('#editarCUIL').val();
-            var telefono = $('#editarTelefono').val();
-            var celphone = $('#editarcelular').val();
-            var email = $('#editaremail').val();
-            var provincia = $('#editarprovincia').val();
-            var localidad = $('#editarlocalidad').val();
-            var calle = $('#editarcalle').val();
-            var altura = $('#editaraltura').val();
 
             // Validar que todos los campos requeridos estén completos
-            if (!nombre || !apellido || !dni || !cuil || !celphone || !provincia || !localidad || !calle) {
+            if (!nombre || !apellido || ! || !cuil || !celphone || !provincia || !localidad || !calle) {
                 $('#alertaCompletaCamposEdicion').text('Por favor, completa todos los campos requeridos *').show();
                 $('#confirmarEdicion').prop('disabled', true); // Deshabilitar el botón de confirmación
                 return; // Detener la ejecución del evento si algún campo requerido no está completo

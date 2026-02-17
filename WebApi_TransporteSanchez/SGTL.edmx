@@ -21,10 +21,10 @@
           <Property Name="FechaCompra" Type="date" Nullable="false" />
           <Property Name="FechaITV" Type="date" Nullable="false" />
           <Property Name="EquipoFrio" Type="nvarchar" MaxLength="50" />
-          <Property Name="Fecha_Alta" Type="date" Nullable="false" />
-          <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
-          <Property Name="Fecha_Modi" Type="date" Nullable="false" />
-          <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="CHOFER_CAMION">
           <Key>
@@ -52,10 +52,10 @@
           <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="AlturaCalle" Type="char" MaxLength="10" />
           <Property Name="EstadoChofer" Type="varchar" MaxLength="10" Nullable="false" />
-          <Property Name="Fecha_Alta" Type="date" Nullable="false" />
-          <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
-          <Property Name="Fecha_Modi" Type="date" Nullable="false" />
-          <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="CLIENTES">
           <Key>
@@ -71,6 +71,10 @@
           <Property Name="AlturaCalle" Type="char" MaxLength="10" />
           <Property Name="Telefono" Type="char" MaxLength="10" />
           <Property Name="Email" Type="nvarchar" MaxLength="50" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="DESTINO">
           <Key>
@@ -83,6 +87,10 @@
           <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="AlturaCalle" Type="char" MaxLength="10" />
           <Property Name="ClienteID" Type="int" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="LOCALIDADES">
           <Key>
@@ -103,6 +111,10 @@
           <Property Name="Calle" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="AlturaCalle" Type="char" MaxLength="10" />
           <Property Name="ClienteID" Type="int" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="PROFORMAS">
           <Key>
@@ -125,7 +137,7 @@
           <Property Name="ColorFondo" Type="varchar" MaxLength="50" />
           <Property Name="ColorBotonesMenu" Type="varchar" MaxLength="50" />
           <Property Name="ContenidoPiePagina" Type="varchar" MaxLength="100" />
-          <Property Name="Fecha_Modi" Type="date" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
           <Property Name="Usu_Modi" Type="varchar" MaxLength="20" />
         </EntityType>
         <EntityType Name="PROVINCIAS">
@@ -148,6 +160,10 @@
           <Property Name="ClienteID" Type="int" Nullable="false" />
           <Property Name="OrigenID" Type="int" Nullable="false" />
           <Property Name="DestinoID" Type="int" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="TARIFAS_KM">
           <Key>
@@ -159,6 +175,10 @@
           <Property Name="ValorKm" Type="decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="MinKm" Type="char" MaxLength="10" Nullable="false" />
           <Property Name="MaxKm" Type="char" MaxLength="10" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <EntityType Name="USUARIOS">
           <Key>
@@ -171,6 +191,10 @@
           <Property Name="Contraseña" Type="nvarchar" MaxLength="50" Nullable="false" />
           <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
           <Property Name="Rol" Type="varchar" Nullable="true" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
+          <Property Name="EstadoUsuario" Type="varchar" MaxLength="10" Nullable="false" />
         </EntityType>
         <EntityType Name="GRUPOS_USUARIOS">
           <Key>
@@ -194,6 +218,7 @@
           </Key>
           <Property Name="Menu_ID" Type="int" StoreGeneratedPattern="Identity" Nullable="false" />
           <Property Name="Menu_Nombre" Type="nvarchar" Nullable="false" />
+          <Property Name="Menu_Principal" Type="int" Nullable="true" />
         </EntityType>
         <EntityType Name="GRUPOS">
           <Key>
@@ -220,9 +245,9 @@
           <Property Name="ClienteID" Type="int" Nullable="false" />
           <Property Name="CamionID" Type="int" Nullable="false" />
           <Property Name="Fecha_Alta" Type="datetime" Nullable="false" />
-          <Property Name="Usu_Alta" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="Usu_Alta" Type="varchar" MaxLength="20" Nullable="false" />
           <Property Name="Fecha_Modi" Type="datetime" Nullable="false" />
-          <Property Name="Usu_Modi" Type="varchar" MaxLength="10" Nullable="false" />
+          <Property Name="Usu_Modi" Type="varchar" MaxLength="20" Nullable="false" />
         </EntityType>
         <Association Name="FK_DESTINO_CLIENTES">
           <End Role="CLIENTES" Type="Self.CLIENTES" Multiplicity="1" />
@@ -602,9 +627,9 @@
           <Property Name="FechaITV" Type="DateTime" Nullable="false" Precision="0" />
           <Property Name="EquipoFrio" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
           <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="false" Nullable="false" />
           <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CAMIONES" FromRole="CAMIONES" ToRole="CHOFER_CAMION" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="CAMIONES" ToRole="VIAJES" />
         </EntityType>
@@ -637,9 +662,9 @@
           <Property Name="AlturaCalle" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
           <Property Name="EstadoChofer" Type="String" MaxLength="10" FixedLength="false" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="false" Nullable="false" />
           <NavigationProperty Name="CHOFER_CAMION" Relationship="Self.FK_CHOFER_CAMION_CHOFERES" FromRole="CHOFERES" ToRole="CHOFER_CAMION" />
           <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_CHOFERES_LOCALIDADES" FromRole="CHOFERES" ToRole="LOCALIDADES" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CHOFERES" FromRole="CHOFERES" ToRole="VIAJES" />
@@ -658,6 +683,10 @@
           <Property Name="AlturaCalle" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
           <Property Name="Telefono" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
           <Property Name="Email" Type="String" MaxLength="50" FixedLength="false" Unicode="true" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <NavigationProperty Name="DESTINO" Relationship="Self.FK_DESTINO_CLIENTES" FromRole="CLIENTES" ToRole="DESTINO" />
           <NavigationProperty Name="ORIGEN" Relationship="Self.FK_ORIGEN_CLIENTES" FromRole="CLIENTES" ToRole="ORIGEN" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_CLIENTES" FromRole="CLIENTES" ToRole="VIAJES" />
@@ -673,6 +702,10 @@
           <Property Name="Calle" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="AlturaCalle" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
           <Property Name="ClienteID" Type="Int32" Nullable="false" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <NavigationProperty Name="CLIENTES" Relationship="Self.FK_DESTINO_CLIENTES" FromRole="DESTINO" ToRole="CLIENTES" />
           <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_DESTINO_LOCALIDADES" FromRole="DESTINO" ToRole="LOCALIDADES" />
           <NavigationProperty Name="PROVINCIAS" Relationship="Self.FK_DESTINO_PROVINCIAS" FromRole="DESTINO" ToRole="PROVINCIAS" />
@@ -701,6 +734,10 @@
           <Property Name="Calle" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="AlturaCalle" Type="String" MaxLength="10" FixedLength="true" Unicode="false" />
           <Property Name="ClienteID" Type="Int32" Nullable="false" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="false" Unicode="true" Nullable="false"/>
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
           <NavigationProperty Name="CLIENTES" Relationship="Self.FK_ORIGEN_CLIENTES" FromRole="ORIGEN" ToRole="CLIENTES" />
           <NavigationProperty Name="LOCALIDADES" Relationship="Self.FK_ORIGEN_LOCALIDADES" FromRole="ORIGEN" ToRole="LOCALIDADES" />
           <NavigationProperty Name="PROVINCIAS" Relationship="Self.FK_ORIGEN_PROVINCIAS" FromRole="ORIGEN" ToRole="PROVINCIAS" />
@@ -753,6 +790,10 @@
           <Property Name="ClienteID" Type="Int32" Nullable="false" />
           <Property Name="OrigenID" Type="Int32" Nullable="false" />
           <Property Name="DestinoID" Type="Int32" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_TARIFAS_FIJAS" FromRole="TARIFAS_FIJAS" ToRole="VIAJES" />
         </EntityType>
         <EntityType Name="TARIFAS_KM">
@@ -765,6 +806,10 @@
           <Property Name="ValorKm" Type="Decimal" Precision="18" Scale="2" Nullable="false" />
           <Property Name="MinKm" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
           <Property Name="MaxKm" Type="String" MaxLength="10" FixedLength="true" Unicode="false" Nullable="false" />
+          <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
           <NavigationProperty Name="VIAJES" Relationship="Self.FK_VIAJES_TARIFAS_KM" FromRole="TARIFAS_KM" ToRole="VIAJES" />
         </EntityType>
         <EntityType Name="USUARIOS">
@@ -778,6 +823,10 @@
           <Property Name="Contraseña" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="false" />
           <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="3" />
           <Property Name="Rol" Type="String" MaxLength="50" FixedLength="false" Unicode="true" Nullable="true" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="EstadoUsuario" Type="String" MaxLength="10" FixedLength="false" Unicode="false" Nullable="false" />
           <NavigationProperty Name="GRUPOS_USUARIOS" Relationship="Self.FK_GRUPOS_USUARIOS_USUARIOS" FromRole="USUARIOS" ToRole="GRUPOS_USUARIOS" />
         </EntityType>
         <EntityType Name="GRUPOS_USUARIOS">
@@ -815,6 +864,7 @@
           </Key>
           <Property Name="Menu_ID" Type="Int32" Nullable="false" annotation:StoreGeneratedPattern="Identity" />
           <Property Name="Menu_Nombre" Type="String" Nullable="false" />
+          <Property Name="Menu_Principal" Type="Int32" Nullable="true" />
           <NavigationProperty Name="GRUPOS_MENU" Relationship="Self.FK_GRUPOS_MENU_MENU" FromRole="MENU" ToRole="GRUPOS_MENU" />
         </EntityType>
         <EntityType Name="VIAJES">
@@ -835,9 +885,9 @@
           <Property Name="ClienteID" Type="Int32" Nullable="false" />
           <Property Name="CamionID" Type="Int32" Nullable="false" />
           <Property Name="Fecha_Alta" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Alta" Type="String" MaxLength="10" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Usu_Alta" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
           <Property Name="Fecha_Modi" Type="DateTime" Nullable="false" Precision="0" />
-          <Property Name="Usu_Modi" Type="String" MaxLength="10" FixedLength="true" Unicode="true" Nullable="false" />
+          <Property Name="Usu_Modi" Type="String" MaxLength="20" FixedLength="true" Unicode="true" Nullable="false" />
           <NavigationProperty Name="CHOFERES" Relationship="Self.FK_VIAJES_CHOFERES" FromRole="VIAJES" ToRole="CHOFERES" />
           <NavigationProperty Name="CAMIONES" Relationship="Self.FK_VIAJES_CAMIONES" FromRole="VIAJES" ToRole="CAMIONES" />
           <NavigationProperty Name="CLIENTES" Relationship="Self.FK_VIAJES_CLIENTES" FromRole="VIAJES" ToRole="CLIENTES" />
@@ -1276,6 +1326,10 @@
                 <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
                 <ScalarProperty Name="Telefono" ColumnName="Telefono" />
                 <ScalarProperty Name="Email" ColumnName="Email" />
+                <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1289,6 +1343,10 @@
                 <ScalarProperty Name="Calle" ColumnName="Calle" />
                 <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
                 <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+                <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1311,6 +1369,10 @@
                 <ScalarProperty Name="Calle" ColumnName="Calle" />
                 <ScalarProperty Name="AlturaCalle" ColumnName="AlturaCalle" />
                 <ScalarProperty Name="ClienteID" ColumnName="ClienteID" />
+                <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1347,6 +1409,10 @@
                 <ScalarProperty Name="ValorRuta" ColumnName="ValorRuta" />
                 <ScalarProperty Name="FechaHasta" ColumnName="FechaHasta" />
                 <ScalarProperty Name="FechaDesde" ColumnName="FechaDesde" />
+                <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1359,6 +1425,10 @@
                 <ScalarProperty Name="ValorKm" ColumnName="ValorKm" />
                 <ScalarProperty Name="MinKm" ColumnName="MinKm" />
                 <ScalarProperty Name="MaxKm" ColumnName="MaxKm" />
+                <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1372,6 +1442,10 @@
                 <ScalarProperty Name="Contraseña" ColumnName="Contraseña" />
                 <ScalarProperty Name="Fecha_Alta" ColumnName="Fecha_Alta" />
                 <ScalarProperty Name="Rol" ColumnName="Rol" />
+                <ScalarProperty Name="Usu_Alta" ColumnName="Usu_Alta" />
+                <ScalarProperty Name="Fecha_Modi" ColumnName="Fecha_Modi" />
+                <ScalarProperty Name="Usu_Modi" ColumnName="Usu_Modi" />
+                <ScalarProperty Name="EstadoUsuario" ColumnName="EstadoUsuario" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
@@ -1406,6 +1480,7 @@
               <MappingFragment StoreEntitySet="MENU">
                 <ScalarProperty Name="Menu_ID" ColumnName="Menu_ID" />
                 <ScalarProperty Name="Menu_Nombre" ColumnName="Menu_Nombre" />
+                <ScalarProperty Name="Menu_Principal" ColumnName="Menu_Principal" />
               </MappingFragment>
             </EntityTypeMapping>
           </EntitySetMapping>
