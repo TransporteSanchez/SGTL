@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
@@ -30,6 +30,81 @@ namespace WebApi_TransporteSanchez.Controllers
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
 
+        }
+
+        private string NormalizarCUIT(string cuit)
+        {
+            if (string.IsNullOrWhiteSpace(cuit)) return string.Empty;
+            // Quitar guiones y cualquier caracter no numérico.
+            return new string(cuit.Where(char.IsDigit).ToArray());
+        }
+
+        // GET: api/Clientes/Buscar
+        [HttpGet]
+        [Route("api/Clientes/Buscar")]
+        public IHttpActionResult Buscar(string dni = null, string cuit = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6)
+        {
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new DbContext(connectionString))
+                {
+                    IQueryable<CLIENTES> query = db.Set<CLIENTES>();
+
+                    var filtroCuit = !string.IsNullOrWhiteSpace(cuit) ? cuit : dni;
+                    if (!string.IsNullOrWhiteSpace(filtroCuit))
+                    {
+                        var norm = NormalizarCUIT(filtroCuit);
+                        if (norm.Length > 0)
+                        {
+                            query = query.Where(x => x.CUIT_Cliente.Contains(norm));
+                        }
+                    }
+
+                    if (fechaDesde.HasValue)
+                    {
+                        query = query.Where(x => x.Fecha_Alta >= fechaDesde.Value);
+                    }
+
+                    if (fechaHasta.HasValue)
+                    {
+                        var hasta = fechaHasta.Value.Date.AddDays(1).AddTicks(-1);
+                        query = query.Where(x => x.Fecha_Alta <= hasta);
+                    }
+
+                    // La tabla CLIENTES no tiene columna Estado en el modelo actual; estadoCliente se ignora aquí.
+
+                    var totalRecords = query.Count();
+
+                    var results = query
+                        .OrderByDescending(x => x.Cliente_ID)
+                        .Skip((page - 1) * pageSize)
+                        .Take(pageSize)
+                        .Select(x => new
+                        {
+                            Cliente_ID = x.Cliente_ID,
+                            RazonSocial = x.Razon_Social,
+                            CUIT_Cliente = x.CUIT_Cliente,
+                            Fecha_Alta = x.Fecha_Alta
+                        })
+                        .ToList();
+
+                    return Ok(new
+                    {
+                        TotalRecords = totalRecords,
+                        Results = results
+                    });
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda de clientes.", ex));
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
         }
 
         // GET: api/Clientes
@@ -175,8 +250,10 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
+                    var cuitNormalizado = NormalizarCUIT(clienteDto.CUIT_Cliente);
+
                     // Verifica si el Cliente ya existe
-                    var clienteExistente = db.Set<CLIENTES>().FirstOrDefault(c => c.CUIT_Cliente == clienteDto.CUIT_Cliente);
+                    var clienteExistente = db.Set<CLIENTES>().FirstOrDefault(c => c.CUIT_Cliente == cuitNormalizado);
                     if (clienteExistente != null)
                     {
                         return Content(HttpStatusCode.BadRequest, new
@@ -190,7 +267,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var cliente = new CLIENTES
                     {
                         Cliente_ID = clienteDto.Cliente_ID,
-                        CUIT_Cliente = clienteDto.CUIT_Cliente,
+                        CUIT_Cliente = cuitNormalizado,
                         Razon_Social = clienteDto.Razon_Social,
                         Cond_Fiscal = clienteDto.Cond_Fiscal,
                         ProvID = clienteDto.ProvID,
@@ -258,7 +335,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     oitem.Cliente_ID = value.Cliente_ID;
                     oitem.Razon_Social = value.Razon_Social;
-                    oitem.CUIT_Cliente = value.CUIT_Cliente;
+                    oitem.CUIT_Cliente = NormalizarCUIT(value.CUIT_Cliente);
                     oitem.Cond_Fiscal = value.Cond_Fiscal;
                     oitem.ProvID = value.ProvID;
                     oitem.LocID = value.LocID;
@@ -343,6 +420,92 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex)
             {
                 return InternalServerError(ex); // Retorna 500 en caso de error interno
+            }
+        }
+
+        // GET: api/Clientes/ValidarCUIT/{cuit}
+        [HttpGet]
+        [Route("api/Clientes/ValidarCUIT/{cuit}")]
+        public IHttpActionResult ValidarCUIT(string cuit)
+        {
+            var cuitNormalizado = NormalizarCUIT(cuit);
+
+            // Si la BD guarda CUIT como 11 dígitos, el input con guiones también debe normalizarse.
+            if (cuitNormalizado.Length != 11)
+            {
+                return Content(HttpStatusCode.BadRequest, new
+                {
+                    codigo = "cuit_invalido",
+                    mensaje = "Formato de CUIT inválido."
+                });
+            }
+
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            using (var db = new DbContext(connectionString))
+            {
+                var cliente = db.Set<CLIENTES>().FirstOrDefault(x => x.CUIT_Cliente == cuitNormalizado);
+                if (cliente != null)
+                {
+                    return Ok(new
+                    {
+                        codigo = "CUIT_registrado",
+                        mensaje = "El CUIT ya está registrado."
+                    });
+                }
+
+                return Ok(new
+                {
+                    codigo = "CUIT_no_registrado",
+                    mensaje = "CUIT válido."
+                });
+            }
+        }
+
+        // GET: api/Clientes/ValidarCUIT/{cuit}/{clienteId}
+        [HttpGet]
+        [Route("api/Clientes/ValidarCUIT/{cuit}/{clienteId}")]
+        public IHttpActionResult ValidarCUIT(string cuit, int clienteId)
+        {
+            var cuitNormalizado = NormalizarCUIT(cuit);
+
+            if (cuitNormalizado.Length != 11)
+            {
+                return Content(HttpStatusCode.BadRequest, new
+                {
+                    codigo = "cuit_invalido",
+                    mensaje = "Formato de CUIT inválido."
+                });
+            }
+
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            using (var db = new DbContext(connectionString))
+            {
+                var clienteConMismoCUIT = db.Set<CLIENTES>().FirstOrDefault(x => x.CUIT_Cliente == cuitNormalizado);
+
+                // Si el CUIT pertenece al mismo cliente que se está editando, está permitido.
+                if (clienteConMismoCUIT != null && clienteConMismoCUIT.Cliente_ID == clienteId)
+                {
+                    return Ok(new
+                    {
+                        codigo = "CUIT_permitido",
+                        mensaje = "CUIT válido."
+                    });
+                }
+
+                if (clienteConMismoCUIT != null)
+                {
+                    return Ok(new
+                    {
+                        codigo = "CUIT_registrado",
+                        mensaje = "El CUIT ya está registrado por otro cliente."
+                    });
+                }
+
+                return Ok(new
+                {
+                    codigo = "CUIT_no_registrado",
+                    mensaje = "CUIT válido."
+                });
             }
         }
 
