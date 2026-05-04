@@ -42,7 +42,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Clientes/Buscar
         [HttpGet]
         [Route("api/Clientes/Buscar")]
-        public IHttpActionResult Buscar(string dni = null, string cuit = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string dni = null, string cuit = null, string razonSocial = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -60,6 +60,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         {
                             query = query.Where(x => x.CUIT_Cliente.Contains(norm));
                         }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(razonSocial))
+                    {
+                        var rs = razonSocial.Trim();
+                        query = query.Where(x => x.Razon_Social != null && x.Razon_Social.Contains(rs));
                     }
 
                     if (fechaDesde.HasValue)

@@ -163,7 +163,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Choferes/Buscar
         [HttpGet]
         [Route("api/Choferes/Buscar")]
-        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
+        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string busqueda = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -176,19 +176,30 @@ namespace WebApi_TransporteSanchez.Controllers
                                   .Where(c => c.EstadoChofer != "Eliminado") 
                                   .AsQueryable();
 
-                    if (!string.IsNullOrEmpty(nombre))
+                    if (!string.IsNullOrWhiteSpace(busqueda))
                     {
-                        query = query.Where(c => c.Nombre.Contains(nombre));
+                        var b = busqueda.Trim();
+                        query = query.Where(c =>
+                            (c.DNI != null && c.DNI.Contains(b)) ||
+                            (c.Nombre != null && c.Nombre.Contains(b)) ||
+                            (c.Apellido != null && c.Apellido.Contains(b)));
                     }
-
-                    if (!string.IsNullOrEmpty(apellido))
+                    else
                     {
-                        query = query.Where(c => c.Apellido.Contains(apellido));
-                    }
+                        if (!string.IsNullOrEmpty(nombre))
+                        {
+                            query = query.Where(c => c.Nombre.Contains(nombre));
+                        }
 
-                    if (!string.IsNullOrEmpty(dni))
-                    {
-                        query = query.Where(c => c.DNI.Contains(dni));
+                        if (!string.IsNullOrEmpty(apellido))
+                        {
+                            query = query.Where(c => c.Apellido.Contains(apellido));
+                        }
+
+                        if (!string.IsNullOrEmpty(dni))
+                        {
+                            query = query.Where(c => c.DNI.Contains(dni));
+                        }
                     }
 
                     if (!string.IsNullOrEmpty(estadoChofer))

@@ -412,6 +412,8 @@
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
+    <Compile Include="Controllers\TarifasFijasController.cs" />
+    <Compile Include="Controllers\TarifasKmController.cs" />
     <Compile Include="DESTINO.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
@@ -590,6 +592,14 @@
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v10.0\WebApplications\Microsoft.WebApplication.targets" Condition="false" />
   <Target Name="MvcBuildViews" AfterTargets="AfterBuild" Condition="'$(MvcBuildViews)'=='true'">
     <AspNetCompiler VirtualPath="temp" PhysicalPath="$(WebProjectOutputDir)" />
+  </Target>
+  <!-- iCloud Drive / sync: conflict copies named "WebApi_TransporteSanchez 2.dll" break ASP.NET assembly load. -->
+  <Target Name="RemoveICloudDuplicateBinaries" BeforeTargets="PrepareForBuild">
+    <ItemGroup>
+      <_DupBin Include="$(OutputPath)WebApi_TransporteSanche*.dll" Exclude="$(OutputPath)WebApi_TransporteSanchez.dll" />
+      <_DupBin Include="$(OutputPath)WebApi_TransporteSanche*.pdb" Exclude="$(OutputPath)WebApi_TransporteSanchez.pdb" />
+    </ItemGroup>
+    <Delete Files="@(_DupBin)" ContinueOnError="true" />
   </Target>
   <ProjectExtensions>
     <VisualStudio>

@@ -481,5 +481,34 @@
             </summary>
             <param name="documentPath">The physical path to XML document.</param>
         </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.DestinoController.DestinoDto.NombreProvincia">
+            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.DestinoController.DestinoDto.NombreLocalidad">
+            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreProvincia">
+            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreLocalidad">
+            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+        </member>
+        <member name="M:WebApi_TransporteSanchez.Controllers.TarifasFijasController.PorRuta(System.Int32,System.Int32,System.Int32)">
+            <summary>
+            Devuelve la tarifa fija vigente para cliente, origen y destino (rango de fechas que incluye hoy; si no hay, la más reciente por FechaDesde).
+            </summary>
+        </member>
+        <member name="T:WebApi_TransporteSanchez.Controllers.TarifasKmController">
+            <summary>
+            Tarifas por kilómetro (tabla TARIFAS_KM).
+            </summary>
+        </member>
+        <member name="M:WebApi_TransporteSanchez.Controllers.TarifasKmController.Calcular(System.String,System.String,System.Decimal)">
+            <summary>
+            Busca una tarifa vigente para el viaje: el periodo calendario del viaje (desde/hasta) debe quedar cubierto
+            por FechaDesde–FechaHasta de la fila, y los km del viaje deben estar entre MinKm y MaxKm.
+            Monto = ValorKm × km.
+            </summary>
+        </member>
     </members>
 </doc>

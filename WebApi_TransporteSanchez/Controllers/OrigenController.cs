@@ -19,6 +19,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public int LocID { get; set; }
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
+            /// <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
+            public string NombreProvincia { get; set; }
+            /// <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+            public string NombreLocalidad { get; set; }
             public int ClienteID { get; set; }
             public System.DateTime Fecha_Alta { get; set; }
             public string Usu_Alta { get; set; }
@@ -45,6 +49,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         LocID = c.LocID,
                         Calle = c.Calle,
                         AlturaCalle = c.AlturaCalle,
+                        NombreProvincia = c.PROVINCIAS.Nombre_Provincia,
+                        NombreLocalidad = c.LOCALIDADES.Nombre_Localidad,
                         ClienteID = c.ClienteID,
                         Fecha_Alta = c.Fecha_Alta,
                         Usu_Alta = c.Usu_Alta,
