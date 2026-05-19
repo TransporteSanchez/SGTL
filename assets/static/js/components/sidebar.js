@@ -1,257 +1,96 @@
-import isDesktop from '../helper/isDesktop.js'
+const isDesktop = (windowObj) => windowObj.innerWidth > 1200;
 
-/**
- * Calculate nested children height in sidebar menu
-* @param {HTMLElement} el 
-*/
-const calculateChildrenHeight = (el, deep = false) => {
-  const children = el.children
-  
-  let height = 0
-  for(let i = 0; i < el.childElementCount; i++) {
-    const child = children[i]
-    height += child.querySelector('.submenu-link').clientHeight
-
-    // 2-level menu
-    if(deep && child.classList.contains('has-sub')) {
-      const subsubmenu = child.querySelector('.submenu')
-
-      if(subsubmenu.classList.contains('submenu-open')) {
-        const childrenHeight =  ~~[...subsubmenu.querySelectorAll('.submenu-link')].reduce((acc,curr) => acc + curr.clientHeight,0)
-        height += childrenHeight
-      }
-    }
-    
-  }
-  el.style.setProperty('--submenu-height', height + 'px')
-  return height
+function setSubmenuState(item, open) {
+  const submenu = item.querySelector('.submenu');
+  if (!submenu) return;
+  // The theme CSS uses max-height: var(--submenu-height) for open state.
+  // Ensure it is always set, otherwise submenu remains visually closed.
+  const links = submenu.querySelectorAll('.submenu-link');
+  let totalHeight = 0;
+  links.forEach((link) => {
+    totalHeight += link.offsetHeight || 40;
+  });
+  submenu.style.setProperty('--submenu-height', `${totalHeight}px`);
+  submenu.classList.toggle('submenu-open', open);
+  submenu.classList.toggle('submenu-closed', !open);
 }
 
-/**
- * a Sidebar component
- * @param  {HTMLElement} el - sidebar element
- * @param  {object} options={} - options
- */
-class Sidebar {
-  constructor(el, options = {}) {
-    this.sidebarEL = el instanceof HTMLElement ? el : document.querySelector(el)
-    this.options = options
-    this.init()
-  }
+function initSubmenus(sidebarEl) {
+  const sidebarItems = sidebarEl.querySelectorAll('.sidebar-item.has-sub');
+  sidebarItems.forEach((item) => {
+    setSubmenuState(item, item.classList.contains('active'));
 
-  /**
-   * initialize the sidebar
-   */
-  init() {
-    // add event listener to sidebar
-    document
-      .querySelectorAll(".burger-btn")
-      .forEach((el) => el.addEventListener("click", this.toggle.bind(this)))
-    document
-      .querySelectorAll(".sidebar-hide")
-      .forEach((el) => el.addEventListener("click", this.toggle.bind(this)))
-    window.addEventListener("resize", this.onResize.bind(this))
-
-    
-    const toggleSubmenu = (el) => {
-      if (el.classList.contains("submenu-open")) {
-        el.classList.remove('submenu-open')
-        el.classList.add('submenu-closed')
-      } else {
-        el.classList.remove("submenu-closed")
-        el.classList.add("submenu-open")
-      } 
-    }
-
-    
-
-
-    let sidebarItems = document.querySelectorAll(".sidebar-item.has-sub")
-    for (var i = 0; i < sidebarItems.length; i++) {
-      let sidebarItem = sidebarItems[i]
-      
-      sidebarItems[i]
-        .querySelector(".sidebar-link")
-        .addEventListener("click", (e) => {
-          e.preventDefault()
-          let submenu = sidebarItem.querySelector(".submenu")
-          toggleSubmenu(submenu)
-        })
-      
-      
-      // If submenu has submenu
-      const submenuItems = sidebarItem.querySelectorAll('.submenu-item.has-sub') 
-      submenuItems.forEach(item => {
-        item.addEventListener('click', () => {
-          const submenuLevelTwo = item.querySelector('.submenu')
-          toggleSubmenu(submenuLevelTwo)
-          
-          // Pass second .submenu
-          const height = calculateChildrenHeight(item.parentElement, true)
-
-        })
-      })
-    }
-
-    // Perfect Scrollbar Init
-    if (typeof PerfectScrollbar == "function") {
-      const container = document.querySelector(".sidebar-wrapper")
-      const ps = new PerfectScrollbar(container, {
-        wheelPropagation: false,
-      })
-    }
-
-    // Scroll into active sidebar
-    setTimeout(() => {
-      this.forceElementVisibility(document.querySelector(".sidebar-item.active"))
-    }, 300)
-
-  }
-
-  
-
-  
-
-  /**
-   * On Sidebar Rezise Event
-   */
-  onResize() {
-    if (isDesktop(window)) {
-      this.sidebarEL.classList.add("active")
-      this.sidebarEL.classList.remove("inactive")
-    } else {
-      this.sidebarEL.classList.remove("active")
-    }
-
-    // reset
-    this.deleteBackdrop()
-    this.toggleOverflowBody(true)
-  }
-
-  /**
-   * Toggle Sidebar
-   */
-  toggle() {
-    const sidebarState = this.sidebarEL.classList.contains("active")
-    if (sidebarState) {
-      this.hide()
-    } else {
-      this.show()
-    }
-  }
-
-  /**
-   * Show Sidebar
-   */
-  show() {
-    this.sidebarEL.classList.add("active")
-    this.sidebarEL.classList.remove("inactive")
-    this.createBackdrop()
-    this.toggleOverflowBody()
-  }
-
-  /**
-   * Hide Sidebar
-   */
-  hide() {
-    this.sidebarEL.classList.remove("active")
-    this.deleteBackdrop()
-    this.toggleOverflowBody()
-  }
-
-  /**
-   * Create Sidebar Backdrop
-   */
-  createBackdrop() {
-    if (isDesktop(window)) return
-    this.deleteBackdrop()
-    const backdrop = document.createElement("div")
-    backdrop.classList.add("sidebar-backdrop")
-    backdrop.addEventListener("click", this.hide.bind(this))
-    document.body.appendChild(backdrop)
-  }
-
-  /**
-   * Delete Sidebar Backdrop
-   */
-  deleteBackdrop() {
-    const backdrop = document.querySelector(".sidebar-backdrop")
-    if (backdrop) {
-      backdrop.remove()
-    }
-  }
-
-  /**
-   * Toggle Overflow Body
-   */
-  toggleOverflowBody(active) {
-    if(isDesktop(window)) return;
-    const sidebarState = this.sidebarEL.classList.contains("active")
-    const body = document.querySelector("body")
-    if (typeof active == "undefined") {
-      body.style.overflowY = sidebarState ? "hidden" : "auto"
-    } else {
-      body.style.overflowY = active ? "auto" : "hidden"
-    }
-  }
-
-  isElementInViewport(el) {
-    var rect = el.getBoundingClientRect()
-
-    return (
-      rect.top >= 0 &&
-      rect.left >= 0 &&
-      rect.bottom <=
-        (window.innerHeight || document.documentElement.clientHeight) &&
-      rect.right <= (window.innerWidth || document.documentElement.clientWidth)
-    )
-  }
-
-  forceElementVisibility(el) {
-    if (!this.isElementInViewport(el)) {
-      el.scrollIntoView(false)
-    }
-  }
+    const link = item.querySelector('.sidebar-link');
+    if (!link || link.dataset.boundClick === '1') return;
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const submenu = item.querySelector('.submenu');
+      if (!submenu) return;
+      const isOpen = submenu.classList.contains('submenu-open');
+      setSubmenuState(item, !isOpen);
+    });
+    link.dataset.boundClick = '1';
+  });
 }
 
+function bindGlobalButtons() {
+  document.querySelectorAll('.burger-btn').forEach((el) => {
+    if (el.dataset.sidebarBound === '1') return;
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+      const open = sidebar.classList.contains('active');
+      sidebar.classList.toggle('active', !open);
+      sidebar.classList.toggle('inactive', open);
+    });
+    el.dataset.sidebarBound = '1';
+  });
 
+  document.querySelectorAll('.sidebar-hide').forEach((el) => {
+    if (el.dataset.sidebarBound === '1') return;
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
+      const sidebar = document.getElementById('sidebar');
+      if (!sidebar) return;
+      sidebar.classList.remove('active');
+      sidebar.classList.add('inactive');
+    });
+    el.dataset.sidebarBound = '1';
+  });
+}
 
-let sidebarEl = document.getElementById("sidebar")
-
-/**
-   * On First Load
-   */
-const onFirstLoad = (sidebarEL) => {
-  if(!sidebarEl) return
+function applyResponsiveState(sidebarEl) {
+  if (!sidebarEl) return;
   if (isDesktop(window)) {
-    sidebarEL.classList.add("active")
-    sidebarEL.classList.add('sidebar-desktop')
-  }
-
-  // Get submenus size
-  let submenus = document.querySelectorAll(".sidebar-item.has-sub .submenu")
-  for (var i = 0; i < submenus.length; i++) {
-    let submenu = submenus[i]
-    const sidebarItem = submenu.parentElement
-    const height = submenu.clientHeight
-    
-    if(sidebarItem.classList.contains('active')) submenu.classList.add('submenu-open')
-    else submenu.classList.add('submenu-closed')
-    setTimeout(() => {
-      const height = calculateChildrenHeight(submenu, true)
-    }, 50);
+    sidebarEl.classList.add('active');
+    sidebarEl.classList.remove('inactive');
+    sidebarEl.classList.add('sidebar-desktop');
+  } else {
+    sidebarEl.classList.remove('sidebar-desktop');
   }
 }
 
-if(document.readyState !== 'loading') {
-  onFirstLoad(sidebarEl)
+function initializeSidebar() {
+  const sidebarEl = document.getElementById('sidebar');
+  if (!sidebarEl) return;
+
+  bindGlobalButtons();
+  initSubmenus(sidebarEl);
+  applyResponsiveState(sidebarEl);
 }
-else {
-  window.addEventListener('DOMContentLoaded', () => onFirstLoad(sidebarEl))
+
+window.initializeSidebar = initializeSidebar;
+
+if (!window.__sidebarResizeBound) {
+  window.addEventListener('resize', () => {
+    initializeSidebar();
+  });
+  window.__sidebarResizeBound = true;
 }
-/**
- * Create Sidebar Wrapper
- */
-if (sidebarEl) {
-  window.sidebar = new Sidebar(sidebarEl)
+
+if (document.readyState !== 'loading') {
+  initializeSidebar();
+} else {
+  window.addEventListener('DOMContentLoaded', initializeSidebar);
 }

@@ -229,214 +229,7 @@
     </div>
 
     <div id="app">
-        <div id="sidebar">
-
-            <!--Barra lateral activa-->
-
-            <div class="sidebar-wrapper active">
-                <div class="sidebar-header position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="logo">
-                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                    style="width: 240px; height: 160px"></a>
-                        </div>
-                        <div class="sidebar-toggler  x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <!--Menú-->
-                <div class="sidebar-menu">
-                    <ul class="menu">
-
-                        <li class="sidebar-item ">
-                            <a href="index.html" class='sidebar-link'>
-                                <i class="bi bi-grid-fill"></i>
-                                <span>Dashboard</span>
-                            </a>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-person"></i>
-                                <span>Choferes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
-
-                                </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
-
-                                </li>
-
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-truck"></i>
-                                <span>Camiones</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
-
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  active has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-calendar-check"></i>
-                                <span>Viajes</span>
-                            </a>
-
-                            <ul class="submenu">
-                                <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
-
-                                </li>
-                                <li class="submenu-item active">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
-
-                                </li>
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-person-workspace"></i>
-                                <span>Clientes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar clientes</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-medical"></i>
-                                <span>Facturación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar facturas</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar facturas</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-people-fill"></i>
-                                <span>Usuarios</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
-                                </li>
-
-                                <li class="submenu-item active">
-                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y
-                                        permisos</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-richtext"></i>
-                                <span>Documentación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Manual de usuario</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Otros</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
-                                <i class="bi bi-columns"></i>
-                                <span>Gestionar contenido</span>
-                            </a>
-
-                        </li>
-
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
             <!--Header-->
@@ -485,8 +278,7 @@
                                             data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
                                 </div>
-                                <div id="toastError"
-                                    class="toast align-items-center text-white bg-danger border-0 mt-2"
+                                <div id="toastError" class="toast align-items-center text-white bg-danger border-0 mt-2"
                                     role="alert" aria-live="assertive" aria-atomic="true">
                                     <div class="d-flex">
                                         <div id="toastErrorMessage" class="toast-body"></div>
@@ -638,8 +430,8 @@
                                     </select>
                                 </div>
                                 <div class="mt-4">
-                                    <label for="fechaInicioViaje" class="form-label fw-bold">Fecha y hora de inicio <span
-                                            class="text-danger">*</span></label>
+                                    <label for="fechaInicioViaje" class="form-label fw-bold">Fecha y hora de inicio
+                                        <span class="text-danger">*</span></label>
                                     <input type="datetime-local" class="form-control" id="fechaInicioViaje"
                                         name="fechaInicioViaje">
                                 </div>
@@ -652,7 +444,8 @@
                             </div>
                             <div class="col-lg-7">
                                 <div id="mapaRutaViajeWrap" style="display: none;">
-                                    <label id="mapaRutaViajeTitulo" class="form-label small mb-1 text-break" for="mapaRutaViaje">Ruta de Google Maps</label>
+                                    <label id="mapaRutaViajeTitulo" class="form-label small mb-1 text-break"
+                                        for="mapaRutaViaje">Ruta de Google Maps</label>
                                     <div id="mapaRutaViaje" role="presentation"></div>
                                     <p id="mapaRutaViajeEstado" class="mb-0 mt-2"></p>
                                 </div>
@@ -660,7 +453,8 @@
                         </div>
                         <div class="row mb-3">
                             <div class="col-12">
-                                <label class="form-label d-block fw-bold">Tipo de tarifa <span class="text-danger">*</span></label>
+                                <label class="form-label d-block fw-bold">Tipo de tarifa <span
+                                        class="text-danger">*</span></label>
                                 <div class="form-check form-check-inline">
                                     <input class="form-check-input" type="radio" name="tarifaTipo" id="tarifaTipoFija"
                                         value="fija" checked>
@@ -674,14 +468,16 @@
                             </div>
                         </div>
                         <div id="tarifaRutaPendiente" class="mb-3">
-                            <p class="text-muted mb-0 small">Completá cliente, origen y destino para cargar o calcular la
+                            <p class="text-muted mb-0 small">Completá cliente, origen y destino para cargar o calcular
+                                la
                                 tarifa.</p>
                         </div>
                         <div id="tarifaDetalleActivo" class="mb-0" style="display: none;">
                             <div id="bloqueTarifaFija" class="mb-3">
                                 <label class="form-label">Valores de tarifa fija</label>
                                 <div class="table-responsive">
-                                    <table class="table table-bordered table-striped table-sm mb-0" id="tablaTarifaFijaModal">
+                                    <table class="table table-bordered table-striped table-sm mb-0"
+                                        id="tablaTarifaFijaModal">
                                         <thead class="table-secondary">
                                             <tr>
                                                 <th>Valor ruta</th>
@@ -696,7 +492,8 @@
                                                 <td id="celValorFijoNeto">—</td>
                                             </tr>
                                             <tr id="filaTarifaFijaMensajeFull" style="display: none;">
-                                                <td colspan="3" class="text-secondary py-3" id="celTarifaFijaMensajeFull"></td>
+                                                <td colspan="3" class="text-secondary py-3"
+                                                    id="celTarifaFijaMensajeFull"></td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -704,18 +501,22 @@
                             </div>
                             <div id="bloqueTarifaKm" class="mb-3" style="display: none;">
                                 <div class="tarifa-km-grid">
-                                    <label for="kmViajeInput" class="form-label fw-bold tk-l-km">Kilómetros del viaje</label>
+                                    <label for="kmViajeInput" class="form-label fw-bold tk-l-km">Kilómetros del
+                                        viaje</label>
                                     <span class="tk-spacer-label" aria-hidden="true"></span>
-                                    <label for="montoCalculadoKm" class="form-label fw-bold tk-l-m">Monto calculado</label>
+                                    <label for="montoCalculadoKm" class="form-label fw-bold tk-l-m">Monto
+                                        calculado</label>
                                     <input type="text" class="form-control tk-i-km" id="kmViajeInput" name="kmViaje"
-                                        inputmode="decimal" autocomplete="off" placeholder="Definí la ruta en el mapa" readonly>
-                                    <button type="button" class="btn btn-outline-primary tk-btn" id="btnCalcularMontoKm">
+                                        inputmode="decimal" autocomplete="off" placeholder="Definí la ruta en el mapa"
+                                        readonly>
+                                    <button type="button" class="btn btn-outline-primary tk-btn"
+                                        id="btnCalcularMontoKm">
                                         Calcular
                                     </button>
                                     <input type="text" class="form-control tk-i-m" id="montoCalculadoKm" readonly
                                         placeholder="—" aria-describedby="montoKmErrorFeedback">
-                                    <div id="montoKmErrorFeedback" class="small text-danger mt-1 d-none tk-err" role="alert"
-                                        aria-live="polite"></div>
+                                    <div id="montoKmErrorFeedback" class="small text-danger mt-1 d-none tk-err"
+                                        role="alert" aria-live="polite"></div>
                                 </div>
                             </div>
                         </div>
@@ -738,11 +539,12 @@
                                         name="choferViajeBuscar" autocomplete="off"
                                         placeholder="Buscá por nombre, apellido o DNI…" maxlength="80">
                                     <input type="hidden" id="choferViajeId" name="choferViajeId" value="">
-                                    <div id="choferViajeResultados" class="list-group shadow-sm border d-none" role="listbox"
-                                        aria-label="Resultados de choferes"></div>
+                                    <div id="choferViajeResultados" class="list-group shadow-sm border d-none"
+                                        role="listbox" aria-label="Resultados de choferes"></div>
                                 </div>
-                                <div id="choferViajeResumen" class="alert alert-light-secondary py-2 px-3 mt-2 mb-0 small d-none"
-                                    role="status"></div>
+                                <div id="choferViajeResumen"
+                                    class="alert alert-light-secondary py-2 px-3 mt-2 mb-0 small d-none" role="status">
+                                </div>
                                 <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 mt-1 d-none"
                                     id="choferViajeLimpiar">Quitar chofer seleccionado</button>
                             </div>
@@ -765,6 +567,8 @@
     <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
@@ -774,25 +578,26 @@
 
     <!-- Carga de diseño y roles -->
     <script>
-        window.onload = function () {
+        window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
 
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();  // o tu equivalente que llame applyStyles
+                adjustVisibilityBasedOnRole();  // si la página lo define
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+            }
         };
 
         function adjustVisibilityBasedOnRole() {
