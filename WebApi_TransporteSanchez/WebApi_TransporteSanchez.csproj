@@ -394,6 +394,7 @@
     </Compile>
     <Compile Include="Controllers\AutenticacionController.cs" />
     <Compile Include="Controllers\HealthController.cs" />
+    <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="JwtConfig.cs" />
     <Compile Include="CLIENTES.cs">

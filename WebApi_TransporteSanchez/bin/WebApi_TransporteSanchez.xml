@@ -487,11 +487,26 @@
         <member name="P:WebApi_TransporteSanchez.Controllers.DestinoController.DestinoDto.NombreLocalidad">
             <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
         </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.GruposController.GrupoUpsertDto.UsuarioLogueado">
+            <summary>Nombre del usuario logueado (Usu_Alta y Usu_Modi). Si no se envía, se usa "SISTEMA".</summary>
+        </member>
         <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreProvincia">
             <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
         </member>
         <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreLocalidad">
             <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+        </member>
+        <member name="T:WebApi_TransporteSanchez.Controllers.UsuariosController.DetallesUsuarioDto">
+            <summary>DTO para el modal de detalles: estado, grupos asignados y permisos (menús) por grupo.</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.UsuariosController.UsuarioAltaDto.GrupoIds">
+            <summary>IDs de grupos asignados. Obligatorio si Rol es "user"; ignorado si Rol es "admin".</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.UsuariosController.UsuarioAltaDto.UsuarioLogueado">
+            <summary>Nombre del usuario logueado (Usu_Modi en alta). Si no se envía, se usa "sistema".</summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.Controllers.UsuariosController.UsuarioEdicionDto.GrupoIds">
+            <summary>IDs de grupos asignados. Obligatorio si Rol es "user"; ignorado si Rol es "admin".</summary>
         </member>
         <member name="M:WebApi_TransporteSanchez.Controllers.TarifasFijasController.PorRuta(System.Int32,System.Int32,System.Int32)">
             <summary>
