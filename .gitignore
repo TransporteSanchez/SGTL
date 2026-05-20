@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+.DS_Store
+assets/.DS_Store
+assets/extensions/.DS_Store
+assets/extensions/@fortawesome/.DS_Store
