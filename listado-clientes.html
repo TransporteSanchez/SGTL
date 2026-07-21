@@ -24,26 +24,20 @@
             width: 100%;
         }
 
-        #tablaChoferes {
+        #tablaClientes {
             width: 100%;
             text-align: center;
         }
 
-        #tablaChoferes th,
-        #tablaChoferes td {
+        #tablaClientes th,
+        #tablaClientes td {
             text-align: center;
             vertical-align: middle;
         }
 
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaChoferes th {
+        #tablaClientes th {
             width: auto;
             white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
         }
 
         .no-outline:focus {
@@ -85,210 +79,7 @@
 
     <div id="app">
         <!--Barra lateral-->
-        <div id="sidebar">
-
-            <!--Barra lateral activa-->
-
-            <div class="sidebar-wrapper active">
-                <div class="sidebar-header position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="logo">
-                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                    style="width: 240px; height: 160px"></a>
-                        </div>
-                        <div class="sidebar-toggler  x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <!--Menú-->
-                <div class="sidebar-menu">
-                    <ul class="menu">
-
-                        <li class="sidebar-item ">
-                            <a href="index.html" class='sidebar-link'>
-                                <i class="bi bi-grid-fill"></i>
-                                <span>Dashboard</span>
-                            </a>
-
-
-                        </li>
-
-                        <li class="sidebar-item has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-person"></i>
-                                <span>Choferes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item ">
-                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
-
-                                </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
-
-                                </li>
-
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-truck"></i>
-                                <span>Camiones</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-calendar-check"></i>
-                                <span>Viajes</span>
-                            </a>
-
-                            <ul class="submenu">
-                                <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
-
-                                </li>
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item active  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-person-workspace"></i>
-                                <span>Clientes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item active">
-                                    <a href="#" class="submenu-link">Listar clientes</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar clientes</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-medical"></i>
-                                <span>Facturación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar facturas</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar facturas</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-people-fill"></i>
-                                <span>Usuarios</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar grupos</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-richtext"></i>
-                                <span>Documentación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Manual de usuario</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Otros</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
-                                <i class="bi bi-columns"></i>
-                                <span>Gestionar contenido</span>
-                            </a>
-
-                        </li>
-
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
             <!--Header-->
@@ -334,89 +125,62 @@
             <section class="section">
                 <div class="card rounded me-4 ms-4 mt-4">
                     <div class="card-header">
-                        <h5 class="card-title">
-                            Listar clientes
+                        <h5 class="card-title">Listar clientes</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Buscador -->
-                        <form id="busquedaChoferForm" class="form">
-                            <div class="row">
-                                <!-- Primera columna: Nombre y Apellido -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="txtnombre">Nombre</label>
-                                    <input type="text" class="form-control mb-4" id="txtnombre" placeholder="Juan">
-                                    <label for="txtapellido">Apellido</label>
-                                    <input type="text" class="form-control" id="txtapellido" placeholder="Perez">
-                                </div>
-
-                                <!-- Segunda columna: DNI y Estado -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="txtdni">DNI</label>
-                                    <input type="number" class="form-control mb-4" id="txtdni" placeholder="36456778">
-                                    <label>Estado</label>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input form-check-success"
-                                            id="checkestadoactivo">
-                                        <label class="form-check-label" for="checkestadoactivo">Activo</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input form-check-danger"
-                                            id="checkestadoinactivo">
-                                        <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
-                                    </div>
-                                </div>
-
-                                <!-- Tercera columna: Fecha de Alta -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="fechaRango">Fecha de alta</label>
-                                    <input type="text" class="form-control mb-4" id="fechaRango"
-                                        placeholder="Desde y hasta">
-                                </div>
-
-                                <!-- Cuarta columna: Buscar -->
-                                <div class="col-md-2 mb-4 mt-4">
-                                    <button type="button" class="btn btn-light"
-                                        onclick="buscarChoferes()">Buscar</button>
-                                </div>
-
-                                <!-- Quinta columna: Botón Generar Reporte -->
-                                <div class="col-md-1 mb-3 mt-4 text-end">
-                                    <label>&nbsp;</label>
-                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                        <i class="bi bi-download"></i>
-                                    </button>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <fieldset class="border p-4">
+                                    <form id="busquedaClienteForm" class="form">
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <label for="txtCUIT_Cliente_Busqueda">CUIT</label>
+                                                <input type="text" class="form-control" id="txtCUIT_Cliente_Busqueda"
+                                                    placeholder="XX-XXXXXXXX-X" maxlength="13" autocomplete="off">
+                                                <div id="busquedaCuitError" class="text-danger small mt-1"
+                                                    style="display: none;"></div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="fechaRango">Fecha de alta</label>
+                                                <input type="text" class="form-control" id="fechaRango"
+                                                    placeholder="Desde y hasta">
+                                            </div>
+                                        </div>
+                                        <div class="row mb-3 align-items-center">
+                                            <div class="col-12 text-end">
+                                                <button type="button" class="btn btn-light"
+                                                    onclick="buscarClientes()">Buscar</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </fieldset>
                             </div>
-                        </form>
+                            <div class="col-md-6 text-end">
+                                <label>&nbsp;</label>
+                                <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
+                                    <i class="bi bi-download"></i>
+                                </button>
+                            </div>
 
-                        <!-- Tabla -->
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped" id="tablaClientes">
+                                    <thead>
+                                        <tr>
+                                            <th>Razon Social</th>
+                                            <th>CUIT</th>
+                                            <th>Fecha de alta</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
 
-                        <div class="table-responsive">
-                            <table class="table table-striped" id="tablaChoferes">
-                                <thead>
-                                    <tr>
-                                        <th>ID</th>
-                                        <th>Fecha de Alta</th>
-                                        <th>Nombre</th>
-                                        <th>Apellido</th>
-                                        <th>DNI</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <!-- Contenido llenado dinámicamente -->
-                                </tbody>
-                            </table>
+                            <nav>
+                                <ul class="pagination justify-content-end" id="pagination"></ul>
+                            </nav>
                         </div>
-
-                        <!-- Paginación -->
-                        <nav>
-                            <ul class="pagination justify-content-end" id="pagination">
-                            </ul>
-                        </nav>
-
                     </div>
                 </div>
 
@@ -432,13 +196,13 @@
             </footer>
         </div>
 
-        <!-- Modal Detalles -->
-        <div class="modal fade text-left" id="DetallesChoferModal" tabindex="-1" role="dialog"
-            aria-labelledby="DetallesChofer" aria-hidden="true">
+        <!-- Modal detalle cliente (solo lectura) -->
+        <div class="modal fade text-left" id="DetallesClienteModal" tabindex="-1" role="dialog"
+            aria-labelledby="DetallesClienteTitulo" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="DetallesChofer">Detalles del chofer</h4>
+                        <h4 class="modal-title" id="DetallesClienteTitulo">Detalles del cliente</h4>
                         <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                             <i data-feather="x"></i>
                         </button>
@@ -446,122 +210,69 @@
                     <div class="modal-body mt-2 mb-4 mx-2">
                         <div class="container-fluid">
                             <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <h6>Estado del chofer</h6>
-                                        <span id="EstadoActualChofer" readonly></span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
+                                <div class="col-md-6 col-12 mb-3">
                                     <h6>Fecha de alta</h6>
-                                    <span id="FechaAltaChofer" class="badge bg-secondary"></span>
+                                    <span id="detalleFechaAlta" class="badge bg-secondary"></span>
+                                </div>
+                                <div class="col-md-6 col-12 mb-3">
+                                    <h6>Última modificación</h6>
+                                    <span id="detalleFechaModi" class="badge bg-secondary"></span>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="dni-column" class="form-label">DNI</label>
-                                        <input type="number" id="dni-column" class="form-control no-outline" readonly />
-                                    </div>
+                                <div class="col-md-6 col-12 mt-2">
+                                    <label class="form-label" for="detalleRazonSocial">Razón social</label>
+                                    <input type="text" id="detalleRazonSocial" class="form-control no-outline"
+                                        readonly />
                                 </div>
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono celular</label>
-                                        <input type="number" id="celphone-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="province-column" class="form-label">Provincia</label>
-                                        <input type="text" id="province-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-6 col-12 mt-2">
+                                    <label class="form-label" for="detalleCUIT">CUIT</label>
+                                    <input type="text" id="detalleCUIT" class="form-control no-outline" readonly />
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="cuil-column" class="form-label">CUIL</label>
-                                        <input type="number" id="cuil-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleCondFiscal">Condición fiscal</label>
+                                    <input type="text" id="detalleCondFiscal" class="form-control no-outline"
+                                        readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="phone-column" class="form-label">Teléfono particular</label>
-                                        <input type="number" id="phone-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleTelefono">Teléfono</label>
+                                    <input type="text" id="detalleTelefono" class="form-control no-outline" readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="local-column" class="form-label">Localidad</label>
-                                        <input type="text" id="local-column" class="form-control no-outline" readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleEmail">Email</label>
+                                    <input type="text" id="detalleEmail" class="form-control no-outline" readonly />
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre</label>
-                                        <input type="text" id="first-name-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleProvincia">Provincia</label>
+                                    <input type="text" id="detalleProvincia" class="form-control no-outline" readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="email-column" class="form-label">Email</label>
-                                        <input type="email" id="email-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleLocalidad">Localidad</label>
+                                    <input type="text" id="detalleLocalidad" class="form-control no-outline" readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="street-column" class="form-label">Calle</label>
-                                        <input type="text" id="street-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleCalle">Calle</label>
+                                    <input type="text" id="detalleCalle" class="form-control no-outline" readonly />
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido</label>
-                                        <input type="text" id="last-name-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleAltura">Altura</label>
+                                    <input type="text" id="detalleAltura" class="form-control no-outline" readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleUsuAlta">Usuario de alta</label>
+                                    <input type="text" id="detalleUsuAlta" class="form-control no-outline" readonly />
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="number-column" class="form-label">Altura</label>
-                                        <input type="number" id="number-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
+                                <div class="col-md-4 col-12 mt-3">
+                                    <label class="form-label" for="detalleUsuModi">Usuario de modificación</label>
+                                    <input type="text" id="detalleUsuModi" class="form-control no-outline" readonly />
                                 </div>
                             </div>
-                            <!-- Tabla de Camiones Asignados -->
-                            <div class="mt-4">
-                                <h6>Camión asignado</h6>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <table class="table" id="tablaCamionesAsignados">
-                                            <thead>
-                                                <tr>
-                                                    <th>Dominio</th>
-                                                    <th>Cédula</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- Contenido llenado dinámicamente -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
                     </div>
                 </div>
@@ -576,7 +287,7 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
@@ -599,25 +310,26 @@
 
     <!-- Carga de diseño y roles -->
     <script>
-        window.onload = function () {
+        window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
 
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();  // o tu equivalente que llame applyStyles
+                adjustVisibilityBasedOnRole();  // si la página lo define
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+            }
         };
 
         function adjustVisibilityBasedOnRole() {
@@ -763,48 +475,44 @@
 
     <!-- Get Activos -->
     <script>
-        // Esperar a que se cargue completamente la página
         $(document).ready(function () {
-            // Marcar el checkbox de "Activo" por defecto
-            $('#checkestadoactivo').prop('checked', true);
-
-            // Llamar a la función de búsqueda de choferes al cargar la página
-            buscarChoferes();
+            buscarClientes();
         });
     </script>
 
-    <!-- Buscador y listar + detalles del chofer -->
+    <!-- Buscador, listado y detalle cliente -->
     <script>
-
-        // Validación para que los campos de Nombre y Apellido solo permitan letras
-        document.getElementById('txtnombre').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('txtapellido').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        // Limita la longitud del número a 8 dígitos
-        document.getElementById('txtdni').addEventListener('input', function (event) {
-
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
-            }
-        });
-
-        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
-        $('#txtnombre, #txtapellido, #txtdni, #fechaRango').on('input', function () {
-            if ($(this).val().trim() === '') {
-                buscarChoferes(currentPage);
-            }
-        });
-
         const pageSize = 6;
         let currentPage = 1;
+
+        function formatearCUIT(input) {
+            const digits = input.val().replace(/[^\d]/g, '').slice(0, 11);
+            let formatted;
+            if (digits.length <= 2) {
+                formatted = digits;
+            } else if (digits.length <= 10) {
+                formatted = digits.slice(0, 2) + '-' + digits.slice(2);
+            } else {
+                formatted = digits.slice(0, 2) + '-' + digits.slice(2, 10) + '-' + digits.slice(10);
+            }
+            input.val(formatted);
+        }
+
+        function validarFormatoCUIT(cuit) {
+            return /^\d{2}-\d{8}-\d{1}$/.test(cuit);
+        }
+
+        function cuitDigitosAFormulario(digits) {
+            var d = String(digits || '').replace(/\D/g, '').slice(0, 11);
+            if (d.length <= 2) return d;
+            if (d.length <= 10) return d.slice(0, 2) + '-' + d.slice(2);
+            return d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10);
+        }
+
+        function condFiscalIntATexto(cond) {
+            var map = { 1: 'RI', 2: 'MT', 3: 'EX' };
+            return map[cond] != null ? map[cond] : String(cond);
+        }
 
         // Función para obtener los nombres de la provincia y localidad
         function obtenerNombres(provId, locId) {
@@ -852,12 +560,44 @@
             });
         }
 
-        // Datepicker con rango de fechas
+        function armarFiltrosBusquedaClientes() {
+            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
+            var fechaRangoTxt = ($('#fechaRango').val() || '').trim();
+            var fechaDesde = null;
+            var fechaHasta = null;
+            var startData = $('#fechaRango').data('start');
+            var endData = $('#fechaRango').data('end');
+            if (startData && endData) {
+                fechaDesde = startData + ' 00:00:00.000';
+                fechaHasta = endData + ' 23:59:59.999';
+            } else if (fechaRangoTxt) {
+                var fechas = fechaRangoTxt.split(' - ');
+                if (fechas.length === 2 && typeof moment !== 'undefined') {
+                    var m0 = moment(fechas[0], 'DD/MM/YYYY', true);
+                    var m1 = moment(fechas[1], 'DD/MM/YYYY', true);
+                    if (m0.isValid() && m1.isValid()) {
+                        fechaDesde = m0.format('YYYY-MM-DD') + ' 00:00:00.000';
+                        fechaHasta = m1.format('YYYY-MM-DD') + ' 23:59:59.999';
+                    }
+                }
+            }
+            var requestData = {};
+            if (cuitVal !== '') {
+                requestData.cuit = cuitVal.replace(/\D/g, '');
+            }
+            if (fechaDesde) {
+                requestData.fechaDesde = fechaDesde;
+            }
+            if (fechaHasta) {
+                requestData.fechaHasta = fechaHasta;
+            }
+            return requestData;
+        }
+
         $(document).ready(function () {
             $('#fechaRango').daterangepicker({
                 autoUpdateInput: false,
                 locale: {
-                    cancelLabel: 'Borrar',
                     format: 'DD/MM/YYYY',
                     applyLabel: 'Aplicar',
                     cancelLabel: 'Cancelar',
@@ -871,321 +611,246 @@
 
             $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
                 $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+                currentPage = 1;
+                buscarClientes(1);
             });
 
-            $('#fechaRango').on('cancel.daterangepicker', function (ev, picker) {
+            $('#fechaRango').on('cancel.daterangepicker', function () {
                 $(this).val('');
                 $(this).removeData('start').removeData('end');
+                currentPage = 1;
+                buscarClientes(1);
+            });
+
+            $('#txtCUIT_Cliente_Busqueda, #fechaRango').on('input', function () {
+                if ($(this).attr('id') === 'fechaRango' && $(this).val().trim() === '') {
+                    $(this).removeData('start').removeData('end');
+                }
+                if ($(this).attr('id') === 'txtCUIT_Cliente_Busqueda' && $(this).val().trim() === '') {
+                    buscarClientes(currentPage);
+                }
+            });
+
+            $('#txtCUIT_Cliente_Busqueda').on('input', function () {
+                formatearCUIT($(this));
+                $(this).removeClass('is-invalid');
+                $('#busquedaCuitError').hide();
+            });
+
+            $('#txtCUIT_Cliente_Busqueda').on('blur', function () {
+                var cuit = $(this).val().trim();
+                if (cuit === '') {
+                    $(this).removeClass('is-invalid');
+                    $('#busquedaCuitError').hide();
+                    return;
+                }
+                if (!validarFormatoCUIT(cuit)) {
+                    $(this).addClass('is-invalid');
+                    $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $('#busquedaCuitError').hide();
+                }
             });
         });
 
-
-        var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
-
-        // Función para mostrar los detalles del chofer en el modal
-        function mostrarDetallesChofer(registro) {
-            obtenerNombres(registro.ProvID, registro.LocID).then(nombres => {
-                $('#first-name-column').val(registro.Nombre);
-                $('#last-name-column').val(registro.Apellido);
-                $('#dni-column').val(registro.DNI);
-                $('#cuil-column').val(registro.CUIL);
-                $('#celphone-column').val(registro.TelefonoCelular);
-                $('#phone-column').val(registro.TelefonoFijo);
-                $('#email-column').val(registro.Email);
-                $('#province-column').val(nombres.Nombre_Provincia);
-                $('#local-column').val(nombres.Nombre_Localidad);
-                $('#street-column').val(registro.Calle);
-                $('#number-column').val(registro.AlturaCalle ? registro.AlturaCalle.trim() : '');
-                $('#EstadoActualChofer').text(registro.EstadoChofer);
-                estadoChoferOriginal = registro.EstadoChofer;
-
-                var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-                $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
-
-                // Formatear la fecha de alta
-                const fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
-                $('#FechaAltaChofer').text(fechaAltaFormateada);
-
-                obtenerCamionesAsignados(registro.Chofer_ID);
-
-                $('#DetallesChoferModal').modal('show');
-            }).catch(error => {
-                console.error('Error al obtener nombres de provincia o localidad', error);
-            });
-        }
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
         function formatFechaUTC3(isoDate) {
-            if (!isoDate) return 'Fecha no disponible';
-
+            if (!isoDate) return '—';
             const date = new Date(isoDate);
             const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
             const day = String(utc3Date.getDate()).padStart(2, '0');
             const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
             const year = utc3Date.getFullYear();
             const hours = String(utc3Date.getHours()).padStart(2, '0');
             const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
             return `${day}/${month}/${year} ${hours}:${minutes}`;
         }
 
-        // Función para obtener camiones asignados al chofer
-        function obtenerCamionesAsignados(choferID) {
-            $.ajax({
-                url: `http://localhost:50222/api/Choferes/${choferID}/Chofer_Camion`,
-                method: 'GET',
-                success: function (data) {
-                    var tbody = $('#tablaCamionesAsignados tbody');
-                    tbody.empty();
+        function mostrarDetalleCliente(registro) {
+            obtenerNombres(registro.ProvID, registro.LocID).then(function (nombres) {
+                $('#detalleRazonSocial').val(registro.Razon_Social || '');
+                $('#detalleCUIT').val(cuitDigitosAFormulario(registro.CUIT_Cliente));
+                $('#detalleCondFiscal').val(condFiscalIntATexto(registro.Cond_Fiscal));
+                $('#detalleTelefono').val(registro.Telefono || '');
+                $('#detalleEmail').val(registro.Email || '');
+                $('#detalleProvincia').val(nombres.Nombre_Provincia);
+                $('#detalleLocalidad').val(nombres.Nombre_Localidad);
+                $('#detalleCalle').val(registro.Calle || '');
+                $('#detalleAltura').val(registro.AlturaCalle ? String(registro.AlturaCalle).trim() : '');
+                $('#detalleUsuAlta').val(registro.Usu_Alta || '');
+                $('#detalleUsuModi').val(registro.Usu_Modi || '');
+                $('#detalleFechaAlta').text(formatFechaUTC3(registro.Fecha_Alta)).removeClass().addClass('badge bg-secondary');
+                $('#detalleFechaModi').text(formatFechaUTC3(registro.Fecha_Modi)).removeClass().addClass('badge bg-secondary');
+                $('#DetallesClienteModal').modal('show');
+            }).catch(function (err) {
+                console.error('Error al obtener nombres de provincia o localidad', err);
+            });
+        }
 
-                    if (data.length === 0) {
-                        var row = `<tr>
-                    <td colspan="2" class="text-center">No se encontraron registros</td>
-                </tr>`;
-                        tbody.append(row);
-                    } else {
-                        data.forEach(function (camion) {
-                            var row = `<tr>
-                        <td>${camion.Dominio}</td>
-                        <td>${camion.Cedula}</td>
-                    </tr>`;
-                            tbody.append(row);
-                        });
-                    }
+        function abrirModalDetalleCliente(clienteId) {
+            $.ajax({
+                url: 'http://localhost:50222/api/Clientes/' + clienteId,
+                type: 'GET',
+                success: function (data) {
+                    mostrarDetalleCliente(data);
                 },
-                error: function (error) {
-                    console.error('Error al obtener los camiones asignados:', error);
+                error: function () {
+                    mostrarToastError('No se pudieron cargar los datos del cliente.');
                 }
             });
         }
 
-        // Función para realizar la búsqueda de choferes
-        function buscarChoferes(page = 1) {
-            var nombre = $('#txtnombre').val();
-            var apellido = $('#txtapellido').val();
-            var dni = $('#txtdni').val();
-            var fechaRango = $('#fechaRango').val();
-            var estadoActivo = $('#checkestadoactivo').is(':checked');
-            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
-
-            let fechaDesde = null;
-            let fechaHasta = null;
-
-            if (fechaRango) {
-                let fechas = fechaRango.split(' - ');
-                if (fechas.length === 2) {
-                    fechaDesde = moment(fechas[0], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 00:00:00.000';
-                    fechaHasta = moment(fechas[1], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 23:59:59.999';
-                }
+        function buscarClientes(page) {
+            if (page === undefined || page === null) {
+                page = 1;
+            }
+            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
+            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
+                $('#txtCUIT_Cliente_Busqueda').addClass('is-invalid');
+                $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
+                return;
             }
 
-            var requestData = {
-                nombre: nombre || null,
-                apellido: apellido || null,
-                dni: dni || null,
-                fechaDesde: fechaDesde || null,
-                fechaHasta: fechaHasta || null,
-                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
-                page: page,
-                pageSize: pageSize
-            };
+            currentPage = page;
+            var requestData = armarFiltrosBusquedaClientes();
+            requestData.page = page;
+            requestData.pageSize = pageSize;
 
-            // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
-            if (nombre !== '') requestData.nombre = nombre;
-            if (apellido !== '') requestData.apellido = apellido;
-            if (dni !== '') requestData.dni = dni;
-            if (fechaDesde !== '') requestData.fechaDesde = fechaDesde;
-            if (fechaHasta !== '') requestData.fechaHasta = fechaHasta;
-
-            // Agregar el estadoChofer al objeto de datos solo si se selecciona
-            if (estadoActivo || estadoInactivo) {
-                requestData.estadoChofer = '';
-                if (estadoActivo) requestData.estadoChofer += 'Activo,';
-                if (estadoInactivo) requestData.estadoChofer += 'Inactivo,';
-                // Eliminar la última coma si existe
-                requestData.estadoChofer = requestData.estadoChofer.slice(0, -1);
-            }
-
-            // Realizar la solicitud AJAX GET al controlador
             $.ajax({
-                url: 'http://localhost:50222/api/Choferes/Buscar',
+                url: 'http://localhost:50222/api/Clientes/Buscar',
                 type: 'GET',
                 data: requestData,
                 success: function (data) {
-                    // Limpiar la tabla antes de agregar nuevos registros
-                    $('#tablaChoferes tbody').empty();
+                    $('#tablaClientes tbody').empty();
+
+                    if (!data || !$.isArray(data.Results)) {
+                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">Respuesta inválida del servidor.</td></tr>');
+                        return;
+                    }
 
                     if (data.Results.length === 0) {
-                        $('#tablaChoferes tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (registro) {
-
-                            // Formatear la fecha de alta
-                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
-
-                            var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-                            var row = `<tr>
-                    <td>${registro.Chofer_ID}</td>
-                    <td>${fechaAltaFormateada}</td>
-                    <td>${registro.Nombre}</td>
-                    <td>${registro.Apellido}</td>
-                    <td>${registro.DNI}</td>
-                    <td><span class="badge ${estadoStyle}">${registro.EstadoChofer}</span></td>
-                    <td>
-                            <button class="btn btn-primary btn-detalle"
-                                data-choferid="${registro.Chofer_ID}"
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
+                            var idCliente = registro.Cliente_ID != null ? registro.Cliente_ID : registro.cliente_Id;
+                            var fechaAltaTxt = '';
+                            if (registro.Fecha_Alta) {
+                                fechaAltaTxt = new Date(registro.Fecha_Alta).toLocaleDateString('es-AR');
+                            }
+                            var razon = registro.RazonSocial != null ? registro.RazonSocial : registro.Razon_Social;
+                            var cuitTxt = String(registro.CUIT_Cliente || '').trim();
+                            var row = `
+                    <tr data-clienteid="${idCliente}">
+                        <td>${razon || ''}</td>
+                        <td>${cuitTxt}</td>
+                        <td>${fechaAltaTxt}</td>
+                        <td>
+                            <button type="button" class="btn btn-primary btn-detalle"
+                                data-clienteid="${idCliente}"
+                                data-bs-toggle="tooltip"
+                                data-bs-placement="top"
                                 title="Más detalles"
-                                onclick="abrirModal('${registro.Chofer_ID}')">
+                                onclick="abrirModalDetalleCliente('${idCliente}')">
                                 <i class="bi bi-info-circle"></i>
                             </button>
-                    </td>
-                </tr>`;
-                            $('#tablaChoferes tbody').append(row);
+                        </td>
+                    </tr>`;
+                            $('#tablaClientes tbody').append(row);
                         });
                     }
                     renderPagination(data.TotalRecords, pageSize, page);
                 },
                 error: function (xhr, status, error) {
-                    console.error(error);
+                    console.error('Clientes/Buscar:', status, error, xhr.responseText);
+                    $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
                 }
             });
         }
 
-        function abrirModal(choferID) {
-            // Obtener detalles del chofer antes de mostrar el modal
-            $.ajax({
-                url: `http://localhost:50222/api/Choferes/${choferID}`,
-                method: 'GET',
-                success: function (data) {
-                    mostrarDetallesChofer(data);
-                    var modal = new bootstrap.Modal(document.getElementById('DetallesChoferModal'));
-                    modal.show();
-                },
-                error: function (error) {
-                    console.error('Error al obtener los detalles del chofer:', error);
-                }
-            });
-        }
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        function renderPagination(totalRecords, pageSize, currentPage) {
+        function renderPagination(totalRecords, pageSize, currentPageNum) {
             const totalPages = Math.ceil(totalRecords / pageSize);
             const paginationContainer = $('#pagination');
             paginationContainer.empty();
 
-            const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+            const prevDisabled = (totalPages === 0 || currentPageNum === 1) ? 'disabled' : '';
+            const nextDisabled = (totalPages === 0 || currentPageNum === totalPages) ? 'disabled' : '';
 
             paginationContainer.append(`
                 <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarChoferes(${currentPage - 1})">
+                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarClientes(${currentPageNum - 1}); return false;">
                         <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
                     </a>
                 </li>
             `);
 
-            for (let i = 1; i <= totalPages; i++) {
-                const activeClass = currentPage === i ? 'active' : '';
+            for (let i = 1; i <= totalPages && totalPages > 0; i++) {
+                const activeClass = currentPageNum === i ? 'active' : '';
                 paginationContainer.append(`
                     <li class="page-item ${activeClass}">
-                        <a class="page-link" href="#" onclick="buscarChoferes(${i})">${i}</a>
+                        <a class="page-link" href="#" onclick="buscarClientes(${i}); return false;">${i}</a>
                     </li>
                 `);
             }
 
             paginationContainer.append(`
                 <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" aria-label="Next" onclick="buscarChoferes(${currentPage + 1})">
+                    <a class="page-link" href="#" aria-label="Next" onclick="buscarClientes(${currentPageNum + 1}); return false;">
                         <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                     </a>
                 </li>
             `);
         }
 
-        $(document).ready(function () {
-            // Ejecutar la búsqueda inicial
-            buscarChoferes(currentPage);
-        });
-
-
     </script>
 
     <!-- Generar reporte csv -->
     <script>
         async function generarReporteCSV() {
-            var dni = $('#txtdni').val() || '';
-            var nombre = $('#txtnombre').val().trim() || '';
-            var apellido = $('#txtapellido').val().trim() || '';
-            var estadoActivo = $('#checkestadoactivo').is(':checked');
-            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
-            var fechaDesde = $('#fechaRango').data('start') || null;
-            var fechaHasta = $('#fechaRango').data('end') || null;
-
-            var requestData = {
-                dni: dni,
-                nombre: nombre || null,
-                apellido: apellido || null,
-                fechaDesde: fechaDesde || null,
-                fechaHasta: fechaHasta || null,
-                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' :
-                    estadoActivo ? 'Activo' :
-                        estadoInactivo ? 'Inactivo' : '',
-                page: currentPage,
-                pageSize: pageSize
-            };
+            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
+            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
+                mostrarToastError('Corregí el formato del CUIT antes de exportar.');
+                return;
+            }
+            var requestData = Object.assign({ page: 1, pageSize: 10000 }, armarFiltrosBusquedaClientes());
 
             try {
                 const response = await $.ajax({
-                    url: 'http://localhost:50222/api/Choferes/Buscar',
+                    url: 'http://localhost:50222/api/Clientes/Buscar',
                     type: 'GET',
                     data: requestData
                 });
 
-                if (response.Results.length === 0) {
+                if (!response.Results || response.Results.length === 0) {
                     mostrarToastError('No se encontraron registros para generar el reporte.');
                     return;
                 }
 
-                // Obtener nombres de provincia y localidad para cada registro
-                const registrosConProvincias = await Promise.all(response.Results.map(async (registro) => {
-                    registro.Provincia = await obtenerNombreProvincia(registro.ProvID);
-                    registro.Localidad = await obtenerNombreLocalidad(registro.ProvID, registro.LocID);
-                    return registro;
+                const registrosCompletos = await Promise.all(response.Results.map(async function (r) {
+                    var id = r.Cliente_ID != null ? r.Cliente_ID : r.cliente_Id;
+                    const full = await $.ajax({
+                        url: 'http://localhost:50222/api/Clientes/' + id,
+                        type: 'GET'
+                    });
+                    full.Provincia = await obtenerNombreProvincia(full.ProvID);
+                    full.Localidad = await obtenerNombreLocalidad(full.ProvID, full.LocID);
+                    return full;
                 }));
 
-                generarCSV(registrosConProvincias);
+                generarCSV(registrosCompletos);
             } catch (error) {
                 console.error('Error al generar el reporte:', error);
                 mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
             }
         }
 
-        // Función para mostrar un toast de error con mensaje dinámico
         function mostrarToastError(mensaje) {
             $('#toastErrorMessage').text(mensaje);
             const toast = new bootstrap.Toast(document.getElementById('toastError'));
             toast.show();
         }
 
-        // Función para obtener el nombre de la provincia usando la API
         async function obtenerNombreProvincia(provId) {
             try {
                 const data = await $.ajax({
@@ -1194,96 +859,65 @@
                 });
                 return data.Nombre_Provincia || 'Provincia no encontrada';
             } catch (error) {
-                console.error(`Error obteniendo la provincia con ID ${provId}:`, error);
+                console.error('Error obteniendo provincia:', error);
                 return 'Provincia no encontrada';
             }
         }
 
-        // Función para obtener el nombre de la localidad usando la API
         async function obtenerNombreLocalidad(provId, locId) {
             try {
                 const data = await $.ajax({
                     url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
                     type: 'GET'
                 });
-
                 if (Array.isArray(data) && data.length > 0) {
                     return data[0].Nombre_Localidad;
-                } else {
-                    return 'Localidad no encontrada';
                 }
+                return 'Localidad no encontrada';
             } catch (error) {
-                console.error(`Error obteniendo la localidad con ProvID ${provId} y LocID ${locId}:`, error);
+                console.error('Error obteniendo localidad:', error);
                 return 'Localidad no encontrada';
             }
         }
 
-        // Función para generar el CSV con codificación UTF-8 con BOM
         function generarCSV(data) {
-            // Definir las columnas del CSV con nombres personalizados
             const headers = [
-                'Chofer_ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
-                'Telefono fijo', 'Telefono celular', 'Email',
-                'Provincia', 'Localidad', 'Calle', 'Altura',
-                'Estado del chofer', 'Fecha de alta',
-                'Usuario de alta', 'Fecha de modificación', 'Usuario de modificación'
+                'Cliente_ID', 'Razon_Social', 'CUIT_Cliente', 'Condicion_fiscal',
+                'Telefono', 'Email', 'Provincia', 'Localidad', 'Calle', 'Altura',
+                'Fecha_de_alta', 'Usuario_alta', 'Fecha_modificacion', 'Usuario_modificacion'
             ];
-
-            let csvContent = headers.join(";") + "\n";
-
+            let csvContent = headers.join(';') + '\n';
             data.forEach(function (registro) {
-                let row = [
-                    registro.Chofer_ID,
-                    registro.DNI,
-                    registro.CUIL,
-                    registro.Nombre,
-                    registro.Apellido,
-                    registro.TelefonoFijo || '',
-                    registro.TelefonoCelular || '',
+                var condTxt = typeof condFiscalIntATexto === 'function'
+                    ? condFiscalIntATexto(registro.Cond_Fiscal)
+                    : String(registro.Cond_Fiscal);
+                var row = [
+                    registro.Cliente_ID,
+                    registro.Razon_Social || '',
+                    registro.CUIT_Cliente || '',
+                    condTxt,
+                    registro.Telefono || '',
                     registro.Email || '',
-                    registro.Provincia,
-                    registro.Localidad,
+                    registro.Provincia || '',
+                    registro.Localidad || '',
                     registro.Calle || '',
                     registro.AlturaCalle || '',
-                    registro.EstadoChofer,
-                    formatFechaUTC3(registro.Fecha_Alta),
+                    (registro.Fecha_Alta != null ? formatFechaUTC3(registro.Fecha_Alta) : ''),
                     registro.Usu_Alta || '',
-                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
+                    (registro.Fecha_Modi != null ? formatFechaUTC3(registro.Fecha_Modi) : ''),
                     registro.Usu_Modi || ''
                 ];
-
-                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+                csvContent += row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(';') + '\n';
             });
-
-            // Agregar el BOM al inicio para asegurar la codificación UTF-8
-            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-
-            let url = URL.createObjectURL(blob);
-
-            let a = document.createElement("a");
+            var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
             a.href = url;
-            a.download = "Listado_Choferes.csv";
+            a.download = 'Listado_Clientes.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
         }
-
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return '';
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
     </script>
 
 </body>

@@ -6,44 +6,31 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
     <style>
-        /* Estilo para ocultar el contenido por defecto */
         #app {
             display: none;
-            /* Ocultar el contenido de la aplicación por defecto */
         }
 
-        /* Estilo para centrar el spinner de carga */
         #loading-message {
             position: fixed;
-            /* Posiciona el mensaje de carga en el medio de la pantalla */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            /* Centra el div */
             z-index: 9999;
-            /* Asegúrate de que esté por encima de otros elementos */
-
         }
     </style>
-
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="shortcut icon"
         href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
         type="image/png">
 
-
-
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link href='https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.10.2/fullcalendar.min.css' rel='stylesheet' />
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css' rel='stylesheet'>
-    <link href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css' rel='stylesheet'>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
-
 </head>
 
 <body>
+    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
@@ -51,224 +38,10 @@
         </div>
     </div>
 
-    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
-        <div id="sidebar">
-
-            <!--Barra lateral activa-->
-
-            <div class="sidebar-wrapper active">
-                <div class="sidebar-header position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="logo">
-                            <a href="index.html">
-                                <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo"
-                                    style="width: 240px; height: 160px">
-                            </a>
-                        </div>
-                        <div class="sidebar-toggler x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block">
-                                <i class="bi bi-x bi-middle"></i>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <!--Menú-->
-                <div class="sidebar-menu">
-                    <ul class="menu">
-
-                        <li class="sidebar-item active">
-                            <a href="index.html" class='sidebar-link'>
-                                <i class="bi bi-grid-fill"></i>
-                                <span>Dashboard</span>
-                            </a>
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-person"></i>
-                                <span>Choferes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
-
-                                </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
-
-                                </li>
-
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-truck"></i>
-                                <span>Camiones</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-calendar-check"></i>
-                                <span>Viajes</span>
-                            </a>
-
-                            <ul class="submenu">
-                                <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
-
-                                </li>
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-person-workspace"></i>
-                                <span>Clientes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar clientes</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-medical"></i>
-                                <span>Facturación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar facturas</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar facturas</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-people-fill"></i>
-                                <span>Usuarios</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-richtext"></i>
-                                <span>Documentación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Manual de usuario</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Otros</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
-                                <i class="bi bi-columns"></i>
-                                <span>Gestionar contenido</span>
-                            </a>
-
-                        </li>
-
-                    </ul>
-                </div>
-            </div>
-        </div>
-
+        <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
-
-            <!--Header-->
             <header>
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
@@ -287,226 +60,322 @@
             </header>
 
             <div id="main-content">
-
-                <!--Contenido de la página-->
-                <!--  <div class="page-heading mt-4 mb-4">
+                <div class="page-heading mt-4 mb-4">
                     <h3>¡Bienvenido!</h3>
-                </div> -->
+                </div>
 
                 <div class="page-content">
-                    <div class="row">
-                        <div class="col-md-8 col-sm-12">
-                        </div>
-
-                        <div class="col-md-4 col-sm-12">
-                            <div class="card mb-4 rounded custom-card">
-                                <div class="card-header">
-                                    <h5 class="card-title">
-                                        Choferes
-                                    </h5>
+                    <div class="row mb-4">
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card rounded custom-card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="fas fa-users me-2 text-primary"></i>
+                                    <h5 class="mb-0">Choferes activos</h5>
                                 </div>
                                 <div class="card-body">
-                                    <div id="chart-choferes"></div>
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="h4 mb-0" id="choferes-activos-texto">0 / 0</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" id="choferes-activos-bar" role="progressbar"
+                                            style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card rounded custom-card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="fas fa-truck me-2 text-success"></i>
+                                    <h5 class="mb-0">Camiones activos</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="h4 mb-0" id="camiones-activos-texto">0 / 0</span>
+                                    </div>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-success" id="camiones-activos-bar" role="progressbar"
+                                            style="width: 0%;"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card rounded custom-card h-100">
+                                <div class="card-header d-flex align-items-center">
+                                    <i class="fas fa-dollar-sign me-2 text-info"></i>
+                                    <h5 class="mb-0">Costo por viaje</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="d-flex flex-column">
+                                        <span class="h4 mb-1" id="costo-promedio-texto">—</span>
+                                        <small class="text-muted" id="costo-por-viaje-subtitulo">Costo promedio</small>
+                                        <small class="text-muted mt-1" id="costo-total-viajes">0 viajes</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-8 col-sm-12">
-                        </div>
 
-                        <div class="col-lg-3 col-md-4 mb-4">
-                            <!-- Define el tamaño de la columna para diferentes pantallas -->
-                            <div class="card rounded custom-card">
+                    <div class="row">
+                        <div class="col-lg-8 mb-4">
+                            <div class="card rounded custom-card h-100">
                                 <div class="card-header">
-                                    <h5 class="card-title">
-                                        Camiones
-                                    </h5>
+                                    <h5 class="mb-0">Viajes - Evolución Mensual</h5>
                                 </div>
                                 <div class="card-body">
-                                    <div class="d-flex align-items-center">
-                                        <!-- Número total de camiones -->
-                                        <h5 class="card-title mb-0 p-2">
-                                            <span id="total-camiones"></span>
-                                        </h5>
-                                        <!-- Icono de camión con fondo y margen -->
-                                        <span class="h4 mb-0 p-2">
-                                            <div class="stats-icon green p-2">
-                                                <i class="fas fa-truck"></i>
-                                            </div>
-                                        </span>
+                                    <div id="chart-viajes-mensual"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 mb-4">
+                            <div class="card rounded custom-card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Top Clientes en facturación</h5>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="top-clientes-list" class="list-group list-group-flush">
+                                        <div class="text-muted text-center py-4">Cargando...</div>
                                     </div>
                                 </div>
-
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!--Footer-->
-
                 <footer>
                     <div id="footer-container"></div>
                     <script src="./assets/static/js/footer.js"></script>
                 </footer>
-
             </div>
         </div>
-
-
-        <!-- Scripts -->
-        <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
-        <script src="assets/compiled/js/app.js"></script>
-        <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
-        <script src="assets/static/js/pages/dashboard.js"></script>
-        <script src='assets/extensions/jquery/jquery.min.js'></script>
-        <script src='assets/extensions/jquery/moment.min.js'></script>
-        <script src='assets/extensions/fullcalendar/fullcalendar.min.js'></script>
-        <script src='https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/locale/es.js'></script>
-        <script src="./assets/static/gestionContenido.js"></script>
-
-        <script>
-            window.onload = function () {
-                const loadingMessage = document.getElementById('loading-message');
-                loadingMessage.style.display = 'block';
-                document.getElementById('app').style.display = 'none';
-
-                // Cargar header, footer y configuración
-                window.loadHeader();
-                window.loadFooter();
-
-                loadSettings()
-                    .then(() => {
-                        adjustVisibilityBasedOnRole();
-                        loadChoferesChart(); // Cargar gráfico de choferes
-                        loadCamionesCount(); // Cargar contador de camiones
-
-                        loadingMessage.style.display = 'none';
-                        document.getElementById('app').style.display = 'block';
-                    })
-                    .catch((error) => {
-                        console.error('Error al cargar el header, footer o los datos:', error);
-                        loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                    });
-            };
-
-            function adjustVisibilityBasedOnRole() {
-                const userRole = localStorage.getItem('userRole');
-                const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-
-                if (userRole && userRole.toLowerCase() === 'admin') {
-                    gestionarContenidoBtn.style.display = 'block';
-                } else {
-                    gestionarContenidoBtn.style.display = 'none';
-                }
-            }
-
-            async function loadSettings() {
-                return new Promise((resolve, reject) => {
-                    const xhr = new XMLHttpRequest();
-                    xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                    xhr.onload = function () {
-                        if (xhr.status >= 200 && xhr.status < 300) {
-                            const data = JSON.parse(xhr.responseText);
-                            if (data) {
-                                const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-
-                                applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                                resolve();
-                            } else {
-                                console.error('La respuesta de la API no contiene los datos esperados.');
-                                reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                            }
-                        } else {
-                            console.error('Error en la petición:', xhr.statusText);
-                            reject(new Error('Error en la carga de la API'));
-                        }
-                    };
-
-                    xhr.onerror = function () {
-                        console.error('Error al cargar la configuración de la API.');
-                        reject(new Error('Error de red'));
-                    };
-
-                    xhr.send();
-                });
-            }
-
-
-            // Cargar gráfico de choferes
-            function loadChoferesChart() {
-                $.ajax({
-                    url: 'http://localhost:50222/api/Choferes',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function (data) {
-                        const totalChoferes = data.length;
-                        const activos = data.filter(chofer => chofer.EstadoChofer === 'Activo').length;
-                        const inactivos = totalChoferes - activos;
-
-                        if (totalChoferes > 0) {
-                            const options = {
-                                chart: {
-                                    type: 'donut'
-                                },
-                                series: [activos, inactivos],
-                                labels: ['Activos', 'Inactivos'],
-                                colors: ['#1abc9c', '#e74c3c'],
-                                responsive: [{
-                                    breakpoint: 480,
-                                    options: {
-                                        chart: {
-                                            width: 200
-                                        },
-                                        legend: {
-                                            position: 'bottom'
-                                        }
-                                    }
-                                }]
-                            };
-
-                            const chart = new ApexCharts(document.querySelector("#chart-choferes"), options);
-                            chart.render();
-                        } else {
-                            document.querySelector("#chart-choferes").innerHTML = '<p>No se encontraron registros</p>';
-                        }
-                    },
-                    error: function (err) {
-                        if (err.status === 404) {
-                            document.querySelector("#chart-choferes").innerHTML = '<p>No se encontraron registros</p>';
-                        } else {
-                            console.error('Error al obtener los datos de los choferes:', err);
-                        }
-                    }
-                });
-            }
-
-            // Cargar contador de camiones
-            function loadCamionesCount() {
-                $.ajax({
-                    url: 'http://localhost:50222/api/Camiones',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function (data) {
-                        const totalCamiones = data.length;
-                        document.getElementById("total-camiones").textContent = totalCamiones;
-                    },
-                    error: function (err) {
-                        if (err.status === 404) {
-                            document.getElementById("total-camiones").textContent = 0;
-                        } else {
-                            console.error('Error al obtener los datos de los camiones:', err);
-                        }
-                    }
-                });
-            }
-        </script>
-
-
-
-
     </div>
+
+    <script src="assets/extensions/jquery/jquery.min.js"></script>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+
+    <script>
+        window.onload = async function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            window.loadHeader();
+            window.loadFooter();
+
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();
+                adjustVisibilityBasedOnRole();
+                loadChoferesActivos();
+                loadCamionesActivos();
+                loadCostoPorViaje();
+                loadViajesEvolucionMensual();
+                loadTopClientesFacturacion();
+
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+            }
+        };
+
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+            if (!gestionarContenidoBtn) return;
+
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+    </script>
+
+    <script>
+        const API_BASE = 'http://localhost:50222/api';
+
+        function loadChoferesActivos() {
+            $.ajax({
+                url: API_BASE + '/Choferes',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const total = data.length;
+                    const activos = data.filter(c => (c.EstadoChofer || '').toLowerCase() === 'activo').length;
+                    const pct = total > 0 ? Math.round((activos / total) * 100) : 0;
+                    document.getElementById('choferes-activos-texto').textContent = activos + ' / ' + total;
+                    document.getElementById('choferes-activos-bar').style.width = pct + '%';
+                },
+                error: function (err) {
+                    if (err.status === 404) {
+                        document.getElementById('choferes-activos-texto').textContent = '0 / 0';
+                    } else {
+                        console.error('Error Choferes:', err);
+                    }
+                }
+            });
+        }
+
+        function loadCostoPorViaje() {
+            $.ajax({
+                url: API_BASE + '/Viajes/ResumenCosto',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const elPromedio = document.getElementById('costo-promedio-texto');
+                    const elSubtitulo = document.getElementById('costo-por-viaje-subtitulo');
+                    const elTotalViajes = document.getElementById('costo-total-viajes');
+                    if (data && data.cantidadViajes > 0) {
+                        elPromedio.textContent = typeof data.costoPromedio === 'number'
+                            ? '$' + Number(data.costoPromedio).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+                            : '—';
+                        elTotalViajes.textContent = data.cantidadViajes + ' viajes';
+                        if (data.costoTotal != null) {
+                            elSubtitulo.textContent = 'Total: $' + Number(data.costoTotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+                        }
+                    } else {
+                        elPromedio.textContent = '—';
+                        elSubtitulo.textContent = 'Costo promedio';
+                        elTotalViajes.textContent = (data && data.cantidadViajes !== undefined ? data.cantidadViajes : 0) + ' viajes';
+                    }
+                },
+                error: function (err) {
+                    document.getElementById('costo-promedio-texto').textContent = '—';
+                    document.getElementById('costo-por-viaje-subtitulo').textContent = 'Costo promedio';
+                    document.getElementById('costo-total-viajes').textContent = 'No disponible';
+                    if (err.status !== 404) console.error('Error ResumenCosto:', err);
+                }
+            });
+        }
+
+        function loadCamionesActivos() {
+            $.ajax({
+                url: API_BASE + '/Camiones',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const total = data.length;
+                    document.getElementById('camiones-activos-texto').textContent = total + ' / ' + total;
+                    document.getElementById('camiones-activos-bar').style.width = total > 0 ? '100%' : '0%';
+                },
+                error: function (err) {
+                    if (err.status === 404) {
+                        document.getElementById('camiones-activos-texto').textContent = '0 / 0';
+                    } else {
+                        console.error('Error Camiones:', err);
+                    }
+                }
+            });
+        }
+
+        function loadViajesEvolucionMensual() {
+            $.ajax({
+                url: API_BASE + '/Viajes',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+                    const porMes = {};
+                    meses.forEach((m, i) => { porMes[i + 1] = 0; });
+                    (data || []).forEach(v => {
+                        const fecha = v.Fecha_Inicio ? new Date(v.Fecha_Inicio) : null;
+                        if (fecha && !isNaN(fecha.getMonth())) {
+                            const mes = fecha.getMonth() + 1;
+                            porMes[mes] = (porMes[mes] || 0) + 1;
+                        }
+                    });
+                    const series = meses.map((_, i) => porMes[i + 1] || 0);
+
+                    const options = {
+                        chart: { type: 'line', height: 280, toolbar: { show: false }, zoom: { enabled: false } },
+                        stroke: { curve: 'smooth', width: 2 },
+                        colors: ['#198754'],
+                        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
+                        xaxis: { categories: meses },
+                        yaxis: { min: 0, tickAmount: 6 },
+                        dataLabels: { enabled: false },
+                        tooltip: { y: { formatter: function (val) { return val + ' viajes'; } } }
+                    };
+                    const chart = new ApexCharts(document.querySelector('#chart-viajes-mensual'), { ...options, series: [{ name: 'Viajes', data: series }] });
+                    chart.render();
+                },
+                error: function (err) {
+                    if (err.status === 404) {
+                        document.getElementById('chart-viajes-mensual').innerHTML = '<p class="text-muted text-center py-4">No hay datos de viajes</p>';
+                    } else {
+                        document.getElementById('chart-viajes-mensual').innerHTML = '<p class="text-danger text-center py-4">Error al cargar viajes</p>';
+                        console.error('Error Viajes:', err);
+                    }
+                }
+            });
+        }
+
+        function loadTopClientesFacturacion() {
+            $.ajax({
+                url: API_BASE + '/Clientes',
+                method: 'GET',
+                dataType: 'json',
+                success: function (data) {
+                    const lista = document.getElementById('top-clientes-list');
+                    if (!data || data.length === 0) {
+                        lista.innerHTML = '<div class="text-muted text-center py-4">No hay clientes</div>';
+                        return;
+                    }
+                    const top = data.slice(0, 5);
+                    lista.innerHTML = top.map(c => {
+                        const nombre = (c.Razon_Social || c.Nombre || 'Sin nombre').trim();
+                        const facturacion = (c.Facturacion != null && c.Facturacion !== '')
+                            ? ('$' + Number(c.Facturacion).toLocaleString('es-AR'))
+                            : '—';
+                        return '<div class="list-group-item d-flex justify-content-between align-items-center"><span>' + nombre + '</span><strong>' + facturacion + '</strong></div>';
+                    }).join('');
+                },
+                error: function (err) {
+                    document.getElementById('top-clientes-list').innerHTML = '<div class="text-muted text-center py-4">No se pudieron cargar los clientes</div>';
+                    if (err.status !== 404) console.error('Error Clientes:', err);
+                }
+            });
+        }
+    </script>
+
 </body>
 
 </html>

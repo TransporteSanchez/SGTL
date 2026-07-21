@@ -45,6 +45,15 @@
         .pagination {
             justify-content: center;
         }
+
+        #listaSugerenciasClientes {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        #listaSugerenciasClientes .list-group-item-action {
+            cursor: pointer;
+        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -69,212 +78,7 @@
     </div>
 
     <div id="app">
-        <div id="sidebar">
-
-            <!--Barra lateral activa-->
-
-            <div class="sidebar-wrapper active">
-                <div class="sidebar-header position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="logo">
-                            <a href="index.html">
-                                <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                    style="width: 240px; height: 160px">
-                            </a>
-                        </div>
-                        <div class="sidebar-toggler  x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <!--Menú-->
-                <div class="sidebar-menu">
-                    <ul class="menu">
-
-                        <li class="sidebar-item ">
-                            <a href="index.html" class='sidebar-link'>
-                                <i class="bi bi-grid-fill"></i>
-                                <span>Dashboard</span>
-                            </a>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-person"></i>
-                                <span>Choferes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
-
-                                </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
-
-                                </li>
-
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-truck"></i>
-                                <span>Camiones</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item active has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-calendar-check"></i>
-                                <span>Viajes</span>
-                            </a>
-
-                            <ul class="submenu">
-                                <li class="submenu-item active">
-                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar tarifas</a>
-
-                                </li>
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-person-workspace"></i>
-                                <span>Clientes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar clientes</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar clientes</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-medical"></i>
-                                <span>Facturación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar facturas</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar facturas</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-people-fill"></i>
-                                <span>Usuarios</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar usuarios</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Gestionar grupos</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-richtext"></i>
-                                <span>Documentación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Manual de usuario</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Otros</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
-                                <i class="bi bi-columns"></i>
-                                <span>Gestionar contenido</span>
-                            </a>
-
-                        </li>
-
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
             <!--Header-->
@@ -318,12 +122,6 @@
                             <form id="busquedaViajeForm" class="form">
                                 <div class="d-flex flex-wrap justify-content-between align-items-end mb-3">
                                     <div class="d-flex flex-wrap">
-                                        <!-- Campo de id de viaje -->
-                                        <div class="me-3 mb-3">
-                                            <label for="idviajeinput">Número de viaje</label>
-                                            <input type="number" class="form-control" id="idviajeinput"
-                                                placeholder="1234">
-                                        </div>
                                         <!-- Campo de fecha de inicio -->
                                         <div class="me-3 mb-3">
                                             <label for="fechaRangoInicioViaje">Fecha de inicio</label>
@@ -335,6 +133,16 @@
                                             <label for="fechaRangoFinViaje">Fecha de fin</label>
                                             <input type="text" class="form-control" id="fechaRangoFinViaje"
                                                 placeholder="Desde y hasta">
+                                        </div>
+                                        <!-- Filtro por cliente (autocompletar) -->
+                                        <div class="me-3 mb-3 position-relative" style="min-width: 260px;">
+                                            <label for="filtroClienteBusqueda">Cliente</label>
+                                            <input type="text" class="form-control" id="filtroClienteBusqueda"
+                                                placeholder="Escribí para buscar por razón social…" autocomplete="off">
+                                            <input type="hidden" id="filtroClienteId" value="">
+                                            <ul class="list-group position-absolute w-100 shadow-sm mt-1 d-none"
+                                                id="listaSugerenciasClientes" role="listbox" style="z-index: 1050;">
+                                            </ul>
                                         </div>
                                         <!-- Botón Buscar -->
                                         <div class="mb-3">
@@ -476,6 +284,8 @@
         <script src="assets/extensions/jquery/jqueryajax.js"></script>
         <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
         <script src="assets/compiled/js/app.js"></script>
+        <script src="assets/static/js/components/sidebar.js"></script>
+        <script src="assets/static/js/sidebar-loader.js"></script>
         <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
         <script type="text/javascript"
             src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
@@ -510,27 +320,28 @@
 
         <!-- Carga de diseño y roles -->
         <script>
-            window.onload = function () {
+            window.onload = async function () {
                 const loadingMessage = document.getElementById('loading-message');
                 loadingMessage.style.display = 'block';
                 document.getElementById('app').style.display = 'none';
 
-                // Cargar header, footer y configuración
                 window.loadHeader();
                 window.loadFooter();
 
-                loadSettings()
-                    .then(() => {
-                        adjustVisibilityBasedOnRole();
-                        loadingMessage.style.display = 'none';
-                        document.getElementById('app').style.display = 'block';
-                    })
-                    .catch((error) => {
-                        console.error('Error al cargar el header, footer o los datos:', error);
-                        loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                    });
+                try {
+                    if (typeof window.loadSidebar === 'function') {
+                        await window.loadSidebar();
+                    }
+                    await loadSettings();  // o tu equivalente que llame applyStyles
+                    adjustVisibilityBasedOnRole();  // si la página lo define
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                } catch (error) {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                }
             };
-
+            
             function adjustVisibilityBasedOnRole() {
                 const userRole = localStorage.getItem('userRole');
                 const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
@@ -580,6 +391,75 @@
         <script>
             const pageSize = 6;
             let currentPage = 1;
+            let clienteBusquedaTimer = null;
+
+            function ocultarSugerenciasClientes() {
+                $('#listaSugerenciasClientes').empty().addClass('d-none');
+            }
+
+            function seleccionarCliente(id, etiqueta) {
+                $('#filtroClienteId').val(id);
+                $('#filtroClienteBusqueda').val(etiqueta);
+                ocultarSugerenciasClientes();
+            }
+
+            $('#filtroClienteBusqueda').on('input', function () {
+                const q = $(this).val().trim();
+                $('#filtroClienteId').val('');
+                clearTimeout(clienteBusquedaTimer);
+                if (q.length < 2) {
+                    ocultarSugerenciasClientes();
+                    return;
+                }
+                clienteBusquedaTimer = setTimeout(function () {
+                    $.ajax({
+                        url: 'http://localhost:50222/api/Clientes/Buscar',
+                        type: 'GET',
+                        data: { razonSocial: q, page: 1, pageSize: 15 },
+                        success: function (data) {
+                            const $ul = $('#listaSugerenciasClientes');
+                            $ul.empty();
+                            const rows = data.Results || [];
+                            if (rows.length === 0) {
+                                $ul.append(
+                                    '<li class="list-group-item list-group-item-light small py-2">Sin coincidencias</li>'
+                                );
+                            } else {
+                                rows.forEach(function (c) {
+                                    const nombre = c.RazonSocial || '';
+                                    const cuit = c.CUIT_Cliente ? ' — ' + String(c.CUIT_Cliente).trim() : '';
+                                    const label = (nombre + cuit).trim() || ('Cliente #' + c.Cliente_ID);
+                                    const $li = $('<li class="list-group-item list-group-item-action small py-2" role="option"></li>');
+                                    $li.text(label);
+                                    $li.data('id', c.Cliente_ID);
+                                    $li.data('label', nombre || label);
+                                    $ul.append($li);
+                                });
+                            }
+                            $ul.removeClass('d-none');
+                        },
+                        error: function () {
+                            ocultarSugerenciasClientes();
+                        }
+                    });
+                }, 300);
+            });
+
+            $('#listaSugerenciasClientes').on('mousedown', 'li.list-group-item-action', function (e) {
+                e.preventDefault();
+                const $li = $(this);
+                const id = $li.data('id');
+                const label = $li.data('label');
+                if (id) {
+                    seleccionarCliente(id, label);
+                }
+            });
+
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('#filtroClienteBusqueda, #listaSugerenciasClientes').length) {
+                    ocultarSugerenciasClientes();
+                }
+            });
 
             // Datepicker para el filtro de fecha de inicio de viaje
             $('#fechaRangoInicioViaje').daterangepicker({
@@ -664,17 +544,23 @@
             }
 
             function buscarViajes(page = 1) {
-                const idViaje = $('#idviajeinput').val().trim();
+                const clienteIdRaw = $('#filtroClienteId').val().trim();
                 const fechaDesde = $('#fechaRangoInicioViaje').data('start') || null;
                 const fechaHasta = $('#fechaRangoInicioViaje').data('end') || null;
+                const fechaFinDesde = $('#fechaRangoFinViaje').data('start') || null;
+                const fechaFinHasta = $('#fechaRangoFinViaje').data('end') || null;
 
                 const requestData = {
-                    idViaje: idViaje || null,
                     fechaDesde,
                     fechaHasta,
+                    fechaFinDesde,
+                    fechaFinHasta,
                     page,
                     pageSize
                 };
+                if (clienteIdRaw) {
+                    requestData.clienteId = parseInt(clienteIdRaw, 10);
+                }
 
                 $.ajax({
                     url: 'http://localhost:50222/api/Viajes/Buscar',
@@ -753,7 +639,7 @@
             $(document).ready(function () {
                 buscarViajes(currentPage);
             });
-            
+
         </script>
 
 </body>
