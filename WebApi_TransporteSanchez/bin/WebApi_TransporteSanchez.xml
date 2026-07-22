@@ -481,20 +481,20 @@
             </summary>
             <param name="documentPath">The physical path to XML document.</param>
         </member>
-        <member name="P:WebApi_TransporteSanchez.Controllers.DestinoController.DestinoDto.NombreProvincia">
-            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
+        <member name="P:WebApi_TransporteSanchez.Controllers.DESTINOController.DESTINODto.NombreProvincia">
+            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificacion.</summary>
         </member>
-        <member name="P:WebApi_TransporteSanchez.Controllers.DestinoController.DestinoDto.NombreLocalidad">
-            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+        <member name="P:WebApi_TransporteSanchez.Controllers.DESTINOController.DESTINODto.NombreLocalidad">
+            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificacion.</summary>
         </member>
         <member name="P:WebApi_TransporteSanchez.Controllers.GruposController.GrupoUpsertDto.UsuarioLogueado">
             <summary>Nombre del usuario logueado (Usu_Alta y Usu_Modi). Si no se envía, se usa "SISTEMA".</summary>
         </member>
-        <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreProvincia">
-            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificación.</summary>
+        <member name="P:WebApi_TransporteSanchez.Controllers.ORIGENController.ORIGENDto.NombreProvincia">
+            <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificacion.</summary>
         </member>
-        <member name="P:WebApi_TransporteSanchez.Controllers.OrigenController.OrigenDto.NombreLocalidad">
-            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificación.</summary>
+        <member name="P:WebApi_TransporteSanchez.Controllers.ORIGENController.ORIGENDto.NombreLocalidad">
+            <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificacion.</summary>
         </member>
         <member name="T:WebApi_TransporteSanchez.Controllers.UsuariosController.DetallesUsuarioDto">
             <summary>DTO para el modal de detalles: estado, grupos asignados y permisos (menús) por grupo.</summary>

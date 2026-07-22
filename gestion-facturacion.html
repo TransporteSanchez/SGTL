@@ -58,6 +58,7 @@
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
 
 <body>
@@ -70,214 +71,7 @@
     </div>
 
     <div id="app">
-        <div id="sidebar">
-
-            <!--Barra lateral activa-->
-
-            <div class="sidebar-wrapper active">
-                <div class="sidebar-header position-relative">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div class="logo">
-                            <a href="index.html"><img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" srcset
-                                    style="width: 240px; height: 160px"></a>
-                        </div>
-                        <div class="sidebar-toggler  x">
-                            <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
-                        </div>
-                    </div>
-                </div>
-
-                <!--Menú-->
-                <div class="sidebar-menu">
-                    <ul class="menu">
-
-                        <li class="sidebar-item ">
-                            <a href="index.html" class='sidebar-link'>
-                                <i class="bi bi-grid-fill"></i>
-                                <span>Dashboard</span>
-                            </a>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-person"></i>
-                                <span>Choferes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-choferes.html" class="submenu-link">Listar choferes</a>
-
-                                </li>
-
-                                <li class="submenu-item  ">
-                                    <a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a>
-
-                                </li>
-
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-truck"></i>
-                                <span>Camiones</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-camiones.html" class="submenu-link">Listar camiones</a>
-
-                                </li>
-
-                                <li class="submenu-item">
-                                    <a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  active has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-calendar-check"></i>
-                                <span>Viajes</span>
-                            </a>
-
-                            <ul class="submenu">
-                                <li class="submenu-item">
-                                    <a href="listado-viajes.html" class="submenu-link">Listar viajes</a>
-
-                                </li>
-                                <li class="submenu-item active">
-                                    <a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Gestionar orígenes y destinos</a>
-
-                                </li>
-                                <li class="submenu-item">
-                                    <a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a>
-
-                                </li>
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-person-workspace"></i>
-                                <span>Clientes</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar clientes</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-medical"></i>
-                                <span>Facturación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Listar facturas</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-people-fill"></i>
-                                <span>Usuarios</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a>
-                                </li>
-
-                                <li class="submenu-item active">
-                                    <a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a>
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y
-                                        permisos</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item  has-sub">
-                            <a href="#" class='sidebar-link'>
-                                <i class="bi bi-file-earmark-richtext"></i>
-                                <span>Documentación</span>
-                            </a>
-
-                            <ul class="submenu">
-
-                                <li class="submenu-item">
-                                    <a href="#" class="submenu-link">Manual de usuario</a>
-
-                                </li>
-
-                                <li class="submenu-item ">
-                                    <a href="#" class="submenu-link">Otros</a>
-                                </li>
-
-                            </ul>
-
-
-                        </li>
-
-                        <li class="sidebar-item">
-                            <a href="gestion-contenido.html" class='sidebar-link' id="gestionarContenidoBtn">
-                                <i class="bi bi-columns"></i>
-                                <span>Gestionar contenido</span>
-                            </a>
-
-                        </li>
-
-                    </ul>
-                </div>
-            </div>
-        </div>
+        <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
             <!--Header-->
@@ -322,11 +116,11 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Fecha desde</label>
-                                    <input type="date" class="form-control" id="fcDesde">
+                                    <input type="text" class="form-control" id="fcDesde" autocomplete="off" placeholder="AAAA-MM-DD">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="form-label">Fecha hasta</label>
-                                    <input type="date" class="form-control" id="fcHasta">
+                                    <input type="text" class="form-control" id="fcHasta" autocomplete="off" placeholder="AAAA-MM-DD">
                                 </div>
                                 <div class="col-md-2 d-flex align-items-end">
                                     <button type="button" class="btn btn-light w-100" onclick="previsualizar()">Previsualizar</button>
@@ -419,11 +213,14 @@
     <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -442,6 +239,7 @@
                     adjustVisibilityBasedOnRole();
                     loadingMessage.style.display = 'none';
                     document.getElementById('app').style.display = 'block';
+                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
                 })
                 .catch((error) => {
                     console.error('Error al cargar el header, footer o los datos:', error);
@@ -542,13 +340,28 @@
             return 'Ocurrio un error. Revise los datos e intente nuevamente.';
         }
 
+        window.clientesFechaAlta = {};
         function cargarClientesFac() {
             $.ajax({ url: API_FAC + '/Clientes', type: 'GET' })
                 .done(function (data) {
                     const s = $('#fcCliente').empty().append('<option value="">Seleccione un cliente</option>');
-                    (data || []).forEach(function (c) { s.append('<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'); });
+                    window.clientesFechaAlta = {};
+                    (data || []).forEach(function (c) {
+                        s.append('<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>');
+                        if (c.Fecha_Alta) { window.clientesFechaAlta[c.Cliente_ID] = String(c.Fecha_Alta).substring(0, 10); }
+                    });
                 })
                 .fail(function () { $('#fcCliente').empty().append('<option value="">Seleccione un cliente</option>'); });
+        }
+
+        // Al elegir un cliente, precargar 'Fecha desde' con su fecha de alta (punto mínimo de búsqueda)
+        function alCambiarClienteFac() {
+            const id = $('#fcCliente').val();
+            const alta = window.clientesFechaAlta[id];
+            if (!alta) { return; }
+            const el = document.getElementById('fcDesde');
+            if (el && el._flatpickr) { el._flatpickr.setDate(alta, true); }
+            else { $('#fcDesde').val(alta); }
         }
 
         function previsualizar() {
@@ -688,6 +501,12 @@
         }
 
         $(document).ready(function () {
+            if (window.flatpickr) {
+                ['fcDesde','fcHasta'].forEach(function (id) {
+                    flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true });
+                });
+            }
+            $('#fcCliente').on('change', alCambiarClienteFac);
             cargarClientesFac();
             listarProformas();
         });

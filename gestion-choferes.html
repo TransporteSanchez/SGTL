@@ -858,8 +858,7 @@
             data-estado="${registro.EstadoChofer}"
             data-bs-toggle="tooltip" 
             data-bs-placement="top"
-            title="${registro.EstadoChofer === 'Activo' ? 'Inactivar' : 'Activar'}"
-            onclick="abrirModalEstado('${registro.Chofer_ID}')">
+            title="${registro.EstadoChofer === 'Activo' ? 'Inactivar' : 'Activar'}">
             <i class="bi bi-arrow-repeat"></i>
         </button>
                     </td>
@@ -1742,9 +1741,17 @@
                     contentType: 'application/json',
                     data: JSON.stringify(nuevoChofer),
                     success: function () {
-                        mostrarToastExito('El chofer se registró exitosamente.');
-                        $('#ModalAltaChofer').modal('hide');
+                        // Cerrar el modal de forma robusta (Bootstrap 5)
+                        try { $('#ModalAltaChofer').modal('hide'); } catch (e) { }
+                        try {
+                            var _el = document.getElementById('ModalAltaChofer');
+                            if (window.bootstrap && bootstrap.Modal && _el) {
+                                var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
+                                if (_i) _i.hide();
+                            }
+                        } catch (e) { }
                         buscarChoferes();
+                        mostrarToastExito('El chofer se registró exitosamente.');
                     },
                     error: function (xhr, status, error) {
                         console.error('Error al agregar el chofer:', error);
@@ -1943,7 +1950,8 @@
             }
 
             var datosActualizacion = {
-                EstadoChofer: estadoChoferNuevo // Nuevo estado a enviar a la API
+                EstadoChofer: estadoChoferNuevo, // Nuevo estado a enviar a la API
+                Usu_Modi: localStorage.getItem('username') || 'sistema'
             };
 
             $.ajax({

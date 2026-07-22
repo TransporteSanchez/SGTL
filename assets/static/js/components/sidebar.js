@@ -10,7 +10,10 @@ function setSubmenuState(item, open) {
   links.forEach((link) => {
     totalHeight += link.offsetHeight || 40;
   });
-  submenu.style.setProperty('--submenu-height', `${totalHeight}px`);
+  // Usar scrollHeight (altura real del contenido) para no recortar el último ítem,
+  // más un pequeño margen de seguridad.
+  const alturaFinal = Math.max(totalHeight, submenu.scrollHeight) + 8;
+  submenu.style.setProperty('--submenu-height', `${alturaFinal}px`);
   submenu.classList.toggle('submenu-open', open);
   submenu.classList.toggle('submenu-closed', !open);
 }

@@ -81,6 +81,7 @@
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
 
 <body>
@@ -329,7 +330,7 @@
                                 <div class="form-group">
                                     <label for="txtfechaCompra" class="form-label">Fecha de compra<span
                                             class="text-danger"> *</span></label>
-                                    <input type="date" id="txtfechaCompra" class="form-control" name="fechaCompra" />
+                                    <input type="text" autocomplete="off" id="txtfechaCompra" class="form-control" name="fechaCompra" />
                                     <div id="fechaCompraError" class="invalid-feedback-date" style="display: none;">
                                     </div>
                                 </div>
@@ -337,7 +338,7 @@
                                 <div class="form-group">
                                     <label for="txtfechaITV" class="form-label">Fecha de ITV<span class="text-danger">
                                             *</span></label>
-                                    <input type="date" id="txtfechaITV" class="form-control" name="fechaITV" />
+                                    <input type="text" autocomplete="off" id="txtfechaITV" class="form-control" name="fechaITV" />
                                     <div id="fechaITVError" class="invalid-feedback-date" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
@@ -434,7 +435,7 @@
                                 <div class="form-group">
                                     <label for="editarfechaCompra" class="form-label">Fecha de
                                         compra<span class="text-danger"> *</span></label>
-                                    <input type="date" id="editarfechaCompra" class="form-control"
+                                    <input type="text" autocomplete="off" id="editarfechaCompra" class="form-control"
                                         placeholder="01/01/2000" name="dc-column" />
                                     <div id="fechaCompraErrorEdit" class="invalid-feedback" style="display: none;">
                                     </div>
@@ -442,7 +443,7 @@
                                 <div class="form-group">
                                     <label for="editarfechaITV" class="form-label">Fecha de
                                         ITV<span class="text-danger"> *</span></label>
-                                    <input type="date" id="editarfechaITV" class="form-control" placeholder="01/01/2000"
+                                    <input type="text" autocomplete="off" id="editarfechaITV" class="form-control" placeholder="01/01/2000"
                                         name="di-column" />
                                     <div id="fechaITVErrorEdit" class="invalid-feedback" style="display: none;"></div>
                                 </div>
@@ -506,6 +507,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Comportamiento tooltip -->
@@ -1089,9 +1091,17 @@
                     contentType: 'application/json',
                     data: JSON.stringify(nuevoCamion),
                     success: function (response) {
+                        // Cerrar el modal de forma robusta (Bootstrap 5)
+                        try { $('#ModalAltaCamion').modal('hide'); } catch (e) { }
+                        try {
+                            var _el = document.getElementById('ModalAltaCamion');
+                            if (window.bootstrap && bootstrap.Modal && _el) {
+                                var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
+                                if (_i) _i.hide();
+                            }
+                        } catch (e) { }
+                        buscarCamiones(currentPage);
                         mostrarToastExito('El camión se registró exitosamente.');
-                        $('#ModalAltaCamion').modal('hide');
-                        buscarCamiones(currentPage); // Llamar a la búsqueda con la primera página después del registro
                     },
                     error: function (xhr, status, error) {
                         console.error('Error al agregar el camión:', error);
@@ -1595,6 +1605,16 @@
     </script>
 
 
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.flatpickr) {
+                ['txtfechaCompra','txtfechaITV','editarfechaCompra','editarfechaITV'].forEach(function (id) {
+                    if (document.getElementById(id)) { flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }); }
+                });
+            }
+        });
+    </script>
 </body>
 
 

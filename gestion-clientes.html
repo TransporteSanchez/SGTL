@@ -1511,9 +1511,17 @@
                 contentType: 'application/json',
                 data: JSON.stringify(nuevoCliente),
                 success: function (response) {
-                    mostrarToastExito('El cliente se registró exitosamente');
-                    $('#ModalAltaCliente').modal('hide');
+                    // Cerrar el modal de forma robusta (Bootstrap 5)
+                    try { $('#ModalAltaCliente').modal('hide'); } catch (e) { }
+                    try {
+                        var _el = document.getElementById('ModalAltaCliente');
+                        if (window.bootstrap && bootstrap.Modal && _el) {
+                            var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
+                            if (_i) _i.hide();
+                        }
+                    } catch (e) { }
                     buscarClientes();
+                    mostrarToastExito('El cliente se registró exitosamente');
                 },
                 error: function (xhr, status, error) {
                     console.error('Error al agregar el cliente:', status, error, xhr.responseText);

@@ -370,7 +370,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     chofer.EstadoChofer = model.EstadoChofer;
                     chofer.Fecha_Modi = DateTime.Now;
-                    chofer.Usu_Modi = model.Usu_Modi;
+                    chofer.Usu_Modi = string.IsNullOrWhiteSpace(model.Usu_Modi) ? (chofer.Usu_Modi ?? "sistema") : model.Usu_Modi;
 
                     db.Configuration.ValidateOnSaveEnabled = false;
                     db.SaveChanges();
