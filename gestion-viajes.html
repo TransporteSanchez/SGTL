@@ -59,6 +59,7 @@
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 
 <body>
@@ -324,6 +325,16 @@
                                 <input type="text" class="form-control" id="numeroCarga" name="numeroCarga">
                             </div>
                         </div>
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="form-label">Ruta y distancia (mapa)</label>
+                                <div id="mapaViaje" style="height: 260px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small id="mapaViajeMsg" class="text-muted">Seleccion&aacute; origen y destino para calcular la distancia.</small>
+                                    <button type="button" class="btn btn-sm btn-light" onclick="calcularRutaViaje()">Recalcular ruta</button>
+                                </div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer">
@@ -352,6 +363,7 @@
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -664,6 +676,93 @@
         const API_VIAJES = 'http://localhost:50222/api';
         let viajeIdEliminar = null;
 
+        // ===== Mapa (OpenStreetMap + OSRM) para calcular ruta y distancia =====
+        var origenesData = {};
+        var destinosData = {};
+        var mapaViaje = null;
+        var rutaViajeLayer = null;
+        var marcadoresViaje = [];
+
+        function initMapaViaje() {
+            if (mapaViaje || typeof L === 'undefined') return;
+            mapaViaje = L.map('mapaViaje').setView([-34.6, -58.4], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19, attribution: '&copy; OpenStreetMap'
+            }).addTo(mapaViaje);
+        }
+
+        function limpiarRutaViaje() {
+            if (mapaViaje && rutaViajeLayer) { mapaViaje.removeLayer(rutaViajeLayer); rutaViajeLayer = null; }
+            if (mapaViaje) { marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); }); }
+            marcadoresViaje = [];
+            $('#mapaViajeMsg').removeClass('text-danger text-success').addClass('text-muted')
+                .text('Seleccioná origen y destino para calcular la distancia.');
+        }
+
+        function construirDireccion(o) {
+            if (!o) return '';
+            var partes = [];
+            var calleAltura = ((o.Calle || '').trim() + ' ' + (o.AlturaCalle || '').trim()).trim();
+            if (calleAltura) partes.push(calleAltura);
+            if (o.NombreLocalidad) partes.push((o.NombreLocalidad || '').trim());
+            if (o.NombreProvincia) partes.push((o.NombreProvincia || '').trim());
+            partes.push('Argentina');
+            return partes.join(', ');
+        }
+
+        function geocodificar(direccion) {
+            return $.ajax({
+                url: 'https://nominatim.openstreetmap.org/search',
+                type: 'GET',
+                data: { q: direccion, format: 'json', limit: 1, countrycodes: 'ar' }
+            });
+        }
+
+        function msgMapa(txt, tipo) {
+            $('#mapaViajeMsg').removeClass('text-danger text-success text-muted')
+                .addClass(tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted'))
+                .text(txt);
+        }
+
+        function calcularRutaViaje() {
+            var oId = $('#origenSelect').val();
+            var dId = $('#destinoSelect').val();
+            if (!oId || !dId) { msgMapa('Seleccioná origen y destino para calcular la distancia.'); return; }
+            var dirO = construirDireccion(origenesData[oId]);
+            var dirD = construirDireccion(destinosData[dId]);
+            initMapaViaje();
+            if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 50); }
+            msgMapa('Buscando ubicaciones...');
+            $.when(geocodificar(dirO), geocodificar(dirD))
+                .done(function (r1, r2) {
+                    var a = r1[0], b = r2[0];
+                    if (!a || !a.length || !b || !b.length) { msgMapa('No se pudo ubicar el origen o el destino. Revisá las direcciones cargadas.', 'error'); return; }
+                    var lat1 = parseFloat(a[0].lat), lon1 = parseFloat(a[0].lon);
+                    var lat2 = parseFloat(b[0].lat), lon2 = parseFloat(b[0].lon);
+                    msgMapa('Calculando ruta...');
+                    $.ajax({
+                        url: 'https://router.project-osrm.org/route/v1/driving/' + lon1 + ',' + lat1 + ';' + lon2 + ',' + lat2,
+                        type: 'GET',
+                        data: { overview: 'full', geometries: 'geojson' }
+                    }).done(function (rr) {
+                        if (!rr || rr.code !== 'Ok' || !rr.routes || !rr.routes.length) { msgMapa('No se pudo calcular la ruta entre esos puntos.', 'error'); return; }
+                        var route = rr.routes[0];
+                        var km = (route.distance / 1000).toFixed(1);
+                        $('#distanciaKm').val(km);
+                        var coords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+                        if (rutaViajeLayer) mapaViaje.removeLayer(rutaViajeLayer);
+                        marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); });
+                        rutaViajeLayer = L.polyline(coords, { color: '#435ebe', weight: 5 }).addTo(mapaViaje);
+                        var m1 = L.marker([lat1, lon1]).addTo(mapaViaje).bindPopup('Origen');
+                        var m2 = L.marker([lat2, lon2]).addTo(mapaViaje).bindPopup('Destino');
+                        marcadoresViaje = [m1, m2];
+                        mapaViaje.fitBounds(rutaViajeLayer.getBounds(), { padding: [20, 20] });
+                        msgMapa('Distancia calculada: ' + km + ' km (se cargó en el campo Distancia).', 'ok');
+                    }).fail(function () { msgMapa('No se pudo calcular la ruta (servicio de routing no disponible).', 'error'); });
+                })
+                .fail(function () { msgMapa('No se pudo geocodificar las direcciones.', 'error'); });
+        }
+
         function usuarioActual() {
             return localStorage.getItem('username') || 'sistema';
         }
@@ -689,9 +788,9 @@
                 cargarCombo(API_VIAJES + '/Clientes', '#clienteSelect', 'Seleccione un cliente',
                     function (c) { return '<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'; }),
                 cargarCombo(API_VIAJES + '/Origen', '#origenSelect', 'Seleccione un origen',
-                    function (o) { return '<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'; }),
+                    function (o) { origenesData[o.Origen_ID] = o; return '<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'; }),
                 cargarCombo(API_VIAJES + '/Destino', '#destinoSelect', 'Seleccione un destino',
-                    function (dst) { return '<option value="' + dst.Destino_ID + '">' + dst.Descripcion + '</option>'; }),
+                    function (dst) { destinosData[dst.Destino_ID] = dst; return '<option value="' + dst.Destino_ID + '">' + dst.Descripcion + '</option>'; }),
                 cargarCombo(API_VIAJES + '/Choferes', '#choferSelect', 'Seleccione un chofer',
                     function (ch) { return '<option value="' + ch.Chofer_ID + '">' + ch.Apellido + ', ' + ch.Nombre + '</option>'; },
                     function (ch) { return (ch.EstadoChofer || '').trim() === 'Activo'; }),
@@ -741,6 +840,7 @@
             $('#alertaCompletaCampos').hide().empty();
             $('#contenedorTarifaFija').hide();
             $('#contenedorTarifaKm').hide();
+            limpiarRutaViaje();
             cargarTodosLosCombos();
             $('#ModalAltaViaje').modal('show');
         }
@@ -879,6 +979,13 @@
                 window.fpInicio = flatpickr('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true });
                 window.fpFin = flatpickr('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true });
             }
+            $('#ModalAltaViaje').on('shown.bs.modal', function () {
+                initMapaViaje();
+                if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 150); }
+            });
+            $('#origenSelect, #destinoSelect').on('change', function () {
+                if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
+            });
             $('#tipoTarifaSelect').on('change', toggleTarifa);
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
         });

@@ -36,31 +36,35 @@ function initSubmenus(sidebarEl) {
   });
 }
 
-function bindGlobalButtons() {
-  document.querySelectorAll('.burger-btn').forEach((el) => {
-    if (el.dataset.sidebarBound === '1') return;
-    el.addEventListener('click', (e) => {
-      e.preventDefault();
-      const sidebar = document.getElementById('sidebar');
-      if (!sidebar) return;
-      const open = sidebar.classList.contains('active');
-      sidebar.classList.toggle('active', !open);
-      sidebar.classList.toggle('inactive', open);
-    });
-    el.dataset.sidebarBound = '1';
-  });
+function ensureCollapseStyle() {
+  if (document.getElementById('js-sidebar-collapse-style')) return;
+  var st = document.createElement('style');
+  st.id = 'js-sidebar-collapse-style';
+  st.textContent = '#sidebar{transition:transform .3s ease;} #main{transition:margin-left .3s ease;} body.js-sidebar-collapsed #sidebar{transform:translateX(-110%);} body.js-sidebar-collapsed #main{margin-left:0 !important;}';
+  document.head.appendChild(st);
+}
 
-  document.querySelectorAll('.sidebar-hide').forEach((el) => {
-    if (el.dataset.sidebarBound === '1') return;
-    el.addEventListener('click', (e) => {
+function bindGlobalButtons() {
+  // Delegación en document: funciona aunque el header (con .burger-btn) se cargue después por XHR.
+  if (window.__sidebarButtonsBound) return;
+  document.addEventListener('click', (e) => {
+    const burger = e.target.closest && e.target.closest('.burger-btn');
+    if (burger) {
+      e.preventDefault();
+      ensureCollapseStyle();
+      document.body.classList.toggle('js-sidebar-collapsed');
+      return;
+    }
+    const hide = e.target.closest && e.target.closest('.sidebar-hide');
+    if (hide) {
       e.preventDefault();
       const sidebar = document.getElementById('sidebar');
       if (!sidebar) return;
       sidebar.classList.remove('active');
       sidebar.classList.add('inactive');
-    });
-    el.dataset.sidebarBound = '1';
+    }
   });
+  window.__sidebarButtonsBound = true;
 }
 
 function applyResponsiveState(sidebarEl) {

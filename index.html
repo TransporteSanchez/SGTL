@@ -26,6 +26,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 </head>
 
@@ -65,7 +66,7 @@
                 </div>
 
                 <div class="page-content">
-                    <div class="row mb-4">
+                    <div class="row mb-4 align-items-start">
                         <div class="col-md-6 col-lg-3 mb-4">
                             <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
@@ -115,6 +116,16 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-md-6 col-lg-3 mb-4">
+                            <div class="card rounded custom-card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Calendario de viajes</h5>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div id="calendarioViajes"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="row">
@@ -152,6 +163,9 @@
     </div>
 
     <script src="assets/extensions/jquery/jquery.min.js"></script>
+    <script src="assets/extensions/jquery/moment.min.js"></script>
+    <script src="assets/extensions/fullcalendar/fullcalendar.min.js"></script>
+    <script src="assets/extensions/fullcalendar/locale/es.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
@@ -179,6 +193,7 @@
                 loadCostoPorViaje();
                 loadViajesEvolucionMensual();
                 loadTopClientesFacturacion();
+                loadCalendarioViajes();
 
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -187,6 +202,34 @@
                 loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
             }
         };
+
+        function loadCalendarioViajes() {
+            var $el = $('#calendarioViajes');
+            if (!$el.length || !$.fn.fullCalendar) { return; }
+            $.ajax({ url: API_BASE + '/Viajes', type: 'GET' })
+                .done(function (data) {
+                    var eventos = (data || []).map(function (v) {
+                        return {
+                            title: 'Viaje #' + v.Viaje_ID + ': ' + (v.Origen || '') + ' -> ' + (v.Destino || ''),
+                            start: v.Fecha_Inicio,
+                            end: v.Fecha_Fin
+                        };
+                    });
+                    $el.fullCalendar({
+                        locale: 'es',
+                        defaultView: 'month',
+                        header: { left: 'prev,next', center: 'title', right: 'today' },
+                        height: 'auto',
+                        fixedWeekCount: false,
+                        eventLimit: 2,
+                        titleFormat: 'MMM YYYY',
+                        events: eventos
+                    });
+                })
+                .fail(function () {
+                    $el.html('<p class="text-muted text-center py-4">No se pudieron cargar los viajes.</p>');
+                });
+        }
 
         function adjustVisibilityBasedOnRole() {
             const userRole = localStorage.getItem('userRole');

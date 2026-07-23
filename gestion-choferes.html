@@ -1960,25 +1960,18 @@
                 contentType: 'application/json',
                 data: JSON.stringify(datosActualizacion),
                 success: function () {
-                    $('#confirmarActivarDesactivarModal').modal('hide');
-
-                    // Actualizar la fila de la tabla con el nuevo estado
-                    var filaChofer = $(`#tablaChoferes tbody tr[data-choferid='${choferIdACambiarEstado}']`);
-                    filaChofer.find('.estado-chofer').text(estadoChoferNuevo);
-                    filaChofer.find('.estado-chofer').removeClass('bg-success bg-danger')
-                        .addClass(estadoChoferNuevo === 'Activo' ? 'bg-success' : 'bg-danger');
-
-                    // Actualizar el tooltip del botón con el nuevo estado
-                    var boton = $(`button[data-choferid='${choferIdACambiarEstado}']`);
-                    boton.data('estado', estadoChoferNuevo);
-                    boton.attr('title', estadoChoferNuevo === 'Activo' ? 'Inactivar' : 'Activar')
-                        .tooltip('dispose')  // Destruir el tooltip actual
-                        .tooltip();  // Volver a inicializar con el nuevo título
-
-                    mostrarToastExito(`El chofer ha sido cambiado a estado ${estadoChoferNuevo}.`);
-
-                    // Refrescar la lista de choferes si es necesario
-                    buscarChoferes();
+                    // Cerrar modal y refrescar la tabla PRIMERO (que re-dibuja el estado).
+                    try { $('#confirmarActivarDesactivarModal').modal('hide'); } catch (e) { }
+                    try {
+                        var _el = document.getElementById('confirmarActivarDesactivarModal');
+                        if (window.bootstrap && bootstrap.Modal && _el) {
+                            var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
+                            if (_i) _i.hide();
+                        }
+                    } catch (e) { }
+                    buscarChoferes(currentPage);
+                    // El toast va al final y protegido: si fallara, no afecta el refresco.
+                    try { mostrarToastExito(`El chofer ha sido cambiado a estado ${estadoChoferNuevo}.`); } catch (e) { }
                 },
                 error: function (xhr, status, error) {
                     console.error('Error al actualizar el estado del chofer:', error);
