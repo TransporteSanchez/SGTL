@@ -218,8 +218,46 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+        // GET: api/Usuarios/MenusPermitidos?username=xxx
+        // Devuelve el Rol del usuario y los nombres de menús permitidos (via sus grupos), para el control de acceso (RBAC).
         [HttpGet]
+        [Route("MenusPermitidos")]
+        public IHttpActionResult GetMenusPermitidos(string username)
+        {
+            if (string.IsNullOrWhiteSpace(username)) return BadRequest("Falta el nombre de usuario.");
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            try
+            {
+                using (var db = new DbContext(connectionString))
+                {
+                    var user = db.Set<USUARIOS>()
+                        .Where(u => u.Nombre_Usuario == username)
+                        .Select(u => new { u.Usuario_ID, u.Rol })
+                        .FirstOrDefault();
+                    if (user == null) return NotFound();
 
+                    var grupoIds = db.Set<GRUPOS_USUARIOS>()
+                        .Where(gu => gu.UsuarioID == user.Usuario_ID)
+                        .Select(gu => gu.GrupoID).ToList();
+
+                    var menuIds = db.Set<GRUPOS_MENU>()
+                        .Where(gm => grupoIds.Contains(gm.GrupoID))
+                        .Select(gm => gm.MenuID).Distinct().ToList();
+
+                    var menus = db.Set<MENU>()
+                        .Where(m => menuIds.Contains(m.Menu_ID))
+                        .Select(m => m.Menu_Nombre).ToList();
+
+                    return Ok(new { Rol = user.Rol, Menus = menus });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+        }
+
+        [HttpGet]
         [Route("Buscar")]
 
         public IHttpActionResult Buscar(string nombre = null, string apellido = null, string nombreusuario = null, string EstadoUsuario = null, int page = 1, int pageSize = 8)
@@ -1673,4 +1711,3 @@ namespace WebApi_TransporteSanchez.Controllers
     }
 
 }
-

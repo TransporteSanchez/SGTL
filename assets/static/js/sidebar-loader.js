@@ -59,13 +59,87 @@ function markActiveSidebarItem() {
   </div>`;
   }
   
-  function applySidebar(sidebarRoot, html) {
+  // ===================== RBAC: filtrado de menú + guarda de páginas =====================
+var API_PERM = 'http://localhost:50222/api';
+var MENU_TO_PAGE = {
+  'dashboard': 'index.html',
+  'listado de choferes': 'listado-choferes.html',
+  'gestion de choferes': 'gestion-choferes.html',
+  'listado de camiones': 'listado-camiones.html',
+  'gestion de camiones': 'gestion-camiones.html',
+  'listado de viajes': 'listado-viajes.html',
+  'gestion de viajes': 'gestion-viajes.html',
+  'gestion de origenes y destinos': 'gestion-origenes-destinos.html',
+  'gestion de tarifas': 'gestion-tarifas.html',
+  'listado de clientes': 'listado-clientes.html',
+  'gestion de clientes': 'gestion-clientes.html',
+  'listado de facturas': 'listado-facturas.html',
+  'gestion de facturas': 'gestion-facturacion.html',
+  'listado de usuarios': 'listado-usuarios.html',
+  'gestion de usuarios': 'gestion-usuarios.html',
+  'grupos y permisos': 'gestion-gruposypermisos.html',
+  'gestion de contenido': 'gestion-contenido.html'
+};
+
+function normalizaPerm(s) {
+  return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+var permisosAplicados = false;
+function aplicarPermisos() {
+  if (permisosAplicados) return;
+  var username = null;
+  try { username = localStorage.getItem('username'); } catch (e) { }
+  if (!username) return; // sin usuario logueado, no filtramos (el header maneja el login)
+  permisosAplicados = true;
+  fetch(API_PERM + '/Usuarios/MenusPermitidos?username=' + encodeURIComponent(username))
+    .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
+    .then(function (data) {
+      var rol = normalizaPerm(data.Rol);
+      if (rol === 'admin') return; // superadmin: acceso total
+      var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
+      filtrarSidebarPermisos(permitidas);
+      guardaAccesoPagina(permitidas);
+    })
+    .catch(function () { /* fail-open: si el endpoint falla, no bloqueamos (evita brickear la app) */ });
+}
+
+function filtrarSidebarPermisos(permitidas) {
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  sidebar.querySelectorAll('.submenu-item').forEach(function (li) {
+    var a = li.querySelector('a.submenu-link');
+    var href = a ? (a.getAttribute('href') || '').toLowerCase() : '';
+    if (href && href !== '#' && permitidas.indexOf(href) === -1) { li.style.display = 'none'; }
+  });
+  sidebar.querySelectorAll('.sidebar-item').forEach(function (item) {
+    if (item.classList.contains('has-sub')) {
+      var visibles = Array.prototype.filter.call(item.querySelectorAll('.submenu-item'), function (li) { return li.style.display !== 'none'; });
+      if (!visibles.length) { item.style.display = 'none'; }
+    } else {
+      var a = item.querySelector('a.sidebar-link');
+      var href = a ? (a.getAttribute('href') || '').toLowerCase() : '';
+      if (href && href !== '#' && permitidas.indexOf(href) === -1) { item.style.display = 'none'; }
+    }
+  });
+}
+
+function guardaAccesoPagina(permitidas) {
+  var actual = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  if (!actual || actual === 'login.html') return;
+  if (permitidas.indexOf(actual) !== -1) return; // tiene acceso a esta pantalla
+  if (permitidas.length) { window.location.replace(permitidas[0]); }
+  else { alert('No tenés pantallas asignadas. Contactá al administrador.'); }
+}
+
+function applySidebar(sidebarRoot, html) {
     sidebarRoot.innerHTML = html;
     markActiveSidebarItem();
   
     if (typeof window.initializeSidebar === 'function') {
       window.initializeSidebar();
     }
+    aplicarPermisos();
   }
   
   function loadSidebar() {
