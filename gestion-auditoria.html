@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Auditoría</title>
+
+    <style>
+        #app { display: none; }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        .table-responsive { width: 100%; }
+
+        #tablaAuditoria { width: 100%; }
+        #tablaAuditoria th, #tablaAuditoria td { vertical-align: middle; }
+        #tablaAuditoria th { white-space: nowrap; }
+
+        .pagination { justify-content: center; }
+
+        .badge-accion { font-size: .75rem; letter-spacing: .3px; }
+
+        .clave-cell {
+            max-width: 220px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        pre.json-box {
+            background: #f5f6fa;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 12px;
+            max-height: 320px;
+            overflow: auto;
+            font-size: .8rem;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title"><i class="bi bi-clipboard-data me-2"></i>Auditoría del sistema</h5>
+                            <p class="text-muted mb-0">Registro de todas las altas, bajas y modificaciones realizadas en el sistema.</p>
+                        </div>
+
+                        <div class="card-body">
+                            <!-- Filtros -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label">Usuario</label>
+                                    <div class="position-relative">
+                                        <input type="text" id="fUsuario" class="form-control" autocomplete="off"
+                                            placeholder="Todos — clic para elegir o escribí">
+                                        <div id="usuarioDropdown" class="list-group position-absolute w-100 shadow-sm"
+                                            style="z-index:1050; max-height:230px; overflow-y:auto; display:none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 col-sm-6">
+                                    <label class="form-label">Entidad</label>
+                                    <select id="fEntidad" class="form-select">
+                                        <option value="">Todas</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 col-sm-6">
+                                    <label class="form-label">Acción</label>
+                                    <select id="fAccion" class="form-select">
+                                        <option value="">Todas</option>
+                                        <option value="INSERT">Alta (INSERT)</option>
+                                        <option value="UPDATE">Modificación (UPDATE)</option>
+                                        <option value="DELETE">Baja (DELETE)</option>
+                                        <option value="LOGIN">Inicio de sesión</option>
+                                        <option value="LOGOUT">Cierre de sesión</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 col-sm-6">
+                                    <label class="form-label">Desde</label>
+                                    <input type="text" id="fDesde" class="form-control" placeholder="AAAA-MM-DD">
+                                </div>
+                                <div class="col-md-2 col-sm-6">
+                                    <label class="form-label">Hasta</label>
+                                    <input type="text" id="fHasta" class="form-control" placeholder="AAAA-MM-DD">
+                                </div>
+                                <div class="col-md-4 col-sm-6">
+                                    <label class="form-label">Buscar en el detalle</label>
+                                    <input type="text" id="fTexto" class="form-control" placeholder="Texto en clave o valores">
+                                </div>
+                                <div class="col-md-8 col-sm-6 d-flex align-items-end gap-2">
+                                    <button class="btn btn-primary" onclick="buscarAuditoria()">
+                                        <i class="bi bi-search me-1"></i>Buscar
+                                    </button>
+                                    <button class="btn btn-light-secondary" onclick="limpiarFiltros()">
+                                        <i class="bi bi-eraser me-1"></i>Limpiar
+                                    </button>
+                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
+                                </div>
+                            </div>
+
+                            <!-- Tabla -->
+                            <div class="table-responsive">
+                                <table class="table table-hover" id="tablaAuditoria">
+                                    <thead>
+                                        <tr>
+                                            <th>Fecha y hora</th>
+                                            <th>Usuario</th>
+                                            <th>Acción</th>
+                                            <th>Entidad</th>
+                                            <th>Registro</th>
+                                            <th class="text-center">Detalle</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cuerpoAuditoria">
+                                        <tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginación -->
+                            <nav>
+                                <ul class="pagination mt-3" id="paginacion"></ul>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer>
+                <div id="footer-container"></div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Modal detalle -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-clipboard-data me-2"></i>Detalle del movimiento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row mb-3">
+                        <dt class="col-sm-3">Fecha y hora</dt><dd class="col-sm-9" id="dFecha"></dd>
+                        <dt class="col-sm-3">Usuario</dt><dd class="col-sm-9" id="dUsuario"></dd>
+                        <dt class="col-sm-3">Acción</dt><dd class="col-sm-9" id="dAccion"></dd>
+                        <dt class="col-sm-3">Entidad</dt><dd class="col-sm-9" id="dEntidad"></dd>
+                        <dt class="col-sm-3">Registro</dt><dd class="col-sm-9" id="dClave"></dd>
+                        <dt class="col-sm-3">Origen</dt><dd class="col-sm-9" id="dOrigen"></dd>
+                    </dl>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-danger">Valores anteriores</h6>
+                            <pre class="json-box" id="dAntes">—</pre>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">Valores nuevos</h6>
+                            <pre class="json-box" id="dNuevos">—</pre>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            if (typeof window.loadHeader === 'function') window.loadHeader();
+            if (typeof window.loadFooter === 'function') window.loadFooter();
+
+            loadSettings()
+                .then(() => {
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
+                })
+                .catch((error) => {
+                    console.error('Error al cargar configuración:', error);
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
+                });
+        };
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        try {
+                            const data = JSON.parse(xhr.responseText);
+                            if (data && typeof applyStyles === 'function') {
+                                applyStyles(data.Logo, data.ColorFondo, data.ColorBotonesMenu, data.ContenidoPiePagina);
+                            }
+                        } catch (e) { /* si falla el theming, seguimos igual */ }
+                        resolve();
+                    } else { reject(new Error('Error en la carga de la API')); }
+                };
+                xhr.onerror = function () { reject(new Error('Error de red')); };
+                xhr.send();
+            });
+        }
+    </script>
+
+    <!-- ================= Lógica de Auditoría ================= -->
+    <script>
+        const API_AUD = 'http://localhost:50222/api';
+        let audState = { page: 1, pageSize: 20, totalPages: 1 };
+        let audCache = {}; // id -> item, para el modal de detalle
+
+        function badgeAccion(accion) {
+            const map = {
+                'INSERT': 'bg-success', 'UPDATE': 'bg-warning', 'DELETE': 'bg-danger',
+                'LOGIN': 'bg-info', 'LOGOUT': 'bg-secondary'
+            };
+            const label = {
+                'INSERT': 'Alta', 'UPDATE': 'Modificación', 'DELETE': 'Baja',
+                'LOGIN': 'Login', 'LOGOUT': 'Logout'
+            };
+            const a = (accion || '').toUpperCase();
+            const cls = map[a] || 'bg-dark';
+            return '<span class="badge badge-accion ' + cls + '">' + (label[a] || a) + '</span>';
+        }
+
+        function fmtFecha(iso) {
+            if (!iso) return '';
+            const d = new Date(iso);
+            if (isNaN(d.getTime())) return iso;
+            return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        }
+
+        function esc(s) {
+            if (s === null || s === undefined) return '';
+            return String(s).replace(/[&<>"']/g, function (c) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+            });
+        }
+
+        function prettyJson(txt) {
+            if (!txt) return '—';
+            try { return esc(JSON.stringify(JSON.parse(txt), null, 2)); }
+            catch (e) { return esc(txt); }
+        }
+
+        function cargarEntidades() {
+            fetch(API_AUD + '/Auditoria/Entidades')
+                .then(r => r.ok ? r.json() : [])
+                .then(list => {
+                    const sel = document.getElementById('fEntidad');
+                    (list || []).forEach(function (e) {
+                        const o = document.createElement('option');
+                        o.value = e; o.textContent = e;
+                        sel.appendChild(o);
+                    });
+                })
+                .catch(() => { });
+        }
+
+        var usuariosAudit = [];
+
+        function cargarUsuarios() {
+            fetch(API_AUD + '/Auditoria/Usuarios')
+                .then(r => r.ok ? r.json() : [])
+                .then(list => { usuariosAudit = (list || []).filter(Boolean); })
+                .catch(() => { usuariosAudit = []; });
+        }
+
+        function renderUsuarioDropdown(filtro) {
+            var dd = document.getElementById('usuarioDropdown');
+            if (!dd) return;
+            var q = (filtro || '').toLowerCase();
+            var items = usuariosAudit.filter(function (u) { return u.toLowerCase().indexOf(q) !== -1; });
+            var html = '<button type="button" class="list-group-item list-group-item-action text-muted" data-val="">(Todos)</button>';
+            if (usuariosAudit.length === 0) {
+                html += '<span class="list-group-item disabled small text-muted">Sin usuarios para listar</span>';
+            } else if (!items.length) {
+                html += '<span class="list-group-item disabled small text-muted">Sin coincidencias</span>';
+            } else {
+                items.slice(0, 50).forEach(function (u) {
+                    html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + esc(u) + '">' + esc(u) + '</button>';
+                });
+            }
+            dd.innerHTML = html;
+            dd.style.display = 'block';
+        }
+
+        function ocultarUsuarioDropdown() {
+            var dd = document.getElementById('usuarioDropdown');
+            if (dd) dd.style.display = 'none';
+        }
+
+        function buscarAuditoria(page) {
+            audState.page = page || 1;
+            const p = new URLSearchParams();
+            const u = document.getElementById('fUsuario').value.trim();
+            const en = document.getElementById('fEntidad').value;
+            const ac = document.getElementById('fAccion').value;
+            const de = document.getElementById('fDesde').value.trim();
+            const ha = document.getElementById('fHasta').value.trim();
+            const tx = document.getElementById('fTexto').value.trim();
+            if (u) p.append('usuario', u);
+            if (en) p.append('entidad', en);
+            if (ac) p.append('accion', ac);
+            if (de) p.append('desde', de);
+            if (ha) p.append('hasta', ha);
+            if (tx) p.append('texto', tx);
+            p.append('page', audState.page);
+            p.append('pageSize', audState.pageSize);
+
+            const cuerpo = document.getElementById('cuerpoAuditoria');
+            cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>';
+
+            fetch(API_AUD + '/Auditoria?' + p.toString())
+                .then(r => { if (!r.ok) throw new Error('Error ' + r.status); return r.json(); })
+                .then(data => renderTabla(data))
+                .catch(err => {
+                    cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">No se pudo cargar la auditoría. ' + esc(err.message) + '</td></tr>';
+                    document.getElementById('paginacion').innerHTML = '';
+                    document.getElementById('resumen').textContent = '';
+                });
+        }
+
+        function renderTabla(data) {
+            const cuerpo = document.getElementById('cuerpoAuditoria');
+            audCache = {};
+            const items = data.items || [];
+            audState.totalPages = data.totalPages || 1;
+
+            if (!items.length) {
+                cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Sin movimientos para los filtros seleccionados.</td></tr>';
+                document.getElementById('paginacion').innerHTML = '';
+                document.getElementById('resumen').textContent = '0 resultados';
+                return;
+            }
+
+            let html = '';
+            items.forEach(function (it) {
+                audCache[it.Auditoria_ID] = it;
+                html += '<tr>' +
+                    '<td>' + esc(fmtFecha(it.Fecha)) + '</td>' +
+                    '<td>' + esc(it.Usuario || '—') + '</td>' +
+                    '<td>' + badgeAccion(it.Accion) + '</td>' +
+                    '<td>' + esc(it.Entidad || '—') + '</td>' +
+                    '<td class="clave-cell" title="' + esc(it.Clave || '') + '">' + esc(it.Clave || '—') + '</td>' +
+                    '<td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(' + it.Auditoria_ID + ')"><i class="bi bi-eye"></i></button></td>' +
+                    '</tr>';
+            });
+            cuerpo.innerHTML = html;
+
+            document.getElementById('resumen').textContent =
+                data.total + ' resultado' + (data.total === 1 ? '' : 's') +
+                ' · página ' + data.page + ' de ' + audState.totalPages;
+
+            renderPaginacion();
+        }
+
+        function renderPaginacion() {
+            const ul = document.getElementById('paginacion');
+            const tp = audState.totalPages, pg = audState.page;
+            if (tp <= 1) { ul.innerHTML = ''; return; }
+            let html = '';
+            html += '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + (pg - 1) + ')">«</a></li>';
+            const desde = Math.max(1, pg - 2), hasta = Math.min(tp, pg + 2);
+            if (desde > 1) html += '<li class="page-item"><a class="page-link" href="#" onclick="return irPagina(1)">1</a></li>' + (desde > 2 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : '');
+            for (let i = desde; i <= hasta; i++) {
+                html += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + i + ')">' + i + '</a></li>';
+            }
+            if (hasta < tp) html += (hasta < tp - 1 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : '') + '<li class="page-item"><a class="page-link" href="#" onclick="return irPagina(' + tp + ')">' + tp + '</a></li>';
+            html += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + (pg + 1) + ')">»</a></li>';
+            ul.innerHTML = html;
+        }
+
+        function irPagina(p) {
+            if (p < 1 || p > audState.totalPages || p === audState.page) return false;
+            buscarAuditoria(p);
+            return false;
+        }
+
+        function verDetalle(id) {
+            const it = audCache[id];
+            if (!it) return;
+            document.getElementById('dFecha').textContent = fmtFecha(it.Fecha);
+            document.getElementById('dUsuario').textContent = it.Usuario || '—';
+            document.getElementById('dAccion').innerHTML = badgeAccion(it.Accion);
+            document.getElementById('dEntidad').textContent = it.Entidad || '—';
+            document.getElementById('dClave').textContent = it.Clave || '—';
+            document.getElementById('dOrigen').textContent = it.Origen || '—';
+            document.getElementById('dAntes').innerHTML = prettyJson(it.Valores_Anteriores);
+            document.getElementById('dNuevos').innerHTML = prettyJson(it.Valores_Nuevos);
+            $('#modalDetalle').modal('show');
+        }
+
+        function limpiarFiltros() {
+            ['fUsuario', 'fDesde', 'fHasta', 'fTexto'].forEach(id => document.getElementById(id).value = '');
+            document.getElementById('fEntidad').value = '';
+            document.getElementById('fAccion').value = '';
+            buscarAuditoria(1);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.flatpickr) {
+                ['fDesde', 'fHasta'].forEach(id => flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }));
+            }
+            ['fUsuario', 'fTexto'].forEach(id => {
+                document.getElementById(id).addEventListener('keypress', function (e) {
+                    if (e.key === 'Enter') { ocultarUsuarioDropdown(); buscarAuditoria(1); }
+                });
+            });
+
+            // Combo de usuario (lista desplegable + filtrado al escribir)
+            var fu = document.getElementById('fUsuario');
+            fu.addEventListener('focus', function () { renderUsuarioDropdown(fu.value.trim()); });
+            fu.addEventListener('input', function () { renderUsuarioDropdown(fu.value.trim()); });
+            document.getElementById('usuarioDropdown').addEventListener('mousedown', function (e) {
+                var btn = e.target.closest('[data-val]');
+                if (!btn) return;
+                e.preventDefault(); // evita que el blur cierre antes del click
+                fu.value = btn.getAttribute('data-val') || '';
+                ocultarUsuarioDropdown();
+                buscarAuditoria(1);
+            });
+            document.addEventListener('click', function (e) {
+                if (!e.target.closest('#fUsuario') && !e.target.closest('#usuarioDropdown')) ocultarUsuarioDropdown();
+            });
+
+            cargarEntidades();
+            cargarUsuarios();
+            buscarAuditoria(1);
+        });
+    </script>
+
+</body>
+
+</html>

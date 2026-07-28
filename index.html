@@ -28,6 +28,18 @@
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
+    <style>
+        .grid-stack { background: transparent; }
+        .grid-stack-item-content { inset: 0; display: flex; }
+        .grid-stack-item-content > .card { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+        .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; }
+        .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+        #chart-viajes-mensual, #calendarioViajes { height: 100%; }
+        .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(13,110,253,.55); outline-offset: -2px; }
+        .grid-stack.editando .card-header { cursor: move; }
+        #widgetsChecklist .form-check-input { cursor: pointer; }
+    </style>
 </head>
 
 <body>
@@ -61,14 +73,27 @@
             </header>
 
             <div id="main-content">
-                <div class="page-heading mt-4 mb-4">
-                    <h3>¡Bienvenido!</h3>
+                <div class="page-heading mt-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <h3 class="mb-0">¡Bienvenido!</h3>
+                    <div class="d-flex gap-2 align-items-center" id="dash-toolbar">
+                        <div class="position-relative d-inline-block" id="widgetsMenu" style="display:none;">
+                            <button class="btn btn-light-secondary btn-sm" id="btnWidgets" type="button"><i class="fas fa-eye me-1"></i>Widgets</button>
+                            <div class="card shadow-sm position-absolute end-0 mt-1 p-2" id="widgetsPanel" style="display:none; z-index:1050; min-width:230px;">
+                                <div id="widgetsChecklist"></div>
+                            </div>
+                        </div>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnResetLayout" style="display:none;"><i class="fas fa-rotate-left me-1"></i>Restablecer</button>
+                        <button class="btn btn-light-secondary btn-sm" id="btnCancelarLayout" style="display:none;">Cancelar</button>
+                        <button class="btn btn-success btn-sm" id="btnGuardarLayout" style="display:none;"><i class="fas fa-check me-1"></i>Guardar</button>
+                        <button class="btn btn-primary btn-sm" id="btnPersonalizar"><i class="fas fa-sliders-h me-1"></i>Personalizar</button>
+                    </div>
                 </div>
 
                 <div class="page-content">
-                    <div class="row mb-4 align-items-start">
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="card rounded custom-card h-100">
+                <div class="grid-stack">
+                <div class="grid-stack-item" gs-id="choferes" gs-x="0" gs-y="0" gs-w="4" gs-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="fas fa-users me-2 text-primary"></i>
                                     <h5 class="mb-0">Choferes activos</h5>
@@ -83,9 +108,11 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="card rounded custom-card h-100">
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-id="camiones" gs-x="4" gs-y="0" gs-w="4" gs-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="fas fa-truck me-2 text-success"></i>
                                     <h5 class="mb-0">Camiones activos</h5>
@@ -100,9 +127,11 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="card rounded custom-card h-100">
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-id="costo" gs-x="8" gs-y="0" gs-w="4" gs-h="2">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
                                     <i class="fas fa-dollar-sign me-2 text-info"></i>
                                     <h5 class="mb-0">Costo por viaje</h5>
@@ -115,22 +144,11 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-md-6 col-lg-3 mb-4">
-                            <div class="card rounded custom-card h-100">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Calendario de viajes</h5>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div id="calendarioViajes"></div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
-                    <div class="row">
-                        <div class="col-lg-8 mb-4">
-                            <div class="card rounded custom-card h-100">
+                </div>
+                <div class="grid-stack-item" gs-id="chart" gs-x="0" gs-y="2" gs-w="8" gs-h="5">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
                                 <div class="card-header">
                                     <h5 class="mb-0">Viajes - Evolución Mensual</h5>
                                 </div>
@@ -138,9 +156,11 @@
                                     <div id="chart-viajes-mensual"></div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="col-lg-4 mb-4">
-                            <div class="card rounded custom-card h-100">
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-id="topclientes" gs-x="8" gs-y="2" gs-w="4" gs-h="5">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
                                 <div class="card-header">
                                     <h5 class="mb-0">Top Clientes en facturación</h5>
                                 </div>
@@ -150,8 +170,21 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
                     </div>
+                </div>
+                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="7" gs-w="12" gs-h="6">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100">
+                                <div class="card-header">
+                                    <h5 class="mb-0">Calendario de viajes</h5>
+                                </div>
+                                <div class="card-body p-2">
+                                    <div id="calendarioViajes"></div>
+                                </div>
+                            </div>
+                    </div>
+                </div>
+                </div>
                 </div>
 
                 <footer>
@@ -169,6 +202,7 @@
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
@@ -194,6 +228,8 @@
                 loadViajesEvolucionMensual();
                 loadTopClientesFacturacion();
                 loadCalendarioViajes();
+
+                if (typeof window.initDashboardGrid === 'function') { window.initDashboardGrid(); }
 
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -225,6 +261,7 @@
                         titleFormat: 'MMM YYYY',
                         events: eventos
                     });
+                    if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 90);
                 })
                 .fail(function () {
                     $el.html('<p class="text-muted text-center py-4">No se pudieron cargar los viajes.</p>');
@@ -378,7 +415,9 @@
                         tooltip: { y: { formatter: function (val) { return val + ' viajes'; } } }
                     };
                     const chart = new ApexCharts(document.querySelector('#chart-viajes-mensual'), { ...options, series: [{ name: 'Viajes', data: series }] });
+                    window.__viajesChart = chart;
                     chart.render();
+                    if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 90);
                 },
                 error: function (err) {
                     if (err.status === 404) {
@@ -417,6 +456,223 @@
                 }
             });
         }
+    </script>
+
+    <!-- ================= Dashboard personalizable (Gridstack) ================= -->
+    <script>
+        (function () {
+            var API_DL = 'http://localhost:50222/api';
+            var GRID = null;
+            var enEdicion = false;
+
+            var WIDGETS = [
+                { id: 'choferes', label: 'Choferes activos' },
+                { id: 'camiones', label: 'Camiones activos' },
+                { id: 'costo', label: 'Costo por viaje' },
+                { id: 'chart', label: 'Viajes - Evolución mensual' },
+                { id: 'topclientes', label: 'Top clientes en facturación' },
+                { id: 'calendario', label: 'Calendario de viajes' }
+            ];
+            var LAYOUT_DEFAULT = [
+                { id: 'choferes', x: 0, y: 0, w: 4, h: 2 },
+                { id: 'camiones', x: 4, y: 0, w: 4, h: 2 },
+                { id: 'costo', x: 8, y: 0, w: 4, h: 2 },
+                { id: 'chart', x: 0, y: 2, w: 8, h: 5 },
+                { id: 'topclientes', x: 8, y: 2, w: 4, h: 5 },
+                { id: 'calendario', x: 0, y: 7, w: 12, h: 6 }
+            ];
+
+            function el(id) { return document.getElementById(id); }
+            function itemEl(id) { return document.querySelector('.grid-stack-item[gs-id="' + id + '"]'); }
+            function usuario() { try { return localStorage.getItem('username'); } catch (e) { return null; } }
+
+            function refrescarVivos() {
+                // Gráfico: ajustar altura al alto disponible del contenedor
+                try {
+                    var cc = document.getElementById('chart-viajes-mensual');
+                    var body = cc ? cc.closest('.card-body') : null;
+                    if (window.__viajesChart && body && body.clientHeight) {
+                        var h = Math.max(150, body.clientHeight - 8);
+                        window.__viajesChart.updateOptions({ chart: { height: h } }, false, false);
+                    } else {
+                        window.dispatchEvent(new Event('resize'));
+                    }
+                } catch (e) { try { window.dispatchEvent(new Event('resize')); } catch (x) { } }
+
+                // Calendario: ajustar altura al alto disponible del contenedor
+                try {
+                    if (window.jQuery && $('#calendarioViajes').length && $.fn.fullCalendar) {
+                        var cal = document.getElementById('calendarioViajes');
+                        var body2 = cal ? cal.closest('.card-body') : null;
+                        var ch = (body2 && body2.clientHeight) ? (body2.clientHeight - 6) : 300;
+                        $('#calendarioViajes').fullCalendar('option', 'height', Math.max(180, ch));
+                    }
+                } catch (e) { }
+            }
+            window.ajustarWidgetsVivos = refrescarVivos;
+
+            window.initDashboardGrid = function () {
+                if (typeof GridStack === 'undefined') { return; } // si el CDN no cargó, el dashboard sigue estático
+                GRID = GridStack.init({
+                    column: 12,
+                    cellHeight: 62,
+                    margin: 8,
+                    float: false,
+                    staticGrid: true,
+                    handle: '.card-header',
+                    columnOpts: { breakpointForWindow: true, breakpoints: [{ w: 768, c: 1 }] }
+                });
+                GRID.on('resizestop change', function () { refrescarVivos(); });
+                construirChecklist();
+                wireToolbar();
+                cargarLayout();
+            };
+
+            function cargarLayout() {
+                var u = usuario();
+                if (!u) { aplicarLayout(LAYOUT_DEFAULT, []); return; }
+                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u))
+                    .then(function (r) { return r.ok ? r.json() : null; })
+                    .then(function (data) {
+                        var parsed = null;
+                        if (data && data.Layout) { try { parsed = JSON.parse(data.Layout); } catch (e) { } }
+                        if (parsed && parsed.items && parsed.items.length) {
+                            aplicarLayout(parsed.items, parsed.hidden || []);
+                        } else {
+                            aplicarLayout(LAYOUT_DEFAULT, []);
+                        }
+                    })
+                    .catch(function () { aplicarLayout(LAYOUT_DEFAULT, []); });
+            }
+
+            function aplicarLayout(items, hidden) {
+                hidden = hidden || [];
+                if (!GRID) return;
+                GRID.batchUpdate();
+                // asegurar que todos estén visibles y en el grid
+                WIDGETS.forEach(function (w) {
+                    var e = itemEl(w.id);
+                    if (!e) return;
+                    e.style.display = '';
+                    try { GRID.makeWidget(e); } catch (x) { }
+                });
+                // aplicar posiciones de los visibles
+                var visibles = items.filter(function (it) { return hidden.indexOf(it.id) === -1; });
+                GRID.load(visibles, false);
+                // ocultar los marcados
+                hidden.forEach(function (id) {
+                    var e = itemEl(id);
+                    if (!e) return;
+                    try { GRID.removeWidget(e, false); } catch (x) { }
+                    e.style.display = 'none';
+                });
+                GRID.commit();
+                actualizarChecklist(hidden);
+                setTimeout(refrescarVivos, 80);
+            }
+
+            function mostrarWidget(id) {
+                var e = itemEl(id); if (!e || !GRID) return;
+                e.style.display = '';
+                try { GRID.makeWidget(e); } catch (x) { }
+                setTimeout(refrescarVivos, 60);
+            }
+            function ocultarWidget(id) {
+                var e = itemEl(id); if (!e || !GRID) return;
+                try { GRID.removeWidget(e, false); } catch (x) { }
+                e.style.display = 'none';
+            }
+
+            function construirChecklist() {
+                var cont = el('widgetsChecklist'); if (!cont) return;
+                cont.innerHTML = '';
+                WIDGETS.forEach(function (w) {
+                    var lbl = document.createElement('label');
+                    lbl.className = 'd-flex align-items-center gap-2 py-1 mb-0';
+                    lbl.style.cursor = 'pointer';
+                    lbl.innerHTML = '<input type="checkbox" class="form-check-input mt-0" data-wid="' + w.id + '" checked> <span>' + w.label + '</span>';
+                    cont.appendChild(lbl);
+                });
+                cont.addEventListener('change', function (e) {
+                    var cb = e.target.closest('input[data-wid]'); if (!cb) return;
+                    var id = cb.getAttribute('data-wid');
+                    if (cb.checked) mostrarWidget(id); else ocultarWidget(id);
+                });
+            }
+            function actualizarChecklist(hidden) {
+                var cont = el('widgetsChecklist'); if (!cont) return;
+                Array.prototype.forEach.call(cont.querySelectorAll('input[data-wid]'), function (cb) {
+                    cb.checked = hidden.indexOf(cb.getAttribute('data-wid')) === -1;
+                });
+            }
+
+            function entrarEdicion() {
+                enEdicion = true;
+                if (GRID) GRID.setStatic(false);
+                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.add('editando');
+                el('btnPersonalizar').style.display = 'none';
+                el('btnGuardarLayout').style.display = '';
+                el('btnCancelarLayout').style.display = '';
+                el('btnResetLayout').style.display = '';
+                el('widgetsMenu').style.display = '';
+            }
+            function salirEdicion() {
+                enEdicion = false;
+                if (GRID) GRID.setStatic(true);
+                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.remove('editando');
+                el('btnPersonalizar').style.display = '';
+                el('btnGuardarLayout').style.display = 'none';
+                el('btnCancelarLayout').style.display = 'none';
+                el('btnResetLayout').style.display = 'none';
+                el('widgetsMenu').style.display = 'none';
+                el('widgetsPanel').style.display = 'none';
+            }
+
+            function guardarLayout() {
+                var u = usuario();
+                if (!u || !GRID) { salirEdicion(); return; }
+                var hidden = [];
+                Array.prototype.forEach.call(el('widgetsChecklist').querySelectorAll('input[data-wid]'), function (cb) {
+                    if (!cb.checked) hidden.push(cb.getAttribute('data-wid'));
+                });
+                var items = GRID.save(false); // [{id,x,y,w,h}, ...] de los visibles
+                var payload = { Nombre_Usuario: u, Layout: JSON.stringify({ items: items, hidden: hidden }) };
+                fetch(API_DL + '/DashboardLayout', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }).then(function () { }).catch(function () { })
+                    .then(function () { salirEdicion(); refrescarVivos(); });
+            }
+
+            function cancelarEdicion() { salirEdicion(); cargarLayout(); }
+
+            function restablecerLayout() {
+                var u = usuario();
+                function aplicarDefault() {
+                    aplicarLayout(LAYOUT_DEFAULT, []);
+                    salirEdicion();
+                }
+                if (!u) { aplicarDefault(); return; }
+                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u), { method: 'DELETE' })
+                    .then(aplicarDefault).catch(aplicarDefault);
+            }
+
+            function wireToolbar() {
+                el('btnPersonalizar').addEventListener('click', entrarEdicion);
+                el('btnGuardarLayout').addEventListener('click', guardarLayout);
+                el('btnCancelarLayout').addEventListener('click', cancelarEdicion);
+                el('btnResetLayout').addEventListener('click', restablecerLayout);
+                el('btnWidgets').addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    var p = el('widgetsPanel');
+                    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+                });
+                document.addEventListener('click', function (e) {
+                    if (!e.target.closest('#widgetsMenu')) { el('widgetsPanel').style.display = 'none'; }
+                });
+            }
+        })();
     </script>
 
 </body>

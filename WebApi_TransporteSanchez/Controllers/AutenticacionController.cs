@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
 using System.Data.Entity;
+using System.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using System.Web.Http;
@@ -85,6 +86,25 @@ namespace WebApi_TransporteSanchez.Controllers
                     try
                     {
                         var token = Generate(user);
+
+                        // Auditoría: registrar el inicio de sesión (no pasa por SaveChanges).
+                        try
+                        {
+                            string cnAudit = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+                            string origenIp = null;
+                            try { origenIp = System.Web.HttpContext.Current?.Request?.UserHostAddress; } catch { }
+                            using (var dbAudit = new DbContext(cnAudit))
+                            {
+                                dbAudit.Database.ExecuteSqlCommand(
+                                    "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
+                                    "VALUES (GETDATE(), @usu, 'LOGIN', 'USUARIOS', @clave, NULL, @detalle, @origen)",
+                                    new SqlParameter("@usu", (object)user.Nombre_Usuario ?? DBNull.Value),
+                                    new SqlParameter("@clave", "Usuario_ID=" + user.Usuario_ID),
+                                    new SqlParameter("@detalle", "Inicio de sesión"),
+                                    new SqlParameter("@origen", (object)origenIp ?? DBNull.Value));
+                            }
+                        }
+                        catch { }
 
                         var response = new LoginResponseDTO
                         {

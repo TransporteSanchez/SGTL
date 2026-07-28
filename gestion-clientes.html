@@ -640,6 +640,9 @@
         $(document).ready(function () {
             $('#fechaRango').daterangepicker({
                 autoUpdateInput: false,
+                showDropdowns: true,               // selectores de mes y año en el encabezado
+                minYear: 2000,
+                maxYear: parseInt(moment().format('YYYY'), 10),
                 locale: {
                     format: 'DD/MM/YYYY',
                     applyLabel: 'Aplicar',

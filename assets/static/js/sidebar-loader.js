@@ -1,3 +1,36 @@
+// ===================== Guarda de sesión (validación de JWT) =====================
+// Se ejecuta al cargar cualquier página que incluya este script (todas las protegidas).
+// Login.html NO lo incluye, así que no hay riesgo de bucle de redirección.
+(function sessionGuard() {
+  var page = (window.location.pathname.split('/').pop() || '').toLowerCase();
+  if (page === 'login.html' || page === '') return;
+
+  var token = null, username = null;
+  try { token = localStorage.getItem('token'); username = localStorage.getItem('username'); } catch (e) { }
+
+  function tokenVencido(t) {
+    if (!t) return true;
+    try {
+      var payload = t.split('.')[1];
+      if (!payload) return true;
+      payload = payload.replace(/-/g, '+').replace(/_/g, '/');
+      while (payload.length % 4) payload += '=';
+      var datos = JSON.parse(decodeURIComponent(escape(atob(payload))));
+      if (!datos.exp) return false;                 // sin claim exp: no afirmamos que venció
+      return (datos.exp * 1000) <= Date.now();       // exp está en segundos
+    } catch (e) {
+      return true;                                   // token ilegible => inválido
+    }
+  }
+
+  if (!token || !username || tokenVencido(token)) {
+    ['token', 'username', 'userRole', 'nombre', 'apellido'].forEach(function (k) {
+      try { localStorage.removeItem(k); } catch (e) { }
+    });
+    window.location.replace('Login.html');
+  }
+})();
+
 function markActiveSidebarItem() {
     const sidebar = document.getElementById('sidebar');
     if (!sidebar) return;
@@ -52,6 +85,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar facturas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
+              <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-contenido.html" class="sidebar-link" id="gestionarContenidoBtn"><i class="bi bi-columns"></i><span>Gestionar contenido</span></a></li>
           </ul>
@@ -78,7 +112,8 @@ var MENU_TO_PAGE = {
   'listado de usuarios': 'listado-usuarios.html',
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
-  'gestion de contenido': 'gestion-contenido.html'
+  'gestion de contenido': 'gestion-contenido.html',
+  'auditoria': 'gestion-auditoria.html'
 };
 
 function normalizaPerm(s) {
@@ -96,12 +131,35 @@ function aplicarPermisos() {
     .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
-      if (rol === 'admin') return; // superadmin: acceso total
+      if (rol === 'admin') { mantenerVisibleContenido(true); return; } // superadmin: acceso total
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
       filtrarSidebarPermisos(permitidas);
       guardaAccesoPagina(permitidas);
+      // El botón "Gestionar contenido" lo gobierna el RBAC. Algunas páginas lo ocultan
+      // por su cuenta (adjustVisibilityBasedOnRole, admin-only); si el grupo tiene el
+      // permiso, forzamos que quede visible pese a ese ocultamiento heredado.
+      mantenerVisibleContenido(permitidas.indexOf('gestion-contenido.html') !== -1);
     })
     .catch(function () { /* fail-open: si el endpoint falla, no bloqueamos (evita brickear la app) */ });
+}
+
+// Mantiene la visibilidad del ítem "Gestionar contenido" acorde al RBAC, incluso si
+// una página intenta ocultarlo más tarde (via style.display = 'none').
+function mantenerVisibleContenido(permitido) {
+  var btn = document.getElementById('gestionarContenidoBtn');
+  if (!btn) return;
+  var li = btn.closest ? btn.closest('.sidebar-item') : null;
+  function fijar() {
+    if (!permitido) return;
+    if (btn.style.display === 'none') btn.style.display = '';
+    if (li && li.style.display === 'none') li.style.display = '';
+  }
+  fijar(); // corrige el estado actual (por si ya fue ocultado)
+  if (permitido && window.MutationObserver) {
+    var obs = new MutationObserver(fijar);
+    obs.observe(btn, { attributes: true, attributeFilter: ['style'] });
+    if (li) obs.observe(li, { attributes: true, attributeFilter: ['style'] });
+  }
 }
 
 function filtrarSidebarPermisos(permitidas) {
