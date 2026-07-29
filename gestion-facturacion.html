@@ -182,6 +182,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-dark" id="btnPdfForm" onclick="pdfDesdeForm()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
                     <button type="button" class="btn btn-outline-primary" id="btnGuardarBorrador" onclick="guardarBorrador()"><i class="bi bi-save me-1"></i>Guardar borrador</button>
                     <button type="button" class="btn btn-success" id="btnGenerar" onclick="generarProforma()"><i class="bi bi-file-earmark-check me-1"></i>Generar proforma</button>
                 </div>
@@ -225,6 +226,9 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="assets/static/js/proforma-pdf.js"></script>
 
     <script>
         window.onload = function () {
@@ -336,6 +340,7 @@
             cuerpo.innerHTML = items.map(function (x) {
                 var esBorr = (x.Estado || '') === 'Borrador';
                 var acc = '<button class="btn btn-sm btn-outline-secondary" title="Ver" onclick="verProforma(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> ';
+                acc += '<button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button> ';
                 if (esBorr) acc += '<button class="btn btn-sm btn-outline-primary" title="Editar" onclick="editarProforma(' + x.Proforma_ID + ')"><i class="bi bi-pencil"></i></button> ';
                 acc += '<button class="btn btn-sm btn-outline-info" title="Duplicar" onclick="duplicar(' + x.Proforma_ID + ')"><i class="bi bi-files"></i></button> ';
                 if (!esBorr) acc += '<button class="btn btn-sm btn-outline-warning" title="Cambiar estado" onclick="abrirEstado(' + x.Proforma_ID + ',\'' + (x.Estado || '') + '\')"><i class="bi bi-arrow-repeat"></i></button> ';
@@ -561,6 +566,8 @@
                 .then(function (res) { if (!res.ok) { alert(res.j.error || 'No se pudo duplicar.'); return; } alert('Duplicada como borrador.'); buscarProformas(1); })
                 .catch(function () { alert('Error de red.'); });
         }
+
+        function pdfDesdeForm() { var id = parseInt(val('p_id')); if (!id) { alert('Guardá la proforma primero para generar el PDF.'); return; } descargarProformaPDF(id); }
 
         document.addEventListener('DOMContentLoaded', function () {
             initEstadosFiltro();

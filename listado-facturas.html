@@ -138,6 +138,8 @@
                     </div>
                 </div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" onclick="if(window.__profActual)imprimirProformaPDF(window.__profActual)"><i class="bi bi-printer me-1"></i>Imprimir</button>
+                    <button type="button" class="btn btn-primary" onclick="if(window.__profActual)descargarProformaPDF(window.__profActual)"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
@@ -151,6 +153,9 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="assets/static/js/proforma-pdf.js"></script>
 
     <script>
         window.onload = function () {
@@ -236,7 +241,7 @@
                     '<td class="text-end">' + money(x.Total) + '</td>' +
                     '<td>' + badgeEstado(x.Estado) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
-                    '<td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button></td></tr>';
+                    '<td class="text-center" style="white-space:nowrap;"><button class="btn btn-sm btn-outline-primary" title="Ver" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button></td></tr>';
             }).join('');
             document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
             renderPag();
@@ -252,6 +257,7 @@
         function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
 
         function verDetalle(id) {
+            window.__profActual = id;
             fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
                 document.getElementById('d_titulo').textContent = 'Proforma ' + (p.Numero || ('#' + p.Proforma_ID));
                 document.getElementById('d_badge').outerHTML = '<span id="d_badge" class="badge ms-2 ' + (badgeEstado(p.Estado).match(/bg-\w+/)[0]) + '">' + esc(p.Estado || '') + '</span>';
