@@ -136,7 +136,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -212,7 +212,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -290,7 +290,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -406,7 +406,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -499,7 +499,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -608,7 +608,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -673,7 +673,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -753,7 +753,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 
@@ -821,7 +821,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
 
                 {
 

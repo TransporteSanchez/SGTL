@@ -4,320 +4,283 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Listado de facturas</title>
-
+    <title>Transporte Sanchez - Listar facturas (Proformas)</title>
     <style>
-        #app {
-            display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaViajes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaViajes th,
-        #tablaViajes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaViajes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .pagination { justify-content: center; }
+        .badge-estado { font-size: .75rem; }
+        .tbl-prof th, .tbl-prof td { vertical-align: middle; }
+        .bloque-titulo { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 16px 0 10px; }
+        .totales dt { font-weight: 500; }
+        .dato dt { font-weight: 500; color: #6b7280; }
     </style>
-
-
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
-    <link rel="shortcut icon"
-        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
-        type="image/png">
-
-
-
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
-
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+    <div id="loading-message" style="display:none;">
+        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando...</span></div>
     </div>
 
     <div id="app">
         <div id="sidebar"></div>
-
         <div id="main" class='layout-navbar navbar-fixed'>
-            <!--Header-->
             <header>
-
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
-                        <a href="#" class="burger-btn d-block">
-                            <i class="bi bi-justify fs-3"></i>
-                        </a>
-
-                        <!--btn para expandir Menú lateral-->
-
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-
-                        <!--Llamado a las opciones del header-->
-
+                        <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
                         <div id="header-container"></div>
-
                         <script src="./assets/static/js/header.js"></script>
-
                     </div>
                 </nav>
             </header>
 
             <div class="page-heading">
-
-                <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header"><h5 class="card-title">Listado de facturas (proformas)</h5></div>
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Listar facturas — Proformas generadas</h5>
+                            <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar facturas).</small>
+                        </div>
                         <div class="card-body">
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-2 col-6"><label class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..."></div>
+                                <div class="col-md-3 col-6"><label class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Desde</label><input id="fDesde" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Hasta</label><input id="fHasta" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-1 col-6"><label class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="usuario"></div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
+                                    <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
+                                </div>
+                            </div>
                             <div class="table-responsive">
-                                <table class="table table-striped" id="tablaProformas">
+                                <table class="table table-hover tbl-prof">
                                     <thead><tr>
-                                        <th>#</th><th>Cliente</th><th>Desde</th><th>Hasta</th>
-                                        <th>Viajes</th><th>Total</th><th>Creaci&oacute;n</th><th>Ver</th>
+                                        <th>Número</th><th>Fecha</th><th>Cliente</th><th>Destino</th>
+                                        <th class="text-end">Total</th><th>Estado</th><th>Usuario</th><th class="text-center">Ver</th>
                                     </tr></thead>
-                                    <tbody></tbody>
+                                    <tbody id="cuerpoProformas"><tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
                             </div>
+                            <nav><ul class="pagination mt-2" id="paginacion"></ul></nav>
                         </div>
                     </div>
                 </section>
-                </div>
-
-            <!--Fin sección de la tabla-->
-
-            <footer>
-                <div id="footer-container"></div>
-                <script src="./assets/static/js/footer.js"></script>
-            </footer>
+            </div>
+            <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
         </div>
-
     </div>
 
-
-    <div class="modal fade text-left" id="modalProforma" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <!-- Modal detalle (solo lectura) -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title">Proforma</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                    <h5 class="modal-title" id="d_titulo">Proforma</h5>
+                    <span id="d_badge" class="badge bg-secondary ms-2"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body"><div id="cuerpoProforma"></div></div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Documento comercial sin validez fiscal.</p>
+                    <div class="bloque-titulo">Datos generales y cliente</div>
+                    <dl class="row dato">
+                        <dt class="col-sm-2">Número</dt><dd class="col-sm-4" id="d_numero"></dd>
+                        <dt class="col-sm-2">Emisión</dt><dd class="col-sm-4" id="d_femision"></dd>
+                        <dt class="col-sm-2">Cliente</dt><dd class="col-sm-4" id="d_cliente"></dd>
+                        <dt class="col-sm-2">CUIT</dt><dd class="col-sm-4" id="d_cuit"></dd>
+                        <dt class="col-sm-2">Dirección</dt><dd class="col-sm-4" id="d_dir"></dd>
+                        <dt class="col-sm-2">Teléfono</dt><dd class="col-sm-4" id="d_tel"></dd>
+                        <dt class="col-sm-2">Email</dt><dd class="col-sm-4" id="d_email"></dd>
+                    </dl>
+                    <div class="bloque-titulo">Transporte</div>
+                    <dl class="row dato">
+                        <dt class="col-sm-2">Origen</dt><dd class="col-sm-4" id="d_origen"></dd>
+                        <dt class="col-sm-2">Destino</dt><dd class="col-sm-4" id="d_destino"></dd>
+                        <dt class="col-sm-2">Tipo de carga</dt><dd class="col-sm-4" id="d_tipocarga"></dd>
+                        <dt class="col-sm-2">Peso / Volumen</dt><dd class="col-sm-4" id="d_pesovol"></dd>
+                    </dl>
+                    <div class="bloque-titulo">Conceptos</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light"><tr>
+                                <th>Código</th><th>Concepto</th><th>Descripción</th><th class="text-end">Cant.</th><th>Unidad</th>
+                                <th class="text-end">P. Unit.</th><th class="text-end">Desc.%</th><th class="text-end">IVA%</th><th class="text-end">Subtotal</th>
+                            </tr></thead>
+                            <tbody id="d_conceptos"></tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="bloque-titulo">Condiciones y observaciones</div>
+                            <dl class="row dato">
+                                <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8" id="d_formapago"></dd>
+                                <dt class="col-sm-4">Validez</dt><dd class="col-sm-8" id="d_validez"></dd>
+                                <dt class="col-sm-4">Observaciones</dt><dd class="col-sm-8" id="d_obs"></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-5 ms-auto"><div class="bloque-titulo">Totales</div>
+                            <dl class="row totales mb-0">
+                                <dt class="col-7">Subtotal</dt><dd class="col-5 text-end" id="d_subtotal"></dd>
+                                <dt class="col-7">Descuentos</dt><dd class="col-5 text-end" id="d_desc"></dd>
+                                <dt class="col-7">Subtotal neto</dt><dd class="col-5 text-end" id="d_neto"></dd>
+                                <dt class="col-7">IVA</dt><dd class="col-5 text-end" id="d_iva"></dd>
+                                <dt class="col-7">Otros impuestos</dt><dd class="col-5 text-end" id="d_otros"></dd>
+                                <dt class="col-7 fs-5 fw-bold">TOTAL GENERAL</dt><dd class="col-5 text-end fs-5 fw-bold" id="d_total"></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="imprimirProforma()"><i class="bi bi-printer"></i> Imprimir</button>
                 </div>
             </div>
         </div>
     </div>
-<!--Scripts-->
+
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
-    <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
-    <!-- Carga de diseño y roles -->
     <script>
         window.onload = function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            // Cargar header, footer y configuración
-            window.loadHeader();
-            window.loadFooter();
-
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
+            var lm = document.getElementById('loading-message');
+            lm.style.display = 'block'; document.getElementById('app').style.display = 'none';
+            if (window.loadHeader) window.loadHeader();
+            if (window.loadFooter) window.loadFooter();
+            loadSettings().then(finish).catch(finish);
+            function finish() { lm.style.display = 'none'; document.getElementById('app').style.display = 'block'; if (window.loadSidebar) window.loadSidebar(); }
         };
-
-        function adjustVisibilityBasedOnRole() {
-            const userRole = localStorage.getItem('userRole');
-            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-
-            if (userRole && userRole.toLowerCase() === 'admin') {
-                gestionarContenidoBtn.style.display = 'block';
-            } else {
-                gestionarContenidoBtn.style.display = 'none';
-            }
-        }
-
         async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
                 xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data) {
-                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            console.error('La respuesta de la API no contiene los datos esperados.');
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        console.error('Error en la petición:', xhr.statusText);
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    console.error('Error al cargar la configuración de la API.');
-                    reject(new Error('Error de red'));
-                };
-
+                xhr.onload = function () { try { var d = JSON.parse(xhr.responseText); if (d && typeof applyStyles === 'function') applyStyles(d.Logo, d.ColorFondo, d.ColorBotonesMenu, d.ContenidoPiePagina); } catch (e) { } resolve(); };
+                xhr.onerror = function () { reject(); };
                 xhr.send();
             });
         }
-
     </script>
 
-    <!-- Comportamiento tooltip -->
     <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
+        const API_FAC = 'http://localhost:50222/api';
+        const ESTADOS_GEN = ['Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
+        var profState = { page: 1, totalPages: 1 };
 
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-
-            // Manejo específico para tooltips en botones deshabilitados
-            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-
-    </script>
-
-    <!-- ================= Listado de facturas (solo lectura) ================= -->
-    <script>
-        const API_LF = 'http://localhost:50222/api';
-        let ultimaProforma = null;
-        function d10(x) { return x ? String(x).substring(0, 10) : ''; }
-        function money(x) { return Number(x || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-
-        function listarProformas() {
-            $.ajax({ url: API_LF + '/Proformas', type: 'GET' })
-                .done(function (data) {
-                    const tb = $('#tablaProformas tbody').empty();
-                    if (!data || !data.length) { tb.html('<tr><td colspan="8" class="text-center">No hay facturas generadas</td></tr>'); return; }
-                    data.forEach(function (p) {
-                        tb.append('<tr>' +
-                            '<td>' + p.Proforma_ID + '</td>' +
-                            '<td>' + (p.ClienteRazon || '') + '</td>' +
-                            '<td>' + d10(p.FechaDesde) + '</td>' +
-                            '<td>' + d10(p.FechaHasta) + '</td>' +
-                            '<td>' + (p.CantidadViajes || '') + '</td>' +
-                            '<td>$' + money(p.ImporteTotal) + '</td>' +
-                            '<td>' + d10(p.FechaCreacion) + '</td>' +
-                            '<td><button class="btn btn-primary btn-sm" onclick="verProforma(' + p.Proforma_ID + ')"><i class="bi bi-eye"></i></button></td>' +
-                            '</tr>');
-                    });
-                })
-                .fail(function () { $('#tablaProformas tbody').html('<tr><td colspan="8" class="text-center">No hay facturas generadas</td></tr>'); });
+        function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
+        function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+        function setTxt(id, v) { var el = document.getElementById(id); if (el) el.textContent = (v == null || v === '' ? '—' : v); }
+        function badgeEstado(e) {
+            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Enviada': 'bg-info', 'Aceptada': 'bg-success', 'Rechazada': 'bg-danger', 'Anulada': 'bg-dark' };
+            return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
         }
 
-        function cuerpoProformaHtml(r) {
-            const p = r.Proforma; const det = r.Detalle;
-            let filas = '';
-            if (det && det.Viajes) {
-                det.Viajes.forEach(function (v) {
-                    filas += '<tr><td>' + v.Viaje_ID + '</td><td>' + d10(v.Fecha_Inicio) + '</td><td>' + (v.Origen || '') + '</td><td>' + (v.Destino || '') + '</td><td>' + (v.Num_Remito || '') + '</td><td>' + (v.Distancia_KM || '') + '</td><td>' + (v.TipoTarifa || '') + '</td><td style="text-align:right;">$' + money(v.Importe) + '</td></tr>';
+        function cargarClientes() {
+            $.ajax({ url: API_FAC + '/Clientes', type: 'GET' }).done(function (data) {
+                var opts = '<option value="">Todos</option>';
+                (data || []).forEach(function (c) {
+                    var id = c.Cliente_ID || c.ClienteID || c.Id;
+                    var nom = c.Razon_Social || c.RazonSocial || ('Cliente ' + id);
+                    opts += '<option value="' + id + '">' + esc(nom) + '</option>';
                 });
-            }
-            return '<h4 style="margin-bottom:4px;">Proforma N&deg; ' + p.Proforma_ID + '</h4>' +
-                '<p style="margin:0;"><strong>Cliente:</strong> ' + (p.ClienteRazon || '') + '</p>' +
-                '<p style="margin:0;"><strong>Per&iacute;odo:</strong> ' + d10(p.FechaDesde) + ' al ' + d10(p.FechaHasta) + '</p>' +
-                '<p style="margin:0 0 10px 0;"><strong>Fecha de emisi&oacute;n:</strong> ' + d10(p.FechaCreacion) + '</p>' +
-                '<table class="table table-bordered" style="width:100%;border-collapse:collapse;"><thead><tr><th>#</th><th>Fecha</th><th>Origen</th><th>Destino</th><th>Remito</th><th>Distancia</th><th>Tarifa</th><th style="text-align:right;">Importe</th></tr></thead><tbody>' + filas + '</tbody></table>' +
-                '<h5 style="text-align:right;margin-top:10px;">Viajes: ' + (p.CantidadViajes || '0') + ' &nbsp;&nbsp; Total: $' + money(p.ImporteTotal) + '</h5>';
+                document.getElementById('fCliente').innerHTML = opts;
+            });
+        }
+        function initEstados() { var s = document.getElementById('fEstado'); ESTADOS_GEN.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; }); }
+        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('fCliente').value = ''; document.getElementById('fEstado').value = ''; buscarProformas(1); }
+
+        function buscarProformas(page) {
+            profState.page = page || 1;
+            var p = new URLSearchParams();
+            p.append('soloGeneradas', 'true');
+            if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
+            if (val('fCliente')) p.append('clienteId', val('fCliente'));
+            if (val('fEstado')) p.append('estado', val('fEstado'));
+            if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
+            if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
+            if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            p.append('page', profState.page); p.append('pageSize', 15);
+            var cuerpo = document.getElementById('cuerpoProformas');
+            cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
+            fetch(API_FAC + '/Proformas?' + p.toString())
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (!res.ok) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error: ' + esc(res.j.detalle || res.j.error || '') + '</td></tr>'; return; }
+                    renderGrid(res.j);
+                })
+                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">No se pudieron cargar las proformas.</td></tr>'; });
+        }
+        function renderGrid(data) {
+            var cuerpo = document.getElementById('cuerpoProformas');
+            var items = (data && data.items) || [];
+            profState.totalPages = (data && data.totalPages) || 1;
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '0 resultados'; return; }
+            cuerpo.innerHTML = items.map(function (x) {
+                return '<tr>' +
+                    '<td>' + esc(x.Numero || '—') + '</td>' +
+                    '<td>' + esc(fdate(x.Fecha)) + '</td>' +
+                    '<td>' + esc(x.Cliente || '—') + '</td>' +
+                    '<td>' + esc(x.Destino || '—') + '</td>' +
+                    '<td class="text-end">' + money(x.Total) + '</td>' +
+                    '<td>' + badgeEstado(x.Estado) + '</td>' +
+                    '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button></td></tr>';
+            }).join('');
+            document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
+            renderPag();
+        }
+        function renderPag() {
+            var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
+            if (tp <= 1) { ul.innerHTML = ''; return; }
+            var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
+            for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
+            h += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg + 1) + ')">»</a></li>';
+            ul.innerHTML = h;
+        }
+        function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
+
+        function verDetalle(id) {
+            fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
+                document.getElementById('d_titulo').textContent = 'Proforma ' + (p.Numero || ('#' + p.Proforma_ID));
+                document.getElementById('d_badge').outerHTML = '<span id="d_badge" class="badge ms-2 ' + (badgeEstado(p.Estado).match(/bg-\w+/)[0]) + '">' + esc(p.Estado || '') + '</span>';
+                setTxt('d_numero', p.Numero); setTxt('d_femision', fdate(p.FechaEmision));
+                setTxt('d_cliente', p.Cli_RazonSocial); setTxt('d_cuit', p.Cli_CUIT); setTxt('d_dir', p.Cli_Direccion);
+                setTxt('d_tel', p.Cli_Telefono); setTxt('d_email', p.Cli_Email);
+                setTxt('d_origen', p.Origen); setTxt('d_destino', p.Destino); setTxt('d_tipocarga', p.TipoCarga);
+                setTxt('d_pesovol', [p.Peso, p.Volumen].filter(Boolean).join(' / '));
+                setTxt('d_formapago', p.FormaPago); setTxt('d_validez', p.Validez); setTxt('d_obs', p.Observaciones);
+                setTxt('d_subtotal', money(p.Subtotal)); setTxt('d_desc', money(p.Descuentos)); setTxt('d_neto', money(p.SubtotalNeto));
+                setTxt('d_iva', money(p.IVA)); setTxt('d_otros', money(p.OtrosImpuestos)); setTxt('d_total', money(p.TotalGeneral));
+                var tb = document.getElementById('d_conceptos');
+                var lineas = p.Detalle || [];
+                tb.innerHTML = lineas.length ? lineas.map(function (l) {
+                    return '<tr><td>' + esc(l.Codigo || '') + '</td><td>' + esc(l.Concepto || '') + '</td><td>' + esc(l.Descripcion || '') + '</td>' +
+                        '<td class="text-end">' + (l.Cantidad || 0) + '</td><td>' + esc(l.Unidad || '') + '</td>' +
+                        '<td class="text-end">' + money(l.PrecioUnitario) + '</td><td class="text-end">' + (l.DescuentoPct || 0) + '</td>' +
+                        '<td class="text-end">' + (l.IvaPct || 0) + '</td><td class="text-end">' + money(l.Subtotal) + '</td></tr>';
+                }).join('') : '<tr><td colspan="9" class="text-center text-muted">Sin conceptos.</td></tr>';
+                $('#modalDetalle').modal('show');
+            }).catch(function () { alert('No se pudo abrir la proforma.'); });
         }
 
-        function verProforma(id) {
-            $.ajax({ url: API_LF + '/Proformas/' + id, type: 'GET' })
-                .done(function (r) { ultimaProforma = r; $('#cuerpoProforma').html(cuerpoProformaHtml(r)); $('#modalProforma').modal('show'); })
-                .fail(function () { alert('No se pudo cargar la factura.'); });
-        }
-
-        function imprimirProforma() {
-            if (!ultimaProforma) { return; }
-            const w = window.open('', '_blank');
-            w.document.write('<html><head><title>Proforma</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#222;} table{width:100%;border-collapse:collapse;margin-top:8px;} th,td{border:1px solid #999;padding:6px;font-size:13px;} th{background:#eee;}</style></head><body>' + cuerpoProformaHtml(ultimaProforma) + '</body></html>');
-            w.document.close(); w.focus();
-            setTimeout(function () { w.print(); }, 300);
-        }
-
-        $(document).ready(function () { listarProformas(); });
+        document.addEventListener('DOMContentLoaded', function () {
+            initEstados();
+            cargarClientes();
+            buscarProformas(1);
+            if (window.flatpickr) { ['fDesde', 'fHasta'].forEach(function (id) { flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }); }); }
+        });
     </script>
-
 </body>
-
 </html>

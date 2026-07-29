@@ -41,7 +41,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var olist = db.Set<CHOFERES>()
                                   .Where(c => c.EstadoChofer != "Eliminado") // No se devuelven los choferes eliminados
@@ -104,7 +104,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var chofer = db.Set<CHOFERES>()
                                    .Where(c => c.Chofer_ID == id && c.EstadoChofer != "Eliminado") 
@@ -169,7 +169,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // 👇 Reemplazo de la condición original
                     var query = db.Set<CHOFERES>()
@@ -288,7 +288,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var camiones = from cc in db.Set<CHOFER_CAMION>()
                                    join c in db.Set<CAMIONES>() on cc.CamionID equals c.Camion_ID
@@ -342,7 +342,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var chofer = db.Set<CHOFERES>().Find(id);
 
@@ -426,7 +426,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var choferConDni = db.Set<CHOFERES>().FirstOrDefault(c => c.DNI == dni);
 
@@ -493,7 +493,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // Verifica si el DNI ya existe
                     var choferExistente = db.Set<CHOFERES>().FirstOrDefault(c => c.DNI == choferDto.DNI);
@@ -576,7 +576,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 // Buscar la entidad CHOFERES por ID
                 var chofer = db.Set<CHOFERES>().Find(id);
@@ -663,7 +663,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var chofer = db.Set<CHOFERES>().Find(id);
 
@@ -748,7 +748,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         //    try
         //    {
-        //        using (var db = new DbContext(connectionString))
+        //        using (var db = new SGTLAuditContext(connectionString))
         //        {
         //            // Buscar el chofer por ID
         //            CHOFERES oitem = db.Set<CHOFERES>().Find(id);

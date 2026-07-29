@@ -27,7 +27,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var provincias = db.Set<PROVINCIAS>()
                         .Select(p => new {
@@ -75,7 +75,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var provincia = db.Set<PROVINCIAS>()
                         .Where(p => p.Prov_ID == provId)
@@ -124,7 +124,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     IQueryable<LocalidadDto> query = db.Set<LOCALIDADES>()
                         .Where(l => l.ProvID == provId)

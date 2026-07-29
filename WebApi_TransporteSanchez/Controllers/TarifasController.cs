@@ -65,7 +65,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var olist = (from t in db.Set<TARIFAS_FIJAS>()
                                  join c in db.Set<CLIENTES>() on t.ClienteID equals c.Cliente_ID into cj
@@ -110,7 +110,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_FIJAS>().Find(id);
                     if (t == null) return NotFound();
@@ -149,7 +149,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = new TARIFAS_FIJAS
                     {
@@ -196,7 +196,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_FIJAS>().Find(id);
                     if (t == null) return NotFound();
@@ -238,7 +238,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_FIJAS>().Find(id);
                     if (t == null) return NotFound();
@@ -271,7 +271,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var olist = db.Set<TARIFAS_KM>()
                         .Select(t => new TarifaKmDto
@@ -304,7 +304,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_KM>().Find(id);
                     if (t == null) return NotFound();
@@ -340,7 +340,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = new TARIFAS_KM
                     {
@@ -384,7 +384,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_KM>().Find(id);
                     if (t == null) return NotFound();
@@ -423,7 +423,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var t = db.Set<TARIFAS_KM>().Find(id);
                     if (t == null) return NotFound();

@@ -34,7 +34,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     // Buscar al usuario por Nombre_Usuario y Contraseña (debe ser comparado de manera segura si está cifrado)
                     var usuario = db.Set<USUARIOS>().SingleOrDefault(u => u.Nombre_Usuario == request.Nombre_Usuario && u.Contraseña == request.Contraseña);

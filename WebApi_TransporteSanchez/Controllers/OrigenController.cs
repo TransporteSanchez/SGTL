@@ -39,7 +39,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var olist = (from c in db.Set<ORIGEN>()
                                  join cli in db.Set<CLIENTES>() on c.ClienteID equals cli.Cliente_ID into clj
@@ -76,7 +76,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var c = db.Set<ORIGEN>().Find(id);
                     if (c == null) return NotFound();
@@ -111,7 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var c = new ORIGEN
                     {
@@ -154,7 +154,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var c = db.Set<ORIGEN>().Find(id);
                     if (c == null) return NotFound();
@@ -196,7 +196,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
                     var c = db.Set<ORIGEN>().Find(id);
                     if (c == null) return NotFound();

@@ -43,7 +43,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var camiones = db.Set<CAMIONES>()
                         .Where(c => c.EstadoCamion != "Eliminado")
@@ -109,7 +109,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var query = db.Set<CAMIONES>().Where(c => c.EstadoCamion != "Eliminado");
 
@@ -197,7 +197,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var camion = db.Set<CAMIONES>()
                         .Where(c => c.Camion_ID == id && c.EstadoCamion != "Eliminado")
@@ -266,7 +266,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // Consultar los choferes asociados al camionID especificado, solo si el camión no ha sido eliminado
                     var choferes = from cc in db.Set<CHOFER_CAMION>()
@@ -311,7 +311,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // Crear una nueva entidad CAMIONES y asignar valores desde CamionDto
                     var camion = new CAMIONES
@@ -385,7 +385,7 @@ namespace WebApi_TransporteSanchez.Controllers
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 // Buscar la entidad CAMIONES por ID
                 var camion = db.Set<CAMIONES>().Find(id);
@@ -470,7 +470,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var camion = db.Set<CAMIONES>().Find(id);
 
@@ -549,7 +549,7 @@ namespace WebApi_TransporteSanchez.Controllers
         //        // Obtener la cadena de conexión dinámica
         //        string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-        //        using (var db = new DbContext(connectionString))
+        //        using (var db = new SGTLAuditContext(connectionString))
         //        {
         //            // Buscar el camión por ID
         //            CAMIONES oitem = db.Set<CAMIONES>().Find(id);

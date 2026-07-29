@@ -448,6 +448,8 @@
     <Compile Include="PROFORMAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="PROFORMAS_Extension.cs" />
+    <Compile Include="PROFORMA_DETALLE.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PROVINCIAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
@@ -467,6 +469,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>SGTL.edmx</DependentUpon>
     </Compile>
+    <Compile Include="Sgtlauditcontext.cs" />
     <Compile Include="TARIFAS_FIJAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>

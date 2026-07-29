@@ -42,7 +42,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var olist = (from v in db.Set<VIAJES>()
                                  join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj
@@ -111,7 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var query = db.Set<VIAJES>().AsQueryable();
 
@@ -191,7 +191,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var viaje = db.Set<VIAJES>().Where(v => v.Viaje_ID == id).FirstOrDefault();
 
@@ -254,7 +254,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var viaje = new VIAJES
                     {
@@ -329,7 +329,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 var viaje = db.Set<VIAJES>().Find(id);
 
@@ -392,7 +392,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var viaje = db.Set<VIAJES>().Find(id);
 

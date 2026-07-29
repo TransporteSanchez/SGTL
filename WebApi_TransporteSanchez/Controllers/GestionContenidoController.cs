@@ -36,7 +36,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var olist = db.Set<GESTION_CONTENIDO>().Select(c => new GestionContenidoDto
                     {
@@ -78,7 +78,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     // Buscar el contenido basado en el ID
                     var content = db.Set<GESTION_CONTENIDO>()
@@ -123,7 +123,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // Verificar que el registro exista
                     if (!db.Set<GESTION_CONTENIDO>().Any(x => x.GestionContenido_ID == id))

@@ -93,7 +93,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             string cnAudit = ConnectionStringHelper.GetConnectionString("SGTLEntities");
                             string origenIp = null;
                             try { origenIp = System.Web.HttpContext.Current?.Request?.UserHostAddress; } catch { }
-                            using (var dbAudit = new DbContext(cnAudit))
+                            using (var dbAudit = new SGTLAuditContext(cnAudit))
                             {
                                 dbAudit.Database.ExecuteSqlCommand(
                                     "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
@@ -137,7 +137,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private bool UserExists(string nombreUsuario)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 return db.Set<USUARIOS>().Any(user => user.Nombre_Usuario.ToLower() == nombreUsuario.ToLower());
             }
@@ -147,7 +147,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private bool IsPasswordValid(string password)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 return db.Set<USUARIOS>().Any(user => user.Contraseña == password);
             }
@@ -157,7 +157,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private USUARIOS Authenticate(LoginRequestDTO userLogin)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 return db.Set<USUARIOS>().FirstOrDefault(user =>
                     user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower() &&

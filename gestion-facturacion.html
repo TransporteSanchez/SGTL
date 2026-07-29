@@ -4,514 +4,574 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Facturación</title>
-
+    <title>Transporte Sanchez - Gestionar facturas (Proformas)</title>
     <style>
-        #app {
-            display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaViajes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaViajes th,
-        #tablaViajes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaViajes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .pagination { justify-content: center; }
+        .bloque-titulo { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 18px 0 12px; }
+        .req::after { content: " *"; color: #dc3545; }
+        #tablaConceptos td { vertical-align: middle; }
+        #tablaConceptos input, #tablaConceptos select { min-width: 70px; }
+        .totales dt { font-weight: 500; }
+        .badge-estado { font-size: .75rem; }
+        .tbl-prof th, .tbl-prof td { vertical-align: middle; }
     </style>
-
-
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
-    <link rel="shortcut icon"
-        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
-        type="image/png">
-
-
-
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
 
 <body>
     <script src="assets/static/js/initTheme.js"></script>
-
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+    <div id="loading-message" style="display:none;">
+        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando...</span></div>
     </div>
 
     <div id="app">
         <div id="sidebar"></div>
-
         <div id="main" class='layout-navbar navbar-fixed'>
-            <!--Header-->
             <header>
-
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
-                        <a href="#" class="burger-btn d-block">
-                            <i class="bi bi-justify fs-3"></i>
-                        </a>
-
-                        <!--btn para expandir Menú lateral-->
-
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-
-                        <!--Llamado a las opciones del header-->
-
+                        <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
                         <div id="header-container"></div>
-
                         <script src="./assets/static/js/header.js"></script>
-
                     </div>
                 </nav>
             </header>
 
             <div class="page-heading">
-
-                <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header"><h5 class="card-title">Generar proforma</h5></div>
-                        <div class="card-body">
-                            <div id="alertaFactura" class="alert alert-light-danger color-danger" style="display:none;"></div>
-                            <div class="row mb-3">
-                                <div class="col-md-4">
-                                    <label class="form-label">Cliente</label>
-                                    <select class="form-select" id="fcCliente"><option value="">Seleccione un cliente</option></select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Fecha desde</label>
-                                    <input type="text" class="form-control" id="fcDesde" autocomplete="off" placeholder="AAAA-MM-DD">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Fecha hasta</label>
-                                    <input type="text" class="form-control" id="fcHasta" autocomplete="off" placeholder="AAAA-MM-DD">
-                                </div>
-                                <div class="col-md-2 d-flex align-items-end">
-                                    <button type="button" class="btn btn-light w-100" onclick="previsualizar()">Previsualizar</button>
-                                </div>
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-0">Gestionar facturas — Proformas</h5>
+                                <small class="text-muted">Documentos comerciales sin validez fiscal.</small>
                             </div>
-                            <div id="previewVacio" class="text-center text-muted my-3" style="display:none;">No hay viajes para ese cliente en el per&iacute;odo seleccionado.</div>
-                            <div id="previewArea" style="display:none;">
-                                <div class="table-responsive">
-                                    <table class="table table-striped" id="tablaPreview">
-                                        <thead><tr>
-                                            <th>#</th><th>Fecha</th><th>Origen</th><th>Destino</th>
-                                            <th>Remito</th><th>Distancia</th><th>Tarifa</th><th>Importe</th>
-                                        </tr></thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <div><strong>Viajes:</strong> <span id="pvCantidad">0</span> &nbsp;&nbsp;|&nbsp;&nbsp; <strong>Total:</strong> $<span id="pvTotal">0</span></div>
-                                    <button type="button" class="btn btn-success" onclick="generar()">Generar proforma</button>
-                                </div>
-                            </div>
+                            <button class="btn btn-primary" onclick="nuevaProforma()"><i class="bi bi-plus-lg me-1"></i>Nueva proforma</button>
                         </div>
-                    </div>
-                </section>
-                <section class="section">
-                    <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header"><h5 class="card-title">Proformas generadas</h5></div>
                         <div class="card-body">
+                            <!-- Filtros -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-2 col-6"><label class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..."></div>
+                                <div class="col-md-3 col-6"><label class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Desde</label><input id="fDesde" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Hasta</label><input id="fHasta" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-1 col-6"><label class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="usuario"></div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
+                                    <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
+                                </div>
+                            </div>
                             <div class="table-responsive">
-                                <table class="table table-striped" id="tablaProformas">
+                                <table class="table table-hover tbl-prof">
                                     <thead><tr>
-                                        <th>#</th><th>Cliente</th><th>Desde</th><th>Hasta</th>
-                                        <th>Viajes</th><th>Total</th><th>Creaci&oacute;n</th><th>Acciones</th>
+                                        <th>Número</th><th>Fecha</th><th>Cliente</th><th>Destino</th>
+                                        <th class="text-end">Total</th><th>Estado</th><th>Usuario</th><th class="text-center">Acciones</th>
                                     </tr></thead>
-                                    <tbody></tbody>
+                                    <tbody id="cuerpoProformas"><tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
                             </div>
+                            <nav><ul class="pagination mt-2" id="paginacion"></ul></nav>
                         </div>
                     </div>
                 </section>
             </div>
-
-            <!--Fin sección de la tabla-->
-
-            <!--Footer-->
-
-            <footer>
-                <div id="footer-container"></div>
-                <script src="./assets/static/js/footer.js"></script>
-            </footer>
-        </div>
-
-    </div>
-
-
-
-    <!-- Modal ver/imprimir proforma -->
-    <div class="modal fade text-left" id="modalProforma" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title">Proforma</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
-                </div>
-                <div class="modal-body"><div id="cuerpoProforma"></div></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="imprimirProforma()"><i class="bi bi-printer"></i> Imprimir</button>
-                </div>
-            </div>
+            <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
         </div>
     </div>
 
-    <!-- Modal eliminar proforma -->
-    <div class="modal fade text-left" id="modalEliminarProf" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+    <!-- ============ Modal Proforma (crear/editar/ver) ============ -->
+    <div class="modal fade" id="modalProforma" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirmar eliminaci&oacute;n</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                    <h5 class="modal-title" id="tituloModal">Nueva proforma</h5>
+                    <span id="badgeEstadoModal" class="badge bg-secondary ms-2"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">&iquest;Est&aacute; seguro que desea eliminar esta proforma?</div>
+                <div class="modal-body">
+                    <input type="hidden" id="p_id">
+                    <!-- Bloque 1: Datos generales -->
+                    <div class="bloque-titulo">1 · Datos generales</div>
+                    <div class="row g-2">
+                        <div class="col-md-3"><label class="form-label">Número</label><input id="p_numero" class="form-control" readonly placeholder="(se asigna al generar)"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha de emisión</label><input id="p_femision" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha de vencimiento</label><input id="p_fvto" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Moneda</label><select id="p_moneda" class="form-select"><option>ARS</option></select></div>
+                    </div>
+                    <!-- Bloque 2: Cliente -->
+                    <div class="bloque-titulo">2 · Datos del cliente</div>
+                    <div class="row g-2">
+                        <div class="col-md-4"><label class="form-label req">Cliente</label><select id="p_cliente" class="form-select" onchange="autocompletarCliente()"><option value="">Seleccionar…</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Razón social</label><input id="p_cli_razon" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Nombre comercial</label><input id="p_cli_nombre" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">CUIT/CUIL/DNI</label><input id="p_cli_cuit" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Condición IVA</label><input id="p_cli_condiva" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">Dirección</label><input id="p_cli_dir" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Ciudad</label><input id="p_cli_ciudad" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Provincia</label><input id="p_cli_prov" class="form-control"></div>
+                        <div class="col-md-2"><label class="form-label">Cód. postal</label><input id="p_cli_cp" class="form-control"></div>
+                        <div class="col-md-2"><label class="form-label">Teléfono</label><input id="p_cli_tel" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Email</label><input id="p_cli_email" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Persona de contacto</label><input id="p_cli_contacto" class="form-control"></div>
+                    </div>
+                    <!-- Bloque 3: Transporte -->
+                    <div class="bloque-titulo">3 · Información del transporte</div>
+                    <div class="row g-2">
+                        <div class="col-md-3"><label class="form-label">Tipo de servicio</label><input id="p_tiposervicio" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label req">Origen</label><input id="p_origen" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label req">Destino</label><input id="p_destino" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Tipo de carga</label><input id="p_tipocarga" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha estimada de carga</label><input id="p_fcarga" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha estimada de entrega</label><input id="p_fentrega" class="form-control"></div>
+                        <div class="col-md-2"><label class="form-label">Peso</label><input id="p_peso" class="form-control"></div>
+                        <div class="col-md-2"><label class="form-label">Volumen</label><input id="p_volumen" class="form-control"></div>
+                        <div class="col-md-2"><label class="form-label">Bultos</label><input id="p_bultos" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Vehículo requerido</label><input id="p_vehiculo" class="form-control"></div>
+                        <div class="col-md-8"><label class="form-label">Observaciones logísticas</label><input id="p_obslog" class="form-control"></div>
+                    </div>
+                    <!-- Bloque 4: Conceptos -->
+                    <div class="bloque-titulo d-flex justify-content-between align-items-center">
+                        <span>4 · Detalle de conceptos</span>
+                        <span>
+                            <button class="btn btn-sm btn-light-secondary" onclick="abrirTraerViajes()"><i class="bi bi-truck me-1"></i>Traer viajes</button>
+                            <button class="btn btn-sm btn-primary" onclick="agregarLinea()"><i class="bi bi-plus-lg me-1"></i>Agregar línea</button>
+                        </span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered" id="tablaConceptos">
+                            <thead class="table-light"><tr>
+                                <th>Código</th><th>Concepto</th><th>Descripción</th><th>Cant.</th><th>Unidad</th>
+                                <th>P. Unit.</th><th>Desc.%</th><th>IVA%</th><th class="text-end">Subtotal</th><th></th>
+                            </tr></thead>
+                            <tbody id="cuerpoConceptos"></tbody>
+                        </table>
+                    </div>
+                    <!-- Bloque 5: Totales -->
+                    <div class="row">
+                        <div class="col-md-6 col-lg-5 ms-auto">
+                            <div class="bloque-titulo">5 · Totales</div>
+                            <dl class="row totales mb-0">
+                                <dt class="col-7">Subtotal</dt><dd class="col-5 text-end" id="t_subtotal">$ 0,00</dd>
+                                <dt class="col-7">Descuentos</dt><dd class="col-5 text-end" id="t_desc">$ 0,00</dd>
+                                <dt class="col-7">Subtotal neto</dt><dd class="col-5 text-end" id="t_neto">$ 0,00</dd>
+                                <dt class="col-7">IVA</dt><dd class="col-5 text-end" id="t_iva">$ 0,00</dd>
+                                <dt class="col-7">Otros impuestos</dt><dd class="col-5 text-end"><input id="p_otros" class="form-control form-control-sm text-end" value="0" oninput="recalcularTotales()"></dd>
+                                <dt class="col-7 fs-5 fw-bold">TOTAL GENERAL</dt><dd class="col-5 text-end fs-5 fw-bold" id="t_total">$ 0,00</dd>
+                            </dl>
+                        </div>
+                    </div>
+                    <!-- Bloque 6: Condiciones comerciales -->
+                    <div class="bloque-titulo">6 · Condiciones comerciales</div>
+                    <div class="row g-2">
+                        <div class="col-md-3"><label class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Plazo de pago</label><input id="p_plazopago" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Validez</label><input id="p_validez" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Tiempo estimado del servicio</label><input id="p_tiemposervicio" class="form-control"></div>
+                        <div class="col-md-6"><label class="form-label">Observaciones comerciales</label><textarea id="p_obscom" class="form-control" rows="2"></textarea></div>
+                        <div class="col-md-6"><label class="form-label">Condiciones particulares</label><textarea id="p_condpart" class="form-control" rows="2"></textarea></div>
+                    </div>
+                    <!-- Bloque 7: Observaciones -->
+                    <div class="bloque-titulo">7 · Observaciones</div>
+                    <textarea id="p_observaciones" class="form-control" rows="3" placeholder="Mercadería frágil, requiere seguro adicional, etc."></textarea>
+                </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarProf()">Eliminar</button>
+                    <button type="button" class="btn btn-outline-primary" id="btnGuardarBorrador" onclick="guardarBorrador()"><i class="bi bi-save me-1"></i>Guardar borrador</button>
+                    <button type="button" class="btn btn-success" id="btnGenerar" onclick="generarProforma()"><i class="bi bi-file-earmark-check me-1"></i>Generar proforma</button>
                 </div>
             </div>
         </div>
     </div>
-    <!--Scripts-->
+
+    <!-- Modal traer viajes -->
+    <div class="modal fade" id="modalViajes" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Traer viajes del cliente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <p class="text-muted small">Trae los viajes del cliente seleccionado en el período como líneas de concepto (se suman a las existentes).</p>
+                <div class="row g-2">
+                    <div class="col-6"><label class="form-label">Desde</label><input id="v_desde" class="form-control" placeholder="AAAA-MM-DD"></div>
+                    <div class="col-6"><label class="form-label">Hasta</label><input id="v_hasta" class="form-control" placeholder="AAAA-MM-DD"></div>
+                </div>
+            </div>
+            <div class="modal-footer"><button class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" onclick="traerViajes()">Traer</button></div>
+        </div></div>
+    </div>
+
+    <!-- Modal cambiar estado -->
+    <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Cambiar estado</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <input type="hidden" id="e_id">
+                <label class="form-label">Nuevo estado</label>
+                <select id="e_estado" class="form-select"></select>
+            </div>
+            <div class="modal-footer"><button class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-primary" onclick="confirmarEstado()">Aplicar</button></div>
+        </div></div>
+    </div>
+
+    <!-- Scripts -->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
-    <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
-    <!-- Carga de diseño y roles -->
     <script>
         window.onload = function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            // Cargar header, footer y configuración
-            window.loadHeader();
-            window.loadFooter();
-
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
+            var lm = document.getElementById('loading-message');
+            lm.style.display = 'block'; document.getElementById('app').style.display = 'none';
+            if (window.loadHeader) window.loadHeader();
+            if (window.loadFooter) window.loadFooter();
+            loadSettings().then(finish).catch(finish);
+            function finish() { lm.style.display = 'none'; document.getElementById('app').style.display = 'block'; if (window.loadSidebar) window.loadSidebar(); }
         };
-
-        function adjustVisibilityBasedOnRole() {
-            const userRole = localStorage.getItem('userRole');
-            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-
-            if (userRole && userRole.toLowerCase() === 'admin') {
-                gestionarContenidoBtn.style.display = 'block';
-            } else {
-                gestionarContenidoBtn.style.display = 'none';
-            }
-        }
-
         async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
                 xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data) {
-                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            console.error('La respuesta de la API no contiene los datos esperados.');
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        console.error('Error en la petición:', xhr.statusText);
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    console.error('Error al cargar la configuración de la API.');
-                    reject(new Error('Error de red'));
-                };
-
+                xhr.onload = function () { try { var d = JSON.parse(xhr.responseText); if (d && typeof applyStyles === 'function') applyStyles(d.Logo, d.ColorFondo, d.ColorBotonesMenu, d.ContenidoPiePagina); } catch (e) { } resolve(); };
+                xhr.onerror = function () { reject(); };
                 xhr.send();
             });
         }
-
     </script>
 
-    <!-- Comportamiento tooltip -->
-    <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-
-            // Manejo específico para tooltips en botones deshabilitados
-            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-
-    </script>
-
-
-    <!-- ================= Fase 3: Facturacion / Proformas ================= -->
     <script>
         const API_FAC = 'http://localhost:50222/api';
-        let ultimaProforma = null;   // {Proforma, Detalle} para imprimir
-        let profIdEliminar = null;
+        const ESTADOS = ['Borrador', 'Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
+        const IVA_OPCIONES = [0, 10.5, 21];
+        var estadoActual = 'Borrador';
+        var profState = { page: 1, totalPages: 1 };
+        var clientesMap = {};
 
-        function d10(x) { return x ? String(x).substring(0, 10) : ''; }
-        function money(x) { return Number(x || 0).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function usuario() { try { return localStorage.getItem('username') || 'sistema'; } catch (e) { return 'sistema'; } }
+        function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
+        function toIso(v) { v = (v || '').trim(); return v ? v : null; }
+        function badgeEstado(e) {
+            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Enviada': 'bg-info', 'Aceptada': 'bg-success', 'Rechazada': 'bg-danger', 'Anulada': 'bg-dark' };
+            return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
+        }
+        function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+        function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); }
 
-        function parseErr(xhr) {
-            try {
-                let r = xhr.responseJSON;
-                if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
-                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
-                if (r && r.Message) { return r.Message; }
-                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
-            } catch (e) { }
-            return 'Ocurrio un error. Revise los datos e intente nuevamente.';
+        // ---------- Clientes ----------
+        function cargarClientes() {
+            $.ajax({ url: API_FAC + '/Clientes', type: 'GET' }).done(function (data) {
+                var arr = data || [];
+                var opts = '<option value="">Seleccionar…</option>';
+                var optsFiltro = '<option value="">Todos</option>';
+                arr.forEach(function (c) {
+                    var id = c.Cliente_ID || c.ClienteID || c.Id;
+                    var nom = c.Razon_Social || c.RazonSocial || ('Cliente ' + id);
+                    clientesMap[id] = c;
+                    opts += '<option value="' + id + '">' + esc(nom) + '</option>';
+                    optsFiltro += '<option value="' + id + '">' + esc(nom) + '</option>';
+                });
+                document.getElementById('p_cliente').innerHTML = opts;
+                document.getElementById('fCliente').innerHTML = optsFiltro;
+            });
+        }
+        function autocompletarCliente() {
+            var id = val('p_cliente');
+            var c = clientesMap[id];
+            if (!c) return;
+            setVal('p_cli_razon', c.Razon_Social || c.RazonSocial || '');
+            setVal('p_cli_cuit', c.CUIT_Cliente || c.CUIT || '');
+            var dir = [(c.Calle || ''), (c.AlturaCalle || '')].join(' ').trim();
+            setVal('p_cli_dir', dir);
+            setVal('p_cli_tel', c.Telefono || '');
+            setVal('p_cli_email', c.Email || '');
+            // Ciudad/Provincia/CondIVA quedan editables (son códigos en CLIENTES).
         }
 
-        window.clientesFechaAlta = {};
-        function cargarClientesFac() {
-            $.ajax({ url: API_FAC + '/Clientes', type: 'GET' })
-                .done(function (data) {
-                    const s = $('#fcCliente').empty().append('<option value="">Seleccione un cliente</option>');
-                    window.clientesFechaAlta = {};
-                    (data || []).forEach(function (c) {
-                        s.append('<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>');
-                        if (c.Fecha_Alta) { window.clientesFechaAlta[c.Cliente_ID] = String(c.Fecha_Alta).substring(0, 10); }
-                    });
-                })
-                .fail(function () { $('#fcCliente').empty().append('<option value="">Seleccione un cliente</option>'); });
+        // ---------- Estados (filtro) ----------
+        function initEstadosFiltro() {
+            var s = document.getElementById('fEstado');
+            ESTADOS.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; });
         }
 
-        // Al elegir un cliente, precargar 'Fecha desde' con su fecha de alta (punto mínimo de búsqueda)
-        function alCambiarClienteFac() {
-            const id = $('#fcCliente').val();
-            const alta = window.clientesFechaAlta[id];
-            if (!alta) { return; }
-            const el = document.getElementById('fcDesde');
-            if (el && el._flatpickr) { el._flatpickr.setDate(alta, true); }
-            else { $('#fcDesde').val(alta); }
-        }
-
-        function previsualizar() {
-            $('#alertaFactura').hide().empty();
-            $('#previewArea').hide();
-            $('#previewVacio').hide();
-
-            const cliente = parseInt($('#fcCliente').val()) || 0;
-            const desde = $('#fcDesde').val();
-            const hasta = $('#fcHasta').val();
-            if (!cliente || !desde || !hasta) { $('#alertaFactura').html('Seleccione cliente, fecha desde y fecha hasta.').show(); return; }
-
-            $.ajax({
-                url: API_FAC + '/Proformas/Previsualizar',
-                type: 'GET',
-                data: { clienteId: cliente, fechaDesde: desde, fechaHasta: hasta }
-            })
-                .done(function (r) {
-                    const tb = $('#tablaPreview tbody').empty();
-                    if (!r.Viajes || !r.Viajes.length) {
-                        $('#previewVacio').show();
+        // ---------- Grilla ----------
+        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { setVal(i, ''); }); setVal('fCliente', ''); setVal('fEstado', ''); buscarProformas(1); }
+        function buscarProformas(page) {
+            profState.page = page || 1;
+            var p = new URLSearchParams();
+            if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
+            if (val('fCliente')) p.append('clienteId', val('fCliente'));
+            if (val('fEstado')) p.append('estado', val('fEstado'));
+            if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
+            if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
+            if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            p.append('page', profState.page); p.append('pageSize', 15);
+            var cuerpo = document.getElementById('cuerpoProformas');
+            cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
+            fetch(API_FAC + '/Proformas?' + p.toString())
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (!res.ok) {
+                        cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error del servidor: ' + esc(res.j.detalle || res.j.error || JSON.stringify(res.j)) + '</td></tr>';
+                        document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '';
                         return;
                     }
-                    r.Viajes.forEach(function (v) {
-                        tb.append('<tr>' +
-                            '<td>' + v.Viaje_ID + '</td>' +
-                            '<td>' + d10(v.Fecha_Inicio) + '</td>' +
-                            '<td>' + (v.Origen || '') + '</td>' +
-                            '<td>' + (v.Destino || '') + '</td>' +
-                            '<td>' + (v.Num_Remito || '') + '</td>' +
-                            '<td>' + (v.Distancia_KM || '') + '</td>' +
-                            '<td>' + (v.TipoTarifa || '') + '</td>' +
-                            '<td>$' + money(v.Importe) + '</td>' +
-                            '</tr>');
-                    });
-                    $('#pvCantidad').text(r.CantidadViajes);
-                    $('#pvTotal').text(money(r.ImporteTotal));
-                    $('#previewArea').show();
+                    renderGrid(res.j);
                 })
-                .fail(function (xhr) { $('#alertaFactura').html(parseErr(xhr)).show(); });
+                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">No se pudieron cargar las proformas (sin respuesta del API).</td></tr>'; });
+        }
+        function renderGrid(data) {
+            var cuerpo = document.getElementById('cuerpoProformas');
+            var items = (data && data.items) || [];
+            profState.totalPages = (data && data.totalPages) || 1;
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas.</td></tr>'; document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '0 resultados'; return; }
+            cuerpo.innerHTML = items.map(function (x) {
+                var esBorr = (x.Estado || '') === 'Borrador';
+                var acc = '<button class="btn btn-sm btn-outline-secondary" title="Ver" onclick="verProforma(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> ';
+                if (esBorr) acc += '<button class="btn btn-sm btn-outline-primary" title="Editar" onclick="editarProforma(' + x.Proforma_ID + ')"><i class="bi bi-pencil"></i></button> ';
+                acc += '<button class="btn btn-sm btn-outline-info" title="Duplicar" onclick="duplicar(' + x.Proforma_ID + ')"><i class="bi bi-files"></i></button> ';
+                if (!esBorr) acc += '<button class="btn btn-sm btn-outline-warning" title="Cambiar estado" onclick="abrirEstado(' + x.Proforma_ID + ',\'' + (x.Estado || '') + '\')"><i class="bi bi-arrow-repeat"></i></button> ';
+                if ((x.Estado || '') !== 'Aceptada' && (x.Estado || '') !== 'Anulada') acc += '<button class="btn btn-sm btn-outline-danger" title="Anular" onclick="anular(' + x.Proforma_ID + ')"><i class="bi bi-x-octagon"></i></button>';
+                return '<tr>' +
+                    '<td>' + esc(x.Numero || '—') + '</td>' +
+                    '<td>' + esc(fdate(x.Fecha)) + '</td>' +
+                    '<td>' + esc(x.Cliente || '—') + '</td>' +
+                    '<td>' + esc(x.Destino || '—') + '</td>' +
+                    '<td class="text-end">' + money(x.Total) + '</td>' +
+                    '<td>' + badgeEstado(x.Estado) + '</td>' +
+                    '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center" style="white-space:nowrap;">' + acc + '</td></tr>';
+            }).join('');
+            document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
+            renderPag();
+        }
+        function renderPag() {
+            var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
+            if (tp <= 1) { ul.innerHTML = ''; return; }
+            var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
+            for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
+            h += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg + 1) + ')">»</a></li>';
+            ul.innerHTML = h;
+        }
+        function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
+
+        // ---------- Conceptos ----------
+        function filaConcepto(l) {
+            l = l || {};
+            var ivaSel = IVA_OPCIONES.map(function (v) { return '<option value="' + v + '"' + (Number(l.IvaPct) === v ? ' selected' : '') + '>' + v + '%</option>'; }).join('');
+            var tr = document.createElement('tr');
+            tr.innerHTML =
+                '<td><input class="form-control form-control-sm c-codigo" value="' + esc(l.Codigo || '') + '"></td>' +
+                '<td><input class="form-control form-control-sm c-concepto" value="' + esc(l.Concepto || '') + '"></td>' +
+                '<td><input class="form-control form-control-sm c-desc" value="' + esc(l.Descripcion || '') + '"></td>' +
+                '<td><input type="number" step="0.01" class="form-control form-control-sm c-cant text-end" value="' + (l.Cantidad != null ? l.Cantidad : 1) + '"></td>' +
+                '<td><input class="form-control form-control-sm c-unidad" value="' + esc(l.Unidad || '') + '"></td>' +
+                '<td><input type="number" step="0.01" class="form-control form-control-sm c-precio text-end" value="' + (l.PrecioUnitario != null ? l.PrecioUnitario : 0) + '"></td>' +
+                '<td><input type="number" step="0.01" class="form-control form-control-sm c-desc-pct text-end" value="' + (l.DescuentoPct != null ? l.DescuentoPct : 0) + '"></td>' +
+                '<td><select class="form-select form-select-sm c-iva">' + ivaSel + '</select></td>' +
+                '<td class="text-end c-subtotal">$ 0,00</td>' +
+                '<td style="white-space:nowrap;"><button class="btn btn-sm btn-outline-info" title="Duplicar" onclick="dupLinea(this)"><i class="bi bi-files"></i></button> <button class="btn btn-sm btn-outline-danger" title="Quitar" onclick="delLinea(this)"><i class="bi bi-trash"></i></button></td>';
+            tr.querySelectorAll('input,select').forEach(function (inp) { inp.addEventListener('input', recalcularTotales); inp.addEventListener('change', recalcularTotales); });
+            return tr;
+        }
+        function agregarLinea(l) { document.getElementById('cuerpoConceptos').appendChild(filaConcepto(l)); recalcularTotales(); }
+        function delLinea(btn) { btn.closest('tr').remove(); recalcularTotales(); }
+        function dupLinea(btn) { var t = btn.closest('tr'); var l = leerFila(t); var nueva = filaConcepto(l); t.after(nueva); recalcularTotales(); }
+        function leerFila(tr) {
+            function g(cls) { var e = tr.querySelector(cls); return e ? e.value : ''; }
+            return { Codigo: g('.c-codigo'), Concepto: g('.c-concepto'), Descripcion: g('.c-desc'), Cantidad: parseFloat(g('.c-cant')) || 0, Unidad: g('.c-unidad'), PrecioUnitario: parseFloat(g('.c-precio')) || 0, DescuentoPct: parseFloat(g('.c-desc-pct')) || 0, IvaPct: parseFloat(g('.c-iva')) || 0 };
+        }
+        function recalcularTotales() {
+            var subtotal = 0, desc = 0, iva = 0;
+            document.querySelectorAll('#cuerpoConceptos tr').forEach(function (tr) {
+                var l = leerFila(tr);
+                var base = l.Cantidad * l.PrecioUnitario;
+                var dl = base * (l.DescuentoPct / 100);
+                var neto = base - dl;
+                var il = neto * (l.IvaPct / 100);
+                subtotal += base; desc += dl; iva += il;
+                tr.querySelector('.c-subtotal').textContent = money(neto);
+            });
+            var otros = parseFloat(val('p_otros')) || 0;
+            document.getElementById('t_subtotal').textContent = money(subtotal);
+            document.getElementById('t_desc').textContent = money(desc);
+            document.getElementById('t_neto').textContent = money(subtotal - desc);
+            document.getElementById('t_iva').textContent = money(iva);
+            document.getElementById('t_total').textContent = money(subtotal - desc + iva + otros);
         }
 
-        function generar() {
-            const cliente = parseInt($('#fcCliente').val()) || 0;
-            const desde = $('#fcDesde').val();
-            const hasta = $('#fcHasta').val();
-            if (!cliente || !desde || !hasta) { $('#alertaFactura').html('Seleccione cliente, fecha desde y fecha hasta.').show(); return; }
-
-            $.ajax({
-                url: API_FAC + '/Proformas',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ ClienteID: cliente, FechaDesde: desde, FechaHasta: hasta })
-            })
-                .done(function () {
-                    alert('Proforma generada correctamente.');
-                    $('#previewArea').hide();
-                    listarProformas();
+        // ---------- Traer viajes ----------
+        function abrirTraerViajes() {
+            if (!val('p_cliente')) { alert('Elegí un cliente primero.'); return; }
+            $('#modalViajes').modal('show');
+        }
+        function traerViajes() {
+            var cli = val('p_cliente'), d = val('v_desde').trim(), h = val('v_hasta').trim();
+            if (!cli || !d || !h) { alert('Completá cliente y fechas.'); return; }
+            fetch(API_FAC + '/Proformas/PrellenarViajes?clienteId=' + encodeURIComponent(cli) + '&desde=' + d + '&hasta=' + h)
+                .then(function (r) { return r.ok ? r.json() : []; })
+                .then(function (lineas) {
+                    if (!lineas || !lineas.length) { alert('No hay viajes para ese cliente en el período.'); return; }
+                    lineas.forEach(function (l) { agregarLinea(l); });
+                    $('#modalViajes').modal('hide');
                 })
-                .fail(function (xhr) { $('#alertaFactura').html(parseErr(xhr)).show(); });
+                .catch(function () { alert('Error al traer viajes.'); });
         }
 
-        function listarProformas() {
-            $.ajax({ url: API_FAC + '/Proformas', type: 'GET' })
-                .done(function (data) {
-                    const tb = $('#tablaProformas tbody').empty();
-                    if (!data || !data.length) { tb.html('<tr><td colspan="8" class="text-center">No hay proformas generadas</td></tr>'); return; }
-                    data.forEach(function (p) {
-                        tb.append('<tr>' +
-                            '<td>' + p.Proforma_ID + '</td>' +
-                            '<td>' + (p.ClienteRazon || '') + '</td>' +
-                            '<td>' + d10(p.FechaDesde) + '</td>' +
-                            '<td>' + d10(p.FechaHasta) + '</td>' +
-                            '<td>' + (p.CantidadViajes || '') + '</td>' +
-                            '<td>$' + money(p.ImporteTotal) + '</td>' +
-                            '<td>' + d10(p.FechaCreacion) + '</td>' +
-                            '<td><button class="btn btn-primary btn-sm" onclick="verProforma(' + p.Proforma_ID + ')"><i class="bi bi-eye"></i></button> ' +
-                            '<button class="btn btn-danger btn-sm ms-1" onclick="abrirEliminarProf(' + p.Proforma_ID + ')"><i class="bi bi-trash"></i></button></td>' +
-                            '</tr>');
-                    });
+        // ---------- Form: abrir / leer ----------
+        function limpiarForm() {
+            ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_ciudad', 'p_cli_prov', 'p_cli_cp', 'p_cli_tel', 'p_cli_email', 'p_cli_contacto', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_tiemposervicio', 'p_obscom', 'p_condpart', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
+            setVal('p_cliente', ''); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
+            document.getElementById('cuerpoConceptos').innerHTML = '';
+            recalcularTotales();
+        }
+        function nuevaProforma() {
+            limpiarForm();
+            estadoActual = 'Borrador';
+            document.getElementById('tituloModal').textContent = 'Nueva proforma';
+            document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge bg-secondary ms-2">Borrador</span>';
+            setModoLectura(false);
+            $('#modalProforma').modal('show');
+        }
+        function editarProforma(id) { abrirProforma(id, false); }
+        function verProforma(id) { abrirProforma(id, true); }
+        function abrirProforma(id, soloLectura) {
+            fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
+                limpiarForm();
+                estadoActual = p.Estado || 'Borrador';
+                setVal('p_id', p.Proforma_ID);
+                setVal('p_numero', p.Numero); setVal('p_moneda', p.Moneda || 'ARS');
+                setVal('p_femision', p.FechaEmision ? p.FechaEmision.substring(0, 10) : '');
+                setVal('p_fvto', p.FechaVencimiento ? p.FechaVencimiento.substring(0, 10) : '');
+                setVal('p_cliente', p.ClienteID || '');
+                setVal('p_cli_razon', p.Cli_RazonSocial); setVal('p_cli_nombre', p.Cli_NombreComercial); setVal('p_cli_cuit', p.Cli_CUIT);
+                setVal('p_cli_condiva', p.Cli_CondIVA); setVal('p_cli_dir', p.Cli_Direccion); setVal('p_cli_ciudad', p.Cli_Ciudad);
+                setVal('p_cli_prov', p.Cli_Provincia); setVal('p_cli_cp', p.Cli_CP); setVal('p_cli_tel', p.Cli_Telefono);
+                setVal('p_cli_email', p.Cli_Email); setVal('p_cli_contacto', p.Cli_Contacto);
+                setVal('p_tiposervicio', p.TipoServicio); setVal('p_origen', p.Origen); setVal('p_destino', p.Destino);
+                setVal('p_tipocarga', p.TipoCarga); setVal('p_fcarga', p.FechaCarga ? p.FechaCarga.substring(0, 10) : ''); setVal('p_fentrega', p.FechaEntrega ? p.FechaEntrega.substring(0, 10) : '');
+                setVal('p_peso', p.Peso); setVal('p_volumen', p.Volumen); setVal('p_bultos', p.Bultos); setVal('p_vehiculo', p.VehiculoRequerido); setVal('p_obslog', p.ObsLogisticas);
+                setVal('p_formapago', p.FormaPago); setVal('p_plazopago', p.PlazoPago); setVal('p_validez', p.Validez); setVal('p_tiemposervicio', p.TiempoServicio);
+                setVal('p_obscom', p.ObsComerciales); setVal('p_condpart', p.CondParticulares); setVal('p_observaciones', p.Observaciones);
+                setVal('p_otros', p.OtrosImpuestos != null ? p.OtrosImpuestos : 0);
+                (p.Detalle || []).forEach(function (l) { agregarLinea(l); });
+                recalcularTotales();
+                document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
+                document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
+                // solo Borrador es editable
+                setModoLectura(soloLectura || estadoActual !== 'Borrador');
+                $('#modalProforma').modal('show');
+            }).catch(function () { alert('No se pudo abrir la proforma.'); });
+        }
+        function setModoLectura(ro) {
+            var cont = document.getElementById('modalProforma');
+            cont.querySelectorAll('input,select,textarea').forEach(function (e) { if (e.id === 'p_numero') return; e.disabled = ro; });
+            document.getElementById('btnGuardarBorrador').style.display = ro ? 'none' : '';
+            document.getElementById('btnGenerar').style.display = ro ? 'none' : '';
+            // botones de línea
+            cont.querySelectorAll('#tablaConceptos button, .bloque-titulo button').forEach(function (b) { b.style.display = ro ? 'none' : ''; });
+        }
+        function armarDto() {
+            var lineas = [];
+            document.querySelectorAll('#cuerpoConceptos tr').forEach(function (tr) { lineas.push(leerFila(tr)); });
+            return {
+                Proforma_ID: parseInt(val('p_id')) || 0,
+                Moneda: val('p_moneda'), FechaEmision: toIso(val('p_femision')), FechaVencimiento: toIso(val('p_fvto')),
+                ClienteID: parseInt(val('p_cliente')) || null,
+                Cli_RazonSocial: val('p_cli_razon'), Cli_NombreComercial: val('p_cli_nombre'), Cli_CUIT: val('p_cli_cuit'),
+                Cli_CondIVA: val('p_cli_condiva'), Cli_Direccion: val('p_cli_dir'), Cli_Ciudad: val('p_cli_ciudad'),
+                Cli_Provincia: val('p_cli_prov'), Cli_CP: val('p_cli_cp'), Cli_Telefono: val('p_cli_tel'),
+                Cli_Email: val('p_cli_email'), Cli_Contacto: val('p_cli_contacto'),
+                TipoServicio: val('p_tiposervicio'), Origen: val('p_origen'), Destino: val('p_destino'), TipoCarga: val('p_tipocarga'),
+                FechaCarga: toIso(val('p_fcarga')), FechaEntrega: toIso(val('p_fentrega')),
+                Peso: val('p_peso'), Volumen: val('p_volumen'), Bultos: val('p_bultos'), VehiculoRequerido: val('p_vehiculo'), ObsLogisticas: val('p_obslog'),
+                FormaPago: val('p_formapago'), PlazoPago: val('p_plazopago'), Validez: val('p_validez'), TiempoServicio: val('p_tiemposervicio'),
+                ObsComerciales: val('p_obscom'), CondParticulares: val('p_condpart'), Observaciones: val('p_observaciones'),
+                OtrosImpuestos: parseFloat(val('p_otros')) || 0,
+                Usu_Alta: usuario(), Usu_Modi: usuario(),
+                Detalle: lineas
+            };
+        }
+        function guardarBorrador(cb) {
+            var dto = armarDto();
+            var id = dto.Proforma_ID;
+            var url = API_FAC + '/Proformas' + (id ? '/' + id : '');
+            var method = id ? 'PUT' : 'POST';
+            fetch(url, { method: method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(dto) })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (!res.ok) { alert('No se pudo guardar: ' + (res.j.error || JSON.stringify(res.j))); return; }
+                    var nuevoId = res.j.Proforma_ID || id;
+                    setVal('p_id', nuevoId);
+                    if (cb) { cb(nuevoId); } else { alert('Borrador guardado.'); $('#modalProforma').modal('hide'); buscarProformas(profState.page); }
                 })
-                .fail(function () { $('#tablaProformas tbody').html('<tr><td colspan="8" class="text-center">No hay proformas generadas</td></tr>'); });
+                .catch(function () { alert('Error de red al guardar.'); });
+        }
+        function generarProforma() {
+            // primero guardar, luego generar
+            guardarBorrador(function (id) {
+                fetch(API_FAC + '/Proformas/' + id + '/Generar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
+                    .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                    .then(function (res) {
+                        if (!res.ok) {
+                            var msg = res.j.errores ? res.j.errores.join('\n') : (res.j.error || 'No se pudo generar.');
+                            alert('No se puede generar:\n' + msg); return;
+                        }
+                        alert('Proforma generada: ' + res.j.Numero);
+                        $('#modalProforma').modal('hide');
+                        buscarProformas(profState.page);
+                    })
+                    .catch(function () { alert('Error de red al generar.'); });
+            });
         }
 
-        function cuerpoProformaHtml(r) {
-            const p = r.Proforma;
-            const det = r.Detalle;
-            let filas = '';
-            if (det && det.Viajes) {
-                det.Viajes.forEach(function (v) {
-                    filas += '<tr><td>' + v.Viaje_ID + '</td><td>' + d10(v.Fecha_Inicio) + '</td><td>' + (v.Origen || '') + '</td><td>' + (v.Destino || '') + '</td><td>' + (v.Num_Remito || '') + '</td><td>' + (v.Distancia_KM || '') + '</td><td>' + (v.TipoTarifa || '') + '</td><td style="text-align:right;">$' + money(v.Importe) + '</td></tr>';
-                });
-            }
-            return '' +
-                '<h4 style="margin-bottom:4px;">Proforma N&deg; ' + p.Proforma_ID + '</h4>' +
-                '<p style="margin:0;"><strong>Cliente:</strong> ' + (p.ClienteRazon || '') + '</p>' +
-                '<p style="margin:0;"><strong>Per&iacute;odo:</strong> ' + d10(p.FechaDesde) + ' al ' + d10(p.FechaHasta) + '</p>' +
-                '<p style="margin:0 0 10px 0;"><strong>Fecha de emisi&oacute;n:</strong> ' + d10(p.FechaCreacion) + '</p>' +
-                '<table class="table table-bordered" style="width:100%;border-collapse:collapse;">' +
-                '<thead><tr><th>#</th><th>Fecha</th><th>Origen</th><th>Destino</th><th>Remito</th><th>Distancia</th><th>Tarifa</th><th style="text-align:right;">Importe</th></tr></thead>' +
-                '<tbody>' + filas + '</tbody></table>' +
-                '<h5 style="text-align:right;margin-top:10px;">Viajes: ' + (p.CantidadViajes || '0') + ' &nbsp;&nbsp; Total: $' + money(p.ImporteTotal) + '</h5>';
+        // ---------- Estado / Anular / Duplicar ----------
+        function abrirEstado(id, actual) {
+            setVal('e_id', id);
+            var sel = document.getElementById('e_estado');
+            var posibles = ESTADOS.filter(function (e) { return e !== 'Borrador' && e !== actual; });
+            sel.innerHTML = posibles.map(function (e) { return '<option value="' + e + '">' + e + '</option>'; }).join('');
+            $('#modalEstado').modal('show');
+        }
+        function confirmarEstado() {
+            var id = val('e_id'), e = val('e_estado');
+            fetch(API_FAC + '/Proformas/' + id + '/Estado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Estado: e, Usuario: usuario() }) })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) { if (!res.ok) { alert(res.j.error || 'No se pudo cambiar el estado.'); return; } $('#modalEstado').modal('hide'); buscarProformas(profState.page); })
+                .catch(function () { alert('Error de red.'); });
+        }
+        function anular(id) {
+            if (!confirm('¿Anular esta proforma? No se elimina, queda como Anulada.')) return;
+            fetch(API_FAC + '/Proformas/' + id + '/Anular', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) { if (!res.ok) { alert(res.j.error || 'No se pudo anular.'); return; } buscarProformas(profState.page); })
+                .catch(function () { alert('Error de red.'); });
+        }
+        function duplicar(id) {
+            fetch(API_FAC + '/Proformas/' + id + '/Duplicar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) { if (!res.ok) { alert(res.j.error || 'No se pudo duplicar.'); return; } alert('Duplicada como borrador.'); buscarProformas(1); })
+                .catch(function () { alert('Error de red.'); });
         }
 
-        function verProforma(id) {
-            $.ajax({ url: API_FAC + '/Proformas/' + id, type: 'GET' })
-                .done(function (r) {
-                    ultimaProforma = r;
-                    $('#cuerpoProforma').html(cuerpoProformaHtml(r));
-                    $('#modalProforma').modal('show');
-                })
-                .fail(function () { alert('No se pudo cargar la proforma.'); });
-        }
-
-        function imprimirProforma() {
-            if (!ultimaProforma) { return; }
-            const w = window.open('', '_blank');
-            w.document.write('<html><head><title>Proforma</title>' +
-                '<style>body{font-family:Arial,sans-serif;padding:24px;color:#222;} table{width:100%;border-collapse:collapse;margin-top:8px;} th,td{border:1px solid #999;padding:6px;font-size:13px;} th{background:#eee;}</style>' +
-                '</head><body>' + cuerpoProformaHtml(ultimaProforma) + '</body></html>');
-            w.document.close();
-            w.focus();
-            setTimeout(function () { w.print(); }, 300);
-        }
-
-        function abrirEliminarProf(id) { profIdEliminar = id; $('#modalEliminarProf').modal('show'); }
-        function confirmarEliminarProf() {
-            if (!profIdEliminar) { return; }
-            $.ajax({ url: API_FAC + '/Proformas/' + profIdEliminar, type: 'DELETE' })
-                .done(function () {
-                    $('#modalEliminarProf').modal('hide');
-                    alert('Proforma eliminada correctamente.');
-                    profIdEliminar = null;
-                    listarProformas();
-                })
-                .fail(function (xhr) { $('#modalEliminarProf').modal('hide'); alert(parseErr(xhr)); });
-        }
-
-        $(document).ready(function () {
+        document.addEventListener('DOMContentLoaded', function () {
+            initEstadosFiltro();
+            cargarClientes();
+            buscarProformas(1);
             if (window.flatpickr) {
-                ['fcDesde','fcHasta'].forEach(function (id) {
+                ['fDesde', 'fHasta', 'p_femision', 'p_fvto', 'p_fcarga', 'p_fentrega', 'v_desde', 'v_hasta'].forEach(function (id) {
                     flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true });
                 });
             }
-            $('#fcCliente').on('change', alCambiarClienteFac);
-            cargarClientesFac();
-            listarProformas();
         });
     </script>
-
 </body>
-
 </html>

@@ -33,7 +33,7 @@ namespace WebApi_TransporteSanchez
 
         // Entidades que NO se auditan (evita ruido y recursion).
         private static readonly HashSet<string> EntidadesExcluidas =
-            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AUDITORIA" };
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AUDITORIA", "PROFORMA_DETALLE" };
 
         // Campos que nunca se guardan en claro.
         private static readonly HashSet<string> CamposSensibles =

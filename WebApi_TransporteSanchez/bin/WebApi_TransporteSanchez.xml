@@ -525,5 +525,28 @@
             Monto = ValorKm × km.
             </summary>
         </member>
+        <member name="T:WebApi_TransporteSanchez.SGTLAuditContext">
+             <summary>
+             Contexto con auditoria automatica. Reemplaza al DbContext generico que usan
+             los controllers: cada vez que se llama SaveChanges(), registra en la tabla
+             AUDITORIA todas las altas/bajas/modificaciones con sus valores antes/despues.
+            
+             Integracion: reemplazar en los controllers  new DbContext(...)  por
+             new SGTLAuditContext(...)  (mismo argumento de connection string).
+             </summary>
+        </member>
+        <member name="P:WebApi_TransporteSanchez.SGTLAuditContext.UsuarioAuditoria">
+            <summary>
+            Usuario responsable del cambio. Si el controller lo setea, se usa ese.
+            Si no, se intenta deducir del propio registro (Usu_Modi / Usu_Alta) o del
+            contexto HTTP; en ultimo caso queda "sistema".
+            </summary>
+        </member>
+        <member name="M:WebApi_TransporteSanchez.SGTLAuditContext.RegistrarEvento(System.String,System.String,System.String,System.String,System.String,System.String,System.String)">
+            <summary>
+            Registra un evento manual (LOGIN, LOGOUT, u otra accion que no pasa por
+            SaveChanges). Nunca lanza excepcion: la auditoria no debe romper el flujo.
+            </summary>
+        </member>
     </members>
 </doc>

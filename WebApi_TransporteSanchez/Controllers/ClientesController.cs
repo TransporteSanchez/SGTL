@@ -48,7 +48,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     IQueryable<CLIENTES> query = db.Set<CLIENTES>();
 
@@ -121,7 +121,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var olist = db.Set<CLIENTES>().Select(c => new Cliente
                     {
@@ -184,7 +184,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var cliente = db.Set<CLIENTES>().Find(id);
 
@@ -254,7 +254,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var cuitNormalizado = NormalizarCUIT(clienteDto.CUIT_Cliente);
 
@@ -330,7 +330,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     CLIENTES oitem = db.Set<CLIENTES>().Find(id);
 
@@ -404,7 +404,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var cliente = db.Set<CLIENTES>().Find(id);
                     if (cliente == null)
@@ -447,7 +447,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 var cliente = db.Set<CLIENTES>().FirstOrDefault(x => x.CUIT_Cliente == cuitNormalizado);
                 if (cliente != null)
@@ -484,7 +484,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new DbContext(connectionString))
+            using (var db = new SGTLAuditContext(connectionString))
             {
                 var clienteConMismoCUIT = db.Set<CLIENTES>().FirstOrDefault(x => x.CUIT_Cliente == cuitNormalizado);
 
