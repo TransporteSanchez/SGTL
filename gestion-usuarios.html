@@ -187,8 +187,11 @@
                                     <div class="mb-3">
                                         <label for="password-column" class="form-label">Contraseña <span
                                                 class="text-danger">*</span></label>
-                                        <input type="text" id="password-column" class="form-control"
-                                            placeholder="Contraseña alfanumérica" />
+                                        <div class="input-group">
+                                            <input type="password" id="password-column" class="form-control"
+                                                placeholder="Contraseña alfanumérica" />
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password-column', this)" tabindex="-1"><i class="bi bi-eye"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="col-md-8 col-12">
@@ -273,8 +276,11 @@
                                     <div class="mb-3">
                                         <label for="editarContraseña" class="form-label">Contraseña <span
                                                 class="text-danger">*</span></label>
-                                        <input type="text" id="editarContraseña" class="form-control"
-                                            placeholder="Contraseña alfanumérica" />
+                                        <div class="input-group">
+                                            <input type="password" id="editarContraseña" class="form-control"
+                                                placeholder="Contraseña alfanumérica" />
+                                            <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('editarContraseña', this)" tabindex="-1"><i class="bi bi-eye"></i></button>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="editarRol" class="form-label">Rol <span class="text-danger">*</span></label>
@@ -441,12 +447,29 @@
         let estadoActualUsuario = null;
 
         function showToast(message) {
-            const toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(message);
-            toastElement.show();
-            const toast = new bootstrap.Toast(toastElement[0]);
-            toast.show();
-            setTimeout(function () { toast.hide(); }, 5000);
+            // Blindado: si el toast falla (API de Bootstrap), no debe cortar el flujo (cierre de modal, refresco, etc.).
+            try {
+                const toastElement = $('#alert-success');
+                if (!toastElement.length) { return; }
+                toastElement.find('.toast-body').text(message);
+                toastElement.show();
+                if (window.bootstrap && bootstrap.Toast) {
+                    const toast = new bootstrap.Toast(toastElement[0]);
+                    toast.show();
+                    setTimeout(function () { try { toast.hide(); } catch (e) { } }, 5000);
+                } else {
+                    setTimeout(function () { toastElement.hide(); }, 5000);
+                }
+            } catch (e) { /* no-op */ }
+        }
+
+
+        function togglePassword(id, btn) {
+            var input = document.getElementById(id);
+            if (!input) return;
+            var icon = btn.querySelector('i');
+            if (input.type === 'password') { input.type = 'text'; if (icon) icon.className = 'bi bi-eye-slash'; }
+            else { input.type = 'password'; if (icon) icon.className = 'bi bi-eye'; }
         }
 
         function escapeHtml(text) {
@@ -977,9 +1000,17 @@
                     contentType: 'application/json',
                     data: JSON.stringify(nuevoUsuario),
                     success: function () {
-                        showToast('El usuario se dio de alta exitosamente');
-                        $('#ModalAltaUsuario').modal('hide');
+                        // Cerrar el modal de forma robusta (se abre con data-bs-toggle -> instancia BS5)
+                        try { $('#ModalAltaUsuario').modal('hide'); } catch (e) { }
+                        try {
+                            var _el = document.getElementById('ModalAltaUsuario');
+                            if (window.bootstrap && bootstrap.Modal && _el) {
+                                var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
+                                if (_i) _i.hide();
+                            }
+                        } catch (e) { }
                         buscarUsuarios(1);
+                        showToast('El usuario se dio de alta exitosamente');
                     },
                     error: function (xhr) {
                         alert(parseApiError(xhr, 'Error al agregar el usuario.'));

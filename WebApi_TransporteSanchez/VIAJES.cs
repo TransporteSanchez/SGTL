@@ -23,8 +23,8 @@ namespace WebApi_TransporteSanchez
         public System.DateTime Fecha_Inicio { get; set; }
         public System.DateTime Fecha_Fin { get; set; }
         public int ChoferID { get; set; }
-        public int TarifaFijaID { get; set; }
-        public int TarifaKmID { get; set; }
+        public Nullable<int> TarifaFijaID { get; set; }
+        public Nullable<int> TarifaKmID { get; set; }
         public int ClienteID { get; set; }
         public int CamionID { get; set; }
         public System.DateTime Fecha_Alta { get; set; }

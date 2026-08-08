@@ -283,12 +283,20 @@
         let gruposCache = [];
 
         function showToast(message) {
-            const toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(message);
-            toastElement.show();
-            const toast = new bootstrap.Toast(toastElement[0]);
-            toast.show();
-            setTimeout(function () { toast.hide(); }, 3500);
+            // Blindado: si el toast falla (API de Bootstrap), no debe cortar el flujo (ej. refresco de tablas).
+            try {
+                const toastElement = $('#alert-success');
+                if (!toastElement.length) { return; }
+                toastElement.find('.toast-body').text(message);
+                toastElement.show();
+                if (window.bootstrap && bootstrap.Toast) {
+                    const toast = new bootstrap.Toast(toastElement[0]);
+                    toast.show();
+                    setTimeout(function () { try { toast.hide(); } catch (e) { } }, 3500);
+                } else {
+                    setTimeout(function () { toastElement.hide(); }, 3500);
+                }
+            } catch (e) { /* no-op */ }
         }
 
         function escapeHtml(text) {

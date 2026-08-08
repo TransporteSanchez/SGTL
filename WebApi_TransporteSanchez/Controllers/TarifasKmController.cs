@@ -49,7 +49,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     // Vigencia: la tarifa aplica al viaje si el rango del viaje (por fecha) está dentro del rango de la tarifa.
                     var candidatos = db.Set<TARIFAS_KM>()
