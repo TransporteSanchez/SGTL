@@ -20,7 +20,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             try
             {
-                using (var db = new DbContext(connectionString))
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var query = db.Set<TARIFAS_FIJAS>()
                         .Where(t => t.ClienteID == clienteId && t.OrigenID == origenId && t.DestinoID == destinoId);

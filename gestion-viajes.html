@@ -4,8 +4,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Clave Google Maps en content. Restricción referrer: incluí la URL exacta (ej. http://127.0.0.1:5502/* si usás Live Server). -->
-    <meta name="google-maps-api-key" content="AIzaSyDLmcAK6pkkh-OaRz7xCietaKcqSmMDnNc">
     <title>Transporte Sanchez - Sistema de gestión de viajes</title>
 
     <style>
@@ -47,163 +45,6 @@
         .pagination {
             justify-content: center;
         }
-
-        #origenSelect:disabled,
-        #destinoSelect:disabled {
-            background-color: #e9ecef;
-            cursor: not-allowed;
-            opacity: 0.85;
-        }
-
-        #tablaTarifaFijaModal th,
-        #tablaTarifaFijaModal td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        #tablaTarifaFijaModal {
-            width: 100%;
-        }
-
-        #tablaTarifaFijaModal thead th {
-            font-weight: 600;
-        }
-
-        /* Mapa ruta (Google Maps) en modal */
-        #mapaRutaViaje {
-            height: 240px;
-            width: 100%;
-            border-radius: 0.25rem;
-            border: 1px solid #dee2e6;
-            background: #f8f9fa;
-        }
-
-        @media (min-width: 992px) {
-            #mapaRutaViaje {
-                height: 260px;
-            }
-        }
-
-        #mapaRutaViajeEstado {
-            font-size: 0.9375rem;
-            line-height: 1.45;
-            color: #374151;
-        }
-
-        #mapaRutaViajeWrap .form-label.small {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #212529;
-        }
-
-        #mapaRutaViajeTitulo {
-            line-height: 1.35;
-        }
-
-        #wrapChoferViajeBusqueda {
-            position: relative;
-        }
-
-        #choferViajeResultados {
-            position: absolute;
-            left: 0;
-            right: 0;
-            z-index: 1060;
-            max-height: 240px;
-            overflow-y: auto;
-        }
-
-        /* Tarifa por km: inputs + botón en una fila; error solo bajo «Monto calculado» (columna 3) */
-        #bloqueTarifaKm .tarifa-km-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-            column-gap: 0.5rem;
-            row-gap: 0.25rem;
-            align-items: end;
-        }
-
-        #bloqueTarifaKm .tk-l-km {
-            grid-column: 1;
-            grid-row: 1;
-            align-self: start;
-            margin-bottom: 0;
-        }
-
-        #bloqueTarifaKm .tk-spacer-label {
-            grid-column: 2;
-            grid-row: 1;
-            min-height: 1.5rem;
-        }
-
-        #bloqueTarifaKm .tk-l-m {
-            grid-column: 3;
-            grid-row: 1;
-            align-self: start;
-            margin-bottom: 0;
-        }
-
-        #bloqueTarifaKm .tk-i-km {
-            grid-column: 1;
-            grid-row: 2;
-        }
-
-        #bloqueTarifaKm .tk-btn {
-            grid-column: 2;
-            grid-row: 2;
-        }
-
-        #bloqueTarifaKm .tk-i-m {
-            grid-column: 3;
-            grid-row: 2;
-        }
-
-        #bloqueTarifaKm .tk-err {
-            grid-column: 3;
-            grid-row: 3;
-            align-self: start;
-            min-height: 0;
-        }
-
-        @media (max-width: 767.98px) {
-            #bloqueTarifaKm .tarifa-km-grid {
-                grid-template-columns: 1fr;
-            }
-
-            #bloqueTarifaKm .tk-spacer-label {
-                display: none;
-            }
-
-            #bloqueTarifaKm .tk-l-km {
-                grid-column: 1;
-                grid-row: 1;
-            }
-
-            #bloqueTarifaKm .tk-i-km {
-                grid-column: 1;
-                grid-row: 2;
-            }
-
-            #bloqueTarifaKm .tk-btn {
-                grid-column: 1;
-                grid-row: 3;
-                justify-self: start;
-            }
-
-            #bloqueTarifaKm .tk-l-m {
-                grid-column: 1;
-                grid-row: 4;
-            }
-
-            #bloqueTarifaKm .tk-i-m {
-                grid-column: 1;
-                grid-row: 5;
-            }
-
-            #bloqueTarifaKm .tk-err {
-                grid-column: 1;
-                grid-row: 6;
-            }
-        }
     </style>
 
 
@@ -217,6 +58,8 @@
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 
 <body>
@@ -274,14 +117,6 @@
                                     <div class="d-flex">
                                         <div class="toast-body">
                                         </div>
-                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                    </div>
-                                </div>
-                                <div id="toastError" class="toast align-items-center text-white bg-danger border-0 mt-2"
-                                    role="alert" aria-live="assertive" aria-atomic="true">
-                                    <div class="d-flex">
-                                        <div id="toastErrorMessage" class="toast-body"></div>
                                         <button type="button" class="btn-close btn-close-white me-2 m-auto"
                                             data-bs-dismiss="toast" aria-label="Close"></button>
                                     </div>
@@ -395,167 +230,104 @@
         <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title" id="ModalAltaViajelabel">Registrar viaje</h4>
+                    <h4 class="modal-title" id="ModalAltaViajelabel">Alta de viaje</h4>
                     <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
                         <i data-feather="x"></i>
                     </button>
                 </div>
-                <div class="modal-body mt-2 mb-4 mx-2">
+                <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
-                        role="alert"></div>
+                        role="alert">
+                    </div>
                     <form class="form" id="FormAltaViaje">
-                        <div class="row mb-3">
-                            <div class="col-12 col-lg-5">
-                                <label for="clienteSelect" class="form-label fw-bold">Cliente <span
-                                        class="text-danger">*</span></label>
-                                <select class="form-select" id="clienteSelect" name="cliente">
-                                    <option value="">Seleccione un cliente</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mb-3 g-3 align-items-stretch">
-                            <div class="col-lg-5">
-                                <div class="mb-3">
-                                    <label for="origenSelect" class="form-label fw-bold">Origen <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select" id="origenSelect" name="origen" disabled>
-                                        <option value="">Primero seleccione un cliente</option>
-                                    </select>
-                                </div>
-                                <div class="mt-4">
-                                    <label for="destinoSelect" class="form-label fw-bold">Destino <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select" id="destinoSelect" name="destino" disabled>
-                                        <option value="">Primero seleccione un cliente</option>
-                                    </select>
-                                </div>
-                                <div class="mt-4">
-                                    <label for="fechaInicioViaje" class="form-label fw-bold">Fecha y hora de inicio
-                                        <span class="text-danger">*</span></label>
-                                    <input type="datetime-local" class="form-control" id="fechaInicioViaje"
-                                        name="fechaInicioViaje">
-                                </div>
-                                <div class="mt-3">
-                                    <label for="fechaFinViaje" class="form-label fw-bold">Fecha y hora de fin <span
-                                            class="text-danger">*</span></label>
-                                    <input type="datetime-local" class="form-control" id="fechaFinViaje"
-                                        name="fechaFinViaje">
-                                </div>
-                            </div>
+                        <input type="hidden" id="viajeIdEdicion" value="">
+                        <input type="hidden" id="choferSelectId" value="">
+                        <input type="hidden" id="tarifaFijaId" value="">
+                        <input type="hidden" id="tarifaKmId" value="">
+                        <div class="row">
+                            <!-- Columna izquierda: formulario -->
                             <div class="col-lg-7">
-                                <div id="mapaRutaViajeWrap" style="display: none;">
-                                    <label id="mapaRutaViajeTitulo" class="form-label small mb-1 text-break"
-                                        for="mapaRutaViaje">Ruta de Google Maps</label>
-                                    <div id="mapaRutaViaje" role="presentation"></div>
-                                    <p id="mapaRutaViajeEstado" class="mb-0 mt-2"></p>
+                                <div class="mb-3">
+                                    <label for="clienteSelect" class="form-label">Cliente <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="clienteSelect"><option value="">Seleccione un cliente</option></select>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="origenSelect" disabled><option value="">Primero seleccione un cliente</option></select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccione un cliente</option></select>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="fechaInicio" class="form-label">Fecha y hora de inicio <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="fechaInicio" placeholder="AAAA-MM-DD HH:MM" autocomplete="off">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="fechaFin" class="form-label">Fecha y hora de fin <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="fechaFin" placeholder="AAAA-MM-DD HH:MM" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="camionSelect" class="form-label">Cami&oacute;n <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="camionSelect"><option value="">Seleccione un cami&oacute;n</option></select>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="distanciaKm" class="form-label">Distancia (KM)</label>
+                                        <input type="number" min="0" step="0.01" class="form-control" id="distanciaKm" readonly placeholder="Se calcula con el mapa">
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label d-block">Tipo de tarifa <span class="text-danger">*</span></label>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoFija" value="fija">
+                                        <label class="form-check-label" for="tarifaTipoFija">Tarifa fija</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoKm" value="km">
+                                        <label class="form-check-label" for="tarifaTipoKm">Tarifa por km</label>
+                                    </div>
+                                    <small id="tarifaInfo" class="text-muted d-block mt-1">Complet&aacute; cliente, origen y destino para cargar o calcular la tarifa.</small>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="numeroRemito" class="form-label">N&uacute;mero de remito</label>
+                                        <input type="text" class="form-control" id="numeroRemito">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="numeroCarga" class="form-label">N&uacute;mero de carga</label>
+                                        <input type="text" class="form-control" id="numeroCarga">
+                                    </div>
+                                </div>
+                                <div class="mb-3 position-relative">
+                                    <label for="choferBuscar" class="form-label">Chofer asignado <span class="text-muted">(opcional)</span></label>
+                                    <input type="text" class="form-control" id="choferBuscar" placeholder="Busc&aacute; por nombre, apellido o DNI..." autocomplete="off">
+                                    <div id="choferResultados" class="list-group position-absolute w-100" style="z-index:1080; display:none; max-height:200px; overflow:auto;"></div>
                                 </div>
                             </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <label class="form-label d-block fw-bold">Tipo de tarifa <span
-                                        class="text-danger">*</span></label>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="tarifaTipo" id="tarifaTipoFija"
-                                        value="fija" checked>
-                                    <label class="form-check-label" for="tarifaTipoFija">Tarifa fija</label>
+                            <!-- Columna derecha: mapa -->
+                            <div class="col-lg-5">
+                                <label class="form-label">Ruta y distancia</label>
+                                <div id="mapaViaje" style="height: 430px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small id="mapaViajeMsg" class="text-muted">Seleccion&aacute; origen y destino para calcular la distancia.</small>
+                                    <button type="button" class="btn btn-sm btn-light" onclick="calcularRutaViaje()">Recalcular</button>
                                 </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="tarifaTipo" id="tarifaTipoKm"
-                                        value="km">
-                                    <label class="form-check-label" for="tarifaTipoKm">Tarifa por km</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="tarifaRutaPendiente" class="mb-3">
-                            <p class="text-muted mb-0 small">Completá cliente, origen y destino para cargar o calcular
-                                la
-                                tarifa.</p>
-                        </div>
-                        <div id="tarifaDetalleActivo" class="mb-0" style="display: none;">
-                            <div id="bloqueTarifaFija" class="mb-3">
-                                <label class="form-label">Valores de tarifa fija</label>
-                                <div class="table-responsive">
-                                    <table class="table table-bordered table-striped table-sm mb-0"
-                                        id="tablaTarifaFijaModal">
-                                        <thead class="table-secondary">
-                                            <tr>
-                                                <th>Valor ruta</th>
-                                                <th>Valor vuelta vacío</th>
-                                                <th>Valor fijo neto</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr id="filaTarifaFijaDatos">
-                                                <td id="celValorRuta">—</td>
-                                                <td id="celValorVueltaVacio">—</td>
-                                                <td id="celValorFijoNeto">—</td>
-                                            </tr>
-                                            <tr id="filaTarifaFijaMensajeFull" style="display: none;">
-                                                <td colspan="3" class="text-secondary py-3"
-                                                    id="celTarifaFijaMensajeFull"></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                            <div id="bloqueTarifaKm" class="mb-3" style="display: none;">
-                                <div class="tarifa-km-grid">
-                                    <label for="kmViajeInput" class="form-label fw-bold tk-l-km">Kilómetros del
-                                        viaje</label>
-                                    <span class="tk-spacer-label" aria-hidden="true"></span>
-                                    <label for="montoCalculadoKm" class="form-label fw-bold tk-l-m">Monto
-                                        calculado</label>
-                                    <input type="text" class="form-control tk-i-km" id="kmViajeInput" name="kmViaje"
-                                        inputmode="decimal" autocomplete="off" placeholder="Definí la ruta en el mapa"
-                                        readonly>
-                                    <button type="button" class="btn btn-outline-primary tk-btn"
-                                        id="btnCalcularMontoKm">
-                                        Calcular
-                                    </button>
-                                    <input type="text" class="form-control tk-i-m" id="montoCalculadoKm" readonly
-                                        placeholder="—" aria-describedby="montoKmErrorFeedback">
-                                    <div id="montoKmErrorFeedback" class="small text-danger mt-1 d-none tk-err"
-                                        role="alert" aria-live="polite"></div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="numeroRemito" class="form-label fw-bold">Número de remito</label>
-                                <input type="text" class="form-control" id="numeroRemito" name="numeroRemito">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="numeroCarga" class="form-label fw-bold">Número de carga</label>
-                                <input type="text" class="form-control" id="numeroCarga" name="numeroCarga">
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-12 col-lg-8">
-                                <label for="choferViajeBuscarInput" class="form-label fw-bold">Chofer asignado <span
-                                        class="text-muted fw-normal small">(opcional)</span></label>
-                                <div id="wrapChoferViajeBusqueda">
-                                    <input type="search" class="form-control" id="choferViajeBuscarInput"
-                                        name="choferViajeBuscar" autocomplete="off"
-                                        placeholder="Buscá por nombre, apellido o DNI…" maxlength="80">
-                                    <input type="hidden" id="choferViajeId" name="choferViajeId" value="">
-                                    <div id="choferViajeResultados" class="list-group shadow-sm border d-none"
-                                        role="listbox" aria-label="Resultados de choferes"></div>
-                                </div>
-                                <div id="choferViajeResumen"
-                                    class="alert alert-light-secondary py-2 px-3 mt-2 mb-0 small d-none" role="status">
-                                </div>
-                                <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 mt-1 d-none"
-                                    id="choferViajeLimpiar">Quitar chofer seleccionado</button>
                             </div>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="reset" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
+                        <i class="bx bx-x d-block d-sm-none"></i>
                         <span class="d-none d-sm-block">Cancelar</span>
                     </button>
-                    <button type="button" class="btn btn-primary ms-1" id="confirmarAltaViajeBtn">
+                    <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
+                        <i class="bx bx-check d-block d-sm-none"></i>
                         <span class="d-none d-sm-block">Confirmar</span>
                     </button>
                 </div>
@@ -574,30 +346,32 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
-        window.onload = async function () {
+        window.onload = function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
+            // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
 
-            try {
-                if (typeof window.loadSidebar === 'function') {
-                    await window.loadSidebar();
-                }
-                await loadSettings();  // o tu equivalente que llame applyStyles
-                adjustVisibilityBasedOnRole();  // si la página lo define
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            } catch (error) {
-                console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-            }
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
         };
 
         function adjustVisibilityBasedOnRole() {
@@ -856,791 +630,360 @@
 
     </script>
 
-    <!-- Clave: preferí el meta «google-maps-api-key» en el head; si no, asigná window.GMAP_API_KEY antes de este script. -->
+    <!-- Alta -->
+
+
+    <!-- Modal de confirmacion de eliminacion de viaje (Fase 1) -->
+    <div class="modal fade text-left" id="confirmarEliminarViajeModal" tabindex="-1" role="dialog"
+        aria-labelledby="confirmarEliminarViajeLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarEliminarViajeLabel">Confirmar eliminaci&oacute;n</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    &iquest;Est&aacute; seguro que desea eliminar este viaje? Esta acci&oacute;n no se puede deshacer.
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarViaje()">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= Fase 1: ABM de Viajes (alta / edicion / eliminacion) ================= -->
     <script>
-        (function () {
-            var ya = (typeof window.GMAP_API_KEY === 'string' && window.GMAP_API_KEY.trim() !== '');
-            if (ya) return;
-            var meta = document.querySelector('meta[name="google-maps-api-key"]');
-            var desdeMeta = meta && meta.getAttribute('content') ? String(meta.getAttribute('content')).trim() : '';
-            window.GMAP_API_KEY = desdeMeta || '';
-        })();
-    </script>
+        const API_VIAJES = 'http://localhost:50222/api';
+        let viajeIdEliminar = null;
 
-    <!-- Alta viaje: modal, APIs y toasts -->
-    <script>
-        (function () {
-            const API_BASE = 'http://localhost:50222';
+        // Datos auxiliares
+        var origenesAll = [], destinosAll = [];
+        var origenesData = {}, destinosData = {};
+        var mapaViaje = null, rutaViajeLayer = null, marcadoresViaje = [];
+        var choferSearchTimer = null;
 
-            /* Google Maps: pegá tu clave entre comillas (si el <meta> del head queda vacío o no se guarda, usá esto). */
-            const GMAP_API_KEY_LOCAL = 'AIzaSyDLmcAK6pkkh-OaRz7xCietaKcqSmMDnNc';
+        function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
+        function formatearParaInput(f) { return f ? String(f).substring(0, 16) : ''; }
 
-            let cacheOrigenes = [];
-            let cacheDestinos = [];
-            let cacheClientesCargado = false;
-            let tarifaFijaActual = null;
-            let choferViajeBuscarTimer = null;
+        function parsearError(xhr) {
+            try {
+                var r = xhr.responseJSON;
+                if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
+                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
+                if (r && r.Message) { return r.Message; }
+                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
+            } catch (e) { }
+            return 'Ocurrió un error. Revise los datos e intente nuevamente.';
+        }
+        function mostrarAlertaModal(msg) { $('#alertaCompletaCampos').html(msg).show(); }
+        function setTarifaInfo(txt, tipo) {
+            $('#tarifaInfo').removeClass('text-muted text-success text-danger')
+                .addClass(tipo === 'ok' ? 'text-success' : (tipo === 'error' ? 'text-danger' : 'text-muted'))
+                .text(txt);
+        }
 
-            let mapaViajeTicket = 0;
-            let mapGoogleMap = null;
-            let mapDirectionsService = null;
-            let mapDirectionsRenderer = null;
-            var googleMapsScriptPromise = null;
-
-            function obtenerClaveGoogleMaps() {
-                try {
-                    var k = (typeof GMAP_API_KEY_LOCAL === 'string' && GMAP_API_KEY_LOCAL.trim() !== '')
-                        ? GMAP_API_KEY_LOCAL.trim()
-                        : '';
-                    if (k) return k;
-                    if (typeof window !== 'undefined' && window.GMAP_API_KEY != null && String(window.GMAP_API_KEY).trim() !== '') {
-                        return String(window.GMAP_API_KEY).trim();
-                    }
-                    var m = document.querySelector('meta[name="google-maps-api-key"]');
-                    if (m) {
-                        var c = (m.getAttribute('content') || '').trim();
-                        if (c) return c;
-                    }
-                } catch (e) { /* ignore */ }
-                return '';
-            }
-
-            function destruirMapaGoogle() {
-                if (mapDirectionsRenderer) {
-                    if (window.google && google.maps && google.maps.event) {
-                        try { google.maps.event.clearInstanceListeners(mapDirectionsRenderer); } catch (e0) { }
-                    }
-                    try { mapDirectionsRenderer.setMap(null); } catch (e1) { }
-                    mapDirectionsRenderer = null;
-                }
-                mapDirectionsService = null;
-                if (mapGoogleMap) {
-                    if (window.google && google.maps && google.maps.event) {
-                        try { google.maps.event.clearInstanceListeners(mapGoogleMap); } catch (e2) { }
-                    }
-                    mapGoogleMap = null;
-                }
-                var el = document.getElementById('mapaRutaViaje');
-                if (el) el.innerHTML = '';
-            }
-
-            function cargarScriptGoogleMaps(apiKey) {
-                if (!apiKey) return Promise.reject(new Error('sin-clave'));
-                if (window.google && window.google.maps && google.maps.Map) return Promise.resolve();
-                if (googleMapsScriptPromise) return googleMapsScriptPromise;
-                googleMapsScriptPromise = new Promise(function (resolve, reject) {
-                    var cb = '__gmapsInitCb_' + Date.now();
-                    window[cb] = function () {
-                        try {
-                            delete window[cb];
-                            resolve();
-                        } catch (e) {
-                            reject(e);
-                        }
-                    };
-                    var s = document.createElement('script');
-                    s.async = true;
-                    s.defer = true;
-                    s.onerror = function () {
-                        try { delete window[cb]; } catch (e3) { }
-                        googleMapsScriptPromise = null;
-                        reject(new Error('script-maps'));
-                    };
-                    s.src = 'https://maps.googleapis.com/maps/api/js?key=' + encodeURIComponent(apiKey)
-                        + '&language=es&region=AR&loading=async&callback=' + cb;
-                    document.head.appendChild(s);
-                });
-                return googleMapsScriptPromise;
-            }
-
-            function limpiarMontoKmFeedback() {
-                $('#montoCalculadoKm').removeClass('is-invalid');
-                $('#montoKmErrorFeedback').text('').addClass('d-none');
-            }
-
-            function mostrarErrorMontoKm(mensaje) {
-                $('#montoCalculadoKm').addClass('is-invalid');
-                $('#montoKmErrorFeedback').text(mensaje).removeClass('d-none');
-            }
-
-            function sincronizarKmDesdeRutaMapa() {
-                if (!$('#tarifaTipoKm').is(':checked')) return;
-                if (!mapDirectionsRenderer || !window.google || !google.maps) return;
-                try {
-                    var dir = mapDirectionsRenderer.getDirections();
-                    if (!dir || !dir.routes || !dir.routes.length) return;
-                    var meters = dir.routes[0].legs[0].distance.value;
-                    var km = meters / 1000;
-                    $('#kmViajeInput').val(km.toFixed(1) + ' km').attr('data-km-numeric', String(km));
-                    $('#montoCalculadoKm').removeData('listo').val('');
-                    limpiarMontoKmFeedback();
-                } catch (e) { /* ignore */ }
-            }
-
-            function actualizarTextoResumenRutaGoogle() {
-                try {
-                    if (!mapDirectionsRenderer) return;
-                    var dir = mapDirectionsRenderer.getDirections();
-                    if (!dir || !dir.routes || !dir.routes.length) return;
-                    var leg = dir.routes[0].legs[0];
-                    $('#mapaRutaViajeEstado').text(
-                        'Distancia: ' + leg.distance.text + ' · Tiempo estimado en auto: ' + leg.duration.text +
-                        '. Arrastrá la ruta azul para ver una alternativa. Mapa y rutas © Google.'
-                    );
-                } catch (e) { /* ignore */ }
-                sincronizarKmDesdeRutaMapa();
-            }
-
-            function inicializarMapaGoogleSiCorresponde() {
-                if (mapGoogleMap || !window.google || !google.maps) return;
-                var el = document.getElementById('mapaRutaViaje');
-                if (!el) return;
-                mapGoogleMap = new google.maps.Map(el, {
-                    center: { lat: -34.6, lng: -58.38 },
-                    zoom: 6,
-                    mapTypeControl: true,
-                    streetViewControl: true,
-                    fullscreenControl: true,
-                    zoomControl: true,
-                    scaleControl: true,
-                    gestureHandling: 'cooperative',
-                    mapTypeControlOptions: { style: google.maps.MapTypeControlStyle.DROPDOWN_MENU },
-                    streetViewControlOptions: { position: google.maps.ControlPosition.RIGHT_BOTTOM }
-                });
-                mapDirectionsService = new google.maps.DirectionsService();
-                mapDirectionsRenderer = new google.maps.DirectionsRenderer({
-                    map: mapGoogleMap,
-                    draggable: true,
-                    preserveViewport: false,
-                    suppressMarkers: false,
-                    polylineOptions: { strokeColor: '#2563eb', strokeWeight: 5, strokeOpacity: 0.92 }
-                });
-                google.maps.event.addListener(mapDirectionsRenderer, 'directions_changed', actualizarTextoResumenRutaGoogle);
-            }
-
-            function obtenerOrigenDestinoSeleccionados() {
-                var oid = $('#origenSelect').val();
-                var did = $('#destinoSelect').val();
-                var o = cacheOrigenes.find(function (x) { return String(x.Origen_ID) === String(oid); });
-                var d = cacheDestinos.find(function (x) { return String(x.Destino_ID) === String(did); });
-                return { origen: o, destino: d };
-            }
-
-            function construirConsultaDireccion(item) {
-                if (!item) return '';
-                var calle = String(item.Calle || '').trim();
-                var alt = String(item.AlturaCalle || '').trim();
-                if (!calle || !alt) return '';
-                var loc = String(item.NombreLocalidad || item.nombreLocalidad || '').trim();
-                var prov = String(item.NombreProvincia || item.nombreProvincia || '').trim();
-                var partes = [calle + ' ' + alt];
-                if (loc) partes.push(loc);
-                if (prov) partes.push(prov);
-                partes.push('Argentina');
-                return partes.join(', ');
-            }
-
-            /** Texto para el título del mapa: calle y altura, localidad y provincia (sin «Argentina»). */
-            function formatearDireccionTituloMapa(item) {
-                if (!item) return '';
-                var calle = String(item.Calle || '').trim();
-                var alt = String(item.AlturaCalle || '').trim();
-                var loc = String(item.NombreLocalidad || item.nombreLocalidad || '').trim();
-                var prov = String(item.NombreProvincia || item.nombreProvincia || '').trim();
-                var calleAlt = '';
-                if (calle && alt) calleAlt = calle + ' ' + alt;
-                else if (calle) calleAlt = calle;
-                else if (alt) calleAlt = alt;
-                if (!calleAlt && item.Descripcion) calleAlt = String(item.Descripcion).trim();
-                var partes = [];
-                if (calleAlt) partes.push(calleAlt);
-                if (loc) partes.push(loc);
-                if (prov) partes.push(prov);
-                return partes.length ? partes.join(', ') : '';
-            }
-
-            function actualizarTituloMapaRuta() {
-                var sel = obtenerOrigenDestinoSeleccionados();
-                var desde = formatearDireccionTituloMapa(sel.origen);
-                var hasta = formatearDireccionTituloMapa(sel.destino);
-                var texto = 'Ruta de Google Maps desde ' + (desde || '—') + ' hasta ' + (hasta || '—');
-                $('#mapaRutaViajeTitulo').text(texto);
-            }
-
-            function actualizarMapaRutaViaje() {
-                if (!rutaTarifaCompleta()) {
-                    mapaViajeTicket++;
-                    $('#mapaRutaViajeWrap').hide();
-                    $('#mapaRutaViajeEstado').text('');
-                    destruirMapaGoogle();
-                    return;
-                }
-
-                var ticket = ++mapaViajeTicket;
-                $('#mapaRutaViajeWrap').show();
-                actualizarTituloMapaRuta();
-
-                var apiKey = obtenerClaveGoogleMaps();
-                if (!apiKey) {
-                    $('#mapaRutaViajeEstado').text(
-                        'Falta la clave de Google Maps. En gestion-viajes.html: (1) línea del meta google-maps-api-key en el head, content="tu_clave", o (2) constante GMAP_API_KEY_LOCAL en el script del modal (buscá esa palabra). Guardá el archivo y recargá con Ctrl+F5. En Google Cloud: Maps JavaScript API + Directions API, facturación y referrer de la clave acorde a la URL de esta página.'
-                    );
-                    return;
-                }
-
-                var sel = obtenerOrigenDestinoSeleccionados();
-                var qo = construirConsultaDireccion(sel.origen);
-                var qd = construirConsultaDireccion(sel.destino);
-
-                function dispararResizeMapa() {
-                    setTimeout(function () {
-                        if (ticket === mapaViajeTicket && mapGoogleMap && window.google && google.maps) {
-                            google.maps.event.trigger(mapGoogleMap, 'resize');
-                        }
-                    }, 280);
-                }
-
-                if (!qo || !qd) {
-                    $('#mapaRutaViajeEstado').text('Cargá calle y altura en origen y destino para ver la ruta en el mapa.');
-                    cargarScriptGoogleMaps(apiKey)
-                        .then(function () {
-                            if (ticket !== mapaViajeTicket) return;
-                            inicializarMapaGoogleSiCorresponde();
-                            if (mapGoogleMap) {
-                                mapGoogleMap.setCenter({ lat: -34.6, lng: -58.38 });
-                                mapGoogleMap.setZoom(6);
-                            }
-                            dispararResizeMapa();
-                        })
-                        .catch(function () {
-                            if (ticket !== mapaViajeTicket) return;
-                            $('#mapaRutaViajeEstado').text('No se pudo cargar Google Maps. Revisá la clave y la facturación del proyecto en Google Cloud.');
-                        });
-                    return;
-                }
-
-                $('#mapaRutaViajeEstado').text('Calculando ruta con Google Maps…');
-
-                cargarScriptGoogleMaps(apiKey)
-                    .then(function () {
-                        if (ticket !== mapaViajeTicket) throw new Error('cancel');
-                        inicializarMapaGoogleSiCorresponde();
-                        if (!mapDirectionsService || !mapDirectionsRenderer || !mapGoogleMap) {
-                            throw new Error('sin-mapa');
-                        }
-                        mapDirectionsService.route({
-                            origin: qo,
-                            destination: qd,
-                            travelMode: google.maps.TravelMode.DRIVING,
-                            region: 'AR',
-                            provideRouteAlternatives: false
-                        }, function (result, status) {
-                            if (ticket !== mapaViajeTicket) return;
-                            if (status === 'OK') {
-                                mapDirectionsRenderer.setMap(mapGoogleMap);
-                                mapDirectionsRenderer.setDirections(result);
-                                actualizarTextoResumenRutaGoogle();
-                                dispararResizeMapa();
-                            } else {
-                                var msg = 'No se pudo trazar la ruta (' + status + '). Revisá las direcciones.';
-                                if (status === 'ZERO_RESULTS' || status === 'NOT_FOUND') {
-                                    msg = 'Google Maps no encontró una ruta entre esas direcciones. Revisá calle, altura, localidad y provincia.';
-                                }
-                                $('#mapaRutaViajeEstado').text(msg);
-                                dispararResizeMapa();
-                            }
-                        });
+        // ===================== MAPA (OpenStreetMap + OSRM) =====================
+        function initMapaViaje() {
+            if (mapaViaje || typeof L === 'undefined') return;
+            mapaViaje = L.map('mapaViaje').setView([-34.6, -58.4], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapaViaje);
+        }
+        function limpiarRutaViaje() {
+            if (mapaViaje && rutaViajeLayer) { mapaViaje.removeLayer(rutaViajeLayer); rutaViajeLayer = null; }
+            if (mapaViaje) { marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); }); }
+            marcadoresViaje = [];
+            msgMapa('Seleccioná origen y destino para calcular la distancia.');
+        }
+        function construirDireccion(o) {
+            if (!o) return '';
+            var partes = [];
+            var ca = ((o.Calle || '').trim() + ' ' + (o.AlturaCalle || '').trim()).trim();
+            if (ca) partes.push(ca);
+            if (o.NombreLocalidad) partes.push((o.NombreLocalidad || '').trim());
+            if (o.NombreProvincia) partes.push((o.NombreProvincia || '').trim());
+            partes.push('Argentina');
+            return partes.join(', ');
+        }
+        function geocodificar(direccion) {
+            return $.ajax({ url: 'https://nominatim.openstreetmap.org/search', type: 'GET', data: { q: direccion, format: 'json', limit: 1, countrycodes: 'ar' } });
+        }
+        function msgMapa(txt, tipo) {
+            $('#mapaViajeMsg').removeClass('text-danger text-success text-muted')
+                .addClass(tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted')).text(txt);
+        }
+        function calcularRutaViaje() {
+            var oId = $('#origenSelect').val(), dId = $('#destinoSelect').val();
+            if (!oId || !dId) { msgMapa('Seleccioná origen y destino para calcular la distancia.'); return; }
+            var dirO = construirDireccion(origenesData[oId]), dirD = construirDireccion(destinosData[dId]);
+            initMapaViaje();
+            if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 50); }
+            msgMapa('Buscando ubicaciones...');
+            $.when(geocodificar(dirO), geocodificar(dirD)).done(function (r1, r2) {
+                var a = r1[0], b = r2[0];
+                if (!a || !a.length || !b || !b.length) { msgMapa('No se pudo ubicar el origen o el destino. Revisá las direcciones.', 'error'); return; }
+                var lat1 = parseFloat(a[0].lat), lon1 = parseFloat(a[0].lon), lat2 = parseFloat(b[0].lat), lon2 = parseFloat(b[0].lon);
+                msgMapa('Calculando ruta...');
+                $.ajax({ url: 'https://router.project-osrm.org/route/v1/driving/' + lon1 + ',' + lat1 + ';' + lon2 + ',' + lat2, type: 'GET', data: { overview: 'full', geometries: 'geojson' } })
+                    .done(function (rr) {
+                        if (!rr || rr.code !== 'Ok' || !rr.routes || !rr.routes.length) { msgMapa('No se pudo calcular la ruta entre esos puntos.', 'error'); return; }
+                        var route = rr.routes[0], km = (route.distance / 1000).toFixed(1);
+                        $('#distanciaKm').val(km);
+                        var coords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+                        if (rutaViajeLayer) mapaViaje.removeLayer(rutaViajeLayer);
+                        marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); });
+                        rutaViajeLayer = L.polyline(coords, { color: '#435ebe', weight: 5 }).addTo(mapaViaje);
+                        var m1 = L.marker([lat1, lon1]).addTo(mapaViaje).bindPopup('Origen');
+                        var m2 = L.marker([lat2, lon2]).addTo(mapaViaje).bindPopup('Destino');
+                        marcadoresViaje = [m1, m2];
+                        mapaViaje.fitBounds(rutaViajeLayer.getBounds(), { padding: [20, 20] });
+                        msgMapa('Distancia: ' + km + ' km (cargada en el campo Distancia).', 'ok');
+                        if ($('input[name="tipoTarifa"]:checked').val() === 'km') { resolverTarifaKm(); }
                     })
-                    .catch(function (err) {
-                        if (err && err.message === 'cancel') return;
-                        if (ticket !== mapaViajeTicket) return;
-                        $('#mapaRutaViajeEstado').text(
-                            'No se pudo cargar o usar Google Maps. Verificá la clave, que estén habilitadas «Maps JavaScript API» y «Directions API», y la cuenta de facturación.'
-                        );
-                        console.warn('Google Maps:', err);
-                    });
+                    .fail(function () { msgMapa('No se pudo calcular la ruta (servicio de routing no disponible).', 'error'); });
+            }).fail(function () { msgMapa('No se pudo geocodificar las direcciones.', 'error'); });
+        }
+
+        // ===================== COMBOS =====================
+        function cargarClientesViaje() {
+            var d = $.Deferred();
+            $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
+                .done(function (data) {
+                    var s = $('#clienteSelect').empty().append('<option value="">Seleccione un cliente</option>');
+                    (data || []).forEach(function (c) { s.append('<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'); });
+                })
+                .always(function () { d.resolve(); });
+            return d.promise();
+        }
+        function cargarCamionesViaje() {
+            var d = $.Deferred();
+            $.ajax({ url: API_VIAJES + '/Camiones', type: 'GET' })
+                .done(function (data) {
+                    var s = $('#camionSelect').empty().append('<option value="">Seleccione un camión</option>');
+                    (data || []).forEach(function (cm) { s.append('<option value="' + cm.Camion_ID + '">' + (cm.Dominio || '').trim() + '</option>'); });
+                })
+                .always(function () { d.resolve(); });
+            return d.promise();
+        }
+        function cargarOrigenesDestinos() {
+            var d = $.Deferred();
+            var p1 = $.ajax({ url: API_VIAJES + '/Origen', type: 'GET' }).done(function (data) { origenesAll = data || []; origenesData = {}; origenesAll.forEach(function (o) { origenesData[o.Origen_ID] = o; }); }).fail(function () { origenesAll = []; });
+            var p2 = $.ajax({ url: API_VIAJES + '/Destino', type: 'GET' }).done(function (data) { destinosAll = data || []; destinosData = {}; destinosAll.forEach(function (o) { destinosData[o.Destino_ID] = o; }); }).fail(function () { destinosAll = []; });
+            $.when(p1, p2).always(function () { d.resolve(); });
+            return d.promise();
+        }
+        function filtrarOrigenDestino(clienteId, origenSel, destinoSel) {
+            var so = $('#origenSelect'), sd = $('#destinoSelect');
+            if (!clienteId) {
+                so.prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+                sd.prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+                return;
             }
+            so.prop('disabled', false).empty().append('<option value="">Seleccione un origen</option>');
+            origenesAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { so.append('<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'); });
+            sd.prop('disabled', false).empty().append('<option value="">Seleccione un destino</option>');
+            destinosAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { sd.append('<option value="' + o.Destino_ID + '">' + o.Descripcion + '</option>'); });
+            if (origenSel) so.val(origenSel);
+            if (destinoSel) sd.val(destinoSel);
+        }
+        function onClienteChangeViaje() {
+            var cid = parseInt($('#clienteSelect').val()) || 0;
+            filtrarOrigenDestino(cid, null, null);
+            $('#distanciaKm').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
+            limpiarRutaViaje();
+            setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
+        }
 
-            function formatearMoneda(val) {
-                if (val === null || val === undefined || val === '') return '—';
-                const n = Number(val);
-                if (Number.isNaN(n)) return '—';
-                return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-            }
+        // ===================== TARIFA AUTOMÁTICA =====================
+        function resolverTarifa() {
+            var tipo = $('input[name="tipoTarifa"]:checked').val();
+            if (tipo === 'fija') { resolverTarifaFija(); }
+            else if (tipo === 'km') { resolverTarifaKm(); }
+        }
+        function resolverTarifaFija() {
+            var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val();
+            $('#tarifaKmId').val('');
+            if (!c || !o || !d) { $('#tarifaFijaId').val(''); setTarifaInfo('Para la tarifa fija: elegí cliente, origen y destino.'); return; }
+            setTarifaInfo('Buscando tarifa fija...');
+            $.ajax({ url: API_VIAJES + '/TarifasFijas/PorRuta', type: 'GET', data: { clienteId: c, origenId: o, destinoId: d } })
+                .done(function (r) { $('#tarifaFijaId').val(r.TarifaFija_ID); setTarifaInfo('Tarifa fija #' + r.TarifaFija_ID + ' — Valor neto: $' + r.ValorFijoNeto, 'ok'); })
+                .fail(function () { $('#tarifaFijaId').val(''); setTarifaInfo('No hay tarifa fija cargada para esa ruta (cliente/origen/destino).', 'error'); });
+        }
+        function resolverTarifaKm() {
+            var fi = $('#fechaInicio').val(), ff = $('#fechaFin').val(), km = $('#distanciaKm').val();
+            $('#tarifaFijaId').val('');
+            if (!fi || !ff) { $('#tarifaKmId').val(''); setTarifaInfo('Para la tarifa por km: completá las fechas de inicio y fin.'); return; }
+            if (!km || parseFloat(km) <= 0) { $('#tarifaKmId').val(''); setTarifaInfo('Para la tarifa por km: elegí origen y destino para calcular la distancia.'); return; }
+            setTarifaInfo('Calculando tarifa por km...');
+            $.ajax({ url: API_VIAJES + '/TarifasKm/Calcular', type: 'GET', data: { fechaInicio: fi, fechaFin: ff, km: km } })
+                .done(function (r) { $('#tarifaKmId').val(r.TarifaKm_ID); setTarifaInfo('Tarifa por km #' + r.TarifaKm_ID + ' — $' + r.ValorKm + '/km · Monto: $' + r.MontoCalculado, 'ok'); })
+                .fail(function (xhr) { $('#tarifaKmId').val(''); setTarifaInfo('No hay tarifa por km para ese período y distancia. ' + parsearError(xhr), 'error'); });
+        }
 
-            function mostrarToastExito(mensaje) {
-                var toastElement = $('#alert-success');
-                toastElement.hide();
-                toastElement.find('.toast-body').text(mensaje);
-                var toast = new bootstrap.Toast(toastElement[0]);
-                toast.show();
-                setTimeout(function () { toast.hide(); }, 5000);
-            }
-
-            function mostrarToastError(mensaje) {
-                $('#toastErrorMessage').text(mensaje);
-                var el = document.getElementById('toastError');
-                var toast = new bootstrap.Toast(el);
-                toast.show();
-                setTimeout(function () {
-                    try { bootstrap.Toast.getInstance(el).hide(); } catch (e) { }
-                }, 6000);
-            }
-
-            function mostrarSoloFilaTarifaFijaDatos() {
-                $('#filaTarifaFijaDatos').show();
-                $('#filaTarifaFijaMensajeFull').hide();
-            }
-
-            function mostrarSoloFilaTarifaFijaMensaje(texto) {
-                $('#filaTarifaFijaDatos').hide();
-                $('#celTarifaFijaMensajeFull').text(texto);
-                $('#filaTarifaFijaMensajeFull').show();
-            }
-
-            function limpiarTablaTarifaFija() {
-                tarifaFijaActual = null;
-                mostrarSoloFilaTarifaFijaDatos();
-                $('#celValorRuta, #celValorVueltaVacio, #celValorFijoNeto').text('—');
-            }
-
-            function aplicarTarifaFijaEnTabla(data) {
-                tarifaFijaActual = data;
-                mostrarSoloFilaTarifaFijaDatos();
-                $('#celValorRuta').text(formatearMoneda(data.ValorRuta));
-                $('#celValorVueltaVacio').text(formatearMoneda(data.ValorVueltaVacio));
-                $('#celValorFijoNeto').text(formatearMoneda(data.ValorFijoNeto));
-            }
-
-            function cargarTarifaFijaSiCorresponde() {
-                if (!$('#tarifaTipoFija').is(':checked')) return;
-
-                const clienteId = $('#clienteSelect').val();
-                const origenId = $('#origenSelect').val();
-                const destinoId = $('#destinoSelect').val();
-
-                if (!clienteId || !origenId || !destinoId) {
-                    limpiarTablaTarifaFija();
-                    return;
-                }
-
-                $.ajax({
-                    url: API_BASE + '/api/TarifasFijas/PorRuta',
-                    type: 'GET',
-                    data: { clienteId: clienteId, origenId: origenId, destinoId: destinoId },
-                    success: function (data) {
-                        aplicarTarifaFijaEnTabla(data);
-                    },
-                    error: function (xhr) {
-                        tarifaFijaActual = null;
-                        if (xhr.status === 404) {
-                            mostrarSoloFilaTarifaFijaMensaje('No hay tarifa fija registrada para esta ruta y cliente.');
-                        } else {
-                            mostrarSoloFilaTarifaFijaMensaje('No se pudo obtener la tarifa fija. Intentá de nuevo.');
-                        }
-                    }
-                });
-            }
-
-            function poblarSelectOrigenDestino() {
-                const clienteId = parseInt($('#clienteSelect').val(), 10);
-                const $origen = $('#origenSelect');
-                const $destino = $('#destinoSelect');
-
-                $origen.empty();
-                $destino.empty();
-
-                if (!clienteId) {
-                    $origen.append('<option value="">Primero seleccione un cliente</option>');
-                    $destino.append('<option value="">Primero seleccione un cliente</option>');
-                    $origen.prop('disabled', true);
-                    $destino.prop('disabled', true);
-                    limpiarTablaTarifaFija();
-                    actualizarVisibilidadTarifaDetalle();
-                    return;
-                }
-
-                const origenes = cacheOrigenes.filter(function (o) { return o.ClienteID === clienteId; });
-                const destinos = cacheDestinos.filter(function (d) { return d.ClienteID === clienteId; });
-
-                $origen.append('<option value="">Seleccione un origen</option>');
-                origenes.forEach(function (o) {
-                    $origen.append('<option value="' + o.Origen_ID + '">' + (o.Descripcion || 'Origen ' + o.Origen_ID) + '</option>');
-                });
-
-                $destino.append('<option value="">Seleccione un destino</option>');
-                destinos.forEach(function (d) {
-                    $destino.append('<option value="' + d.Destino_ID + '">' + (d.Descripcion || 'Destino ' + d.Destino_ID) + '</option>');
-                });
-
-                $origen.prop('disabled', false);
-                $destino.prop('disabled', false);
-                limpiarTablaTarifaFija();
-                actualizarVisibilidadTarifaDetalle();
-            }
-
-            function cargarOrigenesYDestinos(callback) {
-                var pendientes = 2;
-                function listo() {
-                    pendientes--;
-                    if (pendientes === 0 && typeof callback === 'function') callback();
-                }
-
-                $.ajax({
-                    url: API_BASE + '/api/Origen',
-                    type: 'GET',
-                    success: function (data) {
-                        cacheOrigenes = Array.isArray(data) ? data : [];
-                        listo();
-                    },
-                    error: function () {
-                        cacheOrigenes = [];
-                        listo();
-                    }
-                });
-
-                $.ajax({
-                    url: API_BASE + '/api/Destino',
-                    type: 'GET',
-                    success: function (data) {
-                        cacheDestinos = Array.isArray(data) ? data : [];
-                        listo();
-                    },
-                    error: function () {
-                        cacheDestinos = [];
-                        listo();
-                    }
-                });
-            }
-
-            function cargarClientesSelect(callback) {
-                $.ajax({
-                    url: API_BASE + '/api/Clientes/Buscar',
-                    type: 'GET',
-                    data: { page: 1, pageSize: 10000 },
-                    success: function (res) {
-                        var $sel = $('#clienteSelect');
-                        $sel.find('option:not(:first)').remove();
-                        var results = (res && res.Results) ? res.Results : [];
-                        results.forEach(function (c) {
-                            var id = c.Cliente_ID;
-                            var nombre = c.RazonSocial || c.Razon_Social || ('Cliente ' + id);
-                            $sel.append('<option value="' + id + '">' + nombre + '</option>');
+        // ===================== BUSCADOR DE CHOFER =====================
+        function buscarChoferInput() {
+            var q = $('#choferBuscar').val().trim();
+            $('#choferSelectId').val('');
+            clearTimeout(choferSearchTimer);
+            if (q.length < 2) { $('#choferResultados').hide().empty(); return; }
+            choferSearchTimer = setTimeout(function () {
+                $.ajax({ url: API_VIAJES + '/Choferes/Buscar', type: 'GET', data: { busqueda: q, estadoChofer: 'Activo', page: 1, pageSize: 8 } })
+                    .done(function (data) {
+                        var res = (data && data.Results) || [];
+                        var box = $('#choferResultados').empty();
+                        if (!res.length) { box.append('<span class="list-group-item">Sin resultados</span>').show(); return; }
+                        res.forEach(function (ch) {
+                            var texto = ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')';
+                            $('<button type="button" class="list-group-item list-group-item-action"></button>')
+                                .text(texto).on('click', function () { seleccionarChofer(ch.Chofer_ID, texto); }).appendTo(box);
                         });
-                        cacheClientesCargado = true;
-                        if (typeof callback === 'function') callback();
-                    },
-                    error: function () {
-                        mostrarToastError('No se pudieron cargar los clientes. Verificá que la API esté en ejecución.');
-                        if (typeof callback === 'function') callback();
-                    }
-                });
-            }
+                        box.show();
+                    })
+                    .fail(function () { $('#choferResultados').hide().empty(); });
+            }, 300);
+        }
+        function seleccionarChofer(id, texto) { $('#choferSelectId').val(id); $('#choferBuscar').val(texto); $('#choferResultados').hide().empty(); }
 
-            function limpiarDropChoferViaje() {
-                $('#choferViajeResultados').empty().addClass('d-none').removeAttr('data-open');
-            }
+        // ===================== ABRIR MODAL =====================
+        function resetFormViaje() {
+            document.getElementById('FormAltaViaje').reset();
+            if (window.fpInicio) fpInicio.clear();
+            if (window.fpFin) fpFin.clear();
+            $('#viajeIdEdicion').val(''); $('#choferSelectId').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
+            $('#choferBuscar').val(''); $('#choferResultados').hide().empty();
+            $('input[name="tipoTarifa"]').prop('checked', false);
+            $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+            $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+            $('#alertaCompletaCampos').hide().empty();
+            $('#distanciaKm').val('');
+            setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
+            limpiarRutaViaje();
+        }
 
-            function limpiarChoferViajeSeleccion() {
-                $('#choferViajeId').val('');
-                $('#choferViajeBuscarInput').val('');
-                $('#choferViajeResumen').addClass('d-none').empty();
-                $('#choferViajeLimpiar').addClass('d-none');
-                limpiarDropChoferViaje();
-            }
+        function abrirModalAltaViaje() {
+            resetFormViaje();
+            $('#ModalAltaViajelabel').text('Registrar viaje');
+            cargarClientesViaje();
+            cargarCamionesViaje();
+            cargarOrigenesDestinos();
+            $('#ModalAltaViaje').modal('show');
+        }
 
-            function ejecutarBusquedaChoferViaje() {
-                var q = $('#choferViajeBuscarInput').val().trim();
-                if (q.length < 2) {
-                    limpiarDropChoferViaje();
-                    return;
-                }
-                $.ajax({
-                    url: API_BASE + '/api/Choferes/Buscar',
-                    type: 'GET',
-                    data: { busqueda: q, page: 1, pageSize: 15 },
-                    success: function (res) {
-                        var $box = $('#choferViajeResultados');
-                        $box.empty();
-                        var rows = (res && res.Results) ? res.Results : [];
-                        if (!rows.length) {
-                            $box.append(
-                                $('<button type="button" class="list-group-item list-group-item-action disabled" disabled></button>')
-                                    .text('No se encontraron choferes')
-                            );
-                        } else {
-                            rows.forEach(function (c) {
-                                var nom = (c.Nombre || '').trim();
-                                var ape = (c.Apellido || '').trim();
-                                var dni = (c.DNI || '').trim();
-                                var nombreCompleto = [nom, ape].filter(Boolean).join(' ');
-                                var linea = (nombreCompleto || 'Sin nombre') + ' — DNI: ' + (dni || '—');
-                                var $btn = $('<button type="button" class="list-group-item list-group-item-action"></button>')
-                                    .text(linea)
-                                    .attr('data-chofer-id', c.Chofer_ID)
-                                    .data('linea', linea);
-                                $box.append($btn);
-                            });
+        function abrirModalEditarViaje(id) {
+            resetFormViaje();
+            $('#viajeIdEdicion').val(id);
+            $('#ModalAltaViajelabel').text('Editar viaje');
+            $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarOrigenesDestinos()).always(function () {
+                $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
+                    .done(function (v) {
+                        $('#clienteSelect').val(v.ClienteID);
+                        filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
+                        $('#camionSelect').val(v.CamionID);
+                        $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
+                        $('#numeroRemito').val(v.Num_Remito);
+                        $('#numeroCarga').val(v.Num_de_Carga);
+                        if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, true); else $('#fechaInicio').val(formatearParaInput(v.Fecha_Inicio));
+                        if (window.fpFin) fpFin.setDate(v.Fecha_Fin, true); else $('#fechaFin').val(formatearParaInput(v.Fecha_Fin));
+                        if (v.TarifaFijaID && v.TarifaFijaID > 0) {
+                            $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID);
+                            setTarifaInfo('Tarifa fija asignada #' + v.TarifaFijaID + '.', 'ok');
+                        } else if (v.TarifaKmID && v.TarifaKmID > 0) {
+                            $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID);
+                            setTarifaInfo('Tarifa por km asignada #' + v.TarifaKmID + '.', 'ok');
                         }
-                        $box.removeClass('d-none').attr('data-open', '1');
-                    },
-                    error: function () {
-                        limpiarDropChoferViaje();
-                    }
-                });
-            }
+                        if (v.ChoferID && v.ChoferID > 0) {
+                            $.ajax({ url: API_VIAJES + '/Choferes/' + v.ChoferID, type: 'GET' })
+                                .done(function (ch) { $('#choferSelectId').val(ch.Chofer_ID); $('#choferBuscar').val(ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')'); })
+                                .fail(function () { });
+                        }
+                        $('#ModalAltaViaje').modal('show');
+                    })
+                    .fail(function () { alert('No se pudo cargar el viaje seleccionado.'); });
+            });
+        }
 
-            function resetFormularioAltaViaje() {
-                $('#FormAltaViaje')[0].reset();
-                $('#clienteSelect').val('');
-                $('#origenSelect').empty().append('<option value="">Primero seleccione un cliente</option>').prop('disabled', true);
-                $('#destinoSelect').empty().append('<option value="">Primero seleccione un cliente</option>').prop('disabled', true);
-                $('#tarifaTipoFija').prop('checked', true);
-                limpiarTablaTarifaFija();
-                $('#alertaCompletaCampos').hide().text('');
-                limpiarMontoKmFeedback();
-                $('#montoCalculadoKm').val('').removeData('listo');
-                limpiarChoferViajeSeleccion();
-                actualizarVisibilidadTarifaDetalle();
-            }
-
-            function rutaTarifaCompleta() {
-                return !!($('#clienteSelect').val() && $('#origenSelect').val() && $('#destinoSelect').val());
-            }
-
-            function actualizarVisibilidadTarifaDetalle() {
-                if (!rutaTarifaCompleta()) {
-                    $('#tarifaRutaPendiente').show();
-                    $('#tarifaDetalleActivo').hide();
-                    limpiarTablaTarifaFija();
-                    $('#kmViajeInput').val('').removeAttr('data-km-numeric').removeClass('bg-light');
-                    $('#montoCalculadoKm').val('').removeData('listo');
-                    limpiarMontoKmFeedback();
-                    actualizarMapaRutaViaje();
-                    return;
-                }
-                $('#tarifaRutaPendiente').hide();
-                $('#tarifaDetalleActivo').show();
-                alternarBloquesTarifa();
-                actualizarMapaRutaViaje();
-            }
-
-            function alternarBloquesTarifa() {
-                const esFija = $('#tarifaTipoFija').is(':checked');
-                if (esFija) {
-                    $('#bloqueTarifaFija').show();
-                    $('#bloqueTarifaKm').hide();
-                    $('#kmViajeInput').val('').removeAttr('data-km-numeric').removeClass('bg-light');
-                    $('#montoCalculadoKm').val('').removeData('listo');
-                    limpiarMontoKmFeedback();
-                    cargarTarifaFijaSiCorresponde();
-                } else {
-                    $('#bloqueTarifaFija').hide();
-                    $('#bloqueTarifaKm').show();
-                    $('#kmViajeInput').prop('readonly', true).addClass('bg-light');
-                    sincronizarKmDesdeRutaMapa();
-                }
-            }
-
-            window.abrirModalAltaViaje = function () {
-                resetFormularioAltaViaje();
-                $('#ModalAltaViaje').modal('show');
-
-                cargarOrigenesYDestinos(function () {
-                    if (!cacheClientesCargado) {
-                        cargarClientesSelect();
-                    }
-                });
+        // ===================== GUARDAR =====================
+        function construirViajeDto() {
+            var tipo = $('input[name="tipoTarifa"]:checked').val();
+            return {
+                OrigenID: parseInt($('#origenSelect').val()) || 0,
+                DestinoID: parseInt($('#destinoSelect').val()) || 0,
+                Distancia_KM: ($('#distanciaKm').val() || '').toString().trim(),
+                Num_Remito: ($('#numeroRemito').val() || '').trim(),
+                Num_de_Carga: ($('#numeroCarga').val() || '').trim(),
+                Fecha_Inicio: $('#fechaInicio').val(),
+                Fecha_Fin: $('#fechaFin').val(),
+                ChoferID: parseInt($('#choferSelectId').val()) || 0,
+                CamionID: parseInt($('#camionSelect').val()) || 0,
+                TarifaFijaID: tipo === 'fija' ? (parseInt($('#tarifaFijaId').val()) || 0) : 0,
+                TarifaKmID: tipo === 'km' ? (parseInt($('#tarifaKmId').val()) || 0) : 0,
+                ClienteID: parseInt($('#clienteSelect').val()) || 0,
+                Usu_Alta: usuarioActual(),
+                Usu_Modi: usuarioActual()
             };
+        }
+        function guardarViaje() {
+            var dto = construirViajeDto();
+            var tipo = $('input[name="tipoTarifa"]:checked').val();
+            var falt = [];
+            if (!dto.ClienteID) falt.push('Cliente');
+            if (!dto.OrigenID) falt.push('Origen');
+            if (!dto.DestinoID) falt.push('Destino');
+            if (!dto.CamionID) falt.push('Camión');
+            if (!dto.Fecha_Inicio) falt.push('Fecha de inicio');
+            if (!dto.Fecha_Fin) falt.push('Fecha de fin');
+            if (!tipo) falt.push('Tipo de tarifa');
+            else if (tipo === 'fija' && !dto.TarifaFijaID) falt.push('Tarifa fija (no se encontró para esa ruta)');
+            else if (tipo === 'km' && !dto.TarifaKmID) falt.push('Tarifa por km (no se pudo calcular)');
+            if (falt.length) { mostrarAlertaModal('Complete/revise: ' + falt.join(', ') + '.'); return; }
 
-            $('#ModalAltaViaje').on('show.bs.modal', function () {
-                if (!cacheClientesCargado) {
-                    cargarClientesSelect();
-                }
+            var id = $('#viajeIdEdicion').val();
+            var esEdicion = id !== '' && id != null;
+            $.ajax({
+                url: esEdicion ? (API_VIAJES + '/Viajes/' + id) : (API_VIAJES + '/Viajes'),
+                type: esEdicion ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dto),
+                success: function () {
+                    $('#ModalAltaViaje').modal('hide');
+                    alert(esEdicion ? 'Viaje actualizado correctamente.' : 'Viaje registrado correctamente.');
+                    buscarViajes(1);
+                },
+                error: function (xhr) { mostrarAlertaModal(parsearError(xhr)); }
             });
+        }
 
-            $('#ModalAltaViaje').on('shown.bs.modal', function () {
-                setTimeout(function () {
-                    if (mapGoogleMap && window.google && google.maps) {
-                        google.maps.event.trigger(mapGoogleMap, 'resize');
-                    }
-                }, 200);
-            });
+        // ===================== ELIMINAR / ESTADO =====================
+        function abrirModalEliminarViaje(id, estado) { viajeIdEliminar = id; $('#confirmarEliminarViajeModal').modal('show'); }
+        function confirmarEliminarViaje() {
+            if (!viajeIdEliminar) return;
+            $.ajax({ url: API_VIAJES + '/Viajes/' + viajeIdEliminar, type: 'DELETE' })
+                .done(function () { $('#confirmarEliminarViajeModal').modal('hide'); alert('Viaje eliminado correctamente.'); viajeIdEliminar = null; buscarViajes(1); })
+                .fail(function (xhr) { $('#confirmarEliminarViajeModal').modal('hide'); alert('No se pudo eliminar el viaje. ' + parsearError(xhr)); });
+        }
+        function abrirModalEstadoViaje(id, estado) { alert('La activación/inactivación de viajes no está disponible en esta versión.'); }
 
-            $('#clienteSelect').on('change', function () {
-                poblarSelectOrigenDestino();
-            });
-
+        // ===================== READY =====================
+        $(document).ready(function () {
+            if (window.flatpickr) {
+                window.fpInicio = flatpickr('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
+                window.fpFin = flatpickr('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
+            }
+            $('#ModalAltaViaje').on('shown.bs.modal', function () { initMapaViaje(); if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 150); } });
+            $('#clienteSelect').on('change', onClienteChangeViaje);
             $('#origenSelect, #destinoSelect').on('change', function () {
-                actualizarVisibilidadTarifaDetalle();
+                if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
+                if ($('input[name="tipoTarifa"]:checked').val() === 'fija') { resolverTarifaFija(); }
             });
+            $('input[name="tipoTarifa"]').on('change', resolverTarifa);
+            $('#choferBuscar').on('input', buscarChoferInput);
+            $(document).on('click', function (e) { if (!$(e.target).closest('#choferBuscar, #choferResultados').length) { $('#choferResultados').hide(); } });
+            $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
+        });
 
-            $('#fechaInicioViaje, #fechaFinViaje').on('change input', function () {
-                if (!$('#tarifaTipoKm').is(':checked')) return;
-                $('#montoCalculadoKm').val('').removeData('listo');
-                limpiarMontoKmFeedback();
-            });
-
-            $('#choferViajeBuscarInput').on('input', function () {
-                clearTimeout(choferViajeBuscarTimer);
-                choferViajeBuscarTimer = setTimeout(ejecutarBusquedaChoferViaje, 320);
-            });
-
-            $('#choferViajeBuscarInput').on('keydown', function (e) {
-                if (e.key === 'Escape') limpiarDropChoferViaje();
-            });
-
-            $('#choferViajeResultados').on('click', 'button.list-group-item-action:not([disabled])', function () {
-                var id = $(this).attr('data-chofer-id');
-                var linea = $(this).data('linea') || $(this).text();
-                $('#choferViajeId').val(id);
-                var $res = $('#choferViajeResumen');
-                $res.removeClass('d-none').empty();
-                $('<strong></strong>').text('Chofer elegido: ').appendTo($res);
-                $res.append(document.createTextNode(linea));
-                $('#choferViajeLimpiar').removeClass('d-none');
-                limpiarDropChoferViaje();
-                $('#choferViajeBuscarInput').val('');
-            });
-
-            $('#choferViajeLimpiar').on('click', function () {
-                limpiarChoferViajeSeleccion();
-            });
-
-            $(document).on('click', function (e) {
-                if (!$(e.target).closest('#wrapChoferViajeBusqueda').length) {
-                    limpiarDropChoferViaje();
-                }
-            });
-
-            $('input[name="tarifaTipo"]').on('change', function () {
-                alternarBloquesTarifa();
-            });
-
-            var mensajeSinTarifaKm = 'No hay tarifa registrada para ese periodo de viaje y cantidad de kilómetros.';
-
-            $('#btnCalcularMontoKm').on('click', function () {
-                var kmAttr = $('#kmViajeInput').attr('data-km-numeric');
-                var km = kmAttr !== undefined && kmAttr !== '' ? parseFloat(kmAttr, 10) : NaN;
-                limpiarMontoKmFeedback();
-                $('#montoCalculadoKm').removeData('listo').val('');
-
-                var fi = $('#fechaInicioViaje').val();
-                var ff = $('#fechaFinViaje').val();
-                if (!fi || !ff) {
-                    mostrarErrorMontoKm('Completá fecha y hora de inicio y de fin del viaje para calcular.');
-                    return;
-                }
-                if (new Date(fi) > new Date(ff)) {
-                    mostrarErrorMontoKm('La fecha de inicio no puede ser posterior a la fecha de fin.');
-                    return;
-                }
-
-                if (Number.isNaN(km) || km <= 0) {
-                    mostrarErrorMontoKm('No hay kilómetros de ruta. Esperá el trazado en el mapa o ajustá la ruta.');
-                    return;
-                }
-
-                var $btn = $(this);
-                $btn.prop('disabled', true);
-
-                $.ajax({
-                    url: API_BASE + '/api/TarifasKm/Calcular',
-                    type: 'GET',
-                    data: { fechaInicio: fi, fechaFin: ff, km: km },
-                    success: function (data) {
-                        limpiarMontoKmFeedback();
-                        var monto = data && data.MontoCalculado != null ? data.MontoCalculado : null;
-                        if (monto === null || monto === undefined) {
-                            mostrarErrorMontoKm(mensajeSinTarifaKm);
-                            return;
-                        }
-                        $('#montoCalculadoKm').val(formatearMoneda(monto)).data('listo', true);
-                    },
-                    error: function (xhr) {
-                        $('#montoCalculadoKm').val('');
-                        if (xhr.status === 404) {
-                            var msg = mensajeSinTarifaKm;
-                            try {
-                                var j = xhr.responseJSON;
-                                if (j && j.Mensaje) msg = j.Mensaje;
-                            } catch (e1) { /* ignore */ }
-                            mostrarErrorMontoKm(msg);
-                            return;
-                        }
-                        var detalle = 'No se pudo calcular el monto. Intentá de nuevo.';
-                        if (xhr.status === 400) {
-                            try {
-                                var j400 = xhr.responseJSON;
-                                if (typeof j400 === 'string') detalle = j400;
-                                else if (j400 && j400.Message) detalle = j400.Message;
-                            } catch (e2) { /* ignore */ }
-                            mostrarErrorMontoKm(detalle);
-                            return;
-                        }
-                        mostrarErrorMontoKm(detalle);
-                        mostrarToastError(detalle);
-                    },
-                    complete: function () {
-                        $btn.prop('disabled', false);
-                    }
-                });
-            });
-
-            $('#confirmarAltaViajeBtn').on('click', function (e) {
-                e.preventDefault();
-                $('#alertaCompletaCampos').hide().text('');
-
-                const clienteId = $('#clienteSelect').val();
-                const origenId = $('#origenSelect').val();
-                const destinoId = $('#destinoSelect').val();
-                const fi = $('#fechaInicioViaje').val();
-                const ff = $('#fechaFinViaje').val();
-                const esFija = $('#tarifaTipoFija').is(':checked');
-
-                if (!clienteId || !origenId || !destinoId || !fi || !ff) {
-                    $('#alertaCompletaCampos').text('Completá todos los campos obligatorios.').show();
-                    return;
-                }
-
-                if (new Date(fi) > new Date(ff)) {
-                    $('#alertaCompletaCampos').text('La fecha de inicio no puede ser posterior a la fecha de fin.').show();
-                    return;
-                }
-
-                if (esFija) {
-                    if (!tarifaFijaActual) {
-                        $('#alertaCompletaCampos').text('No hay tarifa fija disponible para la ruta elegida. Revisá origen, destino y cliente.').show();
-                        return;
-                    }
-                } else {
-                    var kmNum = parseFloat($('#kmViajeInput').attr('data-km-numeric'), 10);
-                    if (Number.isNaN(kmNum) || kmNum <= 0) {
-                        $('#alertaCompletaCampos').text('No hay distancia en km desde el mapa. Completá la ruta y esperá el trazado.').show();
-                        return;
-                    }
-                    if (!$('#montoCalculadoKm').data('listo')) {
-                        $('#alertaCompletaCampos').text('Pulsá «Calcular» para obtener el monto del viaje.').show();
-                        return;
-                    }
-                }
-
-                // Aquí se conectará POST a api/Viajes cuando el endpoint de alta esté disponible
-                mostrarToastExito('Viaje registrado correctamente.');
-                $('#ModalAltaViaje').modal('hide');
-                if (typeof buscarViajes === 'function') {
-                    buscarViajes(typeof currentPage !== 'undefined' ? currentPage : 1);
-                }
-            });
-
-            $('#ModalAltaViaje').on('hidden.bs.modal', function () {
-                $('#confirmarAltaViajeBtn').prop('disabled', false);
-            });
-
-            $(document).ready(function () {
-                cargarOrigenesYDestinos();
-            });
-        })();
     </script>
 
 </body>

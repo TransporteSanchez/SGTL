@@ -56,7 +56,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
 
                 {
 
@@ -164,7 +164,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
 
                 {
 
@@ -256,7 +256,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
 
                 {
 

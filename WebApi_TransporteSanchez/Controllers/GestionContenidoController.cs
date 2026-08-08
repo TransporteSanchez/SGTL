@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data.Entity;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
+using System.Text;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -34,7 +36,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     var olist = db.Set<GESTION_CONTENIDO>().Select(c => new GestionContenidoDto
                     {
@@ -76,7 +78,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
                     // Buscar el contenido basado en el ID
                     var content = db.Set<GESTION_CONTENIDO>()
@@ -121,42 +123,65 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new DbContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Buscar el registro por ID
-                    var oitem = db.Set<GESTION_CONTENIDO>().Find(id);
-
-                    if (oitem == null)
+                    // Verificar que el registro exista
+                    if (!db.Set<GESTION_CONTENIDO>().Any(x => x.GestionContenido_ID == id))
                     {
                         return NotFound(); // 404 si no se encuentra el contenido
                     }
 
-                    // Actualizar los campos
-                    oitem.Logo = value.Logo;
-                    oitem.ColorFondo = value.ColorFondo;
-                    oitem.ColorBotonesMenu = value.ColorBotonesMenu;
-                    oitem.ContenidoPiePagina = value.ContenidoPiePagina;
+                    var fechaModi = (value.Fecha_Modi != default(DateTime)) ? value.Fecha_Modi : DateTime.Now;
 
-                    // Asegúrate de que Fecha_Modi no se asigne como nulo
-                    if (value.Fecha_Modi != default(DateTime)) // Verifica que no sea el valor por defecto
+                    // Valores actuales (antes del cambio) para el detalle de auditoría.
+                    var actual = db.Database.SqlQuery<GestionContenidoDto>(
+                        "SELECT GestionContenido_ID, Logo, ColorFondo, ColorBotonesMenu, ContenidoPiePagina, Fecha_Modi, Usu_Modi " +
+                        "FROM GESTION_CONTENIDO WHERE GestionContenido_ID = @idsel",
+                        new SqlParameter("@idsel", id)).FirstOrDefault();
+
+                    // Actualización vía SQL directo: evita el facet MaxLength(255) del modelo,
+                    // necesario para guardar el Logo en base64 (la columna ya es NVARCHAR(MAX)).
+                    int filas = db.Database.ExecuteSqlCommand(
+                        "UPDATE GESTION_CONTENIDO SET Logo = @logo, ColorFondo = @fondo, " +
+                        "ColorBotonesMenu = @menu, ContenidoPiePagina = @pie, " +
+                        "Fecha_Modi = @fecha, Usu_Modi = @usu WHERE GestionContenido_ID = @id",
+                        new SqlParameter("@logo", (object)value.Logo ?? DBNull.Value),
+                        new SqlParameter("@fondo", (object)value.ColorFondo ?? DBNull.Value),
+                        new SqlParameter("@menu", (object)value.ColorBotonesMenu ?? DBNull.Value),
+                        new SqlParameter("@pie", (object)value.ContenidoPiePagina ?? DBNull.Value),
+                        new SqlParameter("@fecha", fechaModi),
+                        new SqlParameter("@usu", (object)value.Usu_Modi ?? DBNull.Value),
+                        new SqlParameter("@id", id));
+
+                    if (filas == 0) return NotFound();
+
+                    // Auditoría manual (esta ruta no pasa por SaveChanges). Registramos el antes
+                    // y el después, solo de los campos que cambiaron. El logo se resume para no
+                    // volcar el base64 en la bitácora. El try/catch evita romper el guardado.
+                    try
                     {
-                        oitem.Fecha_Modi = value.Fecha_Modi;
+                        var antes = new Dictionary<string, string>();
+                        var despues = new Dictionary<string, string>();
+                        AgregarCambio(antes, despues, "ColorFondo", actual?.ColorFondo, value.ColorFondo);
+                        AgregarCambio(antes, despues, "ColorBotonesMenu", actual?.ColorBotonesMenu, value.ColorBotonesMenu);
+                        AgregarCambio(antes, despues, "ContenidoPiePagina", actual?.ContenidoPiePagina, value.ContenidoPiePagina);
+                        if (!string.Equals(actual?.Logo, value.Logo))
+                        {
+                            antes["Logo"] = ResumirLogo(actual?.Logo);
+                            despues["Logo"] = ResumirLogo(value.Logo);
+                        }
+
+                        db.Database.ExecuteSqlCommand(
+                            "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
+                            "VALUES (GETDATE(), @usu, 'UPDATE', 'GESTION_CONTENIDO', @clave, @ant, @nue, NULL)",
+                            new SqlParameter("@usu", (object)value.Usu_Modi ?? DBNull.Value),
+                            new SqlParameter("@clave", "GestionContenido_ID=" + id),
+                            new SqlParameter("@ant", (object)ToJson(antes) ?? DBNull.Value),
+                            new SqlParameter("@nue", (object)ToJson(despues) ?? DBNull.Value));
                     }
-                    else
-                    {
-                        // Establecer una fecha actual si se envía nulo
-                        oitem.Fecha_Modi = DateTime.Now;
-                    }
+                    catch { }
 
-                    oitem.Usu_Modi = value.Usu_Modi;
-
-                    // Guardar los cambios
-                    db.Entry(oitem).State = System.Data.Entity.EntityState.Modified;
-
-                    // Intenta guardar los cambios
-                    db.SaveChanges();
-
-                    return Ok("Actualización exitosa."); // 200 OK si la actualización fue exitosa
+                    return Ok("Actualización exitosa."); // 200 OK
                 }
             }
             catch (DbEntityValidationException ex)
@@ -186,6 +211,66 @@ namespace WebApi_TransporteSanchez.Controllers
                 // Manejo de errores generales
                 return InternalServerError(ex); // 500 Internal Server Error para otros errores no esperados
             }
+        }
+
+        // ===================== utilitarios de auditoría =====================
+
+        private static void AgregarCambio(Dictionary<string, string> antes, Dictionary<string, string> despues,
+            string campo, string valorAntes, string valorNuevo)
+        {
+            if (!string.Equals(valorAntes, valorNuevo))
+            {
+                antes[campo] = valorAntes;
+                despues[campo] = valorNuevo;
+            }
+        }
+
+        // Resume el logo para la bitácora: no volcamos el base64 completo.
+        private static string ResumirLogo(string logo)
+        {
+            if (string.IsNullOrEmpty(logo)) return "(vacío)";
+            if (logo.StartsWith("data:")) return "[imagen subida en base64, " + logo.Length + " caracteres]";
+            if (logo.Length > 200) return logo.Substring(0, 200) + "… (" + logo.Length + " caracteres)";
+            return logo;
+        }
+
+        private static string ToJson(Dictionary<string, string> dict)
+        {
+            if (dict == null || dict.Count == 0) return null;
+            var sb = new StringBuilder("{");
+            bool primero = true;
+            foreach (var kv in dict)
+            {
+                if (!primero) sb.Append(",");
+                primero = false;
+                sb.Append('"').Append(EscaparJson(kv.Key)).Append("\":");
+                if (kv.Value == null) sb.Append("null");
+                else sb.Append('"').Append(EscaparJson(kv.Value)).Append('"');
+            }
+            sb.Append("}");
+            return sb.ToString();
+        }
+
+        private static string EscaparJson(string s)
+        {
+            if (string.IsNullOrEmpty(s)) return s ?? "";
+            var sb = new StringBuilder(s.Length + 8);
+            foreach (var c in s)
+            {
+                switch (c)
+                {
+                    case '"': sb.Append("\\\""); break;
+                    case '\\': sb.Append("\\\\"); break;
+                    case '\n': sb.Append("\\n"); break;
+                    case '\r': sb.Append("\\r"); break;
+                    case '\t': sb.Append("\\t"); break;
+                    default:
+                        if (c < ' ') sb.Append("\\u").Append(((int)c).ToString("x4"));
+                        else sb.Append(c);
+                        break;
+                }
+            }
+            return sb.ToString();
         }
 
 

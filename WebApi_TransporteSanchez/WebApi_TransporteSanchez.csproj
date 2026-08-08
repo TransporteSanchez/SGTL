@@ -392,10 +392,13 @@
     <Compile Include="CHOFER_CAMION.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="Controllers\AuditoriaController.cs" />
     <Compile Include="Controllers\AutenticacionController.cs" />
     <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
+    <Compile Include="Controllers\TarifasController.cs" />
+    <Compile Include="Controllers\ProformasController.cs" />
     <Compile Include="JwtConfig.cs" />
     <Compile Include="CLIENTES.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
@@ -445,6 +448,8 @@
     <Compile Include="PROFORMAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="PROFORMAS_Extension.cs" />
+    <Compile Include="PROFORMA_DETALLE.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="PROVINCIAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
@@ -464,6 +469,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>SGTL.edmx</DependentUpon>
     </Compile>
+    <Compile Include="Sgtlauditcontext.cs" />
     <Compile Include="TARIFAS_FIJAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>

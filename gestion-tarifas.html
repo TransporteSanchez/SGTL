@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Gestión de tarifas</title>
+
+    <style>
+        #app {
+            display: none;
+        }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+
+        /* Asegura que la tabla se extienda completamente */
+        .table-responsive {
+            width: 100%;
+        }
+
+        #tablaViajes {
+            width: 100%;
+            text-align: center;
+        }
+
+        #tablaViajes th,
+        #tablaViajes td {
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
+        #tablaViajes th {
+            width: auto;
+            white-space: nowrap;
+        }
+
+        /* Centrar la paginación */
+        .pagination {
+            justify-content: center;
+        }
+    </style>
+
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+
+                        <!--btn para expandir Menú lateral-->
+
+                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
+                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <span class="navbar-toggler-icon"></span>
+                        </button>
+
+                        <!--Llamado a las opciones del header-->
+
+                        <div id="header-container"></div>
+
+                        <script src="./assets/static/js/header.js"></script>
+
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+
+                <!--Comienzo sección de la tabla-->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
+                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
+                                    <div class="d-flex"><div class="toast-body"></div>
+                                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <h5 class="card-title">Gestionar tarifas</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="nav nav-tabs" id="tarifasTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="tab-fijas" data-bs-toggle="tab" data-bs-target="#pane-fijas" type="button" role="tab">Tarifas fijas</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tab-km" data-bs-toggle="tab" data-bs-target="#pane-km" type="button" role="tab">Tarifas por KM</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content pt-4" id="tarifasTabContent">
+                                <!-- ===== Tarifas fijas ===== -->
+                                <div class="tab-pane fade show active" id="pane-fijas" role="tabpanel">
+                                    <div class="text-end mb-3">
+                                        <button type="button" class="btn btn-success" onclick="abrirAltaFija()">
+                                            <i class="bi bi-plus"></i> Nueva tarifa fija
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped" id="tablaFijas">
+                                            <thead><tr>
+                                                <th>#</th><th>Cliente</th><th>Origen</th><th>Destino</th>
+                                                <th>Desde</th><th>Hasta</th><th>Valor fijo neto</th><th>Acciones</th>
+                                            </tr></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- ===== Tarifas por KM ===== -->
+                                <div class="tab-pane fade" id="pane-km" role="tabpanel">
+                                    <div class="text-end mb-3">
+                                        <button type="button" class="btn btn-success" onclick="abrirAltaKm()">
+                                            <i class="bi bi-plus"></i> Nueva tarifa por KM
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped" id="tablaKm">
+                                            <thead><tr>
+                                                <th>#</th><th>Desde</th><th>Hasta</th><th>Valor por KM</th>
+                                                <th>Min KM</th><th>Max KM</th><th>Acciones</th>
+                                            </tr></thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!--Fin sección de la tabla-->
+
+            <!--Footer-->
+
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+        </div>
+
+    </div>
+
+
+
+    <!-- ===== Modal Tarifa Fija ===== -->
+    <div class="modal fade text-left" id="modalFija" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="tituloFija">Nueva tarifa fija</h4>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaFija" class="alert alert-light-danger color-danger" style="display:none;"></div>
+                    <form class="form" id="formFija">
+                        <input type="hidden" id="fjId" value="">
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Cliente</label>
+                                <select class="form-select" id="fjCliente"><option value="">Seleccione un cliente</option></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Origen</label>
+                                <select class="form-select" id="fjOrigen"><option value="">Seleccione un origen</option></select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Destino</label>
+                                <select class="form-select" id="fjDestino"><option value="">Seleccione un destino</option></select>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha desde</label>
+                                <input type="text" class="form-control" id="fjDesde" autocomplete="off" placeholder="AAAA-MM-DD">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha hasta</label>
+                                <input type="text" class="form-control" id="fjHasta" autocomplete="off" placeholder="AAAA-MM-DD">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Valor ruta</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="fjValorRuta">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Valor vuelta vac&iacute;o</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="fjValorVacio">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Valor fijo neto</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="fjValorNeto">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary ms-1" onclick="guardarFija()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Modal Tarifa por KM ===== -->
+    <div class="modal fade text-left" id="modalKm" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="tituloKm">Nueva tarifa por KM</h4>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaKm" class="alert alert-light-danger color-danger" style="display:none;"></div>
+                    <form class="form" id="formKm">
+                        <input type="hidden" id="kmId" value="">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha desde</label>
+                                <input type="text" class="form-control" id="kmDesde" autocomplete="off" placeholder="AAAA-MM-DD">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Fecha hasta</label>
+                                <input type="text" class="form-control" id="kmHasta" autocomplete="off" placeholder="AAAA-MM-DD">
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Valor por KM</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="kmValor">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Min KM</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="kmMin">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Max KM</label>
+                                <input type="number" step="0.01" min="0" class="form-control" id="kmMax">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary ms-1" onclick="guardarKm()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Modal confirmar eliminacion ===== -->
+    <div class="modal fade text-left" id="modalEliminar" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirmar eliminaci&oacute;n</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                </div>
+                <div class="modal-body">&iquest;Est&aacute; seguro que desea eliminar esta tarifa?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminar()">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--Scripts-->
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
+    <script src="assets/static/js/pages/simple-datatables.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+
+    <!-- Carga de diseño y roles -->
+    <script>
+        window.onload = function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            // Cargar header, footer y configuración
+            window.loadHeader();
+            window.loadFooter();
+
+            loadSettings()
+                .then(() => {
+                    adjustVisibilityBasedOnRole();
+                    loadingMessage.style.display = 'none';
+                    document.getElementById('app').style.display = 'block';
+                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
+                })
+                .catch((error) => {
+                    console.error('Error al cargar el header, footer o los datos:', error);
+                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                });
+        };
+
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+
+    </script>
+
+    <!-- Comportamiento tooltip -->
+    <script>
+        $(document).ready(function () {
+            // Inicializa tooltips en todos los elementos estáticos
+            $('[data-bs-toggle="tooltip"]').tooltip();
+
+            // Aplica tooltips a elementos dinámicamente agregados en la tabla
+            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+
+            // Manejo específico para tooltips en botones deshabilitados
+            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('show');
+            });
+
+            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
+                $(this).tooltip('hide');
+            });
+        });
+
+    </script>
+
+
+    <!-- ================= Fase 2: ABM de Tarifas ================= -->
+    <script>
+        const API_TAR = 'http://localhost:50222/api';
+        function setFecha(id, val) {
+            var el = document.getElementById(id);
+            if (el && el._flatpickr) { el._flatpickr.setDate(val || '', true); }
+            else { $('#' + id).val(val || ''); }
+        }
+        function clearFecha(id) {
+            var el = document.getElementById(id);
+            if (el && el._flatpickr) { el._flatpickr.clear(); }
+            else { $('#' + id).val(''); }
+        }
+
+        let elimTipo = null, elimId = null;
+
+        function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
+        function d10(x) { return x ? String(x).substring(0, 10) : ''; }
+
+        function parseErr(xhr) {
+            try {
+                let r = xhr.responseJSON;
+                if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
+                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
+                if (r && r.Message) { return r.Message; }
+                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
+            } catch (e) { }
+            return 'Ocurrio un error. Revise los datos e intente nuevamente.';
+        }
+
+        function cargarCombo(url, sel, ph, map) {
+            const s = $(sel);
+            const d = $.Deferred();
+            $.ajax({ url: url, type: 'GET' })
+                .done(function (data) {
+                    s.empty().append('<option value="">' + ph + '</option>');
+                    (data || []).forEach(function (it) { s.append(map(it)); });
+                })
+                .fail(function () { s.empty().append('<option value="">' + ph + '</option>'); })
+                .always(function () { d.resolve(); });
+            return d.promise();
+        }
+
+        function combosFija() {
+            return $.when(
+                cargarCombo(API_TAR + '/Clientes', '#fjCliente', 'Seleccione un cliente',
+                    function (c) { return '<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'; }),
+                cargarCombo(API_TAR + '/Origen', '#fjOrigen', 'Seleccione un origen',
+                    function (o) { return '<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'; }),
+                cargarCombo(API_TAR + '/Destino', '#fjDestino', 'Seleccione un destino',
+                    function (dd) { return '<option value="' + dd.Destino_ID + '">' + dd.Descripcion + '</option>'; })
+            );
+        }
+
+        // ---------- Tarifas fijas ----------
+        function listarFijas() {
+            $.ajax({ url: API_TAR + '/Tarifas/Fijas', type: 'GET' })
+                .done(function (data) {
+                    const tb = $('#tablaFijas tbody').empty();
+                    if (!data || !data.length) { tb.html('<tr><td colspan="8" class="text-center">Sin tarifas fijas cargadas</td></tr>'); return; }
+                    data.forEach(function (t) {
+                        tb.append('<tr>' +
+                            '<td>' + t.TarifaFija_ID + '</td>' +
+                            '<td>' + (t.ClienteRazon || '') + '</td>' +
+                            '<td>' + (t.OrigenDescripcion || '') + '</td>' +
+                            '<td>' + (t.DestinoDescripcion || '') + '</td>' +
+                            '<td>' + d10(t.FechaDesde) + '</td>' +
+                            '<td>' + d10(t.FechaHasta) + '</td>' +
+                            '<td>$' + t.ValorFijoNeto + '</td>' +
+                            '<td><button class="btn btn-primary btn-sm" onclick="abrirEditarFija(' + t.TarifaFija_ID + ')"><i class="bi bi-pencil"></i></button> ' +
+                            '<button class="btn btn-danger btn-sm ms-1" onclick="abrirEliminar(\'fija\',' + t.TarifaFija_ID + ')"><i class="bi bi-trash"></i></button></td>' +
+                            '</tr>');
+                    });
+                })
+                .fail(function () { $('#tablaFijas tbody').html('<tr><td colspan="8" class="text-center">Sin tarifas fijas cargadas</td></tr>'); });
+        }
+
+        function abrirAltaFija() {
+            document.getElementById('formFija').reset(); clearFecha('fjDesde'); clearFecha('fjHasta');
+            $('#fjId').val('');
+            $('#tituloFija').text('Nueva tarifa fija');
+            $('#alertaFija').hide().empty();
+            combosFija();
+            $('#modalFija').modal('show');
+        }
+
+        function abrirEditarFija(id) {
+            document.getElementById('formFija').reset(); clearFecha('fjDesde'); clearFecha('fjHasta');
+            $('#fjId').val(id);
+            $('#tituloFija').text('Editar tarifa fija');
+            $('#alertaFija').hide().empty();
+            combosFija().always(function () {
+                $.ajax({ url: API_TAR + '/Tarifas/Fijas/' + id, type: 'GET' })
+                    .done(function (t) {
+                        $('#fjCliente').val(t.ClienteID);
+                        $('#fjOrigen').val(t.OrigenID);
+                        $('#fjDestino').val(t.DestinoID);
+                        setFecha('fjDesde', d10(t.FechaDesde));
+                        setFecha('fjHasta', d10(t.FechaHasta));
+                        $('#fjValorRuta').val(t.ValorRuta);
+                        $('#fjValorVacio').val(t.ValorVueltaVacio);
+                        $('#fjValorNeto').val(t.ValorFijoNeto);
+                        $('#modalFija').modal('show');
+                    })
+                    .fail(function () { alert('No se pudo cargar la tarifa seleccionada.'); });
+            });
+        }
+
+        function guardarFija() {
+            const dto = {
+                ClienteID: parseInt($('#fjCliente').val()) || 0,
+                OrigenID: parseInt($('#fjOrigen').val()) || 0,
+                DestinoID: parseInt($('#fjDestino').val()) || 0,
+                FechaDesde: $('#fjDesde').val(),
+                FechaHasta: $('#fjHasta').val(),
+                ValorRuta: parseFloat($('#fjValorRuta').val()) || 0,
+                ValorVueltaVacio: parseFloat($('#fjValorVacio').val()) || 0,
+                ValorFijoNeto: parseFloat($('#fjValorNeto').val()) || 0,
+                Usu_Alta: usuarioActual(),
+                Usu_Modi: usuarioActual()
+            };
+            const falt = [];
+            if (!dto.ClienteID) falt.push('Cliente');
+            if (!dto.OrigenID) falt.push('Origen');
+            if (!dto.DestinoID) falt.push('Destino');
+            if (!dto.FechaDesde) falt.push('Fecha desde');
+            if (!dto.FechaHasta) falt.push('Fecha hasta');
+            if (falt.length) { $('#alertaFija').html('Complete los campos: ' + falt.join(', ') + '.').show(); return; }
+
+            const id = $('#fjId').val();
+            const edit = id !== '' && id != null;
+            $.ajax({
+                url: edit ? (API_TAR + '/Tarifas/Fijas/' + id) : (API_TAR + '/Tarifas/Fijas'),
+                type: edit ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dto),
+                success: function () {
+                    $('#modalFija').modal('hide');
+                    alert(edit ? 'Tarifa fija actualizada.' : 'Tarifa fija registrada.');
+                    listarFijas();
+                },
+                error: function (xhr) { $('#alertaFija').html(parseErr(xhr)).show(); }
+            });
+        }
+
+        // ---------- Tarifas por KM ----------
+        function listarKm() {
+            $.ajax({ url: API_TAR + '/Tarifas/Km', type: 'GET' })
+                .done(function (data) {
+                    const tb = $('#tablaKm tbody').empty();
+                    if (!data || !data.length) { tb.html('<tr><td colspan="7" class="text-center">Sin tarifas por km cargadas</td></tr>'); return; }
+                    data.forEach(function (t) {
+                        tb.append('<tr>' +
+                            '<td>' + t.TarifaKm_ID + '</td>' +
+                            '<td>' + d10(t.FechaDesde) + '</td>' +
+                            '<td>' + d10(t.FechaHasta) + '</td>' +
+                            '<td>$' + t.ValorKm + '</td>' +
+                            '<td>' + (t.MinKm || '') + '</td>' +
+                            '<td>' + (t.MaxKm || '') + '</td>' +
+                            '<td><button class="btn btn-primary btn-sm" onclick="abrirEditarKm(' + t.TarifaKm_ID + ')"><i class="bi bi-pencil"></i></button> ' +
+                            '<button class="btn btn-danger btn-sm ms-1" onclick="abrirEliminar(\'km\',' + t.TarifaKm_ID + ')"><i class="bi bi-trash"></i></button></td>' +
+                            '</tr>');
+                    });
+                })
+                .fail(function () { $('#tablaKm tbody').html('<tr><td colspan="7" class="text-center">Sin tarifas por km cargadas</td></tr>'); });
+        }
+
+        function abrirAltaKm() {
+            document.getElementById('formKm').reset(); clearFecha('kmDesde'); clearFecha('kmHasta');
+            $('#kmId').val('');
+            $('#tituloKm').text('Nueva tarifa por KM');
+            $('#alertaKm').hide().empty();
+            $('#modalKm').modal('show');
+        }
+
+        function abrirEditarKm(id) {
+            document.getElementById('formKm').reset(); clearFecha('kmDesde'); clearFecha('kmHasta');
+            $('#kmId').val(id);
+            $('#tituloKm').text('Editar tarifa por KM');
+            $('#alertaKm').hide().empty();
+            $.ajax({ url: API_TAR + '/Tarifas/Km/' + id, type: 'GET' })
+                .done(function (t) {
+                    setFecha('kmDesde', d10(t.FechaDesde));
+                    setFecha('kmHasta', d10(t.FechaHasta));
+                    $('#kmValor').val(t.ValorKm);
+                    $('#kmMin').val((t.MinKm || '').toString().trim());
+                    $('#kmMax').val((t.MaxKm || '').toString().trim());
+                    $('#modalKm').modal('show');
+                })
+                .fail(function () { alert('No se pudo cargar la tarifa seleccionada.'); });
+        }
+
+        function guardarKm() {
+            const dto = {
+                FechaDesde: $('#kmDesde').val(),
+                FechaHasta: $('#kmHasta').val(),
+                ValorKm: parseFloat($('#kmValor').val()) || 0,
+                MinKm: ($('#kmMin').val() || '').toString().trim(),
+                MaxKm: ($('#kmMax').val() || '').toString().trim(),
+                Usu_Alta: usuarioActual(),
+                Usu_Modi: usuarioActual()
+            };
+            const falt = [];
+            if (!dto.FechaDesde) falt.push('Fecha desde');
+            if (!dto.FechaHasta) falt.push('Fecha hasta');
+            if (dto.MinKm === '') falt.push('Min KM');
+            if (dto.MaxKm === '') falt.push('Max KM');
+            if (falt.length) { $('#alertaKm').html('Complete los campos: ' + falt.join(', ') + '.').show(); return; }
+
+            const id = $('#kmId').val();
+            const edit = id !== '' && id != null;
+            $.ajax({
+                url: edit ? (API_TAR + '/Tarifas/Km/' + id) : (API_TAR + '/Tarifas/Km'),
+                type: edit ? 'PUT' : 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(dto),
+                success: function () {
+                    $('#modalKm').modal('hide');
+                    alert(edit ? 'Tarifa por km actualizada.' : 'Tarifa por km registrada.');
+                    listarKm();
+                },
+                error: function (xhr) { $('#alertaKm').html(parseErr(xhr)).show(); }
+            });
+        }
+
+        // ---------- Eliminacion ----------
+        function abrirEliminar(tipo, id) {
+            elimTipo = tipo; elimId = id;
+            $('#modalEliminar').modal('show');
+        }
+        function confirmarEliminar() {
+            if (!elimTipo || !elimId) { return; }
+            const url = elimTipo === 'fija' ? (API_TAR + '/Tarifas/Fijas/' + elimId) : (API_TAR + '/Tarifas/Km/' + elimId);
+            $.ajax({ url: url, type: 'DELETE' })
+                .done(function () {
+                    $('#modalEliminar').modal('hide');
+                    alert('Tarifa eliminada correctamente.');
+                    if (elimTipo === 'fija') { listarFijas(); } else { listarKm(); }
+                    elimTipo = null; elimId = null;
+                })
+                .fail(function (xhr) {
+                    $('#modalEliminar').modal('hide');
+                    alert(parseErr(xhr));
+                });
+        }
+
+        $(document).ready(function () {
+            if (window.flatpickr) {
+                ['fjDesde','fjHasta','kmDesde','kmHasta'].forEach(function (id) {
+                    flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true });
+                });
+            }
+            listarFijas();
+            listarKm();
+        });
+    </script>
+
+</body>
+
+</html>

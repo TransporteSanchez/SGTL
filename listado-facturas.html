@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Listar facturas (Proformas)</title>
+    <style>
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .pagination { justify-content: center; }
+        .badge-estado { font-size: .75rem; }
+        .tbl-prof th, .tbl-prof td { vertical-align: middle; }
+        .bloque-titulo { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 16px 0 10px; }
+        .totales dt { font-weight: 500; }
+        .dato dt { font-weight: 500; color: #6b7280; }
+    </style>
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="loading-message" style="display:none;">
+        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando...</span></div>
+    </div>
+
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Listar facturas — Proformas generadas</h5>
+                            <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar facturas).</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-2 col-6"><label class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..."></div>
+                                <div class="col-md-3 col-6"><label class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Desde</label><input id="fDesde" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-2 col-6"><label class="form-label">Hasta</label><input id="fHasta" class="form-control" placeholder="AAAA-MM-DD"></div>
+                                <div class="col-md-1 col-6"><label class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="usuario"></div>
+                                <div class="col-12 d-flex gap-2">
+                                    <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
+                                    <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-hover tbl-prof">
+                                    <thead><tr>
+                                        <th>Número</th><th>Fecha</th><th>Cliente</th><th>Destino</th>
+                                        <th class="text-end">Total</th><th>Estado</th><th>Usuario</th><th class="text-center">Ver</th>
+                                    </tr></thead>
+                                    <tbody id="cuerpoProformas"><tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                </table>
+                            </div>
+                            <nav><ul class="pagination mt-2" id="paginacion"></ul></nav>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
+        </div>
+    </div>
+
+    <!-- Modal detalle (solo lectura) -->
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="d_titulo">Proforma</h5>
+                    <span id="d_badge" class="badge bg-secondary ms-2"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Documento comercial sin validez fiscal.</p>
+                    <div class="bloque-titulo">Datos generales y cliente</div>
+                    <dl class="row dato">
+                        <dt class="col-sm-2">Número</dt><dd class="col-sm-4" id="d_numero"></dd>
+                        <dt class="col-sm-2">Emisión</dt><dd class="col-sm-4" id="d_femision"></dd>
+                        <dt class="col-sm-2">Cliente</dt><dd class="col-sm-4" id="d_cliente"></dd>
+                        <dt class="col-sm-2">CUIT</dt><dd class="col-sm-4" id="d_cuit"></dd>
+                        <dt class="col-sm-2">Dirección</dt><dd class="col-sm-4" id="d_dir"></dd>
+                        <dt class="col-sm-2">Teléfono</dt><dd class="col-sm-4" id="d_tel"></dd>
+                        <dt class="col-sm-2">Email</dt><dd class="col-sm-4" id="d_email"></dd>
+                    </dl>
+                    <div class="bloque-titulo">Transporte</div>
+                    <dl class="row dato">
+                        <dt class="col-sm-2">Origen</dt><dd class="col-sm-4" id="d_origen"></dd>
+                        <dt class="col-sm-2">Destino</dt><dd class="col-sm-4" id="d_destino"></dd>
+                        <dt class="col-sm-2">Tipo de carga</dt><dd class="col-sm-4" id="d_tipocarga"></dd>
+                        <dt class="col-sm-2">Peso / Volumen</dt><dd class="col-sm-4" id="d_pesovol"></dd>
+                    </dl>
+                    <div class="bloque-titulo">Conceptos</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered">
+                            <thead class="table-light"><tr>
+                                <th>Código</th><th>Concepto</th><th>Descripción</th><th class="text-end">Cant.</th><th>Unidad</th>
+                                <th class="text-end">P. Unit.</th><th class="text-end">Desc.%</th><th class="text-end">IVA%</th><th class="text-end">Subtotal</th>
+                            </tr></thead>
+                            <tbody id="d_conceptos"></tbody>
+                        </table>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6"><div class="bloque-titulo">Condiciones y observaciones</div>
+                            <dl class="row dato">
+                                <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8" id="d_formapago"></dd>
+                                <dt class="col-sm-4">Validez</dt><dd class="col-sm-8" id="d_validez"></dd>
+                                <dt class="col-sm-4">Observaciones</dt><dd class="col-sm-8" id="d_obs"></dd>
+                            </dl>
+                        </div>
+                        <div class="col-md-5 ms-auto"><div class="bloque-titulo">Totales</div>
+                            <dl class="row totales mb-0">
+                                <dt class="col-7">Subtotal</dt><dd class="col-5 text-end" id="d_subtotal"></dd>
+                                <dt class="col-7">Descuentos</dt><dd class="col-5 text-end" id="d_desc"></dd>
+                                <dt class="col-7">Subtotal neto</dt><dd class="col-5 text-end" id="d_neto"></dd>
+                                <dt class="col-7">IVA</dt><dd class="col-5 text-end" id="d_iva"></dd>
+                                <dt class="col-7">Otros impuestos</dt><dd class="col-5 text-end" id="d_otros"></dd>
+                                <dt class="col-7 fs-5 fw-bold">TOTAL GENERAL</dt><dd class="col-5 text-end fs-5 fw-bold" id="d_total"></dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-dark" onclick="if(window.__profActual)imprimirProformaPDF(window.__profActual)"><i class="bi bi-printer me-1"></i>Imprimir</button>
+                    <button type="button" class="btn btn-primary" onclick="if(window.__profActual)descargarProformaPDF(window.__profActual)"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="assets/static/js/proforma-pdf.js"></script>
+
+    <script>
+        window.onload = function () {
+            var lm = document.getElementById('loading-message');
+            lm.style.display = 'block'; document.getElementById('app').style.display = 'none';
+            if (window.loadHeader) window.loadHeader();
+            if (window.loadFooter) window.loadFooter();
+            loadSettings().then(finish).catch(finish);
+            function finish() { lm.style.display = 'none'; document.getElementById('app').style.display = 'block'; if (window.loadSidebar) window.loadSidebar(); }
+        };
+        async function loadSettings() {
+            return new Promise(function (resolve, reject) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+                xhr.onload = function () { try { var d = JSON.parse(xhr.responseText); if (d && typeof applyStyles === 'function') applyStyles(d.Logo, d.ColorFondo, d.ColorBotonesMenu, d.ContenidoPiePagina); } catch (e) { } resolve(); };
+                xhr.onerror = function () { reject(); };
+                xhr.send();
+            });
+        }
+    </script>
+
+    <script>
+        const API_FAC = 'http://localhost:50222/api';
+        const ESTADOS_GEN = ['Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
+        var profState = { page: 1, totalPages: 1 };
+
+        function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+        function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+        function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
+        function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+        function setTxt(id, v) { var el = document.getElementById(id); if (el) el.textContent = (v == null || v === '' ? '—' : v); }
+        function badgeEstado(e) {
+            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Enviada': 'bg-info', 'Aceptada': 'bg-success', 'Rechazada': 'bg-danger', 'Anulada': 'bg-dark' };
+            return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
+        }
+
+        function cargarClientes() {
+            $.ajax({ url: API_FAC + '/Clientes', type: 'GET' }).done(function (data) {
+                var opts = '<option value="">Todos</option>';
+                (data || []).forEach(function (c) {
+                    var id = c.Cliente_ID || c.ClienteID || c.Id;
+                    var nom = c.Razon_Social || c.RazonSocial || ('Cliente ' + id);
+                    opts += '<option value="' + id + '">' + esc(nom) + '</option>';
+                });
+                document.getElementById('fCliente').innerHTML = opts;
+            });
+        }
+        function initEstados() { var s = document.getElementById('fEstado'); ESTADOS_GEN.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; }); }
+        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('fCliente').value = ''; document.getElementById('fEstado').value = ''; buscarProformas(1); }
+
+        function buscarProformas(page) {
+            profState.page = page || 1;
+            var p = new URLSearchParams();
+            p.append('soloGeneradas', 'true');
+            if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
+            if (val('fCliente')) p.append('clienteId', val('fCliente'));
+            if (val('fEstado')) p.append('estado', val('fEstado'));
+            if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
+            if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
+            if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            p.append('page', profState.page); p.append('pageSize', 15);
+            var cuerpo = document.getElementById('cuerpoProformas');
+            cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
+            fetch(API_FAC + '/Proformas?' + p.toString())
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (!res.ok) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error: ' + esc(res.j.detalle || res.j.error || '') + '</td></tr>'; return; }
+                    renderGrid(res.j);
+                })
+                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">No se pudieron cargar las proformas.</td></tr>'; });
+        }
+        function renderGrid(data) {
+            var cuerpo = document.getElementById('cuerpoProformas');
+            var items = (data && data.items) || [];
+            profState.totalPages = (data && data.totalPages) || 1;
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '0 resultados'; return; }
+            cuerpo.innerHTML = items.map(function (x) {
+                return '<tr>' +
+                    '<td>' + esc(x.Numero || '—') + '</td>' +
+                    '<td>' + esc(fdate(x.Fecha)) + '</td>' +
+                    '<td>' + esc(x.Cliente || '—') + '</td>' +
+                    '<td>' + esc(x.Destino || '—') + '</td>' +
+                    '<td class="text-end">' + money(x.Total) + '</td>' +
+                    '<td>' + badgeEstado(x.Estado) + '</td>' +
+                    '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center" style="white-space:nowrap;"><button class="btn btn-sm btn-outline-primary" title="Ver" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button></td></tr>';
+            }).join('');
+            document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
+            renderPag();
+        }
+        function renderPag() {
+            var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
+            if (tp <= 1) { ul.innerHTML = ''; return; }
+            var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
+            for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
+            h += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg + 1) + ')">»</a></li>';
+            ul.innerHTML = h;
+        }
+        function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
+
+        function verDetalle(id) {
+            window.__profActual = id;
+            fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
+                document.getElementById('d_titulo').textContent = 'Proforma ' + (p.Numero || ('#' + p.Proforma_ID));
+                document.getElementById('d_badge').outerHTML = '<span id="d_badge" class="badge ms-2 ' + (badgeEstado(p.Estado).match(/bg-\w+/)[0]) + '">' + esc(p.Estado || '') + '</span>';
+                setTxt('d_numero', p.Numero); setTxt('d_femision', fdate(p.FechaEmision));
+                setTxt('d_cliente', p.Cli_RazonSocial); setTxt('d_cuit', p.Cli_CUIT); setTxt('d_dir', p.Cli_Direccion);
+                setTxt('d_tel', p.Cli_Telefono); setTxt('d_email', p.Cli_Email);
+                setTxt('d_origen', p.Origen); setTxt('d_destino', p.Destino); setTxt('d_tipocarga', p.TipoCarga);
+                setTxt('d_pesovol', [p.Peso, p.Volumen].filter(Boolean).join(' / '));
+                setTxt('d_formapago', p.FormaPago); setTxt('d_validez', p.Validez); setTxt('d_obs', p.Observaciones);
+                setTxt('d_subtotal', money(p.Subtotal)); setTxt('d_desc', money(p.Descuentos)); setTxt('d_neto', money(p.SubtotalNeto));
+                setTxt('d_iva', money(p.IVA)); setTxt('d_otros', money(p.OtrosImpuestos)); setTxt('d_total', money(p.TotalGeneral));
+                var tb = document.getElementById('d_conceptos');
+                var lineas = p.Detalle || [];
+                tb.innerHTML = lineas.length ? lineas.map(function (l) {
+                    return '<tr><td>' + esc(l.Codigo || '') + '</td><td>' + esc(l.Concepto || '') + '</td><td>' + esc(l.Descripcion || '') + '</td>' +
+                        '<td class="text-end">' + (l.Cantidad || 0) + '</td><td>' + esc(l.Unidad || '') + '</td>' +
+                        '<td class="text-end">' + money(l.PrecioUnitario) + '</td><td class="text-end">' + (l.DescuentoPct || 0) + '</td>' +
+                        '<td class="text-end">' + (l.IvaPct || 0) + '</td><td class="text-end">' + money(l.Subtotal) + '</td></tr>';
+                }).join('') : '<tr><td colspan="9" class="text-center text-muted">Sin conceptos.</td></tr>';
+                $('#modalDetalle').modal('show');
+            }).catch(function () { alert('No se pudo abrir la proforma.'); });
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            initEstados();
+            cargarClientes();
+            buscarProformas(1);
+            if (window.flatpickr) { ['fDesde', 'fHasta'].forEach(function (id) { flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }); }); }
+        });
+    </script>
+</body>
+</html>

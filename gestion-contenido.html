@@ -114,11 +114,28 @@
                             <form id="settings" class="form form-horizontal">
                                 <div class="row">
                                     <div class="col-md-3">
-                                        <label for="logoInput">Logo (URL)</label>
+                                        <label for="logoInput">Logo</label>
                                     </div>
                                     <div class="col-md-9 form-group">
+                                        <div class="d-flex align-items-center gap-3 mb-2">
+                                            <img id="logoPreview" src="./assets/compiled/svg/ts-logo-text.svg"
+                                                alt="Vista previa del logo"
+                                                style="height:48px; max-width:200px; object-fit:contain; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:4px;">
+                                            <div class="d-flex align-items-center">
+                                                <button type="button" class="btn btn-light-secondary btn-sm" id="btnExaminarLogo">
+                                                    <i class="bi bi-upload me-1"></i>Examinar…
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-link text-danger d-none" id="btnQuitarLogo">Quitar archivo</button>
+                                                <input type="file" id="logoFile" class="d-none"
+                                                    accept=".png,.svg,.jpg,.jpeg,.webp,.ico,image/*">
+                                            </div>
+                                        </div>
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
-                                            placeholder="URL del logo">
+                                            placeholder="Pegá una URL o ruta de imagen (o usá Examinar)">
+                                        <small class="text-muted d-block mt-1" id="logoHelp">
+                                            Pegá una URL/ruta (ej. <code>./assets/compiled/svg/ts-logo-text.svg</code>) o subí un archivo
+                                            (.png, .svg, .jpg, .webp, .ico). Máximo 1&nbsp;MB.
+                                        </small>
                                     </div>
                                     <div class="col-md-3">
                                         <label for="backgroundColorInput">Color de fondo</label>
@@ -144,7 +161,7 @@
                                     <div class="col-sm-12 d-flex justify-content-end">
                                         <button type="button" class="btn btn-light-secondary me-1 mb-1"
                                             data-bs-toggle="modal"
-                                            data-bs-target="#confirmarRestablecerModal">Restablecer</button>
+                                            data-bs-target="#confirmarRestablecerModal"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer valores por defecto</button>
                                         <button type="submit" class="btn btn-primary mb-1"
                                             id="saveSettingsBtn">Confirmar</button>
 
@@ -230,6 +247,16 @@
             }
         };
 
+        // Define la visibilidad de elementos según el rol (esta pantalla no tiene botón
+        // dependiente de rol, pero la función debe existir para no romper el window.onload).
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+            if (!gestionarContenidoBtn) return;
+            gestionarContenidoBtn.style.display =
+                (userRole && userRole.toLowerCase() === 'admin') ? 'block' : 'none';
+        }
+
         async function loadSettings() {
             console.log('Llamando a la API de Gestión de Contenido...');
 
@@ -248,7 +275,13 @@
                             const colorBotonesMenu = data.ColorBotonesMenu;
                             const contenidoPiePagina = data.ContenidoPiePagina;
 
-                            document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+                            if (esDataUri(logoUrl)) {
+                                uploadedLogoDataUrl = logoUrl;
+                                marcarArchivoCargado(true);
+                            } else {
+                                document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+                            }
+                            setLogoPreview(logoUrl || './assets/compiled/svg/ts-logo-text.svg');
                             document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
                             document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
                             document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
@@ -289,7 +322,7 @@
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            const logo = document.getElementById('logoInput').value;
+            const logo = valorLogoEfectivo();
             const backgroundColor = document.getElementById('backgroundColorInput').value;
             const menuColor = document.getElementById('menuColorInput').value;
             const footerContent = document.getElementById('footerContentInput').value;
@@ -312,24 +345,16 @@
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const toastSuccess = document.getElementById('alert-success');
-                    const toastBootstrap = new bootstrap.Toast(toastSuccess);
-                    toastSuccess.style.display = 'block';
-                    toastBootstrap.show();
-
-                    document.getElementById('logoInput').value = '';
-                    document.getElementById('backgroundColorInput').value = '';
-                    document.getElementById('menuColorInput').value = '';
-                    document.getElementById('footerContentInput').value = '';
-
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
+                    // Aplica los cambios en vivo (sin recargar la página).
+                    try { applyStyles(logo, backgroundColor, menuColor, footerContent); } catch (e) { }
+                    mostrarToastExito();
                 } else {
-                    handleValidationErrors(JSON.parse(xhr.responseText));
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
+                    try { handleValidationErrors(JSON.parse(xhr.responseText)); }
+                    catch (e) { notifyError('No se pudo guardar el contenido.'); }
                 }
+                // Restaura la vista SIEMPRE (evita el spinner infinito).
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
             };
 
             xhr.onerror = function () {
@@ -365,7 +390,10 @@
             const defaultColorBotonesMenu = '#198754';
             const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
 
+            uploadedLogoDataUrl = null;
+            marcarArchivoCargado(false);
             document.getElementById('logoInput').value = defaultLogo;
+            setLogoPreview(defaultLogo);
             document.getElementById('backgroundColorInput').value = defaultColorFondo;
             document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
             document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
@@ -385,27 +413,26 @@
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    const toastSuccess = document.getElementById('alert-success');
-                    const toastBootstrap = new bootstrap.Toast(toastSuccess);
-                    toastSuccess.style.display = 'block';
-                    toastBootstrap.show();
-
-                    const modalElement = document.getElementById('confirmarRestablecerModal');
-                    const modal = bootstrap.Modal.getInstance(modalElement);
-                    modal.hide();
-
-                    setTimeout(() => {
-                        location.reload();
-                    }, 2000);
+                    mostrarToastExito();
+                    try {
+                        var modalElement = document.getElementById('confirmarRestablecerModal');
+                        if (window.jQuery && jQuery.fn.modal) { jQuery(modalElement).modal('hide'); }
+                        else if (window.bootstrap && bootstrap.Modal) {
+                            (bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement)).hide();
+                        }
+                    } catch (e) { }
                 } else {
-                    showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
-                    loadingMessage.style.display = 'none';
+                    notifyError('Ocurrió un error al restablecer el contenido.');
                 }
+                // Restaura la vista SIEMPRE.
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
             };
 
             xhr.onerror = function () {
-                showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                notifyError('Ocurrió un error al restablecer el contenido.');
                 loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
             };
 
             xhr.send(JSON.stringify(settingsData));
@@ -417,6 +444,98 @@
                 favicon.href = defaultFavicon;
             }
         }
+
+        // =================== Logo: URL o archivo (base64) ===================
+        var MAX_LOGO_BYTES = 1024 * 1024; // 1 MB
+        var uploadedLogoDataUrl = null;   // si hay archivo subido, tiene prioridad al guardar
+
+        function esDataUri(v) { return typeof v === 'string' && v.indexOf('data:') === 0; }
+
+        function notifyError(msg) {
+            if (typeof showErrorToast === 'function') showErrorToast(msg);
+            else alert(msg);
+        }
+
+        // Muestra el toast de éxito de forma segura (sin romper el flujo si algo falla).
+        function mostrarToastExito() {
+            try {
+                var el = document.getElementById('alert-success');
+                if (!el) return;
+                el.style.display = 'block';
+                if (window.bootstrap && bootstrap.Toast) { new bootstrap.Toast(el).show(); }
+                else if (window.jQuery && jQuery.fn.toast) { jQuery(el).toast('show'); }
+            } catch (e) { }
+        }
+
+        function setLogoPreview(src) {
+            var img = document.getElementById('logoPreview');
+            if (img) img.src = src || './assets/compiled/svg/ts-logo-text.svg';
+        }
+
+        function marcarArchivoCargado(cargado) {
+            var quitar = document.getElementById('btnQuitarLogo');
+            var input = document.getElementById('logoInput');
+            if (quitar) quitar.classList.toggle('d-none', !cargado);
+            if (!input) return;
+            if (cargado) {
+                input.value = '';
+                input.setAttribute('disabled', 'disabled');
+                input.setAttribute('placeholder', 'Archivo cargado \u2714  (usá "Quitar archivo" para volver a URL)');
+            } else {
+                input.removeAttribute('disabled');
+                input.setAttribute('placeholder', 'Pegá una URL o ruta de imagen (o usá Examinar)');
+            }
+        }
+
+        // Valor que se guardará: el archivo subido tiene prioridad; si no, la URL escrita.
+        function valorLogoEfectivo() {
+            return uploadedLogoDataUrl || document.getElementById('logoInput').value;
+        }
+
+        (function initLogoControls() {
+            var btnExaminar = document.getElementById('btnExaminarLogo');
+            var btnQuitar = document.getElementById('btnQuitarLogo');
+            var fileInput = document.getElementById('logoFile');
+            var urlInput = document.getElementById('logoInput');
+            if (!btnExaminar || !fileInput || !urlInput) return;
+
+            btnExaminar.addEventListener('click', function () { fileInput.click(); });
+
+            btnQuitar.addEventListener('click', function () {
+                uploadedLogoDataUrl = null;
+                fileInput.value = '';
+                marcarArchivoCargado(false);
+                setLogoPreview(urlInput.value);
+            });
+
+            fileInput.addEventListener('change', function (e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+                var extOk = /\.(png|svg|jpe?g|webp|ico)$/i.test(file.name);
+                var tiposOk = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+                if (!extOk && tiposOk.indexOf(file.type) === -1) {
+                    notifyError('Formato no permitido. Usá .png, .svg, .jpg, .webp o .ico.');
+                    fileInput.value = ''; return;
+                }
+                if (file.size > MAX_LOGO_BYTES) {
+                    notifyError('El archivo supera 1 MB. Elegí una imagen más liviana.');
+                    fileInput.value = ''; return;
+                }
+                var reader = new FileReader();
+                reader.onload = function (ev) {
+                    uploadedLogoDataUrl = ev.target.result; // data URI base64
+                    setLogoPreview(uploadedLogoDataUrl);
+                    marcarArchivoCargado(true);
+                };
+                reader.onerror = function () { notifyError('No se pudo leer el archivo.'); };
+                reader.readAsDataURL(file);
+            });
+
+            // Vista previa en vivo al escribir/pegar una URL
+            urlInput.addEventListener('input', function () {
+                if (!uploadedLogoDataUrl) setLogoPreview(this.value);
+            });
+        })();
     </script>
 
 
