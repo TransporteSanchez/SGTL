@@ -83,7 +83,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-truck"></i><span>Camiones</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-camiones.html" class="submenu-link">Listar camiones</a></li><li class="submenu-item"><a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
-              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar facturas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a></li></ul></li>
+              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar facturas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Cuenta corriente</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
@@ -109,6 +109,8 @@ var MENU_TO_PAGE = {
   'gestion de clientes': 'gestion-clientes.html',
   'listado de facturas': 'listado-facturas.html',
   'gestion de facturas': 'gestion-facturacion.html',
+  'cuenta corriente': 'cuenta-corriente-clientes.html',
+  'cuenta corriente de clientes': 'cuenta-corriente-clientes.html',
   'listado de usuarios': 'listado-usuarios.html',
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
@@ -133,6 +135,11 @@ function aplicarPermisos() {
       var rol = normalizaPerm(data.Rol);
       if (rol === 'admin') { mantenerVisibleContenido(true); return; } // superadmin: acceso total
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
+      // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
+      // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.
+      if (permitidas.indexOf('listado-facturas.html') !== -1 || permitidas.indexOf('gestion-facturacion.html') !== -1) {
+        permitidas.push('cuenta-corriente-clientes.html');
+      }
       filtrarSidebarPermisos(permitidas);
       guardaAccesoPagina(permitidas);
       // El botón "Gestionar contenido" lo gobierna el RBAC. Algunas páginas lo ocultan
