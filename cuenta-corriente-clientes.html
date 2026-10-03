@@ -126,11 +126,11 @@
                                 </div>
                                 <div class="col-lg-2 col-md-3 col-6">
                                     <label for="ccDesde" class="form-label">Desde</label>
-                                    <input id="ccDesde" class="form-control" type="date" value="2026-08-01">
+                                    <input id="ccDesde" class="form-control" type="date">
                                 </div>
                                 <div class="col-lg-2 col-md-3 col-6">
                                     <label for="ccHasta" class="form-label">Hasta</label>
-                                    <input id="ccHasta" class="form-control" type="date" value="2026-08-31">
+                                    <input id="ccHasta" class="form-control" type="date">
                                 </div>
                                 <div class="col-lg-2 col-md-6">
                                     <label for="ccTipo" class="form-label">Comprobante</label>
@@ -245,15 +245,15 @@
                     <div class="cc-block-title">1 · Datos generales</div>
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label">Cliente</label><input id="reciboCliente" class="form-control" readonly></div>
-                        <div class="col-md-3"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control" value="2026-08-09"></div>
-                        <div class="col-md-3"><label class="form-label">Importe del recibo</label><input id="reciboTotal" type="number" min="0.01" step="0.01" class="form-control text-end" value="200000"></div>
+                        <div class="col-md-3"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Importe del recibo</label><input id="reciboTotal" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
                     </div>
 
                     <div class="cc-block-title">2 · Forma de pago</div>
                     <div class="row g-2">
                         <div class="col-md-4"><label class="form-label">Forma</label><select id="reciboFormaPago" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>
-                        <div class="col-md-4"><label class="form-label">Referencia</label><input id="reciboReferencia" class="form-control" value="TRX-984521"></div>
-                        <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="number" min="0.01" step="0.01" class="form-control text-end" value="200000"></div>
+                        <div class="col-md-4"><label class="form-label">Referencia</label><input id="reciboReferencia" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
                     </div>
 
                     <div class="cc-block-title">3 · Imputación a comprobantes</div>

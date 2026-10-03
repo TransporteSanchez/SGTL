@@ -407,6 +407,7 @@
     <Compile Include="Controllers\CamionesController.cs" />
     <Compile Include="Controllers\ChoferesController.cs" />
     <Compile Include="Controllers\ClientesController.cs" />
+    <Compile Include="Controllers\CuentaCorrienteController.cs" />
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GestionContenidoController.cs" />
     <Compile Include="Controllers\GruposController.cs" />
