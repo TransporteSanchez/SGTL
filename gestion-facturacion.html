@@ -229,6 +229,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
+    <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/facturacion-proforma.js"></script>
 
     <script>
         window.onload = function () {
@@ -344,6 +346,8 @@
                 if (esBorr) acc += '<button class="btn btn-sm btn-outline-primary" title="Editar" onclick="editarProforma(' + x.Proforma_ID + ')"><i class="bi bi-pencil"></i></button> ';
                 acc += '<button class="btn btn-sm btn-outline-info" title="Duplicar" onclick="duplicar(' + x.Proforma_ID + ')"><i class="bi bi-files"></i></button> ';
                 if (!esBorr) acc += '<button class="btn btn-sm btn-outline-warning" title="Cambiar estado" onclick="abrirEstado(' + x.Proforma_ID + ',\'' + (x.Estado || '') + '\')"><i class="bi bi-arrow-repeat"></i></button> ';
+                if ((x.Estado || '') === 'Aceptada' && !x.FacturaID) acc += '<button class="btn btn-sm btn-success" title="Emitir Factura" onclick="facturarProforma(' + x.Proforma_ID + ')"><i class="bi bi-receipt"></i></button> ';
+                if (x.FacturaID) acc += '<button class="btn btn-sm btn-success" disabled title="Facturada: ' + esc(x.FacturaNumero) + '"><i class="bi bi-check-circle"></i></button> ';
                 if ((x.Estado || '') !== 'Aceptada' && (x.Estado || '') !== 'Anulada') acc += '<button class="btn btn-sm btn-outline-danger" title="Anular" onclick="anular(' + x.Proforma_ID + ')"><i class="bi bi-x-octagon"></i></button>';
                 return '<tr>' +
                     '<td>' + esc(x.Numero || '—') + '</td>' +
@@ -567,10 +571,17 @@
                 .catch(function () { alert('Error de red.'); });
         }
 
+        function facturarProforma(id) {
+            if (!window.FacturacionProforma) { alert('No se pudo cargar el módulo de Facturación.'); return; }
+            window.FacturacionProforma.abrir(id, function () { buscarProformas(profState.page); });
+        }
+
         function pdfDesdeForm() { var id = parseInt(val('p_id')); if (!id) { alert('Guardá la proforma primero para generar el PDF.'); return; } descargarProformaPDF(id); }
 
         document.addEventListener('DOMContentLoaded', function () {
             initEstadosFiltro();
+            var estadoUrl = new URLSearchParams(window.location.search).get('estado');
+            if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
             cargarClientes();
             buscarProformas(1);
             if (window.flatpickr) {

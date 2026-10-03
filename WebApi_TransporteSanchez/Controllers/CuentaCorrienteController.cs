@@ -45,9 +45,24 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Concepto { get; set; }
             public decimal Debe { get; set; }
             public decimal Haber { get; set; }
+            public decimal Cancelado { get; set; }
             public decimal Saldo { get; set; }
             public string Estado { get; set; }
             public string Origen { get; set; }
+            public List<AplicacionCuentaDto> Aplicaciones { get; set; }
+        }
+
+        public class AplicacionCuentaDto
+        {
+            public int AplicacionID { get; set; }
+            public int ComprobanteDeudaID { get; set; }
+            public int ComprobanteID { get; set; }
+            public DateTime Fecha { get; set; }
+            public string Tipo { get; set; }
+            public string Comprobante { get; set; }
+            public string Concepto { get; set; }
+            public decimal Importe { get; set; }
+            public string Estado { get; set; }
         }
 
         public class PendienteCuentaDto
@@ -183,38 +198,59 @@ WHERE c.Cliente_ID=@clienteId;";
 WITH Aplicado AS (
     SELECT ComprobanteDeudaID AS ComprobanteID,SUM(Importe) AS Importe
     FROM dbo.CUENTA_CORRIENTE_APLICACIONES WHERE Vigente=1 GROUP BY ComprobanteDeudaID
-), Movimientos AS (
-    SELECT m.Movimiento_ID,m.ComprobanteID,m.FechaContable,m.Tipo,m.Concepto,m.Impacto,m.Importe,
-           c.NumeroCorrelativo,c.Estado AS EstadoDocumental,c.Total,
-           SUM(CASE WHEN m.Impacto='D' THEN m.Importe ELSE -m.Importe END)
-               OVER (ORDER BY m.FechaContable,m.Movimiento_ID ROWS UNBOUNDED PRECEDING) AS Saldo,
+), Documentos AS (
+    SELECT m.Movimiento_ID,m.ComprobanteID,m.FechaContable,m.Tipo,m.Concepto,c.NumeroCorrelativo,c.Total,
+           COALESCE(a.Importe,0) AS Cancelado,c.Total-COALESCE(a.Importe,0) AS Saldo,
            CASE WHEN c.Estado='ANULADO' THEN 'Anulado'
                 WHEN c.Impacto='D' AND COALESCE(a.Importe,0)=0 THEN 'Pendiente'
                 WHEN c.Impacto='D' AND COALESCE(a.Importe,0)<c.Total THEN 'Parcial'
                 WHEN c.Impacto='D' THEN 'Cancelado'
                 ELSE 'Aplicado' END AS EstadoFinanciero,
-           (SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
-            JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
-            WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC) AS Origen
+           COALESCE((SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
+                     JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+                     WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC),
+                    (SELECT 'Relacionado con '+r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+                     FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID)) AS Origen
     FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS m
     JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=m.ComprobanteID
     LEFT JOIN Aplicado a ON a.ComprobanteID=c.Comprobante_ID
-    WHERE m.ClienteID=@clienteId
+    WHERE m.ClienteID=@clienteId AND m.Clase='EMISION' AND c.Impacto='D'
 ), Filtrados AS (
-    SELECT * FROM Movimientos
+    SELECT * FROM Documentos d
     WHERE (@desde IS NULL OR FechaContable>=@desde) AND (@hasta IS NULL OR FechaContable<=@hasta)
-      AND (@tipo IS NULL OR Tipo=@tipo) AND (@estado IS NULL OR EstadoFinanciero=@estado)
+      AND (@tipo IS NULL OR Tipo=@tipo OR EXISTS (
+          SELECT 1 FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
+          JOIN dbo.COMPROBANTES credito ON credito.Comprobante_ID=ap.ComprobanteCreditoID
+          WHERE ap.ComprobanteDeudaID=d.ComprobanteID AND ap.Vigente=1 AND credito.Tipo=@tipo
+      ))
+      AND (@estado IS NULL OR EstadoFinanciero=@estado)
 ) ";
                     string sql = cte + @"
 SELECT Movimiento_ID AS MovimientoID,ComprobanteID,FechaContable AS Fecha,Tipo,
        Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
-       Concepto,CAST(CASE WHEN Impacto='D' THEN Importe ELSE 0 END AS decimal(18,2)) AS Debe,
-       CAST(CASE WHEN Impacto='C' THEN Importe ELSE 0 END AS decimal(18,2)) AS Haber,
-       CAST(Saldo AS decimal(18,2)) AS Saldo,EstadoFinanciero AS Estado,
+       Concepto,CAST(Total AS decimal(18,2)) AS Debe,CAST(0 AS decimal(18,2)) AS Haber,
+       CAST(Cancelado AS decimal(18,2)) AS Cancelado,CAST(Saldo AS decimal(18,2)) AS Saldo,
+       EstadoFinanciero AS Estado,
        COALESCE(Origen,'Comprobante directo') AS Origen
 FROM Filtrados ORDER BY FechaContable,Movimiento_ID
 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
                     var items = db.Database.SqlQuery<MovimientoCuentaDto>(sql, parameters).ToList();
+
+                    var aplicaciones = db.Database.SqlQuery<AplicacionCuentaDto>(@"
+SELECT a.Aplicacion_ID AS AplicacionID,a.ComprobanteDeudaID,
+       credito.Comprobante_ID AS ComprobanteID,a.FechaAplicacion AS Fecha,credito.Tipo,
+       credito.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),credito.NumeroCorrelativo),8) AS Comprobante,
+       credito.Concepto,CAST(a.Importe AS decimal(18,2)) AS Importe,'Aplicado' AS Estado
+FROM dbo.CUENTA_CORRIENTE_APLICACIONES a
+JOIN dbo.COMPROBANTES credito ON credito.Comprobante_ID=a.ComprobanteCreditoID
+WHERE a.ClienteID=@clienteId AND a.Vigente=1
+ORDER BY a.FechaAplicacion,a.Aplicacion_ID;", P("@clienteId", clienteId)).ToList();
+                    foreach (var item in items)
+                    {
+                        item.Aplicaciones = aplicaciones
+                            .Where(x => x.ComprobanteDeudaID == item.ComprobanteID)
+                            .ToList();
+                    }
 
                     var countParameters = parameters.Take(5).Select(x => P(x.ParameterName, x.Value == DBNull.Value ? null : x.Value)).ToArray();
                     int total = db.Database.SqlQuery<int>(cte + "SELECT COUNT(1) FROM Filtrados;", countParameters).First();
@@ -263,13 +299,16 @@ FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS WHERE ClienteID=@clienteId;", P("@clienteI
 WITH Deudas AS (
     SELECT c.Comprobante_ID,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
            COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
-           (SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
-            JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
-            WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC) AS Origen
+           COALESCE((SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
+                     JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+                     WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC),
+                    (SELECT 'Relacionado con '+r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+                     FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID)) AS Origen
     FROM dbo.COMPROBANTES c
     LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
     WHERE c.ClienteID=@clienteId AND c.Estado='EMITIDO' AND c.Impacto='D'
-    GROUP BY c.Comprobante_ID,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total
+    GROUP BY c.Comprobante_ID,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
+             c.ComprobanteReferenciaID
 )
 SELECT Comprobante_ID AS ComprobanteID,Tipo,
        Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,

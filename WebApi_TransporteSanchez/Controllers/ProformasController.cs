@@ -247,7 +247,12 @@ namespace WebApi_TransporteSanchez.Controllers
                     string sql =
                         "SELECT Proforma_ID, Numero, ISNULL(FechaEmision,FechaCreacion) AS Fecha, ClienteID, " +
                         "Cli_RazonSocial AS Cliente, Destino, ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total, Estado, Usu_Alta AS UsuarioCreador " +
-                        "FROM PROFORMAS" + where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
+                        ",fac.FacturaID,fac.FacturaNumero FROM PROFORMAS " +
+                        "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
+                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero " +
+                        "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
+                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
+                        where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
                 }
@@ -269,6 +274,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Total { get; set; }
             public string Estado { get; set; }
             public string UsuarioCreador { get; set; }
+            public int? FacturaID { get; set; }
+            public string FacturaNumero { get; set; }
         }
 
         [HttpGet]
