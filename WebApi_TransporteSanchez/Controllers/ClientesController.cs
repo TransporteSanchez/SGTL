@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -29,7 +30,51 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+            public bool EstadoCliente { get; set; }
 
+        }
+
+        public class EstadoClienteUpdateModel
+        {
+            [Required]
+            public bool? EstadoCliente { get; set; }
+            public string Usu_Modi { get; set; }
+        }
+
+        private class ClienteBusquedaDto
+        {
+            public int Cliente_ID { get; set; }
+            public string RazonSocial { get; set; }
+            public string CUIT_Cliente { get; set; }
+            public DateTime Fecha_Alta { get; set; }
+            public bool EstadoCliente { get; set; }
+        }
+
+        private class ClienteEstadoDto
+        {
+            public int Cliente_ID { get; set; }
+            public bool EstadoCliente { get; set; }
+        }
+
+        private static SqlParameter Parametro(string nombre, object valor)
+        {
+            return new SqlParameter(nombre, valor ?? DBNull.Value);
+        }
+
+        private static Dictionary<int, bool> ObtenerEstadosClientes(SGTLAuditContext db, IEnumerable<int> clienteIds)
+        {
+            var ids = clienteIds.Distinct().ToList();
+            if (!ids.Any()) return new Dictionary<int, bool>();
+
+            var parametros = ids
+                .Select((id, indice) => Parametro("@clienteId" + indice, id))
+                .ToArray();
+            var nombresParametros = string.Join(", ", parametros.Select(p => p.ParameterName));
+            var sql = "SELECT Cliente_ID, CONVERT(bit, ISNULL(EstadoCliente, 0)) AS EstadoCliente "
+                + "FROM dbo.CLIENTES WHERE Cliente_ID IN (" + nombresParametros + ")";
+
+            return db.Database.SqlQuery<ClienteEstadoDto>(sql, parametros)
+                .ToDictionary(x => x.Cliente_ID, x => x.EstadoCliente);
         }
 
         private string NormalizarCUIT(string cuit)
@@ -79,15 +124,42 @@ namespace WebApi_TransporteSanchez.Controllers
                         query = query.Where(x => x.Fecha_Alta <= hasta);
                     }
 
-                    // La tabla CLIENTES no tiene columna Estado en el modelo actual; estadoCliente se ignora aquí.
+                    // El estado se obtiene por SQL porque la columna EstadoCliente no forma
+                    // parte del modelo Entity Framework generado de CLIENTES.
+                    var estadosSolicitados = (estadoCliente ?? string.Empty)
+                        .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(estado => estado.Trim())
+                        .ToArray();
+                    var incluirHabilitados = estadosSolicitados.Any(estado =>
+                        string.Equals(estado, "Habilitado", StringComparison.OrdinalIgnoreCase));
+                    var incluirDeshabilitados = estadosSolicitados.Any(estado =>
+                        string.Equals(estado, "Deshabilitado", StringComparison.OrdinalIgnoreCase));
+
+                    if (incluirHabilitados != incluirDeshabilitados)
+                    {
+                        var estadoBuscado = incluirHabilitados;
+                        var clientesConEstado = db.Database.SqlQuery<int>(
+                            "SELECT Cliente_ID FROM dbo.CLIENTES WHERE ISNULL(EstadoCliente,0)=@estadoCliente",
+                            Parametro("@estadoCliente", estadoBuscado)).ToList();
+                        query = query.Where(cliente => clientesConEstado.Contains(cliente.Cliente_ID));
+                    }
 
                     var totalRecords = query.Count();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(totalRecords, 1);
+                    }
+                    else if (pageSize < 1)
+                    {
+                        pageSize = 6;
+                    }
 
                     var results = query
                         .OrderByDescending(x => x.Cliente_ID)
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
-                        .Select(x => new
+                        .Select(x => new ClienteBusquedaDto
                         {
                             Cliente_ID = x.Cliente_ID,
                             RazonSocial = x.Razon_Social,
@@ -95,6 +167,13 @@ namespace WebApi_TransporteSanchez.Controllers
                             Fecha_Alta = x.Fecha_Alta
                         })
                         .ToList();
+
+                    var estados = ObtenerEstadosClientes(db, results.Select(x => x.Cliente_ID));
+                    foreach (var resultado in results)
+                    {
+                        resultado.EstadoCliente = estados.ContainsKey(resultado.Cliente_ID)
+                            && estados[resultado.Cliente_ID];
+                    }
 
                     return Ok(new
                     {
@@ -141,6 +220,13 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Modi = c.Usu_Modi
 
                     }).ToList();
+
+                    var estados = ObtenerEstadosClientes(db, olist.Select(x => x.Cliente_ID));
+                    foreach (var cliente in olist)
+                    {
+                        cliente.EstadoCliente = estados.ContainsKey(cliente.Cliente_ID)
+                            && estados[cliente.Cliente_ID];
+                    }
 
                     if (olist == null || !olist.Any())
                     {
@@ -210,6 +296,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         Fecha_Modi = cliente.Fecha_Modi,
                         Usu_Modi = cliente.Usu_Modi
                     };
+
+                    var estados = ObtenerEstadosClientes(db, new[] { id });
+                    clienteDto.EstadoCliente = estados.ContainsKey(id) && estados[id];
 
                     return Ok(clienteDto); // Retorna 200 con los datos del cliente encontrado
                 }
@@ -291,6 +380,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     // Agregar la entidad al contexto y guardar cambios
                     db.Set<CLIENTES>().Add(cliente);
                     db.SaveChanges();
+                    db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.CLIENTES SET EstadoCliente=1 WHERE Cliente_ID=@clienteId",
+                        Parametro("@clienteId", cliente.Cliente_ID));
 
                     return Ok(); // Retorna 200 OK si la inserción fue exitosa
                 }
@@ -391,6 +483,68 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex)
             {
                 return InternalServerError(ex); // Retorna 500 en caso de error interno
+            }
+        }
+
+
+        // PUT: api/Clientes/Estado/{id}
+        [HttpPut]
+        [Route("api/Clientes/Estado/{id:int}")]
+        public IHttpActionResult PutEstadoCliente(int id, [FromBody] EstadoClienteUpdateModel model)
+        {
+            if (model == null || !ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new SGTLAuditContext(connectionString))
+                {
+                    var cliente = db.Set<CLIENTES>().Find(id);
+                    if (cliente == null)
+                    {
+                        return NotFound();
+                    }
+
+                    var usuario = string.IsNullOrWhiteSpace(model.Usu_Modi)
+                        ? (cliente.Usu_Modi ?? "sistema")
+                        : model.Usu_Modi.Trim();
+
+                    var filasActualizadas = db.Database.ExecuteSqlCommand(@"
+UPDATE dbo.CLIENTES
+SET EstadoCliente=@estadoCliente, Fecha_Modi=@fechaModi, Usu_Modi=@usuModi
+WHERE Cliente_ID=@clienteId",
+                        Parametro("@estadoCliente", model.EstadoCliente.Value),
+                        Parametro("@fechaModi", DateTime.Now),
+                        Parametro("@usuModi", usuario),
+                        Parametro("@clienteId", id));
+
+                    if (filasActualizadas == 0)
+                    {
+                        return NotFound();
+                    }
+
+                    SGTLAuditContext.RegistrarEvento(
+                        connectionString,
+                        usuario,
+                        "UPDATE",
+                        "CLIENTES",
+                        "Cliente_ID=" + id,
+                        "Estado del cliente: " + (model.EstadoCliente.Value ? "Activo" : "Deshabilitado"));
+
+                    return Ok(new { EstadoCliente = model.EstadoCliente.Value });
+                }
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError(new Exception("No se pudo actualizar el estado del cliente.", ex));
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
             }
         }
 

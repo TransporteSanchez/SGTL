@@ -83,7 +83,8 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-truck"></i><span>Camiones</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-camiones.html" class="submenu-link">Listar camiones</a></li><li class="submenu-item"><a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
-              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar facturas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Cuenta corriente</a></li></ul></li>
+              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar proformas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar proformas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Cuenta corriente</a></li></ul></li>
+              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">E-mail</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
@@ -111,6 +112,10 @@ var MENU_TO_PAGE = {
   'gestion de facturas': 'gestion-facturacion.html',
   'cuenta corriente': 'cuenta-corriente-clientes.html',
   'cuenta corriente de clientes': 'cuenta-corriente-clientes.html',
+  'configuracion': 'configuracion-email.html',
+  'configuración': 'configuracion-email.html',
+  'e-mail': 'configuracion-email.html',
+  'email': 'configuracion-email.html',
   'listado de usuarios': 'listado-usuarios.html',
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
@@ -223,6 +228,89 @@ function applySidebar(sidebarRoot, html) {
   }
   
   window.loadSidebar = loadSidebar;
+
+  // Paginador unificado: las pantallas nuevas pueden invocar render directamente y
+  // las pantallas existentes conservan sus eventos de navegación, con la misma
+  // alineación y controles compactos.
+  (function inicializarPaginacionSGTL() {
+    if (window.PaginacionSGTL) return;
+
+    var estilos = '\n' +
+      '.sgtl-pagination{display:flex!important;justify-content:flex-end!important;align-items:center;gap:10px;margin-left:auto;padding:0;border:0;flex-wrap:wrap;font-size:.875rem;color:#1f2937}\n' +
+      '.sgtl-pagination .sgtl-page-info{display:flex;align-items:center;gap:9px;white-space:nowrap;margin:0}\n' +
+      '.sgtl-pagination .sgtl-page-size{min-width:70px;padding:0 18px 4px 0;border:0;border-bottom:1px solid #9ca3af;border-radius:0;background:transparent;color:#374151;cursor:pointer;appearance:auto}\n' +
+      '.sgtl-pagination .sgtl-page-range{white-space:nowrap;margin:0 18px 0 4px;color:#111827}\n' +
+      '.sgtl-pagination .sgtl-page-action{display:flex!important;margin:0}\n' +
+      '.sgtl-pagination .sgtl-page-action .page-link{display:grid;place-items:center;width:32px;height:32px;padding:0;border:0!important;border-radius:50%;background:transparent!important;color:#94a3b8;font-size:1.35rem;box-shadow:none!important}\n' +
+      '.sgtl-pagination .sgtl-page-action:not(.disabled) .page-link:hover{background:#f1f5f9!important;color:#475569}\n' +
+      '.sgtl-pagination .sgtl-page-action.disabled .page-link{opacity:.55;pointer-events:none}\n' +
+      '.sgtl-pagination .sgtl-page-number{display:none!important}\n' +
+      '@media (max-width:575.98px){.sgtl-pagination{justify-content:center!important}.sgtl-pagination .sgtl-page-range{margin-right:2px}.sgtl-pagination .sgtl-page-info{width:100%;justify-content:center}}\n';
+    var etiqueta = document.createElement('style');
+    etiqueta.id = 'sgtl-pagination-styles';
+    etiqueta.textContent = estilos;
+    (document.head || document.documentElement).appendChild(etiqueta);
+
+    function numero(valor, alternativo) {
+      var resultado = Number(valor);
+      return isFinite(resultado) ? resultado : alternativo;
+    }
+
+    function crearItem(clase, contenido) {
+      var item = document.createElement('li');
+      item.className = clase;
+      item.innerHTML = contenido;
+      return item;
+    }
+
+    function render(contenedor, opciones) {
+      if (!contenedor) return;
+      opciones = opciones || {};
+      var total = Math.max(0, numero(opciones.total, 0));
+      var tamanioSeleccionado = numero(opciones.tamanioPagina, 15);
+      var tamanio = tamanioSeleccionado === 0 ? Math.max(total, 1) : Math.max(1, tamanioSeleccionado);
+      var paginas = Math.max(1, Math.ceil(total / tamanio));
+      var pagina = Math.min(paginas, Math.max(1, numero(opciones.pagina, 1)));
+      var inicio = total ? ((pagina - 1) * tamanio) + 1 : 0;
+      var fin = total ? Math.min(total, pagina * tamanio) : 0;
+      var anterior = pagina <= 1;
+      var siguiente = pagina >= paginas || !total;
+      var opcionesTamanio = opciones.opcionesTamanio || [5, 10, 15, 0];
+      var opcionesHtml = opcionesTamanio.map(function (opcion) {
+        var valor = numero(opcion, 0);
+        var seleccionada = valor === tamanioSeleccionado ? ' selected' : '';
+        return '<option value="' + valor + '"' + seleccionada + '>' + (valor === 0 ? 'Todos' : valor) + '</option>';
+      }).join('');
+
+      contenedor.dataset.sgtlModern = 'true';
+      contenedor.className = 'pagination sgtl-pagination mt-3 mb-0';
+      contenedor.innerHTML = '';
+      contenedor.appendChild(crearItem('sgtl-page-info',
+        '<label>Filas por página: <select class="sgtl-page-size" aria-label="Filas por página">' + opcionesHtml + '</select></label>'));
+      contenedor.appendChild(crearItem('sgtl-page-range', inicio + '-' + fin + ' de ' + total));
+      contenedor.appendChild(crearItem('page-item sgtl-page-action ' + (anterior ? 'disabled' : ''),
+        '<button class="page-link" type="button" data-page="' + (pagina - 1) + '" aria-label="Página anterior"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>'));
+      contenedor.appendChild(crearItem('page-item sgtl-page-action ' + (siguiente ? 'disabled' : ''),
+        '<button class="page-link" type="button" data-page="' + (pagina + 1) + '" aria-label="Página siguiente"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>'));
+      if (typeof opciones.alCambiarPagina === 'function') {
+        Array.prototype.forEach.call(contenedor.querySelectorAll('[data-page]'), function (control) {
+          control.addEventListener('click', function (evento) {
+            evento.preventDefault();
+            if (control.closest('.disabled')) return;
+            opciones.alCambiarPagina(Number(control.getAttribute('data-page')));
+          });
+        });
+      }
+      if (typeof opciones.alCambiarTamanio === 'function') {
+        var selectorTamanio = contenedor.querySelector('.sgtl-page-size');
+        selectorTamanio.addEventListener('change', function () {
+          opciones.alCambiarTamanio(numero(selectorTamanio.value, tamanioSeleccionado));
+        });
+      }
+    }
+
+    window.PaginacionSGTL = { render: render };
+  })();
   
   if (document.readyState !== 'loading') {
     loadSidebar().catch((err) => console.error(err));

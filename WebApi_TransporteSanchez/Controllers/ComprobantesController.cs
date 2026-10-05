@@ -59,7 +59,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string CUIT { get; set; }
             public string Domicilio { get; set; }
             public string CondicionFiscal { get; set; }
-            public bool Activo { get; set; }
+            public bool EstadoCliente { get; set; }
         }
 
         private class FacturaReferencia
@@ -231,7 +231,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
             const string sql = @"
 SELECT c.Cliente_ID,c.Razon_Social,c.CUIT_Cliente,
        NULLIF(LTRIM(RTRIM(COALESCE(c.Calle,'')+' '+COALESCE(c.AlturaCalle,''))),'') AS Domicilio,
-       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.Activo,0)) AS Activo
+       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
 FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.Cliente_ID=@id;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
@@ -243,7 +243,7 @@ FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.Cliente_ID=@id;";
                     {
                         ClienteID = (int)reader["Cliente_ID"], RazonSocial = (string)reader["Razon_Social"],
                         CUIT = (string)reader["CUIT_Cliente"], Domicilio = reader["Domicilio"] as string,
-                        CondicionFiscal = reader["CondicionFiscal"] as string, Activo = (bool)reader["Activo"]
+                        CondicionFiscal = reader["CondicionFiscal"] as string, EstadoCliente = (bool)reader["EstadoCliente"]
                     };
                 }
             }
@@ -461,7 +461,7 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
                                 transaction.Rollback();
                                 return NotFound();
                             }
-                            if (!cliente.Activo)
+                            if (!cliente.EstadoCliente)
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.BadRequest, new { error = "El cliente está inactivo." });

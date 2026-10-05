@@ -184,6 +184,21 @@
                                                         placeholder="Desde y hasta">
                                                 </div>
                                             </div>
+                                            <div class="row mb-3">
+                                                <div class="col-md-12">
+                                                    <label class="me-3">Estado</label>
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox" class="form-check-input form-check-success"
+                                                            id="checkEstadoCamionActivo">
+                                                        <label class="form-check-label" for="checkEstadoCamionActivo">Activo</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox" class="form-check-input form-check-danger"
+                                                            id="checkEstadoCamionInactivo">
+                                                        <label class="form-check-label" for="checkEstadoCamionInactivo">Inactivo</label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div class="row">
                                                 <!-- Botón Buscar -->
                                                 <div class="col-md-12 mb-3 text-end">
@@ -227,6 +242,7 @@
                                             <th>Dominio</th>
                                             <th>Marca</th>
                                             <th>Modelo</th>
+                                            <th>Estado</th>
                                             <th>Acciones</th>
                                         </tr>
                                     </thead>
@@ -471,6 +487,24 @@
         </div>
     </div>
 
+    <!-- Modal de confirmación de cambio de estado -->
+    <div class="modal fade text-left" id="confirmarEstadoCamionModal" tabindex="-1" role="dialog"
+        aria-labelledby="confirmarEstadoCamionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarEstadoCamionLabel">Confirmar cambio de estado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="confirmarEstadoCamionBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-secondary ms-1" onclick="confirmarCambioEstadoCamion()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de confirmación de eliminación -->
     <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
         aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
@@ -636,15 +670,24 @@
 
 
         // Constantes para el paginado
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
+
+        function obtenerEstadosCamionSeleccionados() {
+            var estados = [];
+            if ($('#checkEstadoCamionActivo').is(':checked')) estados.push('Activo');
+            if ($('#checkEstadoCamionInactivo').is(':checked')) estados.push('Inactivo');
+            return estados.join(',');
+        }
 
         // Función para realizar la búsqueda de choferes con paginación
         function buscarCamiones(page = 1) {
+            currentPage = page;
             // Obtener el valor del campo de búsqueda
             var dominio = $('#dominioinput').val();
             var fechaDesde = $('#fechaRango').data('start');
             var fechaHasta = $('#fechaRango').data('end');
+            var estadoCamion = obtenerEstadosCamionSeleccionados();
 
             var requestData = {
                 dominio: dominio,
@@ -658,6 +701,7 @@
             if (dominio !== '') requestData.dominio = dominio;
             if (fechaDesde) requestData.fechaDesde = fechaDesde;
             if (fechaHasta) requestData.fechaHasta = fechaHasta;
+            if (estadoCamion) requestData.estadoCamion = estadoCamion;
 
             // Realizar la solicitud AJAX GET al controlador
             $.ajax({
@@ -671,10 +715,11 @@
                     // Verificar si hay resultados
                     if (data.Results.length === 0) {
                         // Mostrar mensaje de que no se encontraron registros
-                        $('#tablaCamiones tbody').html('<tr><td colspan="6" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaCamiones tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         // Iterar sobre los registros recibidos y agregarlos a la tabla
                         data.Results.forEach(function (registro) {
+                            var estadoCamion = registro.EstadoCamion === 'Activo' ? 'Activo' : 'Inactivo';
 
                             // Formatear las fechas
                             var fechaCompra = formatDate(registro.FechaCompra);
@@ -689,6 +734,7 @@
                             <td>${registro.Dominio.trim()}</td>
                             <td>${registro.Marca}</td>
                             <td>${registro.Modelo}</td>
+                            <td><span class="badge ${estadoCamion === 'Activo' ? 'bg-success' : 'bg-secondary'}">${estadoCamion}</span></td>
                         <td>
                             <button class="btn btn-primary" 
                                     data-bs-toggle="tooltip" 
@@ -697,12 +743,20 @@
                                     onclick="abrirModalEdicion(${registro.Camion_ID})">
                                     <i class="bi bi-pencil"></i>
                                 </button>
-                                <button class="btn btn-danger ms-1" 
-                                    data-bs-toggle="tooltip" 
-                                    data-bs-placement="top" 
-                                    title="Eliminar"
-                                    onclick="abrirModalEliminar(${registro.Camion_ID})">
-                                    <i class="bi bi-trash"></i>
+                                <span data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="${estadoCamion === 'Activo' ? 'No es posible eliminar un camión activo' : 'Eliminar'}">
+                                    <button class="btn btn-danger ms-1 ${estadoCamion === 'Activo' ? 'disabled' : ''}"
+                                        onclick="abrirModalEliminar(${registro.Camion_ID}, '${estadoCamion}')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </span>
+                                <button class="btn btn-light btn-activar-inactivar-camion ms-1"
+                                    data-camionid="${registro.Camion_ID}"
+                                    data-estado="${estadoCamion}"
+                                    data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="${estadoCamion === 'Activo' ? 'Inactivar' : 'Activar'}">
+                                    <i class="bi bi-arrow-repeat"></i>
                                 </button>
                         </td>
                     </tr>`;
@@ -778,9 +832,17 @@
         }
 
         // Función para renderizar la paginación
-        function renderPagination(totalRecords, pageSize, currentPage) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
+        function renderPagination(totalRecords, tamanioActual, currentPage) {
+            const totalPages = Math.ceil(totalRecords / tamanioActual);
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                    alCambiarPagina: function (pagina) { buscarCamiones(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarCamiones(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = currentPage === 1 ? 'disabled' : '';
@@ -820,13 +882,15 @@
         }
 
         // Función para abrir el modal de eliminación
-        function abrirModalEliminar(camionId) {
+        function abrirModalEliminar(camionId, estadoCamion) {
+            if (estadoCamion === 'Activo') return;
+            camionIdAEliminar = camionId;
             $('#confirmarEliminarModal').modal('show');
-            setEliminarCamionId(camionId);
         }
 
         $(document).ready(function () {
             // Ejecutar la búsqueda inicial al cargar la página
+            $('#checkEstadoCamionActivo').prop('checked', true);
             buscarCamiones(currentPage);
         });
 
@@ -1437,15 +1501,6 @@
 
         var camionIdAEliminar;
 
-        // Función para abrir el modal y establecer el ID del camión
-        function abrirModalEliminarCamion(camionId, estadoCamion) {
-            if (estadoCamion === 'Activo') {
-                return; // No permitir eliminar si el camión está activo
-            }
-            camionIdAEliminar = camionId;
-            $('#confirmarEliminarModal').modal('show');
-        }
-
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
@@ -1476,7 +1531,8 @@
                         console.log('Camión marcado como eliminado:', response);
                         mostrarToastExito('El camión se eliminó exitosamente.');
                         $('#confirmarEliminarModal').modal('hide');
-                        buscarCamiones(); // Refrescar la tabla
+                        camionIdAEliminar = null;
+                        buscarCamiones(currentPage); // Refrescar la tabla
                     },
                     error: function (xhr, status, error) {
                         console.error('Error al eliminar el camión:', xhr.responseText || error);
@@ -1487,12 +1543,75 @@
 
     </script>
 
+    <!-- Activar/Inactivar camión -->
+    <script>
+        var camionIdACambiarEstado = null;
+        var estadoCamionNuevo = null;
+
+        function mostrarModalEstadoCamion() {
+            var modalElement = document.getElementById('confirmarEstadoCamionModal');
+            if (window.bootstrap && bootstrap.Modal && modalElement) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                return;
+            }
+            $('#confirmarEstadoCamionModal').modal('show');
+        }
+
+        function ocultarModalEstadoCamion() {
+            var modalElement = document.getElementById('confirmarEstadoCamionModal');
+            if (window.bootstrap && bootstrap.Modal && modalElement) {
+                var instancia = bootstrap.Modal.getInstance(modalElement);
+                if (instancia) instancia.hide();
+                return;
+            }
+            $('#confirmarEstadoCamionModal').modal('hide');
+        }
+
+        $(document).on('click', '.btn-activar-inactivar-camion', function () {
+            camionIdACambiarEstado = Number($(this).data('camionid'));
+            var estadoActual = String($(this).data('estado') || '').trim();
+            estadoCamionNuevo = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
+
+            $('#confirmarEstadoCamionBody').html(
+                '¿Confirmás cambiar el estado del camión a <strong>' + estadoCamionNuevo + '</strong>?'
+            );
+            mostrarModalEstadoCamion();
+        });
+
+        function confirmarCambioEstadoCamion() {
+            if (!camionIdACambiarEstado || !estadoCamionNuevo) return;
+
+            $.ajax({
+                url: 'http://localhost:50222/api/Camiones/EstadoCamion/' + camionIdACambiarEstado,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    EstadoCamion: estadoCamionNuevo,
+                    Usu_Modi: localStorage.getItem('username') || 'sistema'
+                }),
+                success: function () {
+                    var mensaje = 'El camión fue ' + (estadoCamionNuevo === 'Activo' ? 'activado' : 'inactivado') + ' correctamente.';
+                    ocultarModalEstadoCamion();
+                    buscarCamiones(currentPage);
+                    mostrarToastExito(mensaje);
+                    camionIdACambiarEstado = null;
+                    estadoCamionNuevo = null;
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al cambiar el estado del camión:', xhr.responseText || error);
+                    mostrarToastError('No se pudo actualizar el estado del camión.');
+                }
+            });
+        }
+    </script>
+
     <!-- Generar reporte CSV de camiones -->
     <script>
         async function generarReporteCSV() {
             var dominio = $('#dominioinput').val() || '';
             var fechaDesde = $('#fechaRango').data('start') || null;
             var fechaHasta = $('#fechaRango').data('end') || null;
+            var estadoCamion = obtenerEstadosCamionSeleccionados();
 
             var requestData = {
                 dominio: dominio,
@@ -1501,6 +1620,7 @@
                 page: currentPage,
                 pageSize: pageSize
             };
+            if (estadoCamion) requestData.estadoCamion = estadoCamion;
 
             try {
                 const response = await $.ajax({

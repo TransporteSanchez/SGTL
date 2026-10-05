@@ -134,6 +134,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
                     var totalRecords = query.Count();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(totalRecords, 1);
+                    }
+                    else if (pageSize < 1)
+                    {
+                        pageSize = 6;
+                    }
 
                     var results = (from v in query
                                    join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj

@@ -20,12 +20,49 @@
     function jsPDF() {
         return window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : window.jsPDF;
     }
+    // jsPDF trabaja de forma consistente con PNG. Gestión de Contenido, en cambio,
+    // admite archivos subidos, data URI y rutas/URL de PNG, SVG, JPG, WebP e ICO.
+    // Se rasteriza la imagen configurada para que cualquiera de esas opciones llegue
+    // al comprobante impreso.
+    function convertirLogoAPng(origen) {
+        if (typeof origen !== 'string' || !origen.trim()) return Promise.resolve(null);
+
+        return new Promise(function (resolver) {
+            var imagen = new Image();
+            imagen.onload = function () {
+                var anchoOriginal = imagen.naturalWidth || imagen.width;
+                var altoOriginal = imagen.naturalHeight || imagen.height;
+                if (!anchoOriginal || !altoOriginal) { resolver(null); return; }
+
+                // Limitar el raster evita generar PDFs innecesariamente pesados.
+                var escala = Math.min(1, 900 / anchoOriginal, 400 / altoOriginal);
+                var lienzo = document.createElement('canvas');
+                lienzo.width = Math.max(1, Math.round(anchoOriginal * escala));
+                lienzo.height = Math.max(1, Math.round(altoOriginal * escala));
+
+                try {
+                    lienzo.getContext('2d').drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
+                    resolver(lienzo.toDataURL('image/png'));
+                } catch (e) {
+                    // Una URL externa sin CORS no se puede incluir en un PDF del navegador.
+                    resolver(null);
+                }
+            };
+            imagen.onerror = function () { resolver(null); };
+
+            // Permite rasterizar URL externas cuando el servidor de la imagen habilita CORS.
+            try {
+                var url = new URL(origen, window.location.href);
+                if (/^https?:$/i.test(url.protocol) && url.origin !== window.location.origin) imagen.crossOrigin = 'anonymous';
+            } catch (e) { }
+            imagen.src = origen;
+        });
+    }
     function obtenerLogo() {
         return fetch(API + '/GestionContenido/1').then(function (respuesta) {
             return respuesta.ok ? respuesta.json() : null;
         }).then(function (datos) {
-            var logo = datos && datos.Logo;
-            return typeof logo === 'string' && /^data:image\/(png|jpe?g)/i.test(logo) ? logo : null;
+            return convertirLogoAPng(datos && datos.Logo);
         }).catch(function () { return null; });
     }
     function obtenerComprobante(id) {
@@ -39,6 +76,20 @@
                 return datos;
             });
         });
+    }
+
+    function tituloComprobante(tipo) {
+        return {
+            FAC: 'FACTURA INTERNA',
+            REC: 'RECIBO INTERNO',
+            NC: 'NOTA DE CRÉDITO INTERNA',
+            ND: 'NOTA DE DÉBITO INTERNA'
+        }[tipo] || null;
+    }
+    function nombreArchivoComprobante(tipo) {
+        return {
+            FAC: 'Factura', REC: 'Recibo', NC: 'Nota_de_Credito', ND: 'Nota_de_Debito'
+        }[tipo] || 'Comprobante';
     }
 
     function construir(factura, logo) {
@@ -60,8 +111,9 @@
 
         var cajaX = ancho - margen - 67;
         doc.setDrawColor(170); doc.setLineWidth(0.3); doc.roundedRect(cajaX, y, 67, 31, 2, 2);
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(25);
-        doc.text('FACTURA INTERNA', cajaX + 33.5, y + 7, { align: 'center' });
+        var titulo = tituloComprobante(factura.Tipo) || 'COMPROBANTE INTERNO';
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(titulo.length > 19 ? 10.5 : 13); doc.setTextColor(25);
+        doc.text(titulo, cajaX + 33.5, y + 7, { align: 'center' });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
         doc.text('N°: ' + texto(factura.Numero), cajaX + 3, y + 14);
         doc.text('Emisión: ' + fecha(factura.FechaEmision), cajaX + 3, y + 19);
@@ -83,6 +135,27 @@
         var domicilio = doc.splitTextToSize('Domicilio: ' + texto(factura.Domicilio), ancho - 2 * margen - 6);
         doc.text(domicilio.slice(0, 2), columnaA, y + 21);
         y += 33;
+
+        var cancelados = factura.ComprobantesCancelados || [];
+        var referencia = factura.ComprobanteReferenciaNumero;
+        if ((factura.Tipo === 'REC' || factura.Tipo === 'NC') && (cancelados.length || referencia)) {
+            var lineasCancelados = cancelados.length
+                ? cancelados.map(function (item) {
+                    return texto(item.Numero) + ' · Emisión ' + fecha(item.FechaEmision) +
+                        ' · Importe aplicado ' + dinero(item.ImporteAplicado);
+                })
+                : ['Factura relacionada: ' + texto(referencia)];
+            var textoCancelados = doc.splitTextToSize(lineasCancelados.join('\n'), ancho - 2 * margen - 6);
+            var altoBloque = Math.max(15, 8 + textoCancelados.length * 4);
+            if (y + altoBloque > alto - 30) { doc.addPage(); y = margen; }
+            doc.setDrawColor(210); doc.setFillColor(248, 249, 250);
+            doc.roundedRect(margen, y, ancho - 2 * margen, altoBloque, 2, 2, 'FD');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(45);
+            doc.text('COMPROBANTES CANCELADOS / IMPUTADOS', margen + 3, y + 5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(65);
+            doc.text(textoCancelados, margen + 3, y + 10);
+            y += altoBloque + 5;
+        }
 
         doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(45);
         doc.text('CONCEPTO', margen, y);
@@ -179,19 +252,22 @@
     function generar(id, modo) {
         Promise.all([obtenerComprobante(id), obtenerLogo()]).then(function (resultado) {
             var factura = resultado[0];
-            if (factura.Tipo !== 'FAC') throw new Error('El comprobante seleccionado no es una Factura.');
+            if (!tituloComprobante(factura.Tipo)) throw new Error('El comprobante seleccionado no se puede imprimir.');
             var doc = construir(factura, resultado[1]);
             if (modo === 'imprimir') {
                 doc.autoPrint();
                 window.open(doc.output('bloburl'), '_blank');
             } else {
-                doc.save('Factura_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf');
+                doc.save(nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf');
             }
         }).catch(function (error) {
-            alert(error && error.message ? error.message : 'No se pudo generar el PDF de la Factura.');
+            alert(error && error.message ? error.message : 'No se pudo generar el PDF del comprobante.');
         });
     }
 
-    window.descargarFacturaPDF = function (id) { generar(id, 'descargar'); };
-    window.imprimirFacturaPDF = function (id) { generar(id, 'imprimir'); };
+    window.descargarComprobantePDF = function (id) { generar(id, 'descargar'); };
+    window.imprimirComprobantePDF = function (id) { generar(id, 'imprimir'); };
+    // Se mantienen los nombres previos para los puntos de entrada de Facturas.
+    window.descargarFacturaPDF = window.descargarComprobantePDF;
+    window.imprimirFacturaPDF = window.imprimirComprobantePDF;
 })(window);

@@ -221,7 +221,7 @@ namespace WebApi_TransporteSanchez.Controllers
             bool soloGeneradas = false, int page = 1, int pageSize = 15)
         {
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 200) pageSize = 15;
+            if (pageSize < 0 || pageSize > 200) pageSize = 15;
             var where = new StringBuilder(" WHERE 1=1 ");
             var ps = new List<SqlParameter>();
             if (!string.IsNullOrWhiteSpace(numero)) { where.Append(" AND Numero LIKE @numero "); ps.Add(P("@numero", "%" + numero.Trim() + "%")); }
@@ -241,6 +241,11 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     int total = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM PROFORMAS" + where,
                         ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).First();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(total, 1);
+                    }
 
                     var pPage = ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToList();
                     pPage.Add(P("@off", (page - 1) * pageSize)); pPage.Add(P("@lim", pageSize));

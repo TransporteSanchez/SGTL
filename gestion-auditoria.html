@@ -269,7 +269,7 @@
     <!-- ================= Lógica de Auditoría ================= -->
     <script>
         const API_AUD = 'http://localhost:50222/api';
-        let audState = { page: 1, pageSize: 20, totalPages: 1 };
+        let audState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
         let audCache = {}; // id -> item, para el modal de detalle
 
         function badgeAccion(accion) {
@@ -389,10 +389,11 @@
             audCache = {};
             const items = data.items || [];
             audState.totalPages = data.totalPages || 1;
+            audState.total = Number(data.total || 0);
 
             if (!items.length) {
                 cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Sin movimientos para los filtros seleccionados.</td></tr>';
-                document.getElementById('paginacion').innerHTML = '';
+                renderPaginacion();
                 document.getElementById('resumen').textContent = '0 resultados';
                 return;
             }
@@ -421,6 +422,14 @@
         function renderPaginacion() {
             const ul = document.getElementById('paginacion');
             const tp = audState.totalPages, pg = audState.page;
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(ul, {
+                    total: audState.total, tamanioPagina: audState.pageSize, pagina: pg,
+                    alCambiarPagina: function (pagina) { buscarAuditoria(pagina); },
+                    alCambiarTamanio: function (tamanio) { audState.pageSize = tamanio; buscarAuditoria(1); }
+                });
+                return;
+            }
             if (tp <= 1) { ul.innerHTML = ''; return; }
             let html = '';
             html += '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + (pg - 1) + ')">«</a></li>';

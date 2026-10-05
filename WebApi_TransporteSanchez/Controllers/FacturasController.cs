@@ -57,7 +57,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal OtrosImpuestos { get; set; }
             public decimal Total { get; set; }
             public decimal ImporteTotal { get; set; }
-            public bool ClienteActivo { get; set; }
+            public bool ClienteHabilitado { get; set; }
             public byte[] Version { get; set; }
         }
 
@@ -132,7 +132,18 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Concepto { get; set; }
             public string Observaciones { get; set; }
             public string ProformaNumero { get; set; }
+            public string ComprobanteReferenciaNumero { get; set; }
+            public List<ComprobanteCanceladoImpresion> ComprobantesCancelados { get; set; }
             public List<ComprobanteDetalleImpresion> Detalle { get; set; }
+        }
+
+        private class ComprobanteCanceladoImpresion
+        {
+            public int ComprobanteID { get; set; }
+            public string Numero { get; set; }
+            public DateTime FechaEmision { get; set; }
+            public string Concepto { get; set; }
+            public decimal ImporteAplicado { get; set; }
         }
 
         private class ComprobanteDetalleImpresion
@@ -269,7 +280,7 @@ SELECT p.Proforma_ID AS ProformaID,ISNULL(p.ClienteID,0) AS ClienteID,p.Numero,p
        ISNULL(p.Subtotal,0) AS Subtotal,ISNULL(p.Descuentos,0) AS Descuentos,
        ISNULL(p.SubtotalNeto,0) AS Neto,ISNULL(p.IVA,0) AS IVA,
        ISNULL(p.OtrosImpuestos,0) AS OtrosImpuestos,ISNULL(p.TotalGeneral,0) AS Total,
-       ISNULL(p.ImporteTotal,0) AS ImporteTotal,CONVERT(bit,ISNULL(c.Activo,0)) AS ClienteActivo,p.VersionCuentaCorriente AS Version
+       ISNULL(p.ImporteTotal,0) AS ImporteTotal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS ClienteHabilitado,p.VersionCuentaCorriente AS Version
 FROM dbo.PROFORMAS p" + hint + @"
 LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID=p.ClienteID
 WHERE p.Proforma_ID=@id;";
@@ -306,7 +317,7 @@ WHERE p.Proforma_ID=@id;";
                         OtrosImpuestos = (decimal)reader["OtrosImpuestos"],
                         Total = (decimal)reader["Total"],
                         ImporteTotal = (decimal)reader["ImporteTotal"],
-                        ClienteActivo = (bool)reader["ClienteActivo"],
+                        ClienteHabilitado = (bool)reader["ClienteHabilitado"],
                         Version = (byte[])reader["Version"]
                     };
                 }
@@ -400,7 +411,7 @@ WHERE Proforma_ID=@id ORDER BY Orden,Detalle_ID;";
             if (!string.Equals(proforma.Moneda, "ARS", StringComparison.OrdinalIgnoreCase))
                 errores.Add("La Proforma debe estar expresada en ARS.");
             if (proforma.ClienteID <= 0) errores.Add("La Proforma no tiene un cliente válido.");
-            if (!proforma.ClienteActivo) errores.Add("El cliente está inactivo para nuevas Facturas.");
+            if (!proforma.ClienteHabilitado) errores.Add("El cliente está inactivo para nuevas Facturas.");
             if (string.IsNullOrWhiteSpace(proforma.RazonSocial) || string.IsNullOrWhiteSpace(proforma.CUIT))
                 errores.Add("Faltan los datos fiscales del cliente.");
             if (detalles.Count == 0) errores.Add("La Proforma no tiene conceptos para facturar.");
@@ -496,7 +507,9 @@ SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,
        (SELECT TOP (1) p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
         JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
         WHERE cp.ComprobanteID=c.Comprobante_ID AND cp.Vigente=1
-        ORDER BY cp.ComprobanteProforma_ID DESC) AS ProformaNumero
+         ORDER BY cp.ComprobanteProforma_ID DESC) AS ProformaNumero,
+        (SELECT r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+         FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID) AS ComprobanteReferenciaNumero
 FROM dbo.COMPROBANTES c
 OUTER APPLY (SELECT SUM(ap.Importe) AS ImporteAplicado
              FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
@@ -536,6 +549,8 @@ WHERE c.Comprobante_ID=@id;";
                                     Concepto = (string)reader["Concepto"],
                                     Observaciones = reader["Observaciones"] as string,
                                     ProformaNumero = reader["ProformaNumero"] as string,
+                                    ComprobanteReferenciaNumero = reader["ComprobanteReferenciaNumero"] as string,
+                                    ComprobantesCancelados = new List<ComprobanteCanceladoImpresion>(),
                                     Detalle = new List<ComprobanteDetalleImpresion>()
                                 };
                             }
@@ -571,6 +586,32 @@ WHERE ComprobanteID=@id ORDER BY Orden,Detalle_ID;";
                                     Neto = (decimal)reader["Neto"],
                                     IVA = (decimal)reader["IVA"],
                                     Total = (decimal)reader["Total"]
+                                });
+                            }
+                        }
+                    }
+                    const string sqlCancelados = @"
+SELECT deuda.Comprobante_ID AS ComprobanteID,
+       deuda.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),deuda.NumeroCorrelativo),8) AS Numero,
+       deuda.FechaEmision,deuda.Concepto,CAST(ap.Importe AS decimal(18,2)) AS ImporteAplicado
+FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
+JOIN dbo.COMPROBANTES deuda ON deuda.Comprobante_ID=ap.ComprobanteDeudaID
+WHERE ap.ComprobanteCreditoID=@id AND ap.Vigente=1
+ORDER BY ap.Aplicacion_ID;";
+                    using (var command = new SqlCommand(sqlCancelados, connection))
+                    {
+                        command.Parameters.Add(P("@id", id));
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                comprobante.ComprobantesCancelados.Add(new ComprobanteCanceladoImpresion
+                                {
+                                    ComprobanteID = (int)reader["ComprobanteID"],
+                                    Numero = (string)reader["Numero"],
+                                    FechaEmision = (DateTime)reader["FechaEmision"],
+                                    Concepto = reader["Concepto"] as string,
+                                    ImporteAplicado = (decimal)reader["ImporteAplicado"]
                                 });
                             }
                         }

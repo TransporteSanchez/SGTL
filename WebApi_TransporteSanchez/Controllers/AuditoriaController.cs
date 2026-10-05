@@ -40,7 +40,7 @@ namespace WebApi_TransporteSanchez.Controllers
             string desde = null, string hasta = null, string texto = null, int page = 1, int pageSize = 20)
         {
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 200) pageSize = 20;
+            if (pageSize < 0 || pageSize > 200) pageSize = 20;
 
             var where = new StringBuilder(" WHERE 1 = 1 ");
             var parametros = new List<SqlParameter>();
@@ -87,6 +87,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     var pTotal = parametros.Select(Clonar).ToArray();
                     int total = db.Database.SqlQuery<int>(
                         "SELECT COUNT(*) FROM AUDITORIA" + where, pTotal).FirstOrDefault();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(total, 1);
+                    }
 
                     // pagina
                     var pPage = parametros.Select(Clonar).ToList();

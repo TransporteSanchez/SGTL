@@ -448,7 +448,7 @@
 
     <!-- Buscador y Listar + Acciones -->
     <script>
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
 
         // Datepicker para el filtro de fecha de inicio de viaje
@@ -590,9 +590,17 @@
             });
         }
 
-        function renderPagination(totalRecords, pageSize, currentPage) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
+        function renderPagination(totalRecords, tamanioActual, currentPage) {
+            const totalPages = Math.ceil(totalRecords / tamanioActual);
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                    alCambiarPagina: function (pagina) { buscarViajes(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarViajes(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = currentPage === 1 ? 'disabled' : '';

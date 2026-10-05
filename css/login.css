@@ -1,93 +1,239 @@
+:root {
+    --login-brand-color: #b6d8c7;
+    --login-accent-color: #198754;
+    --login-accent-hover: #146c43;
+    --login-text-color: #173d69;
+    --login-muted-color: #708096;
+}
+
+html,
 body {
-    background-color: rgb(194, 191, 188);
-    color: white;
-    font-family: Arial, Helvetica, sans-serif;
-    width: 95%;
-    margin-left: auto;
-    margin-right: auto;
+    min-height: 100%;
 }
 
-footer {
-    margin-top: 1%;
-    margin-left: 20%;
-    margin-right: 20%;
-    text-align: center;
+body {
+    margin: 0;
+    background: #f8fafc;
+    color: #26384f;
+    font-family: Inter, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-footer p {
-    color: white;
-    font-size: small;
-    font-family: Arial;
-    padding: 0.5rem;
+.left-section {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #fff;
+    background-color: var(--login-brand-color);
 }
 
-.login {
-    background-image: url(img/LogoSanchez.png);
-    background-repeat: no-repeat;
-    background-size: cover;    
-    height: 10%;
-    margin-left: 30%;
-    margin-right: 30%;
+.brand-lockup {
+    position: relative;
+    z-index: 1;
+    width: min(62%, 420px);
 }
 
-form {
-    margin: 1rem;
-    height: 10%;
-    width: 80%;
-    border-radius: 1rem;
+.brand-logo-frame {
     display: flex;
-    flex-direction: column;
-    text-align: center;
-    padding: 25px 25px;
-    box-shadow: 0 5px 10px black;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
 }
 
-.formulario{
-        
-    background-color: rgb(255, 255, 255);
-    background-color: rgb(255 255 255 / 50%);
+.brand-logo-frame img {
+    display: block;
+    width: 100%;
+    max-height: 155px;
+    object-fit: contain;
 }
 
-.imagen {
-    margin-left: auto;
-    margin-right: auto;
-    height: 80px;
-    width: 350px;
+.login-orbit {
+    position: absolute;
+    display: block;
+    width: 56vw;
+    height: 56vw;
+    min-width: 680px;
+    min-height: 680px;
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 50%;
+    pointer-events: none;
 }
 
-form .titulo {
-    color: black;
-    font-size: 35px;
-    font-weight: 800;
-    margin-bottom: 30px;
+.login-orbit-top {
+    top: -37vw;
+    right: -28vw;
 }
 
-form label {
-    margin-bottom: 35px;
+.login-orbit-bottom {
+    bottom: -42vw;
+    left: -33vw;
+    background: rgba(255, 255, 255, 0.055);
 }
 
-form label .fa-solid {
-    font-size: 20px;
-    margin-right: 10px;
-    color: black;
+.login-orbit-bottom-inner {
+    width: 42vw;
+    height: 42vw;
+    min-width: 510px;
+    min-height: 510px;
+    bottom: -32vw;
+    left: -25vw;
+    border-color: rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.045);
 }
 
-form label input {
-    outline: none;
-    border: none;
-    color: black;
-    border-bottom: solid 1px rgb(155, 157, 158);
-    padding: 0 5px;
-    font-size: 18px;
+.right-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background: #f8fafc;
 }
 
-form button {
-    margin-top: 1rem;
-    color: white;
-    border-radius: 1rem;
-    background-color: rgb(65, 66, 66);
-    height: 40px;
-    width: 150px;
-    padding: 10px 15px;
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 2rem;
+    border: 1px solid #dfe7e9;
+    border-radius: 22px;
+    background: #fff;
+    box-shadow: 0 18px 42px rgba(29, 51, 74, 0.11);
+    position: relative;
+}
+
+.login-card-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 72px;
+    margin-bottom: 1.5rem;
+}
+
+.login-card-brand img {
+    display: block;
+    width: min(100%, 210px);
+    max-height: 72px;
+    object-fit: contain;
+}
+
+.login-card h5 {
+    margin: 0;
+    color: var(--login-text-color);
+    font-size: 1.55rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.login-card h5.mb-4 {
+    margin-bottom: 0 !important;
+}
+
+.login-subtitle {
+    margin: 0.55rem 0 1.75rem;
+    color: var(--login-muted-color);
+    font-size: 0.9rem;
+}
+
+.login-card .form-label {
+    margin-bottom: 0.4rem;
+    color: #53657b;
+    font-size: 0.87rem;
+    font-weight: 500;
+}
+
+.login-card .input-group {
+    border: 1px solid #d8e1e7;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.login-card .input-group:focus-within {
+    border-color: var(--login-accent-color);
+    box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.15);
+}
+
+.login-card .form-control,
+.login-card .input-group-text {
+    min-height: 44px;
+    border: 0;
+    background: #fff;
+}
+
+.login-card .form-control {
+    color: #24384d;
+    box-shadow: none;
+}
+
+.login-card .form-control::placeholder {
+    color: #a7b2c0;
+}
+
+.login-card .input-group-text {
+    color: #68819d;
+}
+
+.login-card #togglePassword {
     cursor: pointer;
+}
+
+.login-submit {
+    margin-top: 2rem;
+}
+
+.login-submit .btn {
+    min-height: 44px;
+    border: 0;
+    border-radius: 10px;
+    background-color: var(--login-accent-color);
+    box-shadow: none;
+    font-weight: 600;
+}
+
+.login-submit .btn:hover,
+.login-submit .btn:focus {
+    background-color: var(--login-accent-hover);
+}
+
+.loading-spinner {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    z-index: 2;
+    transform: translate(-50%, -50%);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.825rem;
+    display: none;
+}
+
+#footerContent {
+    color: #7c8c9f;
+}
+
+@media (max-width: 991.98px) {
+    .right-section {
+        min-height: 100vh;
+        background: linear-gradient(145deg, #eff7f2, #f8fafc 46%);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .right-section {
+        align-items: flex-start;
+        padding: 1.25rem;
+    }
+
+    .login-card {
+        margin-top: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 18px;
+    }
 }

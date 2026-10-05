@@ -36,6 +36,19 @@ namespace WebApi_TransporteSanchez.Controllers
             public List<AplicacionReciboRequest> Aplicaciones { get; set; }
         }
 
+        public class EditarReciboRequest
+        {
+            public DateTime? Fecha { get; set; }
+            public string FormaPago { get; set; }
+            public string Referencia { get; set; }
+            public string Observaciones { get; set; }
+        }
+
+        public class AnularReciboRequest
+        {
+            public string Motivo { get; set; }
+        }
+
         private class UsuarioSesion
         {
             public int UsuarioID { get; set; }
@@ -49,7 +62,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string CUIT { get; set; }
             public string Domicilio { get; set; }
             public string CondicionFiscal { get; set; }
-            public bool Activo { get; set; }
+            public bool EstadoCliente { get; set; }
         }
 
         private class DeudaRecibo
@@ -153,7 +166,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        private UsuarioSesion ValidarAcceso(SqlConnection connection, SqlTransaction transaction)
+        private UsuarioSesion ValidarAcceso(SqlConnection connection, SqlTransaction transaction, string permiso = "REC_EMITIR")
         {
             string nombreUsuario = ObtenerNombreUsuarioToken();
             const string sql = @"
@@ -162,18 +175,19 @@ SELECT TOP (1) u.Usuario_ID,
            SELECT 1 FROM dbo.GRUPOS_USUARIOS gu
            JOIN dbo.GRUPOS_PERMISOS gp ON gp.GrupoID=gu.GrupoID
            JOIN dbo.PERMISOS p ON p.Permiso_ID=gp.PermisoID
-           WHERE gu.UsuarioID=u.Usuario_ID AND p.Codigo='REC_EMITIR') THEN 1 ELSE 0 END AS Autorizado
+           WHERE gu.UsuarioID=u.Usuario_ID AND p.Codigo=@permiso) THEN 1 ELSE 0 END AS Autorizado
 FROM dbo.USUARIOS u
 WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(P("@usuario", nombreUsuario));
+                command.Parameters.Add(P("@permiso", permiso));
                 using (var reader = command.ExecuteReader())
                 {
                     if (!reader.Read())
                         throw new AccesoException(HttpStatusCode.Unauthorized, "El usuario no existe o está inactivo.");
                     if (reader.GetInt32(1) != 1)
-                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para emitir Recibos.");
+                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para realizar esta acción sobre Recibos.");
                     return new UsuarioSesion { UsuarioID = reader.GetInt32(0), NombreUsuario = nombreUsuario };
                 }
             }
@@ -184,7 +198,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
             const string sql = @"
 SELECT c.Cliente_ID,c.Razon_Social,c.CUIT_Cliente,
        NULLIF(LTRIM(RTRIM(COALESCE(c.Calle,'')+' '+COALESCE(c.AlturaCalle,''))),'') AS Domicilio,
-       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.Activo,0)) AS Activo
+       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
 FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK)
 WHERE c.Cliente_ID=@clienteId;";
             using (var command = new SqlCommand(sql, connection, transaction))
@@ -200,7 +214,7 @@ WHERE c.Cliente_ID=@clienteId;";
                         CUIT = (string)reader["CUIT_Cliente"],
                         Domicilio = reader["Domicilio"] as string,
                         CondicionFiscal = reader["CondicionFiscal"] as string,
-                        Activo = (bool)reader["Activo"]
+                        EstadoCliente = (bool)reader["EstadoCliente"]
                     };
                 }
             }
@@ -378,7 +392,7 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                 transaction.Rollback();
                                 return NotFound();
                             }
-                            if (!cliente.Activo)
+                            if (!cliente.EstadoCliente)
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.BadRequest, new { error = "El cliente está inactivo." });
@@ -545,6 +559,338 @@ VALUES
                 return Content(HttpStatusCode.InternalServerError,
                     new { error = "No se pudo emitir el Recibo. Ningún cambio fue confirmado." });
             }
+        }
+
+        [HttpGet]
+        [Route("recibos/{id:int}")]
+        public IHttpActionResult Obtener(int id)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction(IsolationLevel.ReadCommitted))
+                    {
+                        var usuario = ValidarAcceso(connection, transaction, "REC_EMITIR");
+                        int clienteId;
+                        int numero;
+                        string estado;
+                        DateTime fecha;
+                        decimal total;
+                        string observaciones;
+                        string razonSocial;
+                        string cuit;
+                        string forma;
+                        string referencia;
+
+                        using (var command = new SqlCommand(@"
+SELECT c.ClienteID,c.NumeroCorrelativo,c.Estado,c.FechaEmision,c.Total,c.Observaciones,
+       c.RazonSocial,c.CUIT,p.Forma,p.Referencia
+FROM dbo.COMPROBANTES c
+OUTER APPLY (SELECT TOP (1) Forma,Referencia FROM dbo.RECIBOS_FORMAS_PAGO WHERE ComprobanteID=c.Comprobante_ID ORDER BY FormaPago_ID) p
+WHERE c.Comprobante_ID=@id AND c.Tipo='REC';", connection, transaction))
+                        {
+                            command.Parameters.Add(P("@id", id));
+                            using (var reader = command.ExecuteReader())
+                            {
+                                if (!reader.Read())
+                                {
+                                    transaction.Rollback();
+                                    return NotFound();
+                                }
+                                clienteId = (int)reader["ClienteID"];
+                                numero = (int)reader["NumeroCorrelativo"];
+                                estado = (string)reader["Estado"];
+                                fecha = (DateTime)reader["FechaEmision"];
+                                total = (decimal)reader["Total"];
+                                observaciones = reader["Observaciones"] as string;
+                                razonSocial = reader["RazonSocial"] as string;
+                                cuit = reader["CUIT"] as string;
+                                forma = reader["Forma"] as string;
+                                referencia = reader["Referencia"] as string;
+                            }
+                        }
+
+                        var aplicaciones = new List<object>();
+                        using (var command = new SqlCommand(@"
+SELECT a.ComprobanteDeudaID, d.Tipo+'-'+RIGHT(REPLICATE('0',8)+CONVERT(varchar(8),d.NumeroCorrelativo),8) AS Comprobante,
+       d.FechaVencimiento,d.Total AS ImporteOriginal,a.Importe
+FROM dbo.CUENTA_CORRIENTE_APLICACIONES a
+JOIN dbo.COMPROBANTES d ON d.Comprobante_ID=a.ComprobanteDeudaID
+WHERE a.ComprobanteCreditoID=@id AND a.Vigente=1
+ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
+                        {
+                            command.Parameters.Add(P("@id", id));
+                            using (var reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    aplicaciones.Add(new
+                                    {
+                                        ComprobanteID = (int)reader["ComprobanteDeudaID"],
+                                        Comprobante = (string)reader["Comprobante"],
+                                        FechaVencimiento = reader.IsDBNull(reader.GetOrdinal("FechaVencimiento"))
+                                            ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
+                                        ImporteOriginal = (decimal)reader["ImporteOriginal"],
+                                        Importe = (decimal)reader["Importe"]
+                                    });
+                                }
+                            }
+                        }
+                        transaction.Commit();
+                        return Ok(new
+                        {
+                            ComprobanteID = id,
+                            ClienteID = clienteId,
+                            Numero = NumeroRecibo(numero),
+                            Estado = estado,
+                            Fecha = fecha,
+                            Total = total,
+                            RazonSocial = razonSocial,
+                            CUIT = cuit,
+                            FormaPago = forma,
+                            Referencia = referencia,
+                            Observaciones = observaciones,
+                            Aplicaciones = aplicaciones
+                        });
+                    }
+                }
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo obtener el Recibo." }); }
+        }
+
+        [HttpPut]
+        [Route("recibos/{id:int}")]
+        public IHttpActionResult Editar(int id, [FromBody] EditarReciboRequest request)
+        {
+            if (request == null || !request.Fecha.HasValue) return BadRequest("La fecha del Recibo es obligatoria.");
+            DateTime fecha = request.Fecha.Value.Date;
+            if (fecha > FechaArgentina()) return BadRequest("No se admite una fecha de Recibo futura.");
+            if ((request.Referencia ?? string.Empty).Length > 120) return BadRequest("La referencia no puede superar los 120 caracteres.");
+            if ((request.Observaciones ?? string.Empty).Length > 2000) return BadRequest("Las observaciones no pueden superar los 2000 caracteres.");
+            string forma = (request.FormaPago ?? string.Empty).Trim().ToUpperInvariant();
+            if (!new[] { "EFECTIVO", "TRANSFERENCIA", "CHEQUE", "OTRO" }.Contains(forma)) return BadRequest("La forma de pago no es válida.");
+            if ((forma == "TRANSFERENCIA" || forma == "CHEQUE") && string.IsNullOrWhiteSpace(request.Referencia))
+                return BadRequest("La referencia es obligatoria para transferencias y cheques.");
+
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            var usuario = ValidarAcceso(connection, transaction, "REC_EMITIR");
+                            int clienteId;
+                            int numero;
+                            string estado;
+                            using (var command = new SqlCommand(@"
+SELECT ClienteID,NumeroCorrelativo,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
+                            {
+                                command.Parameters.Add(P("@id", id));
+                                using (var reader = command.ExecuteReader())
+                                {
+                                    if (!reader.Read()) { transaction.Rollback(); return NotFound(); }
+                                    clienteId = (int)reader["ClienteID"];
+                                    numero = (int)reader["NumeroCorrelativo"];
+                                    estado = (string)reader["Estado"];
+                                }
+                            }
+                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden editar Recibos emitidos." }); }
+
+                            using (var command = new SqlCommand(@"
+SELECT MAX(d.FechaEmision)
+FROM dbo.CUENTA_CORRIENTE_APLICACIONES a WITH (UPDLOCK,HOLDLOCK)
+JOIN dbo.COMPROBANTES d ON d.Comprobante_ID=a.ComprobanteDeudaID
+WHERE a.ComprobanteCreditoID=@id AND a.Vigente=1;", connection, transaction))
+                            {
+                                command.Parameters.Add(P("@id", id));
+                                object fechaMinima = command.ExecuteScalar();
+                                if (fechaMinima != null && fechaMinima != DBNull.Value && fecha < Convert.ToDateTime(fechaMinima).Date)
+                                {
+                                    transaction.Rollback();
+                                    return Content(HttpStatusCode.BadRequest, new { error = "La fecha del Recibo no puede ser anterior a los comprobantes aplicados." });
+                                }
+                            }
+
+                            string referencia = string.IsNullOrWhiteSpace(request.Referencia) ? null : request.Referencia.Trim();
+                            string observaciones = string.IsNullOrWhiteSpace(request.Observaciones) ? null : request.Observaciones.Trim();
+                            using (var command = new SqlCommand(@"
+UPDATE dbo.COMPROBANTES SET FechaEmision=@fecha,Observaciones=@observaciones,
+       UsuarioModificacionID=@usuario,FechaModificacion=SYSUTCDATETIME()
+WHERE Comprobante_ID=@id;
+UPDATE dbo.RECIBOS_FORMAS_PAGO SET Forma=@forma,Referencia=@referencia,FechaOperacion=@fecha,FechaPago=@fecha
+WHERE ComprobanteID=@id;
+UPDATE dbo.CUENTA_CORRIENTE_MOVIMIENTOS SET FechaContable=@fecha
+WHERE ComprobanteID=@id AND Clase='EMISION';
+UPDATE dbo.CUENTA_CORRIENTE_APLICACIONES SET FechaAplicacion=@fecha
+WHERE ComprobanteCreditoID=@id AND Vigente=1;
+INSERT dbo.AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
+VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta Corriente');", connection, transaction))
+                            {
+                                command.Parameters.AddRange(new[]
+                                {
+                                    P("@fecha", fecha), P("@observaciones", observaciones), P("@usuario", usuario.UsuarioID),
+                                    P("@forma", forma), P("@referencia", referencia), P("@id", id),
+                                    P("@nombre", usuario.NombreUsuario), P("@clave", "Comprobante_ID=" + id),
+                                    P("@detalle", "Recibo " + NumeroRecibo(numero) + " editado")
+                                });
+                                command.ExecuteNonQuery();
+                            }
+                            transaction.Commit();
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Fecha = fecha, Estado = "EMITIDO", ClienteID = clienteId });
+                        }
+                        catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo editar el Recibo. Ningún cambio fue confirmado." }); }
+        }
+
+        [HttpPost]
+        [Route("recibos/{id:int}/anular")]
+        public IHttpActionResult Anular(int id, [FromBody] AnularReciboRequest request)
+        {
+            string motivo = request == null ? null : (request.Motivo ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(motivo)) return BadRequest("El motivo de anulación es obligatorio.");
+            if (motivo.Length > 500) return BadRequest("El motivo de anulación no puede superar los 500 caracteres.");
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            var usuario = ValidarAcceso(connection, transaction, "REC_ANULAR");
+                            int clienteId;
+                            int numero;
+                            decimal total;
+                            string estado;
+                            using (var command = new SqlCommand(@"
+SELECT ClienteID,NumeroCorrelativo,Total,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
+                            {
+                                command.Parameters.Add(P("@id", id));
+                                using (var reader = command.ExecuteReader())
+                                {
+                                    if (!reader.Read()) { transaction.Rollback(); return NotFound(); }
+                                    clienteId = (int)reader["ClienteID"];
+                                    numero = (int)reader["NumeroCorrelativo"];
+                                    total = (decimal)reader["Total"];
+                                    estado = (string)reader["Estado"];
+                                }
+                            }
+                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden anular Recibos emitidos." }); }
+                            int movimientoOriginal;
+                            using (var command = new SqlCommand(@"
+SELECT Movimiento_ID FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS WITH (UPDLOCK,HOLDLOCK)
+WHERE ComprobanteID=@id AND Clase='EMISION';", connection, transaction))
+                            {
+                                command.Parameters.Add(P("@id", id));
+                                object valor = command.ExecuteScalar();
+                                if (valor == null) throw new InvalidOperationException("El Recibo no tiene movimiento de Cuenta Corriente.");
+                                movimientoOriginal = Convert.ToInt32(valor, CultureInfo.InvariantCulture);
+                            }
+                            DateTime fechaAnulacion = FechaArgentina();
+                            using (var command = new SqlCommand(@"
+UPDATE dbo.CUENTA_CORRIENTE_APLICACIONES SET Vigente=0,UsuarioAnulacionID=@usuario,
+       FechaAnulacion=SYSUTCDATETIME(),MotivoAnulacion=@motivo
+WHERE ComprobanteCreditoID=@id AND Vigente=1;
+INSERT dbo.CUENTA_CORRIENTE_MOVIMIENTOS
+ (ComprobanteID,ClienteID,Tipo,Clase,Impacto,Importe,FechaContable,Concepto,MovimientoOriginalID,UsuarioAltaID)
+VALUES (@id,@cliente,'REC','REVERSO','D',@total,@fecha,@concepto,@movimiento,@usuario);
+UPDATE dbo.COMPROBANTES SET Estado='ANULADO',UsuarioAnulacionID=@usuario,
+       FechaAnulacion=SYSUTCDATETIME(),MotivoAnulacion=@motivo WHERE Comprobante_ID=@id;
+INSERT dbo.AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
+VALUES (GETDATE(),@nombre,'ANULAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta Corriente');", connection, transaction))
+                            {
+                                command.Parameters.AddRange(new[]
+                                {
+                                    P("@usuario", usuario.UsuarioID),P("@motivo", motivo),P("@id", id),P("@cliente", clienteId),
+                                    P("@total", total),P("@fecha", fechaAnulacion),P("@concepto", "Anulación de " + NumeroRecibo(numero)),
+                                    P("@movimiento", movimientoOriginal),P("@nombre", usuario.NombreUsuario),
+                                    P("@clave", "Comprobante_ID=" + id),P("@detalle", "Recibo " + NumeroRecibo(numero) + " anulado: " + motivo)
+                                });
+                                command.ExecuteNonQuery();
+                            }
+                            transaction.Commit();
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Estado = "ANULADO" });
+                        }
+                        catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Conflict, new { error = ex.Message }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo anular el Recibo. Ningún cambio fue confirmado." }); }
+        }
+
+        [HttpDelete]
+        [Route("recibos/{id:int}")]
+        public IHttpActionResult Eliminar(int id)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    using (var transaction = connection.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            var usuario = ValidarAcceso(connection, transaction, "REC_ANULAR");
+                            int numero;
+                            string tipo;
+                            string estado;
+                            using (var command = new SqlCommand(@"
+SELECT Tipo,NumeroCorrelativo,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+WHERE Comprobante_ID=@id;", connection, transaction))
+                            {
+                                command.Parameters.Add(P("@id", id));
+                                using (var reader = command.ExecuteReader())
+                                {
+                                    if (!reader.Read()) { transaction.Rollback(); return NotFound(); }
+                                    tipo = (string)reader["Tipo"];
+                                    numero = (int)reader["NumeroCorrelativo"];
+                                    estado = (string)reader["Estado"];
+                                }
+                            }
+                            if (tipo != "REC") { transaction.Rollback(); return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden eliminar Recibos. Las Facturas, NC y ND no se eliminan." }); }
+                            if (estado != "ANULADO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden eliminar Recibos anulados previamente." }); }
+                            using (var command = new SqlCommand(@"
+DELETE FROM dbo.RECIBOS_FORMAS_PAGO WHERE ComprobanteID=@id;
+DELETE FROM dbo.CUENTA_CORRIENTE_APLICACIONES WHERE ComprobanteCreditoID=@id;
+DELETE FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS WHERE ComprobanteID=@id AND Clase='REVERSO';
+DELETE FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS WHERE ComprobanteID=@id AND Clase='EMISION';
+DELETE FROM dbo.COMPROBANTES_DETALLE WHERE ComprobanteID=@id;
+DELETE FROM dbo.COMPROBANTES WHERE Comprobante_ID=@id;
+INSERT dbo.AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
+VALUES (GETDATE(),@nombre,'ELIMINAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta Corriente');", connection, transaction))
+                            {
+                                command.Parameters.AddRange(new[]
+                                {
+                                    P("@id", id),P("@nombre", usuario.NombreUsuario),P("@clave", "Comprobante_ID=" + id),
+                                    P("@detalle", "Recibo " + NumeroRecibo(numero) + " eliminado luego de su anulación")
+                                });
+                                command.ExecuteNonQuery();
+                            }
+                            transaction.Commit();
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Eliminado = true });
+                        }
+                        catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo eliminar el Recibo. Ningún cambio fue confirmado." }); }
         }
     }
 }

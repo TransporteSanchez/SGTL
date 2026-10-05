@@ -10,10 +10,16 @@
     var pendientes = [];
     var comprobanteActualId = null;
     var reciboOperacion = null;
+    var reciboEditandoId = null;
+    var reciboEditando = null;
     var comprobanteOperacion = null;
     var comprobanteTipo = null;
     var facturasReferencia = [];
     var ivaComprobanteFijo = null;
+    var vencimientoComprobanteEditado = false;
+    var paginaActual = 1;
+    var paginacionMovimientos = { total: 0, totalPages: 0 };
+    var tamanioPagina = 15;
 
     function porId(id) { return document.getElementById(id); }
     function token() {
@@ -73,6 +79,30 @@
             });
         });
     }
+    function apiPut(ruta, datos) {
+        return apiEnviar(ruta, 'PUT', datos);
+    }
+    function apiDelete(ruta) {
+        return apiEnviar(ruta, 'DELETE');
+    }
+    function apiEnviar(ruta, metodo, datos) {
+        var encabezados = { Accept: 'application/json', Authorization: 'Bearer ' + token() };
+        if (datos !== undefined) encabezados['Content-Type'] = 'application/json';
+        return fetch(API + ruta, {
+            method: metodo,
+            headers: encabezados,
+            body: datos === undefined ? undefined : JSON.stringify(datos)
+        }).then(function (respuesta) {
+            return respuesta.json().catch(function () { return {}; }).then(function (json) {
+                if (!respuesta.ok) {
+                    var error = new Error(json.error || json.Message || 'No se pudo completar la operación.');
+                    error.status = respuesta.status;
+                    throw error;
+                }
+                return json;
+            });
+        });
+    }
     function dinero(valor) {
         return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
             .format(Number(valor || 0));
@@ -86,6 +116,61 @@
         var id = Number(porId('ccCliente').value || 0);
         return clientes.find(function (item) { return item.ClienteID === id; }) || null;
     }
+    function etiquetaCliente(item) { return item.RazonSocial + ' — ' + item.CUIT; }
+    function actualizarSugerenciasClientes(campoId, sugerenciasId) {
+        var textoBusqueda = porId(campoId).value.trim().toLowerCase();
+        var coincidencias = textoBusqueda ? clientes.filter(function (item) {
+            if (!item.EstadoCliente) return false;
+            return String(item.RazonSocial || '').toLowerCase().indexOf(textoBusqueda) !== -1 ||
+                String(item.CUIT || '').toLowerCase().indexOf(textoBusqueda) !== -1;
+        }).slice(0, 10) : [];
+        porId(sugerenciasId).innerHTML = coincidencias.map(function (item) {
+            return '<option value="' + escapar(etiquetaCliente(item)) + '"></option>';
+        }).join('');
+    }
+    function establecerClientePredictivo(campoId, clienteIdId, sugerenciasId, clienteId) {
+        var cliente = clientes.find(function (item) {
+            return item.ClienteID === Number(clienteId) && item.EstadoCliente;
+        }) || null;
+        porId(campoId).value = cliente ? etiquetaCliente(cliente) : '';
+        porId(clienteIdId).value = cliente ? String(cliente.ClienteID) : '';
+        actualizarSugerenciasClientes(campoId, sugerenciasId);
+    }
+    function clientePredictivoActual(campoId, clienteIdId) {
+        var campo = porId(campoId);
+        var valor = campo.value.trim();
+        var id = Number(porId(clienteIdId).value || 0);
+        var clientePorId = clientes.find(function (item) { return item.ClienteID === id && item.EstadoCliente; }) || null;
+        if (clientePorId && valor === etiquetaCliente(clientePorId)) return clientePorId;
+        var clientePorTexto = clientes.find(function (item) {
+            return item.EstadoCliente && etiquetaCliente(item) === valor;
+        }) || null;
+        porId(clienteIdId).value = clientePorTexto ? String(clientePorTexto.ClienteID) : '';
+        return clientePorTexto;
+    }
+    function sincronizarClientePredictivo(campoId, clienteIdId, sugerenciasId) {
+        var cliente = clientePredictivoActual(campoId, clienteIdId);
+        actualizarSugerenciasClientes(campoId, sugerenciasId);
+        return cliente;
+    }
+    function clienteComprobanteActual() { return clientePredictivoActual('cmpCliente', 'cmpClienteId'); }
+    function clienteReciboActual() { return clientePredictivoActual('reciboCliente', 'reciboClienteId'); }
+    function poblarClientesComprobante(clienteId) {
+        establecerClientePredictivo('cmpCliente', 'cmpClienteId', 'cmpClientesSugeridos', clienteId);
+    }
+    function sumarDiasAFechaIso(fechaIso, dias) {
+        var partes = String(fechaIso || '').split('-');
+        if (partes.length !== 3) return '';
+        var fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+        if (isNaN(fecha.getTime())) return '';
+        fecha.setDate(fecha.getDate() + dias);
+        return fechaIsoLocal(fecha);
+    }
+    function actualizarVencimientoPredeterminado() {
+        if (comprobanteTipo === 'NC' || vencimientoComprobanteEditado) return;
+        porId('cmpFechaVencimiento').value = sumarDiasAFechaIso(porId('cmpFechaEmision').value, 10);
+    }
+    function esConsultaGeneral() { return !clienteActual(); }
     function claseEstado(estado) {
         if (estado === 'Cancelado' || estado === 'Aplicado') return 'cc-paid';
         if (estado === 'Parcial' || estado === 'Parcialmente aplicado') return 'cc-partial';
@@ -111,17 +196,14 @@
         return apiGet('/cuenta-corriente/clientes').then(function (datos) {
             clientes = datos || [];
             var select = porId('ccCliente');
-            select.innerHTML = clientes.map(function (item) {
-                return '<option value="' + item.ClienteID + '">' + escapar(item.RazonSocial + ' — ' + item.CUIT +
-                    (item.Activo ? '' : ' · Inactivo')) + '</option>';
+            select.innerHTML = '<option value="">Todos los clientes</option>' + clientes.filter(function (item) {
+                return item.EstadoCliente;
+            }).map(function (item) {
+                return '<option value="' + item.ClienteID + '">' + escapar(item.RazonSocial + ' — ' + item.CUIT) + '</option>';
             }).join('');
-            if (!clientes.length) {
-                select.innerHTML = '<option value="">No hay clientes</option>';
-                select.disabled = true;
-            } else {
-                var clienteUrl = Number(new URLSearchParams(window.location.search).get('clienteId') || 0);
-                if (clientes.some(function (item) { return item.ClienteID === clienteUrl; })) select.value = String(clienteUrl);
-            }
+            // La consulta siempre inicia sin cliente: el usuario puede limitarla desde el filtro.
+            select.value = '';
+            select.disabled = false;
         });
     }
     function parametrosMovimientos() {
@@ -130,19 +212,34 @@
             var valor = porId('cc' + nombre).value;
             if (valor) parametros.set(nombre.toLowerCase(), valor);
         });
-        parametros.set('pageSize', '200');
+        parametros.set('page', String(paginaActual));
+        parametros.set('pageSize', String(tamanioPagina));
         return parametros.toString();
     }
-    function cargarCuenta() {
+    function tamanioPaginaPara(total) {
+        return tamanioPagina === 0 ? Math.max(Number(total) || 0, 1) : tamanioPagina;
+    }
+    function cargarCuenta(pagina) {
+        if (pagina != null) paginaActual = Math.max(1, Number(pagina) || 1);
         var cliente = clienteActual();
-        if (!cliente) { resumen = null; movimientos = []; pendientes = []; renderTodo(); return Promise.resolve(); }
         mostrarCarga();
+        var rutas = cliente ? {
+            saldo: '/clientes/' + cliente.ClienteID + '/saldo',
+            movimientos: '/clientes/' + cliente.ClienteID + '/cuenta-corriente?' + parametrosMovimientos(),
+            pendientes: '/clientes/' + cliente.ClienteID + '/comprobantes-pendientes'
+        } : {
+            saldo: '/cuenta-corriente/saldo',
+            movimientos: '/cuenta-corriente/movimientos?' + parametrosMovimientos(),
+            pendientes: '/cuenta-corriente/pendientes'
+        };
         return Promise.all([
-            apiGet('/clientes/' + cliente.ClienteID + '/saldo'),
-            apiGet('/clientes/' + cliente.ClienteID + '/cuenta-corriente?' + parametrosMovimientos()),
-            apiGet('/clientes/' + cliente.ClienteID + '/comprobantes-pendientes')
+            apiGet(rutas.saldo), apiGet(rutas.movimientos), apiGet(rutas.pendientes)
         ]).then(function (resultados) {
             resumen = resultados[0]; movimientos = resultados[1].items || []; pendientes = resultados[2] || [];
+            paginacionMovimientos = {
+                total: Number(resultados[1].total || 0),
+                totalPages: Number(resultados[1].totalPages || 0)
+            };
             renderTodo();
         }).catch(mostrarError);
     }
@@ -158,12 +255,13 @@
             ? resumen.ProximoComprobante + ' · ' + dinero(resumen.ProximoImporte) : 'Sin próximos vencimientos';
     }
     function renderMovimientos() {
+        var mostrarCliente = esConsultaGeneral();
         porId('ccTablaCabecera').innerHTML = '<tr><th class="cc-toggle-column"><span class="visually-hidden">Desplegar</span></th>' +
-            '<th>Fecha</th><th>Comprobante</th><th>Concepto</th><th class="text-end">Total</th>' +
+            '<th>Fecha</th>' + (mostrarCliente ? '<th>Cliente</th>' : '') + '<th>Comprobante</th><th>Concepto</th><th class="text-end">Total</th>' +
             '<th class="text-end">Cancelado</th><th class="text-end">Saldo</th>' +
             '<th>Estado</th><th class="text-center">Acciones</th></tr>';
         if (!movimientos.length) {
-            porId('ccTablaCuerpo').innerHTML = '<tr><td colspan="9" class="cc-empty">No hay comprobantes para los filtros seleccionados.</td></tr>';
+            porId('ccTablaCuerpo').innerHTML = '<tr><td colspan="' + (mostrarCliente ? 10 : 9) + '" class="cc-empty">No hay comprobantes para los filtros seleccionados.</td></tr>';
             return;
         }
         porId('ccTablaCuerpo').innerHTML = movimientos.map(function (item) {
@@ -174,7 +272,7 @@
                     '"><i class="bi bi-chevron-down"></i></button>'
                 : '';
             var filaPrincipal = '<tr class="cc-parent-row"><td class="text-center">' + control + '</td><td>' + fecha(item.Fecha) +
-                '</td><td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + escapar(item.Concepto) +
+                '</td>' + (mostrarCliente ? '<td>' + escapar(item.Cliente || '—') + '</td>' : '') + '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + escapar(item.Concepto) +
                 '</td><td class="cc-money">' + dinero(item.Debe) + '</td><td class="cc-money cc-credit">' +
                 dinero(item.Cancelado) + '</td><td class="cc-money cc-debit fw-bold">' + dinero(item.Saldo) +
                 '</td><td>' + badgeEstado(item.Estado) + '</td><td class="text-center">' +
@@ -184,7 +282,8 @@
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
                 aplicacion.Saldo = saldoProgresivo;
                 return '<tr class="cc-application-row d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
-                    '<td></td><td>' + fecha(aplicacion.Fecha) + '</td><td class="cc-document cc-application-document">' +
+                    '<td></td><td>' + fecha(aplicacion.Fecha) + '</td>' +
+                    (mostrarCliente ? '<td>' + escapar(aplicacion.Cliente || item.Cliente || '—') + '</td>' : '') + '<td class="cc-document cc-application-document">' +
                     '<i class="bi bi-arrow-return-right me-2" aria-hidden="true"></i>' + escapar(aplicacion.Comprobante) +
                     '</td><td>' + escapar(aplicacion.Concepto || 'Aplicación a ' + item.Comprobante) + '</td>' +
                     '<td class="cc-money">—</td><td class="cc-money cc-credit">' + dinero(aplicacion.Importe) +
@@ -205,31 +304,74 @@
         });
     }
     function renderPendientes() {
-        var filas = pendientesFiltrados();
-        porId('ccTablaCabecera').innerHTML = '<tr><th>Comprobante</th><th>Emisión</th><th>Vencimiento</th>' +
+        var todasLasFilas = pendientesFiltrados();
+        var tamanio = tamanioPaginaPara(todasLasFilas.length);
+        var inicio = (paginaActual - 1) * tamanio;
+        var filas = todasLasFilas.slice(inicio, inicio + tamanio);
+        var mostrarCliente = esConsultaGeneral();
+        porId('ccTablaCabecera').innerHTML = '<tr>' + (mostrarCliente ? '<th>Cliente</th>' : '') + '<th>Comprobante</th><th>Emisión</th><th>Vencimiento</th>' +
             '<th class="text-end">Importe original</th><th class="text-end">Aplicado</th><th class="text-end">Saldo pendiente</th>' +
             '<th>Situación</th><th>Estado</th><th class="text-center">Acciones</th></tr>';
         if (!filas.length) {
-            porId('ccTablaCuerpo').innerHTML = '<tr><td colspan="9" class="cc-empty">No hay comprobantes sin relacionar para los filtros seleccionados.</td></tr>';
+            porId('ccTablaCuerpo').innerHTML = '<tr><td colspan="' + (mostrarCliente ? 10 : 9) + '" class="cc-empty">No hay comprobantes sin relacionar para los filtros seleccionados.</td></tr>';
             return;
         }
         porId('ccTablaCuerpo').innerHTML = filas.map(function (item) {
-            return '<tr><td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + fecha(item.FechaEmision) + '</td>' +
+            return '<tr>' + (mostrarCliente ? '<td>' + escapar(item.Cliente || '—') + '</td>' : '') + '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + fecha(item.FechaEmision) + '</td>' +
                 '<td>' + fecha(item.FechaVencimiento) + '</td><td class="cc-money">' + dinero(item.ImporteOriginal) + '</td>' +
                 '<td class="cc-money cc-credit">' + dinero(item.ImporteAplicado) + '</td><td class="cc-money cc-debit fw-bold">' +
                 dinero(item.SaldoPendiente) + '</td><td>' + escapar(item.Situacion) + '</td><td>' + badgeEstado(item.Estado) + '</td>' +
                 '<td class="text-center">' + botonDetalle(item.ComprobanteID, item.Comprobante) + '</td></tr>';
         }).join('');
     }
+    function totalPaginasActual() {
+        if (vistaActual === 'pendientes') return Math.ceil(pendientesFiltrados().length / tamanioPaginaPara(pendientesFiltrados().length));
+        return paginacionMovimientos.totalPages;
+    }
+    function renderPaginacion() {
+        var contenedor = porId('ccPagination');
+        var total = vistaActual === 'pendientes' ? pendientesFiltrados().length : paginacionMovimientos.total;
+        var totalPaginas = Math.max(1, totalPaginasActual());
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+        if (window.PaginacionSGTL) {
+            window.PaginacionSGTL.render(contenedor, {
+                pagina: paginaActual,
+                tamanioPagina: tamanioPagina,
+                total: total,
+                alCambiarTamanio: function (nuevoTamanio) {
+                    tamanioPagina = nuevoTamanio;
+                    paginaActual = 1;
+                    if (vistaActual === 'pendientes') {
+                        renderTabla();
+                        renderPaginacion();
+                    } else {
+                        cargarCuenta(1);
+                    }
+                }
+            });
+            return;
+        }
+        // Fallback para páginas que se abran sin el cargador compartido.
+        var inicio = total ? ((paginaActual - 1) * tamanioPagina) + 1 : 0;
+        var fin = total ? Math.min(total, paginaActual * tamanioPagina) : 0;
+        contenedor.innerHTML = '<li class="page-item me-auto">Filas por página: ' + tamanioPagina + '</li>' +
+            '<li class="page-item"><span class="page-link border-0">' + inicio + '-' + fin + ' de ' + total + '</span></li>' +
+            '<li class="page-item ' + (paginaActual <= 1 ? 'disabled' : '') + '"><button class="page-link" type="button" data-page="' +
+            (paginaActual - 1) + '" aria-label="Página anterior"><i class="bi bi-chevron-left"></i></button></li>' +
+            '<li class="page-item ' + (paginaActual >= totalPaginas || !total ? 'disabled' : '') + '"><button class="page-link" type="button" data-page="' +
+            (paginaActual + 1) + '" aria-label="Página siguiente"><i class="bi bi-chevron-right"></i></button></li>';
+    }
     function renderTabla() { if (vistaActual === 'pendientes') renderPendientes(); else renderMovimientos(); }
-    function renderTodo() { renderResumen(); renderTabla(); }
+    function renderTodo() { renderResumen(); renderTabla(); renderPaginacion(); }
     function cambiarVista(nuevaVista) {
         vistaActual = nuevaVista;
+        paginaActual = 1;
         document.querySelectorAll('.cc-tab').forEach(function (tab) {
             var activa = tab.getAttribute('data-view') === vistaActual;
             tab.classList.toggle('active', activa); tab.setAttribute('aria-selected', activa ? 'true' : 'false');
         });
         renderTabla();
+        renderPaginacion();
     }
 
     function buscarComprobante(id) {
@@ -261,24 +403,156 @@
             '<div class="col-md-4"><small class="text-muted d-block">Saldo</small><strong>' + dinero(saldo) + '</strong></div></div>' +
             '<div class="cc-block-title">Trazabilidad</div><div class="cc-trace-item"><div class="cc-trace-title">Origen</div>' +
             '<div class="cc-trace-text">' + escapar(item.Origen || 'Comprobante directo') + '</div></div>';
-        var esFactura = item.Tipo === 'FAC' || String(item.Comprobante || '').indexOf('FAC-') === 0;
-        porId('btnImprimirFactura').classList.toggle('d-none', !esFactura);
-        porId('btnDescargarFactura').classList.toggle('d-none', !esFactura);
+        var esComprobanteImprimible = ['FAC', 'REC', 'NC', 'ND'].indexOf(item.Tipo) !== -1 ||
+            /^(FAC|REC|NC|ND)-/.test(String(item.Comprobante || ''));
+        var esRecibo = item.Tipo === 'REC' || /^REC-/.test(String(item.Comprobante || ''));
+        var estadoRecibo = String(item.EstadoComprobante || (String(item.Estado || '').toLowerCase() === 'anulado' ? 'ANULADO' : 'EMITIDO')).toUpperCase();
+        porId('btnImprimirFactura').classList.toggle('d-none', !esComprobanteImprimible);
+        porId('btnDescargarFactura').classList.toggle('d-none', !esComprobanteImprimible);
+        porId('btnEnviarComprobanteMail').classList.toggle('d-none', !esComprobanteImprimible);
+        porId('btnEditarRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'EMITIDO');
+        porId('btnAnularRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'EMITIDO');
+        porId('btnEliminarRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'ANULADO');
         bootstrap.Modal.getOrCreateInstance(porId('modalDetalleComprobante')).show();
     }
 
-    function cargarFacturasRecibo() {
-        var cliente = clienteActual();
-        var facturasPendientes = pendientes.filter(function (item) { return item.Tipo === 'FAC'; });
-        porId('reciboCliente').value = cliente ? cliente.RazonSocial + ' — ' + cliente.CUIT : '';
-        porId('reciboFacturas').innerHTML = facturasPendientes.map(function (item) {
-            return '<tr><td><input type="checkbox" class="form-check-input cc-recibo-check" data-id="' + Number(item.ComprobanteID) + '"></td>' +
+    function renderAplicacionesReciboEdicion(aplicaciones) {
+        porId('reciboFacturas').innerHTML = (aplicaciones || []).map(function (item) {
+            return '<tr><td><input type="checkbox" class="form-check-input" checked disabled></td>' +
                 '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + fecha(item.FechaVencimiento) + '</td>' +
-                '<td class="text-end">' + dinero(item.ImporteOriginal) + '</td><td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
-                '<td class="text-end"><input type="number" min="0" step="0.01" class="form-control form-control-sm text-end cc-allocation-input cc-recibo-aplicar" ' +
-                'data-id="' + Number(item.ComprobanteID) + '" data-pendiente="' + Number(item.SaldoPendiente) + '" disabled value="0.00"></td></tr>';
-        }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene Facturas pendientes.</td></tr>';
-        actualizarResumenRecibo();
+                '<td class="text-end">' + dinero(item.ImporteOriginal) + '</td><td class="text-end">—</td>' +
+                '<td class="text-end fw-bold">' + dinero(item.Importe) + '</td></tr>';
+        }).join('') || '<tr><td colspan="6" class="cc-empty">El Recibo no tiene comprobantes aplicados.</td></tr>';
+    }
+
+    function abrirEditarRecibo(id) {
+        var error = porId('reciboError');
+        error.textContent = '';
+        apiGet('/recibos/' + id).then(function (recibo) {
+            if (String(recibo.Estado || '').toUpperCase() !== 'EMITIDO') throw new Error('Solo se pueden editar Recibos emitidos.');
+            reciboEditandoId = Number(id);
+            reciboEditando = recibo;
+            reciboOperacion = null;
+            porId('modalNuevoReciboTitulo').textContent = 'Editar recibo · ' + (recibo.Numero || '');
+            porId('reciboFecha').max = hoyIso();
+            porId('reciboFecha').value = String(recibo.Fecha || '').substring(0, 10);
+            porId('reciboCliente').value = (recibo.RazonSocial || 'Cliente') + (recibo.CUIT ? ' — ' + recibo.CUIT : '');
+            porId('reciboClienteId').value = String(recibo.ClienteID || '');
+            porId('reciboTotal').value = Number(recibo.Total || 0).toFixed(2);
+            var formaVisual = {
+                TRANSFERENCIA: 'Transferencia', EFECTIVO: 'Efectivo', CHEQUE: 'Cheque', OTRO: 'Otro'
+            }[String(recibo.FormaPago || '').toUpperCase()] || 'Transferencia';
+            porId('reciboFormaPago').value = formaVisual;
+            porId('reciboReferencia').value = recibo.Referencia || '';
+            porId('reciboFormaImporte').value = Number(recibo.Total || 0).toFixed(2);
+            porId('reciboObservaciones').value = recibo.Observaciones || '';
+            porId('reciboCliente').disabled = true;
+            porId('reciboFecha').disabled = false;
+            porId('reciboTotal').readOnly = true;
+            porId('reciboFormaPago').disabled = false;
+            porId('reciboReferencia').disabled = false;
+            porId('reciboFormaImporte').readOnly = true;
+            porId('reciboObservaciones').disabled = false;
+            renderAplicacionesReciboEdicion(recibo.Aplicaciones);
+            porId('reciboResumenTotal').textContent = dinero(recibo.Total);
+            porId('reciboResumenAplicado').textContent = dinero(recibo.Total);
+            porId('reciboResumenDiferencia').textContent = dinero(0);
+            var mensaje = porId('reciboMensaje');
+            mensaje.className = 'alert alert-info py-2';
+            mensaje.innerHTML = '<i class="bi bi-info-circle me-2"></i>Podés modificar la fecha, forma de pago, referencia y observaciones. Las imputaciones y el importe se preservan.';
+            var boton = porId('btnEmitirRecibo');
+            boton.disabled = false;
+            boton.classList.remove('d-none');
+            boton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Guardar cambios';
+            bootstrap.Modal.getInstance(porId('modalDetalleComprobante')).hide();
+            bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
+        }).catch(function (ex) {
+            window.alert(ex.message || 'No se pudo cargar el Recibo.');
+        });
+    }
+
+    function guardarEdicionRecibo() {
+        var error = porId('reciboError');
+        var fechaRecibo = porId('reciboFecha').value;
+        var forma = porId('reciboFormaPago').value;
+        var referencia = porId('reciboReferencia').value.trim();
+        error.textContent = '';
+        if (!fechaRecibo) { error.textContent = 'Completá la fecha del Recibo.'; return; }
+        if (fechaRecibo > hoyIso()) { error.textContent = 'La fecha del Recibo no puede ser futura.'; return; }
+        if ((forma === 'Transferencia' || forma === 'Cheque') && !referencia) {
+            error.textContent = 'Ingresá la referencia de la transferencia o del cheque.'; return;
+        }
+        var boton = porId('btnEmitirRecibo');
+        boton.disabled = true;
+        boton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando…';
+        apiPut('/recibos/' + reciboEditandoId, {
+            Fecha: fechaRecibo,
+            FormaPago: forma,
+            Referencia: referencia || null,
+            Observaciones: porId('reciboObservaciones').value.trim() || null
+        }).then(function (recibo) {
+            var mensaje = porId('reciboMensaje');
+            mensaje.className = 'alert alert-success py-2';
+            mensaje.textContent = (recibo.Numero || 'El Recibo') + ' se actualizó correctamente.';
+            porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
+            boton.classList.add('d-none');
+            reciboEditandoId = null;
+            reciboEditando = null;
+            cargarCuenta(paginaActual);
+        }).catch(function (ex) {
+            boton.disabled = false;
+            boton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Guardar cambios';
+            error.textContent = ex.message || 'No se pudo editar el Recibo.';
+        });
+    }
+
+    function anularReciboActual() {
+        if (!comprobanteActualId) return;
+        var motivo = window.prompt('Indicá el motivo de anulación del Recibo:');
+        if (motivo === null) return;
+        if (!motivo.trim()) { window.alert('El motivo de anulación es obligatorio.'); return; }
+        apiPost('/recibos/' + comprobanteActualId + '/anular', { Motivo: motivo.trim() }).then(function () {
+            bootstrap.Modal.getInstance(porId('modalDetalleComprobante')).hide();
+            cargarCuenta(paginaActual);
+            window.alert('El Recibo fue anulado correctamente.');
+        }).catch(function (ex) { window.alert(ex.message || 'No se pudo anular el Recibo.'); });
+    }
+
+    function eliminarReciboActual() {
+        if (!comprobanteActualId) return;
+        if (!window.confirm('El Recibo ya fue anulado. ¿Confirmás su eliminación definitiva?')) return;
+        apiDelete('/recibos/' + comprobanteActualId).then(function () {
+            bootstrap.Modal.getInstance(porId('modalDetalleComprobante')).hide();
+            cargarCuenta(paginaActual);
+            window.alert('El Recibo fue eliminado correctamente.');
+        }).catch(function (ex) { window.alert(ex.message || 'No se pudo eliminar el Recibo.'); });
+    }
+
+    function cargarFacturasRecibo() {
+        var cliente = clienteReciboActual();
+        if (!cliente) {
+            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus Facturas pendientes.</td></tr>';
+            actualizarResumenRecibo();
+            return Promise.resolve();
+        }
+        porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Cargando Facturas pendientes…</td></tr>';
+        return apiGet('/clientes/' + cliente.ClienteID + '/comprobantes-pendientes').then(function (comprobantes) {
+            var clienteFormulario = clienteReciboActual();
+            if (!clienteFormulario || clienteFormulario.ClienteID !== cliente.ClienteID) return;
+            var facturasPendientes = (comprobantes || []).filter(function (item) { return item.Tipo === 'FAC'; });
+            porId('reciboFacturas').innerHTML = facturasPendientes.map(function (item) {
+                return '<tr><td><input type="checkbox" class="form-check-input cc-recibo-check" data-id="' + Number(item.ComprobanteID) + '"></td>' +
+                    '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + fecha(item.FechaVencimiento) + '</td>' +
+                    '<td class="text-end">' + dinero(item.ImporteOriginal) + '</td><td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
+                    '<td class="text-end"><input type="number" min="0" step="0.01" class="form-control form-control-sm text-end cc-allocation-input cc-recibo-aplicar" ' +
+                    'data-id="' + Number(item.ComprobanteID) + '" data-pendiente="' + Number(item.SaldoPendiente) + '" disabled value="0.00"></td></tr>';
+            }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene Facturas pendientes.</td></tr>';
+            actualizarResumenRecibo();
+        }).catch(function (ex) {
+            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty text-danger">' +
+                escapar(ex.message || 'No se pudieron cargar las Facturas pendientes.') + '</td></tr>';
+            actualizarResumenRecibo();
+        });
     }
     function actualizarResumenRecibo() {
         var aplicado = 0;
@@ -292,7 +566,12 @@
         porId('reciboResumenDiferencia').textContent = dinero(0);
     }
     function abrirNuevoRecibo() {
+        var cliente = clienteActual();
+        reciboEditandoId = null;
+        reciboEditando = null;
         reciboOperacion = nuevaClave();
+        porId('modalNuevoReciboTitulo').textContent = 'Nuevo recibo';
+        establecerClientePredictivo('reciboCliente', 'reciboClienteId', 'reciboClientesSugeridos', cliente && cliente.ClienteID);
         porId('reciboFecha').max = hoyIso();
         porId('reciboFecha').value = hoyIso();
         porId('reciboTotal').value = '0.00';
@@ -325,7 +604,11 @@
         return aplicaciones;
     }
     function emitirRecibo() {
-        var cliente = clienteActual();
+        if (reciboEditandoId) {
+            guardarEdicionRecibo();
+            return;
+        }
+        var cliente = clienteReciboActual();
         var error = porId('reciboError');
         error.textContent = '';
         if (!token()) { error.textContent = 'La sesión venció. Iniciá sesión nuevamente.'; return; }
@@ -431,9 +714,17 @@
         grupo.classList.remove('d-none');
         porId('cmpReferenciaEtiqueta').textContent = 'Factura relacionada *';
         porId('cmpReferenciaAyuda').textContent = 'Neto, IVA y otros impuestos se completarán según el saldo de la Factura.';
+        if (!clienteId) {
+            porId('cmpReferencia').innerHTML = '<option value="">Seleccioná un cliente primero</option>';
+            porId('btnEmitirComprobante').disabled = true;
+            aplicarImportesFacturaReferencia();
+            return Promise.resolve();
+        }
         porId('cmpReferencia').innerHTML = '<option value="">Cargando Facturas…</option>';
         porId('btnEmitirComprobante').disabled = true;
         return apiGet('/clientes/' + clienteId + '/facturas-referencia').then(function (facturas) {
+            var clienteActualFormulario = clienteComprobanteActual();
+            if (comprobanteTipo !== 'NC' || !clienteActualFormulario || clienteActualFormulario.ClienteID !== clienteId) return;
             facturasReferencia = facturas.filter(function (item) { return centavos(item.SaldoPendiente) > 0; });
             porId('cmpReferencia').innerHTML = facturasReferencia.map(function (item) {
                 return '<option value="' + Number(item.ComprobanteID) + '" data-pendiente="' + centavos(item.SaldoPendiente) + '">' +
@@ -451,16 +742,24 @@
             porId('btnEmitirComprobante').disabled = false;
         });
     }
+    function actualizarClienteComprobante() {
+        if (comprobanteTipo !== 'NC') return;
+        var cliente = clienteComprobanteActual();
+        cargarFacturasReferencia('NC', cliente && cliente.ClienteID).catch(function (ex) {
+            porId('cmpError').textContent = ex.message || 'No se pudieron cargar las Facturas de referencia.';
+            porId('btnEmitirComprobante').disabled = true;
+        });
+    }
     function abrirNuevoComprobante(tipo) {
         var cliente = clienteActual();
-        if (!cliente) { window.alert('Seleccioná un cliente.'); return; }
         comprobanteTipo = tipo;
         comprobanteOperacion = nuevaClave();
         var hoy = hoyIso();
         porId('cmpTitulo').textContent = 'Nueva ' + nombreTipoComprobante(tipo);
-        porId('cmpCliente').value = cliente.RazonSocial + ' — ' + cliente.CUIT;
+        poblarClientesComprobante(cliente && cliente.ClienteID);
         porId('cmpFechaEmision').value = hoy; porId('cmpFechaEmision').max = hoy;
-        porId('cmpFechaVencimiento').value = hoy;
+        vencimientoComprobanteEditado = false;
+        actualizarVencimientoPredeterminado();
         porId('cmpVencimientoGrupo').classList.toggle('d-none', tipo === 'NC');
         porId('cmpConcepto').value = '';
         porId('cmpIvaPct').querySelectorAll('.cc-iva-factura').forEach(function (opcion) { opcion.remove(); });
@@ -473,7 +772,7 @@
             ? 'Seleccioná la Factura que recibirá la Nota de Crédito.'
             : 'Completá los datos para emitir la ' + nombreTipoComprobante(tipo) + '.';
         porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
-        porId('cmpCliente').readOnly = true; porId('cmpIvaImporte').readOnly = true;
+        porId('cmpIvaImporte').readOnly = true;
         porId('cmpNeto').readOnly = tipo === 'NC';
         porId('cmpOtros').readOnly = tipo === 'NC';
         porId('cmpIvaPct').disabled = tipo === 'NC';
@@ -481,18 +780,19 @@
         boton.classList.remove('d-none'); boton.disabled = false;
         boton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Emitir ' + (tipo === 'FAC' ? 'Factura' : tipo);
         recalcularComprobante();
-        cargarFacturasReferencia(tipo, cliente.ClienteID).catch(function (ex) {
+        cargarFacturasReferencia(tipo, cliente && cliente.ClienteID).catch(function (ex) {
             porId('cmpError').textContent = ex.message || 'No se pudieron cargar las Facturas de referencia.';
             boton.disabled = true;
         });
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoComprobante')).show();
     }
     function emitirComprobante() {
-        var cliente = clienteActual();
+        var cliente = clienteComprobanteActual();
         var error = porId('cmpError');
         error.textContent = '';
         if (!token()) { error.textContent = 'La sesión venció. Iniciá sesión nuevamente.'; return; }
-        if (!cliente || !comprobanteTipo) { error.textContent = 'No se pudo determinar el cliente o el tipo de comprobante.'; return; }
+        if (!comprobanteTipo) { error.textContent = 'No se pudo determinar el tipo de comprobante.'; return; }
+        if (!cliente) { error.textContent = 'Seleccioná un cliente para emitir el comprobante.'; return; }
         var emision = porId('cmpFechaEmision').value;
         var vencimiento = comprobanteTipo === 'NC' ? null : porId('cmpFechaVencimiento').value;
         var referencia = comprobanteTipo === 'NC' && porId('cmpReferencia').value
@@ -551,31 +851,40 @@
         bootstrap.Modal.getOrCreateInstance(porId('modalAccionFutura')).show();
     }
     function limpiarFiltros() {
-        establecerRangoUltimos30Dias(); porId('ccTipo').value = '';
+        establecerRangoUltimos30Dias(); porId('ccCliente').value = ''; porId('ccTipo').value = '';
         porId('ccEstado').value = ''; porId('ccSoloPendientes').checked = false;
-        cambiarVista('movimientos'); cargarCuenta();
+        cambiarVista('movimientos'); cargarCuenta(1);
     }
     function filasParaExportar() {
+        var incluirCliente = esConsultaGeneral();
         if (vistaActual === 'pendientes') return pendientesFiltrados().map(function (item) {
-            return [item.Comprobante, fecha(item.FechaEmision), fecha(item.FechaVencimiento), item.ImporteOriginal,
+            var fila = [item.Comprobante, fecha(item.FechaEmision), fecha(item.FechaVencimiento), item.ImporteOriginal,
                 item.ImporteAplicado, item.SaldoPendiente, item.Situacion, item.Estado];
+            if (incluirCliente) fila.unshift(item.Cliente || '');
+            return fila;
         });
         return movimientos.reduce(function (filas, item) {
-            filas.push(['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto, item.Debe,
-                item.Cancelado, item.Saldo, item.Estado]);
+            var filaComprobante = ['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto, item.Debe,
+                item.Cancelado, item.Saldo, item.Estado];
+            if (incluirCliente) filaComprobante.unshift(item.Cliente || '');
+            filas.push(filaComprobante);
             var saldoProgresivo = Number(item.Debe || 0);
             (item.Aplicaciones || []).forEach(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
-                filas.push(['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto,
-                    '', aplicacion.Importe, saldoProgresivo, aplicacion.Estado || 'Aplicado']);
+                var filaAplicacion = ['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto,
+                    '', aplicacion.Importe, saldoProgresivo, aplicacion.Estado || 'Aplicado'];
+                if (incluirCliente) filaAplicacion.unshift(aplicacion.Cliente || item.Cliente || '');
+                filas.push(filaAplicacion);
             });
             return filas;
         }, []);
     }
     function exportarCsv() {
+        var incluirCliente = esConsultaGeneral();
         var cabecera = vistaActual === 'pendientes'
             ? ['Comprobante', 'Emisión', 'Vencimiento', 'Importe original', 'Aplicado', 'Saldo pendiente', 'Situación', 'Estado']
             : ['Nivel', 'Fecha', 'Comprobante', 'Concepto', 'Total', 'Cancelado', 'Saldo', 'Estado'];
+        if (incluirCliente) cabecera.unshift('Cliente');
         var contenido = [cabecera].concat(filasParaExportar()).map(function (fila) {
             return fila.map(function (celda) { return '"' + String(celda == null ? '' : celda).replace(/"/g, '""') + '"'; }).join(';');
         }).join('\r\n');
@@ -586,24 +895,50 @@
     }
 
     function enlazarEventos() {
-        porId('ccCliente').addEventListener('change', cargarCuenta);
-        porId('btnBuscarCuenta').addEventListener('click', cargarCuenta);
+        porId('ccCliente').addEventListener('change', function () { cargarCuenta(1); });
+        porId('btnBuscarCuenta').addEventListener('click', function () { cargarCuenta(1); });
         porId('btnLimpiarCuenta').addEventListener('click', limpiarFiltros);
         porId('ccSoloPendientes').addEventListener('change', function () { cambiarVista(this.checked ? 'pendientes' : 'movimientos'); });
         porId('btnNuevoRecibo').addEventListener('click', abrirNuevoRecibo);
         porId('btnEmitirRecibo').addEventListener('click', emitirRecibo);
         porId('btnEmitirComprobante').addEventListener('click', emitirComprobante);
+        porId('cmpCliente').addEventListener('input', function () {
+            sincronizarClientePredictivo('cmpCliente', 'cmpClienteId', 'cmpClientesSugeridos');
+        });
+        porId('cmpCliente').addEventListener('change', function () {
+            sincronizarClientePredictivo('cmpCliente', 'cmpClienteId', 'cmpClientesSugeridos');
+            actualizarClienteComprobante();
+        });
+        porId('reciboCliente').addEventListener('input', function () {
+            sincronizarClientePredictivo('reciboCliente', 'reciboClienteId', 'reciboClientesSugeridos');
+        });
+        porId('reciboCliente').addEventListener('change', function () {
+            sincronizarClientePredictivo('reciboCliente', 'reciboClienteId', 'reciboClientesSugeridos');
+            cargarFacturasRecibo();
+        });
+        porId('cmpFechaEmision').addEventListener('change', actualizarVencimientoPredeterminado);
+        porId('cmpFechaVencimiento').addEventListener('change', function () {
+            vencimientoComprobanteEditado = true;
+        });
         porId('cmpNeto').addEventListener('input', recalcularComprobante);
         porId('cmpIvaPct').addEventListener('change', recalcularComprobante);
         porId('cmpOtros').addEventListener('input', recalcularComprobante);
         porId('cmpReferencia').addEventListener('change', aplicarImportesFacturaReferencia);
         porId('btnExportarCuenta').addEventListener('click', exportarCsv);
         porId('btnImprimirFactura').addEventListener('click', function () {
-            if (comprobanteActualId && window.imprimirFacturaPDF) window.imprimirFacturaPDF(comprobanteActualId);
+            if (comprobanteActualId && window.imprimirComprobantePDF) window.imprimirComprobantePDF(comprobanteActualId);
         });
         porId('btnDescargarFactura').addEventListener('click', function () {
-            if (comprobanteActualId && window.descargarFacturaPDF) window.descargarFacturaPDF(comprobanteActualId);
+            if (comprobanteActualId && window.descargarComprobantePDF) window.descargarComprobantePDF(comprobanteActualId);
         });
+        porId('btnEnviarComprobanteMail').addEventListener('click', function () {
+            porId('modalAccionFuturaTexto').textContent = 'El envío de ' + (comprobanteActualId ? 'este comprobante' : 'comprobantes') +
+                ' por e-mail se configurará desde Configuración > E-mail.';
+            bootstrap.Modal.getOrCreateInstance(porId('modalAccionFutura')).show();
+        });
+        porId('btnEditarRecibo').addEventListener('click', function () { abrirEditarRecibo(comprobanteActualId); });
+        porId('btnAnularRecibo').addEventListener('click', anularReciboActual);
+        porId('btnEliminarRecibo').addEventListener('click', eliminarReciboActual);
         document.querySelectorAll('.cc-tab').forEach(function (tab) {
             tab.addEventListener('click', function () { cambiarVista(tab.getAttribute('data-view')); });
         });
@@ -626,6 +961,19 @@
                 return;
             }
             var boton = event.target.closest('.cc-ver-detalle'); if (boton) abrirDetalle(boton.getAttribute('data-id'));
+        });
+        porId('ccPagination').addEventListener('click', function (event) {
+            var botonPagina = event.target.closest('button[data-page]');
+            if (!botonPagina || botonPagina.disabled || botonPagina.closest('.disabled')) return;
+            var pagina = Number(botonPagina.getAttribute('data-page'));
+            if (!pagina || pagina === paginaActual) return;
+            paginaActual = pagina;
+            if (vistaActual === 'pendientes') {
+                renderTabla();
+                renderPaginacion();
+            } else {
+                cargarCuenta(paginaActual);
+            }
         });
         porId('reciboFacturas').addEventListener('input', actualizarResumenRecibo);
         porId('reciboFacturas').addEventListener('change', function (event) {

@@ -26,6 +26,19 @@ namespace WebApi_TransporteSanchez.Controllers
 
     {
 
+        private static void AsegurarMenuCuentaCorriente(SGTLAuditContext db)
+        {
+            const string nombreMenu = "Cuenta Corriente";
+            if (db.Set<MENU>().Any(m => m.Menu_Nombre == nombreMenu)) return;
+
+            db.Set<MENU>().Add(new MENU
+            {
+                Menu_Nombre = nombreMenu,
+                Menu_Principal = 0
+            });
+            db.SaveChanges();
+        }
+
         public class GruposDto
 
         {
@@ -611,6 +624,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new SGTLAuditContext(connectionString))
 
                 {
+
+                    AsegurarMenuCuentaCorriente(db);
 
                     if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
 

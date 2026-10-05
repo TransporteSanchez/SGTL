@@ -213,11 +213,7 @@
                             </div>
 
                             <nav aria-label="Paginación de Cuenta Corriente">
-                                <ul class="pagination justify-content-center mt-3 mb-0">
-                                    <li class="page-item disabled"><button class="page-link" type="button">Anterior</button></li>
-                                    <li class="page-item active"><button class="page-link" type="button">1</button></li>
-                                    <li class="page-item disabled"><button class="page-link" type="button">Siguiente</button></li>
-                                </ul>
+                                <ul class="pagination justify-content-end mt-3 mb-0" id="ccPagination"></ul>
                             </nav>
                         </div>
                     </div>
@@ -244,7 +240,7 @@
                 <div class="modal-body">
                     <div class="alert alert-info py-2" id="cmpMensaje">Completá los datos del comprobante.</div>
                     <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label">Cliente</label><input id="cmpCliente" class="form-control" readonly></div>
+                        <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente *</label><input id="cmpCliente" type="text" class="form-control" list="cmpClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="cmpClienteId" type="hidden"><datalist id="cmpClientesSugeridos"></datalist></div>
                         <div class="col-md-3"><label class="form-label">Fecha de emisión</label><input id="cmpFechaEmision" type="date" class="form-control"></div>
                         <div class="col-md-3" id="cmpVencimientoGrupo"><label class="form-label">Fecha de vencimiento</label><input id="cmpFechaVencimiento" type="date" class="form-control"></div>
                         <div class="col-12 d-none" id="cmpReferenciaGrupo">
@@ -287,7 +283,7 @@
 
                     <div class="cc-block-title">1 · Datos generales</div>
                     <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label">Cliente</label><input id="reciboCliente" class="form-control" readonly></div>
+                        <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente *</label><input id="reciboCliente" type="text" class="form-control" list="reciboClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="reciboClienteId" type="hidden"><datalist id="reciboClientesSugeridos"></datalist></div>
                         <div class="col-md-3"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label">Importe del recibo</label><input id="reciboTotal" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
                     </div>
@@ -332,6 +328,18 @@
                 </div>
                 <div class="modal-body" id="modalDetalleCuerpo"></div>
                 <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary d-none" id="btnEnviarComprobanteMail">
+                        <i class="bi bi-envelope me-1"></i>Enviar por mail
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btnEditarRecibo">
+                        <i class="bi bi-pencil me-1"></i>Editar recibo
+                    </button>
+                    <button type="button" class="btn btn-outline-warning d-none" id="btnAnularRecibo">
+                        <i class="bi bi-slash-circle me-1"></i>Anular recibo
+                    </button>
+                    <button type="button" class="btn btn-outline-danger d-none" id="btnEliminarRecibo">
+                        <i class="bi bi-trash me-1"></i>Eliminar recibo
+                    </button>
                     <button type="button" class="btn btn-outline-secondary d-none" id="btnImprimirFactura">
                         <i class="bi bi-printer me-1"></i>Imprimir
                     </button>

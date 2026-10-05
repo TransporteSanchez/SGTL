@@ -219,6 +219,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
                     var totalRecords = query.Count();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(totalRecords, 1);
+                    }
+                    else if (pageSize < 1)
+                    {
+                        pageSize = 8;
+                    }
 
                     var results = query
                         .OrderByDescending(c => c.Chofer_ID)

@@ -39,7 +39,7 @@ no deben recibirse libremente del navegador ni representar dos fuentes independi
 
 ### Cambios en tablas existentes
 
-- `CLIENTES.Activo bit NOT NULL DEFAULT 1`: todos los existentes quedan activos.
+- `CLIENTES.EstadoCliente bit NOT NULL DEFAULT 1`: todos los existentes quedan activos.
   Desactivar bloquea FAC/ND nuevas. Debe permitir consultar y cobrar deuda previa,
   emitir NC correctivas y anular operaciones según permisos.
 - `PROFORMAS.VersionCuentaCorriente rowversion`: token de concurrencia.

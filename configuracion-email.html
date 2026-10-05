@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Configuración de E-mail</title>
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <style>
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .email-card { max-width: 920px; }
+        .email-note { border-left: 4px solid #435ebe; }
+    </style>
+</head>
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="loading-message" style="display:none;"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando…</span></div></div>
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top"><div class="container-fluid">
+                    <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
+                    <div id="header-container"></div>
+                    <script src="./assets/static/js/header.js"></script>
+                </div></nav>
+            </header>
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card email-card rounded mx-4 mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-1"><i class="bi bi-envelope-gear me-2"></i>Configuración de E-mail</h5>
+                            <small class="text-muted">Definí los datos de salida que se usarán para enviar comprobantes.</small>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info email-note">Esta etapa es exclusivamente de interfaz. Los datos se conservan en este navegador hasta que se habilite la integración con el servidor de correo.</div>
+                            <form id="emailConfigForm" autocomplete="off">
+                                <div class="row g-3">
+                                    <div class="col-md-6"><label class="form-label" for="emailRemitente">Nombre del remitente</label><input id="emailRemitente" class="form-control" placeholder="Transporte Sánchez"></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailDireccion">Dirección de e-mail</label><input id="emailDireccion" type="email" class="form-control" placeholder="comprobantes@empresa.com"></div>
+                                    <div class="col-md-8"><label class="form-label" for="emailServidor">Servidor SMTP</label><input id="emailServidor" class="form-control" placeholder="smtp.empresa.com"></div>
+                                    <div class="col-md-4"><label class="form-label" for="emailPuerto">Puerto</label><input id="emailPuerto" type="number" min="1" max="65535" class="form-control" placeholder="587"></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailUsuario">Usuario</label><input id="emailUsuario" class="form-control" placeholder="usuario SMTP"></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailClave">Contraseña</label><input id="emailClave" type="password" class="form-control" placeholder="Contraseña SMTP"></div>
+                                    <div class="col-12"><div class="form-check"><input id="emailTls" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailTls">Usar conexión segura (TLS/SSL)</label></div></div>
+                                </div>
+                                <div class="d-flex justify-content-end gap-2 mt-4">
+                                    <button type="button" id="btnProbarEmail" class="btn btn-outline-primary"><i class="bi bi-send me-1"></i>Probar conexión</button>
+                                    <button type="submit" class="btn btn-primary"><i class="bi bi-save me-1"></i>Guardar configuración</button>
+                                </div>
+                            </form>
+                            <div id="emailFeedback" class="alert d-none mt-3 mb-0" role="status"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
+        </div>
+    </div>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script>
+        (function () {
+            var clave = 'sgtl.configuracion.email.frontend';
+            function campo(id) { return document.getElementById(id); }
+            function mostrar(tipo, texto) {
+                var aviso = campo('emailFeedback');
+                aviso.className = 'alert alert-' + tipo + ' mt-3 mb-0';
+                aviso.textContent = texto;
+            }
+            function valores() {
+                return { remitente: campo('emailRemitente').value, direccion: campo('emailDireccion').value,
+                    servidor: campo('emailServidor').value, puerto: campo('emailPuerto').value,
+                    usuario: campo('emailUsuario').value, tls: campo('emailTls').checked };
+            }
+            window.onload = async function () {
+                campo('loading-message').style.display = 'block';
+                try {
+                    if (window.loadHeader) window.loadHeader();
+                    if (window.loadFooter) window.loadFooter();
+                    if (window.loadSidebar) await window.loadSidebar();
+                    var guardado = JSON.parse(localStorage.getItem(clave) || '{}');
+                    Object.keys(guardado).forEach(function (nombre) {
+                        if (nombre === 'tls') campo('emailTls').checked = !!guardado[nombre];
+                        else if (campo('email' + nombre.charAt(0).toUpperCase() + nombre.slice(1))) campo('email' + nombre.charAt(0).toUpperCase() + nombre.slice(1)).value = guardado[nombre] || '';
+                    });
+                    if (window.loadSettings) await window.loadSettings();
+                    if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
+                    campo('app').style.display = 'block';
+                } finally { campo('loading-message').style.display = 'none'; }
+            };
+            campo('emailConfigForm').addEventListener('submit', function (evento) {
+                evento.preventDefault();
+                localStorage.setItem(clave, JSON.stringify(valores()));
+                mostrar('success', 'La configuración se guardó localmente. El envío real estará disponible al integrar el backend de e-mail.');
+            });
+            campo('btnProbarEmail').addEventListener('click', function () {
+                mostrar('info', 'La prueba de conexión se habilitará junto con la integración del servidor de e-mail.');
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -27,15 +27,15 @@ IF EXISTS (SELECT 1 FROM sys.tables WHERE schema_id = SCHEMA_ID('dbo') AND name 
  'RECIBOS_FORMAS_PAGO','PROFORMAS_VIAJES','PERMISOS','GRUPOS_PERMISOS'))
     THROW 51003, 'Ya existen objetos del módulo. No se admite reinstalación ni instalación parcial.', 1;
 
-IF COL_LENGTH('dbo.CLIENTES','Activo') IS NOT NULL
+IF COL_LENGTH('dbo.CLIENTES','EstadoCliente') IS NOT NULL
  OR COL_LENGTH('dbo.PROFORMAS','VersionCuentaCorriente') IS NOT NULL
     THROW 51004, 'El esquema tiene extensiones previas. Revisar antes de instalar.', 1;
 
 BEGIN TRY
     BEGIN TRANSACTION;
 
-    ALTER TABLE dbo.CLIENTES ADD Activo bit NOT NULL
-        CONSTRAINT DF_CLIENTES_Activo DEFAULT (1) WITH VALUES;
+    ALTER TABLE dbo.CLIENTES ADD EstadoCliente bit NOT NULL
+        CONSTRAINT DF_CLIENTES_EstadoCliente DEFAULT (1) WITH VALUES;
     -- Los clientes existentes quedan activos; no se infiere su estado histórico.
     ALTER TABLE dbo.PROFORMAS ADD VersionCuentaCorriente rowversion;
     -- Permite referencias compuestas que aseguren el mismo cliente.

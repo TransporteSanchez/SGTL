@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Gestionar facturas (Proformas)</title>
+    <title>Transporte Sanchez - Gestionar proformas</title>
     <style>
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
@@ -47,7 +47,7 @@
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
-                                <h5 class="card-title mb-0">Gestionar facturas — Proformas</h5>
+                                <h5 class="card-title mb-0">Gestionar proformas</h5>
                                 <small class="text-muted">Documentos comerciales sin validez fiscal.</small>
                             </div>
                             <button class="btn btn-primary" onclick="nuevaProforma()"><i class="bi bi-plus-lg me-1"></i>Nueva proforma</button>
@@ -257,7 +257,7 @@
         const ESTADOS = ['Borrador', 'Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
         const IVA_OPCIONES = [0, 10.5, 21];
         var estadoActual = 'Borrador';
-        var profState = { page: 1, totalPages: 1 };
+        var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
         var clientesMap = {};
 
         function usuario() { try { return localStorage.getItem('username') || 'sistema'; } catch (e) { return 'sistema'; } }
@@ -319,7 +319,7 @@
             if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
             if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
-            p.append('page', profState.page); p.append('pageSize', 15);
+            p.append('page', profState.page); p.append('pageSize', profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
             cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
             fetch(API_FAC + '/Proformas?' + p.toString())
@@ -338,7 +338,8 @@
             var cuerpo = document.getElementById('cuerpoProformas');
             var items = (data && data.items) || [];
             profState.totalPages = (data && data.totalPages) || 1;
-            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas.</td></tr>'; document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '0 resultados'; return; }
+            profState.total = Number((data && data.total) || 0);
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas.</td></tr>'; renderPag(); document.getElementById('resumen').textContent = '0 resultados'; return; }
             cuerpo.innerHTML = items.map(function (x) {
                 var esBorr = (x.Estado || '') === 'Borrador';
                 var acc = '<button class="btn btn-sm btn-outline-secondary" title="Ver" onclick="verProforma(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> ';
@@ -364,6 +365,14 @@
         }
         function renderPag() {
             var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(ul, {
+                    total: profState.total, tamanioPagina: profState.pageSize, pagina: pg,
+                    alCambiarPagina: function (pagina) { buscarProformas(pagina); },
+                    alCambiarTamanio: function (tamanio) { profState.pageSize = tamanio; buscarProformas(1); }
+                });
+                return;
+            }
             if (tp <= 1) { ul.innerHTML = ''; return; }
             var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
             for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
