@@ -29,7 +29,6 @@ BEGIN TRY
         SmtpPort                    int NULL,
         UsaSsl                      bit NULL,
         CredentialFromMailAddres    varchar(100) NULL,
-        CredentialFromMailPass      varchar(100) NULL,
         [Name]                      varchar(100) NULL,
         [Service]                   smallint NULL,
         ApiKey                      varchar(1000) NULL,

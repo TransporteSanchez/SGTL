@@ -30,10 +30,7 @@ namespace WebApi_TransporteSanchez.Controllers
             // Solo se recibe al crear o cambiar la clave. Nunca se devuelve.
             public string CredentialFromMailPass { get; set; }
             public string Name { get; set; }
-            public short? Service { get; set; }
-            public short? SecureSocketOption { get; set; }
             public bool? UsaTLS12 { get; set; }
-            public string NombreRemitente { get; set; }
             public string Asunto { get; set; }
             public string CuerpoHtml { get; set; }
         }
@@ -46,10 +43,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool? UsaSsl { get; set; }
             public string CredentialFromMailAddres { get; set; }
             public string Name { get; set; }
-            public short? Service { get; set; }
-            public short? SecureSocketOption { get; set; }
             public bool? UsaTLS12 { get; set; }
-            public string NombreRemitente { get; set; }
             public string Asunto { get; set; }
             public string CuerpoHtml { get; set; }
             public bool TienePassword { get; set; }
@@ -88,7 +82,31 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = CrearContexto())
                 {
-                    var configuracion = BuscarPrimeraConfiguracion(db);
+                    var configuraciones = db.Database.SqlQuery<EmailServidorResponseDto>(
+                        ConsultaConfiguracion + " ORDER BY Es_id;").ToList();
+                    return Ok(configuraciones);
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpGet]
+        [Route("{id:int}")]
+        public IHttpActionResult Get(int id)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+            if (!EsIdValido(id)) return BadRequest("El identificador de configuración no es válido.");
+
+            try
+            {
+                using (var db = CrearContexto())
+                {
+                    var configuracion = BuscarConfiguracion(db, id);
                     return configuracion == null ? (IHttpActionResult)NotFound() : Ok(configuracion);
                 }
             }
@@ -106,7 +124,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var autorizado = RequiereAdministrador(out usuario);
             if (autorizado != null) return autorizado;
 
-            var validacion = ValidarConfiguracion(value);
+            var validacion = ValidarConfiguracion(value, true);
             if (validacion != null) return BadRequest(validacion);
 
             try
@@ -129,10 +147,10 @@ namespace WebApi_TransporteSanchez.Controllers
                         P("@usuarioSmtp", value.CredentialFromMailAddres),
                         P("@password", passwordProtegida),
                         P("@nombre", value.Name),
-                        P("@servicio", value.Service),
+                        P("@servicio", (short)1),
                         P("@opcion", (short)ResolverOpcionSeguridad(value)),
                         P("@tls12", value.UsaTLS12),
-                        P("@nombreRemitente", value.NombreRemitente),
+                        P("@nombreRemitente", value.Name),
                         P("@asunto", value.Asunto),
                         P("@cuerpo", value.CuerpoHtml)).Single();
 
@@ -156,7 +174,7 @@ namespace WebApi_TransporteSanchez.Controllers
             if (autorizado != null) return autorizado;
             if (!EsIdValido(id)) return BadRequest("El identificador de configuración no es válido.");
 
-            var validacion = ValidarConfiguracion(value);
+            var validacion = ValidarConfiguracion(value, false);
             if (validacion != null) return BadRequest(validacion);
 
             try
@@ -182,10 +200,10 @@ namespace WebApi_TransporteSanchez.Controllers
                         P("@usuarioSmtp", value.CredentialFromMailAddres),
                         P("@password", passwordProtegida),
                         P("@nombre", value.Name),
-                        P("@servicio", value.Service),
+                        P("@servicio", (short)1),
                         P("@opcion", (short)ResolverOpcionSeguridad(value)),
                         P("@tls12", value.UsaTLS12),
-                        P("@nombreRemitente", value.NombreRemitente),
+                        P("@nombreRemitente", value.Name),
                         P("@asunto", value.Asunto),
                         P("@cuerpo", value.CuerpoHtml),
                         P("@id", id));
@@ -194,6 +212,33 @@ namespace WebApi_TransporteSanchez.Controllers
                     RegistrarAuditoria(usuario, "UPDATE", id, "Configuración SMTP actualizada.");
                     return Ok(resultado);
                 }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpDelete]
+        [Route("{id:int}")]
+        public IHttpActionResult Delete(int id)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+            if (!EsIdValido(id)) return BadRequest("El identificador de configuración no es válido.");
+
+            try
+            {
+                using (var db = CrearContexto())
+                {
+                    int eliminados = db.Database.ExecuteSqlCommand(
+                        "DELETE FROM dbo.EmailServidor WHERE Es_id = @id;", P("@id", id));
+                    if (eliminados == 0) return NotFound();
+                }
+
+                RegistrarAuditoria(usuario, "DELETE", id, "Configuración SMTP eliminada.");
+                return StatusCode(HttpStatusCode.NoContent);
             }
             catch
             {
@@ -276,9 +321,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static SecureSocketOptions ResolverOpcionSeguridad(EmailServidorRequestDto value)
         {
-            return value.SecureSocketOption.HasValue
-                ? (SecureSocketOptions)value.SecureSocketOption.Value
-                : (value.UsaSsl.GetValueOrDefault(true) ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+            return value.UsaSsl.GetValueOrDefault(false) ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
         }
 
         private static SecureSocketOptions ResolverOpcionSeguridad(EmailServidorInterno value)
@@ -293,7 +336,7 @@ namespace WebApi_TransporteSanchez.Controllers
             return ResolverOpcionSeguridad(value) != SecureSocketOptions.None;
         }
 
-        private static string ValidarConfiguracion(EmailServidorRequestDto value)
+        private static string ValidarConfiguracion(EmailServidorRequestDto value, bool requierePassword)
         {
             if (value == null) return "Los datos de configuración son obligatorios.";
             if (string.IsNullOrWhiteSpace(value.SmtpHost) || value.SmtpHost.Length > 100)
@@ -304,14 +347,10 @@ namespace WebApi_TransporteSanchez.Controllers
                 return "La dirección de autenticación SMTP no es válida.";
             if (string.IsNullOrWhiteSpace(value.Name) || value.Name.Length > 100)
                 return "El nombre del perfil es obligatorio y admite hasta 100 caracteres.";
-            if (!value.Service.HasValue)
-                return "El servicio es obligatorio.";
-            if (value.SecureSocketOption.HasValue && (value.SecureSocketOption.Value < 0 || value.SecureSocketOption.Value > 4))
-                return "La opción de seguridad SMTP no es válida.";
+            if (requierePassword && string.IsNullOrWhiteSpace(value.CredentialFromMailPass))
+                return "La contraseña remitente es obligatoria para crear una configuración.";
             if (!string.IsNullOrWhiteSpace(value.CredentialFromMailPass) && value.CredentialFromMailPass.Length > 180)
                 return "La contraseña SMTP admite hasta 180 caracteres.";
-            if (value.NombreRemitente != null && value.NombreRemitente.Length > 150)
-                return "El nombre del remitente admite hasta 150 caracteres.";
             if (value.Asunto != null && value.Asunto.Length > 250)
                 return "El asunto admite hasta 250 caracteres.";
             return null;
@@ -326,13 +365,10 @@ namespace WebApi_TransporteSanchez.Controllers
                 UsaSsl = value.UsaSsl,
                 CredentialFromMailAddres = value.CredentialFromMailAddres,
                 Name = value.Name,
-                Service = 0,
-                SecureSocketOption = value.SecureSocketOption,
                 UsaTLS12 = value.UsaTLS12,
-                NombreRemitente = value.NombreRemitente,
                 Asunto = value.Asunto,
                 CuerpoHtml = value.CuerpoHtml
-            });
+            }, false);
         }
 
         private static bool EsEmailValido(string email)
@@ -377,11 +413,6 @@ namespace WebApi_TransporteSanchez.Controllers
             return new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities"));
         }
 
-        private static EmailServidorResponseDto BuscarPrimeraConfiguracion(SGTLAuditContext db)
-        {
-            return db.Database.SqlQuery<EmailServidorResponseDto>(ConsultaConfiguracion + " ORDER BY Es_id;").FirstOrDefault();
-        }
-
         private static bool EsIdValido(int id)
         {
             return id > 0 && id <= short.MaxValue;
@@ -401,8 +432,7 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         private const string ConsultaConfiguracion =
-            "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], [Service], " +
-            "SecureSocketOption, UsaTLS12, NombreRemitente, Asunto, CuerpoHtml, " +
+            "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], UsaTLS12, Asunto, CuerpoHtml, " +
             "CAST(CASE WHEN NULLIF(CredentialFromMailPassProtegida, '') IS NULL THEN 0 ELSE 1 END AS bit) AS TienePassword " +
             "FROM dbo.EmailServidor";
 

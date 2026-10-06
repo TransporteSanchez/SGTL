@@ -1,7 +1,8 @@
 /*
    La clave SMTP se protege en la aplicación antes de persistirse. La columna
-   original CredentialFromMailPass se conserva por compatibilidad, pero el
-   módulo nuevo no la lee ni la completa.
+   La columna original CredentialFromMailPass no es utilizada por el módulo.
+   Para bases existentes, su eliminación se realiza con
+   03_eliminar_clave_smtp_sin_proteccion.sql.
 */
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
