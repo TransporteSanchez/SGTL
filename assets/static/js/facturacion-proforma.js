@@ -81,7 +81,7 @@
                         '<div id="facResultado" class="alert alert-success mt-3 d-none"></div>' +
                     '</div>' +
                     '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>' +
-                        '<button type="button" class="btn btn-success" id="btnConfirmarFactura" disabled>' +
+                        '<button type="button" class="btn btn-primary" id="btnConfirmarFactura" disabled>' +
                             '<i class="bi bi-receipt me-1"></i>Emitir Factura</button></div>' +
                 '</div></div>' +
             '</div>';
