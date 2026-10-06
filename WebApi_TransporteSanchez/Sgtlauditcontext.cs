@@ -38,7 +38,8 @@ namespace WebApi_TransporteSanchez
         // Campos que nunca se guardan en claro.
         private static readonly HashSet<string> CamposSensibles =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-            { "Contraseña", "Contrasena", "Password", "Pass", "Clave_Acceso" };
+            { "Contraseña", "Contrasena", "Password", "Pass", "Clave_Acceso",
+              "CredentialFromMailPass", "CredentialFromMailPassProtegida", "ApiKey" };
 
         // ------------------------------------------------------------------ API
 

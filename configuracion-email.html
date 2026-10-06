@@ -10,7 +10,7 @@
     <style>
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
-        .email-card { max-width: 920px; }
+        .email-card { max-width: 1080px; }
         .email-note { border-left: 4px solid #435ebe; }
     </style>
 </head>
@@ -35,16 +35,25 @@
                             <small class="text-muted">Definí los datos de salida que se usarán para enviar comprobantes.</small>
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-info email-note">Esta etapa es exclusivamente de interfaz. Los datos se conservan en este navegador hasta que se habilite la integración con el servidor de correo.</div>
+                            <div class="alert alert-info email-note">La contraseña SMTP se transmite al servidor solo al guardar y nunca vuelve a mostrarse en esta pantalla.</div>
                             <form id="emailConfigForm" autocomplete="off">
                                 <div class="row g-3">
-                                    <div class="col-md-6"><label class="form-label" for="emailRemitente">Nombre del remitente</label><input id="emailRemitente" class="form-control" placeholder="Transporte Sánchez"></div>
-                                    <div class="col-md-6"><label class="form-label" for="emailDireccion">Dirección de e-mail</label><input id="emailDireccion" type="email" class="form-control" placeholder="comprobantes@empresa.com"></div>
-                                    <div class="col-md-8"><label class="form-label" for="emailServidor">Servidor SMTP</label><input id="emailServidor" class="form-control" placeholder="smtp.empresa.com"></div>
-                                    <div class="col-md-4"><label class="form-label" for="emailPuerto">Puerto</label><input id="emailPuerto" type="number" min="1" max="65535" class="form-control" placeholder="587"></div>
-                                    <div class="col-md-6"><label class="form-label" for="emailUsuario">Usuario</label><input id="emailUsuario" class="form-control" placeholder="usuario SMTP"></div>
-                                    <div class="col-md-6"><label class="form-label" for="emailClave">Contraseña</label><input id="emailClave" type="password" class="form-control" placeholder="Contraseña SMTP"></div>
-                                    <div class="col-12"><div class="form-check"><input id="emailTls" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailTls">Usar conexión segura (TLS/SSL)</label></div></div>
+                                    <div class="col-12"><h6 class="mb-0">Perfil</h6></div>
+                                    <div class="col-md-8"><label class="form-label" for="emailNombre">Nombre del perfil</label><input id="emailNombre" class="form-control" required maxlength="100" placeholder="Comprobantes"></div>
+                                    <div class="col-md-4"><label class="form-label" for="emailServicio">Servicio</label><input id="emailServicio" type="number" min="0" max="32767" class="form-control" required value="1"></div>
+                                    <div class="col-12 mt-2"><h6 class="mb-0">Servidor SMTP</h6></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailRemitente">Nombre del remitente</label><input id="emailRemitente" class="form-control" maxlength="150" placeholder="Transporte Sánchez"></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailDireccion">Cuenta SMTP y dirección remitente</label><input id="emailDireccion" type="email" class="form-control" required maxlength="100" placeholder="comprobantes@empresa.com"></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailServidor">Servidor SMTP</label><input id="emailServidor" class="form-control" required maxlength="100" placeholder="smtp.empresa.com"></div>
+                                    <div class="col-md-3"><label class="form-label" for="emailPuerto">Puerto</label><input id="emailPuerto" type="number" min="1" max="65535" class="form-control" required placeholder="587"></div>
+                                    <div class="col-md-3"><label class="form-label" for="emailSeguridad">Seguridad</label><select id="emailSeguridad" class="form-select"><option value="3">STARTTLS</option><option value="2">TLS implícito</option><option value="1">Sin TLS/SSL</option><option value="4">STARTTLS si está disponible</option><option value="0">Automática</option></select></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailClave">Contraseña SMTP</label><input id="emailClave" type="password" class="form-control" maxlength="180" placeholder="Dejar vacía para conservar la actual"><div id="emailPasswordInfo" class="form-text"></div></div>
+                                    <div class="col-md-6 d-flex align-items-end"><div class="form-check mb-2"><input id="emailTls12" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailTls12">Exigir TLS 1.2</label></div></div>
+                                    <div class="col-12 mt-2"><h6 class="mb-0">Plantilla predeterminada</h6></div>
+                                    <div class="col-12"><label class="form-label" for="emailAsunto">Asunto</label><input id="emailAsunto" class="form-control" maxlength="250" placeholder="Comprobante adjunto"></div>
+                                    <div class="col-12"><label class="form-label" for="emailCuerpoHtml">Cuerpo HTML</label><textarea id="emailCuerpoHtml" class="form-control" rows="7" placeholder="&lt;p&gt;Hola,&lt;/p&gt;&lt;p&gt;Adjuntamos el comprobante solicitado.&lt;/p&gt;"></textarea></div>
+                                    <div class="col-12 mt-2"><h6 class="mb-0">Prueba</h6></div>
+                                    <div class="col-md-6"><label class="form-label" for="emailPrueba">Dirección de e-mail para la prueba</label><input id="emailPrueba" type="email" class="form-control" placeholder="destinatario@empresa.com"><div class="form-text">Al probar se guardan primero los cambios actuales y se envía un correo real a esta dirección.</div></div>
                                 </div>
                                 <div class="d-flex justify-content-end gap-2 mt-4">
                                     <button type="button" id="btnProbarEmail" class="btn btn-outline-primary"><i class="bi bi-send me-1"></i>Probar conexión</button>
@@ -66,41 +75,123 @@
     <script src="./assets/static/gestionContenido.js"></script>
     <script>
         (function () {
-            var clave = 'sgtl.configuracion.email.frontend';
+            var API = 'http://localhost:50222/api/EmailServidor';
+            var idConfiguracion = null;
             function campo(id) { return document.getElementById(id); }
             function mostrar(tipo, texto) {
                 var aviso = campo('emailFeedback');
                 aviso.className = 'alert alert-' + tipo + ' mt-3 mb-0';
                 aviso.textContent = texto;
             }
-            function valores() {
-                return { remitente: campo('emailRemitente').value, direccion: campo('emailDireccion').value,
-                    servidor: campo('emailServidor').value, puerto: campo('emailPuerto').value,
-                    usuario: campo('emailUsuario').value, tls: campo('emailTls').checked };
+            function token() { return localStorage.getItem('token') || ''; }
+            function encabezados() {
+                var resultado = { 'Accept': 'application/json', 'Content-Type': 'application/json' };
+                if (token()) resultado.Authorization = 'Bearer ' + token();
+                return resultado;
             }
+            function leerError(respuesta) {
+                return respuesta.json().then(function (datos) {
+                    if (typeof datos === 'string') return datos;
+                    return datos.error || datos.Message || 'No se pudo completar la operación.';
+                }).catch(function () { return 'No se pudo completar la operación.'; });
+            }
+            function valores() {
+                return {
+                    SmtpHost: campo('emailServidor').value.trim(),
+                    SmtpPort: Number(campo('emailPuerto').value),
+                    UsaSsl: Number(campo('emailSeguridad').value) !== 1,
+                    CredentialFromMailAddres: campo('emailDireccion').value.trim(),
+                    CredentialFromMailPass: campo('emailClave').value,
+                    Name: campo('emailNombre').value.trim(),
+                    Service: Number(campo('emailServicio').value),
+                    SecureSocketOption: Number(campo('emailSeguridad').value),
+                    UsaTLS12: campo('emailTls12').checked,
+                    NombreRemitente: campo('emailRemitente').value.trim(),
+                    Asunto: campo('emailAsunto').value.trim(),
+                    CuerpoHtml: campo('emailCuerpoHtml').value
+                };
+            }
+            function cargarValores(configuracion) {
+                if (!configuracion) return;
+                idConfiguracion = configuracion.Es_id;
+                campo('emailServidor').value = configuracion.SmtpHost || '';
+                campo('emailPuerto').value = configuracion.SmtpPort || '';
+                campo('emailDireccion').value = configuracion.CredentialFromMailAddres || '';
+                campo('emailNombre').value = configuracion.Name || '';
+                campo('emailServicio').value = configuracion.Service == null ? 1 : configuracion.Service;
+                campo('emailSeguridad').value = configuracion.SecureSocketOption == null ? 3 : configuracion.SecureSocketOption;
+                campo('emailTls12').checked = configuracion.UsaTLS12 !== false;
+                campo('emailRemitente').value = configuracion.NombreRemitente || '';
+                campo('emailAsunto').value = configuracion.Asunto || '';
+                campo('emailCuerpoHtml').value = configuracion.CuerpoHtml || '';
+                campo('emailPasswordInfo').textContent = configuracion.TienePassword ? 'Hay una contraseña almacenada. Dejá este campo vacío para conservarla.' : 'Todavía no se guardó una contraseña SMTP.';
+            }
+            function cargarConfiguracion() {
+                return fetch(API, { headers: encabezados() }).then(function (respuesta) {
+                    if (respuesta.status === 404) return null;
+                    if (!respuesta.ok) return leerError(respuesta).then(function (error) { throw new Error(error); });
+                    return respuesta.json();
+                }).then(function (configuracion) {
+                    cargarValores(configuracion);
+                    return configuracion;
+                });
+            }
+            function guardarConfiguracion(notificar) {
+                if (!campo('emailConfigForm').reportValidity()) return Promise.reject(new Error('Completá los campos obligatorios.'));
+                var metodo = idConfiguracion == null ? 'POST' : 'PUT';
+                var ruta = idConfiguracion == null ? API : API + '/' + encodeURIComponent(idConfiguracion);
+                return fetch(ruta, { method: metodo, headers: encabezados(), body: JSON.stringify(valores()) })
+                    .then(function (respuesta) {
+                        if (!respuesta.ok) return leerError(respuesta).then(function (error) { throw new Error(error); });
+                        return respuesta.json();
+                    }).then(function (configuracion) {
+                        cargarValores(configuracion);
+                        campo('emailClave').value = '';
+                        if (notificar) mostrar('success', 'La configuración se guardó correctamente.');
+                        return configuracion;
+                    });
+            }
+            function cambiarEstadoBoton(id, ocupado) { campo(id).disabled = ocupado; }
             window.onload = async function () {
                 campo('loading-message').style.display = 'block';
                 try {
                     if (window.loadHeader) window.loadHeader();
                     if (window.loadFooter) window.loadFooter();
                     if (window.loadSidebar) await window.loadSidebar();
-                    var guardado = JSON.parse(localStorage.getItem(clave) || '{}');
-                    Object.keys(guardado).forEach(function (nombre) {
-                        if (nombre === 'tls') campo('emailTls').checked = !!guardado[nombre];
-                        else if (campo('email' + nombre.charAt(0).toUpperCase() + nombre.slice(1))) campo('email' + nombre.charAt(0).toUpperCase() + nombre.slice(1)).value = guardado[nombre] || '';
-                    });
                     if (window.loadSettings) await window.loadSettings();
                     if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
                     campo('app').style.display = 'block';
+                    try { await cargarConfiguracion(); }
+                    catch (error) { mostrar('warning', error.message || 'No se pudo cargar la configuración de correo.'); }
                 } finally { campo('loading-message').style.display = 'none'; }
             };
-            campo('emailConfigForm').addEventListener('submit', function (evento) {
+            campo('emailConfigForm').addEventListener('submit', async function (evento) {
                 evento.preventDefault();
-                localStorage.setItem(clave, JSON.stringify(valores()));
-                mostrar('success', 'La configuración se guardó localmente. El envío real estará disponible al integrar el backend de e-mail.');
+                cambiarEstadoBoton('btnProbarEmail', true);
+                try { await guardarConfiguracion(true); }
+                catch (error) { mostrar('danger', error.message || 'No se pudo guardar la configuración.'); }
+                finally { cambiarEstadoBoton('btnProbarEmail', false); }
             });
-            campo('btnProbarEmail').addEventListener('click', function () {
-                mostrar('info', 'La prueba de conexión se habilitará junto con la integración del servidor de e-mail.');
+            campo('btnProbarEmail').addEventListener('click', async function () {
+                var destino = campo('emailPrueba').value.trim();
+                if (!destino || !campo('emailPrueba').checkValidity()) {
+                    campo('emailPrueba').reportValidity();
+                    return;
+                }
+                cambiarEstadoBoton('btnProbarEmail', true);
+                try {
+                    await guardarConfiguracion(false);
+                    var respuesta = await fetch(API + '/' + encodeURIComponent(idConfiguracion) + '/probar', {
+                        method: 'POST', headers: encabezados(), body: JSON.stringify({ EmailDestino: destino })
+                    });
+                    if (!respuesta.ok) throw new Error(await leerError(respuesta));
+                    var resultado = await respuesta.json();
+                    mostrar('success', resultado.mensaje || 'Correo de prueba enviado.');
+                } catch (error) {
+                    mostrar('danger', error.message || 'No se pudo enviar el correo de prueba.');
+                } finally {
+                    cambiarEstadoBoton('btnProbarEmail', false);
+                }
             });
         })();
     </script>

@@ -1,0 +1,461 @@
+using System;
+using System.Data;
+using System.Data.Entity;
+using System.Data.SqlClient;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Security.Claims;
+using System.Text;
+using System.Web.Http;
+using System.Web.Security;
+using MailKit.Security;
+using Microsoft.IdentityModel.Tokens;
+using MimeKit;
+
+namespace WebApi_TransporteSanchez.Controllers
+{
+    [RoutePrefix("api/EmailServidor")]
+    public class EmailServidorController : ApiController
+    {
+        private static readonly string[] PasswordPurpose = { "SGTL", "EmailServidor", "SMTP-password", "v1" };
+
+        public class EmailServidorRequestDto
+        {
+            public string SmtpHost { get; set; }
+            public int? SmtpPort { get; set; }
+            public bool? UsaSsl { get; set; }
+            public string CredentialFromMailAddres { get; set; }
+            // Solo se recibe al crear o cambiar la clave. Nunca se devuelve.
+            public string CredentialFromMailPass { get; set; }
+            public string Name { get; set; }
+            public short? Service { get; set; }
+            public short? SecureSocketOption { get; set; }
+            public bool? UsaTLS12 { get; set; }
+            public string NombreRemitente { get; set; }
+            public string Asunto { get; set; }
+            public string CuerpoHtml { get; set; }
+        }
+
+        public class EmailServidorResponseDto
+        {
+            public short Es_id { get; set; }
+            public string SmtpHost { get; set; }
+            public int? SmtpPort { get; set; }
+            public bool? UsaSsl { get; set; }
+            public string CredentialFromMailAddres { get; set; }
+            public string Name { get; set; }
+            public short? Service { get; set; }
+            public short? SecureSocketOption { get; set; }
+            public bool? UsaTLS12 { get; set; }
+            public string NombreRemitente { get; set; }
+            public string Asunto { get; set; }
+            public string CuerpoHtml { get; set; }
+            public bool TienePassword { get; set; }
+        }
+
+        public class PruebaEmailDto
+        {
+            public string EmailDestino { get; set; }
+        }
+
+        private class EmailServidorInterno
+        {
+            public short Es_id { get; set; }
+            public string SmtpHost { get; set; }
+            public int? SmtpPort { get; set; }
+            public bool? UsaSsl { get; set; }
+            public string CredentialFromMailAddres { get; set; }
+            public string Name { get; set; }
+            public short? SecureSocketOption { get; set; }
+            public bool? UsaTLS12 { get; set; }
+            public string NombreRemitente { get; set; }
+            public string Asunto { get; set; }
+            public string CuerpoHtml { get; set; }
+            public string CredentialFromMailPassProtegida { get; set; }
+        }
+
+        [HttpGet]
+        [Route("")]
+        public IHttpActionResult Get()
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+
+            try
+            {
+                using (var db = CrearContexto())
+                {
+                    var configuracion = BuscarPrimeraConfiguracion(db);
+                    return configuracion == null ? (IHttpActionResult)NotFound() : Ok(configuracion);
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpPost]
+        [Route("")]
+        public IHttpActionResult Post([FromBody] EmailServidorRequestDto value)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+
+            var validacion = ValidarConfiguracion(value);
+            if (validacion != null) return BadRequest(validacion);
+
+            try
+            {
+                string passwordProtegida = string.IsNullOrWhiteSpace(value.CredentialFromMailPass)
+                    ? null
+                    : ProtegerSecreto(value.CredentialFromMailPass);
+
+                using (var db = CrearContexto())
+                {
+                    short id = db.Database.SqlQuery<short>(
+                        "INSERT INTO dbo.EmailServidor (SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, " +
+                        "CredentialFromMailPassProtegida, [Name], [Service], SecureSocketOption, UsaTLS12, " +
+                        "NombreRemitente, Asunto, CuerpoHtml) " +
+                        "VALUES (@host, @port, @ssl, @usuarioSmtp, @password, @nombre, @servicio, @opcion, @tls12, " +
+                        "@nombreRemitente, @asunto, @cuerpo); SELECT CAST(SCOPE_IDENTITY() AS smallint);",
+                        P("@host", value.SmtpHost),
+                        P("@port", value.SmtpPort),
+                        P("@ssl", ResolverUsaSsl(value)),
+                        P("@usuarioSmtp", value.CredentialFromMailAddres),
+                        P("@password", passwordProtegida),
+                        P("@nombre", value.Name),
+                        P("@servicio", value.Service),
+                        P("@opcion", (short)ResolverOpcionSeguridad(value)),
+                        P("@tls12", value.UsaTLS12),
+                        P("@nombreRemitente", value.NombreRemitente),
+                        P("@asunto", value.Asunto),
+                        P("@cuerpo", value.CuerpoHtml)).Single();
+
+                    var resultado = BuscarConfiguracion(db, id);
+                    RegistrarAuditoria(usuario, "INSERT", id, "Configuración SMTP creada.");
+                    return Content(HttpStatusCode.Created, resultado);
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpPut]
+        [Route("{id:int}")]
+        public IHttpActionResult Put(int id, [FromBody] EmailServidorRequestDto value)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+            if (!EsIdValido(id)) return BadRequest("El identificador de configuración no es válido.");
+
+            var validacion = ValidarConfiguracion(value);
+            if (validacion != null) return BadRequest(validacion);
+
+            try
+            {
+                using (var db = CrearContexto())
+                {
+                    var actual = BuscarConfiguracionInterna(db, id);
+                    if (actual == null) return NotFound();
+
+                    string passwordProtegida = actual.CredentialFromMailPassProtegida;
+                    if (!string.IsNullOrWhiteSpace(value.CredentialFromMailPass))
+                        passwordProtegida = ProtegerSecreto(value.CredentialFromMailPass);
+
+                    db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.EmailServidor SET SmtpHost = @host, SmtpPort = @port, UsaSsl = @ssl, " +
+                        "CredentialFromMailAddres = @usuarioSmtp, CredentialFromMailPassProtegida = @password, " +
+                        "[Name] = @nombre, [Service] = @servicio, SecureSocketOption = @opcion, UsaTLS12 = @tls12, " +
+                        "NombreRemitente = @nombreRemitente, Asunto = @asunto, CuerpoHtml = @cuerpo " +
+                        "WHERE Es_id = @id;",
+                        P("@host", value.SmtpHost),
+                        P("@port", value.SmtpPort),
+                        P("@ssl", ResolverUsaSsl(value)),
+                        P("@usuarioSmtp", value.CredentialFromMailAddres),
+                        P("@password", passwordProtegida),
+                        P("@nombre", value.Name),
+                        P("@servicio", value.Service),
+                        P("@opcion", (short)ResolverOpcionSeguridad(value)),
+                        P("@tls12", value.UsaTLS12),
+                        P("@nombreRemitente", value.NombreRemitente),
+                        P("@asunto", value.Asunto),
+                        P("@cuerpo", value.CuerpoHtml),
+                        P("@id", id));
+
+                    var resultado = BuscarConfiguracion(db, id);
+                    RegistrarAuditoria(usuario, "UPDATE", id, "Configuración SMTP actualizada.");
+                    return Ok(resultado);
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpPost]
+        [Route("{id:int}/probar")]
+        public IHttpActionResult Probar(int id, [FromBody] PruebaEmailDto value)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+            if (!EsIdValido(id)) return BadRequest("El identificador de configuración no es válido.");
+
+            if (value == null || !EsEmailValido(value.EmailDestino))
+                return BadRequest("Indicá una dirección válida para recibir el correo de prueba.");
+
+            try
+            {
+                EmailServidorInterno configuracion;
+                using (var db = CrearContexto())
+                {
+                    configuracion = BuscarConfiguracionInterna(db, id);
+                }
+
+                if (configuracion == null) return NotFound();
+                var validacion = ValidarConfiguracion(configuracion);
+                if (validacion != null) return BadRequest(validacion);
+                if (string.IsNullOrWhiteSpace(configuracion.CredentialFromMailPassProtegida))
+                    return BadRequest("La configuración no tiene una contraseña SMTP. Guardala antes de probar.");
+
+                string password = DesprotegerSecreto(configuracion.CredentialFromMailPassProtegida);
+                if (string.IsNullOrWhiteSpace(password))
+                    return BadRequest("No se pudo leer la contraseña SMTP protegida. Volvé a guardarla.");
+
+                EnviarPrueba(configuracion, value.EmailDestino, password);
+                RegistrarAuditoria(usuario, "SMTP_TEST", id, "Correo de prueba enviado a " + value.EmailDestino + ".");
+                return Ok(new { mensaje = "Correo de prueba enviado a " + value.EmailDestino + "." });
+            }
+            catch
+            {
+                return Content(HttpStatusCode.BadGateway, new
+                {
+                    error = "No se pudo conectar, autenticar o enviar el correo de prueba. Verificá host, puerto, seguridad y credenciales."
+                });
+            }
+        }
+
+        private static void EnviarPrueba(EmailServidorInterno configuracion, string destino, string password)
+        {
+            if (configuracion.UsaTLS12 == true)
+                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+
+            var mensaje = new MimeMessage();
+            mensaje.From.Add(new MailboxAddress(
+                string.IsNullOrWhiteSpace(configuracion.NombreRemitente) ? configuracion.Name : configuracion.NombreRemitente,
+                configuracion.CredentialFromMailAddres));
+            mensaje.To.Add(MailboxAddress.Parse(destino));
+            mensaje.Subject = string.IsNullOrWhiteSpace(configuracion.Asunto)
+                ? "Prueba de configuración SMTP"
+                : "Prueba: " + configuracion.Asunto;
+            mensaje.Body = new TextPart("html")
+            {
+                Text = string.IsNullOrWhiteSpace(configuracion.CuerpoHtml)
+                    ? "<p>La configuración SMTP se probó correctamente.</p>"
+                    : configuracion.CuerpoHtml
+            };
+
+            using (var cliente = new MailKit.Net.Smtp.SmtpClient())
+            {
+                cliente.Timeout = 30000;
+                cliente.Connect(configuracion.SmtpHost, configuracion.SmtpPort.Value, ResolverOpcionSeguridad(configuracion));
+                cliente.Authenticate(configuracion.CredentialFromMailAddres, password);
+                cliente.Send(mensaje);
+                cliente.Disconnect(true);
+            }
+        }
+
+        private static SecureSocketOptions ResolverOpcionSeguridad(EmailServidorRequestDto value)
+        {
+            return value.SecureSocketOption.HasValue
+                ? (SecureSocketOptions)value.SecureSocketOption.Value
+                : (value.UsaSsl.GetValueOrDefault(true) ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+        }
+
+        private static SecureSocketOptions ResolverOpcionSeguridad(EmailServidorInterno value)
+        {
+            return value.SecureSocketOption.HasValue
+                ? (SecureSocketOptions)value.SecureSocketOption.Value
+                : (value.UsaSsl.GetValueOrDefault(true) ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
+        }
+
+        private static bool ResolverUsaSsl(EmailServidorRequestDto value)
+        {
+            return ResolverOpcionSeguridad(value) != SecureSocketOptions.None;
+        }
+
+        private static string ValidarConfiguracion(EmailServidorRequestDto value)
+        {
+            if (value == null) return "Los datos de configuración son obligatorios.";
+            if (string.IsNullOrWhiteSpace(value.SmtpHost) || value.SmtpHost.Length > 100)
+                return "El servidor SMTP es obligatorio y admite hasta 100 caracteres.";
+            if (!value.SmtpPort.HasValue || value.SmtpPort.Value < 1 || value.SmtpPort.Value > 65535)
+                return "El puerto SMTP debe estar entre 1 y 65535.";
+            if (!EsEmailValido(value.CredentialFromMailAddres) || value.CredentialFromMailAddres.Length > 100)
+                return "La dirección de autenticación SMTP no es válida.";
+            if (string.IsNullOrWhiteSpace(value.Name) || value.Name.Length > 100)
+                return "El nombre del perfil es obligatorio y admite hasta 100 caracteres.";
+            if (!value.Service.HasValue)
+                return "El servicio es obligatorio.";
+            if (value.SecureSocketOption.HasValue && (value.SecureSocketOption.Value < 0 || value.SecureSocketOption.Value > 4))
+                return "La opción de seguridad SMTP no es válida.";
+            if (!string.IsNullOrWhiteSpace(value.CredentialFromMailPass) && value.CredentialFromMailPass.Length > 180)
+                return "La contraseña SMTP admite hasta 180 caracteres.";
+            if (value.NombreRemitente != null && value.NombreRemitente.Length > 150)
+                return "El nombre del remitente admite hasta 150 caracteres.";
+            if (value.Asunto != null && value.Asunto.Length > 250)
+                return "El asunto admite hasta 250 caracteres.";
+            return null;
+        }
+
+        private static string ValidarConfiguracion(EmailServidorInterno value)
+        {
+            return ValidarConfiguracion(new EmailServidorRequestDto
+            {
+                SmtpHost = value.SmtpHost,
+                SmtpPort = value.SmtpPort,
+                UsaSsl = value.UsaSsl,
+                CredentialFromMailAddres = value.CredentialFromMailAddres,
+                Name = value.Name,
+                Service = 0,
+                SecureSocketOption = value.SecureSocketOption,
+                UsaTLS12 = value.UsaTLS12,
+                NombreRemitente = value.NombreRemitente,
+                Asunto = value.Asunto,
+                CuerpoHtml = value.CuerpoHtml
+            });
+        }
+
+        private static bool EsEmailValido(string email)
+        {
+            try
+            {
+                var direccion = new System.Net.Mail.MailAddress(email ?? string.Empty);
+                return string.Equals(direccion.Address, email, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private static string ProtegerSecreto(string valor)
+        {
+            var protegido = MachineKey.Protect(Encoding.UTF8.GetBytes(valor), PasswordPurpose);
+            return Convert.ToBase64String(protegido);
+        }
+
+        private static string DesprotegerSecreto(string valorProtegido)
+        {
+            try
+            {
+                var datos = MachineKey.Unprotect(Convert.FromBase64String(valorProtegido), PasswordPurpose);
+                return datos == null ? null : Encoding.UTF8.GetString(datos);
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static SqlParameter P(string name, object value)
+        {
+            return new SqlParameter(name, value ?? DBNull.Value);
+        }
+
+        private static SGTLAuditContext CrearContexto()
+        {
+            return new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities"));
+        }
+
+        private static EmailServidorResponseDto BuscarPrimeraConfiguracion(SGTLAuditContext db)
+        {
+            return db.Database.SqlQuery<EmailServidorResponseDto>(ConsultaConfiguracion + " ORDER BY Es_id;").FirstOrDefault();
+        }
+
+        private static bool EsIdValido(int id)
+        {
+            return id > 0 && id <= short.MaxValue;
+        }
+
+        private static EmailServidorResponseDto BuscarConfiguracion(SGTLAuditContext db, int id)
+        {
+            return db.Database.SqlQuery<EmailServidorResponseDto>(ConsultaConfiguracion + " WHERE Es_id = @id;", P("@id", id)).FirstOrDefault();
+        }
+
+        private static EmailServidorInterno BuscarConfiguracionInterna(SGTLAuditContext db, int id)
+        {
+            return db.Database.SqlQuery<EmailServidorInterno>(
+                "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], " +
+                "SecureSocketOption, UsaTLS12, NombreRemitente, Asunto, CuerpoHtml, CredentialFromMailPassProtegida " +
+                "FROM dbo.EmailServidor WHERE Es_id = @id;", P("@id", id)).FirstOrDefault();
+        }
+
+        private const string ConsultaConfiguracion =
+            "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], [Service], " +
+            "SecureSocketOption, UsaTLS12, NombreRemitente, Asunto, CuerpoHtml, " +
+            "CAST(CASE WHEN NULLIF(CredentialFromMailPassProtegida, '') IS NULL THEN 0 ELSE 1 END AS bit) AS TienePassword " +
+            "FROM dbo.EmailServidor";
+
+        private static void RegistrarAuditoria(string usuario, string accion, int id, string detalle)
+        {
+            SGTLAuditContext.RegistrarEvento(
+                ConnectionStringHelper.GetConnectionString("SGTLEntities"), usuario, accion,
+                "EmailServidor", "Es_id=" + id, detalle);
+        }
+
+        private IHttpActionResult RequiereAdministrador(out string usuario)
+        {
+            usuario = null;
+            AuthenticationHeaderValue encabezado = Request.Headers.Authorization;
+            if (encabezado == null || !string.Equals(encabezado.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(encabezado.Parameter))
+                return Unauthorized();
+
+            try
+            {
+                SecurityToken token;
+                var parametros = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = JwtConfig.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = JwtConfig.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(2)
+                };
+                var principal = new JwtSecurityTokenHandler().ValidateToken(encabezado.Parameter, parametros, out token);
+                var rol = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role || c.Type == "role");
+                if (rol == null || !string.Equals(rol.Value, "admin", StringComparison.OrdinalIgnoreCase))
+                    return Content(HttpStatusCode.Forbidden, new { error = "Solo un administrador puede gestionar el servidor SMTP." });
+
+                var nombre = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier || c.Type == "nameid");
+                usuario = nombre == null ? "admin" : nombre.Value;
+                return null;
+            }
+            catch
+            {
+                return Unauthorized();
+            }
+        }
+
+        private IHttpActionResult ErrorInternoConfiguracion()
+        {
+            return Content(HttpStatusCode.InternalServerError, new
+            {
+                error = "No se pudo guardar o recuperar la configuración de correo."
+            });
+        }
+    }
+}
