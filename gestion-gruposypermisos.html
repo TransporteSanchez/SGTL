@@ -538,14 +538,21 @@
                         return;
                     }
 
-                    let html = '<div class="row">';
+                    let html = '<div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle me-1"></i>' +
+                        'Los usuarios con rol <strong>admin</strong> tienen acceso total por su rol y no requieren pertenecer a un grupo.</div><div class="row">';
                     data.forEach(function (item) {
+                        const esAdmin = item.EsAdministrador === true || String(item.Rol || '').trim().toLowerCase() === 'admin';
+                        const estado = esAdmin ? 'disabled' : (item.Asignado ? 'checked' : '');
+                        const detalleAdmin = esAdmin
+                            ? '<span class="badge bg-secondary ms-1">- (admin)</span><small class="d-block text-muted">Acceso total por rol; no requiere grupo.</small>'
+                            : '';
                         html += `
                             <div class="col-md-6 mb-2">
                                 <div class="form-check">
-                                    <input class="form-check-input chk-usuario" type="checkbox" value="${item.Usuario_ID}" id="usr_${item.Usuario_ID}" ${item.Asignado ? 'checked' : ''}>
-                                    <label class="form-check-label" for="usr_${item.Usuario_ID}">
+                                    <input class="form-check-input chk-usuario" type="checkbox" value="${item.Usuario_ID}" id="usr_${item.Usuario_ID}" ${estado}>
+                                    <label class="form-check-label ${esAdmin ? 'text-muted' : ''}" for="usr_${item.Usuario_ID}">
                                         ${escapeHtml(item.Nombre_Usuario)} - ${escapeHtml(item.NombreCompleto)}
+                                        ${detalleAdmin}
                                     </label>
                                 </div>
                             </div>`;

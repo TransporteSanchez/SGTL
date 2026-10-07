@@ -101,7 +101,7 @@
 
                             <div class="cc-actions">
                                 <button type="button" class="btn btn-outline-secondary" id="btnExportarCuenta">
-                                    <i class="bi bi-download me-1"></i>Exportar
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Exportar listado
                                 </button>
 
                                 <div class="dropdown">
@@ -347,6 +347,52 @@
                         <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
                     </button>
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEnviarComprobanteEmail" tabindex="-1" aria-labelledby="modalEnviarComprobanteEmailTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEnviarComprobanteEmailTitulo"><i class="bi bi-envelope-paper me-2"></i>Enviar comprobante por e-mail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="envioComprobantePerfil" class="small text-muted mb-2">Verificando el perfil SMTP de Facturación…</div>
+                    <div id="envioComprobanteFeedback" class="alert d-none" role="status"></div>
+                    <label class="form-label" for="envioComprobanteDestino">Destinatario</label>
+                    <input id="envioComprobanteDestino" type="email" maxlength="320" class="form-control" placeholder="cliente@empresa.com" autocomplete="email">
+                    <div class="form-text">Se adjuntará el PDF del comprobante. Podés modificar el e-mail sugerido del cliente.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmarEnvioComprobante" class="btn btn-primary" disabled><i class="bi bi-send me-1"></i>Enviar comprobante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalExportarCuenta" tabindex="-1" aria-labelledby="modalExportarCuentaTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalExportarCuentaTitulo"><i class="bi bi-file-earmark-pdf me-2"></i>Exportar listado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">El listado incluirá todos los comprobantes que coincidan con los filtros de la búsqueda actual.</p>
+                    <div id="ccExportarResumen" class="alert alert-light border mb-0" role="status"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListado">
+                        <i class="bi bi-printer me-1"></i>Vista previa e imprimir
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnDescargarListadoPdf">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+                    </button>
                 </div>
             </div>
         </div>

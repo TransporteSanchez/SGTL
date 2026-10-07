@@ -401,6 +401,7 @@
     <Compile Include="Controllers\AuditoriaController.cs" />
     <Compile Include="Controllers\AutenticacionController.cs" />
     <Compile Include="Controllers\EmailServidorController.cs" />
+    <Compile Include="Controllers\EnviosComprobantesController.cs" />
     <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />

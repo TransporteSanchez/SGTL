@@ -80,10 +80,10 @@
 
     function tituloComprobante(tipo) {
         return {
-            FAC: 'FACTURA INTERNA',
-            REC: 'RECIBO INTERNO',
-            NC: 'NOTA DE CRÉDITO INTERNA',
-            ND: 'NOTA DE DÉBITO INTERNA'
+            FAC: 'FACTURA',
+            REC: 'RECIBO',
+            NC: 'NOTA DE CRÉDITO',
+            ND: 'NOTA DE DÉBITO'
         }[tipo] || null;
     }
     function nombreArchivoComprobante(tipo) {
@@ -98,138 +98,168 @@
         var doc = new Constructor({ unit: 'mm', format: 'a4' });
         var ancho = doc.internal.pageSize.getWidth();
         var alto = doc.internal.pageSize.getHeight();
-        var margen = 18;
+        var margen = 9;
+        var anchoUtil = ancho - (margen * 2);
         var y = margen;
+        var titulo = tituloComprobante(factura.Tipo) || 'COMPROBANTE';
+        var colorTexto = [20, 20, 20];
+        var colorSecundario = [90, 90, 90];
+        var colorFondo = [245, 245, 245];
 
+        function prepararTexto() {
+            doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+            doc.setDrawColor(25, 25, 25);
+            doc.setLineWidth(0.35);
+        }
+        function etiquetaValor(etiqueta, valor, x, posicionY) {
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+            doc.text(etiqueta, x, posicionY);
+            doc.setFont('helvetica', 'normal'); doc.text(texto(valor), x + doc.getTextWidth(etiqueta) + 1, posicionY);
+        }
+        function nuevaPaginaSiHaceFalta(espacio) {
+            if (y + espacio > alto - 31) { doc.addPage(); y = margen; }
+        }
+
+        // Cabecera con la proporción de un comprobante tradicional, pero sin datos,
+        // marcas ni códigos de autorización fiscal.
+        prepararTexto();
+        doc.rect(margen, y, anchoUtil, 44);
+        doc.line(ancho / 2, y, ancho / 2, y + 44);
+        var identificadorX = (ancho / 2) - 8;
+        doc.setFillColor(255, 255, 255); doc.rect(identificadorX, y, 16, 22, 'FD');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text('I', ancho / 2, y + 11, { align: 'center' });
+        doc.setFontSize(6.5); doc.text('INTERNO', ancho / 2, y + 16, { align: 'center' });
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.text('SIN VALIDEZ FISCAL', ancho / 2, y + 20, { align: 'center' });
+
+        var nombreEmpresaX = margen + 4;
         if (logo) {
-            try { doc.addImage(logo, 'PNG', margen, y, 45, 18); } catch (e) { logo = null; }
+            try { doc.addImage(logo, 'PNG', nombreEmpresaX, y + 5, 31, 14); nombreEmpresaX += 35; } catch (e) { logo = null; }
         }
-        if (!logo) {
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(25);
-            doc.text(EMPRESA.razon, margen, y + 8);
-        }
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text(EMPRESA.razon, nombreEmpresaX, y + 13);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+        doc.text('Documento interno de gestión comercial', nombreEmpresaX, y + 19);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.2); doc.setTextColor(155, 0, 0);
+        doc.text('NO VÁLIDO COMO COMPROBANTE FISCAL', margen + 4, y + 35);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+        doc.text('Emitido por el sistema de gestión.', margen + 4, y + 40);
 
-        var cajaX = ancho - margen - 67;
-        doc.setDrawColor(170); doc.setLineWidth(0.3); doc.roundedRect(cajaX, y, 67, 31, 2, 2);
-        var titulo = tituloComprobante(factura.Tipo) || 'COMPROBANTE INTERNO';
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(titulo.length > 19 ? 10.5 : 13); doc.setTextColor(25);
-        doc.text(titulo, cajaX + 33.5, y + 7, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
-        doc.text('N°: ' + texto(factura.Numero), cajaX + 3, y + 14);
-        doc.text('Emisión: ' + fecha(factura.FechaEmision), cajaX + 3, y + 19);
-        doc.text('Vencimiento: ' + fecha(factura.FechaVencimiento), cajaX + 3, y + 24);
-        doc.text('Estado: ' + texto(factura.EstadoDocumental), cajaX + 3, y + 29);
+        var encabezadoX = (ancho / 2) + 10;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(titulo.length > 16 ? 12.5 : 15); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text(titulo, encabezadoX, y + 11);
+        doc.setFontSize(10); doc.text(texto(factura.Numero), encabezadoX, y + 19);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text('Fecha de emisión: ' + fecha(factura.FechaEmision), encabezadoX, y + 27);
+        if (factura.FechaVencimiento) doc.text('Fecha de vencimiento: ' + fecha(factura.FechaVencimiento), encabezadoX, y + 33);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(6.8); doc.setTextColor(155, 0, 0);
+        doc.text('DOCUMENTO DE USO INTERNO', encabezadoX, y + 40);
+        y += 47;
+
+        // Datos del receptor, conservando sólo los datos comerciales ya registrados.
+        prepararTexto(); doc.rect(margen, y, anchoUtil, 33);
+        doc.setFillColor(colorFondo[0], colorFondo[1], colorFondo[2]); doc.rect(margen, y, anchoUtil, 6, 'F');
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text('RECEPTOR / CLIENTE', margen + 3, y + 4);
+        var clienteX = margen + 3;
+        var clienteDerechaX = (ancho / 2) + 4;
+        etiquetaValor('Nombre: ', factura.RazonSocial, clienteX, y + 12);
+        etiquetaValor('CUIT: ', factura.CUIT, clienteDerechaX, y + 12);
+        var domicilio = doc.splitTextToSize(texto(factura.Domicilio), 78).slice(0, 2);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('Domicilio: ', clienteX, y + 18);
+        doc.setFont('helvetica', 'normal'); doc.text(domicilio, clienteX + 16, y + 18);
+        etiquetaValor('Condición fiscal: ', factura.CondicionFiscal, clienteDerechaX, y + 20);
+        etiquetaValor('Condición de venta: ', factura.CondicionComercial, clienteDerechaX, y + 26);
         y += 37;
-
-        doc.setDrawColor(200); doc.setFillColor(247, 248, 250);
-        doc.roundedRect(margen, y, ancho - 2 * margen, 27, 2, 2, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(45);
-        doc.text('CLIENTE', margen + 3, y + 5);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(65);
-        var columnaA = margen + 3;
-        var columnaB = ancho / 2 + 4;
-        doc.text('Razón social: ' + texto(factura.RazonSocial), columnaA, y + 11);
-        doc.text('CUIT: ' + texto(factura.CUIT), columnaB, y + 11);
-        doc.text('Condición fiscal: ' + texto(factura.CondicionFiscal), columnaA, y + 16);
-        doc.text('Condición comercial: ' + texto(factura.CondicionComercial), columnaB, y + 16);
-        var domicilio = doc.splitTextToSize('Domicilio: ' + texto(factura.Domicilio), ancho - 2 * margen - 6);
-        doc.text(domicilio.slice(0, 2), columnaA, y + 21);
-        y += 33;
 
         var cancelados = factura.ComprobantesCancelados || [];
         var referencia = factura.ComprobanteReferenciaNumero;
-        if ((factura.Tipo === 'REC' || factura.Tipo === 'NC') && (cancelados.length || referencia)) {
-            var lineasCancelados = cancelados.length
+        if (cancelados.length || referencia) {
+            var lineasRelacion = cancelados.length
                 ? cancelados.map(function (item) {
-                    return texto(item.Numero) + ' · Emisión ' + fecha(item.FechaEmision) +
-                        ' · Importe aplicado ' + dinero(item.ImporteAplicado);
+                    return texto(item.Numero) + ' - ' + fecha(item.FechaEmision) + ' - Importe aplicado: ' + dinero(item.ImporteAplicado);
                 })
-                : ['Factura relacionada: ' + texto(referencia)];
-            var textoCancelados = doc.splitTextToSize(lineasCancelados.join('\n'), ancho - 2 * margen - 6);
-            var altoBloque = Math.max(15, 8 + textoCancelados.length * 4);
-            if (y + altoBloque > alto - 30) { doc.addPage(); y = margen; }
-            doc.setDrawColor(210); doc.setFillColor(248, 249, 250);
-            doc.roundedRect(margen, y, ancho - 2 * margen, altoBloque, 2, 2, 'FD');
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(45);
-            doc.text('COMPROBANTES CANCELADOS / IMPUTADOS', margen + 3, y + 5);
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(65);
-            doc.text(textoCancelados, margen + 3, y + 10);
-            y += altoBloque + 5;
+                : ['Comprobante relacionado: ' + texto(referencia)];
+            var textoRelacion = doc.splitTextToSize(lineasRelacion.join('\n'), anchoUtil - 6);
+            var altoRelacion = Math.max(13, 8 + (textoRelacion.length * 3.5));
+            nuevaPaginaSiHaceFalta(altoRelacion + 4);
+            prepararTexto(); doc.rect(margen, y, anchoUtil, altoRelacion);
+            doc.setFillColor(colorFondo[0], colorFondo[1], colorFondo[2]); doc.rect(margen, y, anchoUtil, 5, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('COMPROBANTES RELACIONADOS / IMPUTADOS', margen + 3, y + 3.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+            doc.text(textoRelacion, margen + 3, y + 9);
+            y += altoRelacion + 4;
         }
-
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(45);
-        doc.text('CONCEPTO', margen, y);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(65);
-        y += 5;
-        var concepto = texto(factura.Concepto);
-        if (factura.ProformaNumero) concepto += ' · Proforma ' + factura.ProformaNumero;
-        var lineasConcepto = doc.splitTextToSize(concepto, ancho - 2 * margen);
-        doc.text(lineasConcepto, margen, y);
-        y += lineasConcepto.length * 4 + 3;
 
         var filas = (factura.Detalle || []).map(function (item) {
             var descripcion = texto(item.Concepto);
             if (item.Descripcion) descripcion += '\n' + item.Descripcion;
             if (item.Unidad) descripcion += '\nUnidad: ' + item.Unidad;
             return [
+                texto(item.Codigo), descripcion,
                 numero(item.Cantidad).toLocaleString('es-AR', { maximumFractionDigits: 2 }),
-                texto(item.Codigo), descripcion, dinero(item.PrecioUnitario),
-                numero(item.DescuentoPct).toLocaleString('es-AR') + '%',
-                numero(item.IvaPct).toLocaleString('es-AR') + '%', dinero(item.Total)
+                dinero(item.PrecioUnitario), dinero(item.Total)
             ];
         });
+        if (!filas.length) filas = [['', texto(factura.Concepto), '1', dinero(factura.Neto), dinero(factura.Total)]];
         doc.autoTable({
-            head: [['Cant.', 'Código', 'Descripción', 'P. unit.', 'Desc.', 'IVA', 'Total']],
-            body: filas.length ? filas : [['', '', 'Sin conceptos', '', '', '', '']],
+            head: [['Código', 'Descripción', 'Cantidad', 'P. unitario', 'Importe']],
+            body: filas,
             startY: y,
-            margin: { left: margen, right: margen, bottom: 30 },
-            styles: { fontSize: 7.8, cellPadding: 1.6, overflow: 'linebreak' },
-            headStyles: { fillColor: [33, 37, 41], textColor: 255, halign: 'center' },
+            margin: { left: margen, right: margen, bottom: 34 },
+            theme: 'grid',
+            styles: { fontSize: 8, cellPadding: 1.6, overflow: 'linebreak', lineColor: [70, 70, 70], lineWidth: 0.15 },
+            headStyles: { fillColor: [235, 235, 235], textColor: [15, 15, 15], halign: 'center', fontStyle: 'bold', lineColor: [45, 45, 45] },
             columnStyles: {
-                0: { halign: 'right', cellWidth: 13 }, 1: { cellWidth: 19 }, 2: { cellWidth: 'auto' },
-                3: { halign: 'right', cellWidth: 24 }, 4: { halign: 'right', cellWidth: 15 },
-                5: { halign: 'right', cellWidth: 13 }, 6: { halign: 'right', cellWidth: 25 }
+                0: { cellWidth: 23 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 22 },
+                3: { halign: 'right', cellWidth: 31 }, 4: { halign: 'right', cellWidth: 31 }
             }
         });
-
-        y = doc.lastAutoTable.finalY + 6;
-        function nuevaPaginaSiHaceFalta(espacio) {
-            if (y + espacio > alto - 30) { doc.addPage(); y = margen; }
-        }
-        nuevaPaginaSiHaceFalta(54);
-        var totalX = ancho - margen - 72;
-        function lineaTotal(etiqueta, valor, destacado) {
-            doc.setFont('helvetica', destacado ? 'bold' : 'normal');
-            doc.setFontSize(destacado ? 11 : 8.5); doc.setTextColor(destacado ? 20 : 65);
-            doc.text(etiqueta, totalX, y); doc.text(dinero(valor), ancho - margen, y, { align: 'right' });
-            y += destacado ? 7 : 5;
-        }
-        lineaTotal('Subtotal', factura.Subtotal);
-        lineaTotal('Descuentos', factura.Descuentos);
-        lineaTotal('Neto', factura.Neto);
-        lineaTotal('IVA', factura.IVA);
-        lineaTotal('Otros impuestos', factura.OtrosImpuestos);
-        doc.setDrawColor(175); doc.line(totalX, y - 2, ancho - margen, y - 2); y += 2;
-        lineaTotal('TOTAL', factura.Total, true);
-
-        y += 2;
-        nuevaPaginaSiHaceFalta(25);
-        doc.setDrawColor(210); doc.setFillColor(248, 249, 250);
-        doc.roundedRect(margen, y, ancho - 2 * margen, 17, 2, 2, 'FD');
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(45);
-        doc.text('ESTADO FINANCIERO: ' + texto(factura.EstadoFinanciero).toUpperCase(), margen + 3, y + 6);
-        doc.setFont('helvetica', 'normal'); doc.setTextColor(70);
-        doc.text('Aplicado: ' + dinero(factura.ImporteAplicado), margen + 3, y + 12);
-        doc.text('Saldo pendiente: ' + dinero(factura.SaldoPendiente), ancho - margen - 3, y + 12, { align: 'right' });
-        y += 22;
+        y = doc.lastAutoTable.finalY + 5;
 
         if (factura.Observaciones) {
-            nuevaPaginaSiHaceFalta(18);
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(45);
-            doc.text('OBSERVACIONES', margen, y); y += 5;
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(65);
-            doc.text(doc.splitTextToSize(factura.Observaciones, ancho - 2 * margen), margen, y);
+            var observaciones = doc.splitTextToSize(factura.Observaciones, anchoUtil - 6);
+            var altoObservaciones = 8 + (observaciones.length * 3.5);
+            nuevaPaginaSiHaceFalta(altoObservaciones + 5);
+            prepararTexto(); doc.rect(margen, y, anchoUtil, altoObservaciones);
+            doc.setFillColor(colorFondo[0], colorFondo[1], colorFondo[2]); doc.rect(margen, y, anchoUtil, 5, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('OBSERVACIONES', margen + 3, y + 3.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+            doc.text(observaciones, margen + 3, y + 9);
+            y += altoObservaciones + 5;
         }
+
+        var totales = [
+            ['Subtotal', factura.Subtotal],
+            ['Descuento', factura.Descuentos],
+            ['Neto', factura.Neto],
+            ['IVA', factura.IVA],
+            ['Otros impuestos', factura.OtrosImpuestos]
+        ];
+        var altoTotales = 14 + (totales.length * 5);
+        nuevaPaginaSiHaceFalta(altoTotales + 3);
+        y = Math.max(y, alto - 76);
+        var anchoTotales = 76;
+        var xTotales = ancho - margen - anchoTotales;
+        prepararTexto(); doc.rect(xTotales, y, anchoTotales, altoTotales);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        var yTotal = y + 6;
+        totales.forEach(function (fila) {
+            doc.text(fila[0] + ':', xTotales + 4, yTotal);
+            doc.text(dinero(fila[1]), xTotales + anchoTotales - 4, yTotal, { align: 'right' });
+            yTotal += 5;
+        });
+        doc.setDrawColor(45, 45, 45); doc.line(xTotales + 3, yTotal - 2, xTotales + anchoTotales - 3, yTotal - 2);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(10); doc.text('TOTAL:', xTotales + 4, yTotal + 4);
+        doc.text(dinero(factura.Total), xTotales + anchoTotales - 4, yTotal + 4, { align: 'right' });
+
+        var altoEstado = 25;
+        prepararTexto(); doc.rect(margen, y, xTotales - margen - 4, altoEstado);
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('ESTADO DEL COMPROBANTE', margen + 3, y + 6);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.text('Documental: ' + texto(factura.EstadoDocumental), margen + 3, y + 12);
+        doc.text('Financiero: ' + texto(factura.EstadoFinanciero), margen + 3, y + 17);
+        doc.text('Aplicado: ' + dinero(factura.ImporteAplicado), margen + 3, y + 22);
+        doc.text('Saldo pendiente: ' + dinero(factura.SaldoPendiente), xTotales - 7, y + 22, { align: 'right' });
 
         var usuario = '—';
         try { usuario = localStorage.getItem('username') || localStorage.getItem('usuario') || '—'; } catch (e) { }
@@ -238,27 +268,52 @@
         var paginas = doc.getNumberOfPages();
         for (var pagina = 1; pagina <= paginas; pagina++) {
             doc.setPage(pagina);
-            var pieY = alto - 20;
-            doc.setDrawColor(200); doc.line(margen, pieY, ancho - margen, pieY);
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(8.5); doc.setTextColor(150, 0, 0);
-            doc.text('COMPROBANTE INTERNO — SIN VALIDEZ FISCAL', ancho / 2, pieY + 5, { align: 'center' });
-            doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(105);
-            doc.text('Generado: ' + generado + ' · Usuario: ' + usuario, margen, pieY + 12);
-            doc.text('Página ' + pagina + ' de ' + paginas, ancho - margen, pieY + 12, { align: 'right' });
+            var pieY = alto - 24;
+            doc.setDrawColor(25, 25, 25); doc.setLineWidth(0.35); doc.rect(margen, pieY, anchoUtil, 15);
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(8); doc.setTextColor(150, 0, 0);
+            doc.text('DOCUMENTO INTERNO - SIN VALIDEZ FISCAL', ancho / 2, pieY + 5, { align: 'center' });
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+            doc.text('No habilita crédito fiscal ni constituye un comprobante fiscal.', ancho / 2, pieY + 9, { align: 'center' });
+            doc.text('Generado: ' + generado + ' - Usuario: ' + usuario, margen + 3, pieY + 13);
+            doc.text('Página ' + pagina + ' de ' + paginas, ancho - margen - 3, pieY + 13, { align: 'right' });
         }
         return doc;
     }
 
-    function generar(id, modo) {
-        Promise.all([obtenerComprobante(id), obtenerLogo()]).then(function (resultado) {
+    function generarDocumento(id) {
+        return Promise.all([obtenerComprobante(id), obtenerLogo()]).then(function (resultado) {
             var factura = resultado[0];
             if (!tituloComprobante(factura.Tipo)) throw new Error('El comprobante seleccionado no se puede imprimir.');
-            var doc = construir(factura, resultado[1]);
+            return {
+                documento: construir(factura, resultado[1]),
+                comprobante: factura,
+                nombreArchivo: nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
+            };
+        });
+    }
+
+    function bufferABase64(buffer) {
+        var bytes = new Uint8Array(buffer);
+        var partes = [];
+        // El tamaño es múltiplo de tres para no insertar padding entre partes.
+        var tamanioParte = 32766;
+        for (var inicio = 0; inicio < bytes.length; inicio += tamanioParte) {
+            var fin = Math.min(inicio + tamanioParte, bytes.length);
+            var textoBinario = '';
+            for (var indice = inicio; indice < fin; indice++) textoBinario += String.fromCharCode(bytes[indice]);
+            partes.push(window.btoa(textoBinario));
+        }
+        return partes.join('');
+    }
+
+    function generar(id, modo) {
+        generarDocumento(id).then(function (resultado) {
+            var doc = resultado.documento;
             if (modo === 'imprimir') {
                 doc.autoPrint();
                 window.open(doc.output('bloburl'), '_blank');
             } else {
-                doc.save(nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf');
+                doc.save(resultado.nombreArchivo);
             }
         }).catch(function (error) {
             alert(error && error.message ? error.message : 'No se pudo generar el PDF del comprobante.');
@@ -267,6 +322,14 @@
 
     window.descargarComprobantePDF = function (id) { generar(id, 'descargar'); };
     window.imprimirComprobantePDF = function (id) { generar(id, 'imprimir'); };
+    window.generarComprobantePDFParaEmail = function (id) {
+        return generarDocumento(id).then(function (resultado) {
+            return {
+                PdfBase64: bufferABase64(resultado.documento.output('arraybuffer')),
+                NombreArchivo: resultado.nombreArchivo
+            };
+        });
+    };
     // Se mantienen los nombres previos para los puntos de entrada de Facturas.
     window.descargarFacturaPDF = window.descargarComprobantePDF;
     window.imprimirFacturaPDF = window.imprimirComprobantePDF;

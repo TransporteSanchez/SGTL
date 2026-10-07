@@ -38,6 +38,7 @@ namespace WebApi_TransporteSanchez.Controllers
         public class EmailServidorResponseDto
         {
             public short Es_id { get; set; }
+            public short Service { get; set; }
             public string SmtpHost { get; set; }
             public int? SmtpPort { get; set; }
             public bool? UsaSsl { get; set; }
@@ -54,9 +55,24 @@ namespace WebApi_TransporteSanchez.Controllers
             public string EmailDestino { get; set; }
         }
 
+        public class AsignacionModuloRequestDto
+        {
+            public short? Service { get; set; }
+        }
+
+        public class AsignacionModuloResponseDto
+        {
+            public string Modulo { get; set; }
+            public short Service { get; set; }
+            public short EmailServidorID { get; set; }
+            public string Perfil { get; set; }
+            public string Remitente { get; set; }
+        }
+
         private class EmailServidorInterno
         {
             public short Es_id { get; set; }
+            public short Service { get; set; }
             public string SmtpHost { get; set; }
             public int? SmtpPort { get; set; }
             public bool? UsaSsl { get; set; }
@@ -116,6 +132,78 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        [HttpGet]
+        [Route("asignaciones/facturacion")]
+        public IHttpActionResult ObtenerAsignacionFacturacion()
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+
+            try
+            {
+                using (var db = CrearContexto())
+                {
+                    var asignacion = BuscarAsignacionFacturacion(db);
+                    return asignacion == null ? (IHttpActionResult)NotFound() : Ok(asignacion);
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
+        [HttpPut]
+        [Route("asignaciones/facturacion")]
+        public IHttpActionResult GuardarAsignacionFacturacion([FromBody] AsignacionModuloRequestDto value)
+        {
+            string usuario;
+            var autorizado = RequiereAdministrador(out usuario);
+            if (autorizado != null) return autorizado;
+            if (value == null || !value.Service.HasValue || value.Service.Value <= 0)
+                return BadRequest("Seleccioná un perfil SMTP válido para Facturación.");
+
+            try
+            {
+                using (var db = CrearContexto())
+                using (var transaccion = db.Database.BeginTransaction())
+                {
+                    var perfil = db.Database.SqlQuery<EmailServidorResponseDto>(
+                        ConsultaConfiguracion + " WHERE [Service] = @service;",
+                        P("@service", value.Service.Value)).FirstOrDefault();
+                    if (perfil == null)
+                    {
+                        transaccion.Rollback();
+                        return BadRequest("El perfil SMTP seleccionado ya no existe.");
+                    }
+
+                    int actualizados = db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.CONFIGURACION_EMAIL_MODULO " +
+                        "SET [Service] = @service, FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario " +
+                        "WHERE Modulo = 'FACTURACION';",
+                        P("@service", value.Service.Value), P("@usuario", usuario));
+                    if (actualizados == 0)
+                    {
+                        db.Database.ExecuteSqlCommand(
+                            "INSERT INTO dbo.CONFIGURACION_EMAIL_MODULO " +
+                            "(Modulo, [Service], FechaModificacion, UsuarioModificacion) " +
+                            "VALUES ('FACTURACION', @service, SYSUTCDATETIME(), @usuario);",
+                            P("@service", value.Service.Value), P("@usuario", usuario));
+                    }
+
+                    transaccion.Commit();
+                    RegistrarAuditoria(usuario, "EMAIL_MODULE", perfil.Es_id,
+                        "Facturación asociada al Service=" + perfil.Service + ".");
+                    return Ok(BuscarAsignacionFacturacion(db));
+                }
+            }
+            catch
+            {
+                return ErrorInternoConfiguracion();
+            }
+        }
+
         [HttpPost]
         [Route("")]
         public IHttpActionResult Post([FromBody] EmailServidorRequestDto value)
@@ -137,9 +225,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     short id = db.Database.SqlQuery<short>(
                         "INSERT INTO dbo.EmailServidor (SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, " +
-                        "CredentialFromMailPassProtegida, [Name], [Service], SecureSocketOption, UsaTLS12, " +
+                        "CredentialFromMailPassProtegida, [Name], SecureSocketOption, UsaTLS12, " +
                         "NombreRemitente, Asunto, CuerpoHtml) " +
-                        "VALUES (@host, @port, @ssl, @usuarioSmtp, @password, @nombre, @servicio, @opcion, @tls12, " +
+                        "VALUES (@host, @port, @ssl, @usuarioSmtp, @password, @nombre, @opcion, @tls12, " +
                         "@nombreRemitente, @asunto, @cuerpo); SELECT CAST(SCOPE_IDENTITY() AS smallint);",
                         P("@host", value.SmtpHost),
                         P("@port", value.SmtpPort),
@@ -147,7 +235,6 @@ namespace WebApi_TransporteSanchez.Controllers
                         P("@usuarioSmtp", value.CredentialFromMailAddres),
                         P("@password", passwordProtegida),
                         P("@nombre", value.Name),
-                        P("@servicio", (short)1),
                         P("@opcion", (short)ResolverOpcionSeguridad(value)),
                         P("@tls12", value.UsaTLS12),
                         P("@nombreRemitente", value.Name),
@@ -191,7 +278,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.Database.ExecuteSqlCommand(
                         "UPDATE dbo.EmailServidor SET SmtpHost = @host, SmtpPort = @port, UsaSsl = @ssl, " +
                         "CredentialFromMailAddres = @usuarioSmtp, CredentialFromMailPassProtegida = @password, " +
-                        "[Name] = @nombre, [Service] = @servicio, SecureSocketOption = @opcion, UsaTLS12 = @tls12, " +
+                        "[Name] = @nombre, SecureSocketOption = @opcion, UsaTLS12 = @tls12, " +
                         "NombreRemitente = @nombreRemitente, Asunto = @asunto, CuerpoHtml = @cuerpo " +
                         "WHERE Es_id = @id;",
                         P("@host", value.SmtpHost),
@@ -200,7 +287,6 @@ namespace WebApi_TransporteSanchez.Controllers
                         P("@usuarioSmtp", value.CredentialFromMailAddres),
                         P("@password", passwordProtegida),
                         P("@nombre", value.Name),
-                        P("@servicio", (short)1),
                         P("@opcion", (short)ResolverOpcionSeguridad(value)),
                         P("@tls12", value.UsaTLS12),
                         P("@nombreRemitente", value.Name),
@@ -239,6 +325,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 RegistrarAuditoria(usuario, "DELETE", id, "Configuración SMTP eliminada.");
                 return StatusCode(HttpStatusCode.NoContent);
+            }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                return BadRequest("No se puede eliminar este perfil porque está asignado a un módulo o tiene envíos registrados.");
             }
             catch
             {
@@ -423,16 +513,26 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<EmailServidorResponseDto>(ConsultaConfiguracion + " WHERE Es_id = @id;", P("@id", id)).FirstOrDefault();
         }
 
+        private static AsignacionModuloResponseDto BuscarAsignacionFacturacion(SGTLAuditContext db)
+        {
+            return db.Database.SqlQuery<AsignacionModuloResponseDto>(
+                "SELECT m.Modulo, e.[Service], e.Es_id AS EmailServidorID, e.[Name] AS Perfil, " +
+                "e.CredentialFromMailAddres AS Remitente " +
+                "FROM dbo.CONFIGURACION_EMAIL_MODULO m " +
+                "INNER JOIN dbo.EmailServidor e ON e.[Service] = m.[Service] " +
+                "WHERE m.Modulo = 'FACTURACION';").FirstOrDefault();
+        }
+
         private static EmailServidorInterno BuscarConfiguracionInterna(SGTLAuditContext db, int id)
         {
             return db.Database.SqlQuery<EmailServidorInterno>(
-                "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], " +
+                "SELECT Es_id, [Service], SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], " +
                 "SecureSocketOption, UsaTLS12, NombreRemitente, Asunto, CuerpoHtml, CredentialFromMailPassProtegida " +
                 "FROM dbo.EmailServidor WHERE Es_id = @id;", P("@id", id)).FirstOrDefault();
         }
 
         private const string ConsultaConfiguracion =
-            "SELECT Es_id, SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], UsaTLS12, Asunto, CuerpoHtml, " +
+            "SELECT Es_id, [Service], SmtpHost, SmtpPort, UsaSsl, CredentialFromMailAddres, [Name], UsaTLS12, Asunto, CuerpoHtml, " +
             "CAST(CASE WHEN NULLIF(CredentialFromMailPassProtegida, '') IS NULL THEN 0 ELSE 1 END AS bit) AS TienePassword " +
             "FROM dbo.EmailServidor";
 

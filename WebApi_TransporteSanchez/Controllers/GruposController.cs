@@ -26,17 +26,73 @@ namespace WebApi_TransporteSanchez.Controllers
 
     {
 
-        private static void AsegurarMenuCuentaCorriente(SGTLAuditContext db)
+        private static MENU BuscarMenu(IEnumerable<MENU> menus, params string[] nombres)
         {
-            const string nombreMenu = "Cuenta Corriente";
-            if (db.Set<MENU>().Any(m => m.Menu_Nombre == nombreMenu)) return;
+            return menus.FirstOrDefault(menu => nombres.Any(nombre =>
+                string.Equals((menu.Menu_Nombre ?? string.Empty).Trim(), nombre, StringComparison.OrdinalIgnoreCase)));
+        }
 
-            db.Set<MENU>().Add(new MENU
+        private static void AsegurarCatalogoMenuPermisos(SGTLAuditContext db)
+        {
+            var menus = db.Set<MENU>().ToList();
+            var seModifico = false;
+
+            // Conserva los Menu_ID y, por ende, los permisos ya asignados a los grupos.
+            var renombres = new[]
             {
-                Menu_Nombre = nombreMenu,
-                Menu_Principal = 0
-            });
-            db.SaveChanges();
+                new { Nuevo = "Gestión de proformas", Anteriores = new[] { "Gestión de facturas", "Gestion de facturas" } },
+                new { Nuevo = "Listado de proformas", Anteriores = new[] { "Listado de facturas" } },
+                new { Nuevo = "E-mail", Anteriores = new[] { "Configuración", "Configuracion", "Email" } },
+                new { Nuevo = "Integración WhatsApp", Anteriores = new[] { "Integracion Whatsapp", "WhatsApp", "Whatsapp" } }
+            };
+
+            foreach (var renombre in renombres)
+            {
+                var anterior = BuscarMenu(menus, renombre.Anteriores);
+                if (anterior == null) continue;
+
+                var vigente = BuscarMenu(menus, renombre.Nuevo);
+                if (vigente == null)
+                {
+                    anterior.Menu_Nombre = renombre.Nuevo;
+                    seModifico = true;
+                    continue;
+                }
+
+                if (vigente.Menu_ID == anterior.Menu_ID) continue;
+
+                // Si coexistían ambos nombres, unifica sus asignaciones sin duplicarlas.
+                var gruposVigentes = new HashSet<int>(db.Set<GRUPOS_MENU>()
+                    .Where(asignacion => asignacion.MenuID == vigente.Menu_ID)
+                    .Select(asignacion => asignacion.GrupoID)
+                    .ToList());
+                var gruposAnteriores = db.Set<GRUPOS_MENU>()
+                    .Where(asignacion => asignacion.MenuID == anterior.Menu_ID)
+                    .ToList();
+                foreach (var asignacion in gruposAnteriores.Where(asignacion => gruposVigentes.Add(asignacion.GrupoID)))
+                {
+                    db.Set<GRUPOS_MENU>().Add(new GRUPOS_MENU { GrupoID = asignacion.GrupoID, MenuID = vigente.Menu_ID });
+                }
+                if (gruposAnteriores.Any()) db.Set<GRUPOS_MENU>().RemoveRange(gruposAnteriores);
+                db.Set<MENU>().Remove(anterior);
+                menus.Remove(anterior);
+                seModifico = true;
+            }
+
+            foreach (var nombreMenu in new[]
+            {
+                "Gestión de proformas", "Listado de proformas", "Cuenta Corriente",
+                "Integración WhatsApp", "E-mail"
+            })
+            {
+                if (BuscarMenu(menus, nombreMenu) != null) continue;
+                var menu = new MENU { Menu_Nombre = nombreMenu, Menu_Principal = 0 };
+                db.Set<MENU>().Add(menu);
+                menus.Add(menu);
+                seModifico = true;
+            }
+
+            if (seModifico) db.SaveChanges();
         }
 
         public class GruposDto
@@ -75,6 +131,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public string NombreCompleto { get; set; }
 
+            public string Rol { get; set; }
+
+            public bool EsAdministrador { get; set; }
+
             public bool Asignado { get; set; }
 
         }
@@ -110,6 +170,14 @@ namespace WebApi_TransporteSanchez.Controllers
         {
 
             public List<int> UsuarioIds { get; set; }
+
+        }
+
+        private static bool EsAdministrador(string rol)
+
+        {
+
+            return string.Equals((rol ?? string.Empty).Trim(), "admin", StringComparison.OrdinalIgnoreCase);
 
         }
 
@@ -625,7 +693,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 {
 
-                    AsegurarMenuCuentaCorriente(db);
+                    AsegurarCatalogoMenuPermisos(db);
 
                     if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
 
@@ -691,6 +759,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new SGTLAuditContext(connectionString))
 
                 {
+
+                    AsegurarCatalogoMenuPermisos(db);
 
                     if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
 
@@ -782,21 +852,59 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    var usuariosAsignados = new HashSet<int>(db.Set<GRUPOS_USUARIOS>()
+
+                        .Where(gu => gu.GrupoID == id)
+
+                        .Select(gu => gu.UsuarioID)
+
+                        .ToList());
+
                     var usuarios = db.Set<USUARIOS>()
 
                         .OrderBy(u => u.Nombre_Usuario)
 
-                        .Select(u => new UsuarioAsignacionDto
+                        .Select(u => new
 
                         {
 
-                            Usuario_ID = u.Usuario_ID,
+                            u.Usuario_ID,
 
-                            Nombre_Usuario = u.Nombre_Usuario,
+                            u.Nombre_Usuario,
 
                             NombreCompleto = (u.Nombre ?? "") + " " + (u.Apellido ?? ""),
 
-                            Asignado = db.Set<GRUPOS_USUARIOS>().Any(gu => gu.GrupoID == id && gu.UsuarioID == u.Usuario_ID)
+                            u.Rol
+
+                        })
+
+                        .ToList()
+
+                        .Select(u =>
+
+                        {
+
+                            var esAdministrador = EsAdministrador(u.Rol);
+
+                            return new UsuarioAsignacionDto
+
+                            {
+
+                                Usuario_ID = u.Usuario_ID,
+
+                                Nombre_Usuario = u.Nombre_Usuario,
+
+                                NombreCompleto = u.NombreCompleto.Trim(),
+
+                                Rol = u.Rol,
+
+                                EsAdministrador = esAdministrador,
+
+                                // Un administrador tiene acceso total por su rol, nunca por un grupo.
+
+                                Asignado = !esAdministrador && usuariosAsignados.Contains(u.Usuario_ID)
+
+                            };
 
                         })
 
@@ -850,7 +958,25 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
-                    var ids = (value?.UsuarioIds ?? new List<int>()).Distinct().ToList();
+                    var idsSolicitados = (value?.UsuarioIds ?? new List<int>()).Distinct().ToList();
+
+                    var usuariosSolicitados = db.Set<USUARIOS>()
+
+                        .Where(u => idsSolicitados.Contains(u.Usuario_ID))
+
+                        .Select(u => new { u.Usuario_ID, u.Rol })
+
+                        .ToList();
+
+                    // La API también excluye administradores, aun si se invoca sin la interfaz.
+
+                    var idsAsignables = usuariosSolicitados
+
+                        .Where(u => !EsAdministrador(u.Rol))
+
+                        .Select(u => u.Usuario_ID)
+
+                        .ToList();
 
                     var actuales = db.Set<GRUPOS_USUARIOS>().Where(x => x.GrupoID == id).ToList();
 
@@ -864,7 +990,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
-                    foreach (var usuarioId in ids)
+                    foreach (var usuarioId in idsAsignables)
 
                     {
 

@@ -79,6 +79,70 @@
             });
         });
     }
+    function mostrarFeedbackEnvio(tipo, texto) {
+        var aviso = porId('envioComprobanteFeedback');
+        aviso.className = 'alert alert-' + tipo;
+        aviso.textContent = texto;
+    }
+    function ocultarFeedbackEnvio() {
+        var aviso = porId('envioComprobanteFeedback');
+        aviso.className = 'alert d-none';
+        aviso.textContent = '';
+    }
+    function abrirEnvioComprobante() {
+        if (!comprobanteActualId) return;
+        var boton = porId('btnConfirmarEnvioComprobante');
+        var destino = porId('envioComprobanteDestino');
+        boton.disabled = true;
+        destino.value = '';
+        ocultarFeedbackEnvio();
+        porId('envioComprobantePerfil').textContent = 'Verificando el perfil SMTP de Facturación…';
+        bootstrap.Modal.getOrCreateInstance(porId('modalEnviarComprobanteEmail')).show();
+        apiGet('/comprobantes/' + encodeURIComponent(comprobanteActualId) + '/email').then(function (datos) {
+            destino.value = datos.DestinatarioSugerido || '';
+            if (!datos.Configurado) {
+                porId('envioComprobantePerfil').textContent = 'Facturación no tiene un perfil SMTP asignado.';
+                mostrarFeedbackEnvio('warning', 'Un administrador debe seleccionar el perfil SMTP desde Configuración > E-mail > Perfil para Facturación.');
+                return;
+            }
+            porId('envioComprobantePerfil').textContent = 'Se utilizará el Servicio ' + datos.Service + ' · ' + (datos.Perfil || datos.Remitente || 'perfil SMTP asignado') + '.';
+            boton.disabled = false;
+        }).catch(function (error) {
+            porId('envioComprobantePerfil').textContent = 'No se pudo verificar la configuración de envío.';
+            mostrarFeedbackEnvio('danger', error.message || 'No se pudo preparar el envío del comprobante.');
+        });
+    }
+    function enviarComprobantePorEmail() {
+        if (!comprobanteActualId) return;
+        var destino = porId('envioComprobanteDestino').value.trim();
+        var campoDestino = porId('envioComprobanteDestino');
+        if (!destino || !campoDestino.checkValidity()) {
+            campoDestino.reportValidity();
+            return;
+        }
+        if (typeof window.generarComprobantePDFParaEmail !== 'function') {
+            mostrarFeedbackEnvio('danger', 'No está disponible el generador de PDF del comprobante.');
+            return;
+        }
+        var boton = porId('btnConfirmarEnvioComprobante');
+        boton.disabled = true;
+        boton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Generando PDF…';
+        mostrarFeedbackEnvio('info', 'Generando el PDF y enviando el comprobante…');
+        window.generarComprobantePDFParaEmail(comprobanteActualId).then(function (adjunto) {
+            boton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Enviando…';
+            return apiPost('/comprobantes/' + encodeURIComponent(comprobanteActualId) + '/email', {
+                Destinatario: destino,
+                PdfBase64: adjunto.PdfBase64
+            });
+        }).then(function (resultado) {
+            mostrarFeedbackEnvio('success', resultado.mensaje || 'Comprobante enviado correctamente.');
+            boton.innerHTML = '<i class="bi bi-check-circle me-1"></i>Enviado';
+        }).catch(function (error) {
+            boton.disabled = false;
+            boton.innerHTML = '<i class="bi bi-send me-1"></i>Reintentar envío';
+            mostrarFeedbackEnvio('danger', error.message || 'No se pudo enviar el comprobante.');
+        });
+    }
     function apiPut(ruta, datos) {
         return apiEnviar(ruta, 'PUT', datos);
     }
@@ -855,43 +919,186 @@
         porId('ccEstado').value = ''; porId('ccSoloPendientes').checked = false;
         cambiarVista('movimientos'); cargarCuenta(1);
     }
-    function filasParaExportar() {
+    function textoFiltroListado() {
+        var cliente = clienteActual();
+        var filtros = ['Cliente: ' + (cliente ? etiquetaCliente(cliente) : 'Todos')];
+        filtros.push('Desde: ' + (porId('ccDesde').value ? fecha(porId('ccDesde').value) : 'Sin límite'));
+        filtros.push('Hasta: ' + (porId('ccHasta').value ? fecha(porId('ccHasta').value) : 'Sin límite'));
+        filtros.push('Comprobante: ' + (porId('ccTipo').selectedOptions[0].text || 'Todos'));
+        filtros.push('Estado: ' + (porId('ccEstado').selectedOptions[0].text || 'Todos'));
+        return filtros;
+    }
+    function cantidadListadoActual() {
+        return vistaActual === 'pendientes' ? pendientesFiltrados().length : paginacionMovimientos.total;
+    }
+    function abrirExportacionCuenta() {
+        var esPendiente = vistaActual === 'pendientes';
+        var cantidad = cantidadListadoActual();
+        porId('ccExportarResumen').textContent = (esPendiente ? 'Comprobantes sin relacionar' : 'Comprobantes de cuenta corriente') +
+            ': ' + cantidad + '. ' + textoFiltroListado().join(' · ');
+        bootstrap.Modal.getOrCreateInstance(porId('modalExportarCuenta')).show();
+    }
+    function parametrosMovimientosParaExportar() {
+        var parametros = new URLSearchParams();
+        ['Desde', 'Hasta', 'Tipo', 'Estado'].forEach(function (nombre) {
+            var valor = porId('cc' + nombre).value;
+            if (valor) parametros.set(nombre.toLowerCase(), valor);
+        });
+        parametros.set('page', '1');
+        parametros.set('pageSize', '0');
+        return parametros.toString();
+    }
+    function obtenerMovimientosParaExportar() {
+        var cliente = clienteActual();
+        var ruta = cliente
+            ? '/clientes/' + cliente.ClienteID + '/cuenta-corriente?'
+            : '/cuenta-corriente/movimientos?';
+        return apiGet(ruta + parametrosMovimientosParaExportar()).then(function (resultado) {
+            return resultado.items || [];
+        });
+    }
+    function datosListadoPendientes() {
         var incluirCliente = esConsultaGeneral();
-        if (vistaActual === 'pendientes') return pendientesFiltrados().map(function (item) {
-            var fila = [item.Comprobante, fecha(item.FechaEmision), fecha(item.FechaVencimiento), item.ImporteOriginal,
-                item.ImporteAplicado, item.SaldoPendiente, item.Situacion, item.Estado];
+        var filas = pendientesFiltrados().map(function (item) {
+            var fila = [item.Comprobante, fecha(item.FechaEmision), fecha(item.FechaVencimiento), dinero(item.ImporteOriginal),
+                dinero(item.ImporteAplicado), dinero(item.SaldoPendiente), item.Situacion || '', item.Estado || ''];
             if (incluirCliente) fila.unshift(item.Cliente || '');
             return fila;
         });
-        return movimientos.reduce(function (filas, item) {
-            var filaComprobante = ['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto, item.Debe,
-                item.Cancelado, item.Saldo, item.Estado];
-            if (incluirCliente) filaComprobante.unshift(item.Cliente || '');
-            filas.push(filaComprobante);
+        var cabecera = ['Comprobante', 'Emisión', 'Vencimiento', 'Importe original', 'Aplicado', 'Saldo pendiente', 'Situación', 'Estado'];
+        if (incluirCliente) cabecera.unshift('Cliente');
+        return { cabecera: cabecera, filas: filas, comprobantes: filas.length };
+    }
+    function datosListadoMovimientos(items) {
+        var incluirCliente = esConsultaGeneral();
+        var filas = items.reduce(function (acumulado, item) {
+            var filaComprobante = ['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto || '', dinero(item.Debe),
+                dinero(item.Cancelado), dinero(item.Saldo), item.Estado || ''];
+            if (incluirCliente) filaComprobante.splice(2, 0, item.Cliente || '');
+            acumulado.push(filaComprobante);
             var saldoProgresivo = Number(item.Debe || 0);
             (item.Aplicaciones || []).forEach(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
-                var filaAplicacion = ['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto,
-                    '', aplicacion.Importe, saldoProgresivo, aplicacion.Estado || 'Aplicado'];
-                if (incluirCliente) filaAplicacion.unshift(aplicacion.Cliente || item.Cliente || '');
-                filas.push(filaAplicacion);
+                var filaAplicacion = ['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto || '', '—',
+                    dinero(aplicacion.Importe), dinero(saldoProgresivo), aplicacion.Estado || 'Aplicado'];
+                if (incluirCliente) filaAplicacion.splice(2, 0, aplicacion.Cliente || item.Cliente || '');
+                acumulado.push(filaAplicacion);
             });
-            return filas;
+            return acumulado;
         }, []);
+        var cabecera = ['Nivel', 'Fecha', 'Comprobante', 'Concepto', 'Total', 'Cancelado', 'Saldo', 'Estado'];
+        if (incluirCliente) cabecera.splice(2, 0, 'Cliente');
+        return { cabecera: cabecera, filas: filas, comprobantes: items.length };
     }
-    function exportarCsv() {
-        var incluirCliente = esConsultaGeneral();
-        var cabecera = vistaActual === 'pendientes'
-            ? ['Comprobante', 'Emisión', 'Vencimiento', 'Importe original', 'Aplicado', 'Saldo pendiente', 'Situación', 'Estado']
-            : ['Nivel', 'Fecha', 'Comprobante', 'Concepto', 'Total', 'Cancelado', 'Saldo', 'Estado'];
-        if (incluirCliente) cabecera.unshift('Cliente');
-        var contenido = [cabecera].concat(filasParaExportar()).map(function (fila) {
-            return fila.map(function (celda) { return '"' + String(celda == null ? '' : celda).replace(/"/g, '""') + '"'; }).join(';');
-        }).join('\r\n');
-        var blob = new Blob(['\ufeff' + contenido], { type: 'text/csv;charset=utf-8;' });
-        var enlace = document.createElement('a'); enlace.href = URL.createObjectURL(blob);
-        enlace.download = 'cuenta-corriente-' + porId('ccCliente').value + '.csv';
-        document.body.appendChild(enlace); enlace.click(); document.body.removeChild(enlace); URL.revokeObjectURL(enlace.href);
+    function estilosColumnasListado() {
+        if (vistaActual === 'pendientes') {
+            return esConsultaGeneral()
+                ? {
+                    0: { cellWidth: 35 }, 1: { cellWidth: 30 }, 2: { cellWidth: 18 }, 3: { cellWidth: 18 },
+                    4: { halign: 'right', cellWidth: 23 }, 5: { halign: 'right', cellWidth: 23 },
+                    6: { halign: 'right', cellWidth: 26 }, 7: { cellWidth: 'auto' }, 8: { cellWidth: 20 }
+                }
+                : {
+                    0: { cellWidth: 35 }, 1: { cellWidth: 21 }, 2: { cellWidth: 21 },
+                    3: { halign: 'right', cellWidth: 28 }, 4: { halign: 'right', cellWidth: 28 },
+                    5: { halign: 'right', cellWidth: 30 }, 6: { cellWidth: 'auto' }, 7: { cellWidth: 22 }
+                };
+        }
+        return esConsultaGeneral()
+            ? {
+                0: { cellWidth: 18 }, 1: { cellWidth: 18 }, 2: { cellWidth: 34 }, 3: { cellWidth: 28 },
+                4: { cellWidth: 'auto' }, 5: { halign: 'right', cellWidth: 23 }, 6: { halign: 'right', cellWidth: 23 },
+                7: { halign: 'right', cellWidth: 23 }, 8: { cellWidth: 21 }
+            }
+            : {
+                0: { cellWidth: 22 }, 1: { cellWidth: 19 }, 2: { cellWidth: 34 }, 3: { cellWidth: 'auto' },
+                4: { halign: 'right', cellWidth: 24 }, 5: { halign: 'right', cellWidth: 24 },
+                6: { halign: 'right', cellWidth: 25 }, 7: { cellWidth: 23 }
+            };
+    }
+    function generarListadoPdf(datos) {
+        if (!window.jspdf || !window.jspdf.jsPDF || !window.jspdf.jsPDF.API.autoTable) {
+            throw new Error('No está disponible el generador de PDF.');
+        }
+        var doc = new window.jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        var ancho = doc.internal.pageSize.getWidth();
+        var alto = doc.internal.pageSize.getHeight();
+        var margen = 10;
+        var titulo = vistaActual === 'pendientes' ? 'Listado de comprobantes sin relacionar' : 'Listado de cuenta corriente';
+        var fechaGeneracion = new Date().toLocaleString('es-AR');
+        var filtros = textoFiltroListado().join('   |   ');
+        var lineasFiltros = doc.splitTextToSize(filtros, ancho - (margen * 2));
+        var inicioTabla = 23 + (lineasFiltros.length * 4);
+
+        doc.setProperties({ title: titulo, subject: 'Cuenta corriente de clientes' });
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(15); doc.setTextColor(33, 37, 41);
+        doc.text('Cuenta Corriente de Clientes', margen, 12);
+        doc.setFontSize(10); doc.text(titulo, margen, 18);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.8); doc.setTextColor(80);
+        doc.text(lineasFiltros, margen, 23);
+        doc.text('Comprobantes: ' + datos.comprobantes, ancho - margen, 12, { align: 'right' });
+        doc.text('Generado: ' + fechaGeneracion, ancho - margen, 18, { align: 'right' });
+
+        doc.autoTable({
+            head: [datos.cabecera],
+            body: datos.filas.length ? datos.filas : [datos.cabecera.map(function (_, indice) {
+                return indice === 0 ? 'No hay comprobantes para los filtros seleccionados.' : '';
+            })],
+            startY: inicioTabla,
+            margin: { left: margen, right: margen, bottom: 16 },
+            styles: { fontSize: 7, cellPadding: 1.4, overflow: 'linebreak', valign: 'middle' },
+            headStyles: { fillColor: [33, 37, 41], textColor: 255, halign: 'center', fontStyle: 'bold' },
+            columnStyles: estilosColumnasListado(),
+            didParseCell: function (info) {
+                if (info.section === 'body' && String(info.cell.raw || '') === 'Aplicación') {
+                    info.cell.styles.textColor = [90, 90, 90];
+                }
+            }
+        });
+        var paginas = doc.getNumberOfPages();
+        for (var pagina = 1; pagina <= paginas; pagina += 1) {
+            doc.setPage(pagina);
+            doc.setDrawColor(210); doc.line(margen, alto - 11, ancho - margen, alto - 11);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7); doc.setTextColor(100);
+            doc.text('Cuenta Corriente de Clientes', margen, alto - 6);
+            doc.text('Página ' + pagina + ' de ' + paginas, ancho - margen, alto - 6, { align: 'right' });
+        }
+        return doc;
+    }
+    function cambiarEstadoBotonesListado(ocupado, texto) {
+        ['btnVistaPreviaListado', 'btnDescargarListadoPdf'].forEach(function (id) {
+            var boton = porId(id);
+            boton.disabled = ocupado;
+            if (ocupado) boton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>' + texto;
+        });
+    }
+    function restaurarBotonesListado() {
+        porId('btnVistaPreviaListado').disabled = false;
+        porId('btnVistaPreviaListado').innerHTML = '<i class="bi bi-printer me-1"></i>Vista previa e imprimir';
+        porId('btnDescargarListadoPdf').disabled = false;
+        porId('btnDescargarListadoPdf').innerHTML = '<i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF';
+    }
+    function exportarListadoPdf(modo) {
+        var ventanaPrevia = null;
+        if (modo === 'vistaPrevia') ventanaPrevia = window.open('', '_blank');
+        cambiarEstadoBotonesListado(true, 'Generando…');
+        var datos = vistaActual === 'pendientes'
+            ? Promise.resolve(datosListadoPendientes())
+            : obtenerMovimientosParaExportar().then(datosListadoMovimientos);
+        datos.then(function (listado) {
+            var doc = generarListadoPdf(listado);
+            if (modo === 'vistaPrevia') {
+                if (!ventanaPrevia) throw new Error('El navegador bloqueó la ventana de vista previa. Permití las ventanas emergentes e intentá nuevamente.');
+                doc.autoPrint();
+                ventanaPrevia.location.href = doc.output('bloburl');
+            } else {
+                doc.save('listado-cuenta-corriente-' + fechaIsoLocal(new Date()) + '.pdf');
+            }
+            bootstrap.Modal.getInstance(porId('modalExportarCuenta')).hide();
+        }).catch(function (error) {
+            if (ventanaPrevia && !ventanaPrevia.closed) ventanaPrevia.close();
+            alert(error && error.message ? error.message : 'No se pudo generar el listado PDF.');
+        }).finally(restaurarBotonesListado);
     }
 
     function enlazarEventos() {
@@ -924,7 +1131,9 @@
         porId('cmpIvaPct').addEventListener('change', recalcularComprobante);
         porId('cmpOtros').addEventListener('input', recalcularComprobante);
         porId('cmpReferencia').addEventListener('change', aplicarImportesFacturaReferencia);
-        porId('btnExportarCuenta').addEventListener('click', exportarCsv);
+        porId('btnExportarCuenta').addEventListener('click', abrirExportacionCuenta);
+        porId('btnVistaPreviaListado').addEventListener('click', function () { exportarListadoPdf('vistaPrevia'); });
+        porId('btnDescargarListadoPdf').addEventListener('click', function () { exportarListadoPdf('descargar'); });
         porId('btnImprimirFactura').addEventListener('click', function () {
             if (comprobanteActualId && window.imprimirComprobantePDF) window.imprimirComprobantePDF(comprobanteActualId);
         });
@@ -932,10 +1141,9 @@
             if (comprobanteActualId && window.descargarComprobantePDF) window.descargarComprobantePDF(comprobanteActualId);
         });
         porId('btnEnviarComprobanteMail').addEventListener('click', function () {
-            porId('modalAccionFuturaTexto').textContent = 'El envío de ' + (comprobanteActualId ? 'este comprobante' : 'comprobantes') +
-                ' por e-mail se configurará desde Configuración > E-mail.';
-            bootstrap.Modal.getOrCreateInstance(porId('modalAccionFutura')).show();
+            abrirEnvioComprobante();
         });
+        porId('btnConfirmarEnvioComprobante').addEventListener('click', enviarComprobantePorEmail);
         porId('btnEditarRecibo').addEventListener('click', function () { abrirEditarRecibo(comprobanteActualId); });
         porId('btnAnularRecibo').addEventListener('click', anularReciboActual);
         porId('btnEliminarRecibo').addEventListener('click', eliminarReciboActual);

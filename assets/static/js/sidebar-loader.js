@@ -107,6 +107,9 @@ var MENU_TO_PAGE = {
   'gestion de tarifas': 'gestion-tarifas.html',
   'listado de clientes': 'listado-clientes.html',
   'gestion de clientes': 'gestion-clientes.html',
+  'listado de proformas': 'listado-facturas.html',
+  'gestion de proformas': 'gestion-facturacion.html',
+  // Se mantienen las claves anteriores para instalaciones que todavía no actualizaron el catálogo.
   'listado de facturas': 'listado-facturas.html',
   'gestion de facturas': 'gestion-facturacion.html',
   'cuenta corriente': 'cuenta-corriente-clientes.html',
