@@ -30,6 +30,35 @@ namespace WebApi_TransporteSanchez.Controllers
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
 
+            // Columna de 07_clientes_tipo_y_evidencia.sql (fuera del EDMX): Con_plataforma | Directo.
+            public string Tipo_Cliente { get; set; }
+        }
+
+        public const string TipoConPlataforma = "Con_plataforma";
+        public const string TipoDirecto = "Directo";
+
+        private static string NormalizarTipoCliente(string tipo)
+        {
+            return string.Equals((tipo ?? "").Trim(), TipoConPlataforma, StringComparison.OrdinalIgnoreCase) ? TipoConPlataforma : TipoDirecto;
+        }
+
+        private class TipoClienteRow
+        {
+            public int Cliente_ID { get; set; }
+            public string Tipo_Cliente { get; set; }
+        }
+
+        private static Dictionary<int, string> TiposCliente(DbContext db)
+        {
+            return db.Database.SqlQuery<TipoClienteRow>("SELECT Cliente_ID, Tipo_Cliente FROM CLIENTES")
+                .ToList().ToDictionary(t => t.Cliente_ID, t => t.Tipo_Cliente);
+        }
+
+        private static void GuardarTipoCliente(DbContext db, int clienteId, string tipo)
+        {
+            db.Database.ExecuteSqlCommand("UPDATE CLIENTES SET Tipo_Cliente=@t WHERE Cliente_ID=@id",
+                new System.Data.SqlClient.SqlParameter("@t", NormalizarTipoCliente(tipo)),
+                new System.Data.SqlClient.SqlParameter("@id", clienteId));
         }
 
         private string NormalizarCUIT(string cuit)
@@ -83,6 +112,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var totalRecords = query.Count();
 
+                    var tipos = TiposCliente(db);
                     var results = query
                         .OrderByDescending(x => x.Cliente_ID)
                         .Skip((page - 1) * pageSize)
@@ -93,6 +123,15 @@ namespace WebApi_TransporteSanchez.Controllers
                             RazonSocial = x.Razon_Social,
                             CUIT_Cliente = x.CUIT_Cliente,
                             Fecha_Alta = x.Fecha_Alta
+                        })
+                        .ToList()
+                        .Select(x => new
+                        {
+                            x.Cliente_ID,
+                            x.RazonSocial,
+                            x.CUIT_Cliente,
+                            x.Fecha_Alta,
+                            Tipo_Cliente = tipos.ContainsKey(x.Cliente_ID) ? tipos[x.Cliente_ID] : TipoDirecto
                         })
                         .ToList();
 
@@ -146,6 +185,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         return NotFound(); // Retorna 404 si no se encuentran registros
                     }
+
+                    var tipos = TiposCliente(db);
+                    olist.ForEach(c => c.Tipo_Cliente = tipos.ContainsKey(c.Cliente_ID) ? tipos[c.Cliente_ID] : TipoDirecto);
 
                     return Ok(olist); // Retorna 200 con la lista de clientes
                 }
@@ -210,6 +252,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         Fecha_Modi = cliente.Fecha_Modi,
                         Usu_Modi = cliente.Usu_Modi
                     };
+
+                    var tipos = TiposCliente(db);
+                    clienteDto.Tipo_Cliente = tipos.ContainsKey(id) ? tipos[id] : TipoDirecto;
 
                     return Ok(clienteDto); // Retorna 200 con los datos del cliente encontrado
                 }
@@ -291,6 +336,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     // Agregar la entidad al contexto y guardar cambios
                     db.Set<CLIENTES>().Add(cliente);
                     db.SaveChanges();
+                    GuardarTipoCliente(db, cliente.Cliente_ID, clienteDto.Tipo_Cliente);
 
                     return Ok(); // Retorna 200 OK si la inserción fue exitosa
                 }
@@ -323,7 +369,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
         // PUT: api/Clientes/{id}
-        public IHttpActionResult Put(int id, [FromBody] CLIENTES value)
+        public IHttpActionResult Put(int id, [FromBody] Cliente value)
         {
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -359,6 +405,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     try
                     {
                         db.SaveChanges();
+                        if (value.Tipo_Cliente != null)
+                        {
+                            GuardarTipoCliente(db, id, value.Tipo_Cliente);
+                        }
                         return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
                     }
                     catch (DbEntityValidationException ex)

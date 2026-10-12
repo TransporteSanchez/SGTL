@@ -195,7 +195,7 @@
         <div class="modal-dialog"><div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">Traer viajes del cliente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
             <div class="modal-body">
-                <p class="text-muted small">Trae los viajes del cliente seleccionado en el período como líneas de concepto (se suman a las existentes).</p>
+                <p class="text-muted small">Trae los viajes del cliente seleccionado en el período como líneas de concepto (se suman a las existentes). No trae viajes ya facturados ni sin tarifa. En clientes Rukas, tampoco los que no tienen número de remito o de transporte SAP.</p>
                 <div class="row g-2">
                     <div class="col-6"><label class="form-label">Desde</label><input id="v_desde" class="form-control" placeholder="AAAA-MM-DD"></div>
                     <div class="col-6"><label class="form-label">Hasta</label><input id="v_hasta" class="form-control" placeholder="AAAA-MM-DD"></div>
@@ -422,11 +422,19 @@
             var cli = val('p_cliente'), d = val('v_desde').trim(), h = val('v_hasta').trim();
             if (!cli || !d || !h) { alert('Completá cliente y fechas.'); return; }
             fetch(API_FAC + '/Proformas/PrellenarViajes?clienteId=' + encodeURIComponent(cli) + '&desde=' + d + '&hasta=' + h)
-                .then(function (r) { return r.ok ? r.json() : []; })
-                .then(function (lineas) {
-                    if (!lineas || !lineas.length) { alert('No hay viajes para ese cliente en el período.'); return; }
-                    lineas.forEach(function (l) { agregarLinea(l); });
-                    $('#modalViajes').modal('hide');
+                .then(function (r) { return r.ok ? r.json() : { lineas: [], advertencias: [] }; })
+                .then(function (res) {
+                    var lineas = Array.isArray(res) ? res : (res.lineas || []);
+                    var advertencias = Array.isArray(res) ? [] : (res.advertencias || []);
+                    var yaCargados = {};
+                    document.querySelectorAll('#cuerpoConceptos .c-codigo').forEach(function (i) { yaCargados[(i.value || '').trim()] = true; });
+                    var nuevas = lineas.filter(function (l) { return !yaCargados[l.Codigo]; });
+                    if (nuevas.length < lineas.length) advertencias.push((lineas.length - nuevas.length) + ' viaje(s) ya estaban en la proforma y no se duplicaron.');
+                    nuevas.forEach(function (l) { agregarLinea(l); });
+                    if (nuevas.length) $('#modalViajes').modal('hide');
+                    var msg = nuevas.length ? ('Se agregaron ' + nuevas.length + ' viaje(s).') : 'No hay viajes para facturar de ese cliente en el período.';
+                    if (advertencias.length) msg += '\n\nAtención:\n- ' + advertencias.join('\n- ');
+                    alert(msg);
                 })
                 .catch(function () { alert('Error al traer viajes.'); });
         }
@@ -530,7 +538,7 @@
                             var msg = res.j.errores ? res.j.errores.join('\n') : (res.j.error || 'No se pudo generar.');
                             alert('No se puede generar:\n' + msg); return;
                         }
-                        alert('Proforma generada: ' + res.j.Numero);
+                        alert('Proforma generada: ' + res.j.Numero + (res.j.ViajesFacturados ? ('\n' + res.j.ViajesFacturados + ' viaje(s) quedaron como Facturado en Gestión de viajes.') : ''));
                         $('#modalProforma').modal('hide');
                         buscarProformas(profState.page);
                     })
@@ -554,10 +562,14 @@
                 .catch(function () { alert('Error de red.'); });
         }
         function anular(id) {
-            if (!confirm('¿Anular esta proforma? No se elimina, queda como Anulada.')) return;
+            if (!confirm('¿Anular esta proforma? No se elimina, queda como Anulada y sus viajes vuelven a quedar disponibles para facturar.')) return;
             fetch(API_FAC + '/Proformas/' + id + '/Anular', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-                .then(function (res) { if (!res.ok) { alert(res.j.error || 'No se pudo anular.'); return; } buscarProformas(profState.page); })
+                .then(function (res) {
+                    if (!res.ok) { alert(res.j.error || 'No se pudo anular.'); return; }
+                    if (res.j.ViajesLiberados) alert(res.j.ViajesLiberados + ' viaje(s) volvieron a estar disponibles para facturar.');
+                    buscarProformas(profState.page);
+                })
                 .catch(function () { alert('Error de red.'); });
         }
         function duplicar(id) {

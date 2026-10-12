@@ -3,9 +3,12 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
+using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Web.Http;
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -32,6 +35,161 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+
+            // 08_*.sql (fuera del EDMX): se guarda por SQL directo despues del SaveChanges.
+            public string Num_Transporte { get; set; }
+
+            // Solo lectura: columnas de 06/07_*.sql (fuera del EDMX).
+            public string Estado { get; set; }
+            public string Resultado_Entrega { get; set; }
+            public DateTime? Fecha_Entrega { get; set; }
+            public string Tipo_Cliente { get; set; }
+            public bool Tiene_Evidencia { get; set; }
+        }
+
+        public class EvidenciaDto
+        {
+            public string Nombre_Archivo { get; set; }
+            public string Content_Type { get; set; }
+            public string ContenidoBase64 { get; set; }
+            public string Usuario { get; set; }
+        }
+
+        private class EvidenciaRow
+        {
+            public string Nombre_Archivo { get; set; }
+            public string Content_Type { get; set; }
+            public byte[] Archivo { get; set; }
+        }
+
+        public class CambioEstadoViajeDto
+        {
+            public string Estado { get; set; }
+            public string Resultado_Entrega { get; set; }
+            public DateTime? Fecha_Entrega { get; set; }
+            public string Usuario { get; set; }
+        }
+
+        // Fila de la grilla de gestion-viajes.html. Debe coincidir 1:1 con SELECT_GRILLA.
+        public class ViajeGrillaDto
+        {
+            public int Viaje_ID { get; set; }
+            public DateTime Fecha_Inicio { get; set; }
+            public DateTime Fecha_Fin { get; set; }
+            public string Origen { get; set; }
+            public string Destino { get; set; }
+            public string Num_Remito { get; set; }
+            public string Num_de_Carga { get; set; }
+            public string Num_Transporte { get; set; }
+            public string Distancia_KM { get; set; }
+            public int OrigenID { get; set; }
+            public int DestinoID { get; set; }
+            public int ChoferID { get; set; }
+            public int CamionID { get; set; }
+            public int ClienteID { get; set; }
+            public string Cliente { get; set; }
+            public int? TarifaFijaID { get; set; }
+            public int? TarifaKmID { get; set; }
+            public string Estado { get; set; }
+            public string Resultado_Entrega { get; set; }
+            public DateTime? Fecha_Entrega { get; set; }
+            public string Tipo_Cliente { get; set; }
+            public bool Tiene_Evidencia { get; set; }
+        }
+
+        private class EstadoViajeRow
+        {
+            public int Viaje_ID { get; set; }
+            public string Estado { get; set; }
+            public string Num_Remito { get; set; }
+            public string Num_de_Carga { get; set; }
+            public string Num_Transporte { get; set; }
+            public int? TarifaFijaID { get; set; }
+            public int? TarifaKmID { get; set; }
+            public DateTime Fecha_Inicio { get; set; }
+            public string Tipo_Cliente { get; set; }
+        }
+
+        public const string EstadoRegistrado = "Registrado";
+        public const string EstadoEnViaje = "En_viaje";
+        public const string EstadoEntregado = "Entregado";
+        public const string EstadoListoParaFacturar = "Listo_para_facturar";
+        public const string EstadoFacturado = "Facturado";
+
+        // Con plataforma (Rukas): el seguimiento fino queda en Rukas; en SGTL solo la puerta a la proforma.
+        private static readonly string[] FlujoConPlataforma = { EstadoRegistrado, EstadoListoParaFacturar, EstadoFacturado };
+        // Directo: SGTL es el unico registro del viaje.
+        private static readonly string[] FlujoDirecto = { EstadoRegistrado, EstadoEnViaje, EstadoEntregado, EstadoFacturado };
+        private static readonly string[] ResultadosEntrega = { "Completa", "Parcial", "Rechazo" };
+
+        private static readonly string[] TiposEvidencia = { "image/jpeg", "image/png", "image/webp", "application/pdf" };
+        private const int MaxBytesEvidencia = 5 * 1024 * 1024;
+
+        private static bool EsConPlataforma(string tipoCliente)
+        {
+            return tipoCliente == ClientesController.TipoConPlataforma;
+        }
+
+        private static string[] FlujoEstados(string tipoCliente)
+        {
+            return EsConPlataforma(tipoCliente) ? FlujoConPlataforma : FlujoDirecto;
+        }
+
+        private const int MaxPageSize = 5000;
+
+        private const string SELECT_GRILLA =
+            "SELECT v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino, " +
+            "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
+            "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.OrigenID, v.DestinoID, v.ChoferID, v.CamionID, v.ClienteID, ISNULL(c.Razon_Social,'') AS Cliente, " +
+            "v.TarifaFijaID, v.TarifaKmID, v.Estado, v.Resultado_Entrega, v.Fecha_Entrega, " +
+            "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
+            "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
+            "FROM VIAJES v " +
+            "LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID " +
+            "LEFT JOIN DESTINO d ON d.Destino_ID = v.DestinoID " +
+            "LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID ";
+
+        private const string SELECT_ESTADO =
+            "SELECT v.Viaje_ID, v.Estado, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, " +
+            "RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, v.TarifaFijaID, v.TarifaKmID, v.Fecha_Inicio, " +
+            "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente " +
+            "FROM VIAJES v LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID ";
+
+        private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
+        private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
+        private static SqlParameter[] Clonar(List<SqlParameter> ps) { return ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray(); }
+
+        // Usu_Modi es varchar(20).
+        private static string UsuarioCorto(string u)
+        {
+            u = string.IsNullOrWhiteSpace(u) ? "sistema" : u.Trim();
+            return u.Length > 20 ? u.Substring(0, 20) : u;
+        }
+
+        private static void AgregarRangoFecha(StringBuilder where, List<SqlParameter> ps, string columna, string desde, string hasta, string prefijo)
+        {
+            DateTime d;
+            if (!string.IsNullOrWhiteSpace(desde) && DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+            {
+                where.Append(" AND " + columna + " >= " + prefijo + "Desde ");
+                ps.Add(P(prefijo + "Desde", d.Date));
+            }
+            if (!string.IsNullOrWhiteSpace(hasta) && DateTime.TryParse(hasta, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+            {
+                where.Append(" AND " + columna + " < " + prefijo + "Hasta ");
+                ps.Add(P(prefijo + "Hasta", d.Date.AddDays(1)));
+            }
+        }
+
+        private static string EstadoActual(DbContext db, int id)
+        {
+            return db.Database.SqlQuery<string>("SELECT Estado FROM VIAJES WHERE Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+        }
+
+        private static void GuardarNumTransporte(DbContext db, int id, string numTransporte)
+        {
+            db.Database.ExecuteSqlCommand("UPDATE VIAJES SET Num_Transporte=@t WHERE Viaje_ID=@id",
+                P("@t", string.IsNullOrEmpty(numTransporte) ? null : numTransporte), P("@id", id));
         }
 
         // GET: api/Viajes
@@ -101,70 +259,56 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // GET: api/Viajes/Buscar
-        // Mismo contrato que Camiones/Buscar: filtros opcionales + paginacion.
-        // Devuelve { TotalRecords, Results = [...] } tal como lo consume gestion-viajes.html.
+        // Filtros opcionales + paginacion. Devuelve { TotalRecords, Results = [...] } como lo consume gestion-viajes.html.
+        // fechaDesde/fechaHasta filtran por Fecha_Inicio; fechaFinDesde/fechaFinHasta por Fecha_Fin.
+        // referencia busca en N° remito, N° transporte SAP y N° entrega Rukas.
         [HttpGet]
         [Route("api/Viajes/Buscar")]
-        public IHttpActionResult Buscar(string idViaje = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string idViaje = null, string fechaDesde = null, string fechaHasta = null,
+            string fechaFinDesde = null, string fechaFinHasta = null, string estado = null, int? clienteId = null,
+            string referencia = null, int page = 1, int pageSize = 6)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > MaxPageSize) pageSize = 6;
+
+            var where = new StringBuilder(" WHERE 1=1 ");
+            var ps = new List<SqlParameter>();
+            if (!string.IsNullOrEmpty(idViaje) && int.TryParse(idViaje, out int viajeId))
+            {
+                where.Append(" AND v.Viaje_ID=@id ");
+                ps.Add(P("@id", viajeId));
+            }
+            AgregarRangoFecha(where, ps, "v.Fecha_Inicio", fechaDesde, fechaHasta, "@fi");
+            AgregarRangoFecha(where, ps, "v.Fecha_Fin", fechaFinDesde, fechaFinHasta, "@ff");
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                where.Append(" AND v.Estado=@estado ");
+                ps.Add(P("@estado", estado.Trim()));
+            }
+            if (clienteId.HasValue && clienteId.Value > 0)
+            {
+                where.Append(" AND v.ClienteID=@cli ");
+                ps.Add(P("@cli", clienteId.Value));
+            }
+            if (!string.IsNullOrWhiteSpace(referencia))
+            {
+                where.Append(" AND (v.Num_Remito LIKE @ref OR v.Num_Transporte LIKE @ref OR v.Num_de_Carga LIKE @ref) ");
+                var r = referencia.Trim().Replace("[", "[[]").Replace("%", "[%]").Replace("_", "[_]");
+                ps.Add(P("@ref", "%" + r + "%"));
+            }
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString))
+                using (var db = new SGTLAuditContext(Cn()))
                 {
-                    var query = db.Set<VIAJES>().AsQueryable();
+                    int totalRecords = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM VIAJES v" + where, Clonar(ps)).First();
 
-                    // Filtro por numero (ID) de viaje si se proporciona
-                    if (!string.IsNullOrEmpty(idViaje) && int.TryParse(idViaje, out int viajeId))
-                    {
-                        query = query.Where(v => v.Viaje_ID == viajeId);
-                    }
-
-                    // Filtro por rango de fecha de inicio del viaje
-                    if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime desde))
-                    {
-                        query = query.Where(v => v.Fecha_Inicio >= desde);
-                    }
-
-                    if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime hasta))
-                    {
-                        hasta = hasta.AddDays(1).AddTicks(-1); // incluir todo el dia
-                        query = query.Where(v => v.Fecha_Inicio <= hasta);
-                    }
-
-                    var totalRecords = query.Count();
-
-                    var results = (from v in query
-                                   join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj
-                                   from o in oj.DefaultIfEmpty()
-                                   join d in db.Set<DESTINO>() on v.DestinoID equals d.Destino_ID into dj
-                                   from d in dj.DefaultIfEmpty()
-                                   orderby v.Viaje_ID descending
-                                   select new
-                                   {
-                                       v.Viaje_ID,
-                                       v.Fecha_Inicio,
-                                       v.Fecha_Fin,
-                                       Origen = o != null ? o.Descripcion : "",
-                                       Destino = d != null ? d.Descripcion : "",
-                                       v.Num_Remito,
-                                       v.Num_de_Carga,
-                                       v.Distancia_KM,
-                                       v.OrigenID,
-                                       v.DestinoID,
-                                       v.ChoferID,
-                                       v.CamionID,
-                                       v.ClienteID,
-                                       v.TarifaFijaID,
-                                       v.TarifaKmID,
-                                       // La tabla VIAJES no tiene columna Estado en este modelo.
-                                       // Se devuelve vacio para que el frontend habilite la edicion/eliminacion.
-                                       Estado = ""
-                                   })
-                                   .Skip((page - 1) * pageSize)
-                                   .Take(pageSize)
-                                   .ToList();
+                    var pPage = Clonar(ps).ToList();
+                    pPage.Add(P("@off", (page - 1) * pageSize));
+                    pPage.Add(P("@lim", pageSize));
+                    var results = db.Database.SqlQuery<ViajeGrillaDto>(
+                        SELECT_GRILLA + where + " ORDER BY v.Viaje_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY",
+                        pPage.ToArray()).ToList();
 
                     return Ok(new
                     {
@@ -173,14 +317,249 @@ namespace WebApi_TransporteSanchez.Controllers
                     });
                 }
             }
-            catch (DbUpdateException ex)
+            catch (Exception ex)
             {
                 return InternalServerError(new Exception("Error al acceder a la base de datos durante la busqueda de viajes.", ex));
             }
+        }
+
+        private class ResumenCostoRow
+        {
+            public int CantidadViajes { get; set; }
+            public int ViajesConImporte { get; set; }
+            public decimal CostoTotal { get; set; }
+        }
+
+        // GET: api/Viajes/ResumenCosto
+        // Tarjeta "Costo por viaje" del dashboard (index.html). Importe = tarifa fija neta o valor km x distancia.
+        [HttpGet]
+        [Route("api/Viajes/ResumenCosto")]
+        public IHttpActionResult ResumenCosto()
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var r = db.Database.SqlQuery<ResumenCostoRow>(
+                        "SELECT COUNT(*) AS CantidadViajes, COUNT(x.Importe) AS ViajesConImporte, CAST(ISNULL(SUM(x.Importe),0) AS decimal(18,2)) AS CostoTotal FROM (" +
+                        " SELECT CASE WHEN tf.TarifaFija_ID IS NOT NULL THEN tf.ValorFijoNeto" +
+                        "             WHEN tk.TarifaKm_ID IS NOT NULL THEN tk.ValorKm * TRY_CAST(REPLACE(RTRIM(v.Distancia_KM),',','.') AS decimal(18,2))" +
+                        "        END AS Importe" +
+                        " FROM VIAJES v" +
+                        " LEFT JOIN TARIFAS_FIJAS tf ON tf.TarifaFija_ID = v.TarifaFijaID" +
+                        " LEFT JOIN TARIFAS_KM tk ON tk.TarifaKm_ID = v.TarifaKmID) x").First();
+
+                    decimal promedio = r.ViajesConImporte > 0 ? decimal.Round(r.CostoTotal / r.ViajesConImporte, 2) : 0;
+                    return Ok(new { cantidadViajes = r.CantidadViajes, costoTotal = r.CostoTotal, costoPromedio = promedio });
+                }
+            }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("Error al calcular el resumen de costos de viajes.", ex));
             }
+        }
+
+        // POST: api/Viajes/{id}/Estado
+        // Avanza/retrocede un paso del ciclo y registra el resultado de entrega
+        // (opcional con plataforma; obligatorio en clientes directos para pasar a Entregado).
+        [HttpPost]
+        [Route("api/Viajes/{id:int}/Estado")]
+        public IHttpActionResult CambiarEstado(int id, [FromBody] CambioEstadoViajeDto body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.Estado)) return BadRequest("Falta el estado.");
+            var nuevo = body.Estado.Trim();
+            var resultado = string.IsNullOrWhiteSpace(body.Resultado_Entrega) ? null : body.Resultado_Entrega.Trim();
+
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var v = db.Database.SqlQuery<EstadoViajeRow>(SELECT_ESTADO + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (v == null) return NotFound();
+
+                    var errores = ValidarCambioEstado(v, FlujoEstados(v.Tipo_Cliente), nuevo, resultado, body.Fecha_Entrega);
+                    if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
+
+                    var usuario = UsuarioCorto(body.Usuario);
+                    db.Database.ExecuteSqlCommand(
+                        "UPDATE VIAJES SET Estado=@e, Resultado_Entrega=@r, Fecha_Entrega=@f, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@id",
+                        P("@e", nuevo), P("@r", resultado), P("@f", body.Fecha_Entrega), P("@u", usuario), P("@id", id));
+
+                    SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id,
+                        "Estado=" + v.Estado + " -> " + nuevo + "; Resultado_Entrega=" + (resultado ?? "") +
+                        "; Fecha_Entrega=" + (body.Fecha_Entrega.HasValue ? body.Fecha_Entrega.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : ""));
+
+                    return Ok(new { Viaje_ID = id, Estado = nuevo, Message = "Estado del viaje actualizado." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(new Exception("Error al cambiar el estado del viaje.", ex));
+            }
+        }
+
+        // POST: api/Viajes/{id}/Evidencia
+        // Adjunto de la entrega (foto o PDF del remito firmado / conforme). Uno por viaje: reemplaza el anterior.
+        [HttpPost]
+        [Route("api/Viajes/{id:int}/Evidencia")]
+        public IHttpActionResult SubirEvidencia(int id, [FromBody] EvidenciaDto body)
+        {
+            if (body == null || string.IsNullOrWhiteSpace(body.ContenidoBase64)) return BadRequest("No se recibió el archivo.");
+            var tipo = (body.Content_Type ?? "").Trim().ToLowerInvariant();
+            if (Array.IndexOf(TiposEvidencia, tipo) < 0)
+                return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "Formato no admitido: subí una imagen (JPG, PNG, WEBP) o un PDF." } });
+
+            byte[] archivo;
+            try
+            {
+                var b64 = body.ContenidoBase64;
+                int coma = b64.IndexOf(',');
+                if (b64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && coma >= 0) b64 = b64.Substring(coma + 1);
+                archivo = Convert.FromBase64String(b64);
+            }
+            catch (FormatException)
+            {
+                return BadRequest("El archivo no es válido.");
+            }
+            if (archivo.Length == 0 || archivo.Length > MaxBytesEvidencia)
+                return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El archivo debe pesar como máximo 5 MB." } });
+
+            var nombre = (body.Nombre_Archivo ?? "").Trim();
+            nombre = nombre.Substring(nombre.LastIndexOfAny(new[] { '/', '\\' }) + 1);
+            foreach (var c in System.IO.Path.GetInvalidFileNameChars()) nombre = nombre.Replace(c, '_');
+            if (nombre.Length == 0) nombre = "evidencia";
+            if (nombre.Length > 260) nombre = nombre.Substring(nombre.Length - 260);
+            var usuario = UsuarioCorto(body.Usuario);
+
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var estado = EstadoActual(db, id);
+                    if (estado == null) return NotFound();
+                    if (estado == EstadoFacturado)
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje ya está facturado: no se puede cambiar la evidencia." } });
+
+                    db.Database.ExecuteSqlCommand(
+                        "IF EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id) " +
+                        "  UPDATE VIAJE_EVIDENCIA SET Nombre_Archivo=@n, Content_Type=@t, Archivo=@a, Fecha_Alta=GETDATE(), Usu_Alta=@u WHERE Viaje_ID=@id " +
+                        "ELSE " +
+                        "  INSERT INTO VIAJE_EVIDENCIA (Viaje_ID, Nombre_Archivo, Content_Type, Archivo, Fecha_Alta, Usu_Alta) VALUES (@id, @n, @t, @a, GETDATE(), @u)",
+                        P("@id", id), P("@n", nombre), P("@t", tipo),
+                        new SqlParameter("@a", System.Data.SqlDbType.VarBinary, -1) { Value = archivo }, P("@u", usuario));
+
+                    SGTLAuditContext.RegistrarEvento(Cn(), usuario, "EVIDENCIA", "VIAJES", "Viaje_ID=" + id,
+                        "Evidencia adjunta: " + nombre + " (" + archivo.Length + " bytes)");
+
+                    return Ok(new { Viaje_ID = id, Nombre_Archivo = nombre, Message = "Evidencia adjuntada." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(new Exception("Error al guardar la evidencia del viaje.", ex));
+            }
+        }
+
+        // GET: api/Viajes/{id}/Evidencia
+        [HttpGet]
+        [Route("api/Viajes/{id:int}/Evidencia")]
+        public HttpResponseMessage DescargarEvidencia(int id)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var ev = db.Database.SqlQuery<EvidenciaRow>(
+                        "SELECT Nombre_Archivo, Content_Type, Archivo FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (ev == null) return Request.CreateResponse(HttpStatusCode.NotFound, "El viaje no tiene evidencia adjunta.");
+
+                    var resp = new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(ev.Archivo) };
+                    resp.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(ev.Content_Type);
+                    resp.Content.Headers.ContentDisposition = new System.Net.Http.Headers.ContentDispositionHeaderValue("inline") { FileName = ev.Nombre_Archivo };
+                    return resp;
+                }
+            }
+            catch (Exception ex)
+            {
+                return Request.CreateErrorResponse(HttpStatusCode.InternalServerError, new Exception("Error al obtener la evidencia del viaje.", ex));
+            }
+        }
+
+        // DELETE: api/Viajes/{id}/Evidencia
+        [HttpDelete]
+        [Route("api/Viajes/{id:int}/Evidencia")]
+        public IHttpActionResult EliminarEvidencia(int id, string usuario = null)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var estado = EstadoActual(db, id);
+                    if (estado == null) return NotFound();
+                    if (estado == EstadoFacturado)
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje ya está facturado: no se puede quitar la evidencia." } });
+
+                    int borradas = db.Database.ExecuteSqlCommand("DELETE FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id", P("@id", id));
+                    if (borradas > 0)
+                        SGTLAuditContext.RegistrarEvento(Cn(), UsuarioCorto(usuario), "EVIDENCIA", "VIAJES", "Viaje_ID=" + id, "Evidencia eliminada");
+                    return Ok(new { Message = "Evidencia eliminada." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(new Exception("Error al eliminar la evidencia del viaje.", ex));
+            }
+        }
+
+        // Solo se permite moverse un paso (adelante o atras) dentro del flujo, o quedarse en el
+        // mismo estado para corregir los datos de entrega.
+        private static List<object> ValidarCambioEstado(EstadoViajeRow v, string[] flujo, string nuevo, string resultado, DateTime? fechaEntrega)
+        {
+            var errores = new List<object>();
+            int iActual = Array.IndexOf(flujo, v.Estado);
+            int iNuevo = Array.IndexOf(flujo, nuevo);
+
+            if (iNuevo < 0)
+            {
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "Estado no válido para este viaje: " + nuevo + "." });
+                return errores;
+            }
+            if (iActual >= 0 && Math.Abs(iNuevo - iActual) > 1)
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "Transición no permitida: " + v.Estado + " -> " + nuevo + "." });
+
+            if (resultado != null && Array.IndexOf(ResultadosEntrega, resultado) < 0)
+                errores.Add(new { PropertyName = "Resultado_Entrega", ErrorMessage = "Resultado de entrega no válido." });
+
+            if (fechaEntrega.HasValue && fechaEntrega.Value.Date < v.Fecha_Inicio.Date)
+                errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "La fecha de entrega no puede ser anterior al inicio del viaje." });
+
+            bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
+
+            // Directo: SGTL es la unica constancia de la entrega.
+            if (!conPlataforma && (nuevo == EstadoEntregado || nuevo == EstadoFacturado))
+            {
+                if (resultado == null)
+                    errores.Add(new { PropertyName = "Resultado_Entrega", ErrorMessage = "Para marcar el viaje como entregado indicá el resultado de la entrega." });
+                if (!fechaEntrega.HasValue)
+                    errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "Para marcar el viaje como entregado indicá la fecha de entrega." });
+            }
+
+            // Con plataforma: los tres numeros recien existen despues de cargar en planta y entregar,
+            // por eso se exigen al pasar a facturar y no al crear el viaje.
+            if (nuevo == EstadoListoParaFacturar || nuevo == EstadoFacturado)
+            {
+                if (conPlataforma && string.IsNullOrWhiteSpace(v.Num_Transporte))
+                    errores.Add(new { PropertyName = "Num_Transporte", ErrorMessage = "Para facturar el viaje debe tener N° de transporte SAP. Editá el viaje y cargalo." });
+                if (conPlataforma && string.IsNullOrWhiteSpace(v.Num_Remito))
+                    errores.Add(new { PropertyName = "Num_Remito", ErrorMessage = "Para facturar el viaje debe tener número de remito. Editá el viaje y cargalo." });
+                if (conPlataforma && string.IsNullOrWhiteSpace(v.Num_de_Carga))
+                    errores.Add(new { PropertyName = "Num_de_Carga", ErrorMessage = "Para facturar el viaje debe tener N° de entrega Rukas. Editá el viaje y cargalo." });
+                bool tieneTarifa = (v.TarifaFijaID ?? 0) > 0 || (v.TarifaKmID ?? 0) > 0;
+                if (!tieneTarifa)
+                    errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "Para facturar el viaje debe tener tarifa asignada." });
+            }
+
+            return errores;
         }
 
         // GET: api/Viajes/{id}
@@ -206,8 +585,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         OrigenID = viaje.OrigenID,
                         DestinoID = viaje.DestinoID,
                         Distancia_KM = viaje.Distancia_KM,
-                        Num_Remito = viaje.Num_Remito,
-                        Num_de_Carga = viaje.Num_de_Carga,
+                        Num_Remito = (viaje.Num_Remito ?? "").Trim(),
+                        Num_de_Carga = (viaje.Num_de_Carga ?? "").Trim(),
                         Fecha_Inicio = viaje.Fecha_Inicio,
                         Fecha_Fin = viaje.Fecha_Fin,
                         ChoferID = viaje.ChoferID,
@@ -220,6 +599,17 @@ namespace WebApi_TransporteSanchez.Controllers
                         Fecha_Modi = viaje.Fecha_Modi,
                         Usu_Modi = viaje.Usu_Modi
                     };
+
+                    var est = db.Database.SqlQuery<ViajeGrillaDto>(SELECT_GRILLA + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (est != null)
+                    {
+                        dto.Num_Transporte = est.Num_Transporte;
+                        dto.Estado = est.Estado;
+                        dto.Resultado_Entrega = est.Resultado_Entrega;
+                        dto.Fecha_Entrega = est.Fecha_Entrega;
+                        dto.Tipo_Cliente = est.Tipo_Cliente;
+                        dto.Tiene_Evidencia = est.Tiene_Evidencia;
+                    }
 
                     return Ok(dto);
                 }
@@ -281,6 +671,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     try
                     {
                         db.SaveChanges();
+                        GuardarNumTransporte(db, viaje.Viaje_ID, viajeDto.Num_Transporte);
                         return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente." });
                     }
                     catch (DbEntityValidationException ex)
@@ -338,6 +729,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     return NotFound();
                 }
 
+                if (EstadoActual(db, id) == EstadoFacturado)
+                {
+                    return Content(HttpStatusCode.BadRequest, new List<object>
+                    {
+                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, primero volvé el estado atrás o anulá la proforma." }
+                    });
+                }
+
                 viaje.OrigenID = viajeDto.OrigenID;
                 viaje.DestinoID = viajeDto.DestinoID;
                 viaje.Distancia_KM = viajeDto.Distancia_KM;
@@ -358,6 +757,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 try
                 {
                     db.SaveChanges();
+                    GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
                     return Ok(new { Message = "Viaje actualizado correctamente." });
                 }
                 catch (DbEntityValidationException ex)
@@ -385,7 +785,7 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // DELETE: api/Viajes/{id}
-        // Eliminacion fisica: la tabla VIAJES no tiene columna de estado para baja logica.
+        // Eliminacion fisica. Estado es operativo (no de baja logica); un viaje Facturado no se elimina.
         public IHttpActionResult Delete(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -399,6 +799,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (viaje == null)
                     {
                         return NotFound();
+                    }
+
+                    if (EstadoActual(db, id) == EstadoFacturado)
+                    {
+                        return Content(HttpStatusCode.BadRequest, new List<object>
+                        {
+                            new { PropertyName = "Estado", ErrorMessage = "No se puede eliminar un viaje facturado." }
+                        });
                     }
 
                     db.Set<VIAJES>().Remove(viaje);
@@ -426,6 +834,9 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        // Num_Remito y Num_de_Carga son nchar(20); Num_Transporte nvarchar(20).
+        private const int LargoReferencia = 20;
+
         // Validaciones de negocio compartidas entre alta y edicion.
         private List<object> ValidarViaje(ViajeDto v)
         {
@@ -442,6 +853,19 @@ namespace WebApi_TransporteSanchez.Controllers
 
             if (v.Fecha_Fin < v.Fecha_Inicio)
                 errores.Add(new { PropertyName = "Fecha_Fin", ErrorMessage = "La fecha de fin no puede ser anterior a la fecha de inicio." });
+
+            v.Num_Remito = (v.Num_Remito ?? "").Trim();
+            v.Num_de_Carga = (v.Num_de_Carga ?? "").Trim();
+            v.Num_Transporte = (v.Num_Transporte ?? "").Trim();
+
+            if (v.Num_Remito.Length > LargoReferencia)
+                errores.Add(new { PropertyName = "Num_Remito", ErrorMessage = "El número de remito no puede superar " + LargoReferencia + " caracteres." });
+
+            if (v.Num_Transporte.Length > LargoReferencia)
+                errores.Add(new { PropertyName = "Num_Transporte", ErrorMessage = "El N° de transporte SAP no puede superar " + LargoReferencia + " caracteres." });
+
+            if (v.Num_de_Carga.Length > LargoReferencia)
+                errores.Add(new { PropertyName = "Num_de_Carga", ErrorMessage = "El N° entrega Rukas no puede superar " + LargoReferencia + " caracteres." });
 
             // Debe tener al menos un tipo de tarifa asociada (fija o por km).
             bool tieneFija = v.TarifaFijaID.HasValue && v.TarifaFijaID.Value > 0;

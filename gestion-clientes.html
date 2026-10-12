@@ -251,6 +251,13 @@
                                         <option value="EX">Exento</option>
                                     </select>
                                 </div>
+                                <div class="form-group">
+                                    <label for="txtTipo_Cliente" class="form-label">Tipo de cliente</label>
+                                    <select id="txtTipo_Cliente" class="form-control">
+                                        <option value="Directo">Directo (sin sistema intermedio)</option>
+                                        <option value="Con_plataforma">Con plataforma (ej. Rukas)</option>
+                                    </select>
+                                </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
                                         <label for="email-id-column" class="form-label">Email</label>
@@ -354,6 +361,13 @@
                                         <option value="RI">Responsable Inscripto</option>
                                         <option value="MT">Monotributista</option>
                                         <option value="EX">Exento</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="editarTipoCliente" class="form-label">Tipo de cliente</label>
+                                    <select id="editarTipoCliente" class="form-control">
+                                        <option value="Directo">Directo (sin sistema intermedio)</option>
+                                        <option value="Con_plataforma">Con plataforma (ej. Rukas)</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -1161,6 +1175,7 @@
                     $('#editarCUIT').val(cuitDigitosAFormulario(cuitRaw));
                     $('#editarRazonSocial').val(data.Razon_Social || '');
                     $('#editarCondFiscal').val(condFiscalIntACodigoSelect(data.Cond_Fiscal));
+                    $('#editarTipoCliente').val(data.Tipo_Cliente === 'Con_plataforma' ? 'Con_plataforma' : 'Directo');
                     $('#editarEmail').val(data.Email || '');
                     $('#editarTelefono').val((data.Telefono || '').trim());
 
@@ -1214,7 +1229,8 @@
                     Fecha_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Fecha_Alta : ahora,
                     Usu_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Usu_Alta : usuarioLogueado,
                     Fecha_Modi: ahora,
-                    Usu_Modi: usuarioLogueado
+                    Usu_Modi: usuarioLogueado,
+                    Tipo_Cliente: $('#editarTipoCliente').val()
                 };
 
                 $.ajax({
@@ -1505,7 +1521,8 @@
                 Fecha_Alta: fechaHoraActual,
                 Usu_Alta: usuarioLogueado,
                 Fecha_Modi: fechaHoraActual,
-                Usu_Modi: usuarioLogueado
+                Usu_Modi: usuarioLogueado,
+                Tipo_Cliente: $('#txtTipo_Cliente').val()
             };
 
             $.ajax({

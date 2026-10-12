@@ -155,7 +155,32 @@
                                                     <input type="text" class="form-control" id="fechaRangoFinViaje"
                                                         placeholder="Desde y hasta">
                                                 </div>
-                                                <div class="col-md-6 d-flex justify-content-end align-items-end">
+                                                <div class="col-md-6">
+                                                    <label for="estadoFiltroViaje">Estado</label>
+                                                    <select class="form-select" id="estadoFiltroViaje">
+                                                        <option value="">Todos</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <!-- Fila 3 -->
+                                            <div class="row mb-3">
+                                                <div class="col-md-6">
+                                                    <label for="clienteFiltroViaje">Cliente</label>
+                                                    <select class="form-select" id="clienteFiltroViaje">
+                                                        <option value="">Todos</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="referenciaFiltroViaje">N° remito / transporte / entrega</label>
+                                                    <input type="text" class="form-control" id="referenciaFiltroViaje"
+                                                        maxlength="20" placeholder="Cualquiera de los tres">
+                                                </div>
+                                            </div>
+                                            <!-- Fila 4 -->
+                                            <div class="row mb-3">
+                                                <div class="col-12 d-flex justify-content-end align-items-end">
+                                                    <button type="button" class="btn btn-light me-2"
+                                                        onclick="limpiarFiltrosViajes()">Limpiar</button>
                                                     <button type="button" class="btn btn-light"
                                                         onclick="buscarViajes()">Buscar</button>
                                                 </div>
@@ -184,12 +209,16 @@
                                         <thead>
                                             <tr>
                                                 <th>Número de viaje</th>
+                                                <th>Cliente</th>
                                                 <th>Fecha de inicio</th>
                                                 <th>Fecha de fin</th>
                                                 <th>Origen</th>
                                                 <th>Destino</th>
+                                                <th>N° transporte SAP</th>
                                                 <th>Número de remito</th>
+                                                <th>N° entrega Rukas</th>
                                                 <th>Cantidad de KM</th>
+                                                <th>Estado</th>
                                                 <th>Acciones</th>
                                             </tr>
                                         </thead>
@@ -294,13 +323,20 @@
                                     <small id="tarifaInfo" class="text-muted d-block mt-1">Complet&aacute; cliente, origen y destino para cargar o calcular la tarifa.</small>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="numeroRemito" class="form-label">N&uacute;mero de remito</label>
-                                        <input type="text" class="form-control" id="numeroRemito">
+                                    <div class="col-md-4 mb-3" id="grupoNumTransporte">
+                                        <label for="numeroTransporte" class="form-label">N&deg; transporte SAP</label>
+                                        <input type="text" class="form-control" id="numeroTransporte" maxlength="20" placeholder="Figura en Rukas al despachar">
                                     </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="numeroCarga" class="form-label">N&uacute;mero de carga</label>
-                                        <input type="text" class="form-control" id="numeroCarga">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="numeroRemito" class="form-label">N&uacute;mero de remito</label>
+                                        <input type="text" class="form-control" id="numeroRemito" maxlength="20" placeholder="N° del remito en papel del cargador">
+                                    </div>
+                                    <div class="col-md-4 mb-3" id="grupoNumeroCarga">
+                                        <label for="numeroCarga" class="form-label">N&deg; entrega Rukas</label>
+                                        <input type="text" class="form-control" id="numeroCarga" maxlength="20" placeholder="# de entrega que pide el bot">
+                                    </div>
+                                    <div class="col-12 mb-3">
+                                        <small class="text-muted" id="ayudaNumerosViaje">El remito lo emite el cliente/cargador; ac&aacute; solo se registra su n&uacute;mero.</small>
                                     </div>
                                 </div>
                                 <div class="mb-3 position-relative">
@@ -451,61 +487,61 @@
         const pageSize = 6;
         let currentPage = 1;
 
-        // Datepicker para el filtro de fecha de inicio de viaje
-        $('#fechaRangoInicioViaje').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                cancelLabel: 'Borrar',
-                format: 'DD/MM/YYYY',
-                applyLabel: 'Aplicar',
-                cancelLabel: 'Cancelar',
-                daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                monthNames: [
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                ]
-            }
-        });
+        // Filtros de rango: fecha de inicio y fecha de fin del viaje
+        function initRangoFechaFiltro(selector) {
+            $(selector).daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    format: 'DD/MM/YYYY',
+                    applyLabel: 'Aplicar',
+                    cancelLabel: 'Borrar',
+                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+                    monthNames: [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+                    ]
+                }
+            });
 
-        $('#fechaRangoInicioViaje').on('apply.daterangepicker', function (ev, picker) {
-            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-            $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-            $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-        });
+            $(selector).on('apply.daterangepicker', function (ev, picker) {
+                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
+                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
+                buscarViajes(1);
+            });
 
-        $('#fechaRangoInicioViaje').on('cancel.daterangepicker input', function () {
-            $(this).val('');
-            $(this).removeData('start').removeData('end');
-            buscarViajes(currentPage);
-        });
+            $(selector).on('cancel.daterangepicker', function () {
+                $(this).val('');
+                $(this).removeData('start').removeData('end');
+                buscarViajes(1);
+            });
 
-        // Datepicker para el filtro de fecha de fin de viaje
-        $('#fechaRangoFinViaje').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                cancelLabel: 'Borrar',
-                format: 'DD/MM/YYYY',
-                applyLabel: 'Aplicar',
-                cancelLabel: 'Cancelar',
-                daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                monthNames: [
-                    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                ]
-            }
-        });
+            $(selector).on('input', function () {
+                if (!$(this).val()) { $(this).removeData('start').removeData('end'); }
+            });
+        }
 
-        $('#fechaRangoFinViaje').on('apply.daterangepicker', function (ev, picker) {
-            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-            $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-            $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-        });
+        initRangoFechaFiltro('#fechaRangoInicioViaje');
+        initRangoFechaFiltro('#fechaRangoFinViaje');
 
-        $('#fechaRangoFinViaje').on('cancel.daterangepicker input', function () {
-            $(this).val('');
-            $(this).removeData('start').removeData('end');
-            buscarViajes(currentPage);
-        });
+        function limpiarFiltrosViajes() {
+            $('#idviajeinput').val('');
+            $('#fechaRangoInicioViaje, #fechaRangoFinViaje').val('').removeData('start').removeData('end');
+            $('#estadoFiltroViaje').val('');
+            $('#clienteFiltroViaje').val('');
+            $('#referenciaFiltroViaje').val('');
+            buscarViajes(1);
+        }
+
+        function cargarFiltrosViajes() {
+            var se = $('#estadoFiltroViaje');
+            Object.keys(ESTADO_LABEL).forEach(function (e) { se.append('<option value="' + e + '">' + escHtml(ESTADO_LABEL[e]) + '</option>'); });
+            $.ajax({ url: 'http://localhost:50222/api/Clientes', type: 'GET' })
+                .done(function (data) {
+                    var sc = $('#clienteFiltroViaje');
+                    (data || []).forEach(function (c) { sc.append('<option value="' + c.Cliente_ID + '">' + escHtml(c.Razon_Social) + '</option>'); });
+                });
+        }
 
 
         function formatearFecha(fecha) {
@@ -517,18 +553,73 @@
             return `${dia}/${mes}/${anio}`;
         }
 
-        function buscarViajes(page = 1) {
-            const idViaje = $('#idviajeinput').val().trim();
-            const fechaDesde = $('#fechaRangoInicioViaje').data('start') || null;
-            const fechaHasta = $('#fechaRangoInicioViaje').data('end') || null;
+        function escHtml(s) {
+            if (s == null) return '';
+            return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+        }
+        function textoRef(v) { var t = (v || '').toString().trim(); return t || '—'; }
 
-            const requestData = {
+        const ESTADO_LABEL = {
+            Registrado: 'Registrado',
+            En_viaje: 'En viaje',
+            Entregado: 'Entregado',
+            Listo_para_facturar: 'Listo para facturar',
+            Facturado: 'Facturado'
+        };
+        const ESTADO_BADGE = {
+            Registrado: 'bg-secondary',
+            En_viaje: 'bg-info',
+            Entregado: 'bg-primary',
+            Listo_para_facturar: 'bg-warning text-dark',
+            Facturado: 'bg-success'
+        };
+        function etiquetaEstado(e) { return ESTADO_LABEL[e] || e || '—'; }
+        function badgeEstadoViaje(e) {
+            return '<span class="badge ' + (ESTADO_BADGE[e] || 'bg-secondary') + '">' + escHtml(etiquetaEstado(e)) + '</span>';
+        }
+
+        var viajesPagina = {};
+
+        function filtrosViajes() {
+            const idViaje = $('#idviajeinput').val().trim();
+            return {
                 idViaje: idViaje || null,
-                fechaDesde,
-                fechaHasta,
-                page,
-                pageSize
+                fechaDesde: $('#fechaRangoInicioViaje').data('start') || null,
+                fechaHasta: $('#fechaRangoInicioViaje').data('end') || null,
+                fechaFinDesde: $('#fechaRangoFinViaje').data('start') || null,
+                fechaFinHasta: $('#fechaRangoFinViaje').data('end') || null,
+                estado: $('#estadoFiltroViaje').val() || null,
+                clienteId: $('#clienteFiltroViaje').val() || null,
+                referencia: ($('#referenciaFiltroViaje').val() || '').trim() || null
             };
+        }
+
+        function accionesViaje(viaje) {
+            const facturado = viaje.Estado === 'Facturado';
+            const motivo = 'Viaje facturado: no se puede modificar';
+            return `
+                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${facturado ? motivo : 'Editar'}">
+                    <button class="btn btn-primary btn-sm ${facturado ? 'disabled' : ''}"
+                        onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </span>
+                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${facturado ? motivo : 'Eliminar'}">
+                    <button class="btn btn-danger btn-sm ms-1 ${facturado ? 'disabled' : ''}"
+                        onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}')">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </span>
+                <button class="btn btn-light btn-sm ms-1"
+                    data-bs-toggle="tooltip" data-bs-placement="top" title="Estado y entrega"
+                    onclick="abrirModalEstadoViaje('${viaje.Viaje_ID}')">
+                    <i class="bi bi-flag"></i>
+                </button>`;
+        }
+
+        function buscarViajes(page = 1) {
+            currentPage = page;
+            const requestData = Object.assign(filtrosViajes(), { page, pageSize });
 
             $.ajax({
                 url: 'http://localhost:50222/api/Viajes/Buscar',
@@ -537,45 +628,27 @@
                 success: function (data) {
                     const tbody = $('#tablaViajes tbody');
                     tbody.empty();
+                    viajesPagina = {};
 
                     if (data.Results.length === 0) {
-                        tbody.html('<tr><td colspan="8" class="text-center">No se encontraron registros</td></tr>');
+                        tbody.html('<tr><td colspan="12" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (viaje) {
+                            viajesPagina[viaje.Viaje_ID] = viaje;
                             const row = `
                                 <tr>
                                     <td>${viaje.Viaje_ID}</td>
+                                    <td>${escHtml(viaje.Cliente)}</td>
                                     <td>${formatearFecha(viaje.Fecha_Inicio)}</td>
                                     <td>${formatearFecha(viaje.Fecha_Fin)}</td>
-                                    <td>${viaje.Origen}</td>
-                                    <td>${viaje.Destino}</td>
-                                    <td>${viaje.Num_Remito}</td>
-                                    <td>${viaje.Distancia_KM}</td>
-                                    <td>
-                <button class="btn btn-primary btn-sm"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="Editar"
-                    onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
-                    <i class="bi bi-pencil"></i>
-                </button>
-
-                <span data-bs-toggle="tooltip" data-bs-placement="top"
-                      title="${viaje.Estado === 'Activo' ? 'No se puede eliminar un viaje activo' : 'Eliminar'}">
-                    <button class="btn btn-danger btn-sm ms-1 ${viaje.Estado === 'Activo' ? 'disabled' : ''}"
-                        onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}', '${viaje.Estado}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </span>
-
-                <button class="btn btn-light btn-sm ms-1"
-                    data-bs-toggle="tooltip"
-                    data-bs-placement="top"
-                    title="${viaje.Estado === 'Activo' ? 'Inactivar' : 'Activar'}"
-                    onclick="abrirModalEstadoViaje('${viaje.Viaje_ID}', '${viaje.Estado}')">
-                    <i class="bi bi-arrow-repeat"></i>
-                </button>
-            </td>
+                                    <td>${escHtml(viaje.Origen)}</td>
+                                    <td>${escHtml(viaje.Destino)}</td>
+                                    <td>${escHtml(textoRef(viaje.Num_Transporte))}</td>
+                                    <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
+                                    <td>${escHtml(textoRef(viaje.Num_de_Carga))}</td>
+                                    <td>${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
+                                    <td style="white-space:nowrap;">${badgeEstadoViaje(viaje.Estado)}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
+                                    <td style="white-space:nowrap;">${accionesViaje(viaje)}</td>
                                 </tr>
                             `;
                             tbody.append(row);
@@ -586,8 +659,64 @@
                 },
                 error: function (xhr) {
                     console.error('Error al buscar viajes:', xhr);
+                    $('#tablaViajes tbody').html('<tr><td colspan="12" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
                 }
             });
+        }
+
+        async function generarReporteCSV() {
+            const requestData = Object.assign(filtrosViajes(), { page: 1, pageSize: 5000 });
+            try {
+                const response = await $.ajax({
+                    url: 'http://localhost:50222/api/Viajes/Buscar',
+                    type: 'GET',
+                    data: requestData
+                });
+                if (!response.Results || response.Results.length === 0) {
+                    alert('No se encontraron registros para generar el reporte.');
+                    return;
+                }
+                generarCSVViajes(response.Results);
+            } catch (error) {
+                console.error('Error al generar el reporte:', error);
+                alert('Ocurrió un error al generar el reporte. Intentá de nuevo más tarde.');
+            }
+        }
+
+        function generarCSVViajes(data) {
+            const headers = [
+                'Número de viaje', 'Cliente', 'Fecha de inicio', 'Fecha de fin', 'Origen', 'Destino',
+                'N° transporte SAP', 'Número de remito', 'N° entrega Rukas', 'Cantidad de KM', 'Estado', 'Resultado de entrega', 'Fecha de entrega'
+            ];
+            let csvContent = headers.join(';') + '\n';
+            data.forEach(function (v) {
+                const row = [
+                    v.Viaje_ID,
+                    v.Cliente || '',
+                    formatearFecha(v.Fecha_Inicio),
+                    formatearFecha(v.Fecha_Fin),
+                    v.Origen || '',
+                    v.Destino || '',
+                    (v.Num_Transporte || '').trim(),
+                    (v.Num_Remito || '').trim(),
+                    (v.Num_de_Carga || '').trim(),
+                    (v.Distancia_KM || '').toString().trim(),
+                    etiquetaEstado(v.Estado),
+                    v.Resultado_Entrega || '',
+                    formatearFecha(v.Fecha_Entrega)
+                ];
+                csvContent += row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(';') + '\n';
+            });
+
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'reporte_viajes_' + moment().format('YYYYMMDD_HHmm') + '.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         function renderPagination(totalRecords, pageSize, currentPage) {
@@ -596,7 +725,7 @@
             paginationContainer.empty();
 
             const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
+            const nextDisabled = currentPage >= totalPages ? 'disabled' : '';
 
             paginationContainer.append(`
                 <li class="page-item ${prevDisabled}">
@@ -625,6 +754,9 @@
         }
 
         $(document).ready(function () {
+            cargarFiltrosViajes();
+            $('#estadoFiltroViaje, #clienteFiltroViaje').on('change', function () { buscarViajes(1); });
+            $('#busquedaViajeForm').on('submit', function (e) { e.preventDefault(); buscarViajes(1); });
             buscarViajes(currentPage);
         });
 
@@ -655,6 +787,61 @@
         </div>
     </div>
 
+    <!-- Modal de estado y entrega del viaje -->
+    <div class="modal fade text-left" id="ModalEstadoViaje" tabindex="-1" role="dialog"
+        aria-labelledby="ModalEstadoViajeLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="ModalEstadoViajeLabel">Estado y entrega del viaje</h5>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div id="alertaEstadoViaje" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                    <input type="hidden" id="estadoViajeId" value="">
+                    <p class="mb-2" id="estadoViajeResumen"></p>
+                    <p class="mb-3">Estado actual: <span id="estadoViajeActual"></span></p>
+                    <div class="mb-3">
+                        <label for="estadoViajeNuevo" class="form-label">Nuevo estado</label>
+                        <select class="form-select" id="estadoViajeNuevo"></select>
+                        <small class="text-muted d-block mt-1" id="estadoViajeAyuda"></small>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="resultadoEntrega" class="form-label">Resultado de entrega <span class="text-muted" id="resultadoEntregaMarca">(opcional)</span></label>
+                            <select class="form-select" id="resultadoEntrega">
+                                <option value="">Sin informar</option>
+                                <option value="Completa">Completa</option>
+                                <option value="Parcial">Parcial</option>
+                                <option value="Rechazo">Rechazo</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="fechaEntrega" class="form-label">Fecha de entrega <span class="text-muted" id="fechaEntregaMarca">(opcional)</span></label>
+                            <input type="text" class="form-control" id="fechaEntrega" placeholder="AAAA-MM-DD" autocomplete="off">
+                        </div>
+                    </div>
+                    <div id="grupoEvidencia" class="mb-1" style="display: none;">
+                        <label for="evidenciaArchivo" class="form-label">Evidencia de entrega <span class="text-muted">(recomendado)</span></label>
+                        <div id="evidenciaActual" class="mb-2" style="display: none;">
+                            <i class="bi bi-paperclip"></i>
+                            <a href="#" id="evidenciaVer" target="_blank" rel="noopener">Ver evidencia adjunta</a>
+                            <button type="button" class="btn btn-sm btn-link text-danger" id="evidenciaQuitarBtn" onclick="quitarEvidenciaViaje()">Quitar</button>
+                        </div>
+                        <input type="file" class="form-control" id="evidenciaArchivo" accept="image/jpeg,image/png,image/webp,application/pdf">
+                        <small class="text-muted">Remito firmado, foto de la entrega o conforme del cliente. JPG, PNG, WEBP o PDF hasta 5 MB.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary ms-1" onclick="confirmarEstadoViaje()">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- ================= Fase 1: ABM de Viajes (alta / edicion / eliminacion) ================= -->
     <script>
         const API_VIAJES = 'http://localhost:50222/api';
@@ -665,6 +852,7 @@
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, rutaViajeLayer = null, marcadoresViaje = [];
         var choferSearchTimer = null;
+        var tiposClienteViaje = {};
 
         function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
         function formatearParaInput(f) { return f ? String(f).substring(0, 16) : ''; }
@@ -753,10 +941,30 @@
             $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
                 .done(function (data) {
                     var s = $('#clienteSelect').empty().append('<option value="">Seleccione un cliente</option>');
-                    (data || []).forEach(function (c) { s.append('<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'); });
+                    tiposClienteViaje = {};
+                    (data || []).forEach(function (c) {
+                        tiposClienteViaje[c.Cliente_ID] = c.Tipo_Cliente || 'Directo';
+                        s.append('<option value="' + c.Cliente_ID + '">' + escHtml(c.Razon_Social) + (c.Tipo_Cliente === 'Con_plataforma' ? ' (Rukas)' : '') + '</option>');
+                    });
                 })
                 .always(function () { d.resolve(); });
             return d.promise();
+        }
+
+        function clienteConPlataforma() {
+            var cid = $('#clienteSelect').val();
+            return !!cid && tiposClienteViaje[cid] === 'Con_plataforma';
+        }
+
+        // Con plataforma: los tres números se completan a medida que aparecen (planta, entrega) y se exigen
+        // recién para pasar a "Listo para facturar". Directo: solo remito, opcional.
+        function aplicarReglasTipoCliente() {
+            var conPlataforma = clienteConPlataforma();
+            $('#grupoNumTransporte, #grupoNumeroCarga').toggle(conPlataforma);
+            $('#numeroRemito').attr('placeholder', conPlataforma ? 'N° del remito en papel del cargador' : 'Opcional: remito o comprobante del cliente');
+            $('#ayudaNumerosViaje').text(conPlataforma
+                ? 'Podés guardar el viaje sin estos números y completarlos después. Son obligatorios para marcarlo "Listo para facturar".'
+                : 'El remito lo emite el cliente/cargador; acá solo se registra su número.');
         }
         function cargarCamionesViaje() {
             var d = $.Deferred();
@@ -791,6 +999,7 @@
         }
         function onClienteChangeViaje() {
             var cid = parseInt($('#clienteSelect').val()) || 0;
+            aplicarReglasTipoCliente();
             filtrarOrigenDestino(cid, null, null);
             $('#distanciaKm').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
             limpiarRutaViaje();
@@ -861,6 +1070,7 @@
             $('#distanciaKm').val('');
             setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
             limpiarRutaViaje();
+            aplicarReglasTipoCliente();
         }
 
         function abrirModalAltaViaje() {
@@ -880,11 +1090,13 @@
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
                         $('#clienteSelect').val(v.ClienteID);
+                        aplicarReglasTipoCliente();
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
                         $('#camionSelect').val(v.CamionID);
                         $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
-                        $('#numeroRemito').val(v.Num_Remito);
-                        $('#numeroCarga').val(v.Num_de_Carga);
+                        $('#numeroTransporte').val((v.Num_Transporte || '').trim());
+                        $('#numeroRemito').val((v.Num_Remito || '').trim());
+                        $('#numeroCarga').val((v.Num_de_Carga || '').trim());
                         if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, true); else $('#fechaInicio').val(formatearParaInput(v.Fecha_Inicio));
                         if (window.fpFin) fpFin.setDate(v.Fecha_Fin, true); else $('#fechaFin').val(formatearParaInput(v.Fecha_Fin));
                         if (v.TarifaFijaID && v.TarifaFijaID > 0) {
@@ -913,7 +1125,8 @@
                 DestinoID: parseInt($('#destinoSelect').val()) || 0,
                 Distancia_KM: ($('#distanciaKm').val() || '').toString().trim(),
                 Num_Remito: ($('#numeroRemito').val() || '').trim(),
-                Num_de_Carga: ($('#numeroCarga').val() || '').trim(),
+                Num_de_Carga: clienteConPlataforma() ? ($('#numeroCarga').val() || '').trim() : '',
+                Num_Transporte: clienteConPlataforma() ? ($('#numeroTransporte').val() || '').trim() : '',
                 Fecha_Inicio: $('#fechaInicio').val(),
                 Fecha_Fin: $('#fechaFin').val(),
                 ChoferID: parseInt($('#choferSelectId').val()) || 0,
@@ -957,21 +1170,161 @@
         }
 
         // ===================== ELIMINAR / ESTADO =====================
-        function abrirModalEliminarViaje(id, estado) { viajeIdEliminar = id; $('#confirmarEliminarViajeModal').modal('show'); }
+        function abrirModalEliminarViaje(id) { viajeIdEliminar = id; $('#confirmarEliminarViajeModal').modal('show'); }
         function confirmarEliminarViaje() {
             if (!viajeIdEliminar) return;
             $.ajax({ url: API_VIAJES + '/Viajes/' + viajeIdEliminar, type: 'DELETE' })
                 .done(function () { $('#confirmarEliminarViajeModal').modal('hide'); alert('Viaje eliminado correctamente.'); viajeIdEliminar = null; buscarViajes(1); })
                 .fail(function (xhr) { $('#confirmarEliminarViajeModal').modal('hide'); alert('No se pudo eliminar el viaje. ' + parsearError(xhr)); });
         }
-        function abrirModalEstadoViaje(id, estado) { alert('La activación/inactivación de viajes no está disponible en esta versión.'); }
+
+        // Rukas: el control fino (salida, novedad, sobre) queda en Rukas; acá solo se marca si ya se puede facturar.
+        const FLUJO_CON_PLATAFORMA = ['Registrado', 'Listo_para_facturar', 'Facturado'];
+        // Directo: SGTL es el único registro del viaje.
+        const FLUJO_DIRECTO = ['Registrado', 'En_viaje', 'Entregado', 'Facturado'];
+        const AYUDA_ESTADO = {
+            Registrado: 'Viaje cargado en SGTL.',
+            En_viaje: 'El camión salió con la carga.',
+            Entregado: 'Se entregó: indicá resultado y fecha, y adjuntá la evidencia (remito firmado, foto o conforme).',
+            Listo_para_facturar: 'La entrega ya figura en Rukas y el viaje tiene N° transporte SAP, remito, N° entrega y tarifa.',
+            Facturado: 'Incluido en una proforma generada (se marca solo al generarla).'
+        };
+
+        function esDirecto(v) { return (v.Tipo_Cliente || 'Directo') !== 'Con_plataforma'; }
+        function flujoDeViaje(v) { return esDirecto(v) ? FLUJO_DIRECTO : FLUJO_CON_PLATAFORMA; }
+
+        function opcionesEstado(flujo, actual) {
+            var i = flujo.indexOf(actual);
+            return flujo.filter(function (e, j) { return i < 0 || Math.abs(j - i) <= 1; });
+        }
+
+        function abrirModalEstadoViaje(id) {
+            var v = viajesPagina[id];
+            if (!v) return;
+            $('#alertaEstadoViaje').hide().empty();
+            $('#estadoViajeId').val(id);
+            $('#estadoViajeResumen').text('Viaje #' + v.Viaje_ID + ' · ' + (v.Cliente || '') + ' · ' + (v.Origen || '') + ' → ' + (v.Destino || '') +
+                (esDirecto(v) ? '' : ' · Transporte ' + textoRef(v.Num_Transporte)) + ' · Remito ' + textoRef(v.Num_Remito));
+            $('#estadoViajeActual').html(badgeEstadoViaje(v.Estado));
+
+            var flujo = flujoDeViaje(v);
+            var sel = $('#estadoViajeNuevo').empty();
+            opcionesEstado(flujo, v.Estado).forEach(function (e) {
+                sel.append('<option value="' + e + '">' + escHtml(etiquetaEstado(e)) + (e === v.Estado ? ' (actual)' : '') + '</option>');
+            });
+            sel.val(v.Estado);
+            actualizarAyudaEstado();
+
+            $('#resultadoEntrega').val(v.Resultado_Entrega || '');
+            var fe = v.Fecha_Entrega ? String(v.Fecha_Entrega).substring(0, 10) : '';
+            if (window.fpEntrega) fpEntrega.setDate(fe || null, false); else $('#fechaEntrega').val(fe);
+
+            $('#evidenciaArchivo').val('');
+            $('#grupoEvidencia').toggle(esDirecto(v));
+            $('#evidenciaActual').toggle(!!v.Tiene_Evidencia);
+            $('#evidenciaVer').attr('href', API_VIAJES + '/Viajes/' + id + '/Evidencia');
+            $('#evidenciaQuitarBtn').toggle(v.Estado !== 'Facturado');
+            $('#evidenciaArchivo').prop('disabled', v.Estado === 'Facturado');
+            $('#ModalEstadoViaje').modal('show');
+        }
+
+        function leerArchivoBase64(file) {
+            return new Promise(function (resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function () { resolve(String(reader.result).split(',')[1] || ''); };
+                reader.onerror = function () { reject(reader.error); };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function subirEvidenciaViaje(id, file) {
+            return leerArchivoBase64(file).then(function (b64) {
+                return $.ajax({
+                    url: API_VIAJES + '/Viajes/' + id + '/Evidencia',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ Nombre_Archivo: file.name, Content_Type: file.type, ContenidoBase64: b64, Usuario: usuarioActual() })
+                });
+            });
+        }
+
+        function quitarEvidenciaViaje() {
+            var id = $('#estadoViajeId').val();
+            if (!id || !confirm('¿Quitar la evidencia adjunta de este viaje?')) return;
+            $.ajax({ url: API_VIAJES + '/Viajes/' + id + '/Evidencia?usuario=' + encodeURIComponent(usuarioActual()), type: 'DELETE' })
+                .done(function () {
+                    if (viajesPagina[id]) viajesPagina[id].Tiene_Evidencia = false;
+                    $('#evidenciaActual').hide();
+                    buscarViajes(currentPage);
+                })
+                .fail(function (xhr) { $('#alertaEstadoViaje').text(parsearError(xhr)).show(); });
+        }
+
+        function actualizarAyudaEstado() {
+            var nuevo = $('#estadoViajeNuevo').val();
+            var v = viajesPagina[$('#estadoViajeId').val()] || {};
+            var obligatorio = esDirecto(v) && (nuevo === 'Entregado' || nuevo === 'Facturado');
+            $('#estadoViajeAyuda').text(AYUDA_ESTADO[nuevo] || '');
+            $('#resultadoEntregaMarca, #fechaEntregaMarca')
+                .toggleClass('text-muted', !obligatorio).toggleClass('text-danger', obligatorio)
+                .text(obligatorio ? '*' : '(opcional)');
+        }
+
+        function confirmarEstadoViaje() {
+            var id = $('#estadoViajeId').val();
+            var v = viajesPagina[id];
+            if (!v) return;
+            var dto = {
+                Estado: $('#estadoViajeNuevo').val(),
+                Resultado_Entrega: $('#resultadoEntrega').val() || null,
+                Fecha_Entrega: $('#fechaEntrega').val() || null,
+                Usuario: usuarioActual()
+            };
+            var falt = [];
+            if (!esDirecto(v) && (dto.Estado === 'Listo_para_facturar' || dto.Estado === 'Facturado')) {
+                var sinNumeros = [];
+                if (!(v.Num_Transporte || '').trim()) sinNumeros.push('N° transporte SAP');
+                if (!(v.Num_Remito || '').trim()) sinNumeros.push('número de remito');
+                if (!(v.Num_de_Carga || '').trim()) sinNumeros.push('N° entrega Rukas');
+                if (sinNumeros.length) falt.push('al viaje le falta ' + sinNumeros.join(', ') + ' (editalo antes de marcarlo para facturar)');
+            }
+            if (esDirecto(v) && (dto.Estado === 'Entregado' || dto.Estado === 'Facturado')) {
+                if (!dto.Resultado_Entrega) falt.push('indicá el resultado de la entrega');
+                if (!dto.Fecha_Entrega) falt.push('indicá la fecha de entrega');
+            }
+            var file = esDirecto(v) ? ($('#evidenciaArchivo')[0].files || [])[0] : null;
+            if (file) {
+                if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].indexOf(file.type) < 0) falt.push('la evidencia debe ser una imagen (JPG, PNG, WEBP) o un PDF');
+                else if (file.size > 5 * 1024 * 1024) falt.push('la evidencia no puede pesar más de 5 MB');
+            }
+            if (falt.length) { $('#alertaEstadoViaje').text('No se puede guardar: ' + falt.join('; ') + '.').show(); return; }
+
+            if (esDirecto(v) && dto.Estado === 'Entregado' && dto.Estado !== v.Estado && !file && !v.Tiene_Evidencia) {
+                if (!confirm('No adjuntaste evidencia de la entrega (remito firmado, foto o conforme). Es lo único que queda como constancia para este cliente. ¿Guardar igual?')) return;
+            }
+
+            var subida = file ? subirEvidenciaViaje(id, file) : $.Deferred().resolve().promise();
+            $.when(subida)
+                .then(function () {
+                    return $.ajax({
+                        url: API_VIAJES + '/Viajes/' + id + '/Estado',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify(dto)
+                    });
+                })
+                .done(function () { $('#ModalEstadoViaje').modal('hide'); buscarViajes(currentPage); })
+                .fail(function (xhr) { $('#alertaEstadoViaje').text(xhr && xhr.status !== undefined ? parsearError(xhr) : 'No se pudo leer el archivo seleccionado.').show(); });
+        }
 
         // ===================== READY =====================
         $(document).ready(function () {
             if (window.flatpickr) {
                 window.fpInicio = flatpickr('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
                 window.fpFin = flatpickr('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
+                window.fpEntrega = flatpickr('#fechaEntrega', { dateFormat: 'Y-m-d', allowInput: true });
             }
+            $('#estadoViajeNuevo').on('change', actualizarAyudaEstado);
             $('#ModalAltaViaje').on('shown.bs.modal', function () { initMapaViaje(); if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 150); } });
             $('#clienteSelect').on('change', onClienteChangeViaje);
             $('#origenSelect, #destinoSelect').on('change', function () {

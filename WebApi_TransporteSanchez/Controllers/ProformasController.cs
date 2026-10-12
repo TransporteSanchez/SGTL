@@ -374,6 +374,18 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (h.Total <= 0) errores.Add("El total debe ser mayor a cero.");
                     if (string.IsNullOrWhiteSpace(h.Origen)) errores.Add("Falta el origen.");
                     if (string.IsNullOrWhiteSpace(h.Destino)) errores.Add("Falta el destino.");
+                    var yaFacturados = db.Database.SqlQuery<int>(
+                        "SELECT v.Viaje_ID " + JOIN_VIAJES_DE_PROFORMA + " AND v.Estado='Facturado'", P("@id", id)).ToList();
+                    if (yaFacturados.Count > 0) errores.Add("Viaje(s) ya facturado(s) en otra proforma: " + ListaViajes(yaFacturados) + ". Quitá esas líneas.");
+                    var directosSinEntregar = db.Database.SqlQuery<int>(
+                        "SELECT v.Viaje_ID " + JOIN_VIAJES_DE_PROFORMA + " AND v.Estado NOT IN ('Entregado','Facturado') " +
+                        "AND NOT EXISTS (SELECT 1 FROM CLIENTES c WHERE c.Cliente_ID = v.ClienteID AND c.Tipo_Cliente = 'Con_plataforma')", P("@id", id)).ToList();
+                    if (directosSinEntregar.Count > 0) errores.Add("Viaje(s) de cliente directo que todavía no están Entregados: " + ListaViajes(directosSinEntregar) + ".");
+                    var plataformaSinNumeros = db.Database.SqlQuery<int>(
+                        "SELECT v.Viaje_ID " + JOIN_VIAJES_DE_PROFORMA +
+                        " AND (LTRIM(RTRIM(ISNULL(v.Num_Remito,''))) = '' OR LTRIM(RTRIM(ISNULL(v.Num_Transporte,''))) = '') " +
+                        "AND EXISTS (SELECT 1 FROM CLIENTES c WHERE c.Cliente_ID = v.ClienteID AND c.Tipo_Cliente = 'Con_plataforma')", P("@id", id)).ToList();
+                    if (plataformaSinNumeros.Count > 0) errores.Add("Viaje(s) sin número de remito o de transporte SAP: " + ListaViajes(plataformaSinNumeros) + ".");
                     if (errores.Count > 0) return Content(HttpStatusCode.BadRequest, new { errores });
 
                     int n = db.Database.SqlQuery<int>("SELECT NEXT VALUE FOR dbo.SEQ_PROFORMA").First();
@@ -382,8 +394,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.Database.ExecuteSqlCommand(
                         "UPDATE PROFORMAS SET Numero=@num, Estado='Generada', FechaEmision=ISNULL(FechaEmision,GETDATE()), Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
                         P("@num", numero), P("@u", usu), P("@id", id));
-                    Auditar(db, usu, "GENERAR", id, "Estado=Borrador", "Estado=Generada; Numero=" + numero);
-                    return Ok(new { Proforma_ID = id, Numero = numero, Estado = "Generada", Message = "Proforma generada." });
+                    int viajesFacturados = db.Database.ExecuteSqlCommand(
+                        "UPDATE v SET Estado='Facturado', Usu_Modi=@u, Fecha_Modi=GETDATE() " + JOIN_VIAJES_DE_PROFORMA,
+                        P("@u", UsuarioCorto(usu)), P("@id", id));
+                    Auditar(db, usu, "GENERAR", id, "Estado=Borrador", "Estado=Generada; Numero=" + numero + "; Viajes facturados=" + viajesFacturados);
+                    return Ok(new { Proforma_ID = id, Numero = numero, Estado = "Generada", ViajesFacturados = viajesFacturados, Message = "Proforma generada." });
                 }
             }
             catch (Exception ex)
@@ -433,8 +448,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (est == "Anulada") return Content(HttpStatusCode.BadRequest, new { error = "La proforma ya esta anulada." });
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET Estado='Anulada', Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
                         P("@u", body != null ? body.Usuario : null), P("@id", id));
-                    Auditar(db, body != null ? body.Usuario : null, "ANULAR", id, "Estado=" + est, "Estado=Anulada");
-                    return Ok(new { Message = "Proforma anulada." });
+                    int viajesLiberados = est == "Borrador" ? 0 : db.Database.ExecuteSqlCommand(
+                        "UPDATE v SET Estado=" + ESTADO_PREVIO_A_FACTURADO + ", Usu_Modi=@u, Fecha_Modi=GETDATE() " +
+                        JOIN_VIAJES_DE_PROFORMA + " AND v.Estado='Facturado' " +
+                        "AND NOT EXISTS (SELECT 1 FROM PROFORMA_DETALLE pd2 JOIN PROFORMAS p2 ON p2.Proforma_ID = pd2.Proforma_ID " +
+                        "WHERE LTRIM(RTRIM(pd2.Codigo)) = 'V' + CAST(v.Viaje_ID AS varchar(12)) AND p2.Proforma_ID <> @id AND p2.Estado NOT IN ('Borrador','Anulada'))",
+                        P("@u", UsuarioCorto(body != null ? body.Usuario : null)), P("@id", id));
+                    Auditar(db, body != null ? body.Usuario : null, "ANULAR", id, "Estado=" + est, "Estado=Anulada; Viajes liberados=" + viajesLiberados);
+                    return Ok(new { Message = "Proforma anulada.", ViajesLiberados = viajesLiberados });
                 }
             }
             catch (Exception ex)
@@ -474,7 +495,26 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // Prellenado desde viajes: usa entidades del EDMX (VIAJES/TARIFAS/ORIGEN/DESTINO), que si estan mapeadas.
+        // Fila de VIAJES para prellenar. Estado, Tipo_Cliente y VIAJE_EVIDENCIA vienen de 06/07_*.sql (fuera del EDMX).
+        private class ViajePrellenado
+        {
+            public int Viaje_ID { get; set; }
+            public DateTime Fecha_Inicio { get; set; }
+            public string Origen { get; set; }
+            public string Destino { get; set; }
+            public string Num_Remito { get; set; }
+            public string Num_de_Carga { get; set; }
+            public string Num_Transporte { get; set; }
+            public string Distancia_KM { get; set; }
+            public int? TarifaFijaID { get; set; }
+            public int? TarifaKmID { get; set; }
+            public string Estado { get; set; }
+            public bool Tiene_Evidencia { get; set; }
+        }
+
+        // Prellenado desde viajes. Devuelve { lineas, advertencias }. Nunca trae viajes facturados ni sin tarifa.
+        //   Con plataforma (Rukas): exige numero de remito y de transporte SAP.
+        //   Directo: solo viajes Entregados (SGTL es la unica constancia de la entrega).
         [HttpGet]
         [Route("PrellenarViajes")]
         public IHttpActionResult PrellenarViajes(int clienteId, string desde, string hasta)
@@ -487,39 +527,89 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(Cn()))
                 {
-                    var hastaFin = d2.Date.AddDays(1).AddTicks(-1);
                     var fijas = db.Set<TARIFAS_FIJAS>().Select(t => new { t.TarifaFija_ID, t.ValorFijoNeto }).ToList().ToDictionary(t => t.TarifaFija_ID, t => t.ValorFijoNeto);
                     var kms = db.Set<TARIFAS_KM>().Select(t => new { t.TarifaKm_ID, t.ValorKm }).ToList().ToDictionary(t => t.TarifaKm_ID, t => t.ValorKm);
-                    var filas = (from v in db.Set<VIAJES>()
-                                 join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj
-                                 from o in oj.DefaultIfEmpty()
-                                 join de in db.Set<DESTINO>() on v.DestinoID equals de.Destino_ID into dj
-                                 from de in dj.DefaultIfEmpty()
-                                 where v.ClienteID == clienteId && v.Fecha_Inicio >= d1.Date && v.Fecha_Inicio <= hastaFin
-                                 orderby v.Fecha_Inicio
-                                 select new { v.Viaje_ID, v.Fecha_Inicio, Origen = o != null ? o.Descripcion : "", Destino = de != null ? de.Descripcion : "", v.Num_Remito, v.Distancia_KM, v.TarifaFijaID, v.TarifaKmID }).ToList();
+                    var tipoCliente = db.Database.SqlQuery<string>(
+                        "SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@cli", P("@cli", clienteId)).FirstOrDefault();
+                    bool conPlataforma = tipoCliente == ClientesController.TipoConPlataforma;
+                    var filas = db.Database.SqlQuery<ViajePrellenado>(
+                        "SELECT v.Viaje_ID, v.Fecha_Inicio, ISNULL(o.Descripcion,'') AS Origen, ISNULL(de.Descripcion,'') AS Destino, " +
+                        "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
+                        "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.TarifaFijaID, v.TarifaKmID, v.Estado, " +
+                        "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
+                        "FROM VIAJES v LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN DESTINO de ON de.Destino_ID = v.DestinoID " +
+                        "WHERE v.ClienteID=@cli AND v.Fecha_Inicio >= @d1 AND v.Fecha_Inicio < @d2 ORDER BY v.Fecha_Inicio",
+                        P("@cli", clienteId), P("@d1", d1.Date), P("@d2", d2.Date.AddDays(1))).ToList();
 
                     var lineas = new List<DetalleLineaDto>();
+                    var facturados = new List<int>();
+                    var sinNumeros = new List<int>();
+                    var noEntregados = new List<int>();
+                    var sinTarifa = new List<int>();
+                    var registrados = new List<int>();
+                    var sinEvidencia = new List<int>();
                     int orden = 1;
                     foreach (var f in filas)
                     {
+                        if (f.Estado == "Facturado") { facturados.Add(f.Viaje_ID); continue; }
+                        if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }
+                        if (!conPlataforma && f.Estado != "Entregado") { noEntregados.Add(f.Viaje_ID); continue; }
+
                         decimal importe = 0;
                         if (f.TarifaFijaID.HasValue && f.TarifaFijaID.Value > 0 && fijas.ContainsKey(f.TarifaFijaID.Value)) importe = fijas[f.TarifaFijaID.Value];
                         else if (f.TarifaKmID.HasValue && f.TarifaKmID.Value > 0 && kms.ContainsKey(f.TarifaKmID.Value)) importe = kms[f.TarifaKmID.Value] * ParseDec(f.Distancia_KM);
+                        if (importe <= 0) { sinTarifa.Add(f.Viaje_ID); continue; }
+
+                        if (conPlataforma && f.Estado == "Registrado") registrados.Add(f.Viaje_ID);
+                        if (!conPlataforma && !f.Tiene_Evidencia) sinEvidencia.Add(f.Viaje_ID);
+
                         lineas.Add(new DetalleLineaDto
                         {
                             Orden = orden++, Codigo = "V" + f.Viaje_ID, Concepto = "Viaje " + f.Origen + " -> " + f.Destino,
-                            Descripcion = f.Fecha_Inicio.ToString("dd/MM/yyyy") + (string.IsNullOrWhiteSpace(f.Num_Remito) ? "" : (" - Remito " + f.Num_Remito)),
+                            Descripcion = f.Fecha_Inicio.ToString("dd/MM/yyyy") +
+                                          (string.IsNullOrWhiteSpace(f.Num_Transporte) ? "" : (" - Transporte " + f.Num_Transporte)) +
+                                          (string.IsNullOrWhiteSpace(f.Num_Remito) ? "" : (" - Remito " + f.Num_Remito)) +
+                                          (string.IsNullOrWhiteSpace(f.Num_de_Carga) ? "" : (" - Entrega " + f.Num_de_Carga)),
                             Cantidad = 1, Unidad = "Viaje", PrecioUnitario = Redondear(importe), DescuentoPct = 0, IvaPct = 21
                         });
                     }
-                    return Ok(lineas);
+
+                    var advertencias = new List<string>();
+                    if (sinNumeros.Count > 0) advertencias.Add("No se trajeron " + sinNumeros.Count + " viaje(s) sin número de remito o de transporte SAP: " + ListaViajes(sinNumeros) + ".");
+                    if (noEntregados.Count > 0) advertencias.Add("No se trajeron " + noEntregados.Count + " viaje(s) que todavía no están en estado Entregado: " + ListaViajes(noEntregados) + ".");
+                    if (sinTarifa.Count > 0) advertencias.Add("No se trajeron " + sinTarifa.Count + " viaje(s) sin tarifa o con importe en cero: " + ListaViajes(sinTarifa) + ".");
+                    if (facturados.Count > 0) advertencias.Add(facturados.Count + " viaje(s) ya estaban facturados y no se volvieron a traer: " + ListaViajes(facturados) + ".");
+                    if (registrados.Count > 0) advertencias.Add(registrados.Count + " viaje(s) siguen en estado Registrado (verificá en Rukas que estén entregados): " + ListaViajes(registrados) + ".");
+                    if (sinEvidencia.Count > 0) advertencias.Add(sinEvidencia.Count + " viaje(s) entregados no tienen evidencia adjunta (recomendado): " + ListaViajes(sinEvidencia) + ".");
+
+                    return Ok(new { lineas, advertencias });
                 }
             }
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "Error al prellenar desde viajes.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
+        }
+
+        private static string ListaViajes(List<int> ids)
+        {
+            return string.Join(", ", ids.Select(i => "#" + i));
+        }
+
+        // Las lineas traidas desde viajes llevan Codigo = "V" + Viaje_ID.
+        private const string JOIN_VIAJES_DE_PROFORMA =
+            "FROM VIAJES v JOIN PROFORMA_DETALLE pd ON LTRIM(RTRIM(pd.Codigo)) = 'V' + CAST(v.Viaje_ID AS varchar(12)) " +
+            "WHERE pd.Proforma_ID=@id ";
+
+        // Estado al que vuelve un viaje cuando se anula la proforma que lo facturo (depende del tipo de cliente).
+        private const string ESTADO_PREVIO_A_FACTURADO =
+            "(CASE WHEN EXISTS (SELECT 1 FROM CLIENTES c WHERE c.Cliente_ID = v.ClienteID AND c.Tipo_Cliente = 'Con_plataforma') " +
+            "THEN 'Listo_para_facturar' ELSE 'Entregado' END)";
+
+        private static string UsuarioCorto(string u)
+        {
+            u = string.IsNullOrWhiteSpace(u) ? "sistema" : u.Trim();
+            return u.Length > 20 ? u.Substring(0, 20) : u;
         }
 
         private static decimal ParseDec(string raw)
