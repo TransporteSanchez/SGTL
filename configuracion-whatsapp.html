@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Integración WhatsApp</title>
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <style>
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .whatsapp-card { max-width: 980px; }
+        .whatsapp-icon { color: #25d366; font-size: 2rem; }
+    </style>
+</head>
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="loading-message" style="display:none;"><div class="spinner-border" role="status"><span class="visually-hidden">Cargando…</span></div></div>
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top"><div class="container-fluid">
+                    <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
+                    <div id="header-container"></div>
+                    <script src="./assets/static/js/header.js"></script>
+                </div></nav>
+            </header>
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card whatsapp-card rounded mx-4 mt-4">
+                        <div class="card-header">
+                            <div class="d-flex align-items-center gap-3">
+                                <i class="bi bi-whatsapp whatsapp-icon"></i>
+                                <div>
+                                    <h5 class="card-title mb-1">Integración WhatsApp</h5>
+                                    <small class="text-muted">Envío de la hoja de ruta a los choferes.</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info mb-4">
+                                Este módulo prepara la integración. La conexión con el proveedor de WhatsApp se habilitará cuando se definan las credenciales y la API a utilizar.
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-send me-2"></i>Envío planificado</h6>
+                                        <p class="mb-0 text-muted">Al asignar o confirmar un viaje, se enviará al chofer un resumen con cliente, origen, destino, fecha, carga y observaciones.</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6><i class="bi bi-map me-2"></i>Ruta en Google Maps</h6>
+                                        <p class="mb-0 text-muted">El mensaje incluirá un enlace de navegación generado desde los datos de origen y destino del viaje.</p>
+                                    </div>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label">Formato de enlace previsto</label>
+                                    <code class="d-block p-3 rounded bg-light text-break">https://www.google.com/maps/dir/?api=1&amp;origin={origen}&amp;destination={destino}</code>
+                                </div>
+                                <div class="col-12">
+                                    <div class="alert alert-light border mb-0">
+                                        Próximo paso: seleccionar el proveedor —por ejemplo, WhatsApp Business Cloud API— y registrar de forma segura el token, número emisor y plantilla aprobada antes de habilitar envíos reales.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
+        </div>
+    </div>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script>
+        window.onload = async function () {
+            document.getElementById('loading-message').style.display = 'block';
+            try {
+                if (window.loadHeader) window.loadHeader();
+                if (window.loadFooter) window.loadFooter();
+                if (window.loadSidebar) await window.loadSidebar();
+                if (window.loadSettings) await window.loadSettings();
+                if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
+                document.getElementById('app').style.display = 'block';
+            } finally {
+                document.getElementById('loading-message').style.display = 'none';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -221,7 +221,7 @@ namespace WebApi_TransporteSanchez.Controllers
             bool soloGeneradas = false, int page = 1, int pageSize = 15)
         {
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 200) pageSize = 15;
+            if (pageSize < 0 || pageSize > 200) pageSize = 15;
             var where = new StringBuilder(" WHERE 1=1 ");
             var ps = new List<SqlParameter>();
             if (!string.IsNullOrWhiteSpace(numero)) { where.Append(" AND Numero LIKE @numero "); ps.Add(P("@numero", "%" + numero.Trim() + "%")); }
@@ -241,13 +241,23 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     int total = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM PROFORMAS" + where,
                         ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).First();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(total, 1);
+                    }
 
                     var pPage = ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToList();
                     pPage.Add(P("@off", (page - 1) * pageSize)); pPage.Add(P("@lim", pageSize));
                     string sql =
                         "SELECT Proforma_ID, Numero, ISNULL(FechaEmision,FechaCreacion) AS Fecha, ClienteID, " +
                         "Cli_RazonSocial AS Cliente, Destino, ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total, Estado, Usu_Alta AS UsuarioCreador " +
-                        "FROM PROFORMAS" + where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
+                        ",fac.FacturaID,fac.FacturaNumero FROM PROFORMAS " +
+                        "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
+                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero " +
+                        "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
+                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
+                        where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
                 }
@@ -269,6 +279,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Total { get; set; }
             public string Estado { get; set; }
             public string UsuarioCreador { get; set; }
+            public int? FacturaID { get; set; }
+            public string FacturaNumero { get; set; }
         }
 
         [HttpGet]

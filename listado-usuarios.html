@@ -241,7 +241,7 @@
 
     <script>
         const API_BASE = 'http://localhost:50222/api';
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
 
         function escapeHtml(text) {
@@ -360,6 +360,14 @@
         function renderPagination(totalRecords, pageSizeVal, page) {
             const totalPages = Math.ceil(totalRecords / pageSizeVal) || 1;
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: pageSizeVal, pagina: page,
+                    alCambiarPagina: function (pagina) { buscarUsuarios(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarUsuarios(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = page === 1 ? 'disabled' : '';

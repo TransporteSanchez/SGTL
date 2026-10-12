@@ -545,7 +545,7 @@
                             <i class="bx bx-x d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Cancelar</span>
                         </button>
-                        <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarChofer()">
+                        <button type="button" class="btn btn-primary ms-1" onclick="confirmarEliminarChofer()">
                             <i class="bx bx-check d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Confirmar</span>
                         </button>
@@ -573,7 +573,7 @@
                             <i class="bx bx-x d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Cancelar</span>
                         </button>
-                        <button type="button" class="btn btn-secondary ms-1"
+                        <button type="button" class="btn btn-primary ms-1"
                             onclick="confirmarActivarDesactivarChofer()">
                             <i class="bx bx-check d-block d-sm-none"></i>
                             <span class="d-none d-sm-block">Confirmar</span>
@@ -758,7 +758,7 @@
         });
 
         // Constantes para el paginado
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
 
         // Función para realizar la búsqueda de choferes con paginación
@@ -893,9 +893,17 @@
         }
 
         // Función para renderizar la paginación
-        function renderPagination(totalRecords, pageSize, currentPage) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
+        function renderPagination(totalRecords, tamanioActual, currentPage) {
+            const totalPages = Math.ceil(totalRecords / tamanioActual);
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                    alCambiarPagina: function (pagina) { buscarChoferes(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarChoferes(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = currentPage === 1 ? 'disabled' : '';

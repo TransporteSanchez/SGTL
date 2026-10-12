@@ -269,7 +269,8 @@ namespace WebApi_TransporteSanchez.Controllers
             string referencia = null, int page = 1, int pageSize = 6)
         {
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > MaxPageSize) pageSize = 6;
+            // pageSize = 0 significa "todos" (selector de paginacion compartido).
+            if (pageSize < 0 || pageSize > MaxPageSize) pageSize = 6;
 
             var where = new StringBuilder(" WHERE 1=1 ");
             var ps = new List<SqlParameter>();
@@ -302,6 +303,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new SGTLAuditContext(Cn()))
                 {
                     int totalRecords = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM VIAJES v" + where, Clonar(ps)).First();
+
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(totalRecords, 1);
+                    }
 
                     var pPage = Clonar(ps).ToList();
                     pPage.Add(P("@off", (page - 1) * pageSize));

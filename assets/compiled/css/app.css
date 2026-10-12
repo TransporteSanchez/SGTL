@@ -23189,12 +23189,13 @@ body .bi:before,
 }
 
 .sidebar-wrapper .menu .submenu .submenu-item a {
-    padding: .7rem 2rem;
+    padding: .7rem 1.2rem;
     display: block;
     color: #25396f;
-    font-size: .85rem;
+    font-size: .82rem;
     font-weight: 600;
-    letter-spacing: .5px;
+    letter-spacing: 0;
+    white-space: nowrap;
     transition: all .3s
 }
 

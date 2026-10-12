@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Listar facturas (Proformas)</title>
+    <title>Transporte Sanchez - Listar proformas</title>
     <style>
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
@@ -44,8 +44,8 @@
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-                            <h5 class="card-title mb-0">Listar facturas — Proformas generadas</h5>
-                            <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar facturas).</small>
+                            <h5 class="card-title mb-0">Listar proformas generadas</h5>
+                            <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar proformas).</small>
                         </div>
                         <div class="card-body">
                             <div class="row g-2 mb-3">
@@ -156,6 +156,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
+    <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/facturacion-proforma.js"></script>
 
     <script>
         window.onload = function () {
@@ -180,7 +182,7 @@
     <script>
         const API_FAC = 'http://localhost:50222/api';
         const ESTADOS_GEN = ['Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
-        var profState = { page: 1, totalPages: 1 };
+        var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
 
         function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
         function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -216,7 +218,7 @@
             if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
             if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
-            p.append('page', profState.page); p.append('pageSize', 15);
+            p.append('page', profState.page); p.append('pageSize', profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
             cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
             fetch(API_FAC + '/Proformas?' + p.toString())
@@ -231,7 +233,8 @@
             var cuerpo = document.getElementById('cuerpoProformas');
             var items = (data && data.items) || [];
             profState.totalPages = (data && data.totalPages) || 1;
-            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; document.getElementById('paginacion').innerHTML = ''; document.getElementById('resumen').textContent = '0 resultados'; return; }
+            profState.total = Number((data && data.total) || 0);
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; renderPag(); document.getElementById('resumen').textContent = '0 resultados'; return; }
             cuerpo.innerHTML = items.map(function (x) {
                 return '<tr>' +
                     '<td>' + esc(x.Numero || '—') + '</td>' +
@@ -241,13 +244,23 @@
                     '<td class="text-end">' + money(x.Total) + '</td>' +
                     '<td>' + badgeEstado(x.Estado) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
-                    '<td class="text-center" style="white-space:nowrap;"><button class="btn btn-sm btn-outline-primary" title="Ver" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button></td></tr>';
+                    '<td class="text-center" style="white-space:nowrap;"><button class="btn btn-sm btn-outline-primary" title="Ver" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button> ' +
+                    ((x.Estado || '') === 'Aceptada' && !x.FacturaID ? '<button class="btn btn-sm btn-success" title="Emitir Factura" onclick="facturarProforma(' + x.Proforma_ID + ')"><i class="bi bi-receipt"></i></button>' : '') +
+                    (x.FacturaID ? '<button class="btn btn-sm btn-success" disabled title="Facturada: ' + esc(x.FacturaNumero) + '"><i class="bi bi-check-circle"></i></button>' : '') + '</td></tr>';
             }).join('');
             document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
             renderPag();
         }
         function renderPag() {
             var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(ul, {
+                    total: profState.total, tamanioPagina: profState.pageSize, pagina: pg,
+                    alCambiarPagina: function (pagina) { buscarProformas(pagina); },
+                    alCambiarTamanio: function (tamanio) { profState.pageSize = tamanio; buscarProformas(1); }
+                });
+                return;
+            }
             if (tp <= 1) { ul.innerHTML = ''; return; }
             var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
             for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
@@ -279,6 +292,11 @@
                 }).join('') : '<tr><td colspan="9" class="text-center text-muted">Sin conceptos.</td></tr>';
                 $('#modalDetalle').modal('show');
             }).catch(function () { alert('No se pudo abrir la proforma.'); });
+        }
+
+        function facturarProforma(id) {
+            if (!window.FacturacionProforma) { alert('No se pudo cargar el módulo de Facturación.'); return; }
+            window.FacturacionProforma.abrir(id, function () { buscarProformas(profState.page); });
         }
 
         document.addEventListener('DOMContentLoaded', function () {

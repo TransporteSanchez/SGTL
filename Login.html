@@ -64,6 +64,7 @@
             display: none;
         }
     </style>
+    <link rel="stylesheet" href="./css/login.css">
 </head>
 
 <body>
@@ -71,8 +72,13 @@
         <div class="row vh-100">
             <!-- Sección izquierda -->
             <div class="col-lg-6 left-section d-none d-lg-flex">
-                <div class="text-center">
-                    <img id="logoIzquierdo" src="./assets/compiled/svg/ts-logo2.svg" alt="Logo Izquierdo" style="width: 500px;">
+                <span class="login-orbit login-orbit-top" aria-hidden="true"></span>
+                <span class="login-orbit login-orbit-bottom" aria-hidden="true"></span>
+                <span class="login-orbit login-orbit-bottom-inner" aria-hidden="true"></span>
+                <div class="brand-lockup text-center">
+                    <div class="brand-logo-frame">
+                        <img id="logoIzquierdo" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo de SGTL">
+                    </div>
                 </div>
             </div>
 
@@ -93,10 +99,11 @@
             <!-- Sección derecha -->
             <div class="col-lg-6 right-section">
                 <div class="login-card card">
-                    <div class="text-center mb-4">
-                        <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo Derecho" style="width: 200px;">
+                    <div class="login-card-brand text-center">
+                        <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo de SGTL">
                     </div>
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
+                    <p class="login-subtitle text-center">Ingrese sus credenciales para continuar.</p>
                     <!-- Formulario -->
                     <form id="loginForm">
                         <div class="mb-3">
@@ -124,7 +131,7 @@
 
                         <small id="generalError" class="error-message text-center mb-3 d-block" style="display: none;"></small>
 
-                        <div class="d-grid">
+                        <div class="d-grid login-submit">
                             <button type="submit" class="btn btn-primary">Entrar</button>
                         </div>
                     </form>
@@ -203,19 +210,24 @@
                                 console.log("Logo asignado:", content.Logo);
                             } else {
                                 console.warn("Logo no está disponible.");
-                                document.getElementById('logoIzquierdo').src = './assets/compiled/svg/default-logo.svg';
-                                document.getElementById('logoDerecho').src = './assets/compiled/svg/default-logo.svg';
+                                document.getElementById('logoIzquierdo').src = './assets/compiled/svg/ts-logo-text.svg';
+                                document.getElementById('logoDerecho').src = './assets/compiled/svg/ts-logo-text.svg';
                             }
 
                             // Asignar ColorFondo si existe
                             if (content.ColorFondo) {
-                                document.querySelector('.left-section').style.backgroundColor = content.ColorFondo;
+                                document.documentElement.style.setProperty('--login-brand-color', content.ColorFondo);
                                 console.log("ColorFondo asignado:", content.ColorFondo);
                             } else {
                                 console.warn("ColorFondo no está disponible.");
                             }
 
                             // Asignar ContenidoPiePagina si existe
+                            if (content.ColorBotonesMenu) {
+                                document.documentElement.style.setProperty('--login-accent-color', content.ColorBotonesMenu);
+                                document.documentElement.style.setProperty('--login-accent-hover', content.ColorBotonesMenu);
+                            }
+
                             if (content.ContenidoPiePagina) {
                                 document.getElementById('footerContent').innerHTML = content.ContenidoPiePagina;
                                 console.log("ContenidoPiePagina asignado:", content.ContenidoPiePagina);

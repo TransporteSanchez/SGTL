@@ -103,7 +103,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Camiones/Buscar
         [HttpGet]
         [Route("api/Camiones/Buscar")]
-        public IHttpActionResult Buscar(string dominio = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string dominio = null, string estadoCamion = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -119,6 +119,20 @@ namespace WebApi_TransporteSanchez.Controllers
                         query = query.Where(c => c.Dominio.Contains(dominio));
                     }
 
+                    if (!string.IsNullOrWhiteSpace(estadoCamion))
+                    {
+                        var estados = estadoCamion
+                            .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(estado => estado.Trim())
+                            .Where(estado => estado == "Activo" || estado == "Inactivo")
+                            .ToArray();
+
+                        if (estados.Any())
+                        {
+                            query = query.Where(c => estados.Contains(c.EstadoCamion));
+                        }
+                    }
+
                     // Filtro por rango de fechas de alta si se proporciona
                     if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime desde))
                     {
@@ -132,6 +146,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
                     var totalRecords = query.Count();
+                    if (pageSize == 0)
+                    {
+                        page = 1;
+                        pageSize = Math.Max(totalRecords, 1);
+                    }
+                    else if (pageSize < 1)
+                    {
+                        pageSize = 6;
+                    }
 
                     var results = query
                         .OrderByDescending(c => c.Camion_ID)
@@ -187,6 +210,91 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 return InternalServerError(ex);
             }
+        }
+
+
+        // PUT: api/Camiones/EstadoCamion/{id}
+        [HttpPut]
+        [Route("api/Camiones/EstadoCamion/{id:int}")]
+        public IHttpActionResult PutEstadoCamion(int id, [FromBody] EstadoCamionUpdateModel model)
+        {
+            if (model == null || !ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var estado = (model.EstadoCamion ?? string.Empty).Trim();
+            if (!string.Equals(estado, "Activo", StringComparison.OrdinalIgnoreCase)
+                && !string.Equals(estado, "Inactivo", StringComparison.OrdinalIgnoreCase))
+            {
+                return Content(HttpStatusCode.BadRequest, new
+                {
+                    error = "El estado del camión debe ser Activo o Inactivo."
+                });
+            }
+
+            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+            try
+            {
+                using (var db = new SGTLAuditContext(connectionString))
+                {
+                    var camion = db.Set<CAMIONES>().Find(id);
+                    if (camion == null)
+                    {
+                        return NotFound();
+                    }
+
+                    if (string.Equals(camion.EstadoCamion, "Eliminado", StringComparison.OrdinalIgnoreCase))
+                    {
+                        return Content(HttpStatusCode.BadRequest, new
+                        {
+                            error = "No se puede cambiar el estado de un camión eliminado."
+                        });
+                    }
+
+                    camion.EstadoCamion = string.Equals(estado, "Activo", StringComparison.OrdinalIgnoreCase)
+                        ? "Activo"
+                        : "Inactivo";
+                    camion.Fecha_Modi = DateTime.Now;
+                    camion.Usu_Modi = string.IsNullOrWhiteSpace(model.Usu_Modi)
+                        ? (camion.Usu_Modi ?? "sistema")
+                        : model.Usu_Modi.Trim();
+
+                    db.Configuration.ValidateOnSaveEnabled = false;
+                    db.SaveChanges();
+
+                    return Ok(new { EstadoCamion = camion.EstadoCamion });
+                }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict();
+            }
+            catch (DbEntityValidationException ex)
+            {
+                var validationErrors = ex.EntityValidationErrors
+                    .SelectMany(e => e.ValidationErrors)
+                    .Select(e => new { e.PropertyName, e.ErrorMessage })
+                    .ToList();
+
+                return Content(HttpStatusCode.BadRequest, validationErrors);
+            }
+            catch (DbUpdateException ex)
+            {
+                return InternalServerError(new Exception("Error al actualizar el estado del camión.", ex));
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(ex);
+            }
+        }
+
+        public class EstadoCamionUpdateModel
+        {
+            [Required]
+            public string EstadoCamion { get; set; }
+            public string Usu_Modi { get; set; }
         }
 
 
@@ -485,6 +593,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (camion.EstadoCamion == "Eliminado")
                     {
                         validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "El camión ya se encuentra eliminado." });
+                    }
+
+                    if (camion.EstadoCamion == "Activo")
+                    {
+                        validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "No se puede eliminar un camión activo. Inactívelo primero." });
                     }
 
 

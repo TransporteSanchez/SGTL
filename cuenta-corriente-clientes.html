@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sanchez - Cuenta Corriente de Clientes</title>
+
+    <style>
+        #app { display: none; }
+        #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
+        .cc-card-header { gap: .75rem; }
+        .cc-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+        .cc-summary-card { border: 1px solid var(--bs-border-color, #e5e7eb); box-shadow: none; margin-bottom: 0; }
+        .cc-summary-card .card-body { padding: 1rem 1.1rem; }
+        .cc-summary-label { color: #7c8aa5; font-size: .82rem; margin-bottom: .35rem; }
+        .cc-summary-value { font-size: 1.45rem; font-weight: 600; margin-bottom: .15rem; }
+        .cc-summary-note { color: #7c8aa5; font-size: .75rem; }
+        .cc-tabs { display: flex; width: 100%; border-bottom: 1px solid #e5e7eb; gap: 0; }
+        .cc-tab { display: flex; flex: 1 1 50%; align-items: center; justify-content: center; min-height: 48px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: #7c8aa5; padding: .75rem 1rem .65rem; text-align: center; font-size: .82rem; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+        .cc-tab.active { color: #008c9e; border-bottom-color: #008c9e; }
+        .cc-table th, .cc-table td { vertical-align: middle; }
+        .cc-table th { white-space: nowrap; }
+        .cc-table .cc-money { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .cc-toggle-column { width: 42px; }
+        .cc-toggle-applications { color: #435ebe; padding: .2rem .4rem; text-decoration: none; }
+        .cc-parent-row > td { border-bottom-color: #dce0ec; }
+        .cc-application-row > td { background: #f7f8fc; border-bottom-color: #e8eaf2; }
+        .cc-application-document { padding-left: 1rem !important; }
+        .cc-application-document i { color: #7c8aa5; }
+        .cc-document { color: #435ebe; font-weight: 600; white-space: nowrap; }
+        .cc-debit { color: #dc3545; }
+        .cc-credit { color: #198754; }
+        .cc-empty { padding: 2.5rem 1rem !important; text-align: center; color: #7c8aa5; }
+        .cc-block-title { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 18px 0 12px; }
+        .cc-demo-alert { border-left: 4px solid #ffc107; }
+        .cc-allocation-input { min-width: 125px; }
+        .cc-total-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 1rem 2rem; }
+        .cc-total-row strong { font-size: 1.05rem; }
+        .cc-trace-item { position: relative; padding-left: 1.5rem; padding-bottom: 1rem; }
+        .cc-trace-item::before { content: ""; position: absolute; left: .35rem; top: .42rem; width: .55rem; height: .55rem; border-radius: 50%; background: #435ebe; }
+        .cc-trace-item:not(:last-child)::after { content: ""; position: absolute; left: .6rem; top: 1rem; bottom: 0; width: 1px; background: #dce0ec; }
+        .cc-trace-title { font-weight: 600; }
+        .cc-trace-text { color: #7c8aa5; font-size: .82rem; }
+        .badge.cc-pending { background: #fcebed; color: #dc3545; }
+        .badge.cc-partial { background: #fff3cd; color: #a36a00; }
+        .badge.cc-paid { background: #e8f6ef; color: #198754; }
+        body.theme-dark .cc-summary-card,
+        body.theme-dark .cc-tabs,
+        body.theme-dark .cc-block-title { border-color: #3c4054; }
+        body.theme-dark .cc-trace-item:not(:last-child)::after { background: #3c4054; }
+        body.theme-dark .cc-parent-row > td { border-bottom-color: #3c4054; }
+        body.theme-dark .cc-application-row > td { background: #242638; border-bottom-color: #343749; }
+        body.theme-dark .badge.cc-pending { background: #482a31; color: #ff8792; }
+        body.theme-dark .badge.cc-partial { background: #493c24; color: #efb24f; }
+        body.theme-dark .badge.cc-paid { background: #253f34; color: #66d19a; }
+        @media (max-width: 767.98px) {
+            .cc-card-header { align-items: flex-start !important; }
+            .cc-actions { width: 100%; }
+            .cc-actions .btn { flex: 1 1 auto; }
+            .cc-filter-actions { justify-content: flex-start !important; }
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+</head>
+
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+
+    <div id="loading-message" style="display:none;">
+        <div class="spinner-border" role="status" style="width:50px;height:50px;">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
+    </div>
+
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block"><i class="bi bi-justify fs-3"></i></a>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap cc-card-header">
+                            <div>
+                                <h5 class="card-title mb-0">Cuenta Corriente de Clientes</h5>
+                                <small class="text-muted">Consulta de deuda, comprobantes, pagos y aplicaciones.</small>
+                            </div>
+
+                            <div class="cc-actions">
+                                <button type="button" class="btn btn-outline-secondary" id="btnExportarCuenta">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>Exportar listado
+                                </button>
+
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <i class="bi bi-file-earmark-plus me-1"></i>Comprobantes
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura directa"><i class="bi bi-receipt me-2"></i>Nueva factura directa</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura desde proforma"><i class="bi bi-file-earmark-check me-2"></i>Factura desde proforma</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de crédito"><i class="bi bi-file-earmark-minus me-2"></i>Nueva nota de crédito</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de débito"><i class="bi bi-file-earmark-plus me-2"></i>Nueva nota de débito</button></li>
+                                    </ul>
+                                </div>
+
+                                <button type="button" class="btn btn-primary" id="btnNuevoRecibo">
+                                    <i class="bi bi-wallet2 me-1"></i>Nuevo recibo
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-lg-4 col-md-6">
+                                    <label for="ccCliente" class="form-label">Cliente</label>
+                                    <select id="ccCliente" class="form-select"></select>
+                                </div>
+                                <div class="col-lg-2 col-md-3 col-6">
+                                    <label for="ccDesde" class="form-label">Desde</label>
+                                    <input id="ccDesde" class="form-control" type="date">
+                                </div>
+                                <div class="col-lg-2 col-md-3 col-6">
+                                    <label for="ccHasta" class="form-label">Hasta</label>
+                                    <input id="ccHasta" class="form-control" type="date">
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label for="ccTipo" class="form-label">Comprobante</label>
+                                    <select id="ccTipo" class="form-select">
+                                        <option value="">Todos</option>
+                                        <option value="FAC">Factura</option>
+                                        <option value="REC">Recibo</option>
+                                        <option value="NC">Nota de crédito</option>
+                                        <option value="ND">Nota de débito</option>
+                                    </select>
+                                </div>
+                                <div class="col-lg-2 col-md-6">
+                                    <label for="ccEstado" class="form-label">Estado financiero</label>
+                                    <select id="ccEstado" class="form-select">
+                                        <option value="">Todos</option>
+                                        <option value="Pendiente">Pendiente</option>
+                                        <option value="Parcial">Parcial</option>
+                                        <option value="Cancelado">Cancelado</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row mt-3 align-items-center">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="ccSoloPendientes">
+                                        <label class="form-check-label" for="ccSoloPendientes">Mostrar solo comprobantes pendientes</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 d-flex justify-content-end gap-2 cc-filter-actions mt-2 mt-md-0">
+                                    <button type="button" class="btn btn-light-secondary btn-sm" id="btnLimpiarCuenta">Limpiar</button>
+                                    <button type="button" class="btn btn-primary btn-sm" id="btnBuscarCuenta"><i class="bi bi-search me-1"></i>Buscar</button>
+                                </div>
+                            </div>
+
+                            <div class="row g-3 mt-1">
+                                <div class="col-lg-4">
+                                    <div class="card cc-summary-card">
+                                        <div class="card-body">
+                                            <div class="cc-summary-label"><i class="bi bi-cash-coin me-1"></i>Saldo actual</div>
+                                            <div class="cc-summary-value text-danger" id="ccSaldoActual">$ 0,00</div>
+                                            <div class="cc-summary-note">Saldo deudor en ARS</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card cc-summary-card">
+                                        <div class="card-body">
+                                            <div class="cc-summary-label"><i class="bi bi-exclamation-triangle me-1"></i>Deuda vencida</div>
+                                            <div class="cc-summary-value text-warning" id="ccDeudaVencida">$ 0,00</div>
+                                            <div class="cc-summary-note" id="ccDeudaVencidaNota">Sin deuda vencida</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-4">
+                                    <div class="card cc-summary-card">
+                                        <div class="card-body">
+                                            <div class="cc-summary-label"><i class="bi bi-calendar-event me-1"></i>Próximo vencimiento</div>
+                                            <div class="cc-summary-value" id="ccProximoVencimiento">—</div>
+                                            <div class="cc-summary-note" id="ccProximoVencimientoNota">Sin vencimientos próximos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="cc-tabs mt-3" role="tablist" aria-label="Vistas de Cuenta Corriente">
+                                <button type="button" class="cc-tab active" data-view="movimientos" role="tab" aria-selected="true">Comprobantes</button>
+                                <button type="button" class="cc-tab" data-view="pendientes" role="tab" aria-selected="false">Comprobantes sin relacionar</button>
+                            </div>
+
+                            <div class="table-responsive">
+                                <table class="table table-hover cc-table mb-0" id="ccTabla">
+                                    <thead id="ccTablaCabecera"></thead>
+                                    <tbody id="ccTablaCuerpo"></tbody>
+                                </table>
+                            </div>
+
+                            <nav aria-label="Paginación de Cuenta Corriente">
+                                <ul class="pagination justify-content-end mt-3 mb-0" id="ccPagination"></ul>
+                            </nav>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNuevoComprobante" tabindex="-1" aria-labelledby="cmpTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="cmpTitulo">Nuevo comprobante</h5>
+                        <small class="text-muted">Generación manual para Cuenta Corriente.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2" id="cmpMensaje">Completá los datos del comprobante.</div>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente *</label><input id="cmpCliente" type="text" class="form-control" list="cmpClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="cmpClienteId" type="hidden"><datalist id="cmpClientesSugeridos"></datalist></div>
+                        <div class="col-md-3"><label class="form-label">Fecha de emisión</label><input id="cmpFechaEmision" type="date" class="form-control"></div>
+                        <div class="col-md-3" id="cmpVencimientoGrupo"><label class="form-label">Fecha de vencimiento</label><input id="cmpFechaVencimiento" type="date" class="form-control"></div>
+                        <div class="col-12 d-none" id="cmpReferenciaGrupo">
+                            <label class="form-label" id="cmpReferenciaEtiqueta">Factura relacionada</label>
+                            <select id="cmpReferencia" class="form-select"></select>
+                            <div class="form-text" id="cmpReferenciaAyuda"></div>
+                        </div>
+                        <div class="col-12"><label class="form-label">Concepto</label><input id="cmpConcepto" class="form-control" maxlength="200" placeholder="Descripción del concepto"></div>
+                        <div class="col-md-4"><label class="form-label">Importe neto</label><input id="cmpNeto" type="number" min="0.01" step="0.01" class="form-control text-end" value="0.00"></div>
+                        <div class="col-md-2"><label class="form-label">IVA</label><select id="cmpIvaPct" class="form-select"><option value="0">0%</option><option value="10.5">10,5%</option><option value="21" selected>21%</option><option value="27">27%</option></select></div>
+                        <div class="col-md-3"><label class="form-label">IVA calculado</label><input id="cmpIvaImporte" class="form-control text-end" readonly></div>
+                        <div class="col-md-3"><label class="form-label">Otros impuestos</label><input id="cmpOtros" type="number" min="0" step="0.01" class="form-control text-end" value="0.00"></div>
+                        <div class="col-12"><div class="cc-total-row"><span>Total: <strong id="cmpTotal">$ 0,00</strong></span></div></div>
+                        <div class="col-12"><label class="form-label">Observaciones</label><textarea id="cmpObservaciones" class="form-control" rows="3" maxlength="2000"></textarea></div>
+                    </div>
+                    <div class="text-danger small text-end mt-2" id="cmpError" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnEmitirComprobante"><i class="bi bi-check-circle me-1"></i>Emitir comprobante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalNuevoRecibo" tabindex="-1" aria-labelledby="modalNuevoReciboTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="modalNuevoReciboTitulo">Nuevo recibo</h5>
+                        <small class="text-muted">Registrar cobranza e imputar facturas pendientes.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info py-2" id="reciboMensaje">
+                        <i class="bi bi-info-circle me-2"></i>El recibo se registrará y aplicará a los comprobantes seleccionados.
+                    </div>
+
+                    <div class="cc-block-title">1 · Datos generales</div>
+                    <div class="row g-2">
+                        <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente *</label><input id="reciboCliente" type="text" class="form-control" list="reciboClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="reciboClienteId" type="hidden"><datalist id="reciboClientesSugeridos"></datalist></div>
+                        <div class="col-md-3"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label">Importe del recibo</label><input id="reciboTotal" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
+                    </div>
+
+                    <div class="cc-block-title">2 · Forma de pago</div>
+                    <div class="row g-2">
+                        <div class="col-md-4"><label class="form-label">Forma</label><select id="reciboFormaPago" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>
+                        <div class="col-md-4"><label class="form-label">Referencia</label><input id="reciboReferencia" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
+                        <div class="col-12"><label class="form-label">Observaciones</label><textarea id="reciboObservaciones" class="form-control" rows="2" maxlength="2000"></textarea></div>
+                    </div>
+
+                    <div class="cc-block-title">3 · Imputación a comprobantes</div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover">
+                            <thead><tr><th></th><th>Comprobante</th><th>Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
+                            <tbody id="reciboFacturas"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="cc-total-row mt-2">
+                        <span>Total recibo: <strong id="reciboResumenTotal">$ 0,00</strong></span>
+                        <span>Total aplicado: <strong id="reciboResumenAplicado">$ 0,00</strong></span>
+                        <span>Diferencia: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
+                    </div>
+                    <div class="text-danger small text-end mt-2" id="reciboError" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnEmitirRecibo"><i class="bi bi-check-circle me-1"></i>Emitir recibo</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalDetalleComprobante" tabindex="-1" aria-labelledby="modalDetalleTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalDetalleTitulo">Detalle del comprobante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="modalDetalleCuerpo"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-primary d-none" id="btnEnviarComprobanteMail">
+                        <i class="bi bi-envelope me-1"></i>Enviar por mail
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btnEditarRecibo">
+                        <i class="bi bi-pencil me-1"></i>Editar recibo
+                    </button>
+                    <button type="button" class="btn btn-outline-warning d-none" id="btnAnularRecibo">
+                        <i class="bi bi-slash-circle me-1"></i>Anular recibo
+                    </button>
+                    <button type="button" class="btn btn-outline-danger d-none" id="btnEliminarRecibo">
+                        <i class="bi bi-trash me-1"></i>Eliminar recibo
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btnImprimirFactura">
+                        <i class="bi bi-printer me-1"></i>Imprimir
+                    </button>
+                    <button type="button" class="btn btn-primary d-none" id="btnDescargarFactura">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
+                    </button>
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalEnviarComprobanteEmail" tabindex="-1" aria-labelledby="modalEnviarComprobanteEmailTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalEnviarComprobanteEmailTitulo"><i class="bi bi-envelope-paper me-2"></i>Enviar comprobante por e-mail</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="envioComprobantePerfil" class="small text-muted mb-2">Verificando el perfil SMTP de Facturación…</div>
+                    <div id="envioComprobanteFeedback" class="alert d-none" role="status"></div>
+                    <label class="form-label" for="envioComprobanteDestino">Destinatario</label>
+                    <input id="envioComprobanteDestino" type="email" maxlength="320" class="form-control" placeholder="cliente@empresa.com" autocomplete="email">
+                    <div class="form-text">Se adjuntará el PDF del comprobante. Podés modificar el e-mail sugerido del cliente.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnConfirmarEnvioComprobante" class="btn btn-primary" disabled><i class="bi bi-send me-1"></i>Enviar comprobante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalExportarCuenta" tabindex="-1" aria-labelledby="modalExportarCuentaTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalExportarCuentaTitulo"><i class="bi bi-file-earmark-pdf me-2"></i>Exportar listado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">El listado incluirá todos los comprobantes que coincidan con los filtros de la búsqueda actual.</p>
+                    <div id="ccExportarResumen" class="alert alert-light border mb-0" role="status"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListado">
+                        <i class="bi bi-printer me-1"></i>Vista previa e imprimir
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btnDescargarListadoPdf">
+                        <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalAccionFutura" tabindex="-1" aria-labelledby="modalAccionFuturaTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalAccionFuturaTitulo">Acción pendiente de integración</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="modalAccionFuturaTexto" class="mb-2"></p>
+                    <div class="alert alert-info mb-0">La interfaz se incorporará cuando definamos el modelo de datos y las reglas del backend.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Entendido</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script>if (window.loadSidebar) window.loadSidebar();</script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/cuenta-corriente-clientes.js"></script>
+
+    <script>
+        window.onload = function () {
+            var loading = document.getElementById('loading-message');
+            var app = document.getElementById('app');
+            loading.style.display = 'block';
+            app.style.display = 'none';
+
+            if (window.loadHeader) window.loadHeader();
+            if (window.loadFooter) window.loadFooter();
+
+            cargarConfiguracionVisual().finally(function () {
+                loading.style.display = 'none';
+                app.style.display = 'block';
+                if (window.loadSidebar) window.loadSidebar();
+                if (window.CuentaCorrienteUI) window.CuentaCorrienteUI.inicializar();
+            });
+        };
+
+        function cargarConfiguracionVisual() {
+            return new Promise(function (resolve) {
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+                xhr.onload = function () {
+                    try {
+                        var data = JSON.parse(xhr.responseText);
+                        if (data && typeof applyStyles === 'function') {
+                            applyStyles(data.Logo, data.ColorFondo, data.ColorBotonesMenu, data.ContenidoPiePagina);
+                        }
+                    } catch (e) { }
+                    resolve();
+                };
+                xhr.onerror = resolve;
+                xhr.send();
+            });
+        }
+    </script>
+</body>
+
+</html>

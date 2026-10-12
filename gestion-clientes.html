@@ -104,7 +104,8 @@
 
                             <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
                                 <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
+                                    id="alert-success" aria-live="assertive" aria-atomic="true"
+                                    data-bs-autohide="true" data-bs-delay="4000">
                                     <div class="d-flex">
                                         <div class="toast-body">
                                         </div>
@@ -142,6 +143,21 @@
                                                         placeholder="Desde y hasta">
                                                 </div>
                                             </div>
+                                            <div class="row mb-3">
+                                                <div class="col-12">
+                                                    <label class="me-3">Estado</label>
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox" class="form-check-input form-check-success"
+                                                            id="checkEstadoClienteHabilitado">
+                                                        <label class="form-check-label" for="checkEstadoClienteHabilitado">Habilitado</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
+                                                        <input type="checkbox" class="form-check-input form-check-danger"
+                                                            id="checkEstadoClienteDeshabilitado">
+                                                        <label class="form-check-label" for="checkEstadoClienteDeshabilitado">Deshabilitado</label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                             <div class="row mb-3 align-items-center">
                                                 <div class="col-12 text-end">
                                                     <button type="button" class="btn btn-light"
@@ -173,6 +189,7 @@
                                                 <th>Razon Social</th>
                                                 <th>CUIT</th>
                                                 <th>Fecha de alta</th>
+                                                <th>Estado</th>
                                                 <th>Acciones</th>
                                             </tr>
                                         </thead>
@@ -434,6 +451,24 @@
         </div>
     </div>
 
+    <!-- Modal de confirmación de cambio de estado -->
+    <div class="modal fade text-left" id="confirmarEstadoClienteModal" tabindex="-1" role="dialog"
+        aria-labelledby="confirmarEstadoClienteLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="confirmarEstadoClienteLabel">Confirmar cambio de estado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body" id="confirmarEstadoClienteBody"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary ms-1" onclick="confirmarCambioEstadoCliente()">Confirmar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de confirmación de eliminación -->
     <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
         aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
@@ -453,7 +488,7 @@
                         <i class="bx bx-x d-block d-sm-none"></i>
                         <span class="d-none d-sm-block">Cancelar</span>
                     </button>
-                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarCliente()">
+                    <button type="button" class="btn btn-primary ms-1" onclick="confirmarEliminarCliente()">
                         <i class="bx bx-check d-block d-sm-none"></i>
                         <span class="d-none d-sm-block">Confirmar</span>
                     </button>
@@ -641,6 +676,7 @@
     <script>
         // Esperar a que se cargue completamente la página
         $(document).ready(function () {
+            $('#checkEstadoClienteHabilitado').prop('checked', true);
             buscarClientes();
         });
     </script>
@@ -648,7 +684,7 @@
     <!-- Buscador y listar -->
     <script>
         // Constantes para el paginado
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
 
         $(document).ready(function () {
@@ -702,6 +738,9 @@
                 return;
             }
             var fechaRangoTxt = ($('#fechaRango').val() || '').trim();
+            var estadosCliente = [];
+            if ($('#checkEstadoClienteHabilitado').is(':checked')) estadosCliente.push('Habilitado');
+            if ($('#checkEstadoClienteDeshabilitado').is(':checked')) estadosCliente.push('Deshabilitado');
 
             var fechaDesde = null;
             var fechaHasta = null;
@@ -736,6 +775,9 @@
             if (fechaHasta) {
                 requestData.fechaHasta = fechaHasta;
             }
+            if (estadosCliente.length) {
+                requestData.estadoCliente = estadosCliente.join(',');
+            }
 
             // Realizar la solicitud AJAX GET al controlador
             $.ajax({
@@ -746,12 +788,12 @@
                     $('#tablaClientes tbody').empty();
 
                     if (!data || !$.isArray(data.Results)) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">Respuesta inválida del servidor.</td></tr>');
+                        $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center">Respuesta inválida del servidor.</td></tr>');
                         return;
                     }
 
                     if (data.Results.length === 0) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (registro) {
                             var idCliente = registro.Cliente_ID != null ? registro.Cliente_ID : registro.cliente_Id;
@@ -761,11 +803,19 @@
                             }
                             var razon = registro.RazonSocial != null ? registro.RazonSocial : registro.Razon_Social;
                             var cuitTxt = String(registro.CUIT_Cliente || '').trim();
+                            var activo = registro.EstadoCliente === true || registro.EstadoCliente === 1 || String(registro.EstadoCliente).toLowerCase() === 'true';
+                            var estadoHtml = activo
+                                ? '<span class="badge bg-success">Habilitado</span>'
+                                : '<span class="badge bg-secondary">Deshabilitado</span>';
+                            var accionEstado = activo ? 'Deshabilitar' : 'Habilitar';
+                            var claseEstado = activo ? 'btn-warning' : 'btn-success';
+                            var iconoEstado = activo ? 'bi-person-dash' : 'bi-person-check';
                             var row = `
                     <tr data-clienteid="${idCliente}">
                         <td>${razon || ''}</td>
                         <td>${cuitTxt}</td>
                         <td>${fechaAltaTxt}</td>
+                        <td>${estadoHtml}</td>
                         <td>
                             <button type="button" class="btn btn-primary btn-detalle"
                                 data-clienteid="${idCliente}"
@@ -782,6 +832,13 @@
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </span>
+                            <span data-bs-toggle="tooltip" data-bs-placement="top" title="${accionEstado}">
+                                <button type="button" class="btn ${claseEstado} btn-estado ms-1"
+                                    data-clienteid="${idCliente}"
+                                    data-estado="${activo}">
+                                    <i class="bi ${iconoEstado}"></i>
+                                </button>
+                            </span>
                         </td>
                     </tr>`;
                             $('#tablaClientes tbody').append(row);
@@ -793,16 +850,24 @@
                 },
                 error: function (xhr, status, error) {
                     console.error('Clientes/Buscar:', status, error, xhr.responseText);
-                    $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
+                    $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
                 }
             });
 
         }
 
         // Función para renderizar la paginación
-        function renderPagination(totalRecords, pageSize, currentPage) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
+        function renderPagination(totalRecords, tamanioActual, currentPage) {
+            const totalPages = Math.ceil(totalRecords / tamanioActual);
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                    alCambiarPagina: function (pagina) { buscarClientes(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarClientes(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = (totalPages === 0 || currentPage === 1) ? 'disabled' : '';
@@ -901,13 +966,12 @@
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
-            setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+            toastElement.find('.toast-body').text(mensaje);
+            var toast = bootstrap.Toast.getOrCreateInstance(toastElement[0], {
+                autohide: true,
+                delay: 4000
+            });
+            toast.show();
         }
 
         // Función para abrir el modal de alta de clientes (igual lógica que en choferes)
@@ -1255,12 +1319,11 @@
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
             toastElement.find('.toast-body').text(mensaje);
-            toastElement.show();
-            var toast = new bootstrap.Toast(toastElement[0]);
+            var toast = bootstrap.Toast.getOrCreateInstance(toastElement[0], {
+                autohide: true,
+                delay: 4000
+            });
             toast.show();
-            setTimeout(function () {
-                toast.hide();
-            }, 5000);
         }
     </script>
 
@@ -1274,18 +1337,97 @@
     <!--Eliminar-->
     <script>
 
+        var clienteIdACambiarEstado = null;
+        var estadoClienteNuevo = null;
+
+        function mostrarModalEstadoCliente() {
+            var modalElement = document.getElementById('confirmarEstadoClienteModal');
+            if (window.bootstrap && bootstrap.Modal && modalElement) {
+                bootstrap.Modal.getOrCreateInstance(modalElement).show();
+                return;
+            }
+            $('#confirmarEstadoClienteModal').modal('show');
+        }
+
+        function ocultarModalEstadoCliente() {
+            var modalElement = document.getElementById('confirmarEstadoClienteModal');
+            if (window.bootstrap && bootstrap.Modal && modalElement) {
+                var instancia = bootstrap.Modal.getInstance(modalElement);
+                if (instancia) instancia.hide();
+                return;
+            }
+            $('#confirmarEstadoClienteModal').modal('hide');
+        }
+
+        function cambiarEstadoCliente(id, activo) {
+            clienteIdACambiarEstado = Number(id);
+            estadoClienteNuevo = !activo;
+            $('#confirmarEstadoClienteBody').html(
+                '¿Confirmás cambiar el estado del cliente a <strong>' +
+                (estadoClienteNuevo ? 'Habilitado' : 'Deshabilitado') + '</strong>?'
+            );
+            mostrarModalEstadoCliente();
+        }
+
+        $(document).on('click', '.btn-estado', function (event) {
+            event.preventDefault();
+            cambiarEstadoCliente(Number($(this).data('clienteid')), $(this).data('estado') === true || $(this).data('estado') === 'true');
+        });
+
+        function confirmarCambioEstadoCliente() {
+            if (!clienteIdACambiarEstado || estadoClienteNuevo === null) return;
+            var accion = estadoClienteNuevo ? 'habilitar' : 'deshabilitar';
+            $.ajax({
+                url: 'http://localhost:50222/api/Clientes/Estado/' + clienteIdACambiarEstado,
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    EstadoCliente: estadoClienteNuevo,
+                    Usu_Modi: localStorage.getItem('username') || 'sistema'
+                }),
+                success: function () {
+                    actualizarEstadoClienteEnTabla(clienteIdACambiarEstado, estadoClienteNuevo);
+                    ocultarModalEstadoCliente();
+                    buscarClientes(currentPage);
+                    mostrarToastExito('El cliente fue ' + (estadoClienteNuevo ? 'habilitado' : 'deshabilitado') + ' correctamente.');
+                    clienteIdACambiarEstado = null;
+                    estadoClienteNuevo = null;
+                },
+                error: function (xhr, status, error) {
+                    console.error('Error al actualizar el estado del cliente:', xhr.responseText || error);
+                    window.alert('No se pudo ' + accion + ' el cliente.');
+                }
+            });
+        }
+
+        function actualizarEstadoClienteEnTabla(id, activo) {
+            var fila = $('#tablaClientes tbody tr[data-clienteid="' + id + '"]');
+            if (!fila.length) return;
+
+            var accion = activo ? 'Deshabilitar' : 'Habilitar';
+            var clase = activo ? 'btn-warning' : 'btn-success';
+            var icono = activo ? 'bi-person-dash' : 'bi-person-check';
+            var estado = activo
+                ? '<span class="badge bg-success">Habilitado</span>'
+                : '<span class="badge bg-secondary">Deshabilitado</span>';
+            var boton = fila.find('.btn-estado');
+
+            fila.children('td').eq(3).html(estado);
+            boton.removeClass('btn-warning btn-success').addClass(clase)
+                .attr('data-estado', activo ? 'true' : 'false')
+                .find('i').attr('class', 'bi ' + icono);
+            boton.parent().attr('title', accion);
+        }
+
         // Función para mostrar el toast de éxito con mensaje dinámico
         function mostrarToastExito(mensaje) {
             var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
-
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
-
-            setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+            toastElement.find('.toast-body').text(mensaje);
+            var toast = bootstrap.Toast.getOrCreateInstance(toastElement[0], {
+                autohide: true,
+                delay: 4000
+            });
+            toast.show();
         }
 
         var clienteIdAEliminar;

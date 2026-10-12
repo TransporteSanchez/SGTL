@@ -146,6 +146,21 @@
                                                     placeholder="Desde y hasta">
                                             </div>
                                         </div>
+                                        <div class="row mb-3">
+                                            <div class="col-12">
+                                                <label class="me-3">Estado</label>
+                                                <div class="form-check form-check-inline">
+                                                    <input type="checkbox" class="form-check-input form-check-success"
+                                                        id="checkEstadoClienteHabilitado">
+                                                    <label class="form-check-label" for="checkEstadoClienteHabilitado">Habilitado</label>
+                                                </div>
+                                                <div class="form-check form-check-inline">
+                                                    <input type="checkbox" class="form-check-input form-check-danger"
+                                                        id="checkEstadoClienteDeshabilitado">
+                                                    <label class="form-check-label" for="checkEstadoClienteDeshabilitado">Deshabilitado</label>
+                                                </div>
+                                            </div>
+                                        </div>
                                         <div class="row mb-3 align-items-center">
                                             <div class="col-12 text-end">
                                                 <button type="button" class="btn btn-light"
@@ -476,13 +491,14 @@
     <!-- Get Activos -->
     <script>
         $(document).ready(function () {
+            $('#checkEstadoClienteHabilitado').prop('checked', true);
             buscarClientes();
         });
     </script>
 
     <!-- Buscador, listado y detalle cliente -->
     <script>
-        const pageSize = 6;
+        let pageSize = 15;
         let currentPage = 1;
 
         function formatearCUIT(input) {
@@ -590,6 +606,12 @@
             }
             if (fechaHasta) {
                 requestData.fechaHasta = fechaHasta;
+            }
+            var estados = [];
+            if ($('#checkEstadoClienteHabilitado').is(':checked')) estados.push('Habilitado');
+            if ($('#checkEstadoClienteDeshabilitado').is(':checked')) estados.push('Deshabilitado');
+            if (estados.length) {
+                requestData.estadoCliente = estados.join(',');
             }
             return requestData;
         }
@@ -769,9 +791,17 @@
             });
         }
 
-        function renderPagination(totalRecords, pageSize, currentPageNum) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
+        function renderPagination(totalRecords, tamanioActual, currentPageNum) {
+            const totalPages = Math.ceil(totalRecords / tamanioActual);
             const paginationContainer = $('#pagination');
+            if (window.PaginacionSGTL) {
+                window.PaginacionSGTL.render(paginationContainer.get(0), {
+                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPageNum,
+                    alCambiarPagina: function (pagina) { buscarClientes(pagina); },
+                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarClientes(1); }
+                });
+                return;
+            }
             paginationContainer.empty();
 
             const prevDisabled = (totalPages === 0 || currentPageNum === 1) ? 'disabled' : '';
