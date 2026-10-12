@@ -1007,6 +1007,7 @@
         }
         function onClienteChangeViaje() {
             var cid = parseInt($('#clienteSelect').val()) || 0;
+            if (!clienteConPlataforma()) $('#numeroTransporte, #numeroCarga').val('');
             aplicarReglasTipoCliente();
             filtrarOrigenDestino(cid, null, null);
             $('#distanciaKm').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
@@ -1133,8 +1134,9 @@
                 DestinoID: parseInt($('#destinoSelect').val()) || 0,
                 Distancia_KM: ($('#distanciaKm').val() || '').toString().trim(),
                 Num_Remito: ($('#numeroRemito').val() || '').trim(),
-                Num_de_Carga: clienteConPlataforma() ? ($('#numeroCarga').val() || '').trim() : '',
-                Num_Transporte: clienteConPlataforma() ? ($('#numeroTransporte').val() || '').trim() : '',
+                // Se envian aunque esten ocultos: si el cliente cambio de tipo, el viaje conserva sus numeros de Rukas.
+                Num_de_Carga: ($('#numeroCarga').val() || '').trim(),
+                Num_Transporte: ($('#numeroTransporte').val() || '').trim(),
                 Fecha_Inicio: $('#fechaInicio').val(),
                 Fecha_Fin: $('#fechaFin').val(),
                 ChoferID: parseInt($('#choferSelectId').val()) || 0,

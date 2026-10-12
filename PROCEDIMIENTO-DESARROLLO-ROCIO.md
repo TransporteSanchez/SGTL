@@ -97,6 +97,13 @@ Avisar a Facu que haga `git pull origin facugodoy`.
 
 ## Problemas frecuentes
 
+- **`git switch` / `git pull` en la VM falla con "Your local changes ... would be overwritten"
+  sobre archivos de `bin/` u `obj/`.** Son salidas de compilación de una versión vieja en la
+  que git todavía las seguía. Descartarlas y reintentar (el Rebuild las vuelve a generar):
+  `git restore WebApi_TransporteSanchez/bin WebApi_TransporteSanchez/obj`.
+- **En PowerShell, correr los comandos de git de a uno.** Si se pegan varios juntos y uno
+  falla, los siguientes se ejecutan igual sobre la rama equivocada.
+
 - **`git pull` en la VM dice que hay cambios locales.** Ver con `git status` qué archivos son.
   Si son cambios que Visual Studio hizo solo (p. ej. `.csproj`, `Web.config`), descartarlos:
   `git restore <archivo>`. Si es algo que importa, pasarlo a mano a la Mac y commitearlo allá.
