@@ -340,7 +340,7 @@
                                     </div>
                                 </div>
                                 <div class="mb-3 position-relative">
-                                    <label for="choferBuscar" class="form-label">Chofer asignado <span class="text-muted">(opcional)</span></label>
+                                    <label for="choferBuscar" class="form-label">Chofer asignado <span id="choferRequerido" class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="choferBuscar" placeholder="Busc&aacute; por nombre, apellido o DNI..." autocomplete="off">
                                     <div id="choferResultados" class="list-group position-absolute w-100" style="z-index:1080; display:none; max-height:200px; overflow:auto;"></div>
                                 </div>
@@ -973,6 +973,8 @@
             $('#ayudaNumerosViaje').text(conPlataforma
                 ? 'Podés guardar el viaje sin estos números y completarlos después. Son obligatorios para marcarlo "Listo para facturar".'
                 : 'El remito lo emite el cliente/cargador; acá solo se registra su número.');
+            // Directo: el chofer recibe la hoja de ruta por WhatsApp al registrar el viaje.
+            $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted', conPlataforma).toggleClass('text-danger', !conPlataforma);
         }
         function cargarCamionesViaje() {
             var d = $.Deferred();
@@ -1155,6 +1157,7 @@
             if (!dto.ClienteID) falt.push('Cliente');
             if (!dto.OrigenID) falt.push('Origen');
             if (!dto.DestinoID) falt.push('Destino');
+            if (!dto.ChoferID && !clienteConPlataforma()) falt.push('Chofer');
             if (!dto.CamionID) falt.push('Camión');
             if (!dto.Fecha_Inicio) falt.push('Fecha de inicio');
             if (!dto.Fecha_Fin) falt.push('Fecha de fin');

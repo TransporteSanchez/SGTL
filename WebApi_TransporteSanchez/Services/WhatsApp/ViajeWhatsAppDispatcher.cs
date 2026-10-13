@@ -129,11 +129,11 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
             var carga = (viaje.Num_de_Carga ?? "").Trim();
             string remitoOCarga;
             if (!string.IsNullOrEmpty(remito) && !string.IsNullOrEmpty(carga))
-                remitoOCarga = "Remito " + remito + " / Carga " + carga;
+                remitoOCarga = "Remito " + remito + " / Entrega " + carga;
             else if (!string.IsNullOrEmpty(remito))
                 remitoOCarga = "Remito " + remito;
             else if (!string.IsNullOrEmpty(carga))
-                remitoOCarga = "Carga " + carga;
+                remitoOCarga = "Entrega " + carga;
             else
                 remitoOCarga = "-";
 

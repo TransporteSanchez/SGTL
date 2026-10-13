@@ -10,11 +10,24 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Services.WhatsApp;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
     public class ViajesController : ApiController
     {
+        private readonly ViajeWhatsAppDispatcher _whatsAppDispatcher;
+
+        public ViajesController()
+            : this(new ViajeWhatsAppDispatcher(new WhatsAppCloudApiNotifier()))
+        {
+        }
+
+        public ViajesController(ViajeWhatsAppDispatcher whatsAppDispatcher)
+        {
+            _whatsAppDispatcher = whatsAppDispatcher ?? new ViajeWhatsAppDispatcher(new WhatsAppCloudApiNotifier());
+        }
+
         // DTO principal: refleja exactamente los campos de la entidad VIAJES.
         public class ViajeDto
         {
@@ -190,6 +203,30 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             db.Database.ExecuteSqlCommand("UPDATE VIAJES SET Num_Transporte=@t WHERE Viaje_ID=@id",
                 P("@t", string.IsNullOrEmpty(numTransporte) ? null : numTransporte), P("@id", id));
+        }
+
+        private static string TipoCliente(DbContext db, int clienteId)
+        {
+            return db.Database.SqlQuery<string>("SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@id", P("@id", clienteId)).FirstOrDefault();
+        }
+
+        // Directo: SGTL le envia la hoja de ruta al chofer por WhatsApp. Con plataforma el chofer puede asignarse despues.
+        private static List<object> ValidarChofer(DbContext db, ViajeDto v)
+        {
+            var errores = new List<object>();
+            if (v.ChoferID <= 0 && !EsConPlataforma(TipoCliente(db, v.ClienteID)))
+                errores.Add(new { PropertyName = "ChoferID", ErrorMessage = "Debe seleccionar un chofer para los viajes de clientes directos." });
+            return errores;
+        }
+
+        // El envio nunca impide guardar el viaje: si falla queda registrado en App_Data/whatsapp.log.
+        private object NotificarChofer(SGTLAuditContext db, VIAJES viaje)
+        {
+            if (viaje.ChoferID <= 0)
+                return null;
+
+            var wa = _whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje);
+            return new { wa.Sent, wa.Status, wa.Detail, wa.To };
         }
 
         // GET: api/Viajes
@@ -653,6 +690,12 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 {
+                    var erroresChofer = ValidarChofer(db, viajeDto);
+                    if (erroresChofer.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, erroresChofer);
+                    }
+
                     var viaje = new VIAJES
                     {
                         OrigenID = viajeDto.OrigenID,
@@ -679,7 +722,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         db.SaveChanges();
                         GuardarNumTransporte(db, viaje.Viaje_ID, viajeDto.Num_Transporte);
-                        return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente." });
+                        var whatsApp = NotificarChofer(db, viaje);
+                        return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente.", WhatsApp = whatsApp });
                     }
                     catch (DbEntityValidationException ex)
                     {
@@ -744,6 +788,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     });
                 }
 
+                var erroresChofer = ValidarChofer(db, viajeDto);
+                if (erroresChofer.Any())
+                {
+                    return Content(HttpStatusCode.BadRequest, erroresChofer);
+                }
+
+                var choferAnterior = viaje.ChoferID;
+
                 viaje.OrigenID = viajeDto.OrigenID;
                 viaje.DestinoID = viajeDto.DestinoID;
                 viaje.Distancia_KM = viajeDto.Distancia_KM;
@@ -765,7 +817,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     db.SaveChanges();
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
-                    return Ok(new { Message = "Viaje actualizado correctamente." });
+                    // Solo se reenvia la hoja de ruta si cambio el chofer.
+                    var whatsApp = viaje.ChoferID != choferAnterior ? NotificarChofer(db, viaje) : null;
+                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp });
                 }
                 catch (DbEntityValidationException ex)
                 {

@@ -5,9 +5,9 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
 {
     /// <summary>
     /// Credenciales y opciones de WhatsApp Cloud API.
-    /// Fuente: tabla WHATSAPP_CONFIG (pantalla gestion-whatsapp.html).
+    /// Fuente: tabla WHATSAPP_CONFIG (pantalla configuracion-whatsapp.html).
     /// Plantilla body: {{1}} nombre, {{2}} id viaje, {{3}} origen, {{4}} destino,
-    /// {{5}} fecha, {{6}} remito/carga, {{7}} URL Maps.
+    /// {{5}} fecha, {{6}} remito/entrega, {{7}} URL Maps.
     /// </summary>
     public class WhatsAppSettings
     {

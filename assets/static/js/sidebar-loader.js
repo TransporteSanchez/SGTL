@@ -121,6 +121,7 @@ var MENU_TO_PAGE = {
   'integracion whatsapp': 'configuracion-whatsapp.html',
   'integración whatsapp': 'configuracion-whatsapp.html',
   'whatsapp': 'configuracion-whatsapp.html',
+  'configuracion whatsapp': 'configuracion-whatsapp.html',
   'listado de usuarios': 'listado-usuarios.html',
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',

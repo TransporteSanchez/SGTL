@@ -428,8 +428,18 @@
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
+    <Compile Include="Controllers\WhatsAppConfigController.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />
     <Compile Include="Controllers\TarifasKmController.cs" />
+    <Compile Include="Services\WhatsApp\GoogleMapsLinkBuilder.cs" />
+    <Compile Include="Services\WhatsApp\IWhatsAppNotifier.cs" />
+    <Compile Include="Services\WhatsApp\PhoneNumberHelper.cs" />
+    <Compile Include="Services\WhatsApp\ViajeWhatsAppDispatcher.cs" />
+    <Compile Include="Services\WhatsApp\ViajeWhatsAppPayload.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppCloudApiNotifier.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppFileLogger.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppNotifyResult.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppSettings.cs" />
     <Compile Include="DESTINO.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>

@@ -43,7 +43,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 new { Nuevo = "Gestión de proformas", Anteriores = new[] { "Gestión de facturas", "Gestion de facturas" } },
                 new { Nuevo = "Listado de proformas", Anteriores = new[] { "Listado de facturas" } },
                 new { Nuevo = "E-mail", Anteriores = new[] { "Configuración", "Configuracion", "Email" } },
-                new { Nuevo = "Integración WhatsApp", Anteriores = new[] { "Integracion Whatsapp", "WhatsApp", "Whatsapp" } }
+                new { Nuevo = "Integración WhatsApp", Anteriores = new[] { "Integracion Whatsapp", "WhatsApp", "Whatsapp", "Configuración WhatsApp", "Configuracion WhatsApp" } }
             };
 
             foreach (var renombre in renombres)

@@ -4,6 +4,7 @@ using Unity;
 using Microsoft.Extensions.Configuration;
 using Unity.Lifetime;
 using WebApi_TransporteSanchez.Controllers;
+using WebApi_TransporteSanchez.Services.WhatsApp;
 
 namespace WebApi_TransporteSanchez
 {
@@ -24,6 +25,10 @@ namespace WebApi_TransporteSanchez
 
             // Registrar el controlador (u otros servicios que necesites)
             container.RegisterType<LoginController>();
+
+            // WhatsApp Cloud API: la configuracion se lee de WHATSAPP_CONFIG en cada envio.
+            container.RegisterType<IWhatsAppNotifier, WhatsAppCloudApiNotifier>(new TransientLifetimeManager());
+            container.RegisterType<ViajeWhatsAppDispatcher>(new TransientLifetimeManager());
 
             // Configurar el contenedor como el resolvedor de dependencias predeterminado de Web API
             GlobalConfiguration.Configuration.DependencyResolver = new Unity.WebApi.UnityDependencyResolver(container);
