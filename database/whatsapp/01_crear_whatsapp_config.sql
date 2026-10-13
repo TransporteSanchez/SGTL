@@ -29,21 +29,21 @@ BEGIN TRY
             CONSTRAINT PK_WHATSAPP_CONFIG PRIMARY KEY,
         Enabled                     bit NOT NULL
             CONSTRAINT DF_WHATSAPP_CONFIG_Enabled DEFAULT (0),
-        AccessToken                 nvarchar(1000) NULL,
-        PhoneNumberId               varchar(50) NULL,
-        ApiVersion                  varchar(20) NOT NULL
-            CONSTRAINT DF_WHATSAPP_CONFIG_ApiVersion DEFAULT ('v21.0'),
-        TemplateName                varchar(100) NOT NULL
-            CONSTRAINT DF_WHATSAPP_CONFIG_TemplateName DEFAULT ('viaje_asignado'),
-        TemplateLanguage            varchar(10) NOT NULL
-            CONSTRAINT DF_WHATSAPP_CONFIG_TemplateLanguage DEFAULT ('es_AR'),
-        DefaultCountryCode          varchar(5) NOT NULL
-            CONSTRAINT DF_WHATSAPP_CONFIG_DefaultCountryCode DEFAULT ('54'),
+        AccessToken                 nvarchar(max) NULL,
+        PhoneNumberId               nvarchar(50) NULL,
+        ApiVersion                  nvarchar(20) NULL
+            CONSTRAINT DF_WHATSAPP_CONFIG_ApiVersion DEFAULT (N'v21.0'),
+        TemplateName                nvarchar(100) NULL
+            CONSTRAINT DF_WHATSAPP_CONFIG_TemplateName DEFAULT (N'viaje_asignado'),
+        TemplateLanguage            nvarchar(20) NULL
+            CONSTRAINT DF_WHATSAPP_CONFIG_TemplateLanguage DEFAULT (N'es_AR'),
+        DefaultCountryCode          nvarchar(10) NULL
+            CONSTRAINT DF_WHATSAPP_CONFIG_DefaultCountryCode DEFAULT (N'54'),
         Fecha_Alta                  datetime NOT NULL
             CONSTRAINT DF_WHATSAPP_CONFIG_Fecha_Alta DEFAULT (GETDATE()),
-        Usu_Alta                    varchar(50) NOT NULL,
+        Usu_Alta                    nvarchar(50) NULL,
         Fecha_Modi                  datetime NULL,
-        Usu_Modi                    varchar(50) NULL,
+        Usu_Modi                    nvarchar(50) NULL,
         CONSTRAINT CK_WHATSAPP_CONFIG_FilaUnica CHECK (WhatsAppConfig_ID = 1)
     );
 
