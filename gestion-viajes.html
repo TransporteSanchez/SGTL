@@ -59,7 +59,6 @@
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 </head>
 
 <body>
@@ -351,7 +350,7 @@
                                 <div id="mapaViaje" style="height: 430px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <small id="mapaViajeMsg" class="text-muted">Seleccion&aacute; origen y destino para calcular la distancia.</small>
-                                    <button type="button" class="btn btn-sm btn-light" onclick="calcularRutaViaje()">Recalcular</button>
+                                    <button type="button" class="btn btn-sm btn-light" onclick="recalcularRutaViaje()">Recalcular</button>
                                 </div>
                             </div>
                         </div>
@@ -383,7 +382,7 @@
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="assets/static/js/google-maps.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -858,7 +857,8 @@
         // Datos auxiliares
         var origenesAll = [], destinosAll = [];
         var origenesData = {}, destinosData = {};
-        var mapaViaje = null, rutaViajeLayer = null, marcadoresViaje = [];
+        var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
+        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '';
         var choferSearchTimer = null;
         var tiposClienteViaje = {};
 
@@ -882,16 +882,32 @@
                 .text(txt);
         }
 
-        // ===================== MAPA (OpenStreetMap + OSRM) =====================
+        // ===================== MAPA (Google Maps) =====================
         function initMapaViaje() {
-            if (mapaViaje || typeof L === 'undefined') return;
-            mapaViaje = L.map('mapaViaje').setView([-34.6, -58.4], 5);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(mapaViaje);
+            if (!mapaViajeListo) {
+                mapaViajeListo = SGTLGoogleMaps.cargar()
+                    .then(function () { return Promise.all([google.maps.importLibrary('maps'), google.maps.importLibrary('routes')]); })
+                    .then(function (libs) {
+                        mapaViaje = new libs[0].Map(document.getElementById('mapaViaje'), {
+                            center: { lat: -34.6, lng: -58.4 }, zoom: 5,
+                            mapTypeControl: false, streetViewControl: false
+                        });
+                        directionsService = new libs[1].DirectionsService();
+                        directionsRenderer = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: true });
+                        directionsRenderer.addListener('directions_changed', onRutaViajeCambiada);
+                    })
+                    .catch(function (e) { mapaViajeListo = null; throw e; });
+            }
+            return mapaViajeListo;
+        }
+        function usarDistanciaManual(manual) {
+            $('#distanciaKm').prop('readonly', !manual).attr('placeholder', manual ? 'Ingresala a mano' : 'Se calcula con el mapa');
         }
         function limpiarRutaViaje() {
-            if (mapaViaje && rutaViajeLayer) { mapaViaje.removeLayer(rutaViajeLayer); rutaViajeLayer = null; }
-            if (mapaViaje) { marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); }); }
-            marcadoresViaje = [];
+            rutaViajeSeq++;
+            if (directionsRenderer) directionsRenderer.set('directions', null);
+            conservarKmGuardado = false;
+            usarDistanciaManual(false);
             msgMapa('Seleccioná origen y destino para calcular la distancia.');
         }
         function construirDireccion(o) {
@@ -904,43 +920,82 @@
             partes.push('Argentina');
             return partes.join(', ');
         }
-        function geocodificar(direccion) {
-            return $.ajax({ url: 'https://nominatim.openstreetmap.org/search', type: 'GET', data: { q: direccion, format: 'json', limit: 1, countrycodes: 'ar' } });
-        }
         function msgMapa(txt, tipo) {
             $('#mapaViajeMsg').removeClass('text-danger text-success text-muted')
                 .addClass(tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted')).text(txt);
+        }
+        function motivoRutaFallida(status) {
+            if (status === 'NOT_FOUND' || status === 'ZERO_RESULTS') return 'Google no encontró el origen o el destino. Revisá la dirección en Orígenes y destinos.';
+            if (status === 'OVER_QUERY_LIMIT' || status === 'OVER_DAILY_LIMIT') return 'Se alcanzó el límite diario de consultas a Google Maps.';
+            if (status === 'REQUEST_DENIED') return 'Google Maps rechazó la consulta (revisá la clave y las APIs habilitadas).';
+            return 'No se pudo calcular la ruta con Google Maps.';
+        }
+        // Google nunca devuelve "no encontrado" con direcciones a medias: cae al centro de la localidad, la provincia
+        // o el pais. Provincia o pais dan distancias inventadas, asi que se descartan; localidad se acepta con aviso.
+        function precisionUbicacion(waypoint) {
+            var t = (waypoint && waypoint.types) || [];
+            if (t.indexOf('country') >= 0 || t.indexOf('administrative_area_level_1') >= 0) return 'imprecisa';
+            var exactos = ['street_address', 'premise', 'subpremise', 'route', 'intersection', 'establishment', 'point_of_interest'];
+            var esExacto = t.some(function (x) { return exactos.indexOf(x) >= 0; });
+            return (esExacto && !waypoint.partial_match) ? 'exacta' : 'aproximada';
+        }
+        // Sin ruta no se bloquea el alta: la distancia se carga a mano y la tarifa por km se calcula igual.
+        function rutaViajeNoDisponible(motivo) {
+            if (directionsRenderer) directionsRenderer.set('directions', null);
+            if (!conservarKmGuardado) $('#distanciaKm').val('');
+            conservarKmGuardado = false;
+            usarDistanciaManual(true);
+            msgMapa(motivo + ' Podés ingresar la distancia a mano.', 'error');
+        }
+        function onRutaViajeCambiada() {
+            var dir = directionsRenderer.getDirections();
+            var ruta = dir && dir.routes && dir.routes[directionsRenderer.getRouteIndex() || 0];
+            if (!ruta || !ruta.legs || !ruta.legs.length) return;
+            var metros = ruta.legs.reduce(function (t, l) { return t + (l.distance ? l.distance.value : 0); }, 0);
+            var km = (metros / 1000).toFixed(1);
+            var desde = ruta.legs[0].start_address, hasta = ruta.legs[ruta.legs.length - 1].end_address;
+            usarDistanciaManual(false);
+            if (conservarKmGuardado && $('#distanciaKm').val()) {
+                conservarKmGuardado = false;
+                avisoRutaViaje = '';
+                msgMapa('Distancia guardada: ' + $('#distanciaKm').val() + ' km (la ruta de Google marca ' + km + ' km). Tocá Recalcular para actualizarla.', 'ok');
+                return;
+            }
+            conservarKmGuardado = false;
+            $('#distanciaKm').val(km);
+            msgMapa('Distancia: ' + km + ' km, de ' + desde + ' a ' + hasta + '. ' + (avisoRutaViaje || 'Podés arrastrar la ruta para elegir otro camino.'), 'ok');
+            avisoRutaViaje = '';
+            if ($('input[name="tipoTarifa"]:checked').val() === 'km') { resolverTarifaKm(); }
         }
         function calcularRutaViaje() {
             var oId = $('#origenSelect').val(), dId = $('#destinoSelect').val();
             if (!oId || !dId) { msgMapa('Seleccioná origen y destino para calcular la distancia.'); return; }
             var dirO = construirDireccion(origenesData[oId]), dirD = construirDireccion(destinosData[dId]);
-            initMapaViaje();
-            if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 50); }
-            msgMapa('Buscando ubicaciones...');
-            $.when(geocodificar(dirO), geocodificar(dirD)).done(function (r1, r2) {
-                var a = r1[0], b = r2[0];
-                if (!a || !a.length || !b || !b.length) { msgMapa('No se pudo ubicar el origen o el destino. Revisá las direcciones.', 'error'); return; }
-                var lat1 = parseFloat(a[0].lat), lon1 = parseFloat(a[0].lon), lat2 = parseFloat(b[0].lat), lon2 = parseFloat(b[0].lon);
-                msgMapa('Calculando ruta...');
-                $.ajax({ url: 'https://router.project-osrm.org/route/v1/driving/' + lon1 + ',' + lat1 + ';' + lon2 + ',' + lat2, type: 'GET', data: { overview: 'full', geometries: 'geojson' } })
-                    .done(function (rr) {
-                        if (!rr || rr.code !== 'Ok' || !rr.routes || !rr.routes.length) { msgMapa('No se pudo calcular la ruta entre esos puntos.', 'error'); return; }
-                        var route = rr.routes[0], km = (route.distance / 1000).toFixed(1);
-                        $('#distanciaKm').val(km);
-                        var coords = route.geometry.coordinates.map(function (c) { return [c[1], c[0]]; });
-                        if (rutaViajeLayer) mapaViaje.removeLayer(rutaViajeLayer);
-                        marcadoresViaje.forEach(function (m) { mapaViaje.removeLayer(m); });
-                        rutaViajeLayer = L.polyline(coords, { color: '#435ebe', weight: 5 }).addTo(mapaViaje);
-                        var m1 = L.marker([lat1, lon1]).addTo(mapaViaje).bindPopup('Origen');
-                        var m2 = L.marker([lat2, lon2]).addTo(mapaViaje).bindPopup('Destino');
-                        marcadoresViaje = [m1, m2];
-                        mapaViaje.fitBounds(rutaViajeLayer.getBounds(), { padding: [20, 20] });
-                        msgMapa('Distancia: ' + km + ' km (cargada en el campo Distancia).', 'ok');
-                        if ($('input[name="tipoTarifa"]:checked').val() === 'km') { resolverTarifaKm(); }
-                    })
-                    .fail(function () { msgMapa('No se pudo calcular la ruta (servicio de routing no disponible).', 'error'); });
-            }).fail(function () { msgMapa('No se pudo geocodificar las direcciones.', 'error'); });
+            var seq = ++rutaViajeSeq;
+            msgMapa('Calculando ruta...');
+            initMapaViaje().then(function () {
+                directionsService.route({ origin: dirO, destination: dirD, travelMode: 'DRIVING', region: 'ar' }, function (res, status) {
+                    if (seq !== rutaViajeSeq) return;
+                    if (status !== 'OK') { rutaViajeNoDisponible(motivoRutaFallida(status)); return; }
+                    var wp = res.geocoded_waypoints || [];
+                    var pO = precisionUbicacion(wp[0]), pD = precisionUbicacion(wp[1]);
+                    if (pO === 'imprecisa' || pD === 'imprecisa') {
+                        rutaViajeNoDisponible('Google no pudo ubicar ' + (pO === 'imprecisa' ? 'el origen' : 'el destino') + ' con la dirección cargada en Orígenes y destinos.');
+                        return;
+                    }
+                    var aprox = [];
+                    if (pO === 'aproximada') aprox.push('el origen');
+                    if (pD === 'aproximada') aprox.push('el destino');
+                    avisoRutaViaje = aprox.length ? 'Ubicación aproximada para ' + aprox.join(' y ') + ': revisá la calle y altura, o arrastrá el marcador al punto correcto.' : '';
+                    directionsRenderer.setDirections(res);
+                });
+            }).catch(function () {
+                if (seq === rutaViajeSeq) rutaViajeNoDisponible('No se pudo cargar Google Maps.');
+            });
+        }
+        function recalcularRutaViaje() {
+            conservarKmGuardado = false;
+            calcularRutaViaje();
         }
 
         // ===================== COMBOS =====================
@@ -1105,6 +1160,7 @@
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
                         $('#camionSelect').val(v.CamionID);
                         $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
+                        conservarKmGuardado = !!$('#distanciaKm').val();
                         $('#numeroTransporte').val((v.Num_Transporte || '').trim());
                         $('#numeroRemito').val((v.Num_Remito || '').trim());
                         $('#numeroCarga').val((v.Num_de_Carga || '').trim());
@@ -1338,9 +1394,15 @@
                 window.fpEntrega = flatpickr('#fechaEntrega', { dateFormat: 'Y-m-d', allowInput: true });
             }
             $('#estadoViajeNuevo').on('change', actualizarAyudaEstado);
-            $('#ModalAltaViaje').on('shown.bs.modal', function () { initMapaViaje(); if (mapaViaje) { setTimeout(function () { mapaViaje.invalidateSize(); }, 150); } });
+            $('#ModalAltaViaje').on('shown.bs.modal', function () {
+                if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
+                else { initMapaViaje().catch(function () { msgMapa('No se pudo cargar Google Maps. Podés ingresar la distancia a mano.', 'error'); usarDistanciaManual(true); }); }
+            });
+            SGTLGoogleMaps.alFallarAutenticacion(function () { rutaViajeNoDisponible('Google Maps rechazó la clave para este sitio.'); });
+            $('#distanciaKm').on('change', function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); });
             $('#clienteSelect').on('change', onClienteChangeViaje);
             $('#origenSelect, #destinoSelect').on('change', function () {
+                conservarKmGuardado = false;
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
                 if ($('input[name="tipoTarifa"]:checked').val() === 'fija') { resolverTarifaFija(); }
             });
