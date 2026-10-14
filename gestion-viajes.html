@@ -893,7 +893,8 @@
                             mapTypeControl: false, streetViewControl: false
                         });
                         directionsService = new libs[1].DirectionsService();
-                        directionsRenderer = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: true });
+                        // Sin arrastre: origen, destino y recorrido salen de Orígenes y destinos, no se ajustan desde el viaje.
+                        directionsRenderer = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: false });
                         directionsRenderer.addListener('directions_changed', onRutaViajeCambiada);
                     })
                     .catch(function (e) { mapaViajeListo = null; throw e; });
@@ -963,7 +964,7 @@
             }
             conservarKmGuardado = false;
             $('#distanciaKm').val(km);
-            msgMapa('Distancia: ' + km + ' km, de ' + desde + ' a ' + hasta + '. ' + (avisoRutaViaje || 'Podés arrastrar la ruta para elegir otro camino.'), 'ok');
+            msgMapa('Distancia: ' + km + ' km, de ' + desde + ' a ' + hasta + '. ' + (avisoRutaViaje || 'Ruta sugerida por Google.'), 'ok');
             avisoRutaViaje = '';
             if ($('input[name="tipoTarifa"]:checked').val() === 'km') { resolverTarifaKm(); }
         }
@@ -986,7 +987,7 @@
                     var aprox = [];
                     if (pO === 'aproximada') aprox.push('el origen');
                     if (pD === 'aproximada') aprox.push('el destino');
-                    avisoRutaViaje = aprox.length ? 'Ubicación aproximada para ' + aprox.join(' y ') + ': revisá la calle y altura, o arrastrá el marcador al punto correcto.' : '';
+                    avisoRutaViaje = aprox.length ? 'Ubicación aproximada para ' + aprox.join(' y ') + ': revisá la calle y altura en Orígenes y destinos.' : '';
                     directionsRenderer.setDirections(res);
                 });
             }).catch(function () {
