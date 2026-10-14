@@ -199,6 +199,39 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<string>("SELECT Estado FROM VIAJES WHERE Viaje_ID=@id", P("@id", id)).FirstOrDefault();
         }
 
+        // Viajes anteriores al circuito de estados pueden no tener Estado cargado.
+        private static bool EsRegistrado(string estado)
+        {
+            return string.IsNullOrEmpty(estado) || estado == EstadoRegistrado;
+        }
+
+        private static int? IdOpcional(int? id)
+        {
+            return id.HasValue && id.Value > 0 ? id : (int?)null;
+        }
+
+        private static List<object> ValidarCamposBloqueados(VIAJES actual, ViajeDto nuevo, string estado)
+        {
+            var cambiados = new List<string>();
+            if (actual.ClienteID != nuevo.ClienteID) cambiados.Add("cliente");
+            if (actual.OrigenID != nuevo.OrigenID) cambiados.Add("origen");
+            if (actual.DestinoID != nuevo.DestinoID) cambiados.Add("destino");
+            if (actual.ChoferID != nuevo.ChoferID) cambiados.Add("chofer");
+            if (actual.CamionID != nuevo.CamionID) cambiados.Add("camión");
+            if (IdOpcional(actual.TarifaFijaID) != IdOpcional(nuevo.TarifaFijaID) || IdOpcional(actual.TarifaKmID) != IdOpcional(nuevo.TarifaKmID))
+                cambiados.Add("tarifa");
+
+            var errores = new List<object>();
+            if (cambiados.Any())
+                errores.Add(new
+                {
+                    PropertyName = "Estado",
+                    ErrorMessage = "El viaje está " + estado.Replace('_', ' ') + ": solo se pueden modificar los números de remito, transporte y entrega. "
+                        + "No se puede cambiar " + string.Join(", ", cambiados) + "."
+                });
+            return errores;
+        }
+
         private static void GuardarNumTransporte(DbContext db, int id, string numTransporte)
         {
             db.Database.ExecuteSqlCommand("UPDATE VIAJES SET Num_Transporte=@t WHERE Viaje_ID=@id",
@@ -780,7 +813,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     return NotFound();
                 }
 
-                if (EstadoActual(db, id) == EstadoFacturado)
+                var estado = EstadoActual(db, id);
+                if (estado == EstadoFacturado)
                 {
                     return Content(HttpStatusCode.BadRequest, new List<object>
                     {
@@ -788,26 +822,45 @@ namespace WebApi_TransporteSanchez.Controllers
                     });
                 }
 
-                var erroresChofer = ValidarChofer(db, viajeDto);
-                if (erroresChofer.Any())
+                bool cambioHojaDeRuta = false;
+                if (EsRegistrado(estado))
                 {
-                    return Content(HttpStatusCode.BadRequest, erroresChofer);
+                    var erroresChofer = ValidarChofer(db, viajeDto);
+                    if (erroresChofer.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, erroresChofer);
+                    }
+
+                    // Es lo que el chofer recibe por WhatsApp: si cambia, se le reenvia la hoja de ruta.
+                    cambioHojaDeRuta = viaje.ChoferID != viajeDto.ChoferID
+                        || viaje.OrigenID != viajeDto.OrigenID
+                        || viaje.DestinoID != viajeDto.DestinoID
+                        || viaje.Fecha_Inicio != viajeDto.Fecha_Inicio;
+
+                    viaje.OrigenID = viajeDto.OrigenID;
+                    viaje.DestinoID = viajeDto.DestinoID;
+                    viaje.Distancia_KM = viajeDto.Distancia_KM;
+                    viaje.Fecha_Inicio = viajeDto.Fecha_Inicio;
+                    viaje.Fecha_Fin = viajeDto.Fecha_Fin;
+                    viaje.ChoferID = viajeDto.ChoferID;
+                    viaje.CamionID = viajeDto.CamionID;
+                    viaje.TarifaFijaID = IdOpcional(viajeDto.TarifaFijaID);
+                    viaje.TarifaKmID = IdOpcional(viajeDto.TarifaKmID);
+                    viaje.ClienteID = viajeDto.ClienteID;
+                }
+                else
+                {
+                    // Una vez que el viaje salio, lo que define el cobro y el recorrido queda fijo:
+                    // un cambio pedido por el cliente es otro viaje. Fechas y km se conservan tal cual.
+                    var erroresBloqueados = ValidarCamposBloqueados(viaje, viajeDto, estado);
+                    if (erroresBloqueados.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, erroresBloqueados);
+                    }
                 }
 
-                var choferAnterior = viaje.ChoferID;
-
-                viaje.OrigenID = viajeDto.OrigenID;
-                viaje.DestinoID = viajeDto.DestinoID;
-                viaje.Distancia_KM = viajeDto.Distancia_KM;
                 viaje.Num_Remito = viajeDto.Num_Remito;
                 viaje.Num_de_Carga = viajeDto.Num_de_Carga;
-                viaje.Fecha_Inicio = viajeDto.Fecha_Inicio;
-                viaje.Fecha_Fin = viajeDto.Fecha_Fin;
-                viaje.ChoferID = viajeDto.ChoferID;
-                viaje.CamionID = viajeDto.CamionID;
-                viaje.TarifaFijaID = (viajeDto.TarifaFijaID.HasValue && viajeDto.TarifaFijaID.Value > 0) ? viajeDto.TarifaFijaID : (int?)null;
-                viaje.TarifaKmID = (viajeDto.TarifaKmID.HasValue && viajeDto.TarifaKmID.Value > 0) ? viajeDto.TarifaKmID : (int?)null;
-                viaje.ClienteID = viajeDto.ClienteID;
                 viaje.Fecha_Modi = DateTime.Now;
                 viaje.Usu_Modi = viajeDto.Usu_Modi;
 
@@ -817,8 +870,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     db.SaveChanges();
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
-                    // Solo se reenvia la hoja de ruta si cambio el chofer.
-                    var whatsApp = viaje.ChoferID != choferAnterior ? NotificarChofer(db, viaje) : null;
+                    var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
                     return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp });
                 }
                 catch (DbEntityValidationException ex)
@@ -846,7 +898,7 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // DELETE: api/Viajes/{id}
-        // Eliminacion fisica. Estado es operativo (no de baja logica); un viaje Facturado no se elimina.
+        // Eliminacion fisica. Estado es operativo (no de baja logica); solo se elimina un viaje que todavia no salio.
         public IHttpActionResult Delete(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -862,11 +914,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         return NotFound();
                     }
 
-                    if (EstadoActual(db, id) == EstadoFacturado)
+                    var estado = EstadoActual(db, id);
+                    if (!EsRegistrado(estado))
                     {
                         return Content(HttpStatusCode.BadRequest, new List<object>
                         {
-                            new { PropertyName = "Estado", ErrorMessage = "No se puede eliminar un viaje facturado." }
+                            new { PropertyName = "Estado", ErrorMessage = "El viaje está " + estado.Replace('_', ' ') + ": solo se pueden eliminar viajes en estado Registrado." }
                         });
                     }
 

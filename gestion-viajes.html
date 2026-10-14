@@ -267,6 +267,9 @@
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
                         role="alert">
                     </div>
+                    <div id="avisoViajeBloqueado" class="alert alert-light-warning color-warning" style="display: none;"
+                        role="alert">
+                    </div>
                     <form class="form" id="FormAltaViaje">
                         <input type="hidden" id="viajeIdEdicion" value="">
                         <input type="hidden" id="choferSelectId" value="">
@@ -350,7 +353,7 @@
                                 <div id="mapaViaje" style="height: 430px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
                                 <div class="d-flex justify-content-between align-items-center mt-2">
                                     <small id="mapaViajeMsg" class="text-muted">Seleccion&aacute; origen y destino para calcular la distancia.</small>
-                                    <button type="button" class="btn btn-sm btn-light" onclick="recalcularRutaViaje()">Recalcular</button>
+                                    <button type="button" class="btn btn-sm btn-light" id="btnRecalcularRuta" onclick="recalcularRutaViaje()">Recalcular</button>
                                 </div>
                             </div>
                         </div>
@@ -595,16 +598,19 @@
 
         function accionesViaje(viaje) {
             const facturado = viaje.Estado === 'Facturado';
+            const registrado = viajeRegistrado(viaje.Estado);
             const motivo = 'Viaje facturado: no se puede modificar';
+            const tituloEditar = facturado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
+            const tituloEliminar = facturado ? motivo : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado');
             return `
-                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${facturado ? motivo : 'Editar'}">
+                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEditar}">
                     <button class="btn btn-primary btn-sm ${facturado ? 'disabled' : ''}"
                         onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </span>
-                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${facturado ? motivo : 'Eliminar'}">
-                    <button class="btn btn-danger btn-sm ms-1 ${facturado ? 'disabled' : ''}"
+                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEliminar}">
+                    <button class="btn btn-danger btn-sm ms-1 ${registrado ? '' : 'disabled'}"
                         onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}')">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -858,7 +864,7 @@
         var origenesAll = [], destinosAll = [];
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
-        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '';
+        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false;
         var choferSearchTimer = null;
         var tiposClienteViaje = {};
 
@@ -902,6 +908,7 @@
             return mapaViajeListo;
         }
         function usarDistanciaManual(manual) {
+            manual = manual && !viajeBloqueado;
             $('#distanciaKm').prop('readonly', !manual).attr('placeholder', manual ? 'Ingresala a mano' : 'Se calcula con el mapa');
         }
         function limpiarRutaViaje() {
@@ -943,10 +950,10 @@
         // Sin ruta no se bloquea el alta: la distancia se carga a mano y la tarifa por km se calcula igual.
         function rutaViajeNoDisponible(motivo) {
             if (directionsRenderer) directionsRenderer.set('directions', null);
-            if (!conservarKmGuardado) $('#distanciaKm').val('');
+            if (!conservarKmGuardado && !viajeBloqueado) $('#distanciaKm').val('');
             conservarKmGuardado = false;
             usarDistanciaManual(true);
-            msgMapa(motivo + ' Podés ingresar la distancia a mano.', 'error');
+            msgMapa(motivo + (viajeBloqueado ? '' : ' Podés ingresar la distancia a mano.'), 'error');
         }
         function onRutaViajeCambiada() {
             var dir = directionsRenderer.getDirections();
@@ -956,10 +963,11 @@
             var km = (metros / 1000).toFixed(1);
             var desde = ruta.legs[0].start_address, hasta = ruta.legs[ruta.legs.length - 1].end_address;
             usarDistanciaManual(false);
-            if (conservarKmGuardado && $('#distanciaKm').val()) {
+            if ((conservarKmGuardado || viajeBloqueado) && $('#distanciaKm').val()) {
                 conservarKmGuardado = false;
                 avisoRutaViaje = '';
-                msgMapa('Distancia guardada: ' + $('#distanciaKm').val() + ' km (la ruta de Google marca ' + km + ' km). Tocá Recalcular para actualizarla.', 'ok');
+                msgMapa('Distancia guardada: ' + $('#distanciaKm').val() + ' km (la ruta de Google marca ' + km + ' km).'
+                    + (viajeBloqueado ? '' : ' Tocá Recalcular para actualizarla.'), 'ok');
                 return;
             }
             conservarKmGuardado = false;
@@ -1124,8 +1132,24 @@
         function seleccionarChofer(id, texto) { $('#choferSelectId').val(id); $('#choferBuscar').val(texto); $('#choferResultados').hide().empty(); }
 
         // ===================== ABRIR MODAL =====================
+        function viajeRegistrado(estado) { return !estado || estado === 'Registrado'; }
+
+        // Una vez que el viaje salió solo se completan los números de referencia: el recorrido y lo que define
+        // el cobro quedan fijos (el backend lo valida igual). Un cambio pedido por el cliente es otro viaje.
+        function bloquearDatosDelViaje(estado) {
+            viajeBloqueado = !viajeRegistrado(estado);
+            $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
+                .prop('disabled', viajeBloqueado);
+            if (viajeBloqueado) usarDistanciaManual(false);
+            $('#avisoViajeBloqueado').toggle(viajeBloqueado).text(viajeBloqueado
+                ? 'El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas. '
+                  + 'Si el cliente pide otro recorrido, registralo como un viaje nuevo.'
+                : '');
+        }
+
         function resetFormViaje() {
             document.getElementById('FormAltaViaje').reset();
+            bloquearDatosDelViaje(null);
             if (window.fpInicio) fpInicio.clear();
             if (window.fpFin) fpFin.clear();
             $('#viajeIdEdicion').val(''); $('#choferSelectId').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
@@ -1179,6 +1203,7 @@
                                 .done(function (ch) { $('#choferSelectId').val(ch.Chofer_ID); $('#choferBuscar').val(ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')'); })
                                 .fail(function () { });
                         }
+                        bloquearDatosDelViaje(v.Estado);
                         $('#ModalAltaViaje').modal('show');
                     })
                     .fail(function () { alert('No se pudo cargar el viaje seleccionado.'); });
