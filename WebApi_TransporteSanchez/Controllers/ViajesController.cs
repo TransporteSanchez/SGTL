@@ -612,6 +612,20 @@ namespace WebApi_TransporteSanchez.Controllers
         private static List<object> ValidarCambioEstado(EstadoViajeRow v, string[] flujo, string nuevo, string resultado, DateTime? fechaEntrega)
         {
             var errores = new List<object>();
+
+            // Facturado lo asigna la proforma al generarse y lo quita al anularse. A mano quedaria un viaje
+            // facturado sin proforma, o liberado con la proforma vigente y facturable dos veces.
+            if (v.Estado == EstadoFacturado)
+            {
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo anulá la proforma que lo incluye." });
+                return errores;
+            }
+            if (nuevo == EstadoFacturado)
+            {
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al generar la proforma." });
+                return errores;
+            }
+
             int iActual = Array.IndexOf(flujo, v.Estado);
             int iNuevo = Array.IndexOf(flujo, nuevo);
 
@@ -632,7 +646,7 @@ namespace WebApi_TransporteSanchez.Controllers
             bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
 
             // Directo: SGTL es la unica constancia de la entrega.
-            if (!conPlataforma && (nuevo == EstadoEntregado || nuevo == EstadoFacturado))
+            if (!conPlataforma && nuevo == EstadoEntregado)
             {
                 if (resultado == null)
                     errores.Add(new { PropertyName = "Resultado_Entrega", ErrorMessage = "Para marcar el viaje como entregado indicá el resultado de la entrega." });
@@ -642,7 +656,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             // Con plataforma: los tres numeros recien existen despues de cargar en planta y entregar,
             // por eso se exigen al pasar a facturar y no al crear el viaje.
-            if (nuevo == EstadoListoParaFacturar || nuevo == EstadoFacturado)
+            if (nuevo == EstadoListoParaFacturar)
             {
                 if (conPlataforma && string.IsNullOrWhiteSpace(v.Num_Transporte))
                     errores.Add(new { PropertyName = "Num_Transporte", ErrorMessage = "Para facturar el viaje debe tener N° de transporte SAP. Editá el viaje y cargalo." });
@@ -838,7 +852,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     return Content(HttpStatusCode.BadRequest, new List<object>
                     {
-                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, primero volvé el estado atrás o anulá la proforma." }
+                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, anulá la proforma que lo incluye." }
                     });
                 }
 
