@@ -118,6 +118,7 @@
                                         <option value="DELETE">Baja (DELETE)</option>
                                         <option value="LOGIN">Inicio de sesión</option>
                                         <option value="LOGOUT">Cierre de sesión</option>
+                                        <option value="KM_MANUAL">Km cargados a mano</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2 col-sm-6">
@@ -275,11 +276,11 @@
         function badgeAccion(accion) {
             const map = {
                 'INSERT': 'bg-success', 'UPDATE': 'bg-warning', 'DELETE': 'bg-danger',
-                'LOGIN': 'bg-info', 'LOGOUT': 'bg-secondary'
+                'LOGIN': 'bg-info', 'LOGOUT': 'bg-secondary', 'KM_MANUAL': 'bg-primary'
             };
             const label = {
                 'INSERT': 'Alta', 'UPDATE': 'Modificación', 'DELETE': 'Baja',
-                'LOGIN': 'Login', 'LOGOUT': 'Logout'
+                'LOGIN': 'Login', 'LOGOUT': 'Logout', 'KM_MANUAL': 'Km manual'
             };
             const a = (accion || '').toUpperCase();
             const cls = map[a] || 'bg-dark';

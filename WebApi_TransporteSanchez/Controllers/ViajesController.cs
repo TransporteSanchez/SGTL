@@ -52,6 +52,10 @@ namespace WebApi_TransporteSanchez.Controllers
             // 08_*.sql (fuera del EDMX): se guarda por SQL directo despues del SaveChanges.
             public string Num_Transporte { get; set; }
 
+            // Solo llegan si Google no pudo calcular la ruta y los km se cargaron a mano: van a AUDITORIA, no a VIAJES.
+            public string Km_Manual_Motivo { get; set; }
+            public string Km_Manual_Error_Google { get; set; }
+
             // Solo lectura: columnas de 06/07_*.sql (fuera del EDMX).
             public string Estado { get; set; }
             public string Resultado_Entrega { get; set; }
@@ -208,6 +212,21 @@ namespace WebApi_TransporteSanchez.Controllers
         private static int? IdOpcional(int? id)
         {
             return id.HasValue && id.Value > 0 ? id : (int?)null;
+        }
+
+        private static string Recortar(string s, int max)
+        {
+            s = (s ?? "").Trim();
+            return s.Length > max ? s.Substring(0, max) : s;
+        }
+
+        private static void AuditarKmManual(int viajeId, ViajeDto v, string usuario)
+        {
+            if (string.IsNullOrWhiteSpace(v.Km_Manual_Motivo))
+                return;
+            SGTLAuditContext.RegistrarEvento(Cn(), UsuarioCorto(usuario), "KM_MANUAL", "VIAJES", "Viaje_ID=" + viajeId,
+                "Km cargados a mano: " + Recortar(v.Distancia_KM, 20) + ". Motivo: " + Recortar(v.Km_Manual_Motivo, 200)
+                + ". Google: " + (string.IsNullOrWhiteSpace(v.Km_Manual_Error_Google) ? "-" : Recortar(v.Km_Manual_Error_Google, 200)));
         }
 
         private static List<object> ValidarCamposBloqueados(VIAJES actual, ViajeDto nuevo, string estado)
@@ -755,6 +774,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         db.SaveChanges();
                         GuardarNumTransporte(db, viaje.Viaje_ID, viajeDto.Num_Transporte);
+                        AuditarKmManual(viaje.Viaje_ID, viajeDto, viajeDto.Usu_Alta);
                         var whatsApp = NotificarChofer(db, viaje);
                         return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente.", WhatsApp = whatsApp });
                     }
@@ -822,7 +842,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     });
                 }
 
-                bool cambioHojaDeRuta = false;
+                bool cambioHojaDeRuta = false, cambioKm = false;
                 if (EsRegistrado(estado))
                 {
                     var erroresChofer = ValidarChofer(db, viajeDto);
@@ -836,6 +856,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         || viaje.OrigenID != viajeDto.OrigenID
                         || viaje.DestinoID != viajeDto.DestinoID
                         || viaje.Fecha_Inicio != viajeDto.Fecha_Inicio;
+                    cambioKm = (viaje.Distancia_KM ?? "").Trim() != (viajeDto.Distancia_KM ?? "").Trim();
 
                     viaje.OrigenID = viajeDto.OrigenID;
                     viaje.DestinoID = viajeDto.DestinoID;
@@ -870,6 +891,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     db.SaveChanges();
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
+                    if (cambioKm) AuditarKmManual(id, viajeDto, viajeDto.Usu_Modi);
                     var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
                     return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp });
                 }

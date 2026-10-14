@@ -310,6 +310,11 @@
                                     <div class="col-md-6 mb-3">
                                         <label for="distanciaKm" class="form-label">Distancia (KM)</label>
                                         <input type="number" min="0" step="0.01" class="form-control" id="distanciaKm" readonly placeholder="Se calcula con el mapa">
+                                        <div id="grupoMotivoKmManual" class="mt-2" style="display: none;">
+                                            <label for="motivoKmManual" class="form-label">Motivo de la distancia manual <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="motivoKmManual" maxlength="200" placeholder="Ej.: dirección nueva que Google no encuentra">
+                                            <small class="text-muted">Queda registrado en Auditor&iacute;a con tu usuario.</small>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="mb-3">
@@ -865,6 +870,7 @@
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
         var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false;
+        var distanciaManual = false, errorGoogleRuta = '', kmGuardadoViaje = '';
         var choferSearchTimer = null;
         var tiposClienteViaje = {};
 
@@ -907,9 +913,13 @@
             }
             return mapaViajeListo;
         }
-        function usarDistanciaManual(manual) {
+        function usarDistanciaManual(manual, errorGoogle) {
             manual = manual && !viajeBloqueado;
+            distanciaManual = manual;
+            errorGoogleRuta = manual ? (errorGoogle || '') : '';
             $('#distanciaKm').prop('readonly', !manual).attr('placeholder', manual ? 'Ingresala a mano' : 'Se calcula con el mapa');
+            $('#grupoMotivoKmManual').toggle(manual);
+            if (!manual) $('#motivoKmManual').val('');
         }
         function limpiarRutaViaje() {
             rutaViajeSeq++;
@@ -952,7 +962,7 @@
             if (directionsRenderer) directionsRenderer.set('directions', null);
             if (!conservarKmGuardado && !viajeBloqueado) $('#distanciaKm').val('');
             conservarKmGuardado = false;
-            usarDistanciaManual(true);
+            usarDistanciaManual(true, motivo);
             msgMapa(motivo + (viajeBloqueado ? '' : ' Podés ingresar la distancia a mano.'), 'error');
         }
         function onRutaViajeCambiada() {
@@ -1159,6 +1169,7 @@
             $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
             $('#alertaCompletaCampos').hide().empty();
             $('#distanciaKm').val('');
+            kmGuardadoViaje = '';
             setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
             limpiarRutaViaje();
             aplicarReglasTipoCliente();
@@ -1185,7 +1196,8 @@
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
                         $('#camionSelect').val(v.CamionID);
                         $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
-                        conservarKmGuardado = !!$('#distanciaKm').val();
+                        kmGuardadoViaje = $('#distanciaKm').val();
+                        conservarKmGuardado = !!kmGuardadoViaje;
                         $('#numeroTransporte').val((v.Num_Transporte || '').trim());
                         $('#numeroRemito').val((v.Num_Remito || '').trim());
                         $('#numeroCarga').val((v.Num_de_Carga || '').trim());
@@ -1211,9 +1223,16 @@
         }
 
         // ===================== GUARDAR =====================
+        function kmCargadosAMano() {
+            var km = ($('#distanciaKm').val() || '').toString().trim();
+            return distanciaManual && km !== '' && km !== kmGuardadoViaje;
+        }
         function construirViajeDto() {
             var tipo = $('input[name="tipoTarifa"]:checked').val();
+            var manual = kmCargadosAMano();
             return {
+                Km_Manual_Motivo: manual ? ($('#motivoKmManual').val() || '').trim() : '',
+                Km_Manual_Error_Google: manual ? errorGoogleRuta : '',
                 OrigenID: parseInt($('#origenSelect').val()) || 0,
                 DestinoID: parseInt($('#destinoSelect').val()) || 0,
                 Distancia_KM: ($('#distanciaKm').val() || '').toString().trim(),
@@ -1243,6 +1262,7 @@
             if (!dto.CamionID) falt.push('Camión');
             if (!dto.Fecha_Inicio) falt.push('Fecha de inicio');
             if (!dto.Fecha_Fin) falt.push('Fecha de fin');
+            if (kmCargadosAMano() && !dto.Km_Manual_Motivo) falt.push('Motivo de la distancia manual');
             if (!tipo) falt.push('Tipo de tarifa');
             else if (tipo === 'fija' && !dto.TarifaFijaID) falt.push('Tarifa fija (no se encontró para esa ruta)');
             else if (tipo === 'km' && !dto.TarifaKmID) falt.push('Tarifa por km (no se pudo calcular)');
@@ -1422,7 +1442,7 @@
             $('#estadoViajeNuevo').on('change', actualizarAyudaEstado);
             $('#ModalAltaViaje').on('shown.bs.modal', function () {
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
-                else { initMapaViaje().catch(function () { msgMapa('No se pudo cargar Google Maps. Podés ingresar la distancia a mano.', 'error'); usarDistanciaManual(true); }); }
+                else { initMapaViaje().catch(function () { msgMapa('No se pudo cargar Google Maps. Podés ingresar la distancia a mano.', 'error'); usarDistanciaManual(true, 'No se pudo cargar Google Maps.'); }); }
             });
             SGTLGoogleMaps.alFallarAutenticacion(function () { rutaViajeNoDisponible('Google Maps rechazó la clave para este sitio.'); });
             $('#distanciaKm').on('change', function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); });
