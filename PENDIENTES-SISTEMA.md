@@ -13,6 +13,7 @@ Para aplicarlos en la VM: `git pull` en la rama `rocionuvoli`, recompilar la API
 | 1.1 | **Proforma: fecha estimada de carga y de entrega obligatorias.** Se graban también en `FechaDesde` / `FechaHasta`, que en la base no admiten nulos; hoy, si quedan vacías, el guardado falla con un error genérico. Ahora el modal las marca con asterisco, no deja guardar, marca el campo en rojo y muestra "Por favor, completá todos los campos requeridos *". La API también lo valida y responde 400 con mensaje claro. | `gestion-facturacion.html`, `ProformasController.cs` | Nueva proforma → dejar las dos fechas vacías → Guardar borrador: aviso rojo y campos marcados. Completarlas → guarda normal. |
 | 1.2 | **Auditoría: nombre de entidad sin sufijo.** Se grababa `VIAJES_7970…` en lugar de `VIAJES` (nombre interno de Entity Framework). | `Sgtlauditcontext.cs` | Editar un camión desde pantalla → en Auditoría, Entidad = `CAMIONES`. |
 | 1.3 | **Viajes: campo de km en gris cuando no se puede editar.** | `gestion-viajes.html` | Abrir un viaje → el campo de km se ve gris salvo en modo de carga manual. |
+| 1.4 | **Live Server ya no recarga la página** cuando la API escribe en `App_Data/` (p. ej. `whatsapp.log`) o al compilar (`bin/`, `obj/`, `.vs/`). Antes se perdía lo que se estaba cargando. | `.vscode/settings.json` | Reiniciar Live Server en VS Code. Con un formulario a medio cargar, disparar un envío de WhatsApp o recompilar la API: la página no se recarga. |
 
 **Sobre 1.2:** los 127 registros viejos con sufijo ya se corrigieron en la base el 14/10. Hasta que la API se recompile en la VM con este cambio, cada edición desde pantalla vuelve a grabar el sufijo. Después de recompilar, repetir esta corrección (dentro de transacción, revisar la cantidad antes del `COMMIT`):
 
@@ -65,7 +66,6 @@ Facturación (Facu) ya lo resolvió para la fecha de los comprobantes con `Fecha
 
 | # | Qué | Qué hacer |
 |---|---|---|
-| 3.1 | **Live Server recarga la página** cuando la API escribe `App_Data/whatsapp.log`, y se pierde lo que se estaba cargando. | Agregar en `.vscode/settings.json`: `"liveServer.settings.ignoreFiles": ["**/App_Data/**", "**/bin/**", "**/obj/**"]`. |
 | 3.2 | **Puerto 5500 vs 5502.** `.vscode/settings.json` fija 5502, pero en la VM Live Server levantó en 5500. El Cursor de la VM agregó `127.0.0.1:5500` a las referencias permitidas de la clave de Google Maps. | Ver por qué la VM no toma 5502 (probablemente se abrió otra carpeta como raíz). Unificar en un puerto y dejar en la clave de Maps solo los necesarios. |
 | 3.3 | **Contraseña de la base en `Web.config`, subida a git.** | Coordinar con el equipo: sacarla del repo (archivo local no versionado o variables de entorno) y **cambiar la contraseña** en Azure, porque la actual ya quedó en el historial. |
 | 3.4 | **Direcciones que Google ubica mal** en Orígenes y destinos: "claros del bosque" lo ubica en Córdoba; "Sede Temperley" en Paso del Rey. | Es un tema de datos: corregir esas direcciones desde Orígenes y destinos. |
