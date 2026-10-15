@@ -529,8 +529,8 @@
                 Detalle: lineas
             };
         }
-        // FechaDesde/FechaHasta de PROFORMAS se graban con estas fechas y no admiten nulos.
-        var CAMPOS_REQUERIDOS_PROFORMA = ['#p_fcarga', '#p_fentrega'];
+        // Campos con asterisco: se exigen ya al guardar el borrador (las fechas, ademas, van a FechaDesde/FechaHasta, que no admiten nulos).
+        var CAMPOS_REQUERIDOS_PROFORMA = ['#p_cliente', '#p_origen', '#p_destino', '#p_fcarga', '#p_fentrega'];
         function validarCamposRequeridos() {
             var faltan = false;
             CAMPOS_REQUERIDOS_PROFORMA.forEach(function (sel) {

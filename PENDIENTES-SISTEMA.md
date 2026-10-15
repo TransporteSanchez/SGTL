@@ -16,12 +16,12 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 1.2b | `UPDATE` de 127 entidades viejas en AUDITORIA | Hecho en Azure 14/10 | N/A (SQL) | — |
 | 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
 | 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Commit local sin push** (`98ffe56`) | Tras `git push` + pull en VM |
+| 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | Hecho | **Commit local sin push** | Tras `git push` + pull en VM (recompilar API) |
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
 | 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
 | 3.4 | Direcciones mal geocodificadas | **No hecho** (datos) | — | Corregir en Orígenes/destinos |
 | 3.5 | `bin`/`obj` untracked en la VM | **No hecho** | — | Diagnosticar en VM |
-| 3.6 | Asteriscos Cliente/Origen/Destino en proforma | **No hecho** (falta decisión) | — | — |
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
@@ -88,6 +88,18 @@ Ignora `App_Data`, `bin`, `obj`, `.vs` para que escribir `whatsapp.log` o recomp
 
 En el mismo commit `98ffe56` también está `CLAUDE.md` (reglas de trabajo del repo).
 
+### 1.5 Proforma: Cliente, Origen y Destino obligatorios al guardar — COMMIT LOCAL, SIN PUSH
+
+**Archivos:** `gestion-facturacion.html`, `ProformasController.cs`
+
+Decisión del 15/10 (antes era el 3.6): el asterisco significa lo mismo en los 5 campos. Cliente, Origen y Destino se piden ya al guardar el borrador, igual que las fechas; antes se podían dejar vacíos y recién se exigían al generar. Sin cliente, el borrador no aparecía al filtrar por cliente, no podía traer viajes y su PDF salía sin datos del cliente.
+
+- Modal: mismo aviso rojo y bordes en rojo que las fechas (el select de Cliente también).
+- API (`Crear` / `Editar`): 400 con la lista de campos que faltan. `Generar` mantiene sus controles.
+- Borradores viejos que ya estén incompletos: al editarlos piden completar esos campos antes de guardar.
+
+**Probar:** nueva proforma → dejar Cliente, Origen y Destino vacíos (con fechas cargadas) → Guardar borrador → aviso + los 3 en rojo → completar uno por uno → se va quitando el rojo → guarda OK. Repetir con Generar.
+
 ---
 
 ## 2. Hora guardada en UTC — NO HECHO
@@ -124,9 +136,8 @@ Facturación ya usa `FechaArgentina()` para comprobantes.
 | 3.3 | Password DB en `Web.config` en git | Sacar del repo + **rotar password Azure**. Repo GitHub **privado** → no urgente para demo | Media (seguridad) |
 | 3.4 | “claros del bosque” → Córdoba; “Sede Temperley” → Paso del Rey | Corregir datos en Orígenes y destinos | Alta si se demuestran esos lugares |
 | 3.5 | `bin`/`obj` como untracked en VM | En VM: `git check-ignore -v WebApi_TransporteSanchez/bin`. No commitear esas carpetas | Baja |
-| 3.6 | Cliente/Origen/Destino con `*` pero vacíos al guardar borrador | Decidir: validar al guardar o aclarar que son para Generar | Baja |
 
-*(El ítem 3.1 era Live Server reload → ya resuelto como 1.4, pendiente push.)*
+*(El ítem 3.1 era Live Server reload → resuelto como 1.4. El 3.6 (asteriscos de la proforma) → resuelto como 1.5.)*
 
 ---
 

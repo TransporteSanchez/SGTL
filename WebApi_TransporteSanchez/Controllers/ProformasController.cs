@@ -212,13 +212,17 @@ namespace WebApi_TransporteSanchez.Controllers
             catch { }
         }
 
+        // Campos obligatorios ya en el borrador (los mismos que el modal marca con asterisco).
         // FechaCarga y FechaEntrega se guardan tambien en FechaDesde y FechaHasta, que en la base no admiten nulos.
-        private static string ValidarFechasRequeridas(ProformaDto p)
+        private static string ValidarCamposRequeridos(ProformaDto p)
         {
             var faltan = new List<string>();
+            if (!p.ClienteID.HasValue || p.ClienteID.Value <= 0) faltan.Add("cliente");
+            if (string.IsNullOrWhiteSpace(p.Origen)) faltan.Add("origen");
+            if (string.IsNullOrWhiteSpace(p.Destino)) faltan.Add("destino");
             if (!p.FechaCarga.HasValue) faltan.Add("fecha estimada de carga");
             if (!p.FechaEntrega.HasValue) faltan.Add("fecha estimada de entrega");
-            return faltan.Count == 0 ? null : "Completá la " + string.Join(" y la ", faltan) + ".";
+            return faltan.Count == 0 ? null : "Completá los campos requeridos: " + string.Join(", ", faltan) + ".";
         }
 
         // ======================= Endpoints =======================
@@ -325,8 +329,8 @@ namespace WebApi_TransporteSanchez.Controllers
         public IHttpActionResult Crear([FromBody] ProformaDto p)
         {
             if (p == null) return BadRequest("Datos invalidos.");
-            var errorFechas = ValidarFechasRequeridas(p);
-            if (errorFechas != null) return Content(HttpStatusCode.BadRequest, new { error = errorFechas });
+            var errorRequeridos = ValidarCamposRequeridos(p);
+            if (errorRequeridos != null) return Content(HttpStatusCode.BadRequest, new { error = errorRequeridos });
             try
             {
                 ComputarTotales(p);
@@ -353,8 +357,8 @@ namespace WebApi_TransporteSanchez.Controllers
         public IHttpActionResult Editar(int id, [FromBody] ProformaDto p)
         {
             if (p == null) return BadRequest("Datos invalidos.");
-            var errorFechas = ValidarFechasRequeridas(p);
-            if (errorFechas != null) return Content(HttpStatusCode.BadRequest, new { error = errorFechas });
+            var errorRequeridos = ValidarCamposRequeridos(p);
+            if (errorRequeridos != null) return Content(HttpStatusCode.BadRequest, new { error = errorRequeridos });
             try
             {
                 ComputarTotales(p);
