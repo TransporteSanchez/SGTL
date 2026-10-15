@@ -542,6 +542,8 @@
                         tbody.html('<tr><td colspan="8" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (viaje) {
+                            const bloqueadoPorFacturacion = viaje.Facturada === true;
+                            const motivoBloqueo = 'No se puede modificar: el viaje pertenece a una proforma Facturada';
                             const row = `
                                 <tr>
                                     <td>${viaje.Viaje_ID}</td>
@@ -555,14 +557,16 @@
                 <button class="btn btn-primary btn-sm"
                     data-bs-toggle="tooltip"
                     data-bs-placement="top"
-                    title="Editar"
+                    title="${bloqueadoPorFacturacion ? motivoBloqueo : 'Editar'}"
+                    ${bloqueadoPorFacturacion ? 'disabled' : ''}
                     onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
                     <i class="bi bi-pencil"></i>
                 </button>
 
                 <span data-bs-toggle="tooltip" data-bs-placement="top"
-                      title="${viaje.Estado === 'Activo' ? 'No se puede eliminar un viaje activo' : 'Eliminar'}">
-                    <button class="btn btn-danger btn-sm ms-1 ${viaje.Estado === 'Activo' ? 'disabled' : ''}"
+                      title="${bloqueadoPorFacturacion ? motivoBloqueo : (viaje.Estado === 'Activo' ? 'No se puede eliminar un viaje activo' : 'Eliminar')}">
+                    <button class="btn btn-danger btn-sm ms-1 ${viaje.Estado === 'Activo' || bloqueadoPorFacturacion ? 'disabled' : ''}"
+                        ${bloqueadoPorFacturacion ? 'disabled' : ''}
                         onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}', '${viaje.Estado}')">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -682,6 +686,7 @@
                 var r = xhr.responseJSON;
                 if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
                 if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
+                if (r && r.error) { return r.error; }
                 if (r && r.Message) { return r.Message; }
                 if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
             } catch (e) { }
@@ -887,6 +892,10 @@
             $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarOrigenesDestinos()).always(function () {
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
+                        if (v.Facturada === true) {
+                            alert('No se puede editar el viaje porque pertenece a una proforma Facturada.');
+                            return;
+                        }
                         $('#clienteSelect').val(v.ClienteID);
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
                         $('#camionSelect').val(v.CamionID);

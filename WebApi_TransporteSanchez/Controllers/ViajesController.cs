@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -32,6 +33,50 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public System.DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+            public bool Facturada { get; set; }
+        }
+
+        private class ViajeListadoDto
+        {
+            public int Viaje_ID { get; set; }
+            public DateTime Fecha_Inicio { get; set; }
+            public DateTime Fecha_Fin { get; set; }
+            public string Origen { get; set; }
+            public string Destino { get; set; }
+            public string Num_Remito { get; set; }
+            public string Num_de_Carga { get; set; }
+            public string Distancia_KM { get; set; }
+            public int OrigenID { get; set; }
+            public int DestinoID { get; set; }
+            public int ChoferID { get; set; }
+            public int CamionID { get; set; }
+            public int ClienteID { get; set; }
+            public int? TarifaFijaID { get; set; }
+            public int? TarifaKmID { get; set; }
+            public string Estado { get; set; }
+            public bool Facturada { get; set; }
+        }
+
+        // Se contemplan tanto los vínculos normalizados como las líneas históricas
+        // que identifican un viaje con el código V{id}.
+        private static bool EstaVinculadoAProformaFacturada(DbContext db, int viajeId)
+        {
+            const string sql = @"
+SELECT CAST(CASE WHEN EXISTS (
+    SELECT 1
+    FROM dbo.COMPROBANTES_PROFORMAS cp
+    INNER JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+    WHERE cp.Vigente=1
+      AND (
+          EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv
+                  WHERE pv.ProformaID=p.Proforma_ID AND pv.ViajeID=@viajeId)
+          OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd
+                     WHERE pd.Proforma_ID=p.Proforma_ID
+                       AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,''))))='V'+CONVERT(varchar(11),@viajeId))
+      )
+) THEN 1 ELSE 0 END AS bit);";
+
+            return db.Database.SqlQuery<bool>(sql, new SqlParameter("@viajeId", viajeId)).FirstOrDefault();
         }
 
         // GET: api/Viajes
@@ -150,23 +195,23 @@ namespace WebApi_TransporteSanchez.Controllers
                                    join d in db.Set<DESTINO>() on v.DestinoID equals d.Destino_ID into dj
                                    from d in dj.DefaultIfEmpty()
                                    orderby v.Viaje_ID descending
-                                   select new
+                                   select new ViajeListadoDto
                                    {
-                                       v.Viaje_ID,
-                                       v.Fecha_Inicio,
-                                       v.Fecha_Fin,
+                                        Viaje_ID = v.Viaje_ID,
+                                        Fecha_Inicio = v.Fecha_Inicio,
+                                        Fecha_Fin = v.Fecha_Fin,
                                        Origen = o != null ? o.Descripcion : "",
                                        Destino = d != null ? d.Descripcion : "",
-                                       v.Num_Remito,
-                                       v.Num_de_Carga,
-                                       v.Distancia_KM,
-                                       v.OrigenID,
-                                       v.DestinoID,
-                                       v.ChoferID,
-                                       v.CamionID,
-                                       v.ClienteID,
-                                       v.TarifaFijaID,
-                                       v.TarifaKmID,
+                                        Num_Remito = v.Num_Remito,
+                                        Num_de_Carga = v.Num_de_Carga,
+                                        Distancia_KM = v.Distancia_KM,
+                                        OrigenID = v.OrigenID,
+                                        DestinoID = v.DestinoID,
+                                        ChoferID = v.ChoferID,
+                                        CamionID = v.CamionID,
+                                        ClienteID = v.ClienteID,
+                                        TarifaFijaID = v.TarifaFijaID,
+                                        TarifaKmID = v.TarifaKmID,
                                        // La tabla VIAJES no tiene columna Estado en este modelo.
                                        // Se devuelve vacio para que el frontend habilite la edicion/eliminacion.
                                        Estado = ""
@@ -174,6 +219,9 @@ namespace WebApi_TransporteSanchez.Controllers
                                    .Skip((page - 1) * pageSize)
                                    .Take(pageSize)
                                    .ToList();
+
+                    foreach (var viaje in results)
+                        viaje.Facturada = EstaVinculadoAProformaFacturada(db, viaje.Viaje_ID);
 
                     return Ok(new
                     {
@@ -227,7 +275,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         Fecha_Alta = viaje.Fecha_Alta,
                         Usu_Alta = viaje.Usu_Alta,
                         Fecha_Modi = viaje.Fecha_Modi,
-                        Usu_Modi = viaje.Usu_Modi
+                        Usu_Modi = viaje.Usu_Modi,
+                        Facturada = EstaVinculadoAProformaFacturada(db, id)
                     };
 
                     return Ok(dto);
@@ -347,6 +396,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     return NotFound();
                 }
 
+                if (EstaVinculadoAProformaFacturada(db, id))
+                {
+                    return Content(HttpStatusCode.Conflict, new { error = "No se puede editar el viaje porque pertenece a una proforma Facturada." });
+                }
+
                 viaje.OrigenID = viajeDto.OrigenID;
                 viaje.DestinoID = viajeDto.DestinoID;
                 viaje.Distancia_KM = viajeDto.Distancia_KM;
@@ -408,6 +462,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (viaje == null)
                     {
                         return NotFound();
+                    }
+
+                    if (EstaVinculadoAProformaFacturada(db, id))
+                    {
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje porque pertenece a una proforma Facturada." });
                     }
 
                     db.Set<VIAJES>().Remove(viaje);

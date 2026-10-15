@@ -418,6 +418,7 @@
     <Compile Include="Controllers\CuentaCorrienteController.cs" />
     <Compile Include="Controllers\ComprobantesController.cs" />
     <Compile Include="Controllers\FacturasController.cs" />
+    <Compile Include="Controllers\FacturacionConfiguracionController.cs" />
     <Compile Include="Controllers\RecibosController.cs" />
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GestionContenidoController.cs" />

@@ -47,8 +47,7 @@ BEGIN TRY
         Impacto char(1) NOT NULL,
         CONSTRAINT UQ_TIPOS_COMPROBANTE_Impacto UNIQUE (Tipo, Impacto),
         CONSTRAINT CK_TIPOS_COMPROBANTE_Valores CHECK (
-            (Tipo IN ('FAC','ND') AND Impacto = 'D') OR
-            (Tipo IN ('NC','REC') AND Impacto = 'C'))
+            LEN(Tipo) BETWEEN 1 AND 3 AND Tipo NOT LIKE '%[^A-Z0-9]%' AND Impacto IN ('D','C'))
     );
     INSERT dbo.TIPOS_COMPROBANTE (Tipo, Descripcion, Impacto) VALUES
         ('FAC',N'Factura interna','D'), ('ND',N'Nota de débito interna','D'),
@@ -285,7 +284,8 @@ BEGIN TRY
         CONSTRAINT FK_CC_PV_Viaje FOREIGN KEY (ViajeID) REFERENCES dbo.VIAJES (Viaje_ID),
         CONSTRAINT FK_CC_PV_Alta FOREIGN KEY (UsuarioAltaID) REFERENCES dbo.USUARIOS (Usuario_ID)
     );
-    CREATE INDEX IX_CC_PV_Viaje ON dbo.PROFORMAS_VIAJES (ViajeID,ProformaID);
+    -- Un viaje queda reservado por una única Proforma mientras ésta exista.
+    CREATE UNIQUE INDEX UX_CC_PV_Viaje ON dbo.PROFORMAS_VIAJES (ViajeID);
 
     CREATE TABLE dbo.PERMISOS (
         Permiso_ID int IDENTITY(1,1) NOT NULL CONSTRAINT PK_PERMISOS PRIMARY KEY,

@@ -43,31 +43,36 @@
             <div class="page-heading">
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Listar proformas generadas</h5>
-                            <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar proformas).</small>
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-0">Listar proformas generadas</h5>
+                                <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar proformas).</small>
+                            </div>
+                            <button id="btnExportarListadoProformas" class="btn btn-outline-secondary" type="button" onclick="abrirExportacionProformas()"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar listado</button>
                         </div>
                         <div class="card-body">
                             <div class="row g-2 mb-3">
                                 <div class="col-md-2 col-6"><label class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..."></div>
-                                <div class="col-md-3 col-6"><label class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-md-3 col-6"><label for="fCliente" class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
                                 <div class="col-md-2 col-6"><label class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
                                 <div class="col-md-2 col-6"><label class="form-label">Desde</label><input id="fDesde" class="form-control" placeholder="AAAA-MM-DD"></div>
                                 <div class="col-md-2 col-6"><label class="form-label">Hasta</label><input id="fHasta" class="form-control" placeholder="AAAA-MM-DD"></div>
                                 <div class="col-md-1 col-6"><label class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="usuario"></div>
-                                <div class="col-12 d-flex gap-2">
-                                    <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
-                                    <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
-                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
+                                <div class="col-12 d-flex align-items-center gap-2">
+                                    <span id="resumen" class="text-muted align-self-center"></span>
+                                    <div class="d-flex justify-content-end gap-2 ms-auto">
+                                        <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+                                        <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="table-responsive">
                                 <table class="table table-hover tbl-prof">
                                     <thead><tr>
-                                        <th>Número</th><th>Fecha</th><th>Cliente</th><th>Destino</th>
+                                        <th>Número</th><th>Fecha</th><th>Cliente</th>
                                         <th class="text-end">Total</th><th>Estado</th><th>Usuario</th><th class="text-center">Ver</th>
                                     </tr></thead>
-                                    <tbody id="cuerpoProformas"><tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                    <tbody id="cuerpoProformas"><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
                             </div>
                             <nav><ul class="pagination mt-2" id="paginacion"></ul></nav>
@@ -146,6 +151,27 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalExportarProformas" tabindex="-1" aria-labelledby="modalExportarProformasTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalExportarProformasTitulo"><i class="bi bi-download me-2"></i>Exportar listado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-2">El listado incluirá todas las proformas que coincidan con los filtros de la búsqueda actual, junto con el detalle de sus viajes.</p>
+                    <div id="proformasExportarResumen" class="alert alert-light border mb-0" role="status"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListadoProformas" onclick="exportarReporteProformas('vistaPrevia')"><i class="bi bi-printer me-1"></i>Vista previa e imprimir</button>
+                    <button type="button" class="btn btn-success" id="btnDescargarListadoProformasExcel" onclick="exportarReporteProformas('excel')"><i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel</button>
+                    <button type="button" class="btn btn-primary" id="btnDescargarListadoProformasPdf" onclick="exportarReporteProformas('pdf')"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
@@ -155,6 +181,9 @@
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
+    <script src="assets/static/js/reportes-proformas.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
@@ -181,7 +210,7 @@
 
     <script>
         const API_FAC = 'http://localhost:50222/api';
-        const ESTADOS_GEN = ['Generada', 'Enviada', 'Aceptada', 'Rechazada', 'Anulada'];
+        const ESTADOS_GEN = ['Generada', 'Aceptada', 'Facturada', 'Anulada'];
         var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
 
         function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -190,7 +219,7 @@
         function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
         function setTxt(id, v) { var el = document.getElementById(id); if (el) el.textContent = (v == null || v === '' ? '—' : v); }
         function badgeEstado(e) {
-            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Enviada': 'bg-info', 'Aceptada': 'bg-success', 'Rechazada': 'bg-danger', 'Anulada': 'bg-dark' };
+            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Aceptada': 'bg-success', 'Facturada': 'bg-success', 'Anulada': 'bg-dark' };
             return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
         }
 
@@ -200,16 +229,17 @@
                 (data || []).forEach(function (c) {
                     var id = c.Cliente_ID || c.ClienteID || c.Id;
                     var nom = c.Razon_Social || c.RazonSocial || ('Cliente ' + id);
-                    opts += '<option value="' + id + '">' + esc(nom) + '</option>';
+                    var cuit = c.CUIT_Cliente || c.CUIT || '';
+                    opts += '<option value="' + id + '">' + esc(nom + (cuit ? ' · ' + cuit : '')) + '</option>';
                 });
                 document.getElementById('fCliente').innerHTML = opts;
+                SelectClientePredictivo.inicializar('fCliente', { placeholder: 'Todos los clientes' });
             });
         }
         function initEstados() { var s = document.getElementById('fEstado'); ESTADOS_GEN.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; }); }
-        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('fCliente').value = ''; document.getElementById('fEstado').value = ''; buscarProformas(1); }
+        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('fCliente').value = ''; SelectClientePredictivo.sincronizar('fCliente'); document.getElementById('fEstado').value = ''; buscarProformas(1); }
 
-        function buscarProformas(page) {
-            profState.page = page || 1;
+        function parametrosBusquedaProformas(page, pageSize) {
             var p = new URLSearchParams();
             p.append('soloGeneradas', 'true');
             if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
@@ -218,29 +248,92 @@
             if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
             if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
-            p.append('page', profState.page); p.append('pageSize', profState.pageSize);
+            p.append('page', page || 1); p.append('pageSize', pageSize == null ? profState.pageSize : pageSize);
+            return p;
+        }
+        function buscarProformas(page) {
+            profState.page = page || 1;
+            var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
-            cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>';
+            cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>';
             fetch(API_FAC + '/Proformas?' + p.toString())
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                 .then(function (res) {
-                    if (!res.ok) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">Error: ' + esc(res.j.detalle || res.j.error || '') + '</td></tr>'; return; }
+                    if (!res.ok) { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + esc(res.j.detalle || res.j.error || '') + '</td></tr>'; return; }
                     renderGrid(res.j);
                 })
-                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-danger py-4">No se pudieron cargar las proformas.</td></tr>'; });
+                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar las proformas.</td></tr>'; });
+        }
+        function filtrosReporteProformas() {
+            var filtros = [];
+            if (val('fNumero').trim()) filtros.push('Número: ' + val('fNumero').trim());
+            var cliente = document.getElementById('fCliente');
+            if (cliente && cliente.value) filtros.push('Cliente: ' + cliente.options[cliente.selectedIndex].text);
+            if (val('fEstado')) filtros.push('Estado: ' + val('fEstado'));
+            if (val('fDesde').trim()) filtros.push('Desde: ' + val('fDesde').trim());
+            if (val('fHasta').trim()) filtros.push('Hasta: ' + val('fHasta').trim());
+            if (val('fUsuario').trim()) filtros.push('Usuario: ' + val('fUsuario').trim());
+            return filtros.length ? filtros.join(' | ') : 'Sin filtros';
+        }
+        function abrirExportacionProformas() {
+            document.getElementById('proformasExportarResumen').textContent = 'Proformas: ' + profState.total + '. ' + filtrosReporteProformas();
+            $('#modalExportarProformas').modal('show');
+        }
+        function cambiarEstadoBotonesReporte(ocupado, texto) {
+            ['btnVistaPreviaListadoProformas', 'btnDescargarListadoProformasExcel', 'btnDescargarListadoProformasPdf'].forEach(function (id) {
+                var boton = document.getElementById(id);
+                if (!boton) return;
+                boton.disabled = ocupado;
+                if (ocupado) boton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>' + texto;
+            });
+        }
+        function restaurarBotonesReporte() {
+            var botones = {
+                btnVistaPreviaListadoProformas: '<i class="bi bi-printer me-1"></i>Vista previa e imprimir',
+                btnDescargarListadoProformasExcel: '<i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel',
+                btnDescargarListadoProformasPdf: '<i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF'
+            };
+            Object.keys(botones).forEach(function (id) {
+                var boton = document.getElementById(id);
+                if (boton) { boton.disabled = false; boton.innerHTML = botones[id]; }
+            });
+        }
+        function exportarReporteProformas(formato) {
+            if (!window.ReportesProformas) { alert('No se pudo cargar el generador de reportes.'); return; }
+            var ventanaPrevia = formato === 'vistaPrevia' ? window.open('', '_blank') : null;
+            if (formato === 'vistaPrevia' && !ventanaPrevia) { alert('El navegador bloqueó la ventana de vista previa. Permití las ventanas emergentes e intentá nuevamente.'); return; }
+            cambiarEstadoBotonesReporte(true, 'Generando…');
+            fetch(API_FAC + '/Proformas/Reporte?' + parametrosBusquedaProformas(1, 0).toString())
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+                .then(function (res) {
+                    if (!res.ok) throw new Error(res.j.error || res.j.detalle || 'No se pudo generar el reporte.');
+                    window.ReportesProformas.exportar(formato, {
+                        items: res.j.items || [],
+                        filtros: filtrosReporteProformas(),
+                        titulo: 'Listado de proformas generadas',
+                        archivo: 'listado-proformas-generadas',
+                        formatearFecha: fdate,
+                        ventanaPrevia: ventanaPrevia
+                    });
+                    $('#modalExportarProformas').modal('hide');
+                })
+                .catch(function (error) {
+                    if (ventanaPrevia && !ventanaPrevia.closed) ventanaPrevia.close();
+                    alert(error.message || 'No se pudo generar el reporte.');
+                })
+                .finally(restaurarBotonesReporte);
         }
         function renderGrid(data) {
             var cuerpo = document.getElementById('cuerpoProformas');
             var items = (data && data.items) || [];
             profState.totalPages = (data && data.totalPages) || 1;
             profState.total = Number((data && data.total) || 0);
-            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; renderPag(); document.getElementById('resumen').textContent = '0 resultados'; return; }
+            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; renderPag(); document.getElementById('resumen').textContent = '0 resultados'; return; }
             cuerpo.innerHTML = items.map(function (x) {
                 return '<tr>' +
                     '<td>' + esc(x.Numero || '—') + '</td>' +
                     '<td>' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
-                    '<td>' + esc(x.Destino || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
                     '<td>' + badgeEstado(x.Estado) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +

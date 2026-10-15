@@ -24,6 +24,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int LocID { get; set; }
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
+            public string CodigoPostal { get; set; }
             public string Telefono { get; set; }
             public string Email { get; set; }
             public System.DateTime Fecha_Alta { get; set; }
@@ -56,9 +57,43 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool EstadoCliente { get; set; }
         }
 
+        private class ClienteCodigoPostalDto
+        {
+            public int Cliente_ID { get; set; }
+            public string CodigoPostal { get; set; }
+        }
+
         private static SqlParameter Parametro(string nombre, object valor)
         {
             return new SqlParameter(nombre, valor ?? DBNull.Value);
+        }
+
+        // CodigoPostal se agregó después de generar el modelo EDMX. Se lo administra
+        // por SQL directo para no depender de regenerar las clases generadas.
+        private static bool TieneCampoCodigoPostal(SGTLAuditContext db)
+        {
+            return db.Database.SqlQuery<int>(
+                "SELECT CASE WHEN COL_LENGTH('dbo.CLIENTES','CodigoPostal') IS NULL THEN 0 ELSE 1 END")
+                .First() == 1;
+        }
+
+        private static void CompletarCodigosPostales(SGTLAuditContext db, IEnumerable<Cliente> clientes)
+        {
+            var lista = (clientes ?? Enumerable.Empty<Cliente>()).ToList();
+            if (!lista.Any() || !TieneCampoCodigoPostal(db)) return;
+
+            var codigos = db.Database.SqlQuery<ClienteCodigoPostalDto>(
+                "SELECT Cliente_ID,CodigoPostal FROM dbo.CLIENTES").ToDictionary(x => x.Cliente_ID, x => x.CodigoPostal);
+            foreach (var cliente in lista)
+                cliente.CodigoPostal = codigos.ContainsKey(cliente.Cliente_ID) ? codigos[cliente.Cliente_ID] : null;
+        }
+
+        private static void GuardarCodigoPostal(SGTLAuditContext db, int clienteId, string codigoPostal)
+        {
+            db.Database.ExecuteSqlCommand(
+                "UPDATE dbo.CLIENTES SET CodigoPostal=@codigoPostal WHERE Cliente_ID=@clienteId",
+                Parametro("@codigoPostal", string.IsNullOrWhiteSpace(codigoPostal) ? null : codigoPostal.Trim()),
+                Parametro("@clienteId", clienteId));
         }
 
         private static Dictionary<int, bool> ObtenerEstadosClientes(SGTLAuditContext db, IEnumerable<int> clienteIds)
@@ -227,6 +262,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         cliente.EstadoCliente = estados.ContainsKey(cliente.Cliente_ID)
                             && estados[cliente.Cliente_ID];
                     }
+                    CompletarCodigosPostales(db, olist);
 
                     if (olist == null || !olist.Any())
                     {
@@ -297,6 +333,13 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Modi = cliente.Usu_Modi
                     };
 
+                    if (TieneCampoCodigoPostal(db))
+                    {
+                        clienteDto.CodigoPostal = db.Database.SqlQuery<string>(
+                            "SELECT CodigoPostal FROM dbo.CLIENTES WHERE Cliente_ID=@clienteId",
+                            Parametro("@clienteId", id)).FirstOrDefault();
+                    }
+
                     var estados = ObtenerEstadosClientes(db, new[] { id });
                     clienteDto.EstadoCliente = estados.ContainsKey(id) && estados[id];
 
@@ -345,6 +388,11 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
+                    var codigoPostal = (clienteDto.CodigoPostal ?? string.Empty).Trim();
+                    if (codigoPostal.Length > 20) return BadRequest("El código postal no puede superar los 20 caracteres.");
+                    if (!TieneCampoCodigoPostal(db))
+                        return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo CodigoPostal. Ejecutá el script 08_codigo_postal_clientes.sql." });
+
                     var cuitNormalizado = NormalizarCUIT(clienteDto.CUIT_Cliente);
 
                     // Verifica si el Cliente ya existe
@@ -380,6 +428,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     // Agregar la entidad al contexto y guardar cambios
                     db.Set<CLIENTES>().Add(cliente);
                     db.SaveChanges();
+                    GuardarCodigoPostal(db, cliente.Cliente_ID, codigoPostal);
                     db.Database.ExecuteSqlCommand(
                         "UPDATE dbo.CLIENTES SET EstadoCliente=1 WHERE Cliente_ID=@clienteId",
                         Parametro("@clienteId", cliente.Cliente_ID));
@@ -415,7 +464,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
         // PUT: api/Clientes/{id}
-        public IHttpActionResult Put(int id, [FromBody] CLIENTES value)
+        public IHttpActionResult Put(int id, [FromBody] Cliente value)
         {
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -424,6 +473,11 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
+                    var codigoPostal = (value.CodigoPostal ?? string.Empty).Trim();
+                    if (codigoPostal.Length > 20) return BadRequest("El código postal no puede superar los 20 caracteres.");
+                    if (!TieneCampoCodigoPostal(db))
+                        return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo CodigoPostal. Ejecutá el script 08_codigo_postal_clientes.sql." });
+
                     CLIENTES oitem = db.Set<CLIENTES>().Find(id);
 
                     if (oitem == null)
@@ -451,6 +505,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     try
                     {
                         db.SaveChanges();
+                        GuardarCodigoPostal(db, id, codigoPostal);
                         return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
                     }
                     catch (DbEntityValidationException ex)

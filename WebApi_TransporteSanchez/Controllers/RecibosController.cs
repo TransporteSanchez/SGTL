@@ -28,6 +28,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public Guid ClaveOperacion { get; set; }
             public int ClienteID { get; set; }
             public DateTime? Fecha { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public decimal Total { get; set; }
             public string FormaPago { get; set; }
             public string Referencia { get; set; }
@@ -39,6 +41,8 @@ namespace WebApi_TransporteSanchez.Controllers
         public class EditarReciboRequest
         {
             public DateTime? Fecha { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public string FormaPago { get; set; }
             public string Referencia { get; set; }
             public string Observaciones { get; set; }
@@ -85,6 +89,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ClienteID { get; set; }
             public int NumeroCorrelativo { get; set; }
             public DateTime FechaEmision { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
+            public string NumeroComprobante { get; set; }
             public decimal Total { get; set; }
             public string Observaciones { get; set; }
         }
@@ -113,6 +120,16 @@ namespace WebApi_TransporteSanchez.Controllers
         private static decimal Redondear(decimal value)
         {
             return decimal.Round(value, 2, MidpointRounding.AwayFromZero);
+        }
+
+        private static string NormalizarCampoComprobante(string valor)
+        {
+            return string.IsNullOrWhiteSpace(valor) ? null : valor.Trim().ToUpperInvariant();
+        }
+
+        private static bool SoloDigitos(string valor)
+        {
+            return string.IsNullOrEmpty(valor) || valor.All(char.IsDigit);
         }
 
         private static DateTime FechaArgentina()
@@ -198,7 +215,11 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
             const string sql = @"
 SELECT c.Cliente_ID,c.Razon_Social,c.CUIT_Cliente,
        NULLIF(LTRIM(RTRIM(COALESCE(c.Calle,'')+' '+COALESCE(c.AlturaCalle,''))),'') AS Domicilio,
-       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
+       CASE c.Cond_Fiscal
+           WHEN 1 THEN N'Responsable Inscripto'
+           WHEN 2 THEN N'Monotributista'
+           WHEN 3 THEN N'Exento'
+       END AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
 FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK)
 WHERE c.Cliente_ID=@clienteId;";
             using (var command = new SqlCommand(sql, connection, transaction))
@@ -255,7 +276,7 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Estado,c.Impa
         private static ReciboExistente BuscarReciboPorClave(SqlConnection connection, SqlTransaction transaction, Guid clave)
         {
             const string sql = @"
-SELECT TOP (1) Comprobante_ID,ClienteID,NumeroCorrelativo,FechaEmision,Total,Observaciones
+SELECT TOP (1) Comprobante_ID,ClienteID,NumeroCorrelativo,FechaEmision,Letra,Sucursal,NumeroComprobante,Total,Observaciones
 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
 WHERE ClaveOperacion=@clave AND Tipo='REC';";
             using (var command = new SqlCommand(sql, connection, transaction))
@@ -270,6 +291,9 @@ WHERE ClaveOperacion=@clave AND Tipo='REC';";
                         ClienteID = (int)reader["ClienteID"],
                         NumeroCorrelativo = (int)reader["NumeroCorrelativo"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
+                        Letra = reader["Letra"] as string,
+                        Sucursal = reader["Sucursal"] as string,
+                        NumeroComprobante = reader["NumeroComprobante"] as string,
                         Total = (decimal)reader["Total"],
                         Observaciones = reader["Observaciones"] as string
                     };
@@ -282,6 +306,8 @@ WHERE ClaveOperacion=@clave AND Tipo='REC';";
         {
             if (existente.ClienteID != request.ClienteID || existente.FechaEmision.Date != request.Fecha.Value.Date
                 || existente.Total != request.Total
+                || !string.Equals(existente.Letra ?? string.Empty, request.Letra ?? string.Empty, StringComparison.Ordinal)
+                || !string.Equals(existente.Sucursal ?? string.Empty, request.Sucursal ?? string.Empty, StringComparison.Ordinal)
                 || !string.Equals(existente.Observaciones ?? string.Empty, request.Observaciones ?? string.Empty, StringComparison.Ordinal))
                 return false;
 
@@ -332,16 +358,21 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                 return BadRequest("El total debe ser mayor que cero y tener hasta dos decimales.");
             if (request.ImporteFormaPago != request.Total)
                 return BadRequest("El importe de la forma de pago debe coincidir con el total del Recibo.");
-            if (request.Aplicaciones == null || request.Aplicaciones.Count == 0)
-                return BadRequest("Debe aplicar el Recibo al menos a un comprobante.");
+            if (request.Aplicaciones == null)
+                request.Aplicaciones = new List<AplicacionReciboRequest>();
             if (request.Aplicaciones.Count > 200)
                 return BadRequest("El Recibo supera la cantidad máxima de comprobantes aplicables.");
             if (request.Aplicaciones.Any(x => x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
                 return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
             if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
                 return BadRequest("No se puede aplicar dos veces el mismo comprobante.");
-            if (request.Aplicaciones.Sum(x => x.Importe) != request.Total)
-                return BadRequest("La suma aplicada debe coincidir con el total del Recibo.");
+            if (request.Aplicaciones.Sum(x => x.Importe) > request.Total)
+                return BadRequest("La suma aplicada no puede superar el total del Recibo.");
+            request.Letra = NormalizarCampoComprobante(request.Letra);
+            request.Sucursal = NormalizarCampoComprobante(request.Sucursal);
+            if ((request.Letra ?? string.Empty).Length > 1) return BadRequest("La letra no puede superar un carácter.");
+            if ((request.Sucursal ?? string.Empty).Length > 4) return BadRequest("La sucursal no puede superar cuatro caracteres.");
+            if (!SoloDigitos(request.Sucursal)) return BadRequest("La sucursal solo puede contener números.");
             if ((request.Referencia ?? string.Empty).Length > 120)
                 return BadRequest("La referencia no puede superar los 120 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
@@ -365,6 +396,12 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction);
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC");
+                            var letra = request.Letra;
+                            var sucursal = request.Sucursal;
+                            FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
+                            request.Letra = letra;
+                            request.Sucursal = sucursal;
                             var existente = BuscarReciboPorClave(connection, transaction, request.ClaveOperacion);
                             if (existente != null)
                             {
@@ -432,10 +469,11 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
 
                             int correlativo;
                             using (var command = new SqlCommand(@"
-UPDATE dbo.COMPROBANTES_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
+UPDATE dbo.FACTURACION_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
 SET UltimoNumero=UltimoNumero+1 OUTPUT INSERTED.UltimoNumero
-WHERE Tipo='REC' AND UltimoNumero<99999999;", connection, transaction))
+WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connection, transaction))
                             {
+                                command.Parameters.Add(P("@numerador", configuracion.NumeradorID));
                                 object value = command.ExecuteScalar();
                                 if (value == null)
                                     throw new InvalidOperationException("El numerador de Recibos no existe o está agotado.");
@@ -443,24 +481,26 @@ WHERE Tipo='REC' AND UltimoNumero<99999999;", connection, transaction))
                             }
 
                             int comprobanteId;
-                            string concepto = request.Aplicaciones.Count == 1
-                                ? "Cobranza de 1 comprobante" : "Cobranza de " + request.Aplicaciones.Count + " comprobantes";
+                            string concepto = request.Aplicaciones.Count == 0 ? "Cobranza sin imputaciÃ³n"
+                                : request.Aplicaciones.Count == 1 ? "Cobranza de 1 comprobante"
+                                : "Cobranza de " + request.Aplicaciones.Count + " comprobantes";
                             using (var command = new SqlCommand(@"
 INSERT dbo.COMPROBANTES
  (ClienteID,Tipo,Impacto,NumeroCorrelativo,FechaEmision,FechaVencimiento,Moneda,Estado,
-  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Subtotal,Descuentos,Neto,IVA,
+  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Letra,Sucursal,NumeroComprobante,Subtotal,Descuentos,Neto,IVA,
   OtrosImpuestos,Total,Concepto,Observaciones,ClaveOperacion,UsuarioAltaID,UsuarioEmisionID,FechaEmisionRegistro)
 OUTPUT INSERTED.Comprobante_ID
 VALUES
  (@cliente,'REC','C',@numero,@fecha,NULL,'ARS','EMITIDO',@razon,@cuit,@domicilio,
-  @condFiscal,NULL,@total,0,@total,0,0,@total,@concepto,@observaciones,@clave,@usuario,@usuario,SYSUTCDATETIME());",
+  @condFiscal,NULL,@letra,@sucursal,@numeroComprobante,@total,0,@total,0,0,@total,@concepto,@observaciones,@clave,@usuario,@usuario,SYSUTCDATETIME());",
                                 connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
                                 {
                                     P("@cliente", request.ClienteID),P("@numero", correlativo),P("@fecha", fecha),
                                     P("@razon", cliente.RazonSocial),P("@cuit", cliente.CUIT),P("@domicilio", cliente.Domicilio),
-                                    P("@condFiscal", cliente.CondicionFiscal),P("@total", request.Total),P("@concepto", concepto),
+                                    P("@condFiscal", cliente.CondicionFiscal),P("@letra", request.Letra),P("@sucursal", request.Sucursal),
+                                    P("@numeroComprobante", FacturacionComprobantesConfiguracion.NumeroVisible(correlativo)),P("@total", request.Total),P("@concepto", concepto),
                                     P("@observaciones", request.Observaciones),P("@clave", request.ClaveOperacion),P("@usuario", usuario.UsuarioID)
                                 });
                                 comprobanteId = Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture);
@@ -577,6 +617,9 @@ VALUES
                         int numero;
                         string estado;
                         DateTime fecha;
+                        string letra;
+                        string sucursal;
+                        string numeroComprobante;
                         decimal total;
                         string observaciones;
                         string razonSocial;
@@ -585,7 +628,7 @@ VALUES
                         string referencia;
 
                         using (var command = new SqlCommand(@"
-SELECT c.ClienteID,c.NumeroCorrelativo,c.Estado,c.FechaEmision,c.Total,c.Observaciones,
+SELECT c.ClienteID,c.NumeroCorrelativo,c.Estado,c.FechaEmision,c.Letra,c.Sucursal,c.NumeroComprobante,c.Total,c.Observaciones,
        c.RazonSocial,c.CUIT,p.Forma,p.Referencia
 FROM dbo.COMPROBANTES c
 OUTER APPLY (SELECT TOP (1) Forma,Referencia FROM dbo.RECIBOS_FORMAS_PAGO WHERE ComprobanteID=c.Comprobante_ID ORDER BY FormaPago_ID) p
@@ -603,6 +646,9 @@ WHERE c.Comprobante_ID=@id AND c.Tipo='REC';", connection, transaction))
                                 numero = (int)reader["NumeroCorrelativo"];
                                 estado = (string)reader["Estado"];
                                 fecha = (DateTime)reader["FechaEmision"];
+                                letra = reader["Letra"] as string;
+                                sucursal = reader["Sucursal"] as string;
+                                numeroComprobante = reader["NumeroComprobante"] as string;
                                 total = (decimal)reader["Total"];
                                 observaciones = reader["Observaciones"] as string;
                                 razonSocial = reader["RazonSocial"] as string;
@@ -646,6 +692,9 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                             Numero = NumeroRecibo(numero),
                             Estado = estado,
                             Fecha = fecha,
+                            Letra = letra,
+                            Sucursal = sucursal,
+                            NumeroComprobante = numeroComprobante,
                             Total = total,
                             RazonSocial = razonSocial,
                             CUIT = cuit,
@@ -668,6 +717,11 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
             if (request == null || !request.Fecha.HasValue) return BadRequest("La fecha del Recibo es obligatoria.");
             DateTime fecha = request.Fecha.Value.Date;
             if (fecha > FechaArgentina()) return BadRequest("No se admite una fecha de Recibo futura.");
+            request.Letra = NormalizarCampoComprobante(request.Letra);
+            request.Sucursal = NormalizarCampoComprobante(request.Sucursal);
+            if ((request.Letra ?? string.Empty).Length > 1) return BadRequest("La letra no puede superar un carácter.");
+            if ((request.Sucursal ?? string.Empty).Length > 4) return BadRequest("La sucursal no puede superar cuatro caracteres.");
+            if (!SoloDigitos(request.Sucursal)) return BadRequest("La sucursal solo puede contener números.");
             if ((request.Referencia ?? string.Empty).Length > 120) return BadRequest("La referencia no puede superar los 120 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000) return BadRequest("Las observaciones no pueden superar los 2000 caracteres.");
             string forma = (request.FormaPago ?? string.Empty).Trim().ToUpperInvariant();
@@ -685,6 +739,12 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, "REC_EMITIR");
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC");
+                            var letra = request.Letra;
+                            var sucursal = request.Sucursal;
+                            FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
+                            request.Letra = letra;
+                            request.Sucursal = sucursal;
                             int clienteId;
                             int numero;
                             string estado;
@@ -721,7 +781,7 @@ WHERE a.ComprobanteCreditoID=@id AND a.Vigente=1;", connection, transaction))
                             string referencia = string.IsNullOrWhiteSpace(request.Referencia) ? null : request.Referencia.Trim();
                             string observaciones = string.IsNullOrWhiteSpace(request.Observaciones) ? null : request.Observaciones.Trim();
                             using (var command = new SqlCommand(@"
-UPDATE dbo.COMPROBANTES SET FechaEmision=@fecha,Observaciones=@observaciones,
+UPDATE dbo.COMPROBANTES SET FechaEmision=@fecha,Letra=@letra,Sucursal=@sucursal,Observaciones=@observaciones,
        UsuarioModificacionID=@usuario,FechaModificacion=SYSUTCDATETIME()
 WHERE Comprobante_ID=@id;
 UPDATE dbo.RECIBOS_FORMAS_PAGO SET Forma=@forma,Referencia=@referencia,FechaOperacion=@fecha,FechaPago=@fecha
@@ -735,7 +795,8 @@ VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                             {
                                 command.Parameters.AddRange(new[]
                                 {
-                                    P("@fecha", fecha), P("@observaciones", observaciones), P("@usuario", usuario.UsuarioID),
+                                    P("@fecha", fecha), P("@letra", request.Letra), P("@sucursal", request.Sucursal),
+                                    P("@observaciones", observaciones), P("@usuario", usuario.UsuarioID),
                                     P("@forma", forma), P("@referencia", referencia), P("@id", id),
                                     P("@nombre", usuario.NombreUsuario), P("@clave", "Comprobante_ID=" + id),
                                     P("@detalle", "Recibo " + NumeroRecibo(numero) + " editado")
