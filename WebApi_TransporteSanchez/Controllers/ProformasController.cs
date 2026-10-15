@@ -212,6 +212,15 @@ namespace WebApi_TransporteSanchez.Controllers
             catch { }
         }
 
+        // FechaCarga y FechaEntrega se guardan tambien en FechaDesde y FechaHasta, que en la base no admiten nulos.
+        private static string ValidarFechasRequeridas(ProformaDto p)
+        {
+            var faltan = new List<string>();
+            if (!p.FechaCarga.HasValue) faltan.Add("fecha estimada de carga");
+            if (!p.FechaEntrega.HasValue) faltan.Add("fecha estimada de entrega");
+            return faltan.Count == 0 ? null : "Completá la " + string.Join(" y la ", faltan) + ".";
+        }
+
         // ======================= Endpoints =======================
 
         [HttpGet]
@@ -316,6 +325,8 @@ namespace WebApi_TransporteSanchez.Controllers
         public IHttpActionResult Crear([FromBody] ProformaDto p)
         {
             if (p == null) return BadRequest("Datos invalidos.");
+            var errorFechas = ValidarFechasRequeridas(p);
+            if (errorFechas != null) return Content(HttpStatusCode.BadRequest, new { error = errorFechas });
             try
             {
                 ComputarTotales(p);
@@ -342,6 +353,8 @@ namespace WebApi_TransporteSanchez.Controllers
         public IHttpActionResult Editar(int id, [FromBody] ProformaDto p)
         {
             if (p == null) return BadRequest("Datos invalidos.");
+            var errorFechas = ValidarFechasRequeridas(p);
+            if (errorFechas != null) return Content(HttpStatusCode.BadRequest, new { error = errorFechas });
             try
             {
                 ComputarTotales(p);

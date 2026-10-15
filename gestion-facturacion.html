@@ -95,6 +95,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
                     <input type="hidden" id="p_id">
                     <!-- Bloque 1: Datos generales -->
                     <div class="bloque-titulo">1 · Datos generales</div>
@@ -127,8 +128,8 @@
                         <div class="col-md-3"><label class="form-label req">Origen</label><input id="p_origen" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label req">Destino</label><input id="p_destino" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label">Tipo de carga</label><input id="p_tipocarga" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Fecha estimada de carga</label><input id="p_fcarga" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Fecha estimada de entrega</label><input id="p_fentrega" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label req">Fecha estimada de carga</label><input id="p_fcarga" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label req">Fecha estimada de entrega</label><input id="p_fentrega" class="form-control"></div>
                         <div class="col-md-2"><label class="form-label">Peso</label><input id="p_peso" class="form-control"></div>
                         <div class="col-md-2"><label class="form-label">Volumen</label><input id="p_volumen" class="form-control"></div>
                         <div class="col-md-2"><label class="form-label">Bultos</label><input id="p_bultos" class="form-control"></div>
@@ -456,6 +457,8 @@
         function limpiarForm() {
             ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_ciudad', 'p_cli_prov', 'p_cli_cp', 'p_cli_tel', 'p_cli_email', 'p_cli_contacto', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_tiemposervicio', 'p_obscom', 'p_condpart', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
             setVal('p_cliente', ''); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
+            $('#modalProforma .is-invalid').removeClass('is-invalid');
+            $('#alertaCompletaCampos').hide();
             document.getElementById('cuerpoConceptos').innerHTML = '';
             recalcularTotales();
         }
@@ -526,7 +529,25 @@
                 Detalle: lineas
             };
         }
+        // FechaDesde/FechaHasta de PROFORMAS se graban con estas fechas y no admiten nulos.
+        var CAMPOS_REQUERIDOS_PROFORMA = ['#p_fcarga', '#p_fentrega'];
+        function validarCamposRequeridos() {
+            var faltan = false;
+            CAMPOS_REQUERIDOS_PROFORMA.forEach(function (sel) {
+                var vacio = !($(sel).val() || '').trim();
+                $(sel).toggleClass('is-invalid', vacio);
+                if (vacio) faltan = true;
+            });
+            if (faltan) {
+                $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos *').show();
+                $('#modalProforma .modal-body').scrollTop(0);
+            } else {
+                $('#alertaCompletaCampos').hide();
+            }
+            return !faltan;
+        }
         function guardarBorrador(cb) {
+            if (!validarCamposRequeridos()) return;
             var dto = armarDto();
             var id = dto.Proforma_ID;
             var url = API_FAC + '/Proformas' + (id ? '/' + id : '');
@@ -610,6 +631,11 @@
                     flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true });
                 });
             }
+            $(CAMPOS_REQUERIDOS_PROFORMA.join(',')).on('input change', function () {
+                if (!($(this).val() || '').trim()) return;
+                $(this).removeClass('is-invalid');
+                if (!$('#modalProforma .is-invalid').length) $('#alertaCompletaCampos').hide();
+            });
         });
     </script>
 </body>
