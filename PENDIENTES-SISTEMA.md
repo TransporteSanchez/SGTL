@@ -177,7 +177,8 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
 - Resumen para compartir: `PROFORMA-CLIENTES-RUKAS.md`.
 - Preferencia actual: opción **B** — registrar proforma **recibida** de Marfrig (PDF + datos + viajes) y emitir factura TS desde ahí; directos mantienen proforma propia.
 - Lectura PDF (PdfPig) como mejora; OCR no para el MVP.
-- Implementación: no empezada. Alinear con Facu. Pedir PDF de ejemplo a Claudia.
+- Diseño técnico acordado el 15/10: ver §10 de `PROFORMA-CLIENTES-RUKAS.md` (proforma de tipo Recibida, estado En reclamo si no coinciden totales, factura con el flujo actual de Facu).
+- Implementación: no empezada. Esperando de Claudia (pedido 15/10): PDF de ejemplo y qué hace hoy cuando no coinciden los importes. Después, alinear con Facu.
 
 ---
 

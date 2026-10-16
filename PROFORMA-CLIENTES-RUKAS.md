@@ -165,17 +165,65 @@ Pedir a **Claudia** un **PDF de ejemplo** de proforma Marfrig (aunque con datos 
 
 ---
 
-## 10. Preguntas abiertas (para Facu / Claudia / equipo)
+## 10. Diseño técnico acordado (15/10/2026, con Claude)
+
+Bajada concreta de la opción B. **Todavía no implementado**: espera las respuestas de Claudia (§11) y el OK de Facu.
+
+### Idea central
+
+No se arma un módulo aparte: la proforma de SGTL pasa a tener **dos tipos**.
+
+- **Propia** — la de hoy, para clientes directos. Sin cambios.
+- **Recibida** — registra la proforma de Marfrig, para clientes `Con_plataforma`.
+
+La factura de TS sale **con el flujo actual de Facu, sin cambios**: hoy exige una proforma `Aceptada` con conceptos y totales coherentes, y la recibida cumple ese contrato. Cuenta corriente, anulación y "viaje ya facturado" siguen igual.
+
+### Base de datos (script nuevo en `database/`)
+
+- `PROFORMAS`: columna `Tipo_Proforma` (`Propia` / `Recibida`, default `Propia`) + datos de Marfrig: N°, fecha y total declarado.
+- Tabla nueva `PROFORMA_ADJUNTO` para el PDF de Marfrig (mismo patrón que `VIAJE_EVIDENCIA`: nombre, tipo, `VARBINARY(MAX)`).
+
+### Flujo
+
+1. Nueva proforma → si el cliente es `Con_plataforma`, el modal muestra el bloque **"Proforma recibida de Marfrig"** (N°, fecha, total, PDF).
+2. **Traer viajes** como hoy (tarifas SGTL). Mejora deseable: elegirlos por N° de remito / transporte tal como figuran en la proforma de Marfrig, no solo por período.
+3. **Panel de control:** total Marfrig vs total SGTL, diferencia, viajes sin remito / transporte.
+4. **Registrar** (en lugar de "Generar"): asigna el número interno PF y pasa los viajes a **Facturado**.
+5. Si los totales coinciden → **Aceptada** directo (no se "envía" a Marfrig) → factura TS.
+6. Si **no coinciden** → estado **En reclamo** con motivo obligatorio. No se puede facturar hasta resolverlo:
+   - Marfrig manda proforma corregida → se actualizan N°, total y PDF y se vuelve a controlar; o
+   - se acepta igual, con motivo, por uno de estos caminos (**a definir según lo que hace hoy Claudia**):
+     - (a) línea visible de ajuste "Diferencia según proforma Marfrig N° X", para que la factura iguale a Marfrig;
+     - (b) facturar con tarifas SGTL y dejar la diferencia registrada.
+
+**Por qué puede haber diferencias aunque los viajes sean los correctos:** tarifa Marfrig vs tarifa cargada en SGTL, km en viajes por kilómetro, adicionales / descuentos que viven en Rukas (rechazos, parciales, estadías), un viaje que Marfrig no incluyó o al revés. Ese control es el valor del módulo.
+
+### Lectura del PDF (después, sin rediseño)
+
+- El PDF ya queda guardado desde la v1 (`PROFORMA_ADJUNTO`).
+- Se agrega un endpoint que lee el texto (PdfPig, NuGet) y devuelve **valores sugeridos** (N°, fecha, total, lista de remitos) para precompletar los mismos campos de la v1; la persona confirma.
+- Si el PDF trae remitos, el mismo endpoint permite **preseleccionar los viajes**.
+- Sin cambios de base ni del circuito de facturación. OCR solo si el PDF resulta ser un escaneo.
+- Condición: que los campos de la v1 tengan la forma del PDF real → **el ejemplo de Claudia se necesita antes de implementar**. El PDF de ejemplo no se sube al repo (es documento de un cliente).
+
+### Fuera de la v1
+
+Lectura automática del PDF, OCR, matching línea por línea PDF ↔ viaje.
+
+---
+
+## 11. Preguntas abiertas (para Facu / Claudia / equipo)
 
 1. ¿El total de la factura de TS debe igualar siempre el de la proforma Marfrig, o se factura con tarifas SGTL y se registra la diferencia?
 2. ¿El PDF de Marfrig es obligatorio para emitir factura en clientes Rukas?
 3. ¿Para Rukas desaparece del todo “Generar proforma” propia en SGTL, o conviven un tiempo?
-4. ¿Hay un PDF real de ejemplo para diseñar la extracción y los controles?
+4. ¿Hay un PDF real de ejemplo para diseñar la extracción y los controles? — **Pedido a Claudia el 15/10.**
+6. ¿Qué hace hoy Claudia cuando el importe de la proforma de Marfrig no coincide con lo esperado (reclama, factura igual, ajusta)? — **Pedido a Claudia el 15/10.** Define la salida (a) / (b) del estado En reclamo (§10).
 5. ¿Quién carga la proforma recibida en la práctica (Claudia / mesa) y en qué momento del flujo?
 
 ---
 
-## 11. Referencias en el repo
+## 12. Referencias en el repo
 
 - `RELEVAMIENTO-RUKAS-CLAUDIA.md` — cuestionario (plantilla; respuestas completas están en el Google Doc).
 - `CHECKLIST-OPERACION-VIAJES.md` — flujo operativo actual Rukas vs directo.
