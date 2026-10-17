@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 15/10/2026.**
+**Última actualización de este documento: 17/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -29,6 +29,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
 | 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
+| 10 | Relevamiento visual y design system | Relevamiento por código hecho; faltan capturas en la VM | Doc commiteado | Capturas: ver §10 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -314,3 +315,24 @@ La rama de Facu arrancó en `c40b518`, antes de todo el trabajo de Viajes/Rukas:
 
 **Base de datos: lista (17/10).** Verificado con una consulta de solo lectura: los scripts 04 a 08 de Facu ya estaban aplicados en `sql-tesis`; faltaba el **09** (restricción de tipos de comprobante, que es también el cambio del 02 para bases existentes): Rocío lo corrió y quedaron los 7 en APLICADO.
 
+---
+
+## 10. Relevamiento visual y design system — EN CURSO
+
+Las pantallas se ven y se comportan distinto según la etapa en que se hicieron (avisos, fechas, colores de estado, tono, botones). El objetivo es definir un design system y aplicarlo a todo.
+
+1. [x] Relevamiento por código de las 22 pantallas (17/10): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
+2. [ ] Capturas en la VM: `docs/design-system/02-instructivo-capturas-vm.md`. Push desde la Mac → pull en la VM → pedirle a Claude en la VM que siga el instructivo. No guarda datos.
+3. [ ] Lista de Rocío de lo que no le cierra.
+4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
+5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y e-mail (Facu) y WhatsApp (Fede): **después del merge** y coordinando con ellos.
+
+Bugs vistos en el relevamiento (no visuales):
+
+| ID | Qué | Gravedad | Cuándo | Archivos |
+|---|---|---|---|---|
+| R1 | El botón de reporte CSV no hace nada: llama a `generarReporteCSV()`, que no existe en esa página | Media | listado-viajes: ya. gestion-clientes: después del merge (choca con Facu, como F13) | `listado-viajes.html` (158), `gestion-clientes.html` (179) |
+| R2 | Gestión de contenido: `showErrorToast()` no existe; si falla la red al cargar o guardar, tira error y no avisa | Baja | Ya | `gestion-contenido.html` (299, 361) |
+| R3 | Camiones: el error de fecha pide "DD-MM-YYYY" pero el campo usa AAAA-MM-DD | Baja | Con la decisión de fechas (D11) | `gestion-camiones.html` (1082) |
+| R4 | "Cambiar Contraseña" (encabezado) y "Documentación" (menú) son links que no hacen nada | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |
+| R5 | `</script>` suelto en el pie (inofensivo) | Baja | Con el piloto | `listado-viajes.html` (204) |
