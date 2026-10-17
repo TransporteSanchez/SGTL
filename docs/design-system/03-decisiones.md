@@ -45,7 +45,7 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
   buscador de clientes muestran una cruz a la derecha **solo cuando tienen valor**. La cruz deja
   el campo vacío (o en "Todos") y **vuelve a buscar sola**. No vuelve a un valor por defecto: en
   cuenta corriente, borrar la fecha deja "sin límite", no "últimos 30 días".
-- Las casillas (Activo / Inactivo) no llevan cruz.
+- Las casillas no llevan cruz. (El filtro de estado deja de ser casillas: ver §3.3.)
 - **Enter en cualquier filtro busca**, en todas las pantallas.
 - La cruz se arma una sola vez en el JS compartido; las pantallas solo marcan qué campos son
   filtros. Bootstrap no la trae y no hace falta sumar librerías.
@@ -114,3 +114,44 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
   orígenes y destinos y grupos. Las tablas de configuración (facturación, e-mail) no se paginan.
 - **Columnas:** si la pantalla filtra por estado, la tabla muestra la columna Estado. La columna
   de acciones siempre se titula "Acciones".
+
+---
+
+## 3. Encabezado de pantalla y filtros
+
+### 3.1 Menú y título
+
+- **Todos los ítems del menú empiezan con un verbo en infinitivo** (pedido de la profesora). El
+  **título de la pantalla es igual al ítem del menú**, con mayúscula solo al principio.
+- Cambios de nombre (menú y título):
+
+| Hoy en el menú | Hoy en el título | Pasa a |
+|---|---|---|
+| Listar proformas | Listar proformas generadas | Listar proformas |
+| Cuenta corriente | Cuenta Corriente de Clientes | Gestionar cuenta corriente |
+| Configuración → Facturación | Configuración de Facturación | Gestionar facturación |
+| Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
+| Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
+| Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
+| Auditoría | Auditoría del sistema | Consultar auditoría |
+
+- **Excepción:** "Dashboard" queda como está.
+- Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
+  por el texto: renombrar no cambia quién ve qué.
+
+### 3.2 Encabezado
+
+- **Ícono de la sección del menú** a la izquierda del título, el mismo que tiene la sección en
+  el menú (`bi-truck` en camiones, `bi-gear` en configuración).
+- **Subtítulo de una línea en todas las pantallas**, que diga para qué sirve. Ejemplo: "Solo
+  proformas ya generadas; los borradores están en Gestionar proformas".
+- A la derecha, en la misma línea: exportar y después el alta (§1.1 y §1.2).
+- **Pestaña del navegador:** `<title>Gestionar choferes · Transporte Sánchez</title>` (con tilde).
+
+### 3.3 Filtros
+
+- **Grilla a todo el ancho, sin recuadro propio** (la tarjeta ya es el recuadro): el texto
+  arriba de cada campo (`form-label` con `for`), varios campos por fila, y "Buscar" al final de
+  la última fila, a la derecha. Como auditoría.
+- **Estado como desplegable** "Activo / Inactivo / Todos", con Activo elegido al entrar. La cruz
+  lo pasa a "Todos" (§1.3). Reemplaza las dos casillas Activo / Inactivo.
