@@ -82,3 +82,35 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
   navegador) y `aria-label` con el mismo texto.
 - Se inicializan una sola vez desde el JS compartido, también para las filas que se dibujan
   después; las pantallas no los inicializan por su cuenta.
+
+---
+
+## 2. Tablas
+
+### 2.1 Cómo se ven
+
+- **Rayada y con resaltado al pasar el mouse:** `table table-striped table-hover`.
+- **Alineación según el tipo de dato:**
+  - texto (nombres, razón social, origen, concepto) y códigos (DNI, CUIT, dominio, remito,
+    número de proforma o comprobante): a la izquierda;
+  - cantidades y montos (km, total, cancelado, saldo, tarifa): a la derecha (`text-end`);
+  - fechas, estado y acciones: centrados (`text-center`);
+  - el título de cada columna se alinea igual que su contenido.
+- **Tablas anchas** (gestión de viajes): la columna de acciones queda **fija a la derecha** y
+  siempre visible; lo que se desplaza hacia el costado son los datos. Fechas, números y estados
+  no se parten en dos renglones (`text-nowrap`).
+
+### 2.2 Qué muestran
+
+- **Sin resultados, solo dos textos:**
+  - pantallas con filtros: "No hay resultados para los filtros elegidos.";
+  - pantallas sin filtros: "Todavía no hay … cargados." con lo que corresponda ("Todavía no hay
+    tarifas fijas cargadas.").
+  - Sin resultados, la paginación no se muestra.
+- **Mientras busca:** una fila "Cargando…" centrada en gris dentro de la tabla, en todas las
+  pantallas. Reemplaza lo que había hasta que llega la respuesta.
+- **Un solo contador:** el de la paginación ("1-15 de 577"). Nada de "N resultados" aparte.
+- **Paginación** (`PaginacionSGTL`) en toda tabla que pueda pasar de 15 filas, también tarifas,
+  orígenes y destinos y grupos. Las tablas de configuración (facturación, e-mail) no se paginan.
+- **Columnas:** si la pantalla filtra por estado, la tabla muestra la columna Estado. La columna
+  de acciones siempre se titula "Acciones".
