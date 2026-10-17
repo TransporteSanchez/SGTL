@@ -26,14 +26,15 @@ Rukas es del cliente: ahí se hacen la novedad, el cierre de reparto, el sobre, 
 | 4 | SGTL · Gestión de viajes | Cuando hay novedad de entrega en Rukas: cargar **N° entrega Rukas** (el # que pide el bot). |
 | 5 | SGTL · Estado y entrega | Pasar el viaje a **Listo para facturar**. Opcional: resultado (Completa / Parcial / Rechazo) y fecha de entrega. |
 | 6 | SGTL · Facturación | **Traer viajes** del cliente y período → revisar las advertencias (sin remito o transporte, sin tarifa, todavía en Registrado). |
-| 7 | SGTL · Facturación | **Generar proforma** → los viajes incluidos pasan solos a **Facturado**. |
+| 7 | SGTL · Facturación | **Generar proforma** → los viajes quedan reservados por esa proforma (en Gestión de viajes se ven "En PF-xxxx" y ya no se modifican). Aceptarla y **emitir la factura** → los viajes pasan solos a **Facturado**. |
 
 Reglas que aplica el sistema:
 
 - Sin **N° transporte SAP**, **número de remito** y **N° entrega Rukas** el viaje no se puede marcar **Listo para facturar** (sí se puede guardar).
 - Para buscar un viaje por lo que manda Marfrig, usar el filtro **N° remito / transporte / entrega**.
-- Un viaje **Facturado** no se edita ni se elimina, y no se vuelve a traer a otra proforma.
-- Si se **anula** la proforma, sus viajes vuelven a **Listo para facturar**.
+- Un viaje en una proforma **Generada o Aceptada** no se edita ni cambia de estado; en un **borrador** sí se edita, pero no se elimina. Un viaje está en una sola proforma por vez.
+- Un viaje **Facturado** (con factura emitida) no se edita ni se elimina.
+- Corregir: un **borrador** se elimina; una proforma **Generada o Aceptada** se **anula** (conserva su número); una **facturada** se cancela con **nota de crédito** desde Cuenta corriente. En los tres casos los viajes quedan libres para otra proforma (y vuelven a **Listo para facturar** si estaban Facturados).
 - No hace falta reflejar en SGTL cada movimiento de Rukas (salidas, en viaje): solo lo necesario para facturar.
 
 ---
@@ -48,7 +49,7 @@ Acá SGTL es el **único registro** del viaje, así que se sigue el viaje de pun
 | 2 | SGTL · Estado y entrega | Al salir: pasar a **En viaje**. |
 | 3 | SGTL · Estado y entrega | Al entregar: pasar a **Entregado** con **resultado** y **fecha de entrega** (obligatorios) y adjuntar **evidencia** (foto o PDF del remito firmado / conforme; recomendado). |
 | 4 | SGTL · Facturación | **Traer viajes**: solo entran los viajes **Entregados** con tarifa. |
-| 5 | SGTL · Facturación | **Generar proforma** → los viajes pasan a **Facturado**. Si se anula, vuelven a **Entregado**. |
+| 5 | SGTL · Facturación | **Generar proforma** → los viajes quedan reservados ("En PF-xxxx"). Al **emitir la factura** pasan a **Facturado**; si se anula la proforma o se emite la nota de crédito, quedan libres (y vuelven a **Entregado** si estaban Facturados). |
 
 ---
 

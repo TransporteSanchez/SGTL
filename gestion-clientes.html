@@ -258,7 +258,7 @@
                                         placeholder="Razón Social" name="razon-social-column" />
                                 </div>
                                 <div class="form-group">
-                                    <label for="txtCond_Fiscal" class="form-label">Condición Fiscal<span
+                                    <label for="txtCond_Fiscal" class="form-label">Condición de IVA<span
                                             class="text-danger">
                                             *</span></label>
                                     <select id="txtCond_Fiscal" class="form-control" name="cond-fiscal-column">
@@ -317,6 +317,11 @@
                                     <input type="text" id="txtAlturaCalle" class="form-control" placeholder="Número"
                                         name="altura-column" />
                                 </div>
+                                <div class="form-group">
+                                    <label for="txtCodigoPostal" class="form-label">Cód. postal</label>
+                                    <input type="text" id="txtCodigoPostal" class="form-control" maxlength="20"
+                                        autocomplete="postal-code" placeholder="Código postal" name="codigo-postal-column" />
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -371,7 +376,7 @@
                                 </div>
                                 <div class="form-group">
                                     <label for="editarCondFiscal" class="form-label">
-                                        Condición Fiscal<span class="text-danger">*</span>
+                                        Condición de IVA<span class="text-danger">*</span>
                                     </label>
                                     <select id="editarCondFiscal" class="form-control" name="cond-fiscal-column">
                                         <option value="">Seleccione una opción</option>
@@ -432,6 +437,11 @@
                                     </label>
                                     <input type="text" id="editarAltura" class="form-control" placeholder="Número"
                                         name="altura-column" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="editarCodigoPostal" class="form-label">Cód. postal</label>
+                                    <input type="text" id="editarCodigoPostal" class="form-control" maxlength="20"
+                                        autocomplete="postal-code" placeholder="Código postal" name="codigo-postal-column" />
                                 </div>
                             </div>
                         </div>
@@ -1252,6 +1262,7 @@
 
                     $('#editarCalle').val(data.Calle || '');
                     $('#editarAltura').val((data.AlturaCalle || '').trim());
+                    $('#editarCodigoPostal').val(data.CodigoPostal || '');
 
                     $('#editarCUIT').removeClass('is-invalid is-valid');
                     $('#editarCuitError').hide().text('');
@@ -1288,6 +1299,7 @@
                     LocID: parseInt($('#editarlocalidad').val(), 10),
                     Calle: $('#editarCalle').val().trim(),
                     AlturaCalle: $('#editarAltura').val().trim(),
+                    CodigoPostal: $('#editarCodigoPostal').val().trim(),
                     Telefono: $('#editarTelefono').val().trim(),
                     Email: $('#editarEmail').val().trim(),
                     Fecha_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Fecha_Alta : ahora,
@@ -1658,6 +1670,7 @@
                 LocID: parseInt($('#location-select').val(), 10),
                 Calle: $('#txtCalle').val().trim(),
                 AlturaCalle: $('#txtAlturaCalle').val().trim(),
+                CodigoPostal: $('#txtCodigoPostal').val().trim(),
                 Telefono: $('#celphone-column').val().trim(),
                 Email: $('#email-id-column').val().trim(),
                 Fecha_Alta: fechaHoraActual,

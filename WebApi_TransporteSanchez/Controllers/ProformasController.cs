@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Web.Http;
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -40,6 +41,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Sucursal { get; set; }
             public DateTime? FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
+            // Período de los viajes que incluye la proforma ("Fecha de inicio / fin" de la pantalla).
+            public DateTime? FechaDesde { get; set; }
+            public DateTime? FechaHasta { get; set; }
             public int? ClienteID { get; set; }
             public string Cli_RazonSocial { get; set; }
             public string Cli_NombreComercial { get; set; }
@@ -89,19 +93,22 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
         private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
         private static decimal Redondear(decimal v) { return decimal.Round(v, 2, MidpointRounding.AwayFromZero); }
+        private static readonly Regex CodigoViaje = new Regex(@"^V([1-9][0-9]*)$",
+            RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
 
-        private static readonly string[] EstadosValidos = { "Borrador", "Generada", "Enviada", "Aceptada", "Rechazada", "Anulada" };
+        private static readonly string[] EstadosValidos = { "Borrador", "Generada", "Aceptada", "Facturada", "Anulada" };
 
         private static bool TransicionPermitida(string actual, string nuevo)
         {
             actual = (actual ?? "").Trim(); nuevo = (nuevo ?? "").Trim();
             if (Array.IndexOf(EstadosValidos, nuevo) < 0) return false;
-            if (nuevo == "Anulada") return actual != "Aceptada";
+            // Facturada es un estado terminal, asignado exclusivamente al emitir la Factura.
+            if (actual == "Facturada" || nuevo == "Facturada") return false;
+            // La anulacion de una Factura se documenta mediante una Nota de Credito cancelatoria.
+            if (nuevo == "Anulada") return false;
             switch (actual)
             {
-                case "Generada": return nuevo == "Enviada" || nuevo == "Aceptada" || nuevo == "Rechazada";
-                case "Enviada": return nuevo == "Aceptada" || nuevo == "Rechazada";
-                case "Rechazada": return nuevo == "Enviada";
+                case "Generada": return nuevo == "Aceptada";
                 default: return false;
             }
         }
@@ -126,6 +133,23 @@ namespace WebApi_TransporteSanchez.Controllers
             p.TotalGeneral = Redondear(p.SubtotalNeto + p.IVA + p.OtrosImpuestos);
         }
 
+        // Cond_Fiscal es el código interno de la condición de IVA del cliente.
+        // La Proforma guarda la descripción legible como foto del dato al emitirla.
+        private static void ActualizarCondicionIvaDesdeCliente(DbContext db, ProformaDto p)
+        {
+            p.Cli_CondIVA = null;
+            if (!p.ClienteID.HasValue || p.ClienteID.Value <= 0) return;
+
+            p.Cli_CondIVA = db.Database.SqlQuery<string>(@"
+SELECT CASE Cond_Fiscal
+    WHEN 1 THEN N'Responsable Inscripto'
+    WHEN 2 THEN N'Monotributista'
+    WHEN 3 THEN N'Exento'
+END
+FROM dbo.CLIENTES
+WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
+        }
+
         // Parametros de negocio compartidos por INSERT y UPDATE de cabecera
         private static List<SqlParameter> ParamsNegocio(ProformaDto p)
         {
@@ -147,7 +171,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 P("@subtotal", p.Subtotal), P("@descuentos", p.Descuentos), P("@neto", p.SubtotalNeto),
                 P("@iva", p.IVA), P("@otros", p.OtrosImpuestos), P("@total", p.TotalGeneral),
                 P("@cantviajes", (p.Detalle != null ? p.Detalle.Count : 0).ToString()),
-                P("@fdesde", (object)p.FechaCarga), P("@fhasta", (object)p.FechaEntrega)
+                // Período de los viajes. FechaDesde y FechaHasta no admiten nulos en la base: si no se cargó, la fecha del día.
+                P("@fdesde", (object)(p.FechaDesde ?? DateTime.Today)),
+                P("@fhasta", (object)(p.FechaHasta ?? p.FechaDesde ?? DateTime.Today))
             };
         }
 
@@ -182,7 +208,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "FormaPago,PlazoPago,Validez,TiempoServicio,ObsComerciales,CondParticulares,Observaciones," +
             "ISNULL(Subtotal,0) AS Subtotal,ISNULL(Descuentos,0) AS Descuentos,ISNULL(SubtotalNeto,0) AS SubtotalNeto," +
             "ISNULL(IVA,0) AS IVA,ISNULL(OtrosImpuestos,0) AS OtrosImpuestos,ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS TotalGeneral," +
-            "Usu_Alta,Usu_Modi,Fecha_Alta FROM PROFORMAS ";
+            "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta FROM PROFORMAS ";
 
         private static void InsertarDetalle(DbContext db, int pid, List<DetalleLineaDto> lineas)
         {
@@ -200,6 +226,107 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        // Los viajes se identifican en las líneas automáticas con el código V{id}.
+        // Se mantiene el vínculo explícito en PROFORMAS_VIAJES para reservarlos y
+        // liberarlos de forma atómica cuando se elimina una Proforma no aceptada.
+        private static List<int> ExtraerViajes(List<DetalleLineaDto> lineas)
+        {
+            var resultado = new List<int>();
+            foreach (var linea in lineas ?? new List<DetalleLineaDto>())
+            {
+                var coincidencia = CodigoViaje.Match((linea.Codigo ?? string.Empty).Trim());
+                int viajeId;
+                if (coincidencia.Success && int.TryParse(coincidencia.Groups[1].Value, out viajeId))
+                    resultado.Add(viajeId);
+            }
+            return resultado;
+        }
+
+        private static string ValidarViajesDisponibles(DbContext db, int proformaId, int? clienteId,
+            List<int> viajeIds)
+        {
+            if (viajeIds == null || viajeIds.Count == 0) return null;
+            if (!clienteId.HasValue || clienteId.Value <= 0)
+                return "Debe seleccionar un cliente antes de incluir viajes.";
+            if (viajeIds.Distinct().Count() != viajeIds.Count)
+                return "Un mismo viaje no puede incluirse más de una vez en la Proforma.";
+
+            foreach (var viajeId in viajeIds)
+            {
+                int? clienteViaje = db.Database.SqlQuery<int?>(
+                    "SELECT ClienteID FROM dbo.VIAJES WHERE Viaje_ID=@viaje",
+                    P("@viaje", viajeId)).FirstOrDefault();
+                if (!clienteViaje.HasValue)
+                    return "El viaje #" + viajeId + " ya no existe.";
+                if (clienteViaje.Value != clienteId.Value)
+                    return "El viaje #" + viajeId + " pertenece a otro cliente.";
+
+                int proformaOcupante = db.Database.SqlQuery<int>(@"
+SELECT TOP (1) p.Proforma_ID
+FROM dbo.PROFORMAS p WITH (UPDLOCK,HOLDLOCK)
+WHERE p.Proforma_ID<>@proforma AND p.Estado<>'Anulada'
+  AND (
+      EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WITH (UPDLOCK,HOLDLOCK)
+              WHERE pv.ProformaID=p.Proforma_ID AND pv.ViajeID=@viaje)
+      OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WITH (UPDLOCK,HOLDLOCK)
+                 WHERE pd.Proforma_ID=p.Proforma_ID
+                   AND TRY_CONVERT(int,SUBSTRING(LTRIM(RTRIM(ISNULL(pd.Codigo,''))),2,20))=@viaje
+                   AND UPPER(LEFT(LTRIM(RTRIM(ISNULL(pd.Codigo,''))),1))='V')
+  );", P("@proforma", proformaId), P("@viaje", viajeId)).FirstOrDefault();
+                if (proformaOcupante > 0)
+                    return "El viaje #" + viajeId + " ya está incluido en la Proforma #" + proformaOcupante
+                        + ". Eliminá esa Proforma antes de volver a utilizarlo.";
+            }
+            return null;
+        }
+
+        private static int ObtenerUsuarioId(DbContext db, string usuario)
+        {
+            int? usuarioId = db.Database.SqlQuery<int?>(@"
+SELECT TOP (1) Usuario_ID
+FROM dbo.USUARIOS
+WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", P("@usuario", usuario)).FirstOrDefault();
+            if (!usuarioId.HasValue)
+                throw new InvalidOperationException("El usuario activo no es válido para reservar viajes en la Proforma.");
+            return usuarioId.Value;
+        }
+
+        private static void SincronizarViajes(DbContext db, int proformaId, List<int> viajeIds, string usuario)
+        {
+            db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMAS_VIAJES WHERE ProformaID=@proforma",
+                P("@proforma", proformaId));
+            if (viajeIds == null || viajeIds.Count == 0) return;
+
+            int usuarioId = ObtenerUsuarioId(db, usuario);
+            foreach (var viajeId in viajeIds)
+            {
+                db.Database.ExecuteSqlCommand(@"
+INSERT dbo.PROFORMAS_VIAJES (ProformaID,ViajeID,UsuarioAltaID)
+VALUES (@proforma,@viaje,@usuario);", P("@proforma", proformaId), P("@viaje", viajeId), P("@usuario", usuarioId));
+            }
+        }
+
+        private static List<int> ViajesReservados(DbContext db, int proformaId)
+        {
+            return db.Database.SqlQuery<int>(@"
+SELECT DISTINCT reservados.ViajeID
+FROM (
+    SELECT pv.ViajeID
+    FROM dbo.PROFORMAS_VIAJES pv
+    INNER JOIN dbo.PROFORMAS p ON p.Proforma_ID=pv.ProformaID
+    WHERE p.Proforma_ID<>@proforma AND p.Estado<>'Anulada'
+
+    UNION
+
+    SELECT TRY_CONVERT(int,SUBSTRING(LTRIM(RTRIM(ISNULL(pd.Codigo,''))),2,20))
+    FROM dbo.PROFORMA_DETALLE pd
+    INNER JOIN dbo.PROFORMAS p ON p.Proforma_ID=pd.Proforma_ID
+    WHERE p.Proforma_ID<>@proforma AND p.Estado<>'Anulada'
+      AND UPPER(LEFT(LTRIM(RTRIM(ISNULL(pd.Codigo,''))),1))='V'
+) reservados
+WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
+        }
+
         private static void Auditar(DbContext db, string usuario, string accion, int id, string ant, string nue)
         {
             try
@@ -212,20 +339,50 @@ namespace WebApi_TransporteSanchez.Controllers
             catch { }
         }
 
-        // Campos obligatorios ya en el borrador (los mismos que el modal marca con asterisco).
-        // FechaCarga y FechaEntrega se guardan tambien en FechaDesde y FechaHasta, que en la base no admiten nulos.
+        // Para guardar un borrador alcanza con el cliente (sin cliente no se pueden traer ni reservar viajes).
+        // Origen, destino y fechas estimadas son opcionales: cada línea de viaje ya tiene su recorrido.
         private static string ValidarCamposRequeridos(ProformaDto p)
         {
-            var faltan = new List<string>();
-            if (!p.ClienteID.HasValue || p.ClienteID.Value <= 0) faltan.Add("cliente");
-            if (string.IsNullOrWhiteSpace(p.Origen)) faltan.Add("origen");
-            if (string.IsNullOrWhiteSpace(p.Destino)) faltan.Add("destino");
-            if (!p.FechaCarga.HasValue) faltan.Add("fecha estimada de carga");
-            if (!p.FechaEntrega.HasValue) faltan.Add("fecha estimada de entrega");
-            return faltan.Count == 0 ? null : "Completá los campos requeridos: " + string.Join(", ", faltan) + ".";
+            if (!p.ClienteID.HasValue || p.ClienteID.Value <= 0) return "Seleccioná el cliente.";
+            return null;
         }
 
         // ======================= Endpoints =======================
+
+        private static StringBuilder CrearFiltroListado(string numero, int? clienteId, string estado,
+            string desde, string hasta, string usuario, bool soloGeneradas, out List<SqlParameter> ps)
+        {
+            var where = new StringBuilder(" WHERE 1=1 ");
+            ps = new List<SqlParameter>();
+            if (!string.IsNullOrWhiteSpace(numero)) { where.Append(" AND Numero LIKE @numero "); ps.Add(P("@numero", "%" + numero.Trim() + "%")); }
+            if (clienteId.HasValue && clienteId.Value > 0) { where.Append(" AND ClienteID=@cli "); ps.Add(P("@cli", clienteId.Value)); }
+            if (!string.IsNullOrWhiteSpace(estado))
+            {
+                if (string.Equals(estado.Trim(), "Facturada", StringComparison.OrdinalIgnoreCase))
+                {
+                    where.Append(@" AND EXISTS (SELECT 1
+                        FROM COMPROBANTES_PROFORMAS cp
+                        INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
+                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC') ");
+                }
+                else
+                {
+                    where.Append(@" AND Estado=@est AND NOT EXISTS (SELECT 1
+                        FROM COMPROBANTES_PROFORMAS cp
+                        INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
+                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC') ");
+                    ps.Add(P("@est", estado.Trim()));
+                }
+            }
+            if (soloGeneradas) where.Append(" AND Estado <> 'Borrador' ");
+            if (!string.IsNullOrWhiteSpace(usuario)) { where.Append(" AND Usu_Alta LIKE @usu "); ps.Add(P("@usu", "%" + usuario.Trim() + "%")); }
+            DateTime d;
+            if (!string.IsNullOrWhiteSpace(desde) && DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) >= @desde "); ps.Add(P("@desde", d.Date)); }
+            if (!string.IsNullOrWhiteSpace(hasta) && DateTime.TryParse(hasta, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
+            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) < @hasta "); ps.Add(P("@hasta", d.Date.AddDays(1))); }
+            return where;
+        }
 
         [HttpGet]
         [Route("")]
@@ -235,18 +392,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             if (page < 1) page = 1;
             if (pageSize < 0 || pageSize > 200) pageSize = 15;
-            var where = new StringBuilder(" WHERE 1=1 ");
-            var ps = new List<SqlParameter>();
-            if (!string.IsNullOrWhiteSpace(numero)) { where.Append(" AND Numero LIKE @numero "); ps.Add(P("@numero", "%" + numero.Trim() + "%")); }
-            if (clienteId.HasValue && clienteId.Value > 0) { where.Append(" AND ClienteID=@cli "); ps.Add(P("@cli", clienteId.Value)); }
-            if (!string.IsNullOrWhiteSpace(estado)) { where.Append(" AND Estado=@est "); ps.Add(P("@est", estado.Trim())); }
-            if (soloGeneradas) where.Append(" AND Estado <> 'Borrador' ");
-            if (!string.IsNullOrWhiteSpace(usuario)) { where.Append(" AND Usu_Alta LIKE @usu "); ps.Add(P("@usu", "%" + usuario.Trim() + "%")); }
-            DateTime d;
-            if (!string.IsNullOrWhiteSpace(desde) && DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
-            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) >= @desde "); ps.Add(P("@desde", d.Date)); }
-            if (!string.IsNullOrWhiteSpace(hasta) && DateTime.TryParse(hasta, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
-            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) < @hasta "); ps.Add(P("@hasta", d.Date.AddDays(1))); }
+            List<SqlParameter> ps;
+            var where = CrearFiltroListado(numero, clienteId, estado, desde, hasta, usuario, soloGeneradas, out ps);
 
             try
             {
@@ -264,12 +411,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     pPage.Add(P("@off", (page - 1) * pageSize)); pPage.Add(P("@lim", pageSize));
                     string sql =
                         "SELECT Proforma_ID, Numero, ISNULL(FechaEmision,FechaCreacion) AS Fecha, ClienteID, " +
-                        "Cli_RazonSocial AS Cliente, Destino, ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total, Estado, Usu_Alta AS UsuarioCreador " +
-                        ",fac.FacturaID,fac.FacturaNumero FROM PROFORMAS " +
+                        "Cli_RazonSocial AS Cliente, Destino, ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total, " +
+                        "CASE WHEN fac.FacturaID IS NOT NULL THEN 'Facturada' ELSE Estado END AS Estado, Usu_Alta AS UsuarioCreador " +
+                        ",fac.FacturaID,fac.FacturaNumero,CAST(CASE WHEN fac.FacturaID IS NOT NULL " +
+                        "AND fac.FacturaEstado='EMITIDO' AND NOT EXISTS (SELECT 1 FROM CUENTA_CORRIENTE_APLICACIONES a " +
+                        "WHERE a.ComprobanteDeudaID=fac.FacturaID AND a.Vigente=1) THEN 1 ELSE 0 END AS bit) AS FacturaCancelable FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
-                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero " +
+                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
-                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
+                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
                         where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
@@ -278,6 +428,63 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "Error al listar proformas.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        [HttpGet]
+        [Route("Reporte")]
+        public IHttpActionResult Reporte(string numero = null, int? clienteId = null, string estado = null,
+            string desde = null, string hasta = null, string usuario = null, bool soloGeneradas = false)
+        {
+            List<SqlParameter> ps;
+            var where = CrearFiltroListado(numero, clienteId, estado, desde, hasta, usuario, soloGeneradas, out ps);
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    string sqlProformas = @"
+SELECT Proforma_ID, Numero,
+       ISNULL(FechaEmision,FechaCreacion) AS FechaInicio,
+       FechaVencimiento AS FechaFin,
+       Cli_RazonSocial AS Cliente, Cli_CUIT AS Cuit,
+       ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total,
+       CASE WHEN EXISTS (SELECT 1
+                         FROM COMPROBANTES_PROFORMAS cp
+                         INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
+                         WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC')
+            THEN 'Facturada' ELSE Estado END AS Estado,
+       Usu_Alta AS Usuario
+FROM PROFORMAS " + where + " ORDER BY Proforma_ID DESC";
+                    var proformas = db.Database.SqlQuery<ReporteProformaItem>(sqlProformas,
+                        ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).ToList();
+
+                    string sqlViajes = @"
+SELECT d.Proforma_ID AS ProformaID, d.Orden, d.Codigo, d.Concepto, d.Descripcion,
+       ISNULL(d.Cantidad,0) AS Cantidad, d.Unidad, ISNULL(d.PrecioUnitario,0) AS PrecioUnitario,
+       ISNULL(d.DescuentoPct,0) AS DescuentoPct, ISNULL(d.Subtotal,0) AS Subtotal
+FROM PROFORMA_DETALLE d
+INNER JOIN PROFORMAS ON PROFORMAS.Proforma_ID=d.Proforma_ID " + where + @"
+ AND UPPER(LEFT(LTRIM(RTRIM(ISNULL(d.Codigo,''))),1))='V'
+ORDER BY d.Proforma_ID, d.Orden";
+                    var viajesPorProforma = db.Database.SqlQuery<ReporteViajeItem>(sqlViajes,
+                        ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray())
+                        .ToList()
+                        .GroupBy(x => x.ProformaID)
+                        .ToDictionary(x => x.Key, x => x.ToList());
+
+                    foreach (var proforma in proformas)
+                    {
+                        List<ReporteViajeItem> viajes;
+                        proforma.Viajes = viajesPorProforma.TryGetValue(proforma.Proforma_ID, out viajes)
+                            ? viajes : new List<ReporteViajeItem>();
+                    }
+                    return Ok(new { items = proformas, total = proformas.Count });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError,
+                    new { error = "Error al generar el reporte de proformas.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
@@ -294,6 +501,35 @@ namespace WebApi_TransporteSanchez.Controllers
             public string UsuarioCreador { get; set; }
             public int? FacturaID { get; set; }
             public string FacturaNumero { get; set; }
+            public bool FacturaCancelable { get; set; }
+        }
+
+        private class ReporteProformaItem
+        {
+            public int Proforma_ID { get; set; }
+            public string Numero { get; set; }
+            public DateTime? FechaInicio { get; set; }
+            public DateTime? FechaFin { get; set; }
+            public string Cliente { get; set; }
+            public string Cuit { get; set; }
+            public decimal Total { get; set; }
+            public string Estado { get; set; }
+            public string Usuario { get; set; }
+            public List<ReporteViajeItem> Viajes { get; set; }
+        }
+
+        private class ReporteViajeItem
+        {
+            public int ProformaID { get; set; }
+            public int Orden { get; set; }
+            public string Codigo { get; set; }
+            public string Concepto { get; set; }
+            public string Descripcion { get; set; }
+            public decimal Cantidad { get; set; }
+            public string Unidad { get; set; }
+            public decimal PrecioUnitario { get; set; }
+            public decimal DescuentoPct { get; set; }
+            public decimal Subtotal { get; set; }
         }
 
         [HttpGet]
@@ -306,6 +542,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var dto = db.Database.SqlQuery<ProformaDto>(SELECT_HEADER + " WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (dto == null) return NotFound();
+                    if (TieneFacturaVigente(db, id)) dto.Estado = "Facturada";
                     dto.Detalle = LeerDetalle(db, id);
                     return Ok(dto);
                 }
@@ -324,6 +561,15 @@ namespace WebApi_TransporteSanchez.Controllers
                 "FROM PROFORMA_DETALLE WHERE Proforma_ID=@id ORDER BY Orden", P("@id", id)).ToList();
         }
 
+        private static bool TieneFacturaVigente(DbContext db, int proformaId)
+        {
+            return db.Database.SqlQuery<int>(@"
+SELECT COUNT(*)
+FROM COMPROBANTES_PROFORMAS cp
+INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
+WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)).FirstOrDefault() > 0;
+        }
+
         [HttpPost]
         [Route("")]
         public IHttpActionResult Crear([FromBody] ProformaDto p)
@@ -335,16 +581,28 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 ComputarTotales(p);
                 using (var db = new DbContext(Cn()))
+                using (var transaction = db.Database.BeginTransaction())
                 {
+                    ActualizarCondicionIvaDesdeCliente(db, p);
+                    var viajeIds = ExtraerViajes(p.Detalle);
+                    var errorViajes = ValidarViajesDisponibles(db, 0, p.ClienteID, viajeIds);
+                    if (errorViajes != null) return Content(HttpStatusCode.Conflict, new { error = errorViajes });
                     var ps = ParamsNegocio(p);
-                    ps.Add(P("@usualta", string.IsNullOrWhiteSpace(p.Usu_Alta) ? "sistema" : p.Usu_Alta));
+                    var usuario = string.IsNullOrWhiteSpace(p.Usu_Alta) ? "sistema" : p.Usu_Alta;
+                    ps.Add(P("@usualta", usuario));
                     string sql = "INSERT INTO PROFORMAS (" + COLS + ",Estado,FechaCreacion,Usu_Alta,Fecha_Alta) " +
                                  "OUTPUT INSERTED.Proforma_ID VALUES (" + VALS + ",'Borrador',GETDATE(),@usualta,GETDATE())";
                     int nuevoId = db.Database.SqlQuery<int>(sql, ps.ToArray()).First();
                     InsertarDetalle(db, nuevoId, p.Detalle);
-                    Auditar(db, p.Usu_Alta, "INSERT", nuevoId, null, "Alta de proforma (Borrador)");
+                    SincronizarViajes(db, nuevoId, viajeIds, usuario);
+                    Auditar(db, usuario, "INSERT", nuevoId, null, "Alta de proforma (Borrador)");
+                    transaction.Commit();
                     return Ok(new { Proforma_ID = nuevoId, Message = "Borrador guardado." });
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -363,19 +621,32 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 ComputarTotales(p);
                 using (var db = new DbContext(Cn()))
+                using (var transaction = db.Database.BeginTransaction())
                 {
+                    ActualizarCondicionIvaDesdeCliente(db, p);
                     var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
+                    if (est == "Facturada" || TieneFacturaVigente(db, id)) return Content(HttpStatusCode.BadRequest, new { error = "No se puede editar una proforma Facturada." });
                     if (est != "Borrador") return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden editar proformas en estado Borrador." });
 
+                    var viajeIds = ExtraerViajes(p.Detalle);
+                    var errorViajes = ValidarViajesDisponibles(db, id, p.ClienteID, viajeIds);
+                    if (errorViajes != null) return Content(HttpStatusCode.Conflict, new { error = errorViajes });
                     var ps = ParamsNegocio(p);
-                    ps.Add(P("@usumodi", string.IsNullOrWhiteSpace(p.Usu_Modi) ? "sistema" : p.Usu_Modi));
+                    var usuario = string.IsNullOrWhiteSpace(p.Usu_Modi) ? "sistema" : p.Usu_Modi;
+                    ps.Add(P("@usumodi", usuario));
                     ps.Add(P("@id", id));
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET " + SETS + ",Usu_Modi=@usumodi,Fecha_Modi=GETDATE() WHERE Proforma_ID=@id", ps.ToArray());
                     InsertarDetalle(db, id, p.Detalle);
-                    Auditar(db, p.Usu_Modi, "UPDATE", id, null, "Edicion de proforma (Borrador)");
+                    SincronizarViajes(db, id, viajeIds, usuario);
+                    Auditar(db, usuario, "UPDATE", id, null, "Edicion de proforma (Borrador)");
+                    transaction.Commit();
                     return Ok(new { Message = "Proforma actualizada." });
                 }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
             }
             catch (Exception ex)
             {
@@ -401,8 +672,6 @@ namespace WebApi_TransporteSanchez.Controllers
                     int lineas = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM PROFORMA_DETALLE WHERE Proforma_ID=@id", P("@id", id)).First();
                     if (lineas == 0) errores.Add("Debe tener al menos un concepto.");
                     if (h.Total <= 0) errores.Add("El total debe ser mayor a cero.");
-                    if (string.IsNullOrWhiteSpace(h.Origen)) errores.Add("Falta el origen.");
-                    if (string.IsNullOrWhiteSpace(h.Destino)) errores.Add("Falta el destino.");
                     var yaFacturados = db.Database.SqlQuery<int>(
                         "SELECT v.Viaje_ID " + JOIN_VIAJES_DE_PROFORMA + " AND v.Estado='Facturado'", P("@id", id)).ToList();
                     if (yaFacturados.Count > 0) errores.Add("Viaje(s) ya facturado(s) en otra proforma: " + ListaViajes(yaFacturados) + ". Quitá esas líneas.");
@@ -423,11 +692,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.Database.ExecuteSqlCommand(
                         "UPDATE PROFORMAS SET Numero=@num, Estado='Generada', FechaEmision=ISNULL(FechaEmision,GETDATE()), Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
                         P("@num", numero), P("@u", usu), P("@id", id));
-                    int viajesFacturados = db.Database.ExecuteSqlCommand(
-                        "UPDATE v SET Estado='Facturado', Usu_Modi=@u, Fecha_Modi=GETDATE() " + JOIN_VIAJES_DE_PROFORMA,
-                        P("@u", UsuarioCorto(usu)), P("@id", id));
-                    Auditar(db, usu, "GENERAR", id, "Estado=Borrador", "Estado=Generada; Numero=" + numero + "; Viajes facturados=" + viajesFacturados);
-                    return Ok(new { Proforma_ID = id, Numero = numero, Estado = "Generada", ViajesFacturados = viajesFacturados, Message = "Proforma generada." });
+                    // Los viajes conservan su estado: pasan a Facturado recién al emitir la Factura (FacturasController).
+                    Auditar(db, usu, "GENERAR", id, "Estado=Borrador", "Estado=Generada; Numero=" + numero);
+                    return Ok(new { Proforma_ID = id, Numero = numero, Estado = "Generada", Message = "Proforma generada." });
                 }
             }
             catch (Exception ex)
@@ -449,6 +716,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
+                    if (TieneFacturaVigente(db, id)) return Content(HttpStatusCode.BadRequest, new { error = "No se puede cambiar el estado de una proforma Facturada." });
                     if (!TransicionPermitida(est, body.Estado))
                         return Content(HttpStatusCode.BadRequest, new { error = "Transicion no permitida: " + est + " -> " + body.Estado });
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET Estado=@e, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
@@ -463,28 +731,77 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        [HttpPost]
-        [Route("{id:int}/Anular")]
-        public IHttpActionResult Anular(int id, [FromBody] UsuarioDto body)
+        [HttpDelete]
+        [Route("{id:int}")]
+        public IHttpActionResult Borrar(int id, [FromBody] UsuarioDto body)
         {
             try
             {
                 using (var db = new DbContext(Cn()))
+                using (var transaction = db.Database.BeginTransaction())
                 {
-                    var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
+                    var estado = db.Database.SqlQuery<string>(
+                        "SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (estado == null) return NotFound();
+                    // Solo borradores: una proforma Generada ya tiene número PF y se anula (queda registro).
+                    if (estado != "Borrador")
+                        return Content(HttpStatusCode.BadRequest, new
+                        {
+                            error = "Solo se pueden eliminar borradores. Una proforma generada se anula."
+                        });
+                    if (TieneFacturaVigente(db, id))
+                        return Content(HttpStatusCode.Conflict, new
+                        {
+                            error = "No se puede borrar una proforma que tiene una Factura vinculada."
+                        });
+
+                    db.Database.ExecuteSqlCommand("DELETE FROM PROFORMAS_VIAJES WHERE ProformaID=@id", P("@id", id));
+                    db.Database.ExecuteSqlCommand("DELETE FROM PROFORMA_DETALLE WHERE Proforma_ID=@id", P("@id", id));
+                    int eliminadas = db.Database.ExecuteSqlCommand(@"
+DELETE FROM PROFORMAS
+WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
+                    if (eliminadas != 1) return Content(HttpStatusCode.Conflict,
+                        new { error = "La proforma cambio de estado antes de poder borrarse." });
+
+                    string usuario = body != null ? body.Usuario : null;
+                    Auditar(db, usuario, "DELETE", id, "Estado=" + estado, "Proforma eliminada y viajes liberados");
+                    transaction.Commit();
+                    return Ok(new { Message = "Proforma eliminada." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError,
+                    new { error = "Error al borrar la proforma.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [Route("{id:int}/Anular")]
+        public IHttpActionResult Anular(int id, [FromBody] UsuarioDto body)
+        {
+            // Generada o Aceptada sin Factura: queda Anulada (no se borra, ya tiene número PF) y libera sus viajes.
+            // Borrador: se elimina (Borrar). Con Factura: Nota de Credito cancelatoria (ComprobantesController).
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                using (var transaction = db.Database.BeginTransaction())
+                {
+                    var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WITH (UPDLOCK) WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
-                    if (est == "Aceptada") return Content(HttpStatusCode.BadRequest, new { error = "No se puede anular una proforma Aceptada." });
-                    if (est == "Anulada") return Content(HttpStatusCode.BadRequest, new { error = "La proforma ya esta anulada." });
+                    if (TieneFacturaVigente(db, id) || est == "Facturada")
+                        return Content(HttpStatusCode.Conflict, new { error = "La proforma tiene una Factura: para anularla emití la Nota de Crédito cancelatoria desde Cuenta corriente." });
+                    if (est == "Borrador")
+                        return Content(HttpStatusCode.BadRequest, new { error = "Un borrador no se anula: eliminalo." });
+                    if (est != "Generada" && est != "Aceptada")
+                        return Content(HttpStatusCode.BadRequest, new { error = "La proforma ya está " + est + "." });
+                    string usu = body != null ? body.Usuario : null;
+                    db.Database.ExecuteSqlCommand("DELETE FROM PROFORMAS_VIAJES WHERE ProformaID=@id", P("@id", id));
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET Estado='Anulada', Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
-                        P("@u", body != null ? body.Usuario : null), P("@id", id));
-                    int viajesLiberados = est == "Borrador" ? 0 : db.Database.ExecuteSqlCommand(
-                        "UPDATE v SET Estado=" + ESTADO_PREVIO_A_FACTURADO + ", Usu_Modi=@u, Fecha_Modi=GETDATE() " +
-                        JOIN_VIAJES_DE_PROFORMA + " AND v.Estado='Facturado' " +
-                        "AND NOT EXISTS (SELECT 1 FROM PROFORMA_DETALLE pd2 JOIN PROFORMAS p2 ON p2.Proforma_ID = pd2.Proforma_ID " +
-                        "WHERE LTRIM(RTRIM(pd2.Codigo)) = 'V' + CAST(v.Viaje_ID AS varchar(12)) AND p2.Proforma_ID <> @id AND p2.Estado NOT IN ('Borrador','Anulada'))",
-                        P("@u", UsuarioCorto(body != null ? body.Usuario : null)), P("@id", id));
-                    Auditar(db, body != null ? body.Usuario : null, "ANULAR", id, "Estado=" + est, "Estado=Anulada; Viajes liberados=" + viajesLiberados);
-                    return Ok(new { Message = "Proforma anulada.", ViajesLiberados = viajesLiberados });
+                        P("@u", usu), P("@id", id));
+                    Auditar(db, usu, "ANULAR", id, "Estado=" + est, "Estado=Anulada; viajes liberados");
+                    transaction.Commit();
+                    return Ok(new { Message = "Proforma anulada. Sus viajes quedaron disponibles para otra proforma." });
                 }
             }
             catch (Exception ex)
@@ -504,6 +821,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     var o = db.Database.SqlQuery<ProformaDto>(SELECT_HEADER + " WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (o == null) return NotFound();
                     o.Detalle = LeerDetalle(db, id);
+                    if (ExtraerViajes(o.Detalle).Count > 0)
+                        return Content(HttpStatusCode.Conflict, new
+                        {
+                            error = "No se puede duplicar una Proforma que incluye viajes, porque esos viajes permanecen reservados por la Proforma original."
+                        });
                     foreach (var l in o.Detalle) l.Detalle_ID = null;
                     o.Usu_Alta = body != null ? body.Usuario : o.Usu_Alta;
                     ComputarTotales(o);
@@ -546,7 +868,7 @@ namespace WebApi_TransporteSanchez.Controllers
         //   Directo: solo viajes Entregados (SGTL es la unica constancia de la entrega).
         [HttpGet]
         [Route("PrellenarViajes")]
-        public IHttpActionResult PrellenarViajes(int clienteId, string desde, string hasta)
+        public IHttpActionResult PrellenarViajes(int clienteId, string desde, string hasta, int proformaId = 0)
         {
             DateTime d1, d2;
             if (!DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out d1) ||
@@ -556,6 +878,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(Cn()))
                 {
+                    var reservados = ViajesReservados(db, proformaId);
                     var fijas = db.Set<TARIFAS_FIJAS>().Select(t => new { t.TarifaFija_ID, t.ValorFijoNeto }).ToList().ToDictionary(t => t.TarifaFija_ID, t => t.ValorFijoNeto);
                     var kms = db.Set<TARIFAS_KM>().Select(t => new { t.TarifaKm_ID, t.ValorKm }).ToList().ToDictionary(t => t.TarifaKm_ID, t => t.ValorKm);
                     var tipoCliente = db.Database.SqlQuery<string>(
@@ -572,6 +895,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var lineas = new List<DetalleLineaDto>();
                     var facturados = new List<int>();
+                    var enOtraProforma = new List<int>();
                     var sinNumeros = new List<int>();
                     var noEntregados = new List<int>();
                     var sinTarifa = new List<int>();
@@ -580,6 +904,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     int orden = 1;
                     foreach (var f in filas)
                     {
+                        if (reservados.Contains(f.Viaje_ID)) { enOtraProforma.Add(f.Viaje_ID); continue; }
                         if (f.Estado == "Facturado") { facturados.Add(f.Viaje_ID); continue; }
                         if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }
                         if (!conPlataforma && f.Estado != "Entregado") { noEntregados.Add(f.Viaje_ID); continue; }
@@ -607,6 +932,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (sinNumeros.Count > 0) advertencias.Add("No se trajeron " + sinNumeros.Count + " viaje(s) sin número de remito o de transporte SAP: " + ListaViajes(sinNumeros) + ".");
                     if (noEntregados.Count > 0) advertencias.Add("No se trajeron " + noEntregados.Count + " viaje(s) que todavía no están en estado Entregado: " + ListaViajes(noEntregados) + ".");
                     if (sinTarifa.Count > 0) advertencias.Add("No se trajeron " + sinTarifa.Count + " viaje(s) sin tarifa o con importe en cero: " + ListaViajes(sinTarifa) + ".");
+                    if (enOtraProforma.Count > 0) advertencias.Add(enOtraProforma.Count + " viaje(s) ya están incluidos en otra proforma y no se volvieron a traer: " + ListaViajes(enOtraProforma) + ".");
                     if (facturados.Count > 0) advertencias.Add(facturados.Count + " viaje(s) ya estaban facturados y no se volvieron a traer: " + ListaViajes(facturados) + ".");
                     if (registrados.Count > 0) advertencias.Add(registrados.Count + " viaje(s) siguen en estado Registrado (verificá en Rukas que estén entregados): " + ListaViajes(registrados) + ".");
                     if (sinEvidencia.Count > 0) advertencias.Add(sinEvidencia.Count + " viaje(s) entregados no tienen evidencia adjunta (recomendado): " + ListaViajes(sinEvidencia) + ".");
@@ -629,11 +955,6 @@ namespace WebApi_TransporteSanchez.Controllers
         private const string JOIN_VIAJES_DE_PROFORMA =
             "FROM VIAJES v JOIN PROFORMA_DETALLE pd ON LTRIM(RTRIM(pd.Codigo)) = 'V' + CAST(v.Viaje_ID AS varchar(12)) " +
             "WHERE pd.Proforma_ID=@id ";
-
-        // Estado al que vuelve un viaje cuando se anula la proforma que lo facturo (depende del tipo de cliente).
-        private const string ESTADO_PREVIO_A_FACTURADO =
-            "(CASE WHEN EXISTS (SELECT 1 FROM CLIENTES c WHERE c.Cliente_ID = v.ClienteID AND c.Tipo_Cliente = 'Con_plataforma') " +
-            "THEN 'Listo_para_facturar' ELSE 'Entregado' END)";
 
         private static string UsuarioCorto(string u)
         {

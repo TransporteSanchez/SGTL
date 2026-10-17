@@ -28,6 +28,17 @@
       try { localStorage.removeItem(k); } catch (e) { }
     });
     window.location.replace('Login.html');
+    return;
+  }
+
+  var paginasConfiguracion = [
+    'configuracion-facturacion.html', 'configuracion-email.html',
+    'configuracion-whatsapp.html', 'gestion-contenido.html'
+  ];
+  var rol = '';
+  try { rol = localStorage.getItem('userRole') || ''; } catch (e) { }
+  if (paginasConfiguracion.indexOf(page) !== -1 && rol.trim().toLowerCase() !== 'admin') {
+    window.location.replace('index.html');
   }
 })();
 
@@ -84,7 +95,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar proformas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar proformas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Cuenta corriente</a></li></ul></li>
-              <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">E-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestión de contenido</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Integración WhatsApp</a></li></ul></li>
+              <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-facturacion.html" class="submenu-link">Facturación</a></li><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">E-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestión de contenido</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Integración WhatsApp</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
@@ -116,6 +127,10 @@ var MENU_TO_PAGE = {
   'cuenta corriente de clientes': 'cuenta-corriente-clientes.html',
   'configuracion': 'configuracion-email.html',
   'configuración': 'configuracion-email.html',
+  'facturacion': 'configuracion-facturacion.html',
+  'facturación': 'configuracion-facturacion.html',
+  'configuracion facturacion': 'configuracion-facturacion.html',
+  'configuración facturación': 'configuracion-facturacion.html',
   'e-mail': 'configuracion-email.html',
   'email': 'configuracion-email.html',
   'integracion whatsapp': 'configuracion-whatsapp.html',
@@ -133,6 +148,24 @@ function normalizaPerm(s) {
   return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
 }
 
+var PAGINAS_CONFIGURACION = [
+  'configuracion-facturacion.html', 'configuracion-email.html',
+  'configuracion-whatsapp.html', 'gestion-contenido.html'
+];
+
+function restringirConfiguracionAAdmin(rol) {
+  var sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  var menu = sidebar.querySelector('.configuracion-menu');
+  if (!menu) return;
+  menu.style.display = normalizaPerm(rol) === 'admin' ? '' : 'none';
+}
+
+function esPaginaConfiguracion() {
+  var actual = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+  return PAGINAS_CONFIGURACION.indexOf(actual) !== -1;
+}
+
 var permisosAplicados = false;
 function aplicarPermisos() {
   if (permisosAplicados) return;
@@ -144,7 +177,12 @@ function aplicarPermisos() {
     .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
+      restringirConfiguracionAAdmin(rol);
       if (rol === 'admin') { mantenerVisibleContenido(true); return; } // superadmin: acceso total
+      if (esPaginaConfiguracion()) {
+        window.location.replace('index.html');
+        return;
+      }
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
       // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
       // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.
@@ -210,6 +248,9 @@ function guardaAccesoPagina(permitidas) {
 
 function applySidebar(sidebarRoot, html) {
     sidebarRoot.innerHTML = html;
+    var rol = '';
+    try { rol = localStorage.getItem('userRole') || ''; } catch (e) { }
+    restringirConfiguracionAAdmin(rol);
     markActiveSidebarItem();
   
     if (typeof window.initializeSidebar === 'function') {

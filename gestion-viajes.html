@@ -606,20 +606,27 @@
         }
 
         function accionesViaje(viaje) {
-            const facturado = viaje.Estado === 'Facturado';
+            // Facturado (estado del viaje) o con Factura vigente en Cuenta corriente.
+            const facturado = viaje.Estado === 'Facturado' || viaje.Facturada === true;
             const registrado = viajeRegistrado(viaje.Estado);
-            const motivo = 'Viaje facturado: no se puede modificar';
-            const tituloEditar = facturado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
-            const tituloEliminar = facturado ? motivo : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado');
+            // En una proforma Generada o Aceptada el viaje no se modifica; en un borrador sí (pero no se elimina).
+            const enProforma = !!viaje.EnProforma_ID;
+            const proformaEmitida = viaje.EnProforma_Estado === 'Generada' || viaje.EnProforma_Estado === 'Aceptada';
+            const motivoProforma = 'Está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)) + ': para modificarlo, anulá la proforma';
+            const bloqueado = facturado || proformaEmitida;
+            const motivo = facturado ? 'Viaje facturado: no se puede modificar' : motivoProforma;
+            const tituloEditar = bloqueado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
+            const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en un borrador de proforma: quitalo de la proforma para eliminarlo'
+                : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado'));
             return `
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEditar}">
-                    <button class="btn btn-primary btn-sm ${facturado ? 'disabled' : ''}"
+                    <button class="btn btn-primary btn-sm ${bloqueado ? 'disabled' : ''}"
                         onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
                         <i class="bi bi-pencil"></i>
                     </button>
                 </span>
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEliminar}">
-                    <button class="btn btn-danger btn-sm ms-1 ${registrado ? '' : 'disabled'}"
+                    <button class="btn btn-danger btn-sm ms-1 ${registrado && !bloqueado && !enProforma ? '' : 'disabled'}"
                         onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}')">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -661,7 +668,7 @@
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
                                     <td>${escHtml(textoRef(viaje.Num_de_Carga))}</td>
                                     <td>${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
-                                    <td style="white-space:nowrap;">${badgeEstadoViaje(viaje.Estado)}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
+                                    <td style="white-space:nowrap;">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge bg-light text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
                                     <td style="white-space:nowrap;">${accionesViaje(viaje)}</td>
                                 </tr>
                             `;
@@ -886,6 +893,7 @@
                 var r = xhr.responseJSON;
                 if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
                 if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
+                if (r && r.error) { return r.error; }
                 if (r && r.Message) { return r.Message; }
                 if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
             } catch (e) { }
@@ -1195,6 +1203,10 @@
             $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarOrigenesDestinos()).always(function () {
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
+                        if (v.Facturada === true) {
+                            alert('No se puede editar el viaje porque pertenece a una proforma Facturada.');
+                            return;
+                        }
                         $('#clienteSelect').val(v.ClienteID);
                         aplicarReglasTipoCliente();
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);

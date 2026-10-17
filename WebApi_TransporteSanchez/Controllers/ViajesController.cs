@@ -62,6 +62,14 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Entrega { get; set; }
             public string Tipo_Cliente { get; set; }
             public bool Tiene_Evidencia { get; set; }
+
+            // Tiene una Factura vigente (Cuenta corriente): no se edita ni se elimina.
+            public bool Facturada { get; set; }
+
+            // Proforma (no anulada) que incluye el viaje: sale de la reserva PROFORMAS_VIAJES.
+            public int? EnProforma_ID { get; set; }
+            public string EnProforma_Numero { get; set; }
+            public string EnProforma_Estado { get; set; }
         }
 
         public class EvidenciaDto
@@ -112,6 +120,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Entrega { get; set; }
             public string Tipo_Cliente { get; set; }
             public bool Tiene_Evidencia { get; set; }
+            public bool Facturada { get; set; }
+            public int? EnProforma_ID { get; set; }
+            public string EnProforma_Numero { get; set; }
+            public string EnProforma_Estado { get; set; }
         }
 
         private class EstadoViajeRow
@@ -154,17 +166,58 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private const int MaxPageSize = 5000;
 
+        // Viaje incluido en una Proforma con Factura vigente (COMPROBANTES_PROFORMAS, de Cuenta corriente).
+        // Contempla el vínculo explícito (PROFORMAS_VIAJES) y las líneas históricas con código V{id}.
+        private const string SQL_FACTURADA =
+            "CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES_PROFORMAS cp " +
+            "WHERE cp.Vigente = 1 AND (" +
+            "EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID = cp.ProformaID AND pv.ViajeID = v.Viaje_ID) " +
+            "OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID = cp.ProformaID " +
+            "AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,'')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID)))) THEN 1 ELSE 0 END AS bit)";
+
         private const string SELECT_GRILLA =
             "SELECT v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino, " +
             "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
             "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.OrigenID, v.DestinoID, v.ChoferID, v.CamionID, v.ClienteID, ISNULL(c.Razon_Social,'') AS Cliente, " +
             "v.TarifaFijaID, v.TarifaKmID, v.Estado, v.Resultado_Entrega, v.Fecha_Entrega, " +
             "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
-            "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
+            "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia, " +
+            SQL_FACTURADA + " AS Facturada, " +
+            "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado " +
             "FROM VIAJES v " +
             "LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID " +
             "LEFT JOIN DESTINO d ON d.Destino_ID = v.DestinoID " +
-            "LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID ";
+            "LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID " +
+            OUTER_APPLY_PROFORMA;
+
+        // Proforma no anulada que incluye el viaje (reserva PROFORMAS_VIAJES o línea histórica V{id}).
+        private const string OUTER_APPLY_PROFORMA =
+            "OUTER APPLY (SELECT TOP (1) p.Proforma_ID, p.Numero, p.Estado FROM dbo.PROFORMAS p " +
+            "WHERE p.Estado <> 'Anulada' AND (" +
+            "EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID = p.Proforma_ID AND pv.ViajeID = v.Viaje_ID) " +
+            "OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID = p.Proforma_ID " +
+            "AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,'')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID))) " +
+            "ORDER BY p.Proforma_ID DESC) pf ";
+
+        private class ProformaDelViaje { public int Proforma_ID { get; set; } public string Numero { get; set; } public string Estado { get; set; } }
+
+        private static ProformaDelViaje ProformaQueIncluye(DbContext db, int viajeId)
+        {
+            return db.Database.SqlQuery<ProformaDelViaje>(
+                "SELECT pf.Proforma_ID, ISNULL(pf.Numero,'') AS Numero, pf.Estado FROM VIAJES v " + OUTER_APPLY_PROFORMA +
+                "WHERE v.Viaje_ID=@id AND pf.Proforma_ID IS NOT NULL", P("@id", viajeId)).FirstOrDefault();
+        }
+
+        // En una proforma Generada o Aceptada el viaje ya forma parte de un documento emitido: no se modifica.
+        private static bool BloqueaPorProforma(ProformaDelViaje pf)
+        {
+            return pf != null && (pf.Estado == "Generada" || pf.Estado == "Aceptada");
+        }
+
+        private static string TextoProforma(ProformaDelViaje pf)
+        {
+            return (string.IsNullOrEmpty(pf.Numero) ? "#" + pf.Proforma_ID : pf.Numero) + " (" + pf.Estado + ")";
+        }
 
         private const string SELECT_ESTADO =
             "SELECT v.Viaje_ID, v.Estado, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, " +
@@ -279,6 +332,28 @@ namespace WebApi_TransporteSanchez.Controllers
 
             var wa = _whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje);
             return new { wa.Sent, wa.Status, wa.Detail, wa.To };
+        }
+
+        // Se contemplan tanto los vínculos normalizados como las líneas históricas
+        // que identifican un viaje con el código V{id}.
+        private static bool EstaVinculadoAProformaFacturada(DbContext db, int viajeId)
+        {
+            const string sql = @"
+SELECT CAST(CASE WHEN EXISTS (
+    SELECT 1
+    FROM dbo.COMPROBANTES_PROFORMAS cp
+    INNER JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+    WHERE cp.Vigente=1
+      AND (
+          EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv
+                  WHERE pv.ProformaID=p.Proforma_ID AND pv.ViajeID=@viajeId)
+          OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd
+                     WHERE pd.Proforma_ID=p.Proforma_ID
+                       AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,''))))='V'+CONVERT(varchar(11),@viajeId))
+      )
+) THEN 1 ELSE 0 END AS bit);";
+
+            return db.Database.SqlQuery<bool>(sql, new SqlParameter("@viajeId", viajeId)).FirstOrDefault();
         }
 
         // GET: api/Viajes
@@ -473,6 +548,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     var v = db.Database.SqlQuery<EstadoViajeRow>(SELECT_ESTADO + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
                     if (v == null) return NotFound();
 
+                    var proformaDelViaje = ProformaQueIncluye(db, id);
+                    if (BloqueaPorProforma(proformaDelViaje))
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Estado", ErrorMessage = "El viaje está en la proforma " + TextoProforma(proformaDelViaje) + ": no se puede cambiar su estado. Si hay que corregirlo, anulá la proforma." } });
                     var errores = ValidarCambioEstado(v, FlujoEstados(v.Tipo_Cliente), nuevo, resultado, body.Fecha_Entrega);
                     if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
 
@@ -613,16 +691,16 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var errores = new List<object>();
 
-            // Facturado lo asigna la proforma al generarse y lo quita al anularse. A mano quedaria un viaje
-            // facturado sin proforma, o liberado con la proforma vigente y facturable dos veces.
+            // Facturado lo asigna la Factura al emitirse y lo quita la Nota de Credito cancelatoria. A mano quedaria
+            // un viaje facturado sin factura, o liberado con la factura vigente y facturable dos veces.
             if (v.Estado == EstadoFacturado)
             {
-                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo anulá la proforma que lo incluye." });
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo emití la nota de crédito de su factura desde Cuenta corriente." });
                 return errores;
             }
             if (nuevo == EstadoFacturado)
             {
-                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al generar la proforma." });
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al emitir la factura." });
                 return errores;
             }
 
@@ -719,6 +797,10 @@ namespace WebApi_TransporteSanchez.Controllers
                         dto.Fecha_Entrega = est.Fecha_Entrega;
                         dto.Tipo_Cliente = est.Tipo_Cliente;
                         dto.Tiene_Evidencia = est.Tiene_Evidencia;
+                        dto.Facturada = est.Facturada;
+                        dto.EnProforma_ID = est.EnProforma_ID;
+                        dto.EnProforma_Numero = est.EnProforma_Numero;
+                        dto.EnProforma_Estado = est.EnProforma_Estado;
                     }
 
                     return Ok(dto);
@@ -847,12 +929,23 @@ namespace WebApi_TransporteSanchez.Controllers
                     return NotFound();
                 }
 
+                if (EstaVinculadoAProformaFacturada(db, id))
+                {
+                    return Content(HttpStatusCode.Conflict, new { error = "No se puede editar el viaje porque pertenece a una proforma Facturada." });
+                }
+
+                var proformaDelViaje = ProformaQueIncluye(db, id);
+                if (BloqueaPorProforma(proformaDelViaje))
+                {
+                    return Content(HttpStatusCode.Conflict, new { error = "El viaje está en la proforma " + TextoProforma(proformaDelViaje) + ": no se puede modificar. Si hay que corregirlo, anulá la proforma." });
+                }
+
                 var estado = EstadoActual(db, id);
                 if (estado == EstadoFacturado)
                 {
                     return Content(HttpStatusCode.BadRequest, new List<object>
                     {
-                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, anulá la proforma que lo incluye." }
+                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, emití la nota de crédito de su factura desde Cuenta corriente." }
                     });
                 }
 
@@ -948,6 +1041,17 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (viaje == null)
                     {
                         return NotFound();
+                    }
+
+                    if (EstaVinculadoAProformaFacturada(db, id))
+                    {
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje porque pertenece a una proforma Facturada." });
+                    }
+
+                    var proformaDelViaje = ProformaQueIncluye(db, id);
+                    if (proformaDelViaje != null)
+                    {
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje porque está en la proforma " + TextoProforma(proformaDelViaje) + ". Quitalo de la proforma o anulala primero." });
                     }
 
                     var estado = EstadoActual(db, id);

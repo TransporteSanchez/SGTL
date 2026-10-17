@@ -96,7 +96,7 @@
                         <div class="card-header d-flex justify-content-between align-items-center flex-wrap cc-card-header">
                             <div>
                                 <h5 class="card-title mb-0">Cuenta Corriente de Clientes</h5>
-                                <small class="text-muted">Consulta de deuda, comprobantes, pagos y aplicaciones.</small>
+                                <small class="text-muted">Consultá saldos, comprobantes, pagos y movimientos de cuenta corriente.</small>
                             </div>
 
                             <div class="cc-actions">
@@ -240,9 +240,13 @@
                 <div class="modal-body">
                     <div class="alert alert-info py-2" id="cmpMensaje">Completá los datos del comprobante.</div>
                     <div class="row g-3">
-                        <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente *</label><input id="cmpCliente" type="text" class="form-control" list="cmpClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="cmpClienteId" type="hidden"><datalist id="cmpClientesSugeridos"></datalist></div>
+                        <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente *</label><select id="cmpCliente" class="form-select" required><option value="">Seleccionar cliente</option></select></div>
                         <div class="col-md-3"><label class="form-label">Fecha de emisión</label><input id="cmpFechaEmision" type="date" class="form-control"></div>
                         <div class="col-md-3" id="cmpVencimientoGrupo"><label class="form-label">Fecha de vencimiento</label><input id="cmpFechaVencimiento" type="date" class="form-control"></div>
+                        <div class="col-md-3"><label class="form-label" for="cmpTipoComprobante">Tipo comprobante</label><input id="cmpTipoComprobante" class="form-control" readonly></div>
+                        <div class="col-md-3"><label class="form-label" for="cmpLetra">Letra</label><select id="cmpLetra" class="form-select"></select></div>
+                        <div class="col-md-3"><label class="form-label" for="cmpSucursal">Sucursal</label><select id="cmpSucursal" class="form-select"></select></div>
+                        <div class="col-md-3"><label class="form-label" for="cmpNumeroComprobante">N° comprobante</label><input id="cmpNumeroComprobante" class="form-control" readonly></div>
                         <div class="col-12 d-none" id="cmpReferenciaGrupo">
                             <label class="form-label" id="cmpReferenciaEtiqueta">Factura relacionada</label>
                             <select id="cmpReferencia" class="form-select"></select>
@@ -283,17 +287,19 @@
 
                     <div class="cc-block-title">1 · Datos generales</div>
                     <div class="row g-2">
-                        <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente *</label><input id="reciboCliente" type="text" class="form-control" list="reciboClientesSugeridos" autocomplete="off" placeholder="Escribí razón social o CUIT" required><input id="reciboClienteId" type="hidden"><datalist id="reciboClientesSugeridos"></datalist></div>
-                        <div class="col-md-3"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Importe del recibo</label><input id="reciboTotal" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
+                        <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente *</label><select id="reciboCliente" class="form-select" required><option value="">Seleccionar cliente</option></select></div>
+                        <div class="col-md-6"><label class="form-label">Fecha</label><input id="reciboFecha" type="date" class="form-control"></div>
                     </div>
 
                     <div class="cc-block-title">2 · Forma de pago</div>
                     <div class="row g-2">
+                        <div class="col-md-3"><label class="form-label" for="reciboTipoComprobante">Tipo comprobante</label><input id="reciboTipoComprobante" class="form-control" value="Recibo" disabled></div>
+                        <div class="col-md-3"><label class="form-label" for="reciboLetra">Letra</label><select id="reciboLetra" class="form-select"></select></div>
+                        <div class="col-md-3"><label class="form-label" for="reciboSucursal">Sucursal</label><select id="reciboSucursal" class="form-select"></select></div>
+                        <div class="col-md-3"><label class="form-label" for="reciboNumeroComprobante">N° comprobante</label><input id="reciboNumeroComprobante" class="form-control" readonly></div>
                         <div class="col-md-4"><label class="form-label">Forma</label><select id="reciboFormaPago" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>
                         <div class="col-md-4"><label class="form-label">Referencia</label><input id="reciboReferencia" class="form-control"></div>
                         <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
-                        <div class="col-12"><label class="form-label">Observaciones</label><textarea id="reciboObservaciones" class="form-control" rows="2" maxlength="2000"></textarea></div>
                     </div>
 
                     <div class="cc-block-title">3 · Imputación a comprobantes</div>
@@ -309,6 +315,7 @@
                         <span>Total aplicado: <strong id="reciboResumenAplicado">$ 0,00</strong></span>
                         <span>Diferencia: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
                     </div>
+                    <div class="mt-2"><label class="form-label" for="reciboObservaciones">Observaciones</label><textarea id="reciboObservaciones" class="form-control" rows="2" maxlength="2000"></textarea></div>
                     <div class="text-danger small text-end mt-2" id="reciboError" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
@@ -375,10 +382,10 @@
     </div>
 
     <div class="modal fade" id="modalExportarCuenta" tabindex="-1" aria-labelledby="modalExportarCuentaTitulo" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalExportarCuentaTitulo"><i class="bi bi-file-earmark-pdf me-2"></i>Exportar listado</h5>
+                    <h5 class="modal-title" id="modalExportarCuentaTitulo"><i class="bi bi-download me-2"></i>Exportar listado</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
@@ -389,6 +396,9 @@
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListado">
                         <i class="bi bi-printer me-1"></i>Vista previa e imprimir
+                    </button>
+                    <button type="button" class="btn btn-success" id="btnDescargarListadoExcel">
+                        <i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel
                     </button>
                     <button type="button" class="btn btn-primary" id="btnDescargarListadoPdf">
                         <i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF
@@ -424,7 +434,10 @@
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/facturacion-configuracion.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="assets/static/js/cuenta-corriente-clientes.js"></script>
 
     <script>

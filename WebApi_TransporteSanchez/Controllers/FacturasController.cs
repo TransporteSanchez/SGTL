@@ -23,6 +23,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string VersionProforma { get; set; }
             public DateTime? FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public string Observaciones { get; set; }
         }
 
@@ -100,6 +102,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int NumeroCorrelativo { get; set; }
             public DateTime FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public string Observaciones { get; set; }
             public Guid ClaveOperacion { get; set; }
             public decimal Total { get; set; }
@@ -273,7 +277,19 @@ SELECT p.Proforma_ID AS ProformaID,ISNULL(p.ClienteID,0) AS ClienteID,p.Numero,p
        COALESCE(NULLIF(p.Cli_RazonSocial,''),c.Razon_Social) AS RazonSocial,
        COALESCE(NULLIF(p.Cli_CUIT,''),c.CUIT_Cliente) AS CUIT,
        COALESCE(NULLIF(p.Cli_Direccion,''),LTRIM(RTRIM(COALESCE(c.Calle,'')+' '+COALESCE(c.AlturaCalle,'')))) AS Domicilio,
-       COALESCE(NULLIF(p.Cli_CondIVA,''),CONVERT(nvarchar(60),c.Cond_Fiscal)) AS CondicionFiscal,
+       COALESCE(CASE UPPER(NULLIF(LTRIM(RTRIM(p.Cli_CondIVA)),''))
+           WHEN '1' THEN N'Responsable Inscripto'
+           WHEN 'RI' THEN N'Responsable Inscripto'
+           WHEN '2' THEN N'Monotributista'
+           WHEN 'MT' THEN N'Monotributista'
+           WHEN '3' THEN N'Exento'
+           WHEN 'EX' THEN N'Exento'
+           ELSE NULLIF(LTRIM(RTRIM(p.Cli_CondIVA)),'')
+       END,CASE c.Cond_Fiscal
+           WHEN 1 THEN N'Responsable Inscripto'
+           WHEN 2 THEN N'Monotributista'
+           WHEN 3 THEN N'Exento'
+       END) AS CondicionFiscal,
        NULLIF(LTRIM(RTRIM(COALESCE(p.FormaPago,'')+' '+COALESCE(p.PlazoPago,''))),'') AS CondicionComercial,
        p.TipoServicio,p.Origen,p.Destino,p.Observaciones,
        p.FechaEmision AS FechaEmisionProforma,p.FechaVencimiento AS FechaVencimientoProforma,
@@ -429,7 +445,7 @@ WHERE Proforma_ID=@id ORDER BY Orden,Detalle_ID;";
         {
             const string sql = @"
 SELECT TOP (1) c.Comprobante_ID AS ComprobanteID,c.ClienteID,cp.ProformaID,c.Tipo,
-       c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Observaciones,c.ClaveOperacion,c.Total
+       c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Letra,c.Sucursal,c.Observaciones,c.ClaveOperacion,c.Total
 FROM dbo.COMPROBANTES_PROFORMAS cp WITH (UPDLOCK,HOLDLOCK)
 JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
 WHERE cp.ProformaID=@proformaId AND cp.Vigente=1
@@ -441,7 +457,7 @@ ORDER BY cp.ComprobanteProforma_ID DESC;";
         {
             const string sql = @"
 SELECT TOP (1) c.Comprobante_ID AS ComprobanteID,c.ClienteID,ISNULL(cp.ProformaID,0) AS ProformaID,
-       c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Observaciones,c.ClaveOperacion,c.Total
+       c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Letra,c.Sucursal,c.Observaciones,c.ClaveOperacion,c.Total
 FROM dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK)
 LEFT JOIN dbo.COMPROBANTES_PROFORMAS cp ON cp.ComprobanteID=c.Comprobante_ID AND cp.Vigente=1
 WHERE c.ClaveOperacion=@clave;";
@@ -466,6 +482,8 @@ WHERE c.ClaveOperacion=@clave;";
                         NumeroCorrelativo = (int)reader["NumeroCorrelativo"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
                         FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
+                        Letra = reader["Letra"] as string,
+                        Sucursal = reader["Sucursal"] as string,
                         Observaciones = reader["Observaciones"] as string,
                         ClaveOperacion = (Guid)reader["ClaveOperacion"],
                         Total = (decimal)reader["Total"]
@@ -714,6 +732,12 @@ ORDER BY ap.Aplicacion_ID;";
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, "FAC_EMITIR");
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "FAC");
+                            var letra = request.Letra;
+                            var sucursal = request.Sucursal;
+                            FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
+                            request.Letra = letra;
+                            request.Sucursal = sucursal;
                             var proforma = LeerProforma(connection, transaction, id, true);
                             if (proforma == null)
                             {
@@ -726,6 +750,8 @@ ORDER BY ap.Aplicacion_ID;";
                                 bool mismaOperacion = porClave.Tipo == "FAC" && porClave.ProformaID == id
                                     && porClave.FechaEmision.Date == fechaEmision
                                     && porClave.FechaVencimiento.HasValue && porClave.FechaVencimiento.Value.Date == fechaVencimiento
+                                    && string.Equals(porClave.Letra ?? string.Empty, request.Letra ?? string.Empty, StringComparison.Ordinal)
+                                    && string.Equals(porClave.Sucursal ?? string.Empty, request.Sucursal ?? string.Empty, StringComparison.Ordinal)
                                     && string.Equals(porClave.Observaciones ?? string.Empty, request.Observaciones ?? string.Empty, StringComparison.Ordinal);
                                 if (!mismaOperacion)
                                 {
@@ -773,10 +799,11 @@ ORDER BY ap.Aplicacion_ID;";
 
                             int correlativo;
                             using (var command = new SqlCommand(@"
-UPDATE dbo.COMPROBANTES_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
+UPDATE dbo.FACTURACION_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
 SET UltimoNumero=UltimoNumero+1 OUTPUT INSERTED.UltimoNumero
-WHERE Tipo='FAC' AND UltimoNumero<99999999;", connection, transaction))
+WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connection, transaction))
                             {
+                                command.Parameters.Add(P("@numerador", configuracion.NumeradorID));
                                 object value = command.ExecuteScalar();
                                 if (value == null)
                                     throw new InvalidOperationException("El numerador de Facturas no existe o está agotado.");
@@ -792,12 +819,12 @@ WHERE Tipo='FAC' AND UltimoNumero<99999999;", connection, transaction))
                             using (var command = new SqlCommand(@"
 INSERT dbo.COMPROBANTES
  (ClienteID,Tipo,Impacto,NumeroCorrelativo,FechaEmision,FechaVencimiento,Moneda,Estado,
-  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Subtotal,Descuentos,Neto,IVA,
+  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Letra,Sucursal,NumeroComprobante,Subtotal,Descuentos,Neto,IVA,
   OtrosImpuestos,Total,Concepto,Observaciones,ClaveOperacion,UsuarioAltaID,UsuarioEmisionID,FechaEmisionRegistro)
 OUTPUT INSERTED.Comprobante_ID
 VALUES
  (@cliente,'FAC','D',@numero,@emision,@vencimiento,'ARS','EMITIDO',@razon,@cuit,@domicilio,
-  @condFiscal,@condComercial,@subtotal,@descuentos,@neto,@iva,@otros,@total,@concepto,@observaciones,
+  @condFiscal,@condComercial,@letra,@sucursal,@numeroComprobante,@subtotal,@descuentos,@neto,@iva,@otros,@total,@concepto,@observaciones,
   @clave,@usuario,@usuario,SYSUTCDATETIME());", connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
@@ -805,7 +832,8 @@ VALUES
                                     P("@cliente", proforma.ClienteID),P("@numero", correlativo),P("@emision", fechaEmision),
                                     P("@vencimiento", fechaVencimiento),P("@razon", proforma.RazonSocial),P("@cuit", proforma.CUIT),
                                     P("@domicilio", proforma.Domicilio),P("@condFiscal", proforma.CondicionFiscal),
-                                    P("@condComercial", proforma.CondicionComercial),P("@subtotal", totales.Subtotal),
+                                    P("@condComercial", proforma.CondicionComercial),P("@letra", request.Letra),P("@sucursal", request.Sucursal),
+                                    P("@numeroComprobante", FacturacionComprobantesConfiguracion.NumeroVisible(correlativo)),P("@subtotal", totales.Subtotal),
                                     P("@descuentos", totales.Descuentos),P("@neto", totales.Neto),P("@iva", totales.IVA),
                                     P("@otros", totales.OtrosImpuestos),P("@total", totales.Total),P("@concepto", concepto),
                                     P("@observaciones", request.Observaciones),P("@clave", request.ClaveOperacion),P("@usuario", usuario.UsuarioID)
@@ -841,6 +869,19 @@ INSERT dbo.COMPROBANTES_PROFORMAS
  (ComprobanteID,ProformaID,ClienteID,TipoFactura,Vigente,UsuarioAltaID)
 VALUES (@comprobante,@proforma,@cliente,'FAC',1,@usuario);
 
+UPDATE dbo.PROFORMAS
+SET Estado='Facturada',Usu_Modi=@nombreUsuario,Fecha_Modi=GETDATE()
+WHERE Proforma_ID=@proforma AND Estado='Aceptada';
+IF @@ROWCOUNT<>1
+    THROW 51020, 'No se pudo marcar la Proforma como Facturada.', 1;
+
+-- Los viajes de la Proforma pasan a Facturado al emitirse la Factura (no al generar la Proforma).
+UPDATE v SET Estado='Facturado',Usu_Modi=LEFT(@nombreUsuario,20),Fecha_Modi=GETDATE()
+FROM dbo.VIAJES v
+WHERE (EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID=@proforma AND pv.ViajeID=v.Viaje_ID)
+    OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID=@proforma
+               AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,''))))='V'+CONVERT(varchar(11),v.Viaje_ID)));
+
 INSERT dbo.CUENTA_CORRIENTE_MOVIMIENTOS
  (ComprobanteID,ClienteID,Tipo,Clase,Impacto,Importe,FechaContable,Concepto,UsuarioAltaID)
 VALUES (@comprobante,@cliente,'FAC','EMISION','D',@total,@fecha,@concepto,@usuario);
@@ -848,7 +889,8 @@ VALUES (@comprobante,@cliente,'FAC','EMISION','D',@total,@fecha,@concepto,@usuar
 INSERT dbo.AUDITORIA
  (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
 VALUES
- (GETDATE(),@nombreUsuario,'EMITIR','COMPROBANTES',@claveAuditoria,NULL,@detalleAuditoria,'Cuenta Corriente');", connection, transaction))
+ (GETDATE(),@nombreUsuario,'EMITIR','COMPROBANTES',@claveAuditoria,NULL,@detalleAuditoria,'Cuenta Corriente'),
+ (GETDATE(),@nombreUsuario,'ESTADO','PROFORMAS',@claveProformaAuditoria,'Estado=Aceptada','Estado=Facturada','Facturacion');", connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
                                 {
@@ -856,6 +898,7 @@ VALUES
                                     P("@usuario", usuario.UsuarioID),P("@total", totales.Total),P("@fecha", fechaEmision),
                                     P("@concepto", concepto),P("@nombreUsuario", usuario.NombreUsuario),
                                     P("@claveAuditoria", "Comprobante_ID=" + comprobanteId),
+                                    P("@claveProformaAuditoria", "Proforma_ID=" + id),
                                     P("@detalleAuditoria", "Factura " + NumeroFactura(correlativo) + " desde Proforma_ID=" + id)
                                 });
                                 command.ExecuteNonQuery();

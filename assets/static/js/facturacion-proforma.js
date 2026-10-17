@@ -69,6 +69,14 @@
                     '<div class="modal-body">' +
                         '<div id="facMensaje" class="alert alert-info mb-3">Validando Proforma…</div>' +
                         '<div id="facFormulario" class="row g-3">' +
+                            '<div class="col-md-3"><label class="form-label">Tipo comprobante</label>' +
+                                '<input id="facTipoComprobante" class="form-control" readonly></div>' +
+                            '<div class="col-md-3"><label class="form-label">Letra</label>' +
+                                '<select id="facLetra" class="form-select"></select></div>' +
+                            '<div class="col-md-3"><label class="form-label">Sucursal</label>' +
+                                '<select id="facSucursal" class="form-select"></select></div>' +
+                            '<div class="col-md-3"><label class="form-label">N° comprobante</label>' +
+                                '<input id="facNumeroComprobante" class="form-control" readonly></div>' +
                             '<div class="col-md-4"><label class="form-label">Total a facturar</label>' +
                                 '<input id="facTotal" class="form-control text-end fw-bold" readonly></div>' +
                             '<div class="col-md-4"><label class="form-label">Fecha de emisión</label>' +
@@ -113,7 +121,8 @@
             version: null,
             claveOperacion: nuevaClave(),
             alCompletar: typeof alCompletar === 'function' ? alCompletar : null,
-            enviando: false
+            enviando: false,
+            configuracionLista: false
         };
         porId('facProformaNumero').textContent = 'Proforma #' + id;
         porId('facTotal').value = '';
@@ -125,7 +134,9 @@
         porId('facResultado').textContent = '';
         porId('btnConfirmarFactura').disabled = true;
         porId('btnConfirmarFactura').classList.remove('d-none');
-        porId('facFormulario').querySelectorAll('input,textarea').forEach(function (campo) { campo.disabled = false; });
+        porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
+        porId('facTipoComprobante').readOnly = true;
+        porId('facNumeroComprobante').readOnly = true;
         mostrarMensaje('Validando Proforma…', 'info');
     }
 
@@ -137,9 +148,16 @@
             mostrarMensaje('No hay una sesión activa. Iniciá sesión nuevamente para facturar.', 'danger');
             return;
         }
-        fetch(API + '/proformas/' + encodeURIComponent(id) + '/facturacion', {
+        var configuracion = window.ConfiguracionFacturacion && window.ConfiguracionFacturacion.cargar
+            ? window.ConfiguracionFacturacion.cargar('FAC', {
+                tipo: 'facTipoComprobante', letra: 'facLetra', sucursal: 'facSucursal', numero: 'facNumeroComprobante'
+            })
+            : Promise.reject(new Error('No se cargó la configuración de Facturación.'));
+        var proforma = fetch(API + '/proformas/' + encodeURIComponent(id) + '/facturacion', {
             method: 'GET', headers: encabezados(false)
-        }).then(leerRespuesta).then(function (respuesta) {
+        }).then(leerRespuesta);
+        Promise.all([configuracion, proforma]).then(function (resultados) {
+            var respuesta = resultados[1];
             if (!respuesta.ok) {
                 mostrarMensaje(mensajeError(respuesta, 'No se pudo validar la Proforma.'), 'danger');
                 return;
@@ -160,14 +178,15 @@
                 return;
             }
             mostrarMensaje('La Proforma está lista. Revisá las fechas antes de confirmar.', 'success');
+            estado.configuracionLista = true;
             porId('btnConfirmarFactura').disabled = false;
-        }).catch(function () {
+        }).catch(function (ex) {
             mostrarMensaje('No se pudo conectar con el servicio de Facturación.', 'danger');
         });
     }
 
     function emitir() {
-        if (!estado || estado.enviando || !estado.version) return;
+        if (!estado || estado.enviando || !estado.version || !estado.configuracionLista) return;
         var fechaEmision = porId('facFechaEmision').value;
         var fechaVencimiento = porId('facFechaVencimiento').value;
         if (!fechaEmision || !fechaVencimiento) {
@@ -187,6 +206,8 @@
             VersionProforma: estado.version,
             FechaEmision: fechaEmision,
             FechaVencimiento: fechaVencimiento,
+            Letra: porId('facLetra').value || null,
+            Sucursal: porId('facSucursal').value || null,
             Observaciones: porId('facObservaciones').value.trim() || null
         };
         fetch(API + '/facturas/desde-proforma/' + encodeURIComponent(estado.proformaId), {
@@ -202,7 +223,7 @@
             }
             var factura = respuesta.json;
             mostrarMensaje('Factura emitida correctamente.', 'success');
-            porId('facFormulario').querySelectorAll('input,textarea').forEach(function (campo) { campo.disabled = true; });
+            porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
             boton.classList.add('d-none');
             var resultado = porId('facResultado');
             resultado.classList.remove('d-none');

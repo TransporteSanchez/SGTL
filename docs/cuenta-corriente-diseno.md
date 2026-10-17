@@ -30,7 +30,7 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 | CUENTA_CORRIENTE_MOVIMIENTOS | Movimiento_ID | FK Comprobante; emisión y reverso. No persiste saldo resultante. |
 | CUENTA_CORRIENTE_APLICACIONES | Aplicacion_ID | FK compuestas a crédito C y deuda D del mismo cliente. Conserva anulaciones. |
 | RECIBOS_FORMAS_PAGO | FormaPago_ID | FK compuesta a REC del mismo cliente. |
-| PROFORMAS_VIAJES | ProformaID + ViajeID | Relación explícita, sin borrar historial en cascada. |
+| PROFORMAS_VIAJES | ProformaID + ViajeID | Relación explícita y exclusiva: un viaje queda reservado por una sola Proforma. |
 | PERMISOS | Permiso_ID | Código único por operación. |
 | GRUPOS_PERMISOS | GrupoID + PermisoID | Grupos existentes; FK usuario que asigna. |
 
@@ -44,7 +44,7 @@ no deben recibirse libremente del navegador ni representar dos fuentes independi
   emitir NC correctivas y anular operaciones según permisos.
 - `PROFORMAS.VersionCuentaCorriente rowversion`: token de concurrencia.
 - `UNIQUE (Proforma_ID, ClienteID)` para FK que impide facturar a otro cliente.
-- No agregar saldo en CLIENTES ni reemplazar `PROFORMAS.Estado` por `Facturada`.
+- No agregar saldo en CLIENTES. Al emitir una Factura vigente, actualizar `PROFORMAS.Estado` a `Facturada` y bloquear la edición de la Proforma y de sus viajes vinculados.
 - No alterar en esta instalación campos legacy NOT NULL, estados ni la secuencia PF.
 - No asignar permisos a ningún grupo ni cambiar MENU automáticamente.
 
@@ -164,6 +164,8 @@ de payload normalizado o huella persistida al construir el backend.
 
 ### Anulaciones
 
+- Una Factura vinculada a una Proforma se cancela exclusivamente mediante una NC por el total, sin movimientos previos sobre esa deuda; la Proforma conserva el estado `Facturada`.
+- Una Proforma puede borrarse mientras esté en `Borrador` o `Generada`, sin Factura vinculada. Al borrarla se liberan sus viajes.
 - FAC/ND con aplicaciones vigentes: rechazar; anular primero los créditos implicados.
 - Anular REC/NC: marcar sus aplicaciones no vigentes y reabrir la deuda, en la misma
   transacción que el reverso, estado ANULADO y auditoría.
@@ -181,7 +183,9 @@ de payload normalizado o huella persistida al construir el backend.
 | GET /api/clientes/{id}/comprobantes-pendientes | FAC/ND con original, aplicado, pendiente, vencimiento y estado calculado. |
 | GET /api/comprobantes/{id} | Cabecera, detalle, Proforma, viajes, aplicaciones y auditoría. |
 | GET /api/proformas/{id}/facturacion | Facturable, MotivoBloqueo, FacturaVigente, versión. |
+| GET /api/proformas/{id}/factura-cancelatoria | Factura vinculada, cliente, importes fijos y si admite la cancelación total. |
 | POST /api/facturas/desde-proforma/{id} | ClaveOperacion, VersionProforma, FechaEmision, FechaVencimiento, Observaciones. |
+| DELETE /api/Proformas/{id} | Borra una Proforma aún no aceptada y sin Factura; libera sus viajes. |
 | POST /api/recibos | ClaveOperacion, ClienteID, Fecha, Total, FormasPago[], Aplicaciones[]. |
 | POST /api/notas-credito | ClaveOperacion, FacturaID, Fecha, Motivo, Conceptos[]; aplicación automática a esa FAC. |
 | POST /api/notas-debito | ClaveOperacion, ClienteID, FacturaReferenciaID opcional, fechas y Conceptos[]. |

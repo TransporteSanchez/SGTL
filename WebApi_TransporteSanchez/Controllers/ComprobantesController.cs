@@ -21,9 +21,13 @@ namespace WebApi_TransporteSanchez.Controllers
             public Guid ClaveOperacion { get; set; }
             public int ClienteID { get; set; }
             public string Tipo { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public DateTime? FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
             public int? ComprobanteReferenciaID { get; set; }
+            // Cuando se informa, la NC solo puede cancelar la Factura vigente de esta Proforma.
+            public int? ProformaID { get; set; }
             public string Concepto { get; set; }
             public decimal Neto { get; set; }
             public decimal IvaPct { get; set; }
@@ -77,6 +81,24 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Pendiente { get { return Total - Aplicado; } }
         }
 
+        private class FacturaCancelatoriaProforma
+        {
+            public int ProformaID { get; set; }
+            public string ProformaNumero { get; set; }
+            public int FacturaID { get; set; }
+            public int ClienteID { get; set; }
+            public int NumeroCorrelativo { get; set; }
+            public DateTime FechaFactura { get; set; }
+            public string EstadoFactura { get; set; }
+            public string Cliente { get; set; }
+            public string CUIT { get; set; }
+            public decimal Neto { get; set; }
+            public decimal IVA { get; set; }
+            public decimal OtrosImpuestos { get; set; }
+            public decimal Total { get; set; }
+            public decimal Aplicado { get; set; }
+        }
+
         private class ComprobanteExistente
         {
             public int ComprobanteID { get; set; }
@@ -85,6 +107,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int NumeroCorrelativo { get; set; }
             public DateTime FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public int? ReferenciaID { get; set; }
             public string Concepto { get; set; }
             public string Observaciones { get; set; }
@@ -231,7 +255,11 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
             const string sql = @"
 SELECT c.Cliente_ID,c.Razon_Social,c.CUIT_Cliente,
        NULLIF(LTRIM(RTRIM(COALESCE(c.Calle,'')+' '+COALESCE(c.AlturaCalle,''))),'') AS Domicilio,
-       CONVERT(nvarchar(60),c.Cond_Fiscal) AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
+       CASE c.Cond_Fiscal
+           WHEN 1 THEN N'Responsable Inscripto'
+           WHEN 2 THEN N'Monotributista'
+           WHEN 3 THEN N'Exento'
+       END AS CondicionFiscal,CONVERT(bit,ISNULL(c.EstadoCliente,0)) AS EstadoCliente
 FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.Cliente_ID=@id;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
@@ -279,10 +307,27 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estad
             }
         }
 
+        private static bool EsFacturaVigenteDeProforma(SqlConnection connection, SqlTransaction transaction,
+            int proformaId, int facturaId)
+        {
+            const string sql = @"
+SELECT COUNT(*)
+FROM dbo.COMPROBANTES_PROFORMAS cp WITH (UPDLOCK,HOLDLOCK)
+JOIN dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK) ON c.Comprobante_ID=cp.ComprobanteID
+WHERE cp.ProformaID=@proforma AND cp.ComprobanteID=@factura AND cp.Vigente=1
+  AND c.Tipo='FAC' AND c.Estado='EMITIDO';";
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(P("@proforma", proformaId));
+                command.Parameters.Add(P("@factura", facturaId));
+                return Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture) == 1;
+            }
+        }
+
         private static ComprobanteExistente BuscarPorClave(SqlConnection connection, SqlTransaction transaction, Guid clave)
         {
             const string sql = @"
-SELECT TOP (1) Comprobante_ID,ClienteID,Tipo,NumeroCorrelativo,FechaEmision,FechaVencimiento,
+SELECT TOP (1) Comprobante_ID,ClienteID,Tipo,NumeroCorrelativo,FechaEmision,FechaVencimiento,Letra,Sucursal,
        ComprobanteReferenciaID,Concepto,Observaciones,Neto,IVA,OtrosImpuestos,Total
 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
             using (var command = new SqlCommand(sql, connection, transaction))
@@ -297,6 +342,7 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
                         Tipo = (string)reader["Tipo"], NumeroCorrelativo = (int)reader["NumeroCorrelativo"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
                         FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
+                        Letra = reader["Letra"] as string, Sucursal = reader["Sucursal"] as string,
                         ReferenciaID = reader["ComprobanteReferenciaID"] == DBNull.Value ? (int?)null : (int)reader["ComprobanteReferenciaID"],
                         Concepto = (string)reader["Concepto"], Observaciones = reader["Observaciones"] as string,
                         Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
@@ -313,6 +359,8 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
                 && actual.FechaEmision.Date == emision && actual.FechaVencimiento == vencimiento
                 && actual.ReferenciaID == request.ComprobanteReferenciaID
                 && actual.Concepto == request.Concepto
+                && string.Equals(actual.Letra ?? string.Empty, request.Letra ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(actual.Sucursal ?? string.Empty, request.Sucursal ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(actual.Observaciones ?? string.Empty, request.Observaciones ?? string.Empty, StringComparison.Ordinal)
                 && actual.Neto == request.Neto && actual.IVA == iva
                 && actual.OtrosImpuestos == request.OtrosImpuestos && actual.Total == total;
@@ -383,6 +431,95 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
             }
         }
 
+        [HttpGet]
+        [Route("proformas/{proformaId:int}/factura-cancelatoria")]
+        public IHttpActionResult ObtenerFacturaCancelatoria(int proformaId)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    ValidarAcceso(connection, null, "NC_EMITIR");
+                    const string sql = @"
+SELECT TOP (1)
+       p.Proforma_ID AS ProformaID,p.Numero AS ProformaNumero,
+       c.Comprobante_ID AS FacturaID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision AS FechaFactura,c.Estado AS EstadoFactura,
+       COALESCE(NULLIF(c.RazonSocial,''),p.Cli_RazonSocial) AS Cliente,c.CUIT,
+       c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
+       COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
+FROM dbo.PROFORMAS p
+JOIN dbo.COMPROBANTES_PROFORMAS cp ON cp.ProformaID=p.Proforma_ID AND cp.Vigente=1
+JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID AND c.Tipo='FAC'
+LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
+WHERE p.Proforma_ID=@proforma
+GROUP BY p.Proforma_ID,p.Numero,c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estado,
+         c.RazonSocial,p.Cli_RazonSocial,c.CUIT,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
+ORDER BY c.Comprobante_ID DESC;";
+                    FacturaCancelatoriaProforma factura = null;
+                    using (var command = new SqlCommand(sql, connection))
+                    {
+                        command.Parameters.Add(P("@proforma", proformaId));
+                        using (var reader = command.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                factura = new FacturaCancelatoriaProforma
+                                {
+                                    ProformaID = (int)reader["ProformaID"], ProformaNumero = reader["ProformaNumero"] as string,
+                                    FacturaID = (int)reader["FacturaID"], ClienteID = (int)reader["ClienteID"],
+                                    NumeroCorrelativo = (int)reader["NumeroCorrelativo"], FechaFactura = (DateTime)reader["FechaFactura"],
+                                    EstadoFactura = reader["EstadoFactura"] as string, Cliente = reader["Cliente"] as string,
+                                    CUIT = reader["CUIT"] as string, Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
+                                    OtrosImpuestos = (decimal)reader["OtrosImpuestos"], Total = (decimal)reader["Total"],
+                                    Aplicado = (decimal)reader["Aplicado"]
+                                };
+                            }
+                        }
+                    }
+                    if (factura == null)
+                        return Content(HttpStatusCode.BadRequest,
+                            new { error = "La Proforma no tiene una Factura vigente para anular." });
+
+                    string motivo = null;
+                    if (factura.EstadoFactura != "EMITIDO")
+                        motivo = "La Factura vinculada no se encuentra emitida.";
+                    else if (factura.Aplicado != 0)
+                        motivo = "La Factura tiene movimientos en cuenta corriente y no admite una Nota de Credito cancelatoria por el total.";
+                    else if (factura.Total <= 0)
+                        motivo = "La Factura vinculada no tiene un importe valido para cancelar.";
+
+                    return Ok(new
+                    {
+                        factura.ProformaID,
+                        factura.ProformaNumero,
+                        factura.FacturaID,
+                        FacturaNumero = Numero("FAC", factura.NumeroCorrelativo),
+                        factura.ClienteID,
+                        factura.Cliente,
+                        factura.CUIT,
+                        factura.FechaFactura,
+                        factura.Neto,
+                        factura.IVA,
+                        factura.OtrosImpuestos,
+                        factura.Total,
+                        IvaPct = factura.Neto > 0 ? Redondear(factura.IVA * 100m / factura.Neto) : 0,
+                        Cancelable = motivo == null,
+                        MotivoBloqueo = motivo
+                    });
+                }
+            }
+            catch (AccesoException ex)
+            {
+                return Content(ex.StatusCode, new { error = ex.Message });
+            }
+            catch (Exception)
+            {
+                return Content(HttpStatusCode.InternalServerError,
+                    new { error = "No se pudo obtener la Factura vinculada a la Proforma." });
+            }
+        }
+
         [HttpPost]
         [Route("comprobantes")]
         public IHttpActionResult Emitir([FromBody] EmitirComprobanteRequest request)
@@ -408,6 +545,8 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
                 return BadRequest("La Nota de Crédito debe relacionarse con una Factura.");
             if (request.Tipo != "NC" && request.ComprobanteReferenciaID.HasValue)
                 return BadRequest("Solo la Nota de Crédito admite una Factura de referencia.");
+            if (request.ProformaID.HasValue && request.Tipo != "NC")
+                return BadRequest("La Proforma solo puede informarse al emitir una Nota de Credito cancelatoria.");
             if (request.Concepto.Length == 0 || request.Concepto.Length > 200)
                 return BadRequest("El concepto es obligatorio y no puede superar los 200 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
@@ -437,6 +576,12 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, permiso);
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, request.Tipo);
+                            var letra = request.Letra;
+                            var sucursal = request.Sucursal;
+                            FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
+                            request.Letra = letra;
+                            request.Sucursal = sucursal;
                             var existente = BuscarPorClave(connection, transaction, request.ClaveOperacion);
                             if (existente != null)
                             {
@@ -507,16 +652,36 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
                                             error = "Los importes de la Factura cambiaron. Volvé a seleccionarla para actualizar Neto, IVA e impuestos."
                                         });
                                     }
+                                    if (request.ProformaID.HasValue)
+                                    {
+                                        if (!EsFacturaVigenteDeProforma(connection, transaction,
+                                            request.ProformaID.Value, referencia.ComprobanteID))
+                                        {
+                                            transaction.Rollback();
+                                            return Content(HttpStatusCode.BadRequest, new
+                                            {
+                                                error = "La Factura indicada no es la Factura vigente de la Proforma."
+                                            });
+                                        }
+                                        if (referencia.Aplicado != 0)
+                                        {
+                                            transaction.Rollback();
+                                            return Content(HttpStatusCode.Conflict, new
+                                            {
+                                                error = "La Factura tiene movimientos en cuenta corriente y no puede cancelarse por el total."
+                                            });
+                                        }
+                                    }
                                 }
                             }
 
                             int correlativo;
                             using (var command = new SqlCommand(@"
-UPDATE dbo.COMPROBANTES_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
+UPDATE dbo.FACTURACION_NUMERADORES WITH (UPDLOCK,HOLDLOCK)
 SET UltimoNumero=UltimoNumero+1 OUTPUT INSERTED.UltimoNumero
-WHERE Tipo=@tipo AND UltimoNumero<99999999;", connection, transaction))
+WHERE Numerador_ID=@tipo AND Activo=1 AND UltimoNumero<99999999;", connection, transaction))
                             {
-                                command.Parameters.Add(P("@tipo", request.Tipo));
+                                command.Parameters.Add(P("@tipo", configuracion.NumeradorID));
                                 object value = command.ExecuteScalar();
                                 if (value == null) throw new InvalidOperationException("El numerador del comprobante no existe o está agotado.");
                                 correlativo = Convert.ToInt32(value, CultureInfo.InvariantCulture);
@@ -526,13 +691,13 @@ WHERE Tipo=@tipo AND UltimoNumero<99999999;", connection, transaction))
                             using (var command = new SqlCommand(@"
 INSERT dbo.COMPROBANTES
  (ClienteID,Tipo,Impacto,NumeroCorrelativo,FechaEmision,FechaVencimiento,Moneda,Estado,
-  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Subtotal,Descuentos,Neto,IVA,
+  RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Letra,Sucursal,NumeroComprobante,Subtotal,Descuentos,Neto,IVA,
   OtrosImpuestos,Total,Concepto,Observaciones,ComprobanteReferenciaID,TipoReferencia,ClaveOperacion,
   UsuarioAltaID,UsuarioEmisionID,FechaEmisionRegistro)
 OUTPUT INSERTED.Comprobante_ID
 VALUES
  (@cliente,@tipo,@impacto,@numero,@emision,@vencimiento,'ARS','EMITIDO',@razon,@cuit,@domicilio,
-  @condFiscal,NULL,@neto,0,@neto,@iva,@otros,@total,@concepto,@observaciones,@referencia,@tipoReferencia,
+  @condFiscal,NULL,@letra,@sucursal,@numeroComprobante,@neto,0,@neto,@iva,@otros,@total,@concepto,@observaciones,@referencia,@tipoReferencia,
   @clave,@usuario,@usuario,SYSUTCDATETIME());", connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
@@ -540,7 +705,8 @@ VALUES
                                     P("@cliente", request.ClienteID),P("@tipo", request.Tipo),P("@impacto", impacto),
                                     P("@numero", correlativo),P("@emision", emision),P("@vencimiento", vencimiento),
                                     P("@razon", cliente.RazonSocial),P("@cuit", cliente.CUIT),P("@domicilio", cliente.Domicilio),
-                                    P("@condFiscal", cliente.CondicionFiscal),P("@neto", request.Neto),P("@iva", iva),
+                                    P("@condFiscal", cliente.CondicionFiscal),P("@letra", request.Letra),P("@sucursal", request.Sucursal),
+                                    P("@numeroComprobante", FacturacionComprobantesConfiguracion.NumeroVisible(correlativo)),P("@neto", request.Neto),P("@iva", iva),
                                     P("@otros", request.OtrosImpuestos),P("@total", total),P("@concepto", request.Concepto),
                                     P("@observaciones", request.Observaciones),P("@referencia", request.ComprobanteReferenciaID),
                                     P("@tipoReferencia", request.ComprobanteReferenciaID.HasValue ? "FAC" : null),
@@ -584,6 +750,48 @@ VALUES (@cliente,@credito,'C',@deuda,'D',@importe,@fecha,1,@usuario);", connecti
                                         P("@cliente", request.ClienteID),P("@credito", comprobanteId),
                                         P("@deuda", referencia.ComprobanteID),P("@importe", total),P("@fecha", emision),
                                         P("@usuario", usuario.UsuarioID)
+                                    });
+                                    command.ExecuteNonQuery();
+                                }
+                            }
+
+                            // Nota de Credito cancelatoria de la Factura de una Proforma: desvincula la Factura,
+                            // anula la Proforma y libera sus viajes (vuelven a Listo para facturar / Entregado)
+                            // para que puedan incluirse en otra Proforma y volver a facturarse.
+                            if (request.Tipo == "NC" && request.ProformaID.HasValue)
+                            {
+                                using (var command = new SqlCommand(@"
+UPDATE dbo.COMPROBANTES_PROFORMAS
+SET Vigente=0,UsuarioAnulacionID=@usuario,FechaAnulacion=SYSUTCDATETIME(),MotivoAnulacion=@motivo
+WHERE ProformaID=@proforma AND ComprobanteID=@factura AND Vigente=1;
+IF @@ROWCOUNT<>1
+    THROW 51060, 'No se pudo desvincular la Factura de la Proforma.', 1;
+
+UPDATE v SET Estado=CASE WHEN EXISTS (SELECT 1 FROM dbo.CLIENTES c WHERE c.Cliente_ID=v.ClienteID AND c.Tipo_Cliente='Con_plataforma')
+                         THEN 'Listo_para_facturar' ELSE 'Entregado' END,
+             Usu_Modi=LEFT(@nombreUsuario,20),Fecha_Modi=GETDATE()
+FROM dbo.VIAJES v
+WHERE v.Estado='Facturado' AND (EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID=@proforma AND pv.ViajeID=v.Viaje_ID)
+    OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID=@proforma
+               AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,''))))='V'+CONVERT(varchar(11),v.Viaje_ID)));
+
+DELETE FROM dbo.PROFORMAS_VIAJES WHERE ProformaID=@proforma;
+
+UPDATE dbo.PROFORMAS SET Estado='Anulada',Usu_Modi=@nombreUsuario,Fecha_Modi=GETDATE() WHERE Proforma_ID=@proforma;
+
+INSERT dbo.AUDITORIA
+ (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
+VALUES
+ (GETDATE(),@nombreUsuario,'ANULAR','PROFORMAS',@claveProforma,'Estado=Facturada',@detalleProforma,'Cuenta Corriente');",
+                                    connection, transaction))
+                                {
+                                    string motivo = "Nota de Credito " + Numero(request.Tipo, correlativo) + ": " + request.Concepto;
+                                    command.Parameters.AddRange(new[]
+                                    {
+                                        P("@usuario", usuario.UsuarioID),P("@motivo", motivo.Length > 500 ? motivo.Substring(0, 500) : motivo),
+                                        P("@proforma", request.ProformaID.Value),P("@factura", referencia.ComprobanteID),
+                                        P("@nombreUsuario", usuario.NombreUsuario),P("@claveProforma", "Proforma_ID=" + request.ProformaID.Value),
+                                        P("@detalleProforma", "Estado=Anulada; " + motivo + "; viajes liberados")
                                     });
                                     command.ExecuteNonQuery();
                                 }
