@@ -133,7 +133,7 @@
                                             <select id="selectGrupoPermisos" class="form-select"></select>
                                         </div>
                                         <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                                            <button type="button" class="btn btn-primary" id="btnGuardarPermisos">Guardar
+                                            <button type="button" class="btn btn-primary" id="btnGuardarPermisos" disabled>Guardar
                                                 permisos</button>
                                         </div>
                                     </div>
@@ -371,6 +371,7 @@
                 selPermisos.append('<option value="">Sin grupos</option>');
                 selUsuarios.append('<option value="">Sin grupos</option>');
                 $('#contenedorMenusGrupo').html('<div class="text-muted">No hay datos para mostrar.</div>');
+                $('#btnGuardarPermisos').prop('disabled', true);
                 $('#contenedorUsuariosGrupo').html('<div class="text-muted">No hay datos para mostrar.</div>');
                 return;
             }
@@ -470,13 +471,17 @@
             });
         }
 
+        // "Guardar permisos" solo se habilita con la lista de menús cargada: guardar con la
+        // lista vacía (por ejemplo, si falló la carga) le borraría todos los permisos al grupo.
         function cargarMenusDeGrupo(grupoId) {
+            $('#btnGuardarPermisos').prop('disabled', true);
             if (!grupoId) return;
 
             $.ajax({
                 url: API_BASE + '/Grupos/' + grupoId + '/Menus',
                 type: 'GET',
                 success: function (data) {
+                    if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
                     const cont = $('#contenedorMenusGrupo');
                     cont.empty();
                     if (!data || !data.length) {
@@ -496,9 +501,11 @@
                     });
                     html += '</div>';
                     cont.html(html);
+                    $('#btnGuardarPermisos').prop('disabled', false);
                 },
                 error: function () {
-                    $('#contenedorMenusGrupo').html('<div class="text-danger">Error al cargar permisos.</div>');
+                    if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
+                    $('#contenedorMenusGrupo').html('<div class="text-danger">Error al cargar permisos. No se pueden guardar cambios hasta que se carguen.</div>');
                 }
             });
         }
@@ -507,6 +514,10 @@
             const grupoId = $('#selectGrupoPermisos').val();
             if (!grupoId) {
                 alert('Seleccioná un grupo.');
+                return;
+            }
+            if (!$('.chk-menu').length) {
+                alert('No se cargaron los permisos del grupo, no se puede guardar.');
                 return;
             }
 
