@@ -29,7 +29,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
 | 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
-| 10 | Relevamiento visual y design system | Relevamiento por código hecho; faltan capturas en la VM | Doc commiteado | Capturas: ver §10 |
+| 10 | Relevamiento visual y design system | Relevamiento por código y capturas hechos; faltan las decisiones D1–D17 | Doc commiteado | Ver §10 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -322,7 +322,7 @@ La rama de Facu arrancó en `c40b518`, antes de todo el trabajo de Viajes/Rukas:
 Las pantallas se ven y se comportan distinto según la etapa en que se hicieron (avisos, fechas, colores de estado, tono, botones). El objetivo es definir un design system y aplicarlo a todo.
 
 1. [x] Relevamiento por código de las 23 pantallas (17/10, actualizado con el merge de Facu): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
-2. [ ] Capturas en la VM: `docs/design-system/02-instructivo-capturas-vm.md`. Pull en la VM → pedirle al agente de Cursor en la VM que siga el instructivo (login con usuario admin). No guarda datos. Después, pasar a la Mac la carpeta de capturas y el reporte (§7 del instructivo).
+2. [x] Capturas en la VM (17/10): 91 capturas en `.pruebas-locales/capturas-ui/2026-10-17/` (fuera de git) y reporte en `docs/pruebas/2026-10-17-capturas-ui.md`. Configuración de facturación y de e-mail salieron con error por token vencido: repetirlas con sesión nueva solo si hacen falta.
 3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Las que no dependen de cómo se ve (tono, avisos, confirmaciones, fechas, montos) se pueden decidir antes de tener las capturas.
 4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
 5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y configuración (Facu) y WhatsApp (Fede): coordinando con ellos.
