@@ -17,6 +17,9 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
 | 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Commit local sin push** (`98ffe56`) | Tras `git push` + pull en VM |
 | 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | Hecho | **Commit local sin push** | Tras `git push` + pull en VM (recompilar API) |
+| 1.6 | Dependabot: quitar manifiestos npm de librerías no usadas (55 alertas) | Hecho | **Commit local sin push** | No requiere prueba (no se cargan) |
+| 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Commit local sin push** | Probar las 3 pantallas |
+| 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Commit local sin push** | Restore NuGet + Rebuild |
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
 | 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
@@ -100,6 +103,20 @@ Decisión del 15/10 (antes era el 3.6): el asterisco significa lo mismo en los 5
 
 **Probar:** nueva proforma → dejar Cliente, Origen y Destino vacíos (con fechas cargadas) → Guardar borrador → aviso + los 3 en rojo → completar uno por uno → se va quitando el rojo → guarda OK. Repetir con Generar.
 
+### 1.6 – 1.8 Alertas de Dependabot — COMMITS LOCALES, SIN PUSH (17/10)
+
+De las 60 alertas, solo 2 afectaban a la app; el resto venía de manifiestos de desarrollo de librerías de la plantilla. Un commit por corrección, para poder revertir una sola si falla.
+
+- **1.6** Se quitaron los `package.json` / `package-lock.json` / `bower.json` de `rater-js`, `dayjs`, `datatables.net` y `datatables.net-bs5` (ninguna pantalla las carga; las grillas usan `simple-datatables`). Cierra 55 alertas. Sin efecto en pantalla.
+- **1.7** `gestion-camiones.html`, `gestion-choferes.html`, `listado-choferes.html` cargaban `cdn.jsdelivr.net/jquery/latest` (= jQuery **3.2.1**, con XSS conocidos; Dependabot no lo ve). Choferes además cargaba jQuery dos veces. Ahora usan la copia local `assets/extensions/jquery/jqueryajax.js` (3.6.0), como el resto.
+  **Probar:** en las 3 pantallas, abrir con Ctrl+F5 → consola (F12) sin errores → tooltips, selector de fechas, alta / edición / baja.
+- **1.8** `packages.config`, `.csproj` y `bindingRedirect` de `Web.config` pasan a Newtonsoft.Json 13.0.1 (alerta alta: DoS con JSON muy anidado).
+  **Probar:** en la VM, **Restore NuGet Packages** → **Rebuild Solution** → login + un par de pantallas que guarden (viajes, proformas). Si la API no arranca, revertir ese commit solo.
+
+**Quedan abiertas:** 2 alertas medias del paquete NuGet `jQuery` 3.4.1 de la API (`WebApi_TransporteSanchez/Scripts/`, solo lo usan las vistas MVC de la API, no el front). Las 55 de los manifiestos se cierran solas cuando el cambio llegue a la rama por defecto del repo (`master`).
+
+**Otros scripts sin versión fija** en esas 3 pantallas: `momentjs/latest` y `npm/daterangepicker` (jsdelivr). No tienen alertas hoy, pero conviene fijarles versión.
+
 ---
 
 ## 2. Hora guardada en UTC — NO HECHO
@@ -165,7 +182,7 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 - Orígenes y destinos: Places autocomplete + coordenadas.
 - Merge `rocionuvoli` → `main` (avisar Fede y Facu).
-- Dependabot: 59 alertas en GitHub.
+- Dependabot: 60 alertas revisadas el 17/10 → ver 1.6 – 1.8.
 - Antes de la tesis: limpiar registros de prueba; usuarios “reales”.
 
 ---
