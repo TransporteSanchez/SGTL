@@ -301,7 +301,7 @@ La rama de Facu arrancó en `c40b518`, antes de todo el trabajo de Viajes/Rukas:
 5. Recomendación de base: reglas de Rocío para Traer viajes / Generar (Rukas con números, directos Entregados, advertencias) + reserva de Facu (`PROFORMAS_VIAJES`, un viaje en una sola proforma, también en borrador) + su estado Facturada y anulación con nota de crédito.
 
 **Pendiente después del push:**
-- Correr `database/viajes/01_facturado_solo_con_factura.sql` (primero `@Aplicar = 0`).
+- ~~Correr `database/viajes/01_facturado_solo_con_factura.sql`~~ — diagnóstico corrido el 17/10: **ningún viaje para corregir** (los 8 viajes en Facturado tienen factura vigente). No hizo falta aplicarlo.
 - Rebuild en la VM y prueba completa (ver abajo). Contarle a Facu con el resumen de `docs/`.
 - Revisar 1.1 / 1.5 / F4 / F11 como cerrados por este merge.
 
