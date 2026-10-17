@@ -16,7 +16,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 1.2b | `UPDATE` de 127 entidades viejas en AUDITORIA | Hecho en Azure 14/10 | N/A (SQL) | — |
 | 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
 | 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Pusheado** (`98ffe56`) | Pendiente (reiniciar Live Server) |
-| 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | Hecho | **Pusheado** (`7f546cd`) | Pendiente |
+| 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | **En revisión** (ver nota en 1.5) | **Pusheado** (`7f546cd`) | En pausa: se redefine en el merge con Facu |
 | 1.6 | Dependabot: quitar manifiestos npm de librerías no usadas (55 alertas) | Hecho | **Pusheado** (`739bca1`) | No requiere prueba (no se cargan) |
 | 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Pusheado** (`19a0ea4`) | Pendiente: probar las 3 pantallas |
 | 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Pusheado** (`11d2489`) | Restore + Rebuild OK en VM (17/10); falta probar pantallas |
@@ -101,7 +101,14 @@ Decisión del 15/10 (antes era el 3.6): el asterisco significa lo mismo en los 5
 - API (`Crear` / `Editar`): 400 con la lista de campos que faltan. `Generar` mantiene sus controles.
 - Borradores viejos que ya estén incompletos: al editarlos piden completar esos campos antes de guardar.
 
-**Probar:** nueva proforma → dejar Cliente, Origen y Destino vacíos (con fechas cargadas) → Guardar borrador → aviso + los 3 en rojo → completar uno por uno → se va quitando el rojo → guarda OK. Repetir con Generar.
+**EN REVISIÓN (17/10):** al probar en la VM, Rocío prefiere que Origen, Destino y las fechas estimadas **no** sean obligatorios en el borrador, solo al generar. Se define junto con el merge de `facugodoy`, porque Facu cambió esta misma parte:
+- Agregó "Fecha de Inicio / Fecha Fin" (`FechaEmision` / `FechaVencimiento`, también período de "Traer viajes"); `FechaDesde`/`FechaHasta` = esas fechas o, si faltan, carga/entrega. Si están todas vacías el guardado sigue fallando (la base no acepta nulos ahí).
+- No valida nada al guardar el borrador.
+- En **Generar** sacó Origen y Destino (pide cliente, conceptos y total).
+
+Preguntas a cerrar en el merge: ¿Cliente obligatorio en borrador? (sin cliente no se pueden traer viajes ni filtrar). ¿Qué fecha usar si no se carga ninguna (propuesta: la del día)? ¿Origen y Destino se exigen al generar?
+
+**Probar (cuando se redefina):** nueva proforma → dejar Cliente, Origen y Destino vacíos (con fechas cargadas) → Guardar borrador → aviso + los 3 en rojo → completar uno por uno → se va quitando el rojo → guarda OK. Repetir con Generar.
 
 ### 1.6 – 1.8 Alertas de Dependabot — PUSHEADO (17/10)
 
