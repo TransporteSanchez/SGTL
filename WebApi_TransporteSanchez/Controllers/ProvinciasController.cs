@@ -141,7 +141,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         query = query.Where(l => l.Loc_ID == locId.Value);
                     }
 
-                    var localidades = query.ToList();
+                    // Orden alfabético: con el listado oficial completo hay cientos por provincia
+
+                    var localidades = query.OrderBy(l => l.Nombre_Localidad).ToList();
 
                     if (localidades == null || !localidades.Any())
                     {
