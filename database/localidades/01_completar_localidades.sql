@@ -3980,7 +3980,8 @@ BEGIN CATCH
     THROW;
 END CATCH;
 
-PRINT CONCAT('Localidades antes: ', @Antes, ' · agregadas: ', @Agregadas, ' · ahora: ', (SELECT COUNT(*) FROM dbo.LOCALIDADES));
+DECLARE @Despues int = (SELECT COUNT(*) FROM dbo.LOCALIDADES);
+PRINT CONCAT('Localidades antes: ', @Antes, ' · agregadas: ', @Agregadas, ' · ahora: ', @Despues);
 
 /* ===================== 3. Verificación ===================== */
 
