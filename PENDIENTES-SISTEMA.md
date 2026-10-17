@@ -23,7 +23,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
 | 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
-| 3.4 | Direcciones mal geocodificadas | **No hecho** (datos) | — | Corregir en Orígenes/destinos |
+| 3.4 | Direcciones mal geocodificadas | **Corregido el 17/10** (ver F14 en §8) | — | Corregir en Orígenes/destinos |
 | 3.5 | `bin`/`obj` untracked en la VM | **No hecho** | — | Diagnosticar en VM |
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
@@ -250,7 +250,7 @@ Usuario de prueba **PRUEBACLAUDE** (Usuario_ID 10, grupo Listados): se conserva 
 | F11 | Filtro de estado de proformas sin "Facturada" | Baja | **En el merge** (facturación de Facu) | `gestion-facturacion.html`, `listado-facturas.html` |
 | F12 | Errores de consola: `simple-datatables.js` sin `#table1` y `usernameDisplay` antes del header | Baja | Ya | gestion-viajes / clientes / orígenes / tarifas, listado-clientes |
 | F13 | CUIT sin control de dígito verificador | Baja | Ya (gestion-clientes choca con Facu: hacerlo después del merge) | `gestion-clientes.html` (1483) |
-| F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | Definido el 17/10 (direcciones de fantasía que existen en Google Maps, verificadas): **Sede Temperley** (destino 3) → Av. Hipólito Yrigoyen 10500, Temperley; **Sede Banfield** (destino 4) → Av. Adolfo Alsina 600, Banfield; **claros del bosque** (origen 2) → Av. Celso Barrios 3609, Córdoba (dirección real). Los demás orígenes/destinos, bien. Corregir desde Orígenes y destinos → Editar. Viaje 6: no tocar (limpieza antes de la tesis). **LOCALIDADES completada en Azure (17/10 14:51)**: `database/localidades/01_completar_localidades.sql` aplicado, 225 → 3906 (+3681). Falta correr el SQL de direcciones. Script: (listado oficial Georef, 3882 localidades, sin CABA porque no está en PROVINCIAS). La API ahora devuelve las localidades en orden alfabético (recompilar) | Orígenes y destinos |
+| F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | **Dato corregido (17/10)** por SQL, después de completar LOCALIDADES (225 → 3906 con `database/localidades/01_completar_localidades.sql`): Sede Temperley (destino 3) → Av. Hipólito Yrigoyen 10500, Temperley; Sede Banfield (destino 4) → Av. Adolfo Alsina 600, Banfield (direcciones de fantasía que existen en Google Maps); claros del bosque (origen 2) → Av. Celso Barrios 3609, Córdoba (real). Cierra también el 3.4. Viaje 6: no tocar (limpieza antes de la tesis). **Probar en VM:** viaje nuevo Sede Quilmes → Sede Banfield sin "Ubicación aproximada" y ~10–12 km | Orígenes y destinos |
 
 **Mejoras sugeridas** (voseo, títulos de pestaña, formatos de fecha, validaciones al escribir, búsquedas sin tildes, 404 como "sin datos", etc.): ver la sección "Mejoras sugeridas" del reporte.
 
