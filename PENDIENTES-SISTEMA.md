@@ -11,15 +11,15 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 
 | ID | Tema | Código / acción | Git | Probar en VM |
 |---|---|---|---|---|
-| 1.1 | Proforma: fechas carga/entrega obligatorias | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
-| 1.2 | Auditoría: entidad sin sufijo proxy EF | Hecho | **Pusheado** (`a8c2c43`) | Pendiente (recompilar API) |
+| 1.1 | Proforma: fechas carga/entrega obligatorias | Hecho | **Pusheado** (`a8c2c43`) | En pausa (ver 1.5) |
+| 1.2 | Auditoría: entidad sin sufijo proxy EF | Hecho | **Pusheado** (`a8c2c43`) | **OK en VM (17/10)** |
 | 1.2b | `UPDATE` de 127 entidades viejas en AUDITORIA | Hecho en Azure 14/10 | N/A (SQL) | — |
-| 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
-| 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Pusheado** (`98ffe56`) | Pendiente (reiniciar Live Server) |
+| 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | **OK en VM (17/10)** |
+| 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Pusheado** (`98ffe56`) | **OK en VM (17/10)** |
 | 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | **En revisión** (ver nota en 1.5) | **Pusheado** (`7f546cd`) | En pausa: se redefine en el merge con Facu |
 | 1.6 | Dependabot: quitar manifiestos npm de librerías no usadas (55 alertas) | Hecho | **Pusheado** (`739bca1`) | No requiere prueba (no se cargan) |
-| 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Pusheado** (`19a0ea4`) | Pendiente: probar las 3 pantallas |
-| 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Pusheado** (`11d2489`) | Restore + Rebuild OK en VM (17/10); falta probar pantallas |
+| 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Pusheado** (`19a0ea4`) | **OK en VM (17/10)** |
+| 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Pusheado** (`11d2489`) | **OK en VM (17/10)**: compila, login y guardado de viajes |
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
 | 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
