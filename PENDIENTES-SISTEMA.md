@@ -232,7 +232,7 @@ Reporte completo: `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`.
 | F1 | La API devuelve las **contraseñas en texto plano** (`Usuarios/Buscar` y otros) y gestion-usuarios las precarga en el modal | **Alta** | **Hecho (17/10, sin push)**: la API no devuelve más la contraseña; al editar, vacía = se conserva. **Probar en VM:** editar un usuario sin tocar la contraseña → sigue entrando con la misma; editarlo con contraseña nueva → entra con la nueva; F12 → Red → `Usuarios/Buscar` sin campo `Contraseña`. Conviene que el equipo cambie sus contraseñas | `UsuariosController.cs` (97, 362, 620), `gestion-usuarios.html` (800) |
 | F1b | La mayoría de la API **no pide token** (solo facturación y Email lo validan) y las contraseñas se guardan sin hash | **Alta** | Después del merge: cambio grande, el front casi nunca manda `Authorization` | Todos los controllers + pantallas |
 | F2 | `WhatsAppConfig` devuelve el **Access Token de Meta** sin token y la pantalla lo muestra en texto | **Alta** | Coordinar con **Fede**; si se copió, rotar el token en Meta | `WhatsAppConfigController.cs`, `configuracion-whatsapp.html` |
-| F3 | **Permisos por grupo da 500** en todos los grupos: fila de `MENU` con `Menu_Principal` NULL. "Guardar permisos" quedaba habilitado con la lista vacía (riesgo de borrar permisos) | **Alta** | **Pantalla hecha (17/10, sin push)**: Guardar arranca deshabilitado y solo se habilita con la lista cargada. **Falta el dato:** correr el SQL de F3 (abajo). **Probar en VM:** antes del SQL, la pestaña muestra el error y Guardar queda gris; después del SQL, carga la lista y se puede guardar | Base (`MENU`), `gestion-gruposypermisos.html`, `GruposController.cs` |
+| F3 | **Permisos por grupo da 500** en todos los grupos: fila de `MENU` con `Menu_Principal` NULL. "Guardar permisos" quedaba habilitado con la lista vacía (riesgo de borrar permisos) | **Alta** | **Pantalla hecha (17/10, sin push)**: Guardar arranca deshabilitado y solo se habilita con la lista cargada. **Falta el dato:** correr `database/menu/01_menu_principal_not_null.sql` (ver abajo). **Probar en VM:** antes del SQL, la pestaña muestra el error y Guardar queda gris; después del SQL, carga la lista y se puede guardar | Base (`MENU`), `gestion-gruposypermisos.html`, `GruposController.cs` |
 | F4 | Se puede **anular una proforma Facturada** | Alta | **Resuelto en la rama de Facu** (reemplazó Anular por anular factura con nota de crédito). Verificar tras el merge | `ProformasController.cs` |
 | F5 | `window.bootstrap` nunca se define (error PerfectScrollbar de `app.js`): "Más detalles" de listado-camiones no abre; toasts de camiones/choferes tiran error | Media | Ya | `assets/compiled/js/app.js` o `sidebar-loader.js` |
 | F6 | listado-viajes: el detalle muestra IDs en vez de nombres y no muestra chofer/camión | Media | Ya | `listado-viajes.html` (530-542) |
@@ -249,20 +249,9 @@ Reporte completo: `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`.
 
 **Para la próxima ronda en la VM:** probar altas, ediciones y bajas requiere aprobar el permiso de escritura cuando Claude lo pida (los datos van marcados `PRUEBA-CLAUDE`). En la VM Live Server levanta en **5500** (ver 3.2).
 
-**SQL de F3 (para correr en SSMS, con backup previo; avisar al equipo porque `MENU` es compartida):**
+**Script de F3:** `database/menu/01_menu_principal_not_null.sql` (SSMS, base `Transporte_Sanchez`, backup previo, avisar al equipo porque `MENU` es compartida).
+1. Ejecutarlo tal cual (`@Aplicar = 0`): solo muestra el diagnóstico (menús con NULL, grupos que los tienen, posible duplicado "Gestión de contenido").
+2. Si está bien, poner `@Aplicar = 1` y ejecutarlo de nuevo: pasa los NULL a 0, deja la columna `NOT NULL` con `DEFAULT 0` (para que no se repita con altas manuales) y muestra la verificación (tres "OK").
+3. El código no lee el valor de `Menu_Principal` (la API da de alta menús con 0), así que el cambio no altera el menú lateral ni los permisos.
 
-```sql
--- 1) Diagnóstico: qué menús tienen Menu_Principal nulo y si "Gestión de contenido" está duplicado
-SELECT Menu_ID, Menu_Nombre, Menu_Principal FROM MENU WHERE Menu_Principal IS NULL;
-SELECT Menu_ID, Menu_Nombre, Menu_Principal FROM MENU ORDER BY Menu_Nombre;
-SELECT gm.GrupoID, gm.MenuID, m.Menu_Nombre FROM GRUPOS_MENU gm JOIN MENU m ON m.Menu_ID = gm.MenuID
-WHERE m.Menu_Principal IS NULL OR m.Menu_Nombre LIKE 'Gesti%n de contenido';
-
--- 2) Corrección: el código propio da de alta los menús con Menu_Principal = 0
-BEGIN TRAN;
-UPDATE MENU SET Menu_Principal = 0 WHERE Menu_Principal IS NULL;
-SELECT @@ROWCOUNT AS Filas_Actualizadas;   -- tiene que coincidir con lo que dio el primer SELECT
--- COMMIT;  o  ROLLBACK;
-```
-
-Si aparecen "Gestion de contenido" y "Gestión de contenido" como dos menús distintos, **no borrar ninguno todavía**: pasar el resultado de los SELECT para decidir cuál queda (el menú lateral usa el nombre para habilitar la pantalla).
+Si aparecen "Gestion de contenido" y "Gestión de contenido" como dos menús distintos, **no borrar ninguno todavía**: pasar el resultado del diagnóstico para decidir cuál queda (el menú lateral usa el nombre para habilitar la pantalla).
