@@ -48,8 +48,6 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public string Nombre_Usuario { get; set; }
 
-            public string Contraseña { get; set; }
-
             public DateTime Fecha_Alta { get; set; }
 
             public string Rol { get; set; }
@@ -93,8 +91,6 @@ namespace WebApi_TransporteSanchez.Controllers
                             Apellido = u.Apellido,
 
                             Nombre_Usuario = u.Nombre_Usuario,
-
-                            Contraseña = u.Contraseña,
 
                             Fecha_Alta = u.Fecha_Alta,
 
@@ -359,8 +355,6 @@ namespace WebApi_TransporteSanchez.Controllers
 
                             Nombre_Usuario = u.Nombre_Usuario,
 
-                            Contraseña = u.Contraseña,
-
                             EstadoUsuario = u.EstadoUsuario,
 
                             Fecha_Alta = u.Fecha_Alta
@@ -616,8 +610,6 @@ namespace WebApi_TransporteSanchez.Controllers
                             Apellido = u.Apellido,
 
                             Nombre_Usuario = u.Nombre_Usuario,
-
-                            Contraseña = u.Contraseña,
 
                             Fecha_Alta = u.Fecha_Alta,
 
@@ -1161,11 +1153,11 @@ namespace WebApi_TransporteSanchez.Controllers
 
             if (string.IsNullOrWhiteSpace(value.Nombre) || string.IsNullOrWhiteSpace(value.Apellido) ||
 
-                string.IsNullOrWhiteSpace(value.Contraseña) || string.IsNullOrWhiteSpace(value.Nombre_Usuario))
+                string.IsNullOrWhiteSpace(value.Nombre_Usuario))
 
             {
 
-                return BadRequest("Nombre, Apellido, Nombre_Usuario y Contraseña son campos requeridos.");
+                return BadRequest("Nombre, Apellido y Nombre_Usuario son campos requeridos.");
 
             }
 
@@ -1229,7 +1221,9 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     usuario.Apellido = value.Apellido.Trim();
 
-                    usuario.Contraseña = value.Contraseña;
+                    // Contraseña vacía = se conserva la actual (la API ya no la devuelve al front)
+
+                    if (!string.IsNullOrWhiteSpace(value.Contraseña)) usuario.Contraseña = value.Contraseña;
 
                     usuario.Rol = string.IsNullOrWhiteSpace(value.Rol) ? null : value.Rol.Trim();
 

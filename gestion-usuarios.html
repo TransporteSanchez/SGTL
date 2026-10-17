@@ -274,13 +274,13 @@
                                 </div>
                                 <div class="col-md-6 col-12">
                                     <div class="mb-3">
-                                        <label for="editarContraseña" class="form-label">Contraseña <span
-                                                class="text-danger">*</span></label>
+                                        <label for="editarContraseña" class="form-label">Nueva contraseña</label>
                                         <div class="input-group">
                                             <input type="password" id="editarContraseña" class="form-control"
-                                                placeholder="Contraseña alfanumérica" />
+                                                placeholder="Contraseña alfanumérica" autocomplete="new-password" />
                                             <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('editarContraseña', this)" tabindex="-1"><i class="bi bi-eye"></i></button>
                                         </div>
+                                        <small class="text-muted">Dejá este campo vacío para conservar la contraseña actual.</small>
                                     </div>
                                     <div class="mb-3">
                                         <label for="editarRol" class="form-label">Rol <span class="text-danger">*</span></label>
@@ -773,10 +773,10 @@
         function validarCamposEdicion() {
             const nombre = ($('#editarNombre').val() || '').trim();
             const apellido = ($('#editarApellido').val() || '').trim();
-            const contraseña = ($('#editarContraseña').val() || '').trim();
             const rol = ($('#editarRol').val() || '').trim().toLowerCase();
 
-            if (!nombre || !apellido || !contraseña || !rol) {
+            // La contraseña es opcional al editar: vacía = se conserva la actual.
+            if (!nombre || !apellido || !rol) {
                 $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos *').show();
                 $('#confirmarEdicion').prop('disabled', true);
                 return;
@@ -797,7 +797,7 @@
                 $('#editarNombreUsuario').val(data.Nombre_Usuario);
                 $('#editarNombre').val(data.Nombre);
                 $('#editarApellido').val(data.Apellido);
-                $('#editarContraseña').val(data.Contraseña);
+                $('#editarContraseña').val('');
                 if (data.Rol) $('#editarRol').val(data.Rol);
 
                 const isActivo = data.EstadoUsuario && data.EstadoUsuario.trim().toLowerCase() === 'activo';
