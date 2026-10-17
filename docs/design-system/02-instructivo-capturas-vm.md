@@ -1,4 +1,4 @@
-# Instructivo: capturas para el relevamiento visual (Claude Code en la VM)
+# Instructivo: capturas para el relevamiento visual (agente de Cursor en la VM)
 
 Ronda especial de la VM: **solo mirar y sacar capturas** de todas las pantallas en los mismos
 estados, para comparar cómo se ven. Completa `01-relevamiento-codigo.md`, que dice qué se
@@ -8,8 +8,8 @@ encontró leyendo el código y qué conviene mirar en cada componente.
 
 ## 1. Reglas
 
-- Valen las de `PRUEBAS-VM-CLAUDE.md` §1 y §2: sos tester, no cambiás archivos ni git, no
-  corrés SQL, el login lo hace Rocío.
+- Valen las de `PRUEBAS-VM-CLAUDE.md` §1 y §2 aunque esta sesión sea de Cursor: sos tester,
+  no cambiás archivos ni git, no corrés SQL, el login lo hace Rocío.
 - **Esta ronda no guarda nada.** No aprietes Confirmar, Guardar, Generar, Emitir ni Eliminar
   con datos cargados. Única excepción: apretar el botón principal de un alta con el formulario
   **vacío**, para ver los errores de validación. Si en alguna pantalla eso llega a guardar algo
@@ -31,13 +31,15 @@ encontró leyendo el código y qué conviene mirar en cada componente.
 ## 2. Preparación
 
 1. `PRUEBAS-VM-CLAUDE.md` §2: anotá rama y commit, verificá API y Live Server.
-2. Mismo navegador para todas, **zoom 100 %**, ventana maximizada. Anotá la resolución de la
-   pantalla (por ejemplo 1920×1080).
-3. Herramientas de desarrollador **cerradas** al capturar (tapan la pantalla). Abrilas solo para
-   mirar la consola si algo se ve roto.
-4. Recargá sin caché (Ctrl+F5) al entrar a cada pantalla.
+2. Usá el **navegador integrado de Cursor** para todas las pantallas. Rocío inicia sesión con un
+   usuario **admin** (el menú Configuración solo aparece para admin).
+3. Mismo tamaño de ventana para todas y zoom 100 %. Anotá el tamaño (por ejemplo 1920×1080).
+4. Recargá sin caché al entrar a cada pantalla.
 5. Carpeta: `C:\pruebas-sgtl\capturas-ui\AAAA-MM-DD\` (creala si no existe).
-6. Si no tenés forma de capturar el navegador, pedile a Rocío que las saque ella con
+6. Sacá cada captura con la herramienta de captura del navegador de Cursor, pasándole el
+   nombre de archivo del formato de abajo. Si la guarda en otra carpeta, al terminar mové todas
+   a la carpeta del punto 5. Usá captura de página completa en los estados `inicio`.
+7. Si no podés guardar capturas como archivo, pedile a Rocío que las saque ella con
    Win+Shift+S siguiendo la lista del §4, y vos armá el reporte.
 
 **Nombre de cada archivo:** `NN-pantalla--estado.png`, con el número y el estado de las tablas
@@ -49,7 +51,7 @@ de abajo. Ejemplo: `04-gestion-choferes--alta-errores.png`.
 
 | Estado | Qué es | Cómo llegar |
 |---|---|---|
-| `inicio` | La pantalla recién cargada, con datos | Entrar. Si tiene scroll, sacá también `inicio-abajo` con el final de la página |
+| `inicio` | La pantalla recién cargada, con datos | Entrar y sacar captura de página completa |
 | `sin-resultados` | Mensaje de tabla vacía | Buscar algo que no existe (DNI `99999999`, texto `zzzz`, dominio `ZZ999ZZ`) |
 | `alta-vacio` | Modal de alta recién abierto | Botón de alta / "Nuevo…", sin completar nada |
 | `alta-errores` | Errores de validación | En ese modal, apretar el botón principal con todo vacío. Si sale un aviso del navegador (`alert`), capturalo igual. Después, Cancelar |
@@ -69,7 +71,7 @@ Orden del menú. "Cuidado" = lo que no hay que tocar en esa pantalla, además de
 |---|---|---|---|
 | 00 | General | `menu` (un submenú abierto), `usuario` (menú del usuario abierto), `pie` (final de cualquier pantalla con el pie a la vista) | — |
 | 01 | Login.html | `inicio` (abrilo en otra pestaña, sin cerrar sesión) | No escribas usuario ni contraseña |
-| 02 | index | `inicio`, `inicio-abajo` | No "Personalizar" ni "Guardar" |
+| 02 | index | `inicio` | No "Personalizar" ni "Guardar" |
 | 03 | listado-choferes | `inicio`, `sin-resultados`, `calendario`, `detalle` | — |
 | 04 | gestion-choferes | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores`, `edicion`, `tooltip` | No cambiar estado ni eliminar |
 | 05 | listado-camiones | `inicio`, `sin-resultados`, `detalle` (puede no abrir por F5: anotalo) | — |
@@ -80,16 +82,17 @@ Orden del menú. "Cuidado" = lo que no hay que tocar en esa pantalla, además de
 | 10 | gestion-tarifas | `inicio`, `pestana-2`, `alta-vacio`, `alta-errores`, `edicion` | — |
 | 11 | listado-clientes | `inicio`, `sin-resultados`, `detalle` | — |
 | 12 | gestion-clientes | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores`, `edicion`, `tooltip` | No cambiar estado ni eliminar |
-| 13 | listado-facturas | `inicio`, `sin-resultados`, `calendario`, `detalle` | No "Emitir" |
-| 14 | gestion-facturacion | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores` (con "Guardar borrador") | **Nunca "Generar"** (consume un número PF) ni Anular |
+| 13 | listado-facturas | `inicio`, `sin-resultados`, `calendario`, `detalle`, `exportar` (modal "Exportar" abierto, sin exportar), `buscador-cliente` (escribir 2 letras en el filtro de cliente) | No "Emitir" |
+| 14 | gestion-facturacion | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores` (con "Guardar borrador"), `exportar` | **Nunca "Generar"** (consume un número PF), ni Anular, ni Eliminar |
 | 15 | cuenta-corriente-clientes | `inicio`, `sin-resultados`, `alta-vacio` ("Nuevo recibo"), `comprobantes` (menú "Comprobantes" abierto), `detalle` | No "Emitir", no enviar por mail |
-| 16 | configuracion-email | `inicio`, `alta-vacio` ("Nueva configuración") | No editar, no "Probar" |
-| 17 | gestion-contenido | `inicio` | No "Confirmar" ni "Restablecer" |
-| 18 | configuracion-whatsapp | **Sin captura**: describila en el reporte | Muestra el token (F2) |
-| 19 | listado-usuarios | `inicio`, `sin-resultados`, `detalle` | — |
-| 20 | gestion-usuarios | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores`, `edicion` | No cambiar estado ni eliminar |
-| 21 | gestion-gruposypermisos | `inicio`, `pestana-2` (con un grupo elegido), `pestana-3`, `alta-vacio`, `alta-errores` | No "Guardar permisos" ni guardar usuarios |
-| 22 | gestion-auditoria | `inicio`, `sin-resultados`, `calendario`, `detalle` | — |
+| 16 | configuracion-facturacion | `inicio` | No "Guardar" ni desactivar |
+| 17 | configuracion-email | `inicio`, `alta-vacio` ("Nueva configuración") | No editar, no "Probar" |
+| 18 | gestion-contenido | `inicio` | No "Confirmar" ni "Restablecer" |
+| 19 | configuracion-whatsapp | **Sin captura**: describila en el reporte | Muestra el token (F2) |
+| 20 | listado-usuarios | `inicio`, `sin-resultados`, `detalle` | — |
+| 21 | gestion-usuarios | `inicio`, `sin-resultados`, `alta-vacio`, `alta-errores`, `edicion` | No cambiar estado ni eliminar |
+| 22 | gestion-gruposypermisos | `inicio`, `pestana-2` (con un grupo elegido), `pestana-3`, `alta-vacio`, `alta-errores` | No "Guardar permisos" ni guardar usuarios |
+| 23 | gestion-auditoria | `inicio`, `sin-resultados`, `calendario`, `detalle` | — |
 
 ---
 
@@ -141,7 +144,12 @@ Ninguno. (Si se guardó algo por error: pantalla, ID y qué pasó.)
 
 ## 7. Llevar las capturas a la Mac (Rocío)
 
-- Carpeta de capturas → Mac, en `.pruebas-locales/capturas-ui/AAAA-MM-DD/`. Esa carpeta está
-  excluida de git (`.git/info/exclude`), así que no se sube.
-- Reporte → `docs/pruebas/AAAA-MM-DD-capturas-ui.md`, como los reportes anteriores. No tiene
-  imágenes ni datos sensibles, así que se puede commitear.
+Pasar a la Mac dos cosas, como te resulte más cómodo (carpeta compartida de la VM, arrastrar,
+Drive), a cualquier lugar, y avisarle a la sesión de la Mac dónde quedaron:
+
+- **La carpeta entera** `C:\pruebas-sgtl\capturas-ui\AAAA-MM-DD\` (todas las imágenes).
+- **El reporte** `C:\pruebas-sgtl\reportes\AAAA-MM-DD-capturas-ui.md`.
+
+En la Mac, las capturas van a `.pruebas-locales/capturas-ui/AAAA-MM-DD/` (excluida de git: no
+se suben porque tienen datos de clientes y choferes) y el reporte a
+`docs/pruebas/AAAA-MM-DD-capturas-ui.md` (sin imágenes ni datos sensibles: se commitea).

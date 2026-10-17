@@ -321,17 +321,17 @@ La rama de Facu arrancó en `c40b518`, antes de todo el trabajo de Viajes/Rukas:
 
 Las pantallas se ven y se comportan distinto según la etapa en que se hicieron (avisos, fechas, colores de estado, tono, botones). El objetivo es definir un design system y aplicarlo a todo.
 
-1. [x] Relevamiento por código de las 22 pantallas (17/10): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
-2. [ ] Capturas en la VM: `docs/design-system/02-instructivo-capturas-vm.md`. Push desde la Mac → pull en la VM → pedirle a Claude en la VM que siga el instructivo. No guarda datos.
-3. [ ] Lista de Rocío de lo que no le cierra.
+1. [x] Relevamiento por código de las 23 pantallas (17/10, actualizado con el merge de Facu): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
+2. [ ] Capturas en la VM: `docs/design-system/02-instructivo-capturas-vm.md`. Pull en la VM → pedirle al agente de Cursor en la VM que siga el instructivo (login con usuario admin). No guarda datos. Después, pasar a la Mac la carpeta de capturas y el reporte (§7 del instructivo).
+3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Las que no dependen de cómo se ve (tono, avisos, confirmaciones, fechas, montos) se pueden decidir antes de tener las capturas.
 4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
-5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y e-mail (Facu) y WhatsApp (Fede): **después del merge** y coordinando con ellos.
+5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y configuración (Facu) y WhatsApp (Fede): coordinando con ellos.
 
 Bugs vistos en el relevamiento (no visuales):
 
 | ID | Qué | Gravedad | Cuándo | Archivos |
 |---|---|---|---|---|
-| R1 | El botón de reporte CSV no hace nada: llama a `generarReporteCSV()`, que no existe en esa página | Media | listado-viajes: ya. gestion-clientes: después del merge (choca con Facu, como F13) | `listado-viajes.html` (158), `gestion-clientes.html` (179) |
+| R1 | El botón de reporte CSV no hace nada: llama a `generarReporteCSV()`, que no existe en esa página | Media | Ya (sigue igual después del merge) | `listado-viajes.html` (158), `gestion-clientes.html` (179) |
 | R2 | Gestión de contenido: `showErrorToast()` no existe; si falla la red al cargar o guardar, tira error y no avisa | Baja | Ya | `gestion-contenido.html` (299, 361) |
 | R3 | Camiones: el error de fecha pide "DD-MM-YYYY" pero el campo usa AAAA-MM-DD | Baja | Con la decisión de fechas (D11) | `gestion-camiones.html` (1082) |
 | R4 | "Cambiar Contraseña" (encabezado) y "Documentación" (menú) son links que no hacen nada | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |

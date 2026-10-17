@@ -1,14 +1,17 @@
 # Relevamiento visual y de UX — lectura de código — 17/10/2026
 
 Primer paso para definir el design system de SGTL. Este documento releva **cómo está hecha
-hoy cada pantalla** (22 HTML + encabezado, menú y pie compartidos) leyendo el código, sin
+hoy cada pantalla** (23 HTML + encabezado, menú y pie compartidos) leyendo el código, sin
 cambiar nada.
+
+Actualizado con el merge de Facu (`94bc42b`, 17/10): estados de proforma, modales nuevos de
+proformas, buscador de clientes compartido y la pantalla nueva Configuración de Facturación.
 
 - **Qué no cubre:** cómo se ven renderizadas (alineaciones, espacios, cortes de texto,
   pantallas chicas). Eso sale de las capturas en la VM: ver `02-instructivo-capturas-vm.md`.
-- **Qué falta sumar:** la lista de Rocío de lo que no le cierra como usuaria.
-- **Después:** con las tres fuentes se arma `03-decisiones.md` (el design system en sí) y se
-  aplica módulo por módulo, empezando por un piloto.
+- **Después:** Rocío repasa las decisiones del §6 una por una, con las capturas a la vista; de
+  ahí sale `03-decisiones.md` (el design system en sí), que se aplica módulo por módulo,
+  empezando por un piloto.
 
 Ya se habían anotado observaciones visuales en la recorrida del 17/10
 (`docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`, "Mejoras sugeridas"); acá
@@ -40,7 +43,7 @@ están integradas.
 |---|---|---|---|
 | **1 — Original** | 2024-09 a 2025-04: Rocío, Facu y Fede | choferes, camiones, clientes, usuarios (gestión y listado), listado-viajes, gestion-viajes (base), grupos y permisos, gestión de contenido | Título "Gestionar X" / "Listar X" sin subtítulo. Filtros dentro de un `fieldset` con borde. "Buscar" gris, sin "Limpiar". Tabla rayada con todo centrado. Alta con botón verde de solo íconos. Modales con título `h4` y cruz de Feather. Toasts arriba a la derecha mezclados con `alert()`. Fechas con daterangepicker DD/MM/AAAA. |
 | **2 — Julio 2026** | Commits "Agus" | proformas (gestión y listado), tarifas, orígenes y destinos, auditoría | Subtítulo gris bajo el título (proformas, auditoría). Filtros en grilla, "Buscar" azul chico + "Limpiar". Tabla con hover, texto a la izquierda, montos a la derecha, "Cargando…" en la tabla. Acciones con botones outline de colores. Avisos con `alert()` del navegador, incluso los de éxito. Fechas con flatpickr AAAA-MM-DD. Tarifas y orígenes copian los modales de la familia 1 y hablan de "usted". |
-| **3 — Agosto a octubre 2026** | Facu (Fede en WhatsApp) | cuenta corriente, configuración de e-mail, integración WhatsApp | Título con ícono y subtítulo. Mensajes dentro de la página (`.alert`), sin `alert()` en e-mail y WhatsApp. Botones outline. Montos con `Intl` ARS. Fecha con el selector nativo del navegador. Colores propios (23 colores hex en cuenta corriente, incluido un modo oscuro que no existe en el resto). Botón "Guardando…" al guardar. |
+| **3 — Agosto a octubre 2026** | Facu (Fede en WhatsApp) | cuenta corriente, configuración de facturación, configuración de e-mail, integración WhatsApp | Título con ícono y subtítulo. Mensajes dentro de la página (`.alert`), sin `alert()` en e-mail y WhatsApp. Botones outline. Montos con `Intl` ARS. Fecha con el selector nativo del navegador. Colores propios (23 colores hex en cuenta corriente, incluido un modo oscuro que no existe en el resto). Botón "Guardando…" al guardar. |
 | **Aparte** | — | Login, inicio | Login con paleta y tipografía propias (`css/login.css`: verde `#198754`, azul `#173d69`, Inter) y Font Awesome. Inicio con widgets movibles (Gridstack), Font Awesome y calendario. |
 
 `gestion-viajes` es híbrida: base de la familia 1 con muchos cambios de octubre (19 commits
@@ -60,6 +63,9 @@ de Rocío): flatpickr en el modal, `alert()` para los avisos, cinco estados con 
 - **Paginación `PaginacionSGTL`** (en `sidebar-loader.js`): la usan 14 pantallas, con
   15 filas por página y selector "Filas por página". Es el mejor ejemplo de componente
   compartido que ya hay.
+- **Buscador de clientes** `assets/static/js/select-cliente-predictivo.js` (merge de Facu):
+  convierte un `<select>` en un campo con búsqueda al escribir, sin distinguir tildes. Lo usan
+  proformas (las dos) y cuenta corriente. Candidato natural para todos los desplegables largos.
 - **Pantalla de carga** `#loading-message` con spinner: está en todas, pero copiada en cada
   `<style>`.
 - **Gestión de contenido** deja cambiar desde la aplicación el logo, el color de fondo, el
@@ -88,10 +94,11 @@ de Rocío): flatpickr en el modal, `alert()` para los avisos, cinco estados con 
 | gestion-viajes | 1* | Gestionar viajes | verde, solo íconos | gris / sí (gris) | rayada, centrada | íconos chicos | `alert()` (el toast está pero no se usa) | modal + `confirm()` | daterangepicker (filtros) + flatpickr (modal) |
 | gestion-origenes-destinos | 2 | Gestionar orígenes y destinos | verde, "Nuevo origen" | — | rayada, sin paginar | íconos sin `title` | `alert()` | modal | — |
 | gestion-tarifas | 2 | Gestionar tarifas | verde, "Nueva tarifa fija" | — | rayada, sin paginar | íconos sin `title` | `alert()` (el toast está pero no se usa) | modal | flatpickr |
-| gestion-facturacion | 2 | Gestionar proformas + subtítulo | azul, "Nueva proforma" | azul chico / sí | hover, total a la derecha | íconos outline de 7 colores con `title` | `alert()` (21) | `confirm()` | flatpickr |
-| listado-facturas | 2 | Listar proformas generadas + subtítulo | — | azul chico / sí | hover | ojo + PDF | `alert()` | — | flatpickr |
+| gestion-facturacion | 2 | Gestionar proformas + subtítulo | azul, "Nueva proforma" | azul chico / sí | hover, total a la derecha | íconos outline de 7 colores con `title` | `alert()` (17) + modal de mensaje | modal (eliminar borrador) + `confirm()` | flatpickr |
+| listado-facturas | 2 | Listar proformas generadas + subtítulo | — | azul chico / sí | hover | ojo + PDF | `alert()` (5) | — | flatpickr |
 | gestion-auditoria | 2 | Auditoría del sistema + ícono + subtítulo | — | azul con ícono / sí | hover, a la izquierda, "Cargando…" | ojo outline | — | — | flatpickr |
 | cuenta-corriente-clientes | 3 | Cuenta Corriente de Clientes + subtítulo | azul "Nuevo recibo" + dos outline | azul chico / sí (Limpiar primero) | hover, montos a la derecha | ojo outline | mensaje en página + `alert()` + `prompt()` | `confirm()` + `prompt()` | nativo del navegador |
+| configuracion-facturacion | 3 | Configuración de Facturación + ícono + subtítulo | — (tres formularios con "Guardar" azul) | — | tres tablas hover (sucursales, numeradores, tipos) | desactivar | mensaje en página | `confirm()` | — |
 | configuracion-email | 3 | Configuración de E-mail + ícono + subtítulo | verde, "Nueva configuración" | — | rayada + hover, sin paginar | íconos outline | mensaje en página | modal | — |
 | configuracion-whatsapp | 3 | Integración WhatsApp + ícono + subtítulo | — (formulario con "Guardar") | — | — | — | mensaje en página | — | — |
 | Login | — | Iniciar sesión | — | — | — | — | toast + error bajo el campo | — | — |
@@ -180,7 +187,7 @@ de Rocío): flatpickr en el modal, `alert()` para los avisos, cinco estados con 
 | Camiones | Activo verde · Inactivo **gris** |
 | Clientes | **Habilitado** verde · **Deshabilitado** gris |
 | Viajes | Registrado gris · En viaje celeste · Entregado azul · Listo para facturar amarillo · Facturado verde |
-| Proformas | Borrador gris · Generada azul · Enviada celeste · Aceptada verde · Rechazada rojo · Anulada negro |
+| Proformas | Borrador gris · Generada azul · Aceptada verde · **Facturada verde** · Anulada negro |
 | Cuenta corriente | Pendiente rojo claro · Parcial amarillo claro · Cancelado / Aplicado verde claro (colores propios) |
 | Auditoría | Alta verde · Modificación amarillo · Baja rojo · **Login** celeste · **Logout** gris · Km manual azul |
 
@@ -188,6 +195,7 @@ Problemas:
 - **El mismo estado tiene dos colores:** "Inactivo" es rojo en choferes y usuarios, y gris en
   camiones.
 - **El mismo concepto tiene dos nombres:** Activo/Inactivo contra Habilitado/Deshabilitado.
+- **Dos estados distintos con el mismo color:** en proformas, Aceptada y Facturada son verdes.
 - **El rojo significa cosas distintas:** inactivo, rechazado, baja y deuda pendiente.
 - **Hay dos estilos:** badges sólidos de Bootstrap en casi todo y pastel propio en cuenta
   corriente (Mazer ya trae `bg-light-*` para eso).
@@ -235,7 +243,7 @@ Problemas:
 | Mecanismo | Dónde |
 |---|---|
 | Toast de Bootstrap arriba a la derecha (verde o rojo, 3,5 a 5 s) | choferes, camiones, clientes, usuarios, grupos, contenido, listados (solo error), Login (error) |
-| `alert()` del navegador | proformas (21), grupos (11), viajes (incluso "Viaje registrado correctamente."), tarifas, orígenes, cuenta corriente (7), PDF, y errores en choferes, camiones y usuarios |
+| `alert()` del navegador | proformas (17 en gestión y 5 en el listado; el merge sumó un modal de mensaje que reemplaza algunos), grupos (11), viajes (incluso "Viaje registrado correctamente."), tarifas, orígenes, cuenta corriente (7), PDF, y errores en choferes, camiones y usuarios |
 | Mensaje dentro de la página (`.alert`) | e-mail, WhatsApp, cuenta corriente, emitir factura |
 | Nada visible | listado-viajes (errores solo en consola), listado-usuarios |
 
@@ -251,9 +259,9 @@ Problemas:
 ### 5.10 Confirmaciones
 
 - **Modal de Bootstrap:** choferes, camiones, clientes, usuarios, viajes, tarifas, orígenes,
-  contenido, e-mail.
+  contenido, e-mail, eliminar borrador de proforma.
 - **`confirm()` del navegador:** eliminar grupo, anular proforma, evidencia del viaje,
-  eliminar en cuenta corriente.
+  eliminar en cuenta corriente, desactivar en configuración de facturación.
 - **`prompt()` del navegador:** motivo de anulación en cuenta corriente.
 - **Textos en tres tratamientos** para la misma pregunta: "¿Estás seguro que **querés**
   eliminar este chofer…?", "¿Estás seguro de que **deseas** cambiar el estado…?", "¿**Está**
@@ -348,7 +356,7 @@ lo menos posible. Son propuestas para discutir, no decisiones tomadas.
 | D5 | Acciones por fila: íconos o texto, colores, tamaño | Íconos chicos con tooltip y un color por tipo de acción, igual en todas |
 | D6 | Estados: vocabulario, paleta y estilo | Un mapa único de colores por significado (verde = OK/activo, gris = inactivo/borrador, amarillo = pendiente, rojo = error/rechazo/baja, azul/celeste = en curso), con `bg-light-*` de Mazer o sólidos, uno solo |
 | D7 | Modales: tamaños, título, cierre y botones | `h5` + `btn-close`; "Cancelar" gris a la izquierda; botón principal con verbo concreto ("Guardar", "Eliminar" en rojo); detalle con "Cerrar" |
-| D8 | Formularios: obligatorios, errores, select vacío | Asterisco rojo; campo en rojo con mensaje debajo + banner arriba; "Seleccioná…"; labels con `for` |
+| D8 | Formularios: obligatorios, errores, select vacío, desplegables largos | Asterisco rojo; campo en rojo con mensaje debajo + banner arriba; "Seleccioná…"; labels con `for`; desplegables largos con el buscador de `select-cliente-predictivo.js` |
 | D9 | Avisos | Toast para éxito y para error, una sola función compartida; nunca `alert()` |
 | D10 | Confirmaciones | Un modal compartido; nunca `confirm()` ni `prompt()`; las acciones destructivas en rojo |
 | D11 | Fechas | Mostrar DD/MM/AAAA y HH:MM en 24 h; un solo selector (flatpickr, que ya está local y permite mostrar DD/MM/AAAA y mandar AAAA-MM-DD); sacar daterangepicker y moment |
