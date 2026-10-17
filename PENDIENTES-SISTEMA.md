@@ -15,11 +15,11 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 1.2 | Auditoría: entidad sin sufijo proxy EF | Hecho | **Pusheado** (`a8c2c43`) | Pendiente (recompilar API) |
 | 1.2b | `UPDATE` de 127 entidades viejas en AUDITORIA | Hecho en Azure 14/10 | N/A (SQL) | — |
 | 1.3 | Viajes: km en gris si readonly | Hecho | **Pusheado** (`a8c2c43`) | Pendiente |
-| 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Commit local sin push** (`98ffe56`) | Tras `git push` + pull en VM |
-| 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | Hecho | **Commit local sin push** | Tras `git push` + pull en VM (recompilar API) |
-| 1.6 | Dependabot: quitar manifiestos npm de librerías no usadas (55 alertas) | Hecho | **Commit local sin push** | No requiere prueba (no se cargan) |
-| 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Commit local sin push** | Probar las 3 pantallas |
-| 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Commit local sin push** | Restore NuGet + Rebuild |
+| 1.4 | Live Server: no recargar por `App_Data`/`bin`/`obj` | Hecho | **Pusheado** (`98ffe56`) | Pendiente (reiniciar Live Server) |
+| 1.5 | Proforma: Cliente/Origen/Destino obligatorios al guardar borrador | Hecho | **Pusheado** (`7f546cd`) | Pendiente |
+| 1.6 | Dependabot: quitar manifiestos npm de librerías no usadas (55 alertas) | Hecho | **Pusheado** (`739bca1`) | No requiere prueba (no se cargan) |
+| 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Pusheado** (`19a0ea4`) | Pendiente: probar las 3 pantallas |
+| 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Pusheado** (`11d2489`) | Restore + Rebuild OK en VM (17/10); falta probar pantallas |
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
 | 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
@@ -80,9 +80,9 @@ SELECT @@ROWCOUNT AS Filas_Actualizadas;
 
 **Probar:** abrir viaje → km gris; si pasa a carga manual → editable (fondo normal).
 
-### 1.4 Live Server ignoreFiles — COMMIT LOCAL, SIN PUSH
+### 1.4 Live Server ignoreFiles — PUSHEADO
 
-**Commit:** `98ffe56` (solo Mac; falta `git push`)  
+**Commit:** `98ffe56`  
 **Archivo:** `.vscode/settings.json`
 
 Ignora `App_Data`, `bin`, `obj`, `.vs` para que escribir `whatsapp.log` o recompilar no recargue la página.
@@ -91,7 +91,7 @@ Ignora `App_Data`, `bin`, `obj`, `.vs` para que escribir `whatsapp.log` o recomp
 
 En el mismo commit `98ffe56` también está `CLAUDE.md` (reglas de trabajo del repo).
 
-### 1.5 Proforma: Cliente, Origen y Destino obligatorios al guardar — COMMIT LOCAL, SIN PUSH
+### 1.5 Proforma: Cliente, Origen y Destino obligatorios al guardar — PUSHEADO (`7f546cd`)
 
 **Archivos:** `gestion-facturacion.html`, `ProformasController.cs`
 
@@ -103,7 +103,7 @@ Decisión del 15/10 (antes era el 3.6): el asterisco significa lo mismo en los 5
 
 **Probar:** nueva proforma → dejar Cliente, Origen y Destino vacíos (con fechas cargadas) → Guardar borrador → aviso + los 3 en rojo → completar uno por uno → se va quitando el rojo → guarda OK. Repetir con Generar.
 
-### 1.6 – 1.8 Alertas de Dependabot — COMMITS LOCALES, SIN PUSH (17/10)
+### 1.6 – 1.8 Alertas de Dependabot — PUSHEADO (17/10)
 
 De las 60 alertas, solo 2 afectaban a la app; el resto venía de manifiestos de desarrollo de librerías de la plantilla. Un commit por corrección, para poder revertir una sola si falla.
 
@@ -184,6 +184,9 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 - Merge `rocionuvoli` → `main` (avisar Fede y Facu).
 - Dependabot: 60 alertas revisadas el 17/10 → ver 1.6 – 1.8.
 - Antes de la tesis: limpiar registros de prueba; usuarios “reales”.
+- **API — silenciar advertencias "Falta el comentario XML" (CS1591).** El `.csproj` genera documentación XML (`DocumentationFile`, la usa Swagger) y el compilador avisa por cada miembro público sin `///`: son cientos y tapan advertencias que sí importan. Agregar `<NoWarn>1591</NoWarn>` en el `PropertyGroup` del `.csproj`. Sin efecto en el funcionamiento.
+- **API — reinstalar los 30 paquetes NuGet marcados `targetFramework="net45"`.** El proyecto es .NET 4.8 y NuGet avisa "Algunos paquetes NuGet se instalaron con una plataforma de destino diferente…" (Microsoft.Bcl.*, Microsoft.IdentityModel.*, System.IdentityModel.Tokens.Jwt, etc.). Hoy compila y funciona igual. En la VM: Consola del Administrador de paquetes → `Update-Package -Reinstall -ProjectName WebApi_TransporteSanchez` → Rebuild y probar todo. Hacerlo **después del merge con Facu** y en un commit solo (toca `packages.config` y `.csproj`).
+- **API — MailKit 2.11.1 / MimeKit 2.11.0 con vulnerabilidad moderada** (aviso de NuGet al restaurar, Dependabot no lo muestra). Actualizar implica pasar a 4.x (salto grande). Es el envío de mails de Facu (configuración de email y envío de comprobantes): hacerlo **con Facu, después del merge**.
 
 ---
 
