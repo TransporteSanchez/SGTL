@@ -323,7 +323,7 @@ Las pantallas se ven y se comportan distinto según la etapa en que se hicieron 
 
 1. [x] Relevamiento por código de las 23 pantallas (17/10, actualizado con el merge de Facu): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
 2. [x] Capturas en la VM (17/10): 91 capturas en `.pruebas-locales/capturas-ui/2026-10-17/` (fuera de git) y reporte en `docs/pruebas/2026-10-17-capturas-ui.md`. Configuración de facturación y de e-mail salieron con error por token vencido: repetirlas con sesión nueva solo si hacen falta.
-3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Las que no dependen de cómo se ve (tono, avisos, confirmaciones, fechas, montos) se pueden decidir antes de tener las capturas.
+3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Se van anotando en `docs/design-system/03-decisiones.md`. Hechas: botones (alta, exportar, Buscar y borrar filtros, acciones de cada fila, tooltips; cubre D2, D5 y la parte de botones de D3).
 4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
 5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y configuración (Facu) y WhatsApp (Fede): coordinando con ellos.
 
@@ -336,3 +336,6 @@ Bugs vistos en el relevamiento (no visuales):
 | R3 | Camiones: el error de fecha pide "DD-MM-YYYY" pero el campo usa AAAA-MM-DD | Baja | Con la decisión de fechas (D11) | `gestion-camiones.html` (1082) |
 | R4 | "Cambiar Contraseña" (encabezado) y "Documentación" (menú) son links que no hacen nada | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |
 | R5 | `</script>` suelto en el pie (inofensivo) | Baja | Con el piloto | `listado-viajes.html` (204) |
+| R6 | Exportar en choferes y camiones baja solo la página visible (15 filas por defecto), no todo lo filtrado, y no avisa | Media | Con el botón de exportar (decisión 1.2) | `gestion-choferes.html` (2008), `listado-choferes.html` (863), `gestion-camiones.html` (1620), `listado-camiones.html` (684) |
+
+Para después: que choferes, camiones, clientes y viajes exporten con el mismo modal de Excel / PDF / imprimir que proformas y cuenta corriente (hoy bajan CSV).
