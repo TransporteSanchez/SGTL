@@ -1655,6 +1655,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    // Primero sus asignaciones a grupos (FK_GRUPOS_USUARIOS_USUARIOS); se guardan juntas
+
+                    db.Set<GRUPOS_USUARIOS>().RemoveRange(db.Set<GRUPOS_USUARIOS>().Where(gu => gu.UsuarioID == id).ToList());
+
                     // Eliminar el usuario encontrado
 
                     db.Set<USUARIOS>().Remove(oitem);
