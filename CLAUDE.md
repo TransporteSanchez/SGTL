@@ -20,6 +20,8 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
 - **La Mac es el único lugar donde se cambia código y se commitea.** La VM Windows solo
   hace `pull`, compila en Visual Studio y prueba. En la Mac no se puede compilar la API:
   los cambios en C# se revisan con cuidado y al terminar se dice **qué probar en la VM**.
+- **Si esta sesión corre en la VM Windows** (repo en `C:\Repo\SGTL`): solo probás y
+  reportás, sin cambiar nada. Seguí `PRUEBAS-VM-CLAUDE.md`.
 - Rama de trabajo: `rocionuvoli`. A `main` pasa solo lo probado; `master` es la versión final.
 - Un commit por tema, mensaje en español con el formato `Módulo: qué cambió`
   (ej. `Viajes: km a mano solo si Google falla`). No pushear sin que Rocío lo pida.
