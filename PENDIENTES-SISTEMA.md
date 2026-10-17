@@ -27,6 +27,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 3.5 | `bin`/`obj` untracked en la VM | **No hecho** | — | Diagnosticar en VM |
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
+| 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
 | 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -213,8 +214,37 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
 
 1. [ ] Desde la Mac: `git push origin rocionuvoli` (sube `98ffe56` = Live Server + CLAUDE.md).
 2. [x] `PROFORMA-CLIENTES-RUKAS.md` commiteado junto con este documento.
-3. [ ] En la VM: `git pull`, recompilar API, reiniciar Live Server.
-4. [ ] Probar 1.1, 1.2, 1.3, 1.4.
+3. [x] En la VM: `git pull`, recompilar API, reiniciar Live Server (17/10).
+4. [x] Probar 1.2, 1.3, 1.4, 1.7, 1.8: OK (17/10). 1.1 y 1.5 en pausa hasta el merge.
 5. [ ] Si reaparecen entidades con sufijo: SQL 1.2b.
 6. [ ] Evitar en demo las direcciones 3.4 o corregirlas en datos.
 7. [ ] Hora UTC (§2) y demás: después de la presentación.
+
+---
+
+## 8. Hallazgos de la recorrida general en la VM (17/10) — NO HECHOS
+
+Recorrida de las 20 pantallas hecha por Claude en la VM, **antes del merge con Facu** (línea base para comparar después).
+Reporte completo: `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`. No se guardaron datos: altas, ediciones y bajas quedaron **sin probar**.
+
+| ID | Qué | Gravedad | Cuándo | Archivos |
+|---|---|---|---|---|
+| F1 | La API devuelve las **contraseñas en texto plano** (`Usuarios/Buscar` y otros) y gestion-usuarios las precarga en el modal | **Alta** | **Ya** (no choca con Facu) | `UsuariosController.cs` (97, 362, 620), `gestion-usuarios.html` (800) |
+| F1b | La mayoría de la API **no pide token** (solo facturación y Email lo validan) y las contraseñas se guardan sin hash | **Alta** | Después del merge: cambio grande, el front casi nunca manda `Authorization` | Todos los controllers + pantallas |
+| F2 | `WhatsAppConfig` devuelve el **Access Token de Meta** sin token y la pantalla lo muestra en texto | **Alta** | Coordinar con **Fede**; si se copió, rotar el token en Meta | `WhatsAppConfigController.cs`, `configuracion-whatsapp.html` |
+| F3 | **Permisos por grupo da 500** en todos los grupos: fila de `MENU` con `Menu_Principal` NULL. "Guardar permisos" queda habilitado con la lista vacía (riesgo de borrar permisos) | **Alta** | **Ya**: SQL de diagnóstico + deshabilitar Guardar si falla la carga | Base (`MENU`), `gestion-gruposypermisos.html`, `GruposController.cs` |
+| F4 | Se puede **anular una proforma Facturada** | Alta | **Resuelto en la rama de Facu** (reemplazó Anular por anular factura con nota de crédito). Verificar tras el merge | `ProformasController.cs` |
+| F5 | `window.bootstrap` nunca se define (error PerfectScrollbar de `app.js`): "Más detalles" de listado-camiones no abre; toasts de camiones/choferes tiran error | Media | Ya | `assets/compiled/js/app.js` o `sidebar-loader.js` |
+| F6 | listado-viajes: el detalle muestra IDs en vez de nombres y no muestra chofer/camión | Media | Ya | `listado-viajes.html` (530-542) |
+| F7 | listado-usuarios: el filtro "Nombre de usuario" no filtra (parámetro mal nombrado) | Media | Ya | `listado-usuarios.html` (277) |
+| F8 | Fechas: grilla resta 3 h pero el filtro compara en UTC (camiones, clientes, auditoría) | Media | Con el §2 | — |
+| F9 | Tarifas fijas #2 y #3 sin cliente y duplicadas (nunca se encuentran al cargar un viaje); tarifa por km 2026 solo hasta 100 km | Media | Datos: corregir en pantalla. Validación del modal: ya | `gestion-tarifas.html` |
+| F10 | Usuario "Cgodoy" duplicado (IDs 8 y 9, doble envío) | Media | Datos: decidir cuál queda. Código: índice único + bloquear doble clic | `UsuariosController.cs`, `gestion-usuarios.html` |
+| F11 | Filtro de estado de proformas sin "Facturada" | Baja | **En el merge** (facturación de Facu) | `gestion-facturacion.html`, `listado-facturas.html` |
+| F12 | Errores de consola: `simple-datatables.js` sin `#table1` y `usernameDisplay` antes del header | Baja | Ya | gestion-viajes / clientes / orígenes / tarifas, listado-clientes |
+| F13 | CUIT sin control de dígito verificador | Baja | Ya (gestion-clientes choca con Facu: hacerlo después del merge) | `gestion-clientes.html` (1483) |
+| F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | Datos (como 3.4) | Orígenes y destinos |
+
+**Mejoras sugeridas** (voseo, títulos de pestaña, formatos de fecha, validaciones al escribir, búsquedas sin tildes, 404 como "sin datos", etc.): ver la sección "Mejoras sugeridas" del reporte.
+
+**Para la próxima ronda en la VM:** probar altas, ediciones y bajas requiere aprobar el permiso de escritura cuando Claude lo pida (los datos van marcados `PRUEBA-CLAUDE`). En la VM Live Server levanta en **5500** (ver 3.2).
