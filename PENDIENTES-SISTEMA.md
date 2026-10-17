@@ -188,7 +188,7 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 ## 5. Pendientes generales — NO HECHOS
 
-- Orígenes y destinos: Places autocomplete + coordenadas.
+- **Orígenes y destinos: autocompletar direcciones con Google Places y guardar coordenadas** (confirmado por Rocío el 17/10 como mejora a futuro). Evita direcciones mal ubicadas como las del 3.4 / F14: hoy se cargan a mano y Google las interpreta.
 - Merge `rocionuvoli` → `main` (avisar Fede y Facu).
 - Dependabot: 60 alertas revisadas el 17/10 → ver 1.6 – 1.8.
 - Antes de la tesis: limpiar registros de prueba; usuarios “reales”.
@@ -249,7 +249,7 @@ Usuario de prueba **PRUEBACLAUDE** (Usuario_ID 10, grupo Listados): se conserva 
 | F11 | Filtro de estado de proformas sin "Facturada" | Baja | **En el merge** (facturación de Facu) | `gestion-facturacion.html`, `listado-facturas.html` |
 | F12 | Errores de consola: `simple-datatables.js` sin `#table1` y `usernameDisplay` antes del header | Baja | Ya | gestion-viajes / clientes / orígenes / tarifas, listado-clientes |
 | F13 | CUIT sin control de dígito verificador | Baja | Ya (gestion-clientes choca con Facu: hacerlo después del merge) | `gestion-clientes.html` (1483) |
-| F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | Esperando a Rocío: direcciones reales de Sede Temperley (destino 3) y Sede Banfield (destino 4), hoy las dos con Saenz Peña 1052. "claros del bosque" (origen 2) está cargado en Córdoba, que puede ser correcto. Viaje 6 (Facturado, con origen/destino de otros clientes): no tocar, se va con la limpieza previa a la tesis | Orígenes y destinos |
+| F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | Definido el 17/10 (direcciones de fantasía que existen en Google Maps, verificadas): **Sede Temperley** (destino 3) → Av. Hipólito Yrigoyen 10500, Temperley; **Sede Banfield** (destino 4) → Av. Adolfo Alsina 600, Banfield; **claros del bosque** (origen 2) → Av. Celso Barrios 3609, Córdoba (dirección real). Los demás orígenes/destinos, bien. Corregir desde Orígenes y destinos → Editar. Viaje 6: no tocar (limpieza antes de la tesis) | Orígenes y destinos |
 
 **Mejoras sugeridas** (voseo, títulos de pestaña, formatos de fecha, validaciones al escribir, búsquedas sin tildes, 404 como "sin datos", etc.): ver la sección "Mejoras sugeridas" del reporte.
 
