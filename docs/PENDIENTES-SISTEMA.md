@@ -31,7 +31,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 6 | Proforma Rukas: importar Excel de Rukas (rediseño) | Diseño acordado 18/10 (§10 del doc), falta OK de Facu y confirmar con Claudia | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
-| 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida (sin push) | **Pusheado** (`3bb4fd6`) | **Probado en VM (18/10): 17 OK, 1 falla** (ver §12) |
+| 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
 | 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | Hecho (18/10): 5 commits | Sin push | Probar en VM junto con F1 (ver §13) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -501,7 +501,7 @@ Si algo da `NULL` (o `ModulosEmail` no incluye `PRESUPUESTOS`), correr los scrip
 
 **Resultado en la VM (18/10)** — reporte completo: `docs/pruebas/2026-10-18-merge-presupuestos-facu.md`. 22 pruebas: 17 OK, 1 falla, 2 no concluyentes, 2 sin datos.
 - Funciona: Traer viajes (Rukas), la corrección nueva de los "+" en viajes que ya salieron, alta / edición / eliminación de viaje, todo Presupuestos (alta, "+", vista previa, aceptar, generar viaje), los bloqueos del viaje de presupuesto (editar ruta/km → 409; eliminar → 409), WhatsApp, Gestión de contenido, e-mail y menú.
-- [x] **F1 — el "+" de alta rápida no abre en gestion-viajes** (`bootstrap is not defined` en `alta-rapida-ubicacion.js`, archivo de Facu). **Corregido (18/10, sin push):** usa `window.bootstrap` si existe y si no jQuery (`$(el).modal(...)`), como `sgtl-ui.js`; ya no queda trabada la alta rápida después de un error. **Probar en VM:** en gestion-viajes, el "+" de Origen y de Destino abre el modal, crea la ubicación y la deja elegida; repetirlo dos veces sin recargar. En Presupuestos el "+" sigue andando.
+- [x] **F1 — el "+" de alta rápida no abre en gestion-viajes** (`bootstrap is not defined` en `alta-rapida-ubicacion.js`, archivo de Facu). Corregido (`b4b12b5`): usa `window.bootstrap` si existe y si no jQuery. **OK en VM (18/10)**, 7 de 7 pruebas: crea origen y destino, los deja elegidos, se puede repetir sin recargar, un solo backdrop; en Presupuestos sigue andando. Reporte: `docs/pruebas/2026-10-18-verificacion-F1-alta-rapida.md`.
 - [ ] No concluyentes: 1b (Traer viajes de cliente directo: no hay viajes disponibles) y 4k (el importe del presupuesto coincide con el de la tarifa). Para 4k hace falta un viaje de presupuesto con importe distinto de la tarifa, con remito y transporte SAP.
 - [ ] **WhatsApp:** al generar el viaje #31 con el chofer de prueba "Prueba, Fede" pudo salir un mensaje real. Confirmar con Fede.
 - [ ] **Limpieza:** SQL en el reporte (presupuesto #5, viaje #31, origen #5, destino #6), corregido en la Mac. Lo corre Rocío.
