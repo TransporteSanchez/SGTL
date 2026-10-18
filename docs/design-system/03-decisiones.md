@@ -280,3 +280,39 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",
   "Forma de pago").
 - `form-label` con `for` en todos los campos (tocar el nombre lleva al campo).
+
+---
+
+## 7. Fechas y montos
+
+La zona horaria (de dónde sale "la hora actual") es otro tema: §2 de `PENDIENTES-SISTEMA.md`.
+Esto define solo cómo se muestran y cómo se cargan.
+
+### 7.1 Selector de fecha
+
+- **Uno solo: flatpickr** (local, `assets/extensions/flatpickr/`) **en español**
+  (`l10n/es.js`: semana desde el lunes). Se sacan daterangepicker y moment (CDN), y el
+  `type="date"` del navegador de cuenta corriente.
+- **Se ve y se escribe DD/MM/AAAA**; con hora, **DD/MM/AAAA HH:MM en 24 h**. A la API se le sigue
+  mandando AAAA-MM-DD (`altInput: true`, `altFormat: 'd/m/Y'`, `dateFormat: 'Y-m-d'`): la API
+  no cambia.
+- **Rango en los filtros: un solo campo** "Desde y hasta" con `mode: 'range'` y `showMonths: 2`.
+  Se ve "01/10/2026 a 17/10/2026". Elegir el rango no busca solo: se busca con Buscar o Enter.
+  Se borra con la cruz (§1.3).
+- Los textos de ayuda y los errores dicen DD/MM/AAAA (corrige R3).
+
+### 7.2 Fechas en tablas y detalles
+
+- Siempre **DD/MM/AAAA con ceros** ("05/07/2026", no "5/7/2026" ni "2026-07-05").
+- Con hora: **"17/10/2026 21:29"** (24 h, sin "p. m."). En auditoría, con segundos:
+  "17/10/2026 21:29:06".
+- Una sola función de formato en el JS compartido.
+
+### 7.3 Montos y cantidades
+
+- **"$ 1.234,56":** `$`, espacio, puntos de miles, coma decimal, **siempre dos decimales**
+  (`Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' })`). A la derecha en las
+  tablas (§2.1).
+- **Excepción:** los indicadores del tablero se redondean a pesos ("$ 133.103").
+- **Km con coma decimal y un decimal:** "17,4".
+- Una sola función de formato en el JS compartido.
