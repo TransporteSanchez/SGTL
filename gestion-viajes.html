@@ -290,11 +290,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
-                                        <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccione un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" aria-label="Agregar origen" title="Agregar origen" disabled>+</button></div>
+                                        <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" aria-label="Registrar origen" title="Registrar origen" disabled>+</button></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
-                                        <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccione un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" aria-label="Agregar destino" title="Agregar destino" disabled>+</button></div>
+                                        <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" aria-label="Registrar destino" title="Registrar destino" disabled>+</button></div>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -1061,8 +1061,8 @@
         function filtrarOrigenDestino(clienteId, origenSel, destinoSel) {
             var so = $('#origenSelect'), sd = $('#destinoSelect');
             if (!clienteId) {
-                so.prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
-                sd.prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+                so.prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
+                sd.prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
                 return;
             }
             so.prop('disabled', false).empty().append('<option value="">Seleccione un origen</option>');
@@ -1173,8 +1173,8 @@
             $('#viajeIdEdicion').val(''); $('#choferSelectId').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
             $('#choferBuscar').val(''); $('#choferResultados').hide().empty();
             $('input[name="tipoTarifa"]').prop('checked', false);
-            $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
-            $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+            $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
+            $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
             $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', true);
             $('#alertaCompletaCampos').hide().empty();
             $('#distanciaKm').val('');

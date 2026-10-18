@@ -1,7 +1,7 @@
 (function () {
     'use strict';
     var api = 'http://localhost:50222/api', clientes = [], origenes = [], destinos = [], registros = [], choferes = [];
-    var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false, modalViajeGenerado;
+    var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
     var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
@@ -125,11 +125,7 @@
         generandoViaje = true; el('btnGenerarViaje').disabled = true;
         pedir(api + '/Presupuestos/' + encodeURIComponent(presupuestoViaje.id) + '/viaje', { method: 'POST', headers: encabezadosEnvio(), body: JSON.stringify({ ChoferID: Number(el('generarViajeChofer').value) }) }).then(function (r) {
             generandoViaje = false;
-            el('mensajeViajeGenerado').textContent = 'Se generó el viaje N.º ' + r.ViajeID + '.';
-            el('modalGenerarViaje').addEventListener('hidden.bs.modal', function mostrarConfirmacion() {
-                el('modalGenerarViaje').removeEventListener('hidden.bs.modal', mostrarConfirmacion); modalViajeGenerado.show();
-            });
-            modalViaje.hide(); aviso('mensaje', 'Viaje #' + r.ViajeID + ' generado correctamente.', false); listar();
+            modalViaje.hide(); aviso('mensaje', 'Viaje #' + r.ViajeID + ' generado.', false); listar();
         }).catch(function (error) {
             generandoViaje = false; el('btnGenerarViaje').disabled = false; aviso('generarViajeFeedback', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || 'No se pudo generar el viaje.', true); listar();
         });
@@ -217,7 +213,6 @@
         }).catch(function (error) { if (version === secuenciaVista) aviso('vistaPresupuestoFeedback', error.message || 'No se pudo generar el presupuesto.', true); });
     }
     modal = bootstrap.Modal.getOrCreateInstance(el('modalPresupuesto'));
-    modalViajeGenerado = bootstrap.Modal.getOrCreateInstance(el('modalViajeGenerado'));
     modalVista = bootstrap.Modal.getOrCreateInstance(el('modalVistaPresupuesto'));
     el('imprimirVistaPresupuesto').onclick = function () {
         try { var vista = el('vistaPresupuestoDocumento').contentWindow; vista.focus(); vista.print(); }
