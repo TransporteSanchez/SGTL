@@ -83,13 +83,14 @@ Ninguno. Solo se abrieron pantallas/modales y se dispararon validaciones con for
 
 ## Revisión de las capturas en la Mac (17/10)
 
-Llegaron las 91. Casi todas sirven, pero siete no muestran lo que el reporte dice:
+Llegaron las 91. Casi todas sirven, pero nueve no muestran lo que el reporte dice:
 
 | Captura | Qué se ve | Por qué |
 |---|---|---|
 | `16-configuracion-facturacion--inicio` | Aviso rojo "IDX10223: Lifetime validation failed. The token is expired…" y las tres tablas vacías | El token venció a las 17:45 (hora argentina) y las capturas son de 18:15 a 18:47. La guarda del front se esquivó congelando `Date.now`, pero esta API sí valida el token |
 | `17-configuracion-email--inicio` y `--alta-vacio` | "No se pudo completar la operación", tabla vacía y "Cargando perfiles…" en el select | Lo mismo |
 | `05-listado-camiones--detalle` | El listado sin ningún modal abierto | Es F5 ("Más detalles" de camiones no abre). Sirve como evidencia, no como captura del modal |
+| `13-listado-facturas--calendario` y `23-gestion-auditoria--calendario` | La pantalla sin el calendario abierto | flatpickr no se abrió al sacar la captura. Los calendarios de camiones y viajes (flatpickr) sí se ven |
 | `14-gestion-facturacion--alta-vacio`, `--alta-errores` y `--exportar` | La pantalla **Listar proformas generadas**, sin el modal de alta (y con el de exportar del listado) | Se sacaron en la pantalla equivocada. El modal "Nueva proforma" no quedó capturado |
 
 - Las demás pantallas cargaron datos con el token vencido porque esos controllers no lo piden: confirma **F1b**.
