@@ -288,7 +288,7 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 
 ## 7. Fechas y montos
 
-La zona horaria (de dónde sale "la hora actual") es otro tema: §2 de `PENDIENTES-SISTEMA.md`.
+La zona horaria (de dónde sale "la hora actual") es otro tema: §2 de `docs/PENDIENTES-SISTEMA.md`.
 Esto define solo cómo se muestran y cómo se cargan.
 
 ### 7.1 Selector de fecha

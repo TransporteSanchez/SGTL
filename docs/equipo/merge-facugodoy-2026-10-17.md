@@ -2,7 +2,7 @@
 
 Resumen para Facu (y para el equipo) de cómo quedó la integración de su commit
 `35894cc` ("mejoras de facturacion y cuenta corriente") con el trabajo de Rocío en Viajes / Rukas.
-Las decisiones las tomó Rocío; el detalle de cada punto está en `PENDIENTES-SISTEMA.md` §9.
+Las decisiones las tomó Rocío; el detalle de cada punto está en `docs/PENDIENTES-SISTEMA.md` §9.
 
 ## Contexto
 
@@ -30,7 +30,7 @@ tuyo y sumar las reglas de viajes, cambiando solo lo que hacía falta para que c
 | **Cuándo un viaje queda "Facturado"** | No se tocaba el estado del viaje (en la versión de Rocío pasaba a Facturado al **generar** la proforma) | Pasa a **Facturado al emitir la factura**, en la misma transacción de `FacturasController` | "Facturado" significa factura emitida, igual que el "Facturada" de la proforma. Sin estado intermedio: mientras está en una proforma el viaje conserva su estado y la pertenencia sale de tu reserva |
 | **Bloqueo del viaje** | Solo con factura vigente | Además, no se edita ni cambia de estado si está en una proforma **Generada o Aceptada**; no se elimina si está en cualquier proforma | Una vez generada, el importe del viaje ya está en un documento emitido. En borrador se puede seguir editando |
 | **Grilla de viajes** | — | Muestra "En PF-xxxx" (dato de la reserva). "Facturada" se calcula en la misma consulta de la grilla | Tu versión consultaba la base una vez por cada viaje de la grilla |
-| **Traer viajes** | Trae cualquier viaje del cliente no reservado | Además aplica las reglas de negocio: clientes con plataforma (Rukas) solo con remito y N° de transporte; directos solo Entregados; sin viajes facturados ni sin tarifa. Devuelve `{ lineas, advertencias }` y la pantalla muestra las advertencias | Reglas del relevamiento con Claudia (`CHECKLIST-OPERACION-VIAJES.md`) |
+| **Traer viajes** | Trae cualquier viaje del cliente no reservado | Además aplica las reglas de negocio: clientes con plataforma (Rukas) solo con remito y N° de transporte; directos solo Entregados; sin viajes facturados ni sin tarifa. Devuelve `{ lineas, advertencias }` y la pantalla muestra las advertencias | Reglas del relevamiento con Claudia (`docs/negocio/CHECKLIST-OPERACION-VIAJES.md`) |
 | **Generar** | Cliente, conceptos y total | Lo mismo + las mismas reglas de viajes (Rukas con números, directos Entregados, sin facturados). Origen y destino **no** son obligatorios | Cada línea de viaje ya tiene su recorrido |
 | **Eliminar / anular proforma** | Eliminar (borrado físico) en Borrador **y Generada**; Anular deshabilitado | **Borrador → Eliminar**. **Generada o Aceptada sin factura → Anular** (queda "Anulada", conserva el número y libera los viajes). Facturada → nota de crédito | Una Generada ya tiene número PF y pudo enviarse al cliente: borrarla deja un hueco de numeración sin registro |
 | **Nota de crédito cancelatoria** | La proforma seguía Facturada y los viajes reservados: **nunca se podían volver a facturar** | Desvincula la factura (`COMPROBANTES_PROFORMAS.Vigente = 0`, con usuario, fecha y motivo), pasa la proforma a **Anulada**, devuelve los viajes a Listo para facturar / Entregado y libera la reserva | Si una factura se anula por error de importe, los viajes tienen que poder ir en una proforma nueva |

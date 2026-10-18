@@ -64,7 +64,7 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
 
 Rocío te indica el alcance de cada ronda. Puede ser:
 
-- **Ítems puntuales** de `PENDIENTES-SISTEMA.md`: cada ítem tiene su "**Probar:**".
+- **Ítems puntuales** de `docs/PENDIENTES-SISTEMA.md`: cada ítem tiene su "**Probar:**".
 - **Recorrida general** (por ejemplo antes y después de integrar ramas). Por cada pantalla
   del menú: abre sin errores en consola (F12), lista/busca/filtra/pagina, abre los modales,
   y el alta/edición respeta validaciones y mensajes. Pantallas:

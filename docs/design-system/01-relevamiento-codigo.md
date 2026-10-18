@@ -33,7 +33,7 @@ están integradas.
 3. **La base está bien.** La plantilla Mazer (Bootstrap 5, Nunito, Bootstrap Icons) es la
    misma en todas las pantallas y ya hay piezas centralizadas: menú, encabezado y paginación.
    El design system se arma sobre eso, sin cambiar de plantilla.
-4. **Aparecieron bugs que no son visuales** (§7), algunos ya anotados en `PENDIENTES-SISTEMA.md`.
+4. **Aparecieron bugs que no son visuales** (§7), algunos ya anotados en `docs/PENDIENTES-SISTEMA.md`.
 
 ---
 
@@ -251,7 +251,7 @@ Problemas:
   veces dentro de `gestion-choferes.html` y tres en `gestion-clientes.html`, y hay
   variantes `showToast`, `mostrarToastError` y `mostrar`.
 - **Toasts que fallan:** en camiones, choferes y los listados tiran error porque
-  `window.bootstrap` no está definido (F5 de `PENDIENTES-SISTEMA.md`). Usuarios y grupos ya
+  `window.bootstrap` no está definido (F5 de `docs/PENDIENTES-SISTEMA.md`). Usuarios y grupos ya
   lo esquivan.
 - **Toast armado y sin usar:** en gestion-viajes y gestion-tarifas está el HTML del toast,
   pero avisan con `alert()`.
@@ -270,7 +270,7 @@ Problemas:
 ### 5.11 Fechas
 
 Además de lo visual, la hora tiene el problema de zona horaria del §2 de
-`PENDIENTES-SISTEMA.md`. Acá se define solo **cómo se muestra y cómo se carga**.
+`docs/PENDIENTES-SISTEMA.md`. Acá se define solo **cómo se muestra y cómo se carga**.
 
 - **Selectores:** daterangepicker + moment desde CDN (familia 1, filtros de viajes), flatpickr
   local (familia 2, modal de viajes, compra e ITV de camiones) y el nativo del navegador
@@ -379,7 +379,7 @@ Para que el design system no se vuelva a dispersar:
 
 ## 7. Bugs vistos de paso (no visuales)
 
-Anotados también en `PENDIENTES-SISTEMA.md` §9.
+Anotados también en `docs/PENDIENTES-SISTEMA.md` §9.
 
 | ID | Qué | Dónde |
 |---|---|---|

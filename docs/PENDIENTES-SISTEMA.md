@@ -28,8 +28,9 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
-| 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
+| 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
+| 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -204,10 +205,10 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 No es un bug de las pruebas: es un **rediseño de negocio** detectado al contrastar SGTL con las respuestas de Claudia.
 
-- Resumen para compartir: `PROFORMA-CLIENTES-RUKAS.md`.
+- Resumen para compartir: `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`.
 - Preferencia actual: opción **B** — registrar proforma **recibida** de Marfrig (PDF + datos + viajes) y emitir factura TS desde ahí; directos mantienen proforma propia.
 - Lectura PDF (PdfPig) como mejora; OCR no para el MVP.
-- Diseño técnico acordado el 15/10: ver §10 de `PROFORMA-CLIENTES-RUKAS.md` (proforma de tipo Recibida, estado En reclamo si no coinciden totales, factura con el flujo actual de Facu).
+- Diseño técnico acordado el 15/10: ver §10 de `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` (proforma de tipo Recibida, estado En reclamo si no coinciden totales, factura con el flujo actual de Facu).
 - Implementación: no empezada. Esperando de Claudia (pedido 15/10): PDF de ejemplo y qué hace hoy cuando no coinciden los importes. Después, alinear con Facu.
 
 ---
@@ -215,7 +216,7 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
 ## 7. Checklist operativo inmediato
 
 1. [ ] Desde la Mac: `git push origin rocionuvoli` (sube `98ffe56` = Live Server + CLAUDE.md).
-2. [x] `PROFORMA-CLIENTES-RUKAS.md` commiteado junto con este documento.
+2. [x] `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` commiteado junto con este documento.
 3. [x] En la VM: `git pull`, recompilar API, reiniciar Live Server (17/10).
 4. [x] Probar 1.2, 1.3, 1.4, 1.7, 1.8: OK (17/10). 1.1 y 1.5 en pausa hasta el merge.
 5. [ ] Si reaparecen entidades con sufijo: SQL 1.2b.
@@ -270,7 +271,7 @@ Si aparecen "Gestion de contenido" y "Gestión de contenido" como dos menús dis
 
 ## 9. Merge de `facugodoy` (35894cc) en `rocionuvoli` — RESUELTO, SIN PUSH NI PRUEBA EN VM (17/10)
 
-Respaldo de la rama antes del merge: `respaldo/pre-merge-facu`. Resumen para Facu (antes vs. ahora y por qué): **`docs/merge-facugodoy-2026-10-17.md`**.
+Respaldo de la rama antes del merge: `respaldo/pre-merge-facu`. Resumen para Facu (antes vs. ahora y por qué): **`docs/equipo/merge-facugodoy-2026-10-17.md`**.
 La rama de Facu arrancó en `c40b518`, antes de todo el trabajo de Viajes/Rukas: muchas diferencias no son decisiones distintas sino código que él no vio.
 
 **Ya resuelto en el merge:**
@@ -328,7 +329,7 @@ Las pantallas se ven y se comportan distinto según la etapa en que se hicieron 
 5. [x] Piloto en Choferes hecho en la Mac (17/10) y **OK en la VM** (17/10, commit `020e892`, Live Server 5500): 11 ítems, el único "FAIL" era el checklist (la cruz de Estado deja Todos, como dice §3.3). Quedó el chofer de prueba ID 10 (abajo).
 6. [ ] Aplicar el design system al resto de las pantallas (anotado el 18/10; retomar cuando cierre lo de ahora). Reglas en `docs/design-system/03-decisiones.md`. Solo frente: HTML/JS + menú. No tocar API, numeración, SMTP, token de WhatsApp ni PDF. Cada pantalla pasa a `SGTL` (toasts, confirmación, cruz de filtros, badges, botones de fila, fechas/montos). Menú y título iguales, en infinitivo. Se sacan `alert()` / `confirm()` / `prompt()`, el botón Limpiar y "Confirmar" en el pie de los modales.
 
-**Probar en la VM (piloto Choferes):** solo `gestion-choferes` y `listado-choferes`. Seguí `PRUEBAS-VM-CLAUDE.md`. Hard refresh (Ctrl+F5). En consola no tiene que aparecer `SGTL is not defined` ni `camposChofer is not defined`. Creá un chofer de prueba (`PRUEBA-CLAUDE` + fecha) y no toques choferes que no hayas creado. No elimines nada sin preguntarle a Rocío. No asignes el chofer a un viaje (puede mandar WhatsApp).
+**Probar en la VM (piloto Choferes):** solo `gestion-choferes` y `listado-choferes`. Seguí `docs/equipo/PRUEBAS-VM-CLAUDE.md`. Hard refresh (Ctrl+F5). En consola no tiene que aparecer `SGTL is not defined` ni `camposChofer is not defined`. Creá un chofer de prueba (`PRUEBA-CLAUDE` + fecha) y no toques choferes que no hayas creado. No elimines nada sin preguntarle a Rocío. No asignes el chofer a un viaje (puede mandar WhatsApp).
 
 | # | Pantalla | Qué hacer | Esperado |
 |---|---|---|---|
@@ -431,3 +432,24 @@ SELECT Proforma_ID, Codigo FROM dbo.PROFORMA_DETALLE WHERE Proforma_ID = 12;
 ```
 
 Para después: que choferes, camiones, clientes y viajes exporten con el mismo modal de Excel / PDF / imprimir que proformas y cuenta corriente (hoy bajan CSV).
+
+---
+
+## 11. Documentación ordenada en `docs/` — SUBIDO, PENDIENTE DE PROBAR EN LA VM (18/10)
+
+Los `.md` que estaban sueltos en la raíz (y la guía de auditoría que estaba dentro de la API) pasaron a `docs/`, con `git mv`:
+
+- `docs/PENDIENTES-SISTEMA.md` (este documento).
+- `docs/equipo/`: `PROCEDIMIENTO-DESARROLLO-ROCIO.md`, `FLUJO-GIT.md`, `PRUEBAS-VM-CLAUDE.md`, `merge-facugodoy-2026-10-17.md`.
+- `docs/negocio/`: `RELEVAMIENTO-RUKAS-CLAUDIA.md`, `PROFORMA-CLIENTES-RUKAS.md`, `CHECKLIST-OPERACION-VIAJES.md`.
+- `docs/diseno/`: `cuenta-corriente-diseno.md` y `auditoria-integracion.md` (antes `WebApi_TransporteSanchez/LEEME-integracion-auditoria.md`; no estaba en el `.csproj`).
+- `docs/design-system/` y `docs/pruebas/` quedan como estaban.
+
+Se corrigieron todas las menciones a los nombres viejos (documentos, `CLAUDE.md` y comentarios en `sgtl-ui.js`, `gestion-choferes.html` y `listado-choferes.html`).
+
+Reglas para que no vuelvan a quedar sueltos: `docs/README.md` (qué va en cada carpeta, cómo se nombra e índice). `CLAUDE.md` y el nuevo `AGENTS.md` (lo leen Cursor, Copilot y otras IA) avisan que hay que leerlo antes de crear un `.md`.
+
+- [ ] Avisarles a Facu y Fede: la documentación ahora va en `docs/` y las reglas están en `docs/README.md`. Si usan una IA en el navegador (ChatGPT, Claude web), que le pasen ese archivo como contexto.
+- [ ] Opcional: control automático (GitHub Action) que falle si aparece un `.md` nuevo en la raíz.
+
+**Probar en la VM:** `git pull` y verificar que la sesión de pruebas encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (lo indica `CLAUDE.md`). No hay cambios de código: los cambios en HTML y JS son solo comentarios, no hace falta recompilar.

@@ -1,8 +1,8 @@
 # Reporte de pruebas — Recorrida general (foto antes del merge con Facu) — 17/10/2026
 
-> Generado por Claude Code en la VM siguiendo `PRUEBAS-VM-CLAUDE.md`. Copiado al repo como
+> Generado por Claude Code en la VM siguiendo `docs/equipo/PRUEBAS-VM-CLAUDE.md`. Copiado al repo como
 > línea base para comparar después del merge de `facugodoy`. Los hallazgos están cargados
-> en `PENDIENTES-SISTEMA.md` §8. Capturas: en la VM, `C:\pruebas-sgtl\reportes\capturas\`.
+> en `docs/PENDIENTES-SISTEMA.md` §8. Capturas: en la VM, `C:\pruebas-sgtl\reportes\capturas\`.
 
 ## Entorno
 - Rama / commit: rocionuvoli @ f4e3d20 Docs: instructivo de pruebas para Claude en la VM (solo probar y reportar) — `git status` limpio

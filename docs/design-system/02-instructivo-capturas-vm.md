@@ -8,7 +8,7 @@ encontró leyendo el código y qué conviene mirar en cada componente.
 
 ## 1. Reglas
 
-- Valen las de `PRUEBAS-VM-CLAUDE.md` §1 y §2 aunque esta sesión sea de Cursor: sos tester,
+- Valen las de `docs/equipo/PRUEBAS-VM-CLAUDE.md` §1 y §2 aunque esta sesión sea de Cursor: sos tester,
   no cambiás archivos ni git, no corrés SQL, el login lo hace Rocío.
 - **Esta ronda no guarda nada.** No aprietes Confirmar, Guardar, Generar, Emitir ni Eliminar
   con datos cargados. Única excepción: apretar el botón principal de un alta con el formulario
@@ -30,7 +30,7 @@ encontró leyendo el código y qué conviene mirar en cada componente.
 
 ## 2. Preparación
 
-1. `PRUEBAS-VM-CLAUDE.md` §2: anotá rama y commit, verificá API y Live Server.
+1. `docs/equipo/PRUEBAS-VM-CLAUDE.md` §2: anotá rama y commit, verificá API y Live Server.
 2. Usá el **navegador integrado de Cursor** para todas las pantallas. Rocío inicia sesión con un
    usuario **admin** (el menú Configuración solo aparece para admin).
 3. Mismo tamaño de ventana para todas y zoom 100 %. Anotá el tamaño (por ejemplo 1920×1080).

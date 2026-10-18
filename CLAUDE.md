@@ -15,13 +15,13 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
   Scripts versionados en `database/<módulo>/NN_descripcion.sql`, numerados e idempotentes.
 - **Auditoría:** se captura sola en `Sgtlauditcontext.cs` (los controllers usan ese contexto).
 
-## Cómo se trabaja (ver `PROCEDIMIENTO-DESARROLLO-ROCIO.md` y `FLUJO-GIT.md`)
+## Cómo se trabaja (ver `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md` y `docs/equipo/FLUJO-GIT.md`)
 
 - **La Mac es el único lugar donde se cambia código y se commitea.** La VM Windows solo
   hace `pull`, compila en Visual Studio y prueba. En la Mac no se puede compilar la API:
   los cambios en C# se revisan con cuidado y al terminar se dice **qué probar en la VM**.
 - **Si esta sesión corre en la VM Windows** (repo en `C:\Repo\SGTL`): solo probás y
-  reportás, sin cambiar nada. Seguí `PRUEBAS-VM-CLAUDE.md`.
+  reportás, sin cambiar nada. Seguí `docs/equipo/PRUEBAS-VM-CLAUDE.md`.
 - Rama de trabajo: `rocionuvoli`. A `main` pasa solo lo probado; `master` es la versión final.
 - Un commit por tema, mensaje en español con el formato `Módulo: qué cambió`
   (ej. `Viajes: km a mano solo si Google falla`). No pushear sin que Rocío lo pida.
@@ -46,10 +46,17 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
   "Confirmar". Proformas, cuenta corriente, facturación, e-mail (Facu) y WhatsApp (Fede):
   avisar a Rocío antes de aplicar estas reglas.
 - **Fechas:** hoy la hora sale de tres lugares distintos (base en UTC, API en hora local,
-  navegador en UTC); ver sección 2 de `PENDIENTES-SISTEMA.md` antes de agregar código
+  navegador en UTC); ver sección 2 de `docs/PENDIENTES-SISTEMA.md` antes de agregar código
   que guarde o compare fechas.
+
+## Documentación
+
+Toda la documentación va en `docs/`; en la raíz solo quedan `CLAUDE.md` y `AGENTS.md`.
+**Antes de crear, mover o renombrar un `.md`, leé `docs/README.md`**: dice en qué carpeta
+va cada tipo de documento, cómo se nombra y qué índice actualizar. Los reportes de prueba
+van en `docs/pruebas/AAAA-MM-DD-tema.md`.
 
 ## Pendientes
 
-`PENDIENTES-SISTEMA.md` es la lista única de pendientes. Al terminar un ítem, actualizarlo
+`docs/PENDIENTES-SISTEMA.md` es la lista única de pendientes. Al terminar un ítem, actualizarlo
 ahí (moverlo a "subido, pendiente de probar en la VM" con cómo probarlo) en el mismo commit.

@@ -423,7 +423,7 @@
   function dosCifras(n) { return String(n).padStart(2, '0'); }
 
   // "05/07/2026", con { hora: true } "05/07/2026 21:29" y con { segundos: true } "05/07/2026 21:29:06".
-  // Formatea la hora tal como llega: la zona horaria es otro tema (§2 de PENDIENTES-SISTEMA.md).
+  // Formatea la hora tal como llega: la zona horaria es otro tema (§2 de docs/PENDIENTES-SISTEMA.md).
   function fecha(valor, opciones) {
     var d = aFecha(valor);
     if (!d) return '';

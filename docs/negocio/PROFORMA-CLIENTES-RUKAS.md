@@ -225,7 +225,7 @@ Lectura automática del PDF, OCR, matching línea por línea PDF ↔ viaje.
 
 ## 12. Referencias en el repo
 
-- `RELEVAMIENTO-RUKAS-CLAUDIA.md` — cuestionario (plantilla; respuestas completas están en el Google Doc).
-- `CHECKLIST-OPERACION-VIAJES.md` — flujo operativo actual Rukas vs directo.
-- `docs/cuenta-corriente-diseno.md` — contrato proforma → factura.
+- `docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md` — cuestionario (plantilla; respuestas completas están en el Google Doc).
+- `docs/negocio/CHECKLIST-OPERACION-VIAJES.md` — flujo operativo actual Rukas vs directo.
+- `docs/diseno/cuenta-corriente-diseno.md` — contrato proforma → factura.
 - Google Doc: *Relevamiento Marfrig-Rukas → SGTL* (respuestas de Claudia).

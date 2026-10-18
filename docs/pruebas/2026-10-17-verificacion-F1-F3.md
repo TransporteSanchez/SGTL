@@ -1,13 +1,13 @@
 # Reporte de pruebas — verificacion-F1-F3 — 17/10/2026
 
-> Generado por Claude Code en la VM siguiendo `PRUEBAS-VM-CLAUDE.md`. Resultados volcados en
-> `PENDIENTES-SISTEMA.md` §8. Capturas: en la VM, `C:\pruebas-sgtl\reportes\capturas\`.
+> Generado por Claude Code en la VM siguiendo `docs/equipo/PRUEBAS-VM-CLAUDE.md`. Resultados volcados en
+> `docs/PENDIENTES-SISTEMA.md` §8. Capturas: en la VM, `C:\pruebas-sgtl\reportes\capturas\`.
 
 ## Entorno
 - Rama / commit: rocionuvoli @ 85f688e Docs: script de MENU aplicado en la base (F3) — `git status` limpio, al día con `origin/rocionuvoli`
 - API: http://localhost:50222/api (OK). Rocío confirmó que la recompiló en Visual Studio después del pull.
 - Front: Live Server puerto 5500
-- Alcance pedido: verificar F1 (contraseñas) y F3 (permisos por grupo) del §8 de `PENDIENTES-SISTEMA.md`. Consola comparada con `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`.
+- Alcance pedido: verificar F1 (contraseñas) y F3 (permisos por grupo) del §8 de `docs/PENDIENTES-SISTEMA.md`. Consola comparada con `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md`.
 - Login: RNUVOLI (lo hizo Rocío). Usuario de prueba **PRUEBACLAUDE** (Usuario_ID 10, rol `user`, grupo Listados), creado por Rocío antes de la ronda.
 
 ## Resumen

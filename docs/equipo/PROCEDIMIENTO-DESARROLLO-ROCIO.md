@@ -1,7 +1,7 @@
 # Procedimiento de desarrollo — Rocío (Mac + VM Windows)
 
 Cómo trabaja Rocío: se programa en la **Mac** (Cursor) y se compila / prueba en una
-**máquina virtual Windows** (Visual Studio, SSMS, front). Complementa a `FLUJO-GIT.md`.
+**máquina virtual Windows** (Visual Studio, SSMS, front). Complementa a `docs/equipo/FLUJO-GIT.md`.
 
 ## Reglas
 
@@ -24,7 +24,7 @@ git commit -m "descripción"
 git push origin rocionuvoli
 ```
 
-Si hay trabajo nuevo de Facu en `main`, integrarlo antes (ver `FLUJO-GIT.md`):
+Si hay trabajo nuevo de Facu en `main`, integrarlo antes (ver `docs/equipo/FLUJO-GIT.md`):
 
 ```bash
 git fetch origin
@@ -83,7 +83,7 @@ git pull origin main
 git merge rocionuvoli
 git push origin main
 
-# mantener la rama de Facu al día (ver FLUJO-GIT.md, paso 3)
+# mantener la rama de Facu al día (ver docs/equipo/FLUJO-GIT.md, paso 3)
 git switch facugodoy
 git pull origin facugodoy
 git merge main

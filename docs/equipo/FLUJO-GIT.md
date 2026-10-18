@@ -97,7 +97,7 @@ git push origin facugodoy
 ## ROCÍO — trabajo propio de pulido
 
 > Paso a paso completo (código en la Mac, pruebas en la VM Windows):
-> ver `PROCEDIMIENTO-DESARROLLO-ROCIO.md`.
+> ver `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md`.
 
 Para cambios chicos, directo en `main`:
 
