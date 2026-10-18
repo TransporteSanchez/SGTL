@@ -4,55 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Listar choferes · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaChoferes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaChoferes th,
-        #tablaChoferes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaChoferes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
-
-        .no-outline:focus {
-            outline: none !important;
-            box-shadow: none !important;
-            border: 1px solid #ced4da !important;
-            /* Mantiene el borde original */
-            background-color: #f8f9fa !important;
-            /* Mantiene el color de fondo original */
         }
     </style>
 
@@ -65,13 +21,8 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <style>
-        .no-outline:focus {
-            outline: none;
-            box-shadow: none;
-        }
-    </style>
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
@@ -79,7 +30,7 @@
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
@@ -115,109 +66,83 @@
                 </nav>
             </header>
 
-            <!-- Notificación de error -->
-            <div id="toastError"
-                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
-                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
-                <div class="d-flex">
-                    <div id="toastErrorMessage" class="toast-body">
-                        <!-- Mensaje dinámico se inserta acá -->
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Close"></button>
-                </div>
-            </div>
-
             <section class="section">
                 <div class="card rounded me-4 ms-4 mt-4">
-                    <div class="card-header">
-                        <h5 class="card-title">
-                            Listar choferes
-                        </h5>
+                    <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-file-earmark-person me-2"></i>Listar choferes
+                            </h5>
+                            <p class="text-muted mb-0">Consultá los choferes y sus camiones; para cambiarlos andá a Gestionar choferes.</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-outline-secondary" id="btnExportar"
+                                data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar">
+                                <i class="bi bi-download" aria-hidden="true"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <!-- Buscador -->
-                        <form id="busquedaChoferForm" class="form">
-                            <div class="row">
-                                <!-- Primera columna: Nombre y Fecha de alta -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="txtnombre">Nombre</label>
-                                    <input type="text" class="form-control mb-4" id="txtnombre" placeholder="Juan">
-                                    <label for="fechaRango">Fecha de alta</label>
-                                    <input type="text" class="form-control mb-4" id="fechaRango"
-                                        placeholder="Desde y hasta">
-                                </div>
-
-                                <!-- Segunda columna: Apellido y Estado -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="txtapellido">Apellido</label>
-                                    <input type="text" class="form-control mb-4" id="txtapellido" placeholder="Perez">
-                                    <label>Estado</label>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input form-check-success"
-                                            id="checkestadoactivo">
-                                        <label class="form-check-label" for="checkestadoactivo">Activo</label>
-                                    </div>
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input form-check-danger"
-                                            id="checkestadoinactivo">
-                                        <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
-                                    </div>
-                                </div>
-
-                                <!-- Tercera columna: DNI -->
-                                <div class="col-md-3 mb-4">
-                                    <label for="txtdni">DNI</label>
-                                    <input type="number" class="form-control mb-4" id="txtdni" placeholder="36456778">
-                                </div>
-
-                                <!-- Cuarta columna: Buscar -->
-                                <div class="col-md-2 mb-4 mt-4">
-                                    <button type="button" class="btn btn-light"
-                                        onclick="buscarChoferes()">Buscar</button>
-                                </div>
-
-                                <!-- Quinta columna: Botón Generar Reporte -->
-                                <div class="col-md-1 mb-3 mt-4 text-end">
-                                    <label>&nbsp;</label>
-                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                        <i class="bi bi-download"></i>
-                                    </button>
-                                </div>
+                        <form id="busquedaChoferForm" class="row g-3 align-items-end" novalidate>
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <label for="txtnombre" class="form-label">Nombre</label>
+                                <input type="text" class="form-control" id="txtnombre" placeholder="Juan" autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <label for="txtapellido" class="form-label">Apellido</label>
+                                <input type="text" class="form-control" id="txtapellido" placeholder="Pérez" autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <label for="txtdni" class="form-label">DNI</label>
+                                <input type="text" inputmode="numeric" class="form-control" id="txtdni"
+                                    placeholder="30111222" autocomplete="off">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <label for="fechaRango" class="form-label">Fecha de alta</label>
+                                <input type="text" class="form-control" id="fechaRango"
+                                    placeholder="Desde y hasta">
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-4">
+                                <label for="filtroEstado" class="form-label">Estado</label>
+                                <select id="filtroEstado" class="form-select">
+                                    <option value="Activo" selected>Activo</option>
+                                    <option value="Inactivo">Inactivo</option>
+                                    <option value="">Todos</option>
+                                </select>
+                            </div>
+                            <div class="col-12 col-sm-6 col-lg-4 d-flex justify-content-end">
+                                <button type="submit" class="btn btn-light">
+                                    <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                </button>
                             </div>
                         </form>
 
-                        <!-- Tabla -->
-
-                        <div class="table-responsive">
-                            <table class="table table-striped" id="tablaChoferes">
+                        <div class="table-responsive mt-4">
+                            <table class="table table-striped table-hover" id="tablaChoferes">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
-                                        <th>Fecha de alta</th>
+                                        <th class="text-center">Fecha de alta</th>
                                         <th>Nombre</th>
                                         <th>Apellido</th>
                                         <th>DNI</th>
-                                        <th>Estado</th>
-                                        <th>Acciones</th>
+                                        <th class="text-center">Estado</th>
+                                        <th class="text-center">Acciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <!-- Contenido llenado dinámicamente -->
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted py-4">Cargando…</td>
+                                    </tr>
                                 </tbody>
                             </table>
                         </div>
 
-                        <!-- Paginación -->
-                        <nav>
-                            <ul class="pagination justify-content-end" id="pagination">
-                            </ul>
+                        <nav aria-label="Paginación de choferes">
+                            <ul class="pagination justify-content-end" id="pagination"></ul>
                         </nav>
-
                     </div>
                 </div>
-
             </section>
 
             <!--Footer-->
@@ -230,137 +155,91 @@
             </footer>
         </div>
 
-        <!-- Modal Detalles -->
-        <div class="modal fade text-left" id="DetallesChoferModal" tabindex="-1" role="dialog"
-            aria-labelledby="DetallesChofer" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <!-- Modal Ver detalle del chofer -->
+        <div class="modal fade" id="DetallesChoferModal" tabindex="-1" aria-labelledby="DetallesChofer" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="DetallesChofer">Detalles del chofer</h4>
-                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                            <i data-feather="x"></i>
-                        </button>
+                        <h5 class="modal-title" id="DetallesChofer">Ver detalle del chofer</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body mt-2 mb-4 mx-2">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <h6>Estado del chofer</h6>
-                                        <span id="EstadoActualChofer" readonly></span>
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <h6>Fecha de alta</h6>
-                                    <span id="FechaAltaChofer" class="badge bg-secondary"></span>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="dni-column" class="form-label">DNI</label>
-                                        <input type="number" id="dni-column" class="form-control no-outline" readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="celphone-column" class="form-label">Teléfono celular</label>
-                                        <input type="number" id="celphone-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12 mt-4">
-                                    <div class="form-group">
-                                        <label for="province-column" class="form-label">Provincia</label>
-                                        <input type="text" id="province-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="cuil-column" class="form-label">CUIL</label>
-                                        <input type="number" id="cuil-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="phone-column" class="form-label">Teléfono particular</label>
-                                        <input type="number" id="phone-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="local-column" class="form-label">Localidad</label>
-                                        <input type="text" id="local-column" class="form-control no-outline" readonly />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="first-name-column" class="form-label">Nombre</label>
-                                        <input type="text" id="first-name-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="email-column" class="form-label">Email</label>
-                                        <input type="email" id="email-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="street-column" class="form-label">Calle</label>
-                                        <input type="text" id="street-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="last-name-column" class="form-label">Apellido</label>
-                                        <input type="text" id="last-name-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                                <div class="col-md-4 col-12">
-                                </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="number-column" class="form-label">Altura</label>
-                                        <input type="number" id="number-column" class="form-control no-outline"
-                                            readonly />
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Tabla de Camiones Asignados -->
-                            <div class="mt-4">
-                                <h6>Camión asignado</h6>
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <table class="table" id="tablaCamionesAsignados">
-                                            <thead>
-                                                <tr>
-                                                    <th>Dominio</th>
-                                                    <th>Cédula</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <!-- Contenido llenado dinámicamente -->
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-
+                    <div class="modal-body">
+                        <div class="d-flex flex-wrap gap-4 mb-4">
+                            <div><span class="text-muted me-1">Estado:</span><span id="EstadoActualChofer"></span></div>
+                            <div><span class="text-muted me-1">Fecha de alta:</span><span id="FechaAltaChofer"></span></div>
                         </div>
+
+                        <h6 class="mb-2">Datos personales</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Nombre</span>
+                                <p class="form-control-plaintext" id="detalleNombre"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Apellido</span>
+                                <p class="form-control-plaintext" id="detalleApellido"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">DNI</span>
+                                <p class="form-control-plaintext" id="detalleDNI"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">CUIL</span>
+                                <p class="form-control-plaintext" id="detalleCUIL"></p>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-2">Contacto</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Teléfono celular</span>
+                                <p class="form-control-plaintext" id="detalleCelular"></p>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Teléfono particular</span>
+                                <p class="form-control-plaintext" id="detalleTelefono"></p>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">E-mail</span>
+                                <p class="form-control-plaintext text-break" id="detalleEmail"></p>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-2">Domicilio</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Provincia</span>
+                                <p class="form-control-plaintext" id="detalleProvincia"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Localidad</span>
+                                <p class="form-control-plaintext" id="detalleLocalidad"></p>
+                            </div>
+                            <div class="col-12 col-md-8">
+                                <span class="form-label d-block mb-0">Calle</span>
+                                <p class="form-control-plaintext" id="detalleCalle"></p>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Altura</span>
+                                <p class="form-control-plaintext" id="detalleAltura"></p>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-2">Camión asignado</h6>
+                        <div class="table-responsive">
+                            <table class="table table-striped mb-0" id="tablaCamionesAsignados">
+                                <thead>
+                                    <tr>
+                                        <th>Dominio</th>
+                                        <th>Cédula</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -369,32 +248,15 @@
     </div>
 
     <!-- Scripts -->
-    <script src="assets/extensions/jquery/jqueryajax.js">
-    </script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
-
-    <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            // Opcional: Ocultar tooltips al salir
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-    </script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -410,13 +272,13 @@
                 if (typeof window.loadSidebar === 'function') {
                     await window.loadSidebar();
                 }
-                await loadSettings();  // o tu equivalente que llame applyStyles
-                adjustVisibilityBasedOnRole();  // si la página lo define
+                await loadSettings();
+                adjustVisibilityBasedOnRole();
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
             }
         };
 
@@ -465,537 +327,199 @@
 
     </script>
 
-    <!-- Get Activos -->
+    <!-- Buscar, listar y ver detalle -->
     <script>
-        // Esperar a que se cargue completamente la página
-        $(document).ready(function () {
-            // Marcar el checkbox de "Activo" por defecto
-            $('#checkestadoactivo').prop('checked', true);
-
-            // Llamar a la función de búsqueda de choferes al cargar la página
-            buscarChoferes();
-        });
-    </script>
-
-    <!-- Buscador y listar + detalles del chofer -->
-    <script>
-
-        // Validación para que los campos de Nombre y Apellido solo permitan letras
-        document.getElementById('txtnombre').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        document.getElementById('txtapellido').addEventListener('input', function (event) {
-            this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
-        });
-
-        // Limita la longitud del número a 8 dígitos
-        document.getElementById('txtdni').addEventListener('input', function (event) {
-
-            // Remueve cualquier caracter que no sea del 0 al 9
-            this.value = this.value.replace(/[^0-9]/g, '');
-
-            if (this.value.length > 8) {
-                this.value = this.value.slice(0, 8);
-            }
-        });
-
-        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
-        $('#txtnombre, #txtapellido, #txtdni, #fechaRango').on('input', function () {
-            if ($(this).val().trim() === '') {
-                buscarChoferes(currentPage);
-            }
-        });
-
+        const API = 'http://localhost:50222/api';
+        const COLUMNAS_CHOFERES = 7;
+        const LETRAS = /[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g;
         let pageSize = 15;
         let currentPage = 1;
+        let ultimaBusqueda = 0;
+        const nombresUbicacion = {};
 
-        // Función para obtener los nombres de la provincia y localidad
-        function obtenerNombres(provId, locId) {
-            let nombreProvincia = '';
-            let nombreLocalidad = '';
+        // Fecha_Alta y Fecha_Modi se guardan con la hora UTC del navegador: se muestran 3 h antes
+        // (§2 de PENDIENTES-SISTEMA.md).
+        function fechaChofer(valor) {
+            if (!valor) return '';
+            const fecha = new Date(valor);
+            if (isNaN(fecha.getTime())) return '';
+            return SGTL.fecha(new Date(fecha.getTime() - 3 * 60 * 60 * 1000), { hora: true });
+        }
 
-            // Función para obtener el nombre de la provincia
-            function obtenerNombreProvincia() {
-                return $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                }).then(function (data) {
-                    nombreProvincia = data.Nombre_Provincia;
-                }).catch(function () {
-                    nombreProvincia = 'Provincia no encontrada';
-                });
+        function nombreUbicacion(url, extraer) {
+            if (!nombresUbicacion[url]) {
+                nombresUbicacion[url] = SGTL.ajax({ url: url, type: 'GET' }).then(extraer, function () { return ''; });
             }
+            return nombresUbicacion[url];
+        }
 
-            // Función para obtener el nombre de la localidad
-            function obtenerNombreLocalidad() {
-                let url = `http://localhost:50222/api/Provincias/${provId}/Localidades`;
-                if (locId) {
-                    url += `?locId=${locId}`;
-                }
-                return $.ajax({
-                    url: url,
-                    type: 'GET'
-                }).then(function (data) {
-                    if (Array.isArray(data) && data.length > 0) {
-                        nombreLocalidad = data[0].Nombre_Localidad;
-                    } else {
-                        nombreLocalidad = 'Localidad no encontrada';
-                    }
-                }).catch(function () {
-                    nombreLocalidad = 'Localidad no encontrada';
-                });
-            }
+        function nombreProvincia(provId) {
+            if (!provId) return Promise.resolve('');
+            return nombreUbicacion(`${API}/Provincias/${provId}`, function (data) { return data.Nombre_Provincia || ''; });
+        }
 
-            // Ejecutar ambas solicitudes en paralelo
-            return $.when(obtenerNombreProvincia(), obtenerNombreLocalidad()).then(function () {
-                return {
-                    Nombre_Provincia: nombreProvincia,
-                    Nombre_Localidad: nombreLocalidad
-                };
+        function nombreLocalidad(provId, locId) {
+            if (!provId || !locId) return Promise.resolve('');
+            return nombreUbicacion(`${API}/Provincias/${provId}/Localidades?locId=${locId}`, function (data) {
+                return Array.isArray(data) && data.length ? data[0].Nombre_Localidad : '';
             });
         }
 
-        // Datepicker con rango de fechas
-        $(document).ready(function () {
-            $('#fechaRango').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    cancelLabel: 'Borrar',
-                    format: 'DD/MM/YYYY',
-                    applyLabel: 'Aplicar',
-                    cancelLabel: 'Cancelar',
-                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    monthNames: [
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ]
-                }
-            });
-
-            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD')); // Guardamos el formato ISO
-            });
-
-            $('#fechaRango').on('cancel.daterangepicker', function (ev, picker) {
-                $(this).val('');
-                $(this).removeData('start').removeData('end');
-            });
-        });
-
-
-        var estadoChoferOriginal;  // Variable global para almacenar el valor original de EstadoChofer
-
-        // Función para mostrar los detalles del chofer en el modal
-        function mostrarDetallesChofer(registro) {
-            obtenerNombres(registro.ProvID, registro.LocID).then(nombres => {
-                $('#first-name-column').val(registro.Nombre);
-                $('#last-name-column').val(registro.Apellido);
-                $('#dni-column').val(registro.DNI);
-                $('#cuil-column').val(registro.CUIL);
-                $('#celphone-column').val(registro.TelefonoCelular);
-                $('#phone-column').val(registro.TelefonoFijo);
-                $('#email-column').val(registro.Email);
-                $('#province-column').val(nombres.Nombre_Provincia);
-                $('#local-column').val(nombres.Nombre_Localidad);
-                $('#street-column').val(registro.Calle);
-                $('#number-column').val(registro.AlturaCalle ? registro.AlturaCalle.trim() : '');
-                $('#EstadoActualChofer').text(registro.EstadoChofer);
-                estadoChoferOriginal = registro.EstadoChofer;
-
-                var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-                $('#EstadoActualChofer').removeClass().addClass(estadoStyle);
-
-                // Formatear la fecha de alta
-                const fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
-                $('#FechaAltaChofer').text(fechaAltaFormateada);
-
-                obtenerCamionesAsignados(registro.Chofer_ID);
-
-                $('#DetallesChoferModal').modal('show');
-            }).catch(error => {
-                console.error('Error al obtener nombres de provincia o localidad', error);
-            });
-        }
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return 'Fecha no disponible';
-
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        // Función para obtener camiones asignados al chofer
-        function obtenerCamionesAsignados(choferID) {
-            $.ajax({
-                url: `http://localhost:50222/api/Choferes/${choferID}/Chofer_Camion`,
-                method: 'GET',
-                success: function (data) {
-                    var tbody = $('#tablaCamionesAsignados tbody');
-                    tbody.empty();
-
-                    if (data.length === 0) {
-                        var row = `<tr>
-                    <td colspan="2" class="text-center">No se encontraron registros</td>
-                </tr>`;
-                        tbody.append(row);
-                    } else {
-                        data.forEach(function (camion) {
-                            var row = `<tr>
-                        <td>${camion.Dominio}</td>
-                        <td>${camion.Cedula}</td>
-                    </tr>`;
-                            tbody.append(row);
-                        });
-                    }
-                },
-                error: function (error) {
-                    console.error('Error al obtener los camiones asignados:', error);
-                }
-            });
-        }
-
-        // Función para realizar la búsqueda de choferes
-        function buscarChoferes(page = 1) {
-            var nombre = $('#txtnombre').val();
-            var apellido = $('#txtapellido').val();
-            var dni = $('#txtdni').val();
-            var fechaRango = $('#fechaRango').val();
-            var estadoActivo = $('#checkestadoactivo').is(':checked');
-            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
-
-            let fechaDesde = null;
-            let fechaHasta = null;
-
-            if (fechaRango) {
-                let fechas = fechaRango.split(' - ');
-                if (fechas.length === 2) {
-                    fechaDesde = moment(fechas[0], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 00:00:00.000';
-                    fechaHasta = moment(fechas[1], 'DD/MM/YYYY').format('YYYY-MM-DD') + ' 23:59:59.999';
-                }
-            }
-
-            var requestData = {
-                nombre: nombre || null,
-                apellido: apellido || null,
-                dni: dni || null,
-                fechaDesde: fechaDesde || null,
-                fechaHasta: fechaHasta || null,
-                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' : (estadoActivo ? 'Activo' : (estadoInactivo ? 'Inactivo' : '')),
-                page: page,
-                pageSize: pageSize
+        function filtrosBusqueda() {
+            const rango = SGTL.valorRango('#fechaRango');
+            return {
+                nombre: $('#txtnombre').val().trim(),
+                apellido: $('#txtapellido').val().trim(),
+                dni: $('#txtdni').val().trim(),
+                fechaDesde: rango ? rango.desde + ' 00:00:00.000' : null,
+                fechaHasta: rango ? rango.hasta + ' 23:59:59.999' : null,
+                estadoChofer: $('#filtroEstado').val()
             };
+        }
 
-            // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
-            if (nombre !== '') requestData.nombre = nombre;
-            if (apellido !== '') requestData.apellido = apellido;
-            if (dni !== '') requestData.dni = dni;
-            if (fechaDesde !== '') requestData.fechaDesde = fechaDesde;
-            if (fechaHasta !== '') requestData.fechaHasta = fechaHasta;
+        function filaChofer(chofer) {
+            return `<tr>
+                <td>${SGTL.escapar(chofer.Chofer_ID)}</td>
+                <td class="text-center text-nowrap">${fechaChofer(chofer.Fecha_Alta)}</td>
+                <td>${SGTL.escapar(chofer.Nombre)}</td>
+                <td>${SGTL.escapar(chofer.Apellido)}</td>
+                <td>${SGTL.escapar(chofer.DNI)}</td>
+                <td class="text-center">${SGTL.estado(chofer.EstadoChofer)}</td>
+                <td class="text-center">${SGTL.accionesFila([SGTL.botonFila('ver', { id: chofer.Chofer_ID })])}</td>
+            </tr>`;
+        }
 
-            // Agregar el estadoChofer al objeto de datos solo si se selecciona
-            if (estadoActivo || estadoInactivo) {
-                requestData.estadoChofer = '';
-                if (estadoActivo) requestData.estadoChofer += 'Activo,';
-                if (estadoInactivo) requestData.estadoChofer += 'Inactivo,';
-                // Eliminar la última coma si existe
-                requestData.estadoChofer = requestData.estadoChofer.slice(0, -1);
-            }
+        function buscarChoferes(page = 1) {
+            const tbody = '#tablaChoferes tbody';
+            const busqueda = ++ultimaBusqueda;
+            currentPage = page;
+            SGTL.tabla.cargando(tbody, COLUMNAS_CHOFERES);
 
-            // Realizar la solicitud AJAX GET al controlador
-            $.ajax({
-                url: 'http://localhost:50222/api/Choferes/Buscar',
+            SGTL.ajax({
+                url: API + '/Choferes/Buscar',
                 type: 'GET',
-                data: requestData,
-                success: function (data) {
-                    // Limpiar la tabla antes de agregar nuevos registros
-                    $('#tablaChoferes tbody').empty();
-
-                    if (data.Results.length === 0) {
-                        $('#tablaChoferes tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
-                    } else {
-                        data.Results.forEach(function (registro) {
-
-                            // Formatear la fecha de alta
-                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
-
-                            var estadoStyle = registro.EstadoChofer === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-                            var row = `<tr>
-                    <td>${registro.Chofer_ID}</td>
-                    <td>${fechaAltaFormateada}</td>
-                    <td>${registro.Nombre}</td>
-                    <td>${registro.Apellido}</td>
-                    <td>${registro.DNI}</td>
-                    <td><span class="badge ${estadoStyle}">${registro.EstadoChofer}</span></td>
-                    <td>
-                            <button class="btn btn-primary btn-detalle"
-                                data-choferid="${registro.Chofer_ID}"
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
-                                title="Más detalles"
-                                onclick="abrirModal('${registro.Chofer_ID}')">
-                                <i class="bi bi-info-circle"></i>
-                            </button>
-                    </td>
-                </tr>`;
-                            $('#tablaChoferes tbody').append(row);
-                        });
-                    }
-                    renderPagination(data.TotalRecords, pageSize, page);
-                },
-                error: function (xhr, status, error) {
-                    console.error(error);
-                }
-            });
-        }
-
-        function abrirModal(choferID) {
-            // Obtener detalles del chofer antes de mostrar el modal
-            $.ajax({
-                url: `http://localhost:50222/api/Choferes/${choferID}`,
-                method: 'GET',
-                success: function (data) {
-                    mostrarDetallesChofer(data);
-                    var modal = new bootstrap.Modal(document.getElementById('DetallesChoferModal'));
-                    modal.show();
-                },
-                error: function (error) {
-                    console.error('Error al obtener los detalles del chofer:', error);
-                }
-            });
-        }
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        function renderPagination(totalRecords, tamanioActual, currentPage) {
-            const totalPages = Math.ceil(totalRecords / tamanioActual);
-            const paginationContainer = $('#pagination');
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(paginationContainer.get(0), {
-                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                data: Object.assign(filtrosBusqueda(), { page: page, pageSize: pageSize })
+            }, 'No se pudieron cargar los choferes. Revisá la conexión y probá de nuevo.').then(function (data) {
+                if (busqueda !== ultimaBusqueda) return;
+                const registros = data.Results || [];
+                if (registros.length) SGTL.tabla.llenar(tbody, registros.map(filaChofer).join(''));
+                else SGTL.tabla.vacia(tbody, COLUMNAS_CHOFERES);
+                SGTL.tabla.paginacion('#pagination', {
+                    total: data.TotalRecords || 0,
+                    tamanioPagina: pageSize,
+                    pagina: page,
                     alCambiarPagina: function (pagina) { buscarChoferes(pagina); },
                     alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarChoferes(1); }
                 });
-                return;
-            }
-            paginationContainer.empty();
-
-            const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
-
-            paginationContainer.append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarChoferes(${currentPage - 1})">
-                        <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-                    </a>
-                </li>
-            `);
-
-            for (let i = 1; i <= totalPages; i++) {
-                const activeClass = currentPage === i ? 'active' : '';
-                paginationContainer.append(`
-                    <li class="page-item ${activeClass}">
-                        <a class="page-link" href="#" onclick="buscarChoferes(${i})">${i}</a>
-                    </li>
-                `);
-            }
-
-            paginationContainer.append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" aria-label="Next" onclick="buscarChoferes(${currentPage + 1})">
-                        <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                    </a>
-                </li>
-            `);
+            }, function (error) {
+                if (busqueda !== ultimaBusqueda) return;
+                SGTL.tabla.vacia(tbody, COLUMNAS_CHOFERES, 'No se pudieron cargar los choferes.');
+                SGTL.tabla.paginacion('#pagination', { total: 0 });
+                SGTL.toastError(error.mensajeUsuario);
+            });
         }
 
-        $(document).ready(function () {
-            // Ejecutar la búsqueda inicial
-            buscarChoferes(currentPage);
-        });
+        function cargarCamionesAsignados(choferId) {
+            const tbody = '#tablaCamionesAsignados tbody';
+            SGTL.tabla.cargando(tbody, 2);
+            return SGTL.ajax({ url: `${API}/Choferes/${choferId}/Chofer_Camion`, type: 'GET' }).then(function (camiones) {
+                if (!camiones.length) {
+                    SGTL.tabla.vacia(tbody, 2, 'Todavía no hay camiones asignados.');
+                    return;
+                }
+                SGTL.tabla.llenar(tbody, camiones.map(function (camion) {
+                    return `<tr><td>${SGTL.escapar(camion.Dominio)}</td><td>${SGTL.escapar(camion.Cedula)}</td></tr>`;
+                }).join(''));
+            }, function () {
+                SGTL.tabla.vacia(tbody, 2, 'No se pudieron cargar los camiones asignados.');
+            });
+        }
 
+        function verDetalleChofer(choferId, boton) {
+            const listo = SGTL.procesando(boton);
+            SGTL.ajax({ url: `${API}/Choferes/${choferId}`, type: 'GET' },
+                'No se pudo abrir el detalle del chofer. Probá de nuevo.').then(function (chofer) {
+                    return Promise.all([nombreProvincia(chofer.ProvID), nombreLocalidad(chofer.ProvID, chofer.LocID)]).then(function (nombres) {
+                        $('#EstadoActualChofer').html(SGTL.estado(chofer.EstadoChofer));
+                        $('#FechaAltaChofer').text(fechaChofer(chofer.Fecha_Alta));
+                        $('#detalleNombre').text(chofer.Nombre || '');
+                        $('#detalleApellido').text(chofer.Apellido || '');
+                        $('#detalleDNI').text(chofer.DNI || '');
+                        $('#detalleCUIL').text(chofer.CUIL || '');
+                        $('#detalleCelular').text(chofer.TelefonoCelular || '');
+                        $('#detalleTelefono').text(chofer.TelefonoFijo || '');
+                        $('#detalleEmail').text(chofer.Email || '');
+                        $('#detalleProvincia').text(nombres[0]);
+                        $('#detalleLocalidad').text(nombres[1]);
+                        $('#detalleCalle').text(chofer.Calle || '');
+                        $('#detalleAltura').text(chofer.AlturaCalle ? String(chofer.AlturaCalle).trim() : '');
+                        cargarCamionesAsignados(chofer.Chofer_ID);
+                        SGTL.modal('#DetallesChoferModal', 'show');
+                    });
+                }).catch(function (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo abrir el detalle del chofer. Probá de nuevo.');
+                }).finally(listo);
+        }
 
-    </script>
-
-    <!-- Generar reporte csv -->
-    <script>
-        async function generarReporteCSV() {
-            var dni = $('#txtdni').val() || '';
-            var nombre = $('#txtnombre').val().trim() || '';
-            var apellido = $('#txtapellido').val().trim() || '';
-            var estadoActivo = $('#checkestadoactivo').is(':checked');
-            var estadoInactivo = $('#checkestadoinactivo').is(':checked');
-            var fechaDesde = $('#fechaRango').data('start') || null;
-            var fechaHasta = $('#fechaRango').data('end') || null;
-
-            var requestData = {
-                dni: dni,
-                nombre: nombre || null,
-                apellido: apellido || null,
-                fechaDesde: fechaDesde || null,
-                fechaHasta: fechaHasta || null,
-                estadoChofer: estadoActivo && estadoInactivo ? 'Activo,Inactivo' :
-                    estadoActivo ? 'Activo' :
-                        estadoInactivo ? 'Inactivo' : '',
-                page: currentPage,
-                pageSize: pageSize
-            };
-
+        // Exporta todo lo que coincide con los filtros, no solo la página visible.
+        async function exportarChoferes() {
+            const listo = SGTL.procesando('#btnExportar');
             try {
-                const response = await $.ajax({
-                    url: 'http://localhost:50222/api/Choferes/Buscar',
+                const data = await SGTL.ajax({
+                    url: API + '/Choferes/Buscar',
                     type: 'GET',
-                    data: requestData
-                });
-
-                if (response.Results.length === 0) {
-                    mostrarToastError('No se encontraron registros para generar el reporte.');
+                    data: Object.assign(filtrosBusqueda(), { page: 1, pageSize: 0 })
+                }, 'No se pudo exportar. Revisá la conexión y probá de nuevo.');
+                const registros = data.Results || [];
+                if (!registros.length) {
+                    SGTL.toastError('No hay choferes para exportar con los filtros elegidos.');
                     return;
                 }
 
-                // Obtener nombres de provincia y localidad para cada registro
-                const registrosConProvincias = await Promise.all(response.Results.map(async (registro) => {
-                    registro.Provincia = await obtenerNombreProvincia(registro.ProvID);
-                    registro.Localidad = await obtenerNombreLocalidad(registro.ProvID, registro.LocID);
-                    return registro;
+                const filas = await Promise.all(registros.map(async function (r) {
+                    const [provincia, localidad] = await Promise.all([
+                        nombreProvincia(r.ProvID), nombreLocalidad(r.ProvID, r.LocID)
+                    ]);
+                    return [
+                        r.Chofer_ID, r.DNI, r.CUIL, r.Nombre, r.Apellido,
+                        r.TelefonoFijo, r.TelefonoCelular, r.Email,
+                        provincia, localidad, r.Calle, r.AlturaCalle,
+                        r.EstadoChofer, fechaChofer(r.Fecha_Alta), r.Usu_Alta,
+                        fechaChofer(r.Fecha_Modi), r.Usu_Modi
+                    ];
                 }));
 
-                generarCSV(registrosConProvincias);
+                SGTL.descargarCSV('Listado_Choferes.csv', [
+                    'ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
+                    'Teléfono particular', 'Teléfono celular', 'E-mail',
+                    'Provincia', 'Localidad', 'Calle', 'Altura',
+                    'Estado', 'Fecha de alta', 'Usuario de alta',
+                    'Fecha de modificación', 'Usuario de modificación'
+                ], filas);
             } catch (error) {
-                console.error('Error al generar el reporte:', error);
-                mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
+                SGTL.toastError(error.mensajeUsuario || 'No se pudo exportar. Probá de nuevo.');
+            } finally {
+                listo();
             }
         }
 
-        // Función para mostrar un toast de error con mensaje dinámico
-        function mostrarToastError(mensaje) {
-            $('#toastErrorMessage').text(mensaje);
-            const toast = new bootstrap.Toast(document.getElementById('toastError'));
-            toast.show();
-        }
-
-        // Función para obtener el nombre de la provincia usando la API
-        async function obtenerNombreProvincia(provId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                });
-                return data.Nombre_Provincia || 'Provincia no encontrada';
-            } catch (error) {
-                console.error(`Error obteniendo la provincia con ID ${provId}:`, error);
-                return 'Provincia no encontrada';
-            }
-        }
-
-        // Función para obtener el nombre de la localidad usando la API
-        async function obtenerNombreLocalidad(provId, locId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
-                    type: 'GET'
-                });
-
-                if (Array.isArray(data) && data.length > 0) {
-                    return data[0].Nombre_Localidad;
-                } else {
-                    return 'Localidad no encontrada';
-                }
-            } catch (error) {
-                console.error(`Error obteniendo la localidad con ProvID ${provId} y LocID ${locId}:`, error);
-                return 'Localidad no encontrada';
-            }
-        }
-
-        // Función para generar el CSV con codificación UTF-8 con BOM
-        function generarCSV(data) {
-            // Definir las columnas del CSV con nombres personalizados
-            const headers = [
-                'Chofer_ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
-                'Telefono fijo', 'Telefono celular', 'Email',
-                'Provincia', 'Localidad', 'Calle', 'Altura',
-                'Estado del chofer', 'Fecha de alta',
-                'Usuario de alta', 'Fecha de modificación', 'Usuario de modificación'
-            ];
-
-            let csvContent = headers.join(";") + "\n";
-
-            data.forEach(function (registro) {
-                let row = [
-                    registro.Chofer_ID,
-                    registro.DNI,
-                    registro.CUIL,
-                    registro.Nombre,
-                    registro.Apellido,
-                    registro.TelefonoFijo || '',
-                    registro.TelefonoCelular || '',
-                    registro.Email || '',
-                    registro.Provincia,
-                    registro.Localidad,
-                    registro.Calle || '',
-                    registro.AlturaCalle || '',
-                    registro.EstadoChofer,
-                    formatFechaUTC3(registro.Fecha_Alta),
-                    registro.Usu_Alta || '',
-                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
-                    registro.Usu_Modi || ''
-                ];
-
-                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
+        $(function () {
+            $('#txtnombre, #txtapellido').on('input', function () {
+                this.value = this.value.replace(LETRAS, '');
             });
-
-            // Agregar el BOM al inicio para asegurar la codificación UTF-8
-            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-
-            let url = URL.createObjectURL(blob);
-
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = "Listado_Choferes.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return '';
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
+            $('#txtdni').on('input', function () {
+                this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
+            });
+            SGTL.rangoFechas('#fechaRango');
+            SGTL.filtros(['#txtnombre', '#txtapellido', '#txtdni', '#fechaRango', '#filtroEstado'], function () { buscarChoferes(1); });
+            $('#busquedaChoferForm').on('submit', function (evento) {
+                evento.preventDefault();
+                buscarChoferes(1);
+            });
+            $('#tablaChoferes').on('click', '[data-accion="ver"]', function () { verDetalleChofer($(this).data('id'), this); });
+            $('#btnExportar').on('click', exportarChoferes);
+            buscarChoferes(1);
+        });
     </script>
 
 </body>

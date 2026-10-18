@@ -1,0 +1,143 @@
+/* Estilos compartidos del design system de SGTL.
+   Las reglas están en docs/design-system/03-decisiones.md; los números de sección (§) son de ese documento. */
+
+/* §8 Indicador de carga al entrar a una pantalla */
+#loading-message {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 9999;
+}
+
+/* §4.3 Estados */
+.badge.estado-gris,
+.badge.estado-azul,
+.badge.estado-amarillo,
+.badge.estado-verde,
+.badge.estado-rojo {
+    font-weight: 600;
+}
+
+.badge.estado-gris { background-color: #eef0f2; color: #5c636a; }
+.badge.estado-azul { background-color: #e8ecf9; color: #435ebe; }
+.badge.estado-amarillo { background-color: #fff3cd; color: #a36a00; }
+.badge.estado-verde { background-color: #e8f6ef; color: #198754; }
+.badge.estado-rojo { background-color: #fcebed; color: #dc3545; }
+
+/* §2.1 Tablas */
+.table > :not(caption) > * > * {
+    vertical-align: middle;
+}
+
+.sgtl-acciones {
+    display: inline-flex;
+    gap: .25rem;
+    white-space: nowrap;
+}
+
+/* El tooltip de un botón deshabilitado va en un span que lo envuelve. */
+.sgtl-acciones .sgtl-envoltura-deshabilitado {
+    display: inline-block;
+}
+
+.sgtl-acciones .sgtl-envoltura-deshabilitado .btn {
+    pointer-events: none;
+}
+
+/* §1.3 Cruz para borrar cada filtro */
+.sgtl-filtro {
+    position: relative;
+}
+
+.sgtl-filtro > .form-control {
+    padding-right: 2.25rem;
+}
+
+.sgtl-filtro > .form-select {
+    padding-right: 4rem;
+}
+
+.sgtl-filtro-borrar {
+    display: none;
+    position: absolute;
+    top: 50%;
+    right: .5rem;
+    transform: translateY(-50%);
+    padding: 0 .35rem;
+    border: 0;
+    background: transparent;
+    color: #6c757d;
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.sgtl-filtro > .form-select ~ .sgtl-filtro-borrar {
+    right: 2.25rem;
+}
+
+.sgtl-filtro.con-valor > .sgtl-filtro-borrar {
+    display: block;
+}
+
+.sgtl-filtro-borrar:hover,
+.sgtl-filtro-borrar:focus-visible {
+    color: #212529;
+}
+
+/* §5.1 Avisos */
+.sgtl-toasts {
+    position: fixed;
+    top: 0;
+    right: 0;
+    z-index: 1090;
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+    max-width: 100%;
+    padding: 1rem;
+    pointer-events: none;
+}
+
+.sgtl-toast {
+    display: flex;
+    align-items: flex-start;
+    gap: .75rem;
+    width: 360px;
+    max-width: 100%;
+    padding: .75rem 1rem;
+    border-radius: .5rem;
+    color: #fff;
+    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    opacity: 0;
+    transform: translateY(-.5rem);
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events: auto;
+}
+
+.sgtl-toast.visible {
+    opacity: 1;
+    transform: none;
+}
+
+.sgtl-toast-exito { background-color: #198754; }
+.sgtl-toast-error { background-color: #dc3545; }
+
+.sgtl-toast .sgtl-toast-texto {
+    flex: 1;
+}
+
+.sgtl-toast .btn-close {
+    flex-shrink: 0;
+}
+
+/* §10 Celular: los avisos ocupan el ancho de la pantalla */
+@media (max-width: 575.98px) {
+    .sgtl-toasts {
+        left: 0;
+    }
+
+    .sgtl-toast {
+        width: 100%;
+    }
+}

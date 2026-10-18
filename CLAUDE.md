@@ -37,6 +37,14 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
   agregar otros secretos al repo.
 - Antes de tocar módulos de Facu o Fede, avisar a Rocío para que coordine con ellos.
 - Textos de pantalla y mensajes de error en español rioplatense (voseo: "Completá…").
+- **Design system:** las pantallas nuevas o tocadas siguen `docs/design-system/03-decisiones.md`.
+  Estilos en `assets/static/css/sgtl.css` y funciones en `assets/static/js/sgtl-ui.js`
+  (`window.SGTL`: toasts, confirmación, tooltips, estados, botones de fila, cruz de filtros,
+  fechas, montos, carga). No copies HTML ni JS de avisos, confirmaciones o badges en la
+  pantalla. El botón que abre un modal y el título del modal dicen lo mismo, en infinitivo
+  ("Registrar camión"); el pie es Cancelar + el verbo ("Guardar", "Eliminar"), nunca
+  "Confirmar". Proformas, cuenta corriente, facturación, e-mail (Facu) y WhatsApp (Fede):
+  avisar a Rocío antes de aplicar estas reglas.
 - **Fechas:** hoy la hora sale de tres lugares distintos (base en UTC, API en hora local,
   navegador en UTC); ver sección 2 de `PENDIENTES-SISTEMA.md` antes de agregar código
   que guarde o compare fechas.
