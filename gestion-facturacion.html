@@ -101,6 +101,11 @@
                 </div>
                 <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                    <div id="avisoDescartarProforma" class="alert alert-light-warning color-warning d-none" role="alert">
+                        <div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>
+                        <button type="button" class="btn btn-sm btn-light-secondary" onclick="seguirEditandoProforma()">Seguir editando</button>
+                        <button type="button" class="btn btn-sm btn-warning ms-1" onclick="descartarCambiosProforma()">Descartar cambios</button>
+                    </div>
                     <input type="hidden" id="p_id">
                     <div class="bloque-titulo">Datos generales y del cliente</div>
                     <div class="row g-2">
@@ -319,6 +324,7 @@
             $('#modalMensajeProforma').modal('show');
         }
         function cerrarProformaYMostrarMensaje(mensaje, tipo) {
+            proformaConCambios = false;
             $('#modalProforma').one('hidden.bs.modal', function () { mostrarMensajeProforma(mensaje, tipo); }).modal('hide');
         }
 
@@ -542,8 +548,8 @@
             tr.querySelectorAll('input,select').forEach(function (inp) { inp.addEventListener('input', recalcularTotales); inp.addEventListener('change', recalcularTotales); });
             return tr;
         }
-        function agregarLinea(l) { document.getElementById('cuerpoConceptos').appendChild(filaConcepto(l)); recalcularTotales(); }
-        function delLinea(btn) { btn.closest('tr').remove(); recalcularTotales(); }
+        function agregarLinea(l) { document.getElementById('cuerpoConceptos').appendChild(filaConcepto(l)); recalcularTotales(); proformaConCambios = true; }
+        function delLinea(btn) { btn.closest('tr').remove(); recalcularTotales(); proformaConCambios = true; }
         function dupLinea(btn) { var t = btn.closest('tr'); var l = leerFila(t); var nueva = filaConcepto(l); t.after(nueva); recalcularTotales(); }
         function leerFila(tr) {
             function g(cls) { var e = tr.querySelector(cls); return e ? e.value : ''; }
@@ -592,9 +598,10 @@
                     var yaCargados = {};
                     document.querySelectorAll('#cuerpoConceptos .c-codigo').forEach(function (i) { yaCargados[(i.value || '').trim()] = true; });
                     var nuevas = lineas.filter(function (l) { return !yaCargados[l.Codigo]; });
-                    if (nuevas.length < lineas.length) advertencias.push((lineas.length - nuevas.length) + ' viaje(s) ya estaban en la proforma y no se duplicaron.');
+                    var repetidos = lineas.length - nuevas.length;
+                    if (repetidos) advertencias.push(repetidos === 1 ? '1 viaje ya estaba en la proforma y no se duplicó.' : repetidos + ' viajes ya estaban en la proforma y no se duplicaron.');
                     nuevas.forEach(function (l) { agregarLinea(l); });
-                    var msg = nuevas.length ? ('Se agregaron ' + nuevas.length + ' viaje(s).') : 'No hay viajes disponibles para ese cliente en el período.';
+                    var msg = nuevas.length === 1 ? 'Se agregó 1 viaje.' : nuevas.length ? ('Se agregaron ' + nuevas.length + ' viajes.') : 'No hay viajes disponibles para ese cliente en el período.';
                     if (advertencias.length) msg += ' Atención: ' + advertencias.join(' ');
                     mostrarMensajeViajes(msg);
                 })
@@ -624,6 +631,7 @@
             document.getElementById('tituloModal').textContent = 'Nueva proforma';
             document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge bg-secondary ms-2">Borrador</span>';
             setModoLectura(false);
+            proformaConCambios = false;
             $('#modalProforma').modal('show');
         }
         function editarProforma(id) { abrirProforma(id, false); }
@@ -655,9 +663,14 @@
                 document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
+                proformaConCambios = false;
                 $('#modalProforma').modal('show');
             }).catch(function () { alert('No se pudo abrir la proforma.'); });
         }
+        // Cerrar con cambios sin guardar (líneas traídas o datos editados) pide confirmación dentro del modal.
+        var proformaConCambios = false;
+        function seguirEditandoProforma() { document.getElementById('avisoDescartarProforma').classList.add('d-none'); }
+        function descartarCambiosProforma() { proformaConCambios = false; seguirEditandoProforma(); $('#modalProforma').modal('hide'); }
         function setModoLectura(ro) {
             var cont = document.getElementById('modalProforma');
             cont.querySelectorAll('input,select,textarea').forEach(function (e) { if (e.id === 'p_numero') return; e.disabled = ro; });
@@ -716,6 +729,7 @@
                     if (!res.ok) { mostrarMensajeProforma('No se pudo guardar: ' + (res.j.error || JSON.stringify(res.j)), 'danger'); return; }
                     var nuevoId = res.j.Proforma_ID || id;
                     setVal('p_id', nuevoId);
+                    proformaConCambios = false;
                     if (cb) { cb(nuevoId); } else { cerrarProformaYMostrarMensaje('Borrador guardado.', 'success'); buscarProformas(profState.page); }
                 })
                 .catch(function () { mostrarMensajeProforma('Error de red al guardar.', 'danger'); });
@@ -804,6 +818,16 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            var modalProforma = document.getElementById('modalProforma');
+            modalProforma.addEventListener('input', function (e) { if (!e.target.disabled && e.target.id !== 'p_id') proformaConCambios = true; });
+            modalProforma.addEventListener('change', function (e) { if (!e.target.disabled && e.target.id !== 'p_id') proformaConCambios = true; });
+            modalProforma.addEventListener('hide.bs.modal', function (e) {
+                if (!proformaConCambios || document.getElementById('btnGuardarBorrador').style.display === 'none') return;
+                e.preventDefault();
+                document.getElementById('avisoDescartarProforma').classList.remove('d-none');
+                $('#modalProforma .modal-body').scrollTop(0);
+            });
+            modalProforma.addEventListener('hidden.bs.modal', function () { proformaConCambios = false; seguirEditandoProforma(); });
             initEstadosFiltro();
             var estadoUrl = new URLSearchParams(window.location.search).get('estado');
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
