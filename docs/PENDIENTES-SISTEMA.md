@@ -28,7 +28,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
-| 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
+| 6 | Proforma Rukas: importar Excel de Rukas (rediseño) | Diseño acordado 18/10 (§10 del doc), falta OK de Facu y confirmar con Claudia | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
 
@@ -201,16 +201,24 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 ---
 
-## 6. Proforma recibida (clientes Rukas / Marfrig) — SOLO DEFINICIÓN
+## 6. Proforma Rukas (clientes Rukas / Marfrig) — SOLO DEFINICIÓN
 
 No es un bug de las pruebas: es un **rediseño de negocio** detectado al contrastar SGTL con las respuestas de Claudia.
 
-- Resumen para compartir: `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`.
-- Preferencia actual: opción **B** — registrar proforma **recibida** de Marfrig (PDF + datos + viajes) y emitir factura TS desde ahí; directos mantienen proforma propia.
-- Lectura PDF (PdfPig) como mejora; OCR no para el MVP.
-- Diseño técnico acordado el 15/10: ver §10 de `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` (proforma de tipo Recibida, estado En reclamo si no coinciden totales, factura con el flujo actual de Facu).
-- **18/10: recorrida de solo lectura por Rukas** (ver §12 de `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`). La proforma de Rukas no es un PDF: tiene detalle por N° de transporte, exportable a Excel. Conviene importar ese Excel en lugar de leer un PDF. Los reclamos se hacen dentro de Rukas (bloqueo o anulación del transporte con motivo).
-- Implementación: no empezada. Falta confirmar con Claudia quién genera la proforma en Rukas (la pantalla del transportista tiene "Generar proforma"), alinear con Facu. Formato del Excel ya relevado con un archivo real (§12).
+- Documento: `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`. **Diseño vigente: §10 (18/10/2026)**, que reemplaza al del 15/10 (PDF, estado En reclamo).
+- Resumen del §10:
+  - Para clientes `Con_plataforma`, la proforma se crea **importando el Excel** que se exporta de Rukas.
+  - SGTL controla **línea por línea** contra los viajes por N° de transporte (tabla de 8 casos).
+  - Se factura por el **total de Rukas**, con el flujo actual de Facu.
+  - Si hay que corregir en Rukas, se **pide la corrección a Marfrig** y se **reimporta**.
+  - Después de facturar, se marca **"Cargada en Rukas"**.
+  - Los clientes directos no cambian.
+- 18/10: recorrida de solo lectura por Rukas y formato del Excel relevado con un archivo real (§12).
+- **Premisas del diseño, a confirmar con Claudia** (preguntas 7 y 8 del §11):
+  - [ ] ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? Si lo hace Marfrig, revisar el flujo.
+  - [ ] Con una proforma ya generada, ¿quién la corrige? Con el perfil de Transporte Sanchez **no hay opción de modificar, quitar transportes ni anular** una proforma en Proceso (revisado en el código de la pantalla); serían funciones de Marfrig. ¿Se lo piden a Marfrig por mail o por ticket? ¿Cuánto tarda?
+- [ ] **Con Facu:** OK al diseño (toca Facturación) y el N° de factura fiscal que se carga en Rukas (pregunta 9 del §11).
+- Implementación: no empezada.
 
 ---
 

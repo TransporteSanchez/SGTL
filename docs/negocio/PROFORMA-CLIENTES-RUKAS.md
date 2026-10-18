@@ -1,7 +1,7 @@
 # Proforma en clientes Rukas / Marfrig — resumen de definición
 
 Documento para alinear equipo (y para retomar el diseño en otra conversación o con otra IA).
-Fecha de esta nota: 15/10/2026.
+Fecha de esta nota: 15/10/2026. **Actualizada el 18/10/2026: el diseño vigente es el §10.** Los §5–§9 quedan como historia de la decisión (todavía hablan de leer el PDF, que se descartó).
 Fuente operativa: respuestas de Claudia en el Doc *Relevamiento Marfrig-Rukas → SGTL*.
 
 ---
@@ -101,6 +101,8 @@ El espejo justifica más esfuerzo si SGTL **concilia** la proforma recibida de M
 
 Ir por **B (proforma recibida)**, con lectura de PDF como mejora si hay tiempo y un PDF real de Marfrig.
 
+**Actualización 18/10:** sigue siendo B, pero la proforma se trae **importando el Excel de Rukas** en lugar de leer un PDF. Ver §10 y §12.
+
 ---
 
 ## 6. Flujo propuesto (opción B)
@@ -165,61 +167,127 @@ Pedir a **Claudia** un **PDF de ejemplo** de proforma Marfrig (aunque con datos 
 
 ---
 
-## 10. Diseño técnico acordado (15/10/2026, con Claude)
+## 10. Diseño acordado (18/10/2026, reemplaza el del 15/10)
 
-Bajada concreta de la opción B. **Todavía no implementado**: espera las respuestas de Claudia (§11) y el OK de Facu.
+**Todavía no implementado.** Falta el OK de Facu (toca Facturación) y confirmar las premisas con Claudia (§11).
+
+### Premisas
+
+1. **La proforma la genera Transporte Sanchez en Rukas**, eligiendo transportes ya cerrados. Los importes los fija Marfrig (costos SAP) y TS los conforma antes, viaje por viaje, en Cierre de Reparto. *(A confirmar con Claudia; ver §12.)*
+2. **Una proforma ya generada no la puede corregir TS:** con su perfil no aparecen modificar, quitar transportes ni anular. La corrección se le pide a Marfrig. *(A confirmar con Claudia.)*
+3. **No hay API pública de Rukas.** La integración es manual: el **Excel del detalle** se exporta desde Rukas y se importa en SGTL. Del PDF no se lee nada (el perfil de TS ni siquiera tiene el botón).
+4. **La factura de TS se emite por el total de Rukas.** Es lo que Marfrig paga y lo que se carga contra esa proforma. Si la tarifa de SGTL da otro importe, la diferencia queda registrada como aviso; la factura no la corrige.
 
 ### Idea central
 
 No se arma un módulo aparte: la proforma de SGTL pasa a tener **dos tipos**.
 
-- **Propia** — la de hoy, para clientes directos. Sin cambios.
-- **Recibida** — registra la proforma de Marfrig, para clientes `Con_plataforma`.
+- **Propia:** la de hoy, para clientes directos. Sin cambios: viajes → proforma → factura.
+- **Rukas:** se crea **importando el Excel** de una proforma de Rukas, para clientes `Con_plataforma`. Reemplaza al botón "Generar proforma" propio para esos clientes.
 
-La factura de TS sale **con el flujo actual de Facu, sin cambios**: hoy exige una proforma `Aceptada` con conceptos y totales coherentes, y la recibida cumple ese contrato. Cuenta corriente, anulación y "viaje ya facturado" siguen igual.
-
-### Base de datos (script nuevo en `database/`)
-
-- `PROFORMAS`: columna `Tipo_Proforma` (`Propia` / `Recibida`, default `Propia`) + datos de Marfrig: N°, fecha y total declarado.
-- Tabla nueva `PROFORMA_ADJUNTO` para el PDF de Marfrig (mismo patrón que `VIAJE_EVIDENCIA`: nombre, tipo, `VARBINARY(MAX)`).
+La factura sale **con el flujo actual de Facu, sin cambios**: proforma `Aceptada` con conceptos y totales coherentes → factura. Cuenta corriente, anulación con nota de crédito y "viaje ya facturado" siguen igual.
 
 ### Flujo
 
-1. Nueva proforma → si el cliente es `Con_plataforma`, el modal muestra el bloque **"Proforma recibida de Marfrig"** (N°, fecha, total, PDF).
-2. **Traer viajes** como hoy (tarifas SGTL). Mejora deseable: elegirlos por N° de remito / transporte tal como figuran en la proforma de Marfrig, no solo por período.
-3. **Panel de control:** total Marfrig vs total SGTL, diferencia, viajes sin remito / transporte.
-4. **Registrar** (en lugar de "Generar"): asigna el número interno PF y pasa los viajes a **Facturado**.
-5. Si los totales coinciden → **Aceptada** directo (no se "envía" a Marfrig) → factura TS.
-6. Si **no coinciden** → estado **En reclamo** con motivo obligatorio. No se puede facturar hasta resolverlo:
-   - Marfrig manda proforma corregida → se actualizan N°, total y PDF y se vuelve a controlar; o
-   - se acepta igual, con motivo, por uno de estos caminos (**a definir según lo que hace hoy Claudia**):
-     - (a) línea visible de ajuste "Diferencia según proforma Marfrig N° X", para que la factura iguale a Marfrig;
-     - (b) facturar con tarifas SGTL y dejar la diferencia registrada.
+0. **Antes de generar en Rukas (ayuda opcional):** SGTL muestra, por cliente, los viajes listos para facturar con su N° de transporte, para usarlos de guía al tildar en Rukas. Es el único momento en que TS decide qué entra en la proforma, y así se evitan la mayoría de las correcciones.
+1. **En Rukas:** generar la proforma y exportar el Excel (Proceso → detalle de la proforma → ícono de Excel).
+2. **En SGTL, "Importar proforma Rukas":** se elige el cliente y el archivo.
+   - El N° de proforma de Rukas sale del nombre del archivo y se puede corregir.
+   - Se valida el archivo (caso 8 de la tabla).
+   - Se crea la proforma de tipo Rukas, con su número interno PF como cualquier otra, y se guardan el Excel original y las líneas.
+3. **Control línea por línea:** cada línea se cruza con los viajes de SGTL por `Num_Transporte` y queda con uno de los resultados de la tabla de casos. Arriba, los totales: Rukas, SGTL y diferencia.
+4. **Resolución:**
+   - **Todo coincide** → **Aceptar**.
+   - **Diferencias aceptables** (casos 2, 3 y 5) → **Aceptar con observación**: motivo obligatorio, queda en la auditoría.
+   - **El error está en SGTL** (caso 4) → se corrige el viaje y se usa **Volver a controlar**, sin reimportar.
+   - **El error está en Rukas** (casos 2 y 7, cuando corresponde corregir esta proforma) → **Pedir corrección a Marfrig**: la proforma pasa a `En corrección` con fecha, motivo y medio (mail o ticket), para que no quede olvidada.
+     - Cuando Marfrig corrige la misma proforma → se baja el Excel de nuevo y se usa **Reimportar**: mismo N°, reemplaza las líneas y vuelve a controlar.
+     - Si Marfrig la anula y genera otra (otro N°) → se **anula** la proforma en SGTL y se **importa** la nueva.
+   - **Casos bloqueantes** (6 y 8) → no se puede aceptar, ni siquiera con observación.
+5. **Factura:** con el flujo actual. La proforma Rukas tiene **una línea de concepto por transporte** (importe de viaje + adicionales de Rukas), así que el total es el de Rukas. Los viajes que coincidieron quedan vinculados y pasan a `Facturado` al emitir la factura, como hoy.
+6. **Cargar en Rukas:** SGTL muestra el N° y la fecha de factura listos para copiar. Después de cargarla en Rukas, se marca **Cargada en Rukas** (fecha y usuario). Un listado muestra las facturas Rukas que faltan cargar. *(Ver pregunta 9 de §11: el N° que pide Rukas es el de la factura fiscal.)*
 
-**Por qué puede haber diferencias aunque los viajes sean los correctos:** tarifa Marfrig vs tarifa cargada en SGTL, km en viajes por kilómetro, adicionales / descuentos que viven en Rukas (rechazos, parciales, estadías), un viaje que Marfrig no incluyó o al revés. Ese control es el valor del módulo.
+**Reglas:**
 
-### Lectura del PDF (después, sin rediseño)
+- **Reimportar** se puede solo hasta emitir la factura. Después, si algo cambia en Rukas, hace falta una nota de crédito, como hoy.
+- **No puede haber dos proformas Rukas vigentes** con el mismo N° y el mismo cliente.
+- Un viaje sigue pudiendo estar en **una sola proforma** (regla actual de `PROFORMAS_VIAJES`), sea propia o Rukas.
 
-- El PDF ya queda guardado desde la v1 (`PROFORMA_ADJUNTO`).
-- Se agrega un endpoint que lee el texto (PdfPig, NuGet) y devuelve **valores sugeridos** (N°, fecha, total, lista de remitos) para precompletar los mismos campos de la v1; la persona confirma.
-- Si el PDF trae remitos, el mismo endpoint permite **preseleccionar los viajes**.
-- Sin cambios de base ni del circuito de facturación. OCR solo si el PDF resulta ser un escaneo.
-- Condición: que los campos de la v1 tengan la forma del PDF real → **el ejemplo de Claudia se necesita antes de implementar**. El PDF de ejemplo no se sube al repo (es documento de un cliente).
+### Tabla de casos (control línea por línea)
+
+| # | Situación | Qué se hace | ¿Frena la factura? |
+|---|---|---|---|
+| 1 | **Coincide:** mismo transporte, mismo importe | Nada | No |
+| 2 | **Mismo transporte, importe distinto; Rukas está mal** (falta un adicional, tarifa equivocada) | Pedir corrección a Marfrig y reimportar, o aceptar con observación | Sí, hasta reimportar o aceptar con observación |
+| 3 | **Mismo transporte, importe distinto; SGTL está mal** (tarifa vieja) | Aceptar con observación y, si corresponde, actualizar la tarifa en SGTL | No (se factura por el importe de Rukas) |
+| 4 | **En Rukas sí, y SGTL no encuentra el transporte** porque al viaje le falta el N° o está mal cargado | Corregir el viaje en SGTL y volver a controlar | Sí, hasta corregirlo |
+| 5 | **En Rukas sí, y el viaje no existe en SGTL** | Cargarlo en SGTL, o aceptar con observación "sin viaje en SGTL" | No, si se acepta con observación |
+| 6 | **El transporte ya está facturado en SGTL** en otra proforma | Revisar: es un posible cobro doble | **Sí, siempre** |
+| 7 | **En SGTL hay viajes del cliente que no están en esta proforma** | Aviso, no error (ver abajo) | **No** |
+| 8 | **El archivo es inválido:** formato distinto, transporte repetido, cliente que no es `Con_plataforma`, o el N° ya está facturado en SGTL | Se rechaza al importar | Sí |
+
+**Caso 7.** Una proforma de Rukas es un lote: incluye solo los transportes que se tildaron al generarla. Que SGTL tenga más viajes es normal:
+
+- El viaje **todavía está en Pendientes en Rukas** (sin cierre de reparto): va en la próxima proforma.
+- **Ya está en otra proforma de Rukas** importada antes: SGTL lo sabe y no lo cuenta.
+- **Se pasó tildarlo:** recién ahí corresponde pedir la corrección a Marfrig, o dejarlo para la próxima proforma.
+
+Por eso SGTL **avisa sin frenar**: "Hay N viajes de este cliente listos para facturar que no están en ninguna proforma de Rukas", con la fecha de cada uno. Un viaje de Marfrig que está en SGTL y no existe en Rukas casi no puede pasar (los transportes los crea Marfrig); si aparece, lo más probable es un error de carga en SGTL.
+
+### Estados de la proforma Rukas
+
+`Generada` (importada, en control) → `En corrección` (pedido a Marfrig) → `Generada` (reimportada) → `Aceptada` → `Facturada`. Desde cualquiera antes de `Facturada` se puede pasar a `Anulada`. Los estados `Borrador` y "enviada al cliente" no aplican.
+
+### Base de datos (script nuevo en `database/`)
+
+- **`PROFORMAS`:**
+  - `Tipo_Proforma` (`Propia` / `Rukas`, default `Propia`).
+  - N° de proforma Rukas.
+  - Observación de aceptación.
+  - Datos del pedido de corrección: fecha, motivo y medio.
+  - Fecha y usuario de "Cargada en Rukas".
+  - Revisar si `Estado` tiene alguna restricción que impida el valor nuevo `En corrección`.
+- **Tabla nueva de líneas importadas** (por ejemplo `PROFORMA_RUKAS_LINEA`):
+  - De la proforma: N° de transporte, fecha, ruta, importe de viaje y adicionales.
+  - Del control: `Viaje_ID` encontrado (puede quedar vacío), importe según SGTL, resultado del control (casos 1–6) y observación.
+  - Se reemplaza entera al reimportar.
+- **`PROFORMA_ADJUNTO`** para el Excel original importado (mismo patrón que `VIAJE_EVIDENCIA`).
+- Conceptos en `PROFORMA_DETALLE` y viajes en `PROFORMAS_VIAJES`, como hoy.
+
+### Lectura del Excel
+
+- Formato relevado con un archivo real: ver "Formato del Excel del detalle" en §12. Puntos clave:
+  - `Importe Viajes` viene como texto con **coma de miles**.
+  - `Fecha` viene como texto `dd.MM.yyyy`.
+  - El N° de proforma solo está en el nombre del archivo.
+- Librería .NET 4.8 para leer `.xlsx`: **DocumentFormat.OpenXml** o **ClosedXML** (las dos con licencia MIT). Hoy el proyecto no tiene ninguna. Se agrega por NuGet desde la VM.
+- Si Rukas cambia el formato (columnas o encabezados), la importación lo rechaza con un mensaje claro en lugar de leer mal.
 
 ### Fuera de la v1
 
-Lectura automática del PDF, OCR, matching línea por línea PDF ↔ viaje.
+- Lectura de PDF y OCR: descartados (no hacen falta).
+- Integración automática con Rukas: solo si Rukas ofrece una API para integradores (pregunta 10 de §11). No usar la API interna de su pantalla.
+- Crear viajes en SGTL a partir de las líneas del Excel (el Excel no trae chofer ni camión).
 
 ---
 
 ## 11. Preguntas abiertas (para Facu / Claudia / equipo)
 
-1. ¿El total de la factura de TS debe igualar siempre el de la proforma Marfrig, o se factura con tarifas SGTL y se registra la diferencia?
-2. ¿El PDF de Marfrig es obligatorio para emitir factura en clientes Rukas?
-3. ¿Para Rukas desaparece del todo “Generar proforma” propia en SGTL, o conviven un tiempo?
-4. ¿Hay un PDF real de ejemplo para diseñar la extracción y los controles? — **Pedido a Claudia el 15/10.**
-6. ¿Qué hace hoy Claudia cuando el importe de la proforma de Marfrig no coincide con lo esperado (reclama, factura igual, ajusta)? — **Pedido a Claudia el 15/10.** Define la salida (a) / (b) del estado En reclamo (§10).
-5. ¿Quién carga la proforma recibida en la práctica (Claudia / mesa) y en qué momento del flujo?
+Respondidas o resueltas:
+
+1. ~~¿El total de la factura de TS debe igualar siempre el de la proforma Marfrig?~~ **Sí:** se factura por el total de Rukas y la diferencia con la tarifa de SGTL queda como aviso (§10).
+2. ~~¿El PDF de Marfrig es obligatorio?~~ **No aplica:** la fuente es el Excel. El adjunto (el Excel original) se guarda solo.
+3. ~~¿Para Rukas desaparece "Generar proforma" propia?~~ **Sí:** para clientes `Con_plataforma` se reemplaza por "Importar proforma Rukas".
+4. ~~¿Hay un PDF real de ejemplo?~~ **Resuelto con el Excel real** (18/10, §12).
+
+Abiertas:
+
+5. ¿Quién carga la proforma en SGTL en la práctica (Claudia / mesa) y en qué momento?
+6. ¿Qué hace hoy Claudia cuando un importe no coincide? Por lo visto (§12), reclama en Cierre de Reparto antes de dar conformidad. Confirmarlo.
+7. ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? (premisa 1 de §10)
+8. Con una proforma ya generada, ¿la corrige Marfrig a pedido? ¿Por mail o por ticket? ¿Cuánto tarda? (premisa 2 de §10)
+9. El N° de factura que se carga en Rukas (formato `A00005-00000659`) es el de la **factura fiscal (ARCA)**. Los comprobantes de SGTL son internos y se numeran con un correlativo sin punto de venta. ¿Guardamos en SGTL el N° fiscal para la marca "Cargada en Rukas"? Ver con **Facu**.
+10. ¿Rukas ofrece API o exportación para integradores? Preguntar por ticket de soporte o vía Marfrig.
 
 ---
 
@@ -250,13 +318,19 @@ reales de proformas, facturas ni importes.
 
 ### Diferencias y reclamos dentro de Rukas
 
-Rukas tiene estas acciones (algunas pueden ser solo para el perfil de Marfrig):
+El código de la pantalla tiene estas acciones, pero **con el perfil de Transporte Sanchez no se muestran**: van en solapas (Diferencias, Bloqueados, Anulados) o en menús que a TS le llegan vacíos. Serían del perfil de Marfrig:
 
-- **Bloquear un transporte para proforma**, con observación (y desbloquearlo después).
+- **Bloquear un transporte para proforma**, con observación, y desbloquearlo.
 - **Anular un transporte**, con motivo obligatorio y comprobante adjunto (JPG o PDF). "Quitar anulación" lo devuelve a Pendientes.
 - **Diferencia de número de entrega** entre SAP y TRF, con opción de actualizar la entrega.
-- **Pasar a Preliquidar por excepción**, con justificación.
-- **Modificar una proforma generada**: agregar o quitar transportes.
+- **Modificar una proforma generada:** agregar o quitar transportes.
+
+TS sí tiene:
+
+- **antes de generar la proforma**, elegir qué transportes cerrados entran;
+- en los casos que Rukas habilita, **pasar un transporte pendiente a Preliquidar por excepción**, con justificación.
+
+Según la capacitación de Rukas para empresas de transporte (septiembre 2025), en **Cierre de Reparto** TS carga los adicionales y **da conformidad del viaje, la tarifa y los adicionales**. Ese es el momento del reclamo, antes de la proforma.
 
 ### Qué cambia respecto de lo definido en §5–§10
 
@@ -266,8 +340,10 @@ Rukas tiene estas acciones (algunas pueden ser solo para el perfil de Marfrig):
    - detectar viajes que están en Rukas y no en SGTL, o al revés;
    - comparar el importe de Rukas con la tarifa de SGTL **por viaje**.
 3. **Respaldo:** el adjunto pasa a ser opcional. Sirve para guardar el Excel exportado o la imagen de la factura que se sube a Rukas.
-4. **Pregunta 6 (§11), respondida en parte:** los reclamos se canalizan dentro de Rukas (bloqueo o anulación del transporte con motivo y comprobante, o modificación de la proforma). Falta saber qué hace Claudia en la práctica y si hay acuerdos por fuera del sistema.
+4. **Pregunta 6 (§11), respondida en parte:** los reclamos se hacen en Cierre de Reparto, antes de dar conformidad. Una proforma ya generada la corrige Marfrig (TS no tiene esas opciones). Falta saber qué hace Claudia en la práctica.
 5. **Paso nuevo después de facturar en SGTL:** cargar la factura en Rukas. Esa carga sigue siendo manual (sin API), pero SGTL puede mostrar el N° y la fecha listos para copiar y marcar "Cargada en Rukas".
+
+El diseño que sale de todo esto está en el §10.
 
 ### Formato del Excel del detalle
 
