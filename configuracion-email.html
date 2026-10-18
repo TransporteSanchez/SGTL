@@ -64,6 +64,17 @@
                             <div class="form-text mt-2">La asociación es explícita: si seleccionás el Servicio 1, Facturación usará ese perfil aunque existan otros perfiles SMTP.</div>
                         </div>
                     </div>
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header"><h6 class="card-title mb-1"><i class="bi bi-envelope me-2"></i>Perfil para Presupuestos</h6><small class="text-muted">Elegí el perfil SMTP para el módulo de Presupuestos.</small></div>
+                        <div class="card-body">
+                            <div id="emailPresupuestosFeedback" class="alert d-none mb-3" role="status"></div>
+                            <div class="row g-3 align-items-end">
+                                <div class="col-md-8"><label class="form-label" for="emailPresupuestosService">Perfil SMTP asignado</label><select id="emailPresupuestosService" class="form-select"><option value="">Cargando perfiles…</option></select></div>
+                                <div class="col-md-4 d-grid"><button type="button" id="btnGuardarEmailPresupuestos" class="btn btn-primary"><i class="bi bi-save me-1"></i>Asignar a Presupuestos</button></div>
+                            </div>
+                            <div class="form-text mt-2">Podés crear un perfil SMTP en esta pantalla y asignarlo aquí. El módulo de Presupuestos usará este perfil para enviar el PDF al cliente.</div>
+                        </div>
+                    </div>
                 </section>
             </div>
             <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
@@ -92,7 +103,7 @@
                             <div class="col-md-6"><div class="form-check mt-2"><input id="emailTls12" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailTls12">Usa TLS 1.2</label></div></div>
                             <div class="col-12 mt-2"><h6 class="mb-0">Plantilla predeterminada</h6></div>
                             <div class="col-12"><label class="form-label" for="emailAsunto">Asunto</label><input id="emailAsunto" class="form-control" maxlength="250" placeholder="Comprobante adjunto"></div>
-                            <div class="col-12"><label class="form-label" for="emailCuerpoHtml">Cuerpo HTML</label><textarea id="emailCuerpoHtml" class="form-control" rows="6" placeholder="&lt;p&gt;Hola,&lt;/p&gt;&lt;p&gt;Adjuntamos el comprobante solicitado.&lt;/p&gt;"></textarea></div>
+                            <div class="col-12"><label class="form-label" for="emailCuerpoHtml">Cuerpo HTML</label><textarea id="emailCuerpoHtml" class="form-control" rows="6" placeholder="&lt;p&gt;Hola,&lt;/p&gt;&lt;p&gt;Adjuntamos el comprobante solicitado.&lt;/p&gt;"></textarea><div class="form-text">Para Presupuestos podés usar {{CLIENTE}} y {{NUMERO_PRESUPUESTO}} en el asunto y el cuerpo.</div></div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -261,6 +272,19 @@
                 selector.disabled = configuracionesCargadas.length === 0;
                 campo('btnGuardarEmailFacturacion').disabled = configuracionesCargadas.length === 0;
             }
+            function cargarOpcionesPresupuestos(serviceSeleccionado) {
+                var selector = campo('emailPresupuestosService');
+                selector.innerHTML = '<option value="">Seleccioná un perfil SMTP…</option>';
+                configuracionesCargadas.forEach(function (configuracion) {
+                    var opcion = document.createElement('option');
+                    opcion.value = String(configuracion.Service);
+                    opcion.textContent = 'Servicio ' + configuracion.Service + ' · ' + (configuracion.Name || configuracion.CredentialFromMailAddres || 'Sin nombre') + ' · ' + (configuracion.CredentialFromMailAddres || 'sin remitente');
+                    opcion.selected = Number(configuracion.Service) === Number(serviceSeleccionado);
+                    selector.appendChild(opcion);
+                });
+                selector.disabled = configuracionesCargadas.length === 0;
+                campo('btnGuardarEmailPresupuestos').disabled = configuracionesCargadas.length === 0;
+            }
             function cargarConfiguraciones() {
                 return fetch(API, { headers: encabezados() }).then(function (respuesta) {
                     if (respuesta.status === 404) return [];
@@ -270,6 +294,7 @@
                     configuracionesCargadas = Array.isArray(configuraciones) ? configuraciones : (configuraciones ? [configuraciones] : []);
                     renderizarConfiguraciones(configuracionesCargadas);
                     cargarOpcionesFacturacion(campo('emailFacturacionService').value);
+                    cargarOpcionesPresupuestos(campo('emailPresupuestosService').value);
                     return configuracionesCargadas;
                 });
             }
@@ -293,6 +318,32 @@
                 var service = Number(campo('emailFacturacionService').value || 0);
                 if (!service) return Promise.reject(new Error('Seleccioná un perfil SMTP para Facturación.'));
                 return fetch(API + '/asignaciones/facturacion', {
+                    method: 'PUT', headers: encabezados(), body: JSON.stringify({ Service: service })
+                }).then(function (respuesta) {
+                    if (!respuesta.ok) return leerError(respuesta).then(function (error) { throw new Error(error); });
+                    return respuesta.json();
+                });
+            }
+            function cargarAsignacionPresupuestos() {
+                return fetch(API + '/asignaciones/presupuestos', { headers: encabezados() }).then(function (respuesta) {
+                    if (respuesta.status === 404) {
+                        cargarOpcionesPresupuestos(null);
+                        mostrar('emailPresupuestosFeedback', 'info', 'Todavía no hay un perfil SMTP asignado a Presupuestos.');
+                        return null;
+                    }
+                    if (!respuesta.ok) return leerError(respuesta).then(function (error) { throw new Error(error); });
+                    return respuesta.json();
+                }).then(function (asignacion) {
+                    if (!asignacion) return null;
+                    cargarOpcionesPresupuestos(asignacion.Service);
+                    mostrar('emailPresupuestosFeedback', 'success', 'Presupuestos tiene asignado el Servicio ' + asignacion.Service + ' · ' + (asignacion.Perfil || asignacion.Remitente || 'perfil SMTP asignado') + '.');
+                    return asignacion;
+                });
+            }
+            function guardarAsignacionPresupuestos() {
+                var service = Number(campo('emailPresupuestosService').value || 0);
+                if (!service) return Promise.reject(new Error('Seleccioná un perfil SMTP para Presupuestos.'));
+                return fetch(API + '/asignaciones/presupuestos', {
                     method: 'PUT', headers: encabezados(), body: JSON.stringify({ Service: service })
                 }).then(function (respuesta) {
                     if (!respuesta.ok) return leerError(respuesta).then(function (error) { throw new Error(error); });
@@ -364,6 +415,7 @@
                 try {
                     await cargarConfiguraciones();
                     await cargarAsignacionFacturacion();
+                    await cargarAsignacionPresupuestos();
                 } catch (error) {
                     mostrar('emailFeedback', 'danger', error.message || 'No se pudieron cargar las configuraciones de correo.');
                 }
@@ -386,6 +438,7 @@
                     cerrarModal('emailConfigModal');
                     await cargarConfiguraciones();
                     await cargarAsignacionFacturacion();
+                    await cargarAsignacionPresupuestos();
                     mostrar('emailFeedback', 'success', 'La configuración se guardó correctamente. No se realizó ninguna prueba de conexión.');
                 } catch (error) {
                     mostrar('emailFormFeedback', 'danger', error.message || 'No se pudo guardar la configuración.');
@@ -420,6 +473,16 @@
                 } catch (error) {
                     mostrar('emailFacturacionFeedback', 'danger', error.message || 'No se pudo guardar la asociación de Facturación.');
                 } finally { cambiarEstadoBoton('btnGuardarEmailFacturacion', false); }
+            });
+            campo('btnGuardarEmailPresupuestos').addEventListener('click', async function () {
+                cambiarEstadoBoton('btnGuardarEmailPresupuestos', true);
+                try {
+                    var asignacion = await guardarAsignacionPresupuestos();
+                    cargarOpcionesPresupuestos(asignacion.Service);
+                    mostrar('emailPresupuestosFeedback', 'success', 'Presupuestos tiene asignado el Servicio ' + asignacion.Service + ' · ' + (asignacion.Perfil || asignacion.Remitente || 'perfil SMTP asignado') + '.');
+                } catch (error) {
+                    mostrar('emailPresupuestosFeedback', 'danger', error.message || 'No se pudo guardar la asociación de Presupuestos.');
+                } finally { cambiarEstadoBoton('btnGuardarEmailPresupuestos', false); }
             });
             campo('btnEliminarConfiguracion').addEventListener('click', async function () {
                 if (idAEliminar == null) return;

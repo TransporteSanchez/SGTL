@@ -8,6 +8,7 @@ using System.Text;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Web.Http;
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -54,7 +55,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         return NotFound(); // 404 si no hay contenido
                     }
 
-                    return Ok(olist); // 200 OK con la lista de contenido
+                    return SinCache(olist);
                 }
             }
             catch (Exception ex)
@@ -99,7 +100,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         return NotFound(); // 404 si no se encuentra el contenido
                     }
 
-                    return Ok(content); // 200 OK con el contenido encontrado
+                    return SinCache(content);
                 }
             }
             catch (Exception ex)
@@ -109,6 +110,13 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+
+        private IHttpActionResult SinCache<T>(T contenido)
+        {
+            var respuesta = Request.CreateResponse(HttpStatusCode.OK, contenido);
+            respuesta.Headers.CacheControl = new CacheControlHeaderValue { NoCache = true, NoStore = true, MustRevalidate = true };
+            return ResponseMessage(respuesta);
+        }
 
         // PUT: api/GestionContenido/{id}
         public IHttpActionResult Put(int id, [FromBody] GESTION_CONTENIDO value)

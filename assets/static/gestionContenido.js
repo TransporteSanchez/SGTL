@@ -1,3 +1,13 @@
+window.cargarEstilosContenido = function () {
+    return fetch('http://localhost:50222/api/GestionContenido/1', { cache: 'no-store' })
+        .then(function (respuesta) {
+            if (!respuesta.ok) throw new Error('No se pudo cargar la configuración de contenido.');
+            return respuesta.json();
+        }).then(function (datos) {
+            window.applyStyles(datos.Logo, datos.ColorFondo, datos.ColorBotonesMenu, datos.ContenidoPiePagina);
+        });
+};
+
 window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
     const logoElement = document.querySelector('.sidebar-header .logo img');
     if (logoElement) {
@@ -20,7 +30,8 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     });
 
     // Aplicar estilos dinámicos para que el color también funcione con cambios de clase
-    const dynamicStyle = document.createElement('style');
+    const dynamicStyle = document.getElementById('estilos-gestion-contenido') || document.createElement('style');
+    dynamicStyle.id = 'estilos-gestion-contenido';
     dynamicStyle.innerHTML = `
         /* Estilos solo para el enlace activo */
         .sidebar-item.active .sidebar-link {

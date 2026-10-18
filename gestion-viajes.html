@@ -289,11 +289,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="origenSelect" disabled><option value="">Primero seleccione un cliente</option></select>
+                                        <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccione un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" aria-label="Agregar origen" title="Agregar origen" disabled>+</button></div>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccione un cliente</option></select>
+                                        <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccione un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" aria-label="Agregar destino" title="Agregar destino" disabled>+</button></div>
                                     </div>
                                 </div>
                                 <div class="row">
@@ -388,6 +388,7 @@
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/alta-rapida-ubicacion.js"></script>
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
@@ -1097,6 +1098,7 @@
             var cid = parseInt($('#clienteSelect').val()) || 0;
             if (!clienteConPlataforma()) $('#numeroTransporte, #numeroCarga').val('');
             aplicarReglasTipoCliente();
+            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', !cid);
             filtrarOrigenDestino(cid, null, null);
             $('#distanciaKm').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
             limpiarRutaViaje();
@@ -1179,6 +1181,7 @@
             $('input[name="tipoTarifa"]').prop('checked', false);
             $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
             $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccione un cliente</option>');
+            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', true);
             $('#alertaCompletaCampos').hide().empty();
             $('#distanciaKm').val('');
             kmGuardadoViaje = '';
@@ -1209,6 +1212,7 @@
                         }
                         $('#clienteSelect').val(v.ClienteID);
                         aplicarReglasTipoCliente();
+                        $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', !v.ClienteID);
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
                         $('#camionSelect').val(v.CamionID);
                         $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
@@ -1476,6 +1480,18 @@
             SGTLGoogleMaps.alFallarAutenticacion(function () { rutaViajeNoDisponible('Google Maps rechazó la clave para este sitio.'); });
             $('#distanciaKm').on('change', function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); });
             $('#clienteSelect').on('change', onClienteChangeViaje);
+            $('#agregarOrigenViaje, #agregarDestinoViaje').on('click', function () {
+                var tipo = this.id === 'agregarOrigenViaje' ? 'Origen' : 'Destino';
+                AltaRapidaUbicacion.abrir({ tipo: tipo, clienteId: $('#clienteSelect').val(), clienteNombre: $('#clienteSelect option:selected').text(), modalPadre: 'ModalAltaViaje', alCrear: function (registro) {
+                    if (tipo === 'Origen') { origenesAll.push(registro); origenesData[registro.Origen_ID] = registro; }
+                    else { destinosAll.push(registro); destinosData[registro.Destino_ID] = registro; }
+                    filtrarOrigenDestino(parseInt($('#clienteSelect').val(), 10), tipo === 'Origen' ? registro.Origen_ID : $('#origenSelect').val(), tipo === 'Destino' ? registro.Destino_ID : $('#destinoSelect').val());
+                    $('#distanciaKm, #tarifaFijaId, #tarifaKmId').val('');
+                    limpiarRutaViaje();
+                    setTarifaInfo('Calculá la ruta y la tarifa para la nueva ubicación.');
+                    $(tipo === 'Origen' ? '#origenSelect' : '#destinoSelect').trigger('change');
+                }});
+            });
             $('#origenSelect, #destinoSelect').on('change', function () {
                 conservarKmGuardado = false;
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }

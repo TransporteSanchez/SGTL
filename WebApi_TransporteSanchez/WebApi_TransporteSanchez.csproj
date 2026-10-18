@@ -407,6 +407,8 @@
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="Controllers\TarifasController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
+    <Compile Include="Controllers\PresupuestosController.cs" />
+    <Compile Include="Controllers\EnviosPresupuestosController.cs" />
     <Compile Include="JwtConfig.cs" />
     <Compile Include="CLIENTES.cs">
       <DependentUpon>SGTL.tt</DependentUpon>

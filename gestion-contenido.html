@@ -230,10 +230,10 @@
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            window.loadHeader();
             window.loadFooter();
 
             try {
+                await window.loadHeader();
                 if (typeof window.loadSidebar === 'function') {
                     await window.loadSidebar();
                 }
@@ -290,21 +290,19 @@
                             resolve();
                         } else {
                             console.error('La respuesta de la API no contiene los datos esperados.');
-                            loadDefaultValues();
-                            showErrorToast();
+                            notifyError('No se pudo cargar el contenido guardado.');
                             reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
                         }
                     } else {
                         console.error('Error en la petición:', xhr.statusText);
-                        showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                        notifyError("Ocurrió un error al cargar el contenido de la página.");
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
 
                 xhr.onerror = function () {
                     console.error('Error al cargar la configuración de la API.');
-                    loadDefaultValues();
-                    showErrorToast();
+                    notifyError('No se pudo cargar el contenido guardado.');
                     reject(new Error('Error de red'));
                 };
 
@@ -349,8 +347,7 @@
                     try { applyStyles(logo, backgroundColor, menuColor, footerContent); } catch (e) { }
                     mostrarToastExito();
                 } else {
-                    try { handleValidationErrors(JSON.parse(xhr.responseText)); }
-                    catch (e) { notifyError('No se pudo guardar el contenido.'); }
+                    notifyError('No se pudo guardar el contenido.');
                 }
                 // Restaura la vista SIEMPRE (evita el spinner infinito).
                 loadingMessage.style.display = 'none';
@@ -358,7 +355,7 @@
             };
 
             xhr.onerror = function () {
-                showErrorToast("Ocurrió un error al actualizar el contenido de la página.");
+                notifyError("Ocurrió un error al actualizar el contenido de la página.");
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             };
@@ -390,14 +387,6 @@
             const defaultColorBotonesMenu = '#198754';
             const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
 
-            uploadedLogoDataUrl = null;
-            marcarArchivoCargado(false);
-            document.getElementById('logoInput').value = defaultLogo;
-            setLogoPreview(defaultLogo);
-            document.getElementById('backgroundColorInput').value = defaultColorFondo;
-            document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
-            document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
-
             const settingsData = {
                 Logo: defaultLogo,
                 ColorFondo: defaultColorFondo,
@@ -413,6 +402,16 @@
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
+                    uploadedLogoDataUrl = null;
+                    marcarArchivoCargado(false);
+                    document.getElementById('logoInput').value = defaultLogo;
+                    setLogoPreview(defaultLogo);
+                    document.getElementById('backgroundColorInput').value = defaultColorFondo;
+                    document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
+                    document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
+                    applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
+                    const favicon = document.querySelector('link[rel="shortcut icon"]');
+                    if (favicon) favicon.href = defaultFavicon;
                     mostrarToastExito();
                     try {
                         var modalElement = document.getElementById('confirmarRestablecerModal');
@@ -436,13 +435,6 @@
             };
 
             xhr.send(JSON.stringify(settingsData));
-
-            applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]');
-            if (favicon) {
-                favicon.href = defaultFavicon;
-            }
         }
 
         // =================== Logo: URL o archivo (base64) ===================

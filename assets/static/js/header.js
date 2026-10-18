@@ -30,8 +30,8 @@ function setupUserInfo() {
 
   // Si no hay token, muestra el loading y redirige al login
   if (!token) {
-    loadingRedirect.style.display = 'flex'; // Muestra el mensaje de carga
-    window.location.replace('login.html'); // Redirige inmediatamente a login
+    if (loadingRedirect) loadingRedirect.style.display = 'flex';
+    window.location.replace('Login.html');
     return;
   }
 
@@ -76,25 +76,20 @@ function setupUserInfo() {
     logoutBtn.addEventListener('click', function(event) {
       event.preventDefault();
 
+      // La API de logout solo confirma la operación; la sesión se conserva en el navegador.
+      ['token', 'username', 'nombre', 'apellido', 'userRole'].forEach(function (key) {
+        localStorage.removeItem(key);
+      });
       fetch('http://localhost:50222/api/logout', {
         method: 'POST',
+        keepalive: true,
         headers: {
           'Authorization': 'Bearer ' + token
         }
-      }).then(response => {
-        if (response.ok) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('nombre');
-          localStorage.removeItem('apellido');
-          localStorage.removeItem('userRole');
-          window.location.href = 'login.html';
-        } else {
-          alert('Error al cerrar sesión');
-        }
       }).catch(error => {
         console.error('Error al realizar la solicitud de logout:', error);
-        alert('Error al cerrar sesión');
       });
+      window.location.replace('Login.html');
     });
   } else {
     console.warn('Botón de logout no encontrado.');

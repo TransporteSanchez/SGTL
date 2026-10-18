@@ -92,7 +92,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item"><a href="index.html" class="sidebar-link"><i class="bi bi-grid-fill"></i><span>Dashboard</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-person"></i><span>Choferes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-choferes.html" class="submenu-link">Listar choferes</a></li><li class="submenu-item"><a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-truck"></i><span>Camiones</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-camiones.html" class="submenu-link">Listar camiones</a></li><li class="submenu-item"><a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a></li></ul></li>
-              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li></ul></li>
+              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li><li class="submenu-item"><a href="presupuestos.html" class="submenu-link">Presupuestos</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar proformas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar proformas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Cuenta corriente</a></li></ul></li>
               <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-facturacion.html" class="submenu-link">Facturación</a></li><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">E-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestión de contenido</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Integración WhatsApp</a></li></ul></li>
@@ -114,6 +114,7 @@ var MENU_TO_PAGE = {
   'gestion de camiones': 'gestion-camiones.html',
   'listado de viajes': 'listado-viajes.html',
   'gestion de viajes': 'gestion-viajes.html',
+  'presupuestos': 'presupuestos.html',
   'gestion de origenes y destinos': 'gestion-origenes-destinos.html',
   'gestion de tarifas': 'gestion-tarifas.html',
   'listado de clientes': 'listado-clientes.html',
@@ -184,6 +185,7 @@ function aplicarPermisos() {
         return;
       }
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
+      if (permitidas.indexOf('gestion-viajes.html') !== -1) permitidas.push('presupuestos.html');
       // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
       // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.
       if (permitidas.indexOf('listado-facturas.html') !== -1 || permitidas.indexOf('gestion-facturacion.html') !== -1) {
@@ -266,10 +268,15 @@ function applySidebar(sidebarRoot, html) {
         resolve();
         return;
       }
+      if (sidebarRoot.dataset.sgtlLoaded === 'true' && sidebarRoot.querySelector('.sidebar-wrapper')) {
+        resolve();
+        return;
+      }
   
       // Always render immediately from local template to guarantee
       // menu availability regardless of hosting mode (file:// or http://).
       applySidebar(sidebarRoot, buildFallbackSidebarHtml());
+      sidebarRoot.dataset.sgtlLoaded = 'true';
       resolve();
     });
   }

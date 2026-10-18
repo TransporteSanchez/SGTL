@@ -949,6 +949,13 @@ SELECT CAST(CASE WHEN EXISTS (
                     });
                 }
 
+                bool desdePresupuesto = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0;
+                if (desdePresupuesto && (viaje.ClienteID != viajeDto.ClienteID || viaje.OrigenID != viajeDto.OrigenID || viaje.DestinoID != viajeDto.DestinoID ||
+                    !MismaDistancia(viaje.Distancia_KM, viajeDto.Distancia_KM) ||
+                    viaje.TarifaFijaID != ((viajeDto.TarifaFijaID ?? 0) > 0 ? viajeDto.TarifaFijaID : null) ||
+                    viaje.TarifaKmID != ((viajeDto.TarifaKmID ?? 0) > 0 ? viajeDto.TarifaKmID : null)))
+                    return Content(HttpStatusCode.Conflict, new { error = "El cliente, la ruta, la distancia y la tarifa provienen de un presupuesto aceptado y no se pueden modificar en el viaje." });
+
                 bool cambioHojaDeRuta = false, cambioKm = false;
                 if (EsRegistrado(estado))
                 {
@@ -1063,6 +1070,9 @@ SELECT CAST(CASE WHEN EXISTS (
                         });
                     }
 
+                    if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado." });
+
                     db.Set<VIAJES>().Remove(viaje);
 
                     try
@@ -1090,6 +1100,13 @@ SELECT CAST(CASE WHEN EXISTS (
 
         // Num_Remito y Num_de_Carga son nchar(20); Num_Transporte nvarchar(20).
         private const int LargoReferencia = 20;
+
+        private static bool MismaDistancia(string a, string b)
+        {
+            decimal x, y;
+            return decimal.TryParse((a ?? "").Trim().Replace(',', '.'), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out x)
+                && decimal.TryParse((b ?? "").Trim().Replace(',', '.'), System.Globalization.NumberStyles.Number, System.Globalization.CultureInfo.InvariantCulture, out y) && x == y;
+        }
 
         // Validaciones de negocio compartidas entre alta y edicion.
         private List<object> ValidarViaje(ViajeDto v)
