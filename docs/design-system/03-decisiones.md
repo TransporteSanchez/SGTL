@@ -5,7 +5,10 @@ las propuestas de `01-relevamiento-codigo.md` (§6) con las capturas de la VM a 
 (`docs/pruebas/2026-10-17-capturas-ui.md`). Si una pantalla necesita apartarse de una regla,
 se anota acá como excepción.
 
-Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
+Estado: **decidido** (17/10/2026), falta aplicarlo. Lo que no está acá no se decidió.
+
+Proformas, cuenta corriente y configuración de facturación y e-mail son de **Facu**, y
+WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ellos.
 
 ---
 
@@ -366,3 +369,20 @@ Esto define solo cómo se muestran y cómo se cargan.
 - Los tooltips no aparecen en pantallas táctiles: por eso todo botón de solo ícono lleva también
   `aria-label` (§1.5).
 - **Modo oscuro: no.** Se sacan los estilos `theme-dark` sueltos de cuenta corriente.
+
+---
+
+## 11. Marca
+
+- **Color de las acciones: el azul de Mazer** (`#435ebe`, `btn-primary`): Guardar, Editar,
+  links, foco de los campos. El **verde** es para crear (`btn-success`, §1.1) y para el
+  siguiente paso del circuito (§1.4).
+- **El marco** (fondo, menú, login, círculo de las iniciales) usa los dos colores de Gestionar
+  contenido (hoy verde azulado y verde oscuro). Los colores sueltos se alinean a esto: la
+  pestaña activa de cuenta corriente (`#008c9e`) y las iniciales sin color configurado
+  (`#007bff`) toman el color del menú.
+- **Tipografía: Nunito en todo**, también en el login (hoy Inter).
+- **Íconos: solo Bootstrap Icons.** Se sacan Font Awesome (CDN, en login e inicio), Feather y
+  Boxicons.
+- **Gestionar contenido sigue igual:** logo, pie, color de fondo y color del menú. "Restablecer"
+  mantiene los valores actuales del código (`#b6d8c7` y `#198754`).

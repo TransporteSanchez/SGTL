@@ -29,7 +29,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
 | 6 | Proforma recibida Marfrig/Rukas (rediseño) | Solo definición | Doc commiteado | Ver `PROFORMA-CLIENTES-RUKAS.md` |
-| 10 | Relevamiento visual y design system | Relevamiento por código y capturas hechos; faltan las decisiones D1–D17 | Doc commiteado | Ver §10 |
+| 10 | Relevamiento visual y design system | Relevamiento, capturas y decisiones hechos; falta el CSS/JS compartido y aplicarlo | Doc commiteado | Ver §10 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -323,8 +323,8 @@ Las pantallas se ven y se comportan distinto según la etapa en que se hicieron 
 
 1. [x] Relevamiento por código de las 23 pantallas (17/10, actualizado con el merge de Facu): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
 2. [x] Capturas en la VM (17/10): 91 capturas en `.pruebas-locales/capturas-ui/2026-10-17/` (fuera de git) y reporte en `docs/pruebas/2026-10-17-capturas-ui.md`. Configuración de facturación y de e-mail salieron con error por token vencido, y alta, errores y exportar de Gestionar proformas se sacaron en el listado: repetirlas solo si hacen falta.
-3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Se van anotando en `docs/design-system/03-decisiones.md`. Hechas: botones (alta, exportar, Buscar y borrar filtros, acciones de cada fila, tooltips; cubre D2, D5 y la parte de botones de D3), tablas (D4), encabezado, menú y filtros (D1 y D3), estados (D6), avisos y confirmaciones (D9 y D10), modales, formularios y verbos (D7 y D8), fechas y montos (D11 y D12), carga y guardado (D13), textos (D14), pantallas chicas (D16) y modo oscuro (D17). Falta: marca (D15).
-4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
+3. [x] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista (17/10). Quedaron en `docs/design-system/03-decisiones.md`.
+4. [ ] CSS y JS de interfaz compartidos (botones, tooltips, cruz de filtros, tablas, estados, toasts, confirmación, carga, formato de fechas y montos) y regla en `CLAUDE.md` que apunte a `03-decisiones.md`.
 5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y configuración (Facu) y WhatsApp (Fede): coordinando con ellos.
 
 Bugs vistos en el relevamiento (no visuales):
