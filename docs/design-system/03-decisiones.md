@@ -316,3 +316,53 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Excepción:** los indicadores del tablero se redondean a pesos ("$ 133.103").
 - **Km con coma decimal y un decimal:** "17,4".
 - Una sola función de formato en el JS compartido.
+
+---
+
+## 8. Carga y guardado
+
+- **Al entrar a una pantalla:** el indicador de carga de pantalla completa (`#loading-message`),
+  con su estilo en el CSS compartido (hoy está copiado en cada `<style>`).
+- **Mientras busca:** "Cargando…" dentro de la tabla (§2.2).
+- **Al guardar** (o generar, emitir, enviar): el botón principal se deshabilita, muestra una
+  ruedita (`spinner-border spinner-border-sm`) y el verbo en gerundio ("Guardando…",
+  "Generando…", "Emitiendo…", "Enviando…") hasta que llega la respuesta. Mientras tanto,
+  "Cancelar" y la cruz del modal también quedan deshabilitados. Evita el doble clic (F10).
+- **Botones de las filas** (Inactivar, Marcar como aceptada…): deshabilitados mientras procesan.
+
+---
+
+## 9. Textos
+
+- **Siempre voseo:** "Completá", "Seleccioná", "¿Querés eliminar…?", "Probá de nuevo". Nada de
+  usted ("Seleccione", "Inténtelo", "¿Está seguro…?") ni tuteo ("deseas", "intenta").
+- **Mayúscula solo al principio** ("Cuenta corriente de clientes", "Cambiar contraseña") y con
+  tildes ("Razón social", "Sánchez", "Ocurrió").
+- **Títulos, botones y etiquetas sin punto final; los mensajes, con punto.**
+- **Sin inglés a la vista:** "KM mínimo / KM máximo" (no "Min KM / Max KM"), "Alta" (no
+  "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp: "Token de acceso" e "ID del
+  número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la
+  ayuda de abajo para poder encontrarlo. **Excepción:** "Dashboard" queda.
+- **Nunca mostrar un error técnico** (excepciones, códigos como "IDX10223…"). El mensaje dice qué
+  pasó y qué hacer. Si la sesión venció: "Tu sesión venció. Volvé a iniciar sesión." y se lleva
+  al login.
+
+---
+
+## 10. Pantallas chicas y modo oscuro
+
+- **Adaptable, con prioridad en computadora.** Se prueba en cuatro anchos (con las herramientas
+  del navegador):
+
+| Ancho | Qué representa | Qué tiene que pasar |
+|---|---|---|
+| 1920 px | Escritorio | Todo a la vista; solo viajes se desplaza hacia el costado |
+| 1366 px | Notebook común | Igual que escritorio |
+| 768 px | Tablet vertical | Filtros en dos columnas, tablas con desplazamiento, modales casi a todo el ancho |
+| 390 px | Celular | Todo se puede usar: filtros en una columna, tablas con desplazamiento, modales a pantalla completa, calendario de un mes |
+
+- En celular el objetivo es que funcione, no que esté optimizado (las tablas no se convierten en
+  tarjetas).
+- Los tooltips no aparecen en pantallas táctiles: por eso todo botón de solo ícono lleva también
+  `aria-label` (§1.5).
+- **Modo oscuro: no.** Se sacan los estilos `theme-dark` sueltos de cuenta corriente.
