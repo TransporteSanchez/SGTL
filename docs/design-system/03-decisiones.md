@@ -14,8 +14,9 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
 ### 1.1 Botón de alta
 
 - **Verde** (`btn btn-success`).
-- **Ícono "+" y texto con lo que se crea:** `<i class="bi bi-plus-lg"></i> Nuevo chofer`,
-  "Nueva proforma", "Nuevo recibo". Nada de botones de alta solo con íconos ni "Alta" a secas.
+- **Ícono "+" y el verbo "Registrar" en infinitivo con lo que se crea:**
+  `<i class="bi bi-plus-lg"></i> Registrar chofer`, "Registrar proforma", "Registrar recibo"
+  (lista completa en §6.1). Nada de botones de alta solo con íconos, ni "Alta", ni "Nuevo…".
   Con el texto a la vista no lleva tooltip.
 - **Arriba a la derecha, en la misma línea que el título de la pantalla.** Es el último botón de
   esa línea (el de más a la derecha).
@@ -229,3 +230,53 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
   sistema: eliminar, anular, generar proforma (consume un número), emitir factura, enviar por
   mail o WhatsApp.
 - **Activar / inactivar no pide confirmación:** se hace y avisa con el toast de éxito.
+
+---
+
+## 6. Modales y formularios
+
+### 6.1 Verbos
+
+Todo botón, tooltip y título de modal dice la acción con **verbo en infinitivo**, igual que el
+menú (§3.1). El título del modal es el mismo texto que el botón que lo abrió.
+
+| Dónde | Texto |
+|---|---|
+| Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tarifa fija" / "Registrar tarifa por km", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
+| Editar (tooltip y título del modal) | "Editar camión" |
+| Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión" |
+| Pie de los modales | "Cancelar", "Guardar", "Eliminar", "Generar", "Emitir recibo", "Cerrar" |
+| Acciones de la fila | "Inactivar", "Activar", "Descargar PDF", "Marcar como aceptada", "Emitir factura", "Exportar" |
+| Confirmación | "¿Eliminar el camión ABC123?" |
+
+- "Registrar proforma" crea el borrador; "Generar" le asigna el número. "Registrar recibo" abre el
+  formulario; el botón del pie es "Emitir recibo".
+
+### 6.2 Modales
+
+- **Encabezado:** título `h5` (`modal-title`) y la cruz de Bootstrap (`btn-close`) siempre
+  visible arriba a la derecha. Nada de íconos Feather (no se cargan y la cruz queda invisible).
+- **Pie:** "Cancelar" gris claro (`btn btn-light-secondary`) y, a su derecha, el botón principal
+  con el verbo: "Guardar" (`btn-primary`) en alta y edición, "Eliminar" / "Anular" en rojo
+  (`btn-danger`), "Generar", "Emitir recibo". **Nunca "Confirmar".**
+- **Detalle:** solo "Cerrar" en el pie, además de la cruz.
+- **Los formularios no se cierran con un clic afuera** (`data-bs-backdrop="static"`); Escape y la
+  cruz sí los cierran. Los de detalle se cierran también con un clic afuera.
+- **Tamaño según el contenido:** `modal-lg` para formularios comunes; `modal-xl` solo con mapa o
+  tablas (viajes, proformas, recibo); el tamaño por defecto para confirmaciones.
+
+### 6.3 Formularios
+
+- **Obligatorios:** asterisco rojo al lado del nombre del campo (`<span class="text-danger">*</span>`).
+- **"Guardar" siempre habilitado.** Al tocarlo con errores:
+  - arriba del formulario, un aviso corto en rojo: "Revisá los campos marcados.";
+  - cada campo con problema en rojo (`is-invalid`) con su mensaje debajo
+    (`invalid-feedback`): "Completá el DNI.", "El DNI tiene que tener 7 u 8 números.";
+  - el cursor va al primer campo con error.
+- **Cada campo se valida al salir de él**, no en cada tecla, y el rojo se va apenas se corrige.
+- **Opción vacía de los desplegables:** "Seleccioná un cliente" (voseo).
+- **Ayudas:** el texto gris dentro del campo es un ejemplo ("30111222"); las instrucciones van
+  debajo, en chico (`form-text`): "Sin puntos ni espacios".
+- **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",
+  "Forma de pago").
+- `form-label` con `for` en todos los campos (tocar el nombre lleva al campo).
