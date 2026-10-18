@@ -881,7 +881,9 @@
         var origenesAll = [], destinosAll = [];
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
-        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false;
+        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false, presupuestoDelViaje = null;
+        // El recorrido y los km no se tocan si el viaje ya salió o si viene de un presupuesto aceptado.
+        function rutaFija() { return viajeBloqueado || !!presupuestoDelViaje; }
         var distanciaManual = false, errorGoogleRuta = '', kmGuardadoViaje = '';
         var choferSearchTimer = null;
         var tiposClienteViaje = {};
@@ -927,7 +929,7 @@
             return mapaViajeListo;
         }
         function usarDistanciaManual(manual, errorGoogle) {
-            manual = manual && !viajeBloqueado;
+            manual = manual && !rutaFija();
             distanciaManual = manual;
             errorGoogleRuta = manual ? (errorGoogle || '') : '';
             $('#distanciaKm').prop('readonly', !manual).attr('placeholder', manual ? 'Ingresala a mano' : 'Se calcula con el mapa');
@@ -973,10 +975,10 @@
         // Sin ruta no se bloquea el alta: la distancia se carga a mano y la tarifa por km se calcula igual.
         function rutaViajeNoDisponible(motivo) {
             if (directionsRenderer) directionsRenderer.set('directions', null);
-            if (!conservarKmGuardado && !viajeBloqueado) $('#distanciaKm').val('');
+            if (!conservarKmGuardado && !rutaFija()) $('#distanciaKm').val('');
             conservarKmGuardado = false;
             usarDistanciaManual(true, motivo);
-            msgMapa(motivo + (viajeBloqueado ? '' : ' Podés ingresar la distancia a mano.'), 'error');
+            msgMapa(motivo + (rutaFija() ? '' : ' Podés ingresar la distancia a mano.'), 'error');
         }
         function onRutaViajeCambiada() {
             var dir = directionsRenderer.getDirections();
@@ -986,11 +988,11 @@
             var km = (metros / 1000).toFixed(1);
             var desde = ruta.legs[0].start_address, hasta = ruta.legs[ruta.legs.length - 1].end_address;
             usarDistanciaManual(false);
-            if ((conservarKmGuardado || viajeBloqueado) && $('#distanciaKm').val()) {
+            if ((conservarKmGuardado || rutaFija()) && $('#distanciaKm').val()) {
                 conservarKmGuardado = false;
                 avisoRutaViaje = '';
                 msgMapa('Distancia guardada: ' + $('#distanciaKm').val() + ' km (la ruta de Google marca ' + km + ' km).'
-                    + (viajeBloqueado ? '' : ' Tocá Recalcular para actualizarla.'), 'ok');
+                    + (rutaFija() ? '' : ' Tocá Recalcular para actualizarla.'), 'ok');
                 return;
             }
             conservarKmGuardado = false;
@@ -1112,6 +1114,7 @@
             else if (tipo === 'km') { resolverTarifaKm(); }
         }
         function resolverTarifaFija() {
+            if (presupuestoDelViaje) return;
             var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val();
             $('#tarifaKmId').val('');
             if (!c || !o || !d) { $('#tarifaFijaId').val(''); setTarifaInfo('Para la tarifa fija: elegí cliente, origen y destino.'); return; }
@@ -1121,6 +1124,7 @@
                 .fail(function () { $('#tarifaFijaId').val(''); setTarifaInfo('No hay tarifa fija cargada para esa ruta (cliente/origen/destino).', 'error'); });
         }
         function resolverTarifaKm() {
+            if (presupuestoDelViaje) return;
             var fi = $('#fechaInicio').val(), ff = $('#fechaFin').val(), km = $('#distanciaKm').val();
             $('#tarifaFijaId').val('');
             if (!fi || !ff) { $('#tarifaKmId').val(''); setTarifaInfo('Para la tarifa por km: completá las fechas de inicio y fin.'); return; }
@@ -1160,16 +1164,29 @@
 
         // Una vez que el viaje salió solo se completan los números de referencia: el recorrido y lo que define
         // el cobro quedan fijos (el backend lo valida igual). Un cambio pedido por el cliente es otro viaje.
-        function bloquearDatosDelViaje(estado) {
+        // Si el viaje viene de un presupuesto aceptado, cliente, recorrido, km y tarifa son los del presupuesto.
+        function bloquearDatosDelViaje(estado, presupuestoId) {
             viajeBloqueado = !viajeRegistrado(estado);
+            presupuestoDelViaje = presupuestoId || null;
             $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
                 .prop('disabled', viajeBloqueado);
-            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', viajeBloqueado || !$('#clienteSelect').val());
-            if (viajeBloqueado) usarDistanciaManual(false);
-            $('#avisoViajeBloqueado').toggle(viajeBloqueado).text(viajeBloqueado
-                ? 'El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas. '
-                  + 'Si el cliente pide otro recorrido, registralo como un viaje nuevo.'
-                : '');
+            if (presupuestoDelViaje) {
+                $('#clienteSelect, #origenSelect, #destinoSelect, input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', true);
+            }
+            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', rutaFija() || !$('#clienteSelect').val());
+            if (rutaFija()) usarDistanciaManual(false);
+            var avisos = [];
+            if (viajeBloqueado) {
+                avisos.push('El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas. '
+                    + 'Si el cliente pide otro recorrido, registralo como un viaje nuevo.');
+            }
+            if (presupuestoDelViaje) {
+                avisos.push('Este viaje se generó desde el presupuesto #' + presupuestoDelViaje + ', aceptado por el cliente: '
+                    + 'el cliente, el recorrido, los km y la tarifa son los del presupuesto y no se pueden cambiar. '
+                    + (viajeBloqueado ? '' : 'Podés modificar el chofer, el camión, las fechas y los números de referencia. ')
+                    + 'Si cambia el recorrido, hace falta un presupuesto nuevo.');
+            }
+            $('#avisoViajeBloqueado').toggle(avisos.length > 0).text(avisos.join(' '));
         }
 
         function resetFormViaje() {
@@ -1236,7 +1253,7 @@
                                 .done(function (ch) { $('#choferSelectId').val(ch.Chofer_ID); $('#choferBuscar').val(ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')'); })
                                 .fail(function () { });
                         }
-                        bloquearDatosDelViaje(v.Estado);
+                        bloquearDatosDelViaje(v.Estado, v.Presupuesto_ID);
                         $('#ModalAltaViaje').modal('show');
                     })
                     .fail(function () { alert('No se pudo cargar el viaje seleccionado.'); });

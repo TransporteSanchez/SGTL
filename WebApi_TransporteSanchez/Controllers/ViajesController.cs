@@ -66,6 +66,9 @@ namespace WebApi_TransporteSanchez.Controllers
             // Tiene una Factura vigente (Cuenta corriente): no se edita ni se elimina.
             public bool Facturada { get; set; }
 
+            // Presupuesto aceptado que genero el viaje: cliente, recorrido, km y tarifa quedan fijos.
+            public int? Presupuesto_ID { get; set; }
+
             // Proforma (no anulada) que incluye el viaje: sale de la reserva PROFORMAS_VIAJES.
             public int? EnProforma_ID { get; set; }
             public string EnProforma_Numero { get; set; }
@@ -803,6 +806,9 @@ SELECT CAST(CASE WHEN EXISTS (
                         dto.EnProforma_Estado = est.EnProforma_Estado;
                     }
 
+                    dto.Presupuesto_ID = db.Database.SqlQuery<int?>(
+                        "SELECT TOP (1) Presupuesto_ID FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", P("@id", id)).FirstOrDefault();
+
                     return Ok(dto);
                 }
             }
@@ -954,7 +960,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     !MismaDistancia(viaje.Distancia_KM, viajeDto.Distancia_KM) ||
                     viaje.TarifaFijaID != ((viajeDto.TarifaFijaID ?? 0) > 0 ? viajeDto.TarifaFijaID : null) ||
                     viaje.TarifaKmID != ((viajeDto.TarifaKmID ?? 0) > 0 ? viajeDto.TarifaKmID : null)))
-                    return Content(HttpStatusCode.Conflict, new { error = "El cliente, la ruta, la distancia y la tarifa provienen de un presupuesto aceptado y no se pueden modificar en el viaje." });
+                    return Content(HttpStatusCode.Conflict, new { error = "El viaje se generó desde un presupuesto aceptado: el cliente, el recorrido, los km y la tarifa son los del presupuesto y no se pueden cambiar. Si cambia el recorrido, hace falta un presupuesto nuevo." });
 
                 bool cambioHojaDeRuta = false, cambioKm = false;
                 if (EsRegistrado(estado))
