@@ -63,6 +63,7 @@
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
@@ -369,14 +370,8 @@
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Cancelar</span>
-                    </button>
-                    <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
-                        <i class="bx bx-check d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Confirmar</span>
-                    </button>
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">Guardar</button>
                 </div>
             </div>
         </div>
@@ -392,6 +387,7 @@
     <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
     <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
@@ -695,13 +691,13 @@
                     data: requestData
                 });
                 if (!response.Results || response.Results.length === 0) {
-                    alert('No se encontraron registros para generar el reporte.');
+                    SGTL.toastError('No hay viajes para exportar con los filtros elegidos.');
                     return;
                 }
                 generarCSVViajes(response.Results);
             } catch (error) {
                 console.error('Error al generar el reporte:', error);
-                alert('Ocurrió un error al generar el reporte. Intentá de nuevo más tarde.');
+                SGTL.toastError('No se pudo generar el reporte. Probá de nuevo.');
             }
         }
 
@@ -795,28 +791,6 @@
     <!-- Alta -->
 
 
-    <!-- Modal de confirmacion de eliminacion de viaje (Fase 1) -->
-    <div class="modal fade text-left" id="confirmarEliminarViajeModal" tabindex="-1" role="dialog"
-        aria-labelledby="confirmarEliminarViajeLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmarEliminarViajeLabel">Confirmar eliminaci&oacute;n</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    &iquest;Est&aacute; seguro que desea eliminar este viaje? Esta acci&oacute;n no se puede deshacer.
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarViaje()">Eliminar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal de estado y entrega del viaje -->
     <div class="modal fade text-left" id="ModalEstadoViaje" tabindex="-1" role="dialog"
         aria-labelledby="ModalEstadoViajeLabel" aria-hidden="true">
@@ -875,7 +849,6 @@
     <!-- ================= Fase 1: ABM de Viajes (alta / edicion / eliminacion) ================= -->
     <script>
         const API_VIAJES = 'http://localhost:50222/api';
-        let viajeIdEliminar = null;
 
         // Datos auxiliares
         var origenesAll = [], destinosAll = [];
@@ -891,16 +864,19 @@
         function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
         function formatearParaInput(f) { return f ? String(f).substring(0, 16) : ''; }
 
+        // Solo se muestra el texto de la API cuando rechaza un dato (400 o 409): el resto trae detalles técnicos.
         function parsearError(xhr) {
+            if (xhr && xhr.status === 401) return SGTL.mensajeError(xhr);
             try {
                 var r = xhr.responseJSON;
                 if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
-                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
-                if (r && r.error) { return r.error; }
-                if (r && r.Message) { return r.Message; }
-                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
+                if (xhr.status === 400 || xhr.status === 409) {
+                    if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
+                    if (r && r.error) { return r.error; }
+                    if (r && r.Message) { return r.Message; }
+                }
             } catch (e) { }
-            return 'Ocurrió un error. Revise los datos e intente nuevamente.';
+            return 'Ocurrió un error. Revisá los datos y probá de nuevo.';
         }
         function mostrarAlertaModal(msg) { $('#alertaCompletaCampos').html(msg).show(); }
         function setTarifaInfo(txt, tipo) {
@@ -1225,7 +1201,7 @@
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
                         if (v.Facturada === true) {
-                            alert('No se puede editar el viaje porque pertenece a una proforma Facturada.');
+                            SGTL.toastError('No se puede editar el viaje porque pertenece a una proforma Facturada.');
                             return;
                         }
                         $('#clienteSelect').val(v.ClienteID);
@@ -1256,7 +1232,7 @@
                         bloquearDatosDelViaje(v.Estado, v.Presupuesto_ID);
                         $('#ModalAltaViaje').modal('show');
                     })
-                    .fail(function () { alert('No se pudo cargar el viaje seleccionado.'); });
+                    .fail(function () { SGTL.toastError('No se pudo cargar el viaje. Probá de nuevo.'); });
             });
         }
 
@@ -1290,12 +1266,12 @@
             };
         }
         // El backend solo devuelve WhatsApp cuando intentó avisarle al chofer (alta o cambio en la hoja de ruta).
-        function textoWhatsApp(wa) {
-            if (!wa) return '';
-            if (wa.Sent) return '\nSe le envió la hoja de ruta al chofer por WhatsApp.';
-            if (wa.Status === 'not_configured') return '\nNo se envió WhatsApp: la integración no está configurada.';
-            if (wa.Status === 'payload_error') return '\nNo se envió WhatsApp: revisá el teléfono del chofer.';
-            return '\nNo se pudo enviar el WhatsApp al chofer' + (wa.Detail ? ' (' + String(wa.Detail).substring(0, 150) + ')' : '') + '. Avisale por otro medio.';
+        function avisarWhatsApp(wa) {
+            if (!wa) return;
+            if (wa.Sent) { SGTL.toastExito('Se le envió la hoja de ruta al chofer por WhatsApp.'); return; }
+            if (wa.Status === 'not_configured') { SGTL.toastError('No se envió WhatsApp: la integración no está configurada.'); return; }
+            if (wa.Status === 'payload_error') { SGTL.toastError('No se envió WhatsApp: revisá el teléfono del chofer.'); return; }
+            SGTL.toastError('No se pudo enviar el WhatsApp al chofer. Avisale por otro medio.');
         }
         function guardarViaje() {
             var dto = construirViajeDto();
@@ -1312,31 +1288,47 @@
             if (!tipo) falt.push('Tipo de tarifa');
             else if (tipo === 'fija' && !dto.TarifaFijaID) falt.push('Tarifa fija (no se encontró para esa ruta)');
             else if (tipo === 'km' && !dto.TarifaKmID) falt.push('Tarifa por km (no se pudo calcular)');
-            if (falt.length) { mostrarAlertaModal('Complete/revise: ' + falt.join(', ') + '.'); return; }
+            if (falt.length) { mostrarAlertaModal('Completá o revisá: ' + falt.join(', ') + '.'); return; }
 
             var id = $('#viajeIdEdicion').val();
             var esEdicion = id !== '' && id != null;
+            $('#alertaCompletaCampos').hide().empty();
+            var listo = SGTL.procesando('#confirmarBtn');
             $.ajax({
                 url: esEdicion ? (API_VIAJES + '/Viajes/' + id) : (API_VIAJES + '/Viajes'),
                 type: esEdicion ? 'PUT' : 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(dto),
                 success: function (r) {
+                    listo();
                     $('#ModalAltaViaje').modal('hide');
-                    alert((esEdicion ? 'Viaje actualizado correctamente.' : 'Viaje registrado correctamente.') + textoWhatsApp(r && r.WhatsApp));
+                    SGTL.toastExito(esEdicion ? 'Viaje guardado.' : 'Viaje registrado.');
+                    avisarWhatsApp(r && r.WhatsApp);
                     buscarViajes(1);
                 },
-                error: function (xhr) { mostrarAlertaModal(parsearError(xhr)); }
+                error: function (xhr) { listo(); mostrarAlertaModal(SGTL.escapar(parsearError(xhr))); }
             });
         }
 
         // ===================== ELIMINAR / ESTADO =====================
-        function abrirModalEliminarViaje(id) { viajeIdEliminar = id; $('#confirmarEliminarViajeModal').modal('show'); }
-        function confirmarEliminarViaje() {
-            if (!viajeIdEliminar) return;
-            $.ajax({ url: API_VIAJES + '/Viajes/' + viajeIdEliminar, type: 'DELETE' })
-                .done(function () { $('#confirmarEliminarViajeModal').modal('hide'); alert('Viaje eliminado correctamente.'); viajeIdEliminar = null; buscarViajes(1); })
-                .fail(function (xhr) { $('#confirmarEliminarViajeModal').modal('hide'); alert('No se pudo eliminar el viaje. ' + parsearError(xhr)); });
+        function abrirModalEliminarViaje(id) {
+            SGTL.confirmar({
+                titulo: '¿Eliminar el viaje #' + id + '?',
+                mensaje: 'No se puede deshacer.',
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return new Promise(function (resolver, rechazar) {
+                        $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'DELETE' })
+                            .done(resolver)
+                            .fail(function (xhr) { var e = new Error('DELETE'); e.mensajeUsuario = parsearError(xhr); rechazar(e); });
+                    });
+                }
+            }).then(function (eliminado) {
+                if (!eliminado) return;
+                SGTL.toastExito('Viaje eliminado.');
+                buscarViajes(1);
+            });
         }
 
         // Rukas: el control fino (salida, novedad, sobre) queda en Rukas; acá solo se marca si ya se puede facturar.
