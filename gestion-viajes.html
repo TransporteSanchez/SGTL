@@ -285,7 +285,7 @@
                             <div class="col-lg-7">
                                 <div class="mb-3">
                                     <label for="clienteSelect" class="form-label">Cliente <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="clienteSelect"><option value="">Seleccione un cliente</option></select>
+                                    <select class="form-select" id="clienteSelect"><option value="">Seleccioná un cliente</option></select>
                                 </div>
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
@@ -310,7 +310,7 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="camionSelect" class="form-label">Cami&oacute;n <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="camionSelect"><option value="">Seleccione un cami&oacute;n</option></select>
+                                        <select class="form-select" id="camionSelect"><option value="">Seleccioná un camión</option></select>
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="distanciaKm" class="form-label">Distancia (KM)</label>
@@ -613,8 +613,10 @@
             const bloqueado = facturado || proformaEmitida;
             const motivo = facturado ? 'Viaje facturado: no se puede modificar' : motivoProforma;
             const tituloEditar = bloqueado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
+            const desdePresupuesto = !!viaje.Presupuesto_ID;
             const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en un borrador de proforma: quitalo de la proforma para eliminarlo'
-                : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado'));
+                : (desdePresupuesto ? 'Se generó desde el presupuesto #' + viaje.Presupuesto_ID + ': no se puede eliminar'
+                : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado')));
             return `
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEditar}">
                     <button class="btn btn-primary btn-sm ${bloqueado ? 'disabled' : ''}"
@@ -623,7 +625,7 @@
                     </button>
                 </span>
                 <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEliminar}">
-                    <button class="btn btn-danger btn-sm ms-1 ${registrado && !bloqueado && !enProforma ? '' : 'disabled'}"
+                    <button class="btn btn-danger btn-sm ms-1 ${registrado && !bloqueado && !enProforma && !desdePresupuesto ? '' : 'disabled'}"
                         onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}')">
                         <i class="bi bi-trash"></i>
                     </button>
@@ -878,7 +880,12 @@
             } catch (e) { }
             return 'Ocurrió un error. Revisá los datos y probá de nuevo.';
         }
-        function mostrarAlertaModal(msg) { $('#alertaCompletaCampos').html(msg).show(); }
+        // El botón Guardar está abajo (después del mapa): se sube el modal para que el aviso se vea.
+        function mostrarAlertaModal(msg) {
+            $('#alertaCompletaCampos').html(msg).show();
+            // El modal no tiene scroll propio: se desplaza el contenedor .modal.
+            $('#ModalAltaViaje').scrollTop(0);
+        }
         function setTarifaInfo(txt, tipo) {
             $('#tarifaInfo').removeClass('text-muted text-success text-danger')
                 .addClass(tipo === 'ok' ? 'text-success' : (tipo === 'error' ? 'text-danger' : 'text-muted'))
@@ -1013,7 +1020,7 @@
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
                 .done(function (data) {
-                    var s = $('#clienteSelect').empty().append('<option value="">Seleccione un cliente</option>');
+                    var s = $('#clienteSelect').empty().append('<option value="">Seleccioná un cliente</option>');
                     tiposClienteViaje = {};
                     (data || []).forEach(function (c) {
                         tiposClienteViaje[c.Cliente_ID] = c.Tipo_Cliente || 'Directo';
@@ -1045,7 +1052,7 @@
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Camiones', type: 'GET' })
                 .done(function (data) {
-                    var s = $('#camionSelect').empty().append('<option value="">Seleccione un camión</option>');
+                    var s = $('#camionSelect').empty().append('<option value="">Seleccioná un camión</option>');
                     (data || []).forEach(function (cm) { s.append('<option value="' + cm.Camion_ID + '">' + (cm.Dominio || '').trim() + '</option>'); });
                 })
                 .always(function () { d.resolve(); });
@@ -1065,9 +1072,9 @@
                 sd.prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
                 return;
             }
-            so.prop('disabled', false).empty().append('<option value="">Seleccione un origen</option>');
+            so.prop('disabled', false).empty().append('<option value="">Seleccioná un origen</option>');
             origenesAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { so.append('<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'); });
-            sd.prop('disabled', false).empty().append('<option value="">Seleccione un destino</option>');
+            sd.prop('disabled', false).empty().append('<option value="">Seleccioná un destino</option>');
             destinosAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { sd.append('<option value="' + o.Destino_ID + '">' + o.Descripcion + '</option>'); });
             if (origenSel) so.val(origenSel);
             if (destinoSel) sd.val(destinoSel);
@@ -1288,11 +1295,11 @@
             if (!tipo) falt.push('Tipo de tarifa');
             else if (tipo === 'fija' && !dto.TarifaFijaID) falt.push('Tarifa fija (no se encontró para esa ruta)');
             else if (tipo === 'km' && !dto.TarifaKmID) falt.push('Tarifa por km (no se pudo calcular)');
+            $('#alertaCompletaCampos').hide().empty();
             if (falt.length) { mostrarAlertaModal('Completá o revisá: ' + falt.join(', ') + '.'); return; }
 
             var id = $('#viajeIdEdicion').val();
             var esEdicion = id !== '' && id != null;
-            $('#alertaCompletaCampos').hide().empty();
             var listo = SGTL.procesando('#confirmarBtn');
             $.ajax({
                 url: esEdicion ? (API_VIAJES + '/Viajes/' + id) : (API_VIAJES + '/Viajes'),

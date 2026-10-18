@@ -124,6 +124,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Tipo_Cliente { get; set; }
             public bool Tiene_Evidencia { get; set; }
             public bool Facturada { get; set; }
+            public int? Presupuesto_ID { get; set; }
             public int? EnProforma_ID { get; set; }
             public string EnProforma_Numero { get; set; }
             public string EnProforma_Estado { get; set; }
@@ -186,6 +187,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia, " +
             SQL_FACTURADA + " AS Facturada, " +
+            "(SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID = v.Viaje_ID) AS Presupuesto_ID, " +
             "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado " +
             "FROM VIAJES v " +
             "LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID " +
@@ -804,10 +806,8 @@ SELECT CAST(CASE WHEN EXISTS (
                         dto.EnProforma_ID = est.EnProforma_ID;
                         dto.EnProforma_Numero = est.EnProforma_Numero;
                         dto.EnProforma_Estado = est.EnProforma_Estado;
+                        dto.Presupuesto_ID = est.Presupuesto_ID;
                     }
-
-                    dto.Presupuesto_ID = db.Database.SqlQuery<int?>(
-                        "SELECT TOP (1) Presupuesto_ID FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", P("@id", id)).FirstOrDefault();
 
                     return Ok(dto);
                 }
