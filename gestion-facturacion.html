@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Gestionar proformas</title>
+    <title>Gestionar proformas · Transporte Sánchez</title>
     <style>
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
@@ -52,7 +52,7 @@
                             </div>
                             <div class="d-flex flex-wrap gap-2">
                                 <button id="btnExportarListadoProformas" class="btn btn-outline-secondary" type="button" onclick="abrirExportacionProformas()"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar listado</button>
-                                <button class="btn btn-primary" onclick="nuevaProforma()"><i class="bi bi-plus-lg me-1"></i>Nueva proforma</button>
+                                <button class="btn btn-primary" onclick="nuevaProforma()"><i class="bi bi-plus-lg me-1"></i>Registrar proforma</button>
                             </div>
                         </div>
                         <div class="card-body">
@@ -95,7 +95,7 @@
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="tituloModal">Nueva proforma</h5>
+                    <h5 class="modal-title" id="tituloModal">Registrar proforma</h5>
                     <span id="badgeEstadoModal" class="badge bg-secondary ms-2"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
@@ -628,7 +628,7 @@
         function nuevaProforma() {
             limpiarForm();
             estadoActual = 'Borrador';
-            document.getElementById('tituloModal').textContent = 'Nueva proforma';
+            document.getElementById('tituloModal').textContent = 'Registrar proforma';
             document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge bg-secondary ms-2">Borrador</span>';
             setModoLectura(false);
             proformaConCambios = false;
