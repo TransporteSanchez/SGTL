@@ -155,6 +155,19 @@ git add archivo-resuelto
 git commit
 ```
 
+**Regla: los conflictos se revisan uno por uno con Rocío antes de integrar.**
+Vale para las personas y para cualquier IA que haga el merge.
+
+1. Ante un conflicto, el merge queda abierto (`git merge --no-commit`) y no se
+   resuelve nada por cuenta propia.
+2. Primero se listan todos los conflictos. Después se presentan **de a uno**:
+   qué trae cada lado, qué se recomienda y cómo quedaría el código.
+3. Cada resolución se aplica recién cuando Rocío la aprueba.
+4. Si al revisar aparece algo para corregir que no es parte del conflicto, va
+   en un **commit aparte** después del merge, no dentro del merge.
+5. El commit del merge va al final, con todo aprobado, y su mensaje resume
+   cómo se resolvió cada conflicto.
+
 ---
 
 ## Regla de oro para módulos nuevos
