@@ -938,13 +938,13 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     }
 
                     var advertencias = new List<string>();
-                    if (sinNumeros.Count > 0) advertencias.Add("No se trajeron " + sinNumeros.Count + " viaje(s) sin número de remito o de transporte SAP: " + ListaViajes(sinNumeros) + ".");
-                    if (noEntregados.Count > 0) advertencias.Add("No se trajeron " + noEntregados.Count + " viaje(s) que todavía no están en estado Entregado: " + ListaViajes(noEntregados) + ".");
-                    if (sinTarifa.Count > 0) advertencias.Add("No se trajeron " + sinTarifa.Count + " viaje(s) sin tarifa o con importe en cero: " + ListaViajes(sinTarifa) + ".");
-                    if (enOtraProforma.Count > 0) advertencias.Add(enOtraProforma.Count + " viaje(s) ya están incluidos en otra proforma y no se volvieron a traer: " + ListaViajes(enOtraProforma) + ".");
-                    if (facturados.Count > 0) advertencias.Add(facturados.Count + " viaje(s) ya estaban facturados y no se volvieron a traer: " + ListaViajes(facturados) + ".");
-                    if (registrados.Count > 0) advertencias.Add(registrados.Count + " viaje(s) siguen en estado Registrado (verificá en Rukas que estén entregados): " + ListaViajes(registrados) + ".");
-                    if (sinEvidencia.Count > 0) advertencias.Add(sinEvidencia.Count + " viaje(s) entregados no tienen evidencia adjunta (recomendado): " + ListaViajes(sinEvidencia) + ".");
+                    if (sinNumeros.Count > 0) advertencias.Add("No se " + (sinNumeros.Count == 1 ? "trajo 1 viaje" : "trajeron " + sinNumeros.Count + " viajes") + " sin número de remito o de transporte SAP: " + ListaViajes(sinNumeros) + ".");
+                    if (noEntregados.Count > 0) advertencias.Add("No se " + (noEntregados.Count == 1 ? "trajo 1 viaje que todavía no está" : "trajeron " + noEntregados.Count + " viajes que todavía no están") + " en estado Entregado: " + ListaViajes(noEntregados) + ".");
+                    if (sinTarifa.Count > 0) advertencias.Add("No se " + (sinTarifa.Count == 1 ? "trajo 1 viaje" : "trajeron " + sinTarifa.Count + " viajes") + " sin tarifa o con importe en cero: " + ListaViajes(sinTarifa) + ".");
+                    if (enOtraProforma.Count > 0) advertencias.Add((enOtraProforma.Count == 1 ? "1 viaje ya está incluido en otra proforma y no se volvió a traer: " : enOtraProforma.Count + " viajes ya están incluidos en otra proforma y no se volvieron a traer: ") + ListaViajes(enOtraProforma) + ".");
+                    if (facturados.Count > 0) advertencias.Add((facturados.Count == 1 ? "1 viaje ya estaba facturado y no se volvió a traer: " : facturados.Count + " viajes ya estaban facturados y no se volvieron a traer: ") + ListaViajes(facturados) + ".");
+                    if (registrados.Count > 0) advertencias.Add((registrados.Count == 1 ? "1 viaje sigue en estado Registrado (verificá en Rukas que esté entregado): " : registrados.Count + " viajes siguen en estado Registrado (verificá en Rukas que estén entregados): ") + ListaViajes(registrados) + ".");
+                    if (sinEvidencia.Count > 0) advertencias.Add((sinEvidencia.Count == 1 ? "1 viaje entregado no tiene evidencia adjunta (recomendado): " : sinEvidencia.Count + " viajes entregados no tienen evidencia adjunta (recomendado): ") + ListaViajes(sinEvidencia) + ".");
 
                     return Ok(new { lineas, advertencias });
                 }
