@@ -85,7 +85,10 @@
                 if (window.loadHeader) window.loadHeader();
                 if (window.loadFooter) window.loadFooter();
                 if (window.loadSidebar) await window.loadSidebar();
-                if (window.loadSettings) await window.loadSettings();
+                if (window.cargarEstilosContenido) {
+                    try { await window.cargarEstilosContenido(); }
+                    catch (error) { console.error('No se pudo cargar el diseño:', error); }
+                }
                 if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
                 document.getElementById('app').style.display = 'block';
             } finally {

@@ -136,6 +136,18 @@ namespace WebApi_TransporteSanchez.Controllers
         [Route("asignaciones/facturacion")]
         public IHttpActionResult ObtenerAsignacionFacturacion()
         {
+            return ObtenerAsignacionModulo("FACTURACION");
+        }
+
+        [HttpGet]
+        [Route("asignaciones/presupuestos")]
+        public IHttpActionResult ObtenerAsignacionPresupuestos()
+        {
+            return ObtenerAsignacionModulo("PRESUPUESTOS");
+        }
+
+        private IHttpActionResult ObtenerAsignacionModulo(string modulo)
+        {
             string usuario;
             var autorizado = RequiereAdministrador(out usuario);
             if (autorizado != null) return autorizado;
@@ -144,7 +156,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = CrearContexto())
                 {
-                    var asignacion = BuscarAsignacionFacturacion(db);
+                    var asignacion = BuscarAsignacionModulo(db, modulo);
                     return asignacion == null ? (IHttpActionResult)NotFound() : Ok(asignacion);
                 }
             }
@@ -158,11 +170,23 @@ namespace WebApi_TransporteSanchez.Controllers
         [Route("asignaciones/facturacion")]
         public IHttpActionResult GuardarAsignacionFacturacion([FromBody] AsignacionModuloRequestDto value)
         {
+            return GuardarAsignacionModulo("FACTURACION", value);
+        }
+
+        [HttpPut]
+        [Route("asignaciones/presupuestos")]
+        public IHttpActionResult GuardarAsignacionPresupuestos([FromBody] AsignacionModuloRequestDto value)
+        {
+            return GuardarAsignacionModulo("PRESUPUESTOS", value);
+        }
+
+        private IHttpActionResult GuardarAsignacionModulo(string modulo, AsignacionModuloRequestDto value)
+        {
             string usuario;
             var autorizado = RequiereAdministrador(out usuario);
             if (autorizado != null) return autorizado;
             if (value == null || !value.Service.HasValue || value.Service.Value <= 0)
-                return BadRequest("Seleccioná un perfil SMTP válido para Facturación.");
+                return BadRequest("Seleccioná un perfil SMTP válido.");
 
             try
             {
@@ -181,21 +205,21 @@ namespace WebApi_TransporteSanchez.Controllers
                     int actualizados = db.Database.ExecuteSqlCommand(
                         "UPDATE dbo.CONFIGURACION_EMAIL_MODULO " +
                         "SET [Service] = @service, FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario " +
-                        "WHERE Modulo = 'FACTURACION';",
-                        P("@service", value.Service.Value), P("@usuario", usuario));
+                        "WHERE Modulo = @modulo;",
+                        P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo));
                     if (actualizados == 0)
                     {
                         db.Database.ExecuteSqlCommand(
                             "INSERT INTO dbo.CONFIGURACION_EMAIL_MODULO " +
                             "(Modulo, [Service], FechaModificacion, UsuarioModificacion) " +
-                            "VALUES ('FACTURACION', @service, SYSUTCDATETIME(), @usuario);",
-                            P("@service", value.Service.Value), P("@usuario", usuario));
+                            "VALUES (@modulo, @service, SYSUTCDATETIME(), @usuario);",
+                            P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo));
                     }
 
                     transaccion.Commit();
                     RegistrarAuditoria(usuario, "EMAIL_MODULE", perfil.Es_id,
-                        "Facturación asociada al Service=" + perfil.Service + ".");
-                    return Ok(BuscarAsignacionFacturacion(db));
+                        modulo + " asociado al Service=" + perfil.Service + ".");
+                    return Ok(BuscarAsignacionModulo(db, modulo));
                 }
             }
             catch
@@ -513,14 +537,14 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<EmailServidorResponseDto>(ConsultaConfiguracion + " WHERE Es_id = @id;", P("@id", id)).FirstOrDefault();
         }
 
-        private static AsignacionModuloResponseDto BuscarAsignacionFacturacion(SGTLAuditContext db)
+        private static AsignacionModuloResponseDto BuscarAsignacionModulo(SGTLAuditContext db, string modulo)
         {
             return db.Database.SqlQuery<AsignacionModuloResponseDto>(
                 "SELECT m.Modulo, e.[Service], e.Es_id AS EmailServidorID, e.[Name] AS Perfil, " +
                 "e.CredentialFromMailAddres AS Remitente " +
                 "FROM dbo.CONFIGURACION_EMAIL_MODULO m " +
                 "INNER JOIN dbo.EmailServidor e ON e.[Service] = m.[Service] " +
-                "WHERE m.Modulo = 'FACTURACION';").FirstOrDefault();
+                "WHERE m.Modulo = @modulo;", P("@modulo", modulo)).FirstOrDefault();
         }
 
         private static EmailServidorInterno BuscarConfiguracionInterna(SGTLAuditContext db, int id)

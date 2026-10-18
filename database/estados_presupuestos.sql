@@ -1,0 +1,16 @@
+﻿SET NOCOUNT ON;
+SET XACT_ABORT ON;
+IF DB_NAME() <> N'Transporte_Sanchez' THROW 53060, 'Ejecutar en la base Transporte_Sanchez.', 1;
+IF OBJECT_ID(N'dbo.PRESUPUESTOS', N'U') IS NULL THROW 53061, 'Crear primero la tabla PRESUPUESTOS.', 1;
+BEGIN TRANSACTION;
+IF COL_LENGTH('dbo.PRESUPUESTOS','Estado') IS NULL
+    ALTER TABLE dbo.PRESUPUESTOS ADD Estado varchar(15) NOT NULL CONSTRAINT DF_Presupuestos_Estado DEFAULT 'Pendiente' WITH VALUES;
+IF COL_LENGTH('dbo.PRESUPUESTOS','ViajeID') IS NULL
+    ALTER TABLE dbo.PRESUPUESTOS ADD ViajeID int NULL;
+IF OBJECT_ID('dbo.CK_Presupuestos_Estado','C') IS NULL
+    EXEC(N'ALTER TABLE dbo.PRESUPUESTOS WITH CHECK ADD CONSTRAINT CK_Presupuestos_Estado CHECK (Estado IN (''Pendiente'',''Aceptado'',''Rechazado''))');
+IF OBJECT_ID('dbo.FK_Presupuestos_Viajes','F') IS NULL
+    EXEC(N'ALTER TABLE dbo.PRESUPUESTOS WITH CHECK ADD CONSTRAINT FK_Presupuestos_Viajes FOREIGN KEY (ViajeID) REFERENCES dbo.VIAJES(Viaje_ID)');
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id=OBJECT_ID('dbo.PRESUPUESTOS') AND name='UX_Presupuestos_ViajeID')
+    EXEC(N'CREATE UNIQUE INDEX UX_Presupuestos_ViajeID ON dbo.PRESUPUESTOS(ViajeID) WHERE ViajeID IS NOT NULL');
+COMMIT TRANSACTION;
