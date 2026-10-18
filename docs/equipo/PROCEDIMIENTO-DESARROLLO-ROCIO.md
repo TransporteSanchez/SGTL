@@ -95,6 +95,37 @@ Avisar a Facu que haga `git pull origin facugodoy`.
 
 ---
 
+## 7. Después de cada ronda de pruebas: errores, mejoras y limpieza
+
+Acordado con Rocío el 18/10/2026. Vale para cualquier IA que analice un reporte de pruebas.
+La idea es resolver en el momento todo lo que se pueda y no acumular pendientes.
+
+**Errores.** Se analizan y se propone la corrección: causa, cambio y cómo probarlo en la VM.
+Se aplica cuando Rocío la aprueba, en un commit por tema, y se actualizan los pendientes.
+
+**Mejoras, también las de módulos de Facu o Fede.** Se suman a la ronda actual. Para cada una
+se plantea:
+
+- **qué hay hoy y qué se propone**;
+- **qué implica**: archivos que toca, si hace falta script en la base y qué hay que probar;
+- **la recomendación**: hacerla ya, dejarla pendiente o **validarla antes con Facu o Fede**,
+  con el motivo. Por ejemplo, si cambia una decisión de su módulo o algo que ellos están
+  tocando en su rama.
+
+Rocío decide cuáles se hacen. Las que no, quedan en `docs/PENDIENTES-SISTEMA.md` con el
+motivo y con quién hay que hablarlas.
+
+**Limpieza de datos de prueba.** Al terminar de analizar un reporte, recordarle a Rocío la
+limpieza y clasificar cada dato:
+
+- **conviene limpiar ya**: datos que ensucian pantallas o reportes, que pueden confundir otra
+  prueba o que tienen efectos reales (por ejemplo, un viaje con chofer asignado);
+- **no molestan / conviene dejarlos**: datos que sirven para la próxima prueba (por ejemplo,
+  para verificar una corrección) o que no se ven en ningún lado.
+
+El SQL va revisado, dentro de `BEGIN TRAN` … `SELECT @@ROWCOUNT` … `-- COMMIT; o ROLLBACK;`, y lo
+corre Rocío.
+
 ## Problemas frecuentes
 
 - **`git switch` / `git pull` en la VM falla con "Your local changes ... would be overwritten"
