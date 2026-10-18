@@ -217,8 +217,9 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
 - **Premisas del diseño, a confirmar con Claudia** (preguntas 7 y 8 del §11):
   - [ ] ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? Si lo hace Marfrig, revisar el flujo.
   - [ ] Con una proforma ya generada, ¿quién la corrige? Con el perfil de Transporte Sanchez **no hay opción de modificar, quitar transportes ni anular** una proforma en Proceso (revisado en el código de la pantalla); serían funciones de Marfrig. ¿Se lo piden a Marfrig por mail o por ticket? ¿Cuánto tarda?
-- [ ] **Con Facu:** OK al diseño (toca Facturación) y el N° de factura fiscal que se carga en Rukas (pregunta 9 del §11).
-- Implementación: no empezada.
+- [ ] **Con Facu:** OK al diseño (toca Facturación) y el N° de factura fiscal que se carga en Rukas (pregunta 9 del §11). Recomendación: guardar en la factura de SGTL letra, punto de venta, número y fecha fiscal, para todos los clientes. Se ve al final.
+- [ ] **IVA:** confirmar si los importes de Rukas son netos (pregunta 11 del §11). Hay que saberlo antes de la etapa 2.
+- Implementación: no empezada. Plan por etapas en `docs/diseno/proforma-rukas-diseno.md` (antes de empezar: traer el commit nuevo de Facu `4a84bb2`, que toca proformas y viajes).
 
 ---
 

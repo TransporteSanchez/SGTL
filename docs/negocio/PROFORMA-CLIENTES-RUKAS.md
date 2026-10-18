@@ -169,7 +169,7 @@ Pedir a **Claudia** un **PDF de ejemplo** de proforma Marfrig (aunque con datos 
 
 ## 10. Diseño acordado (18/10/2026, reemplaza el del 15/10)
 
-**Todavía no implementado.** Falta el OK de Facu (toca Facturación) y confirmar las premisas con Claudia (§11).
+**Todavía no implementado.** Falta el OK de Facu (toca Facturación) y confirmar las premisas con Claudia (§11). Plan de desarrollo por etapas: `docs/diseno/proforma-rukas-diseno.md`.
 
 ### Premisas
 
@@ -286,8 +286,17 @@ Abiertas:
 6. ¿Qué hace hoy Claudia cuando un importe no coincide? Por lo visto (§12), reclama en Cierre de Reparto antes de dar conformidad. Confirmarlo.
 7. ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? (premisa 1 de §10)
 8. Con una proforma ya generada, ¿la corrige Marfrig a pedido? ¿Por mail o por ticket? ¿Cuánto tarda? (premisa 2 de §10)
-9. El N° de factura que se carga en Rukas (formato `A00005-00000659`) es el de la **factura fiscal (ARCA)**. Los comprobantes de SGTL son internos y se numeran con un correlativo sin punto de venta. ¿Guardamos en SGTL el N° fiscal para la marca "Cargada en Rukas"? Ver con **Facu**.
+9. El N° de factura que se carga en Rukas (formato `A00005-00000659`) es el de la **factura fiscal (ARCA)**. Esa factura la emite TS por fuera (Rukas no factura ni está conectado a ARCA). Los comprobantes de SGTL son internos y se numeran con un correlativo sin punto de venta. **Ver con Facu** (se decide al final).
+
+   **Recomendación (18/10): guardar el N° fiscal en la factura de SGTL**, para todos los clientes (no solo Rukas):
+   - **Campos:** letra, punto de venta (5 dígitos), número (8 dígitos), fecha fiscal y CAE opcional. Con eso se arma el formato que pide Rukas.
+   - **Carga manual** después de emitir en ARCA ("Registrar factura fiscal").
+   - **Validaciones:** formato correcto y número que no se repita; opcional, el total fiscal, con aviso si no coincide con el de SGTL.
+   - **"Cargada en Rukas"** se habilita solo con el N° fiscal cargado.
+   - **Listado "Sin factura fiscal"** para que no se pase ninguna.
+   - **Para qué sirve:** trazabilidad proforma Rukas → factura SGTL → factura fiscal → cobro, imputar los recibos, y dejar el campo listo para una futura conexión con ARCA, que lo completaría sola.
 10. ¿Rukas ofrece API o exportación para integradores? Preguntar por ticket de soporte o vía Marfrig.
+11. ¿Los importes de Rukas son **netos (sin IVA)**? SGTL arma las proformas con IVA 21 % por línea. Si son netos, la factura es total de Rukas + IVA. Para verlo: comparar el total de la factura de una proforma cerrada con el total de Rukas.
 
 ---
 
