@@ -223,7 +223,82 @@ Lectura automática del PDF, OCR, matching línea por línea PDF ↔ viaje.
 
 ---
 
-## 12. Referencias en el repo
+## 12. Lo que muestra Rukas (relevado el 18/10/2026)
+
+Recorrida de solo lectura por Rukas con el usuario de Transporte Sanchez (acceso dado por
+Claudia), menú **Proforma → Control Proformas**. No se modificó nada. Acá no van números
+reales de proformas, facturas ni importes.
+
+### Circuito en Rukas (vista del transportista)
+
+| Solapa | Qué hay |
+|---|---|
+| **Pendientes** | Transportes que salieron y todavía no tienen cierre de reparto. Columnas: fecha de salida, cierre de reparto, N° de transporte, empresa, ruta. |
+| **Proforma** (Preliquidar) | Transportes cerrados y listos para proformar: N° de transporte, fecha, ruta, importe viajes y adicionales. Se tildan y el botón **Generar proforma** abre "Generación de Proforma": número (correlativo de Rukas), fecha, cantidad de viajes, total a facturar (viajes + adicionales). |
+| **Proceso** | Proformas generadas que esperan la factura. Por cada una: N°, fecha, fecha de creación, cantidad de viajes, costo transporte, costo adicionales, total; botones de detalle, carga de factura e imágenes. |
+| **Cerrados** | Proformas con factura cargada: además de lo anterior, fecha de cierre, **fecha y N° de factura** (formato `A00005-00000659`: letra + punto de venta de 5 dígitos + número de 8). |
+| **Búsqueda** | Buscador por N° de proforma. |
+
+**Carga de la factura de TS en Rukas:** primero se sube la imagen de la factura (JPG o PDF), después fecha y N° de factura y se confirma. Rukas le avisa por correo a Marfrig que se cargó la factura.
+
+### Qué tiene una proforma de Rukas
+
+- **No es un PDF:** es un registro dentro de Rukas. El detalle se ve en pantalla y se puede **exportar a Excel**.
+- **Detalle por transporte:** una línea por viaje con **N° de transporte** (el que SGTL guarda como "N° de transporte SAP", `Num_Transporte`), fecha, ruta, importe del viaje y adicionales.
+- **La tarifa va por ruta o banda de km**, con un importe fijo por banda (por ejemplo "CD CORDOBA - HASTA 130 KM"). No es km × tarifa.
+- **Los importes los pone Marfrig** (costos SAP) y el transportista no los edita. Hay acciones de Marfrig como "copiar costos SAP" y un detalle por entrega con zona, peso / peso SAP y tarifa / $SAP.
+
+### Diferencias y reclamos dentro de Rukas
+
+Rukas tiene estas acciones (algunas pueden ser solo para el perfil de Marfrig):
+
+- **Bloquear un transporte para proforma**, con observación (y desbloquearlo después).
+- **Anular un transporte**, con motivo obligatorio y comprobante adjunto (JPG o PDF). "Quitar anulación" lo devuelve a Pendientes.
+- **Diferencia de número de entrega** entre SAP y TRF, con opción de actualizar la entrega.
+- **Pasar a Preliquidar por excepción**, con justificación.
+- **Modificar una proforma generada**: agregar o quitar transportes.
+
+### Qué cambia respecto de lo definido en §5–§10
+
+1. **Quién genera la proforma.** En la pantalla del transportista está el botón "Generar proforma". O sea que, por lo visto, **TS la genera en Rukas** eligiendo transportes ya cerrados, pero **con los importes que fija Marfrig**. Claudia había dicho que "la arma Marfrig": puede ser que se refiera a que Marfrig pone los importes. **Hay que confirmarlo con ella.**
+2. **El PDF no hace falta.** No se necesita PdfPig ni OCR. La fuente es la **exportación a Excel del detalle** (N° de transporte, fecha, ruta, importe, adicionales). Importar ese Excel en SGTL permite:
+   - cruzar **línea por línea** con los viajes por `Num_Transporte`, en lugar de controlar solo el total;
+   - detectar viajes que están en Rukas y no en SGTL, o al revés;
+   - comparar el importe de Rukas con la tarifa de SGTL **por viaje**.
+3. **Respaldo:** el adjunto pasa a ser opcional. Sirve para guardar el Excel exportado o la imagen de la factura que se sube a Rukas.
+4. **Pregunta 6 (§11), respondida en parte:** los reclamos se canalizan dentro de Rukas (bloqueo o anulación del transporte con motivo y comprobante, o modificación de la proforma). Falta saber qué hace Claudia en la práctica y si hay acuerdos por fuera del sistema.
+5. **Paso nuevo después de facturar en SGTL:** cargar la factura en Rukas. Esa carga sigue siendo manual (sin API), pero SGTL puede mostrar el N° y la fecha listos para copiar y marcar "Cargada en Rukas".
+
+### Formato del Excel del detalle
+
+El botón de Excel del detalle (Proceso → Detalle Proforma) **arma el archivo en el navegador**, a partir de la misma tabla que se ve en pantalla. No hace ninguna acción en Rukas. Formato verificado con un archivo real (18/10/2026; el archivo **no se sube al repo**):
+
+- **Nombre del archivo:** `MARFRIG - PROFORMA NRO <número>.xlsx`. **El N° de proforma solo figura en el nombre del archivo**: adentro no hay fila de título ni de totales.
+- **Hoja única** `Sheet1`. **Fila 1 = encabezados**; desde la fila 2, una fila por transporte.
+
+| Columna | Encabezado | Tipo de celda | Ejemplo de formato |
+|---|---|---|---|
+| A | `Transporte` | número | 6 dígitos |
+| B | `Descripción Transporte` | texto | razón social del transportista |
+| C | `Fecha` | **texto** | `14.09.2026` (`dd.mm.aaaa`) |
+| D | `Ruta` | texto | `CD CORDOBA - HASTA 130 KM` |
+| E | `Importe Viajes` | **texto** | `664,570` (coma = separador de miles, pesos enteros) |
+| F | `Adicionales` | número | `0` |
+
+**Cuidados al importar:**
+
+- `Importe Viajes` viene como texto con **coma de miles**. Con cultura es-AR, `664,570` se leería como 664,57: hay que quitar las comas y tomarlo como entero.
+- `Fecha` viene como texto: parsearla con el formato exacto `dd.MM.yyyy`.
+- El total no viene en el archivo: se calcula sumando las columnas E y F.
+- El N° de proforma se carga a mano o se toma del nombre del archivo.
+- En la solapa Pendientes, el N° de transporte aparece con un prefijo (`ZQFV <número>`); en el Excel viene solo el número.
+- En los listados de Rukas los importes aparecen como `ARS 5.292.185`, con punto de miles.
+
+**PDF de Rukas:** el código de la pantalla tiene un botón para descargar la proforma en PDF (`PLV-…_pdf.php`), pero con el perfil de Transporte Sanchez no aparece. Ese es, probablemente, el PDF que Marfrig manda por mail.
+
+---
+
+## 13. Referencias en el repo
 
 - `docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md` — cuestionario (plantilla; respuestas completas están en el Google Doc).
 - `docs/negocio/CHECKLIST-OPERACION-VIAJES.md` — flujo operativo actual Rukas vs directo.

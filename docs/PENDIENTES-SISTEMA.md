@@ -209,7 +209,8 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
 - Preferencia actual: opción **B** — registrar proforma **recibida** de Marfrig (PDF + datos + viajes) y emitir factura TS desde ahí; directos mantienen proforma propia.
 - Lectura PDF (PdfPig) como mejora; OCR no para el MVP.
 - Diseño técnico acordado el 15/10: ver §10 de `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` (proforma de tipo Recibida, estado En reclamo si no coinciden totales, factura con el flujo actual de Facu).
-- Implementación: no empezada. Esperando de Claudia (pedido 15/10): PDF de ejemplo y qué hace hoy cuando no coinciden los importes. Después, alinear con Facu.
+- **18/10: recorrida de solo lectura por Rukas** (ver §12 de `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`). La proforma de Rukas no es un PDF: tiene detalle por N° de transporte, exportable a Excel. Conviene importar ese Excel en lugar de leer un PDF. Los reclamos se hacen dentro de Rukas (bloqueo o anulación del transporte con motivo).
+- Implementación: no empezada. Falta confirmar con Claudia quién genera la proforma en Rukas (la pantalla del transportista tiene "Generar proforma"), alinear con Facu. Formato del Excel ya relevado con un archivo real (§12).
 
 ---
 
