@@ -323,7 +323,7 @@ Las pantallas se ven y se comportan distinto según la etapa en que se hicieron 
 
 1. [x] Relevamiento por código de las 23 pantallas (17/10, actualizado con el merge de Facu): `docs/design-system/01-relevamiento-codigo.md`. Incluye las decisiones a tomar (D1–D17).
 2. [x] Capturas en la VM (17/10): 91 capturas en `.pruebas-locales/capturas-ui/2026-10-17/` (fuera de git) y reporte en `docs/pruebas/2026-10-17-capturas-ui.md`. Configuración de facturación y de e-mail salieron con error por token vencido: repetirlas con sesión nueva solo si hacen falta.
-3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Se van anotando en `docs/design-system/03-decisiones.md`. Hechas: botones (alta, exportar, Buscar y borrar filtros, acciones de cada fila, tooltips; cubre D2, D5 y la parte de botones de D3), tablas (D4) y encabezado, menú y filtros (D1 y D3).
+3. [ ] Repaso con Rocío de las decisiones D1–D17, una por una, con las capturas a la vista. Se van anotando en `docs/design-system/03-decisiones.md`. Hechas: botones (alta, exportar, Buscar y borrar filtros, acciones de cada fila, tooltips; cubre D2, D5 y la parte de botones de D3), tablas (D4), encabezado, menú y filtros (D1 y D3) y estados (D6).
 4. [ ] Decisiones del design system (`docs/design-system/03-decisiones.md`), CSS y JS de interfaz compartidos, y regla en `CLAUDE.md`.
 5. [ ] Piloto en un módulo, después el resto. Proformas, cuenta corriente y configuración (Facu) y WhatsApp (Fede): coordinando con ellos.
 
@@ -337,5 +337,18 @@ Bugs vistos en el relevamiento (no visuales):
 | R4 | "Cambiar Contraseña" (encabezado) y "Documentación" (menú) son links que no hacen nada | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |
 | R5 | `</script>` suelto en el pie (inofensivo) | Baja | Con el piloto | `listado-viajes.html` (204) |
 | R6 | Exportar en choferes y camiones baja solo la página visible (15 filas por defecto), no todo lo filtrado, y no avisa | Media | Con el botón de exportar (decisión 1.2) | `gestion-choferes.html` (2008), `listado-choferes.html` (863), `gestion-camiones.html` (1620), `listado-camiones.html` (684) |
+
+| R7 | Gestión de viajes: viajes **Facturado** (4, 6, 7, 8, 9, 11, 12, facturados con PF-00000002) aparecen "En borrador #12". La etiqueta muestra la proforma no anulada más nueva que incluye el viaje (`OUTER_APPLY_PROFORMA`), así que el borrador #12 los contiene, por `PROFORMAS_VIAJES` o por líneas `V{id}` en `PROFORMA_DETALLE`. Falta ver si se armó un borrador con viajes ya facturados (no debería poder) o si son líneas copiadas | Media | Revisar con la consulta de abajo; tocar proformas es de **Facu** | `ViajesController.cs` (194), proformas |
+
+Consulta de solo lectura para R7 (la corre Rocío):
+
+```sql
+SELECT p.Proforma_ID, p.Numero, p.Estado, pv.ViajeID
+FROM dbo.PROFORMAS p
+LEFT JOIN dbo.PROFORMAS_VIAJES pv ON pv.ProformaID = p.Proforma_ID
+WHERE p.Proforma_ID = 12;
+
+SELECT Proforma_ID, Codigo FROM dbo.PROFORMA_DETALLE WHERE Proforma_ID = 12;
+```
 
 Para después: que choferes, camiones, clientes y viajes exporten con el mismo modal de Excel / PDF / imprimir que proformas y cuenta corriente (hoy bajan CSV).

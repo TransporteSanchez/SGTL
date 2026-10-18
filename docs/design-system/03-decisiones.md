@@ -155,3 +155,45 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
   la última fila, a la derecha. Como auditoría.
 - **Estado como desplegable** "Activo / Inactivo / Todos", con Activo elegido al entrar. La cruz
   lo pasa a "Todos" (§1.3). Reemplaza las dos casillas Activo / Inactivo.
+
+---
+
+## 4. Estados (etiquetas)
+
+### 4.1 Un color, un significado
+
+| Color | Significa | Estados |
+|---|---|---|
+| Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión |
+| Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
+| Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual |
+| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta |
+| Rojo | Anulado, dado de baja o deuda | Anulada, Baja, Pendiente (deuda) |
+
+- Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
+- El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
+  etiqueta); las pantallas no arman su propio mapa de colores.
+
+### 4.2 Nombres
+
+- Clientes muestra **Activo / Inactivo** (no Habilitado / Deshabilitado).
+- Auditoría muestra **Inicio de sesión / Cierre de sesión** (no Login / Logout).
+- Es solo lo que se ve: los valores guardados en la base no cambian.
+
+### 4.3 Estilo
+
+- **Colores suaves con bordes redondeados y el texto del mismo color**, como cuenta corriente
+  hoy. Las clases `bg-light-*` de Mazer no sirven: ponen el texto casi negro y los estados se
+  distinguen menos. Van en el CSS compartido, con estos colores (los verde, amarillo y rojo son
+  los de cuenta corriente):
+
+| Clase | Fondo | Texto |
+|---|---|---|
+| `badge rounded-pill estado-gris` | `#eef0f2` | `#5c636a` |
+| `badge rounded-pill estado-azul` | `#e8ecf9` | `#435ebe` |
+| `badge rounded-pill estado-amarillo` | `#fff3cd` | `#a36a00` |
+| `badge rounded-pill estado-verde` | `#e8f6ef` | `#198754` |
+| `badge rounded-pill estado-rojo` | `#fcebed` | `#dc3545` |
+
+- **Etiquetas informativas** que no son un estado ("En PF-00000006" en viajes): blancas con borde
+  gris, sin color (`badge rounded-pill bg-white text-dark border`).
