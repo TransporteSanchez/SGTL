@@ -32,7 +32,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida (sin push) | **Pusheado** (`3bb4fd6`) | **Probado en VM (18/10): 17 OK, 1 falla** (ver §12) |
-| 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | En curso (18/10) | Sin push | Ver §13 |
+| 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | Hecho (18/10): 5 commits | Sin push | Probar en VM junto con F1 (ver §13) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
