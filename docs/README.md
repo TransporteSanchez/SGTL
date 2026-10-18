@@ -70,3 +70,4 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-17-recorrida-general-pre-merge-facu.md` — recorrida general antes del merge con Facu.
 - `docs/pruebas/2026-10-17-verificacion-F1-F3.md` — verificación de F1 (contraseñas) y F3 (permisos).
 - `docs/pruebas/2026-10-17-capturas-ui.md` — reporte de capturas del relevamiento visual.
+- `docs/pruebas/2026-10-18-merge-presupuestos-facu.md` — pruebas en la VM del merge de presupuestos de Facu y de los botones "+" de viajes.

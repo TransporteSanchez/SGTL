@@ -31,7 +31,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 6 | Proforma Rukas: importar Excel de Rukas (rediseño) | Diseño acordado 18/10 (§10 del doc), falta OK de Facu y confirmar con Claudia | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
-| 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10) | Sin push | Antes: verificar en la base las tablas de presupuestos (ver §12) |
+| 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); **falla F1** ("+" no abre en Viajes) | **Pusheado** (`3bb4fd6`) | **Probado en VM (18/10): 17 OK, 1 falla** (ver §12) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -264,6 +264,7 @@ Usuario de prueba **PRUEBACLAUDE** (Usuario_ID 10, grupo Listados): se conserva 
 | F12 | Errores de consola: `simple-datatables.js` sin `#table1` y `usernameDisplay` antes del header | Baja | Ya | gestion-viajes / clientes / orígenes / tarifas, listado-clientes |
 | F13 | CUIT sin control de dígito verificador | Baja | Ya (gestion-clientes choca con Facu: hacerlo después del merge) | `gestion-clientes.html` (1483) |
 | F14 | Datos de direcciones: "Sede Banfield" con localidad Quilmes, "Sede Temperley" con Morón; viaje 6 con origen/destino de otros clientes | Baja | **Dato corregido (17/10)** por SQL, después de completar LOCALIDADES (225 → 3906 con `database/localidades/01_completar_localidades.sql`): Sede Temperley (destino 3) → Av. Hipólito Yrigoyen 10500, Temperley; Sede Banfield (destino 4) → Av. Adolfo Alsina 600, Banfield (direcciones de fantasía que existen en Google Maps); claros del bosque (origen 2) → Av. Celso Barrios 3609, Córdoba (real). Cierra también el 3.4. Viaje 6: no tocar (limpieza antes de la tesis). **Probar en VM:** viaje nuevo Sede Quilmes → Sede Banfield sin "Ubicación aproximada" y ~10–12 km | Orígenes y destinos |
+| F16 | Errores de consola: PerfectScrollbar "no element is specified" en casi todas las pantallas (`app.js`); `GET api/DashboardLayout?username=…` da 404 en el dashboard | Baja | Ya (visto en la prueba del 18/10, `docs/pruebas/2026-10-18-merge-presupuestos-facu.md`) | Plantilla (`assets/compiled/js/app.js`), `index.html` |
 
 **Mejoras sugeridas** (voseo, títulos de pestaña, formatos de fecha, validaciones al escribir, búsquedas sin tildes, 404 como "sin datos", etc.): ver la sección "Mejoras sugeridas" del reporte.
 
@@ -467,7 +468,7 @@ Reglas para que no vuelvan a quedar sueltos: `docs/README.md` (qué va en cada c
 
 ---
 
-## 12. Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` — SIN PUSH NI PRUEBA EN VM (18/10)
+## 12. Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` — PUSHEADO Y PROBADO EN VM, CON 1 FALLA (18/10)
 
 Antes de empezar con la proforma Rukas (§6) se trajo a `rocionuvoli` el commit nuevo de Facu (presupuestos, perfil de e-mail para presupuestos, alta rápida de origen/destino desde el viaje, estilos de Gestión de contenido), que tocaba los mismos archivos.
 
@@ -479,7 +480,7 @@ Antes de empezar con la proforma Rukas (§6) se trajo a `rocionuvoli` el commit 
 
 **Corrección aparte:** los botones "+" de Facu quedaban habilitados en viajes que ya salieron (`bloquearDatosDelViaje` no los conocía). Ahora se deshabilitan junto con origen y destino.
 
-**Antes de probar — la base:** "Traer viajes", editar viaje y eliminar viaje ahora consultan `PRESUPUESTOS`; si la tabla no existe, fallan. Rocío verifica (consulta de solo lectura):
+**Antes de probar — la base:** *(verificado el 18/10: las tablas y columnas de presupuestos y el perfil de e-mail ya estaban; no hizo falta correr nada).* "Traer viajes", editar viaje y eliminar viaje ahora consultan `PRESUPUESTOS`; si la tabla no existe, fallan. Rocío verifica (consulta de solo lectura):
 
 ```sql
 SELECT OBJECT_ID('dbo.PRESUPUESTOS') AS TablaPresupuestos,
@@ -497,7 +498,23 @@ Si algo da `NULL` (o `ModulosEmail` no incluye `PRESUPUESTOS`), correr los scrip
 4. Configuración → WhatsApp: carga con logo y colores y guarda como hoy.
 5. Lo nuevo de Facu: Presupuestos (alta, aceptar → viaje) y su perfil de e-mail. Si hay un viaje de presupuesto: no deja cambiarle la ruta ni eliminarlo, y "Traer viajes" toma el importe del presupuesto.
 
+**Resultado en la VM (18/10)** — reporte completo: `docs/pruebas/2026-10-18-merge-presupuestos-facu.md`. 22 pruebas: 17 OK, 1 falla, 2 no concluyentes, 2 sin datos.
+- Funciona: Traer viajes (Rukas), la corrección nueva de los "+" en viajes que ya salieron, alta / edición / eliminación de viaje, todo Presupuestos (alta, "+", vista previa, aceptar, generar viaje), los bloqueos del viaje de presupuesto (editar ruta/km → 409; eliminar → 409), WhatsApp, Gestión de contenido, e-mail y menú.
+- [ ] **F1 — el "+" de alta rápida no abre en gestion-viajes** (`bootstrap is not defined` en `alta-rapida-ubicacion.js`, archivo de Facu). En Presupuestos anda. Corrección propuesta: usar `window.bootstrap` si existe y si no jQuery (`$(el).modal(...)`), como `sgtl-ui.js`. Falta el OK de Rocío para tocar el archivo de Facu.
+- [ ] No concluyentes: 1b (Traer viajes de cliente directo: no hay viajes disponibles) y 4k (el importe del presupuesto coincide con el de la tarifa). Para 4k hace falta un viaje de presupuesto con importe distinto de la tarifa, con remito y transporte SAP.
+- [ ] **WhatsApp:** al generar el viaje #31 con el chofer de prueba "Prueba, Fede" pudo salir un mensaje real. Confirmar con Fede.
+- [ ] **Limpieza:** SQL en el reporte (presupuesto #5, viaje #31, origen #5, destino #6), corregido en la Mac. Lo corre Rocío.
+- F2 y F3 del reporte son anteriores al merge: F2 (simple-datatables en gestion-viajes) ya estaba como F12 en §8; F3 (PerfectScrollbar y 404 de `api/DashboardLayout`) queda como F16 en §8.
+- Mejoras que salieron (no bloquean; detalle en el reporte):
+  - Viaje de presupuesto: deshabilitar cliente, ruta, km y tarifa al editar, con aviso, en lugar de esperar el 409.
+  - gestion-viajes: "Confirmar" → "Guardar", modal de eliminar sin voseo, `alert()` en lugar de toast, botones vacíos en pantallas chicas, falta Observaciones (entra en el design system, §10).
+  - Presupuestos (Facu): toast + modal duplicados al generar viaje, "+" "Agregar origen" vs modal "Nuevo origen", PDF sin CUIT ni dirección del prestador.
+  - Proformas (Facu): "Se agregaron 1 viaje(s)"; Cancelar descarta las líneas traídas sin preguntar.
+  - **configuracion-whatsapp (Fede): el Access Token de Meta se ve entero en el formulario; enmascararlo como el secreto SMTP.**
+  - gestion-contenido: título de la pestaña.
+
 **Para hablar con Facu:**
 - [ ] Sus scripts de presupuestos están en `database/` suelto; la convención es `database/<módulo>/NN_descripcion.sql` (por ejemplo `database/presupuestos/01_…`).
 - [ ] El bloqueo al eliminar cuenta cualquier presupuesto vinculado al viaje, pero el mensaje dice "aceptado".
-- [ ] La corrección de los botones "+" en viajes que ya salieron (su funcionalidad).
+- [ ] La corrección de los botones "+" en viajes que ya salieron (su funcionalidad) y F1 (su `alta-rapida-ubicacion.js` no anda en páginas sin `window.bootstrap`).
+- [ ] Las mejoras de Presupuestos y Proformas que salieron en la prueba.
