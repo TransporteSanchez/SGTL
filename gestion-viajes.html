@@ -1164,6 +1164,7 @@
             viajeBloqueado = !viajeRegistrado(estado);
             $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
                 .prop('disabled', viajeBloqueado);
+            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', viajeBloqueado || !$('#clienteSelect').val());
             if (viajeBloqueado) usarDistanciaManual(false);
             $('#avisoViajeBloqueado').toggle(viajeBloqueado).text(viajeBloqueado
                 ? 'El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas. '

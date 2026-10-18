@@ -31,6 +31,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 6 | Proforma Rukas: importar Excel de Rukas (rediseño) | Diseño acordado 18/10 (§10 del doc), falta OK de Facu y confirmar con Claudia | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
+| 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli-proforma-rukas` + botones "+" | Hecho (18/10) | Sin push | Antes: verificar en la base las tablas de presupuestos (ver §12) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -463,3 +464,40 @@ Reglas para que no vuelvan a quedar sueltos: `docs/README.md` (qué va en cada c
 - [ ] Opcional: control automático (GitHub Action) que falle si aparece un `.md` nuevo en la raíz.
 
 **Probar en la VM:** `git pull` y verificar que la sesión de pruebas encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (lo indica `CLAUDE.md`). No hay cambios de código: los cambios en HTML y JS son solo comentarios, no hace falta recompilar.
+
+---
+
+## 12. Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli-proforma-rukas` — SIN PUSH NI PRUEBA EN VM (18/10)
+
+Rama nueva `rocionuvoli-proforma-rukas` (desde `rocionuvoli`) para desarrollar la proforma Rukas (§6). Antes de empezar se trajo el commit nuevo de Facu (presupuestos, perfil de e-mail para presupuestos, alta rápida de origen/destino desde el viaje, estilos de Gestión de contenido), que tocaba los mismos archivos.
+
+**Conflictos, revisados uno por uno con Rocío** (detalle en el mensaje del merge `0ddf948`):
+- `ProformasController.cs` (Traer viajes): consulta de Rocío + precio desde presupuesto aceptado de Facu (si el viaje salió de un presupuesto, el importe es el del presupuesto).
+- `ViajesController.cs`: reglas por estado y proforma de Rocío + bloqueo de Facu (un viaje de presupuesto no cambia cliente, ruta, km ni tarifa, y no se elimina).
+- `configuracion-whatsapp.html`: queda la versión de Rocío (ya cargaba los estilos).
+- `gestion-viajes.html`: reglas por tipo de cliente de Rocío + botones "+" de alta rápida de Facu.
+
+**Corrección aparte:** los botones "+" de Facu quedaban habilitados en viajes que ya salieron (`bloquearDatosDelViaje` no los conocía). Ahora se deshabilitan junto con origen y destino.
+
+**Antes de probar — la base:** "Traer viajes", editar viaje y eliminar viaje ahora consultan `PRESUPUESTOS`; si la tabla no existe, fallan. Rocío verifica (consulta de solo lectura):
+
+```sql
+SELECT OBJECT_ID('dbo.PRESUPUESTOS') AS TablaPresupuestos,
+       COL_LENGTH('dbo.PRESUPUESTOS','Estado') AS ColEstado,
+       COL_LENGTH('dbo.PRESUPUESTOS','ViajeID') AS ColViajeID,
+       OBJECT_DEFINITION(OBJECT_ID('dbo.CK_CEM_Modulo')) AS ModulosEmail;
+```
+
+Si algo da `NULL` (o `ModulosEmail` no incluye `PRESUPUESTOS`), correr los scripts de Facu en este orden: `database/presupuestos.sql`, `database/estados_presupuestos.sql`, `database/email/06_perfil_presupuestos.sql`. Son idempotentes.
+
+**Probar en la VM** (`git checkout rocionuvoli-proforma-rukas` + `pull` → recompilar la API → hard refresh):
+1. Proformas: "Traer viajes" funciona como antes (Rukas con números, directos Entregados, advertencias).
+2. Viajes: editar uno Registrado (con "+" habilitados) y uno En viaje / Entregado ("+" deshabilitados junto con origen y destino); eliminar uno Registrado; no dejar eliminar uno que ya salió.
+3. Registrar viaje: sin cliente los "+" están deshabilitados; con cliente Rukas se ven transporte SAP y entrega; con directo se ocultan.
+4. Configuración → WhatsApp: carga con logo y colores y guarda como hoy.
+5. Lo nuevo de Facu: Presupuestos (alta, aceptar → viaje) y su perfil de e-mail. Si hay un viaje de presupuesto: no deja cambiarle la ruta ni eliminarlo, y "Traer viajes" toma el importe del presupuesto.
+
+**Para hablar con Facu:**
+- [ ] Sus scripts de presupuestos están en `database/` suelto; la convención es `database/<módulo>/NN_descripcion.sql` (por ejemplo `database/presupuestos/01_…`).
+- [ ] El bloqueo al eliminar cuenta cualquier presupuesto vinculado al viaje, pero el mensaje dice "aceptado".
+- [ ] La corrección de los botones "+" en viajes que ya salieron (su funcionalidad).
