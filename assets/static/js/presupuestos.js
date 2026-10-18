@@ -84,7 +84,7 @@
             selector.onchange = function () { cambiarEstado(p, selector); }; estadoCelda.appendChild(selector);
             tr.insertCell().textContent = p.viajeId ? '#' + p.viajeId : '—';
             var td = tr.insertCell(), editar = document.createElement('button'), borrar = document.createElement('button'), enviar = document.createElement('button');
-            editar.type = 'button'; editar.className = 'btn btn-primary btn-sm'; editar.title = 'Editar'; editar.setAttribute('aria-label', 'Editar presupuesto'); editar.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>'; editar.onclick = function () { abrir(p); }; td.appendChild(editar);
+            editar.type = 'button'; editar.className = 'btn btn-primary btn-sm'; editar.title = 'Editar presupuesto'; editar.setAttribute('aria-label', 'Editar presupuesto'); editar.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>'; editar.onclick = function () { abrir(p); }; td.appendChild(editar);
             editar.disabled = p.estado !== 'Pendiente' || !!p.viajeId; if (editar.disabled) editar.title = 'Solo se editan presupuestos pendientes sin viaje';
             borrar.type = 'button'; borrar.className = 'btn btn-danger btn-sm ms-1'; borrar.title = 'Eliminar'; borrar.setAttribute('aria-label', 'Eliminar presupuesto'); borrar.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>'; borrar.onclick = function () { eliminar(p); }; td.appendChild(borrar);
             borrar.disabled = !!p.viajeId;
@@ -157,7 +157,7 @@
             else { el('btnEnviarPresupuesto').disabled = false; el('btnEnviarPresupuesto').textContent = 'Reintentar'; }
         }).then(function () { enviando = false; });
     };
-    el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Nuevo presupuesto'; modal.show(); };
+    el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Registrar presupuesto'; modal.show(); };
     el('filtro').oninput = dibujar;
     el('cliente').onchange = function () { var c = clientes.find(function (x) { return String(x.Cliente_ID) === el('cliente').value; }); el('email').value = c && c.Email || ''; opcionesRuta(); solicitarCalculo(); };
     ['agregarOrigenPresupuesto', 'agregarDestinoPresupuesto'].forEach(function (id) {
