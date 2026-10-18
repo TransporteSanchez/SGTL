@@ -197,3 +197,35 @@ Estado: **en curso** (17/10/2026). Lo que no está acá todavía no se decidió.
 
 - **Etiquetas informativas** que no son un estado ("En PF-00000006" en viajes): blancas con borde
   gris, sin color (`badge rounded-pill bg-white text-dark border`).
+
+---
+
+## 5. Avisos y confirmaciones
+
+### 5.1 Avisos
+
+- **Éxito:** toast verde arriba a la derecha que **se va solo a los 4 segundos**. Texto corto,
+  sin signos de exclamación: "Chofer guardado.", "Proforma generada: PF-00000010."
+- **Error:** toast rojo arriba a la derecha que **no se va solo**: queda hasta que se cierra.
+  Dice qué pasó y, si se sabe, qué hacer: "No se pudo guardar el chofer. Revisá la conexión y
+  probá de nuevo."
+- **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
+  **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
+- **Nunca `alert()`.**
+- Los mensajes fijos de ayuda dentro de la página o del modal ("Guardar no realiza ninguna
+  prueba de conexión SMTP…") se quedan: son notas, no avisos.
+- Una sola función compartida para los toasts (en el JS compartido), que no dependa de
+  `window.bootstrap` (bug F5). Las pantallas no tienen su propio HTML ni su propia copia.
+
+### 5.2 Confirmaciones
+
+- **Un único modal de confirmación compartido**, nunca `confirm()` ni `prompt()`:
+  - título con la pregunta concreta: "¿Eliminar el chofer Juan Pérez?";
+  - una línea con la consecuencia: "No se puede deshacer.";
+  - botones "Cancelar" (gris) y **el verbo de la acción** ("Eliminar", "Anular", "Generar",
+    "Enviar"), en rojo si destruye o anula;
+  - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal.
+- **Qué pide confirmación:** solo lo que no se puede deshacer o tiene efectos afuera del
+  sistema: eliminar, anular, generar proforma (consume un número), emitir factura, enviar por
+  mail o WhatsApp.
+- **Activar / inactivar no pide confirmación:** se hace y avisa con el toast de éxito.
