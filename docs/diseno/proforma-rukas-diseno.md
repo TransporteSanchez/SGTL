@@ -10,9 +10,9 @@ Fecha: 18/10/2026. **Propuesta: todavía no empezó el desarrollo.**
 
 | # | Qué | Por qué | Quién |
 |---|---|---|---|
-| A | **Traer a la rama el commit nuevo de Facu** (`4a84bb2`, presupuestos, en `origin/facugodoy`) | Toca `ProformasController.cs`, `ViajesController.cs` y `gestion-viajes.html`, los mismos archivos que vamos a tocar. Integrarlo antes evita conflictos después. | Rocío |
+| A | ~~Traer el commit nuevo de Facu~~ (`4a84bb2`, presupuestos) — **hecho el 18/10** (merge `0ddf948`, ver §12 de pendientes) | Toca `ProformasController.cs`, `ViajesController.cs` y `gestion-viajes.html`, los mismos archivos que vamos a tocar. Integrarlo antes evita conflictos después. | Rocío |
 | B | **Confirmar si los importes de Rukas son netos (sin IVA)** | SGTL arma la proforma con IVA 21 % por línea (`IvaPct = 21`) y compara netos. Si Rukas da netos, la factura es total de Rukas + IVA; si da importes con IVA, se compara distinto. Una forma de verlo: la factura `A00005-00000659` de la proforma cerrada 7450, ¿es por el total de Rukas o por ese total × 1,21? | Rocío / Claudia |
-| C | **Rama de trabajo** (ver §2) | — | Rocío |
+| C | ~~Rama de trabajo~~ | Resuelto: todo en `rocionuvoli` (§2) | — |
 
 Las preguntas 7 y 8 de Claudia y el OK de Facu (§11 del documento de negocio) **no frenan el arranque**: el diseño ya contempla las dos salidas. Sí hay que tenerlas cerradas antes de pasar a `main`.
 
@@ -20,16 +20,14 @@ Las preguntas 7 y 8 de Claudia y el OK de Facu (§11 del documento de negocio) *
 
 ## 2. Rama y forma de trabajo
 
-**Recomendación: una rama propia del tema, `rocionuvoli-proforma-rukas`, creada desde `rocionuvoli`.**
+**Todo se desarrolla en `rocionuvoli`** (decisión de Rocío, 18/10). No se usan ramas aparte por tema.
 
-- Mientras esto está a medio hacer, `rocionuvoli` puede seguir pasando a `main` otras cosas ya probadas (design system, correcciones), sin arrastrar un módulo incompleto.
-- La VM hace `git checkout rocionuvoli-proforma-rukas` + `pull` para probar cada etapa.
-- Cuando todo está probado y cerrado con Facu y Claudia: merge a `rocionuvoli` y de ahí a `main`, como siempre.
-- Si preferís trabajar directo en `rocionuvoli`, también funciona. La condición es no pasar `rocionuvoli` a `main` hasta terminar esto.
+- Cada etapa se commitea en `rocionuvoli`, se sube y se prueba en la VM; Rocío además la revisa a mano.
+- `rocionuvoli` pasa a `main` solo con todo probado y OK, y con las dudas cerradas con Facu y Claudia. Mientras el módulo esté a medias, no se pasa `rocionuvoli` a `main`.
 
 **Un commit por etapa** (ver §4), con el formato `Proformas: …`. Al terminar cada etapa se actualiza el ítem 6 de `docs/PENDIENTES-SISTEMA.md` con cómo probarla en la VM.
 
-**Para no pisarse con Facu:** lo nuevo va en **archivos nuevos** (un controller y un JS propios de Rukas). En sus archivos (`ProformasController.cs`, `FacturasController.cs`, `gestion-facturacion.html`) solo se tocan los puntos de enganche mínimos, listados en §3.
+**Para no pisarse con Facu:** lo nuevo va en **archivos nuevos** (un controller y un JS propios de Rukas). En sus archivos (`ProformasController.cs`, `FacturasController.cs`, `gestion-facturacion.html`) solo se tocan los puntos de enganche mínimos, listados en §3. Si al traer cambios suyos hay conflictos, se revisan uno por uno con Rocío (`docs/equipo/FLUJO-GIT.md`).
 
 ---
 
@@ -100,7 +98,7 @@ SQL directo, como `ProformasController`, sin tocar el EDMX. Ruta `api/ProformasR
 | **4. Guía y avisos** | `ViajesSinProforma`: guía antes de generar en Rukas y aviso del caso 7 en la vista de control | Viajes de prueba sin proforma aparecen en la guía y en el aviso; los de otra proforma no |
 | **5. Factura** | Emitir la factura desde una proforma Rukas con el flujo de Facu | Total = Rukas (+ IVA según 1-B); viajes pasan a `Facturado`; PDF de factura y de proforma se ven bien; NC cancelatoria libera los viajes |
 | **6. N° fiscal y "Cargada en Rukas"** | **Al final, con Facu** (pregunta 9 del §11): N° fiscal en la factura, marca "Cargada en Rukas", listado de pendientes de cargar | Se define cuando se cierre con Facu |
-| **7. Cierre** | Recorrida completa con la VM, reporte en `docs/pruebas/`, pendientes al día, merge a `rocionuvoli` → `main` | — |
+| **7. Cierre** | Recorrida completa con la VM, reporte en `docs/pruebas/`, pendientes al día, revisión a mano de Rocío y paso de `rocionuvoli` a `main` | — |
 
 Las etapas 2 y 3 son el núcleo; con eso ya se puede mostrar el flujo completo en una demo (la factura de la etapa 5 debería funcionar sin cambios).
 
