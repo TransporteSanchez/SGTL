@@ -533,3 +533,42 @@ Salieron del reporte `docs/pruebas/2026-10-18-merge-presupuestos-facu.md`. Rocí
 - [x] **Scripts de presupuestos y títulos de pestaña:** `database/presupuestos.sql` y `database/estados_presupuestos.sql` pasaron a `database/presupuestos/01_crear_presupuestos.sql` y `02_estados_y_viaje_presupuestos.sql` (con `git mv`; ya estaban corridos, no hay que correr nada). Títulos de pestaña "Gestionar contenido · Transporte Sánchez" y "Gestionar viajes · Transporte Sánchez" (antes "Sistema de gestión de viajes"). **Probar en VM:** solo ver los títulos de las pestañas.
 - [x] **Presupuestos: verbos del design system** (`presupuestos.html`, `presupuestos.js`, de Facu): botón y título del modal "Registrar presupuesto" (antes "Nuevo presupuesto"), tooltip "Editar presupuesto", pie "Cancelar" / "Guardar" (antes "Guardar presupuesto"). Salió de la verificación de F1. **Probar en VM:** ver los textos; registrar y editar siguen andando.
 - [ ] **Orígenes y destinos: altura vacía guardada como espacios** (`AlturaCalle` es `char(10)`; vuelve `"          "` o `"100       "`). Recortar al leer en `OrigenController` / `DestinoController`. Baja: no se ve en pantalla. Hacerlo con la pasada del design system de Orígenes y destinos.
+
+**Resultado en la VM (18/10)** — reporte: `docs/pruebas/2026-10-18-verificacion-F1-y-mejoras.md`. 31 pruebas: 29 OK, 1 verificada solo por código (D3, sin generar viaje para no mandar WhatsApp) y **1 falla (C4)**: en gestion-viajes, el aviso "Completá o revisá: …" aparece arriba del modal, fuera de la vista, y no marca los campos.
+
+**Limpieza de las tres rondas del 18/10 (SQL único, revisado en la Mac; lo corre Rocío).** Borra el presupuesto #5, el viaje #31 y las ubicaciones de prueba (origen 5, 6 y 7; destino 6, 7 y 8). El viaje #30 y el #32 ya se eliminaron desde la pantalla. Para volver a probar un viaje de presupuesto queda el #28 (presupuesto #1, datos del 17/10).
+
+```sql
+-- Controles previos (solo lectura)
+SELECT Presupuesto_ID, Estado, ViajeID FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID = 5;          -- ViajeID = 31
+SELECT Viaje_ID, ClienteID, OrigenID, DestinoID, Num_Remito FROM dbo.VIAJES WHERE Viaje_ID = 31; -- ClienteID = 5, origen 5, destino 6
+SELECT COUNT(*) AS EnProformas FROM dbo.PROFORMAS_VIAJES WHERE ViajeID = 31;                      -- 0
+SELECT COUNT(*) AS EnDetalle   FROM dbo.PROFORMA_DETALLE WHERE LTRIM(RTRIM(Codigo)) = 'V31';      -- 0
+SELECT Origen_ID, Descripcion  FROM dbo.ORIGEN  WHERE Origen_ID  IN (5, 6, 7);                    -- "PRUEBA-CLAUDE 18/10" y "… 18/10 B"
+SELECT Destino_ID, Descripcion FROM dbo.DESTINO WHERE Destino_ID IN (6, 7, 8);                    -- ídem
+SELECT COUNT(*) AS OtrosViajes FROM dbo.VIAJES
+ WHERE Viaje_ID <> 31 AND (OrigenID IN (5, 6, 7) OR DestinoID IN (6, 7, 8));                       -- 0
+
+BEGIN TRAN;
+
+DELETE FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID = 5 AND ViajeID = 31;
+SELECT @@ROWCOUNT AS PresupuestosBorrados;   -- 1
+
+DELETE FROM dbo.VIAJE_EVIDENCIA WHERE Viaje_ID = 31;
+SELECT @@ROWCOUNT AS EvidenciasBorradas;     -- 0
+
+DELETE FROM dbo.VIAJES WHERE Viaje_ID = 31 AND ClienteID = 5;
+SELECT @@ROWCOUNT AS ViajesBorrados;         -- 1
+
+DELETE FROM dbo.ORIGEN WHERE (Origen_ID = 5 AND Descripcion = 'PRUEBA-CLAUDE 18/10')
+                          OR (Origen_ID IN (6, 7) AND Descripcion = 'PRUEBA-CLAUDE 18/10 B');
+SELECT @@ROWCOUNT AS OrigenesBorrados;       -- 3
+
+DELETE FROM dbo.DESTINO WHERE (Destino_ID = 6 AND Descripcion = 'PRUEBA-CLAUDE 18/10')
+                           OR (Destino_ID IN (7, 8) AND Descripcion = 'PRUEBA-CLAUDE 18/10 B');
+SELECT @@ROWCOUNT AS DestinosBorrados;       -- 3
+
+-- COMMIT; o ROLLBACK;
+```
+
+Si algún control previo no da lo esperado, o algún `@@ROWCOUNT` no coincide, `ROLLBACK` y avisar. Los registros de auditoría quedan.
