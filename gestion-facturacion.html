@@ -179,7 +179,7 @@
                     <input id="p_observaciones" type="hidden">
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-light-secondary" id="btnCerrarProforma" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-outline-dark" id="btnPdfForm" onclick="pdfDesdeForm()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
                     <button type="button" class="btn btn-primary" id="btnGuardarBorrador" onclick="guardarBorrador()"><i class="bi bi-save me-1"></i>Guardar borrador</button>
                     <button type="button" class="btn btn-success" id="btnGenerar" onclick="generarProforma()"><i class="bi bi-file-earmark-check me-1"></i>Generar proforma</button>
@@ -585,9 +585,9 @@
         }
         function traerViajes() {
             var cli = val('p_cliente'), d = val('p_fdesde').trim(), h = val('p_fhasta').trim();
-            if (!cli) { alert('Elegí un cliente antes de traer viajes.'); return; }
-            if (!d || !h) { alert('Seleccioná la fecha de inicio y fin del período antes de traer viajes.'); return; }
-            if (h < d) { alert('La fecha fin no puede ser anterior a la fecha de inicio.'); return; }
+            if (!cli) { mostrarMensajeViajes('Elegí un cliente antes de traer viajes.'); return; }
+            if (!d || !h) { mostrarMensajeViajes('Seleccioná la fecha de inicio y fin del período antes de traer viajes.'); return; }
+            if (h < d) { mostrarMensajeViajes('La fecha fin no puede ser anterior a la fecha de inicio.'); return; }
             limpiarMensajeViajes();
             var proformaId = parseInt(val('p_id')) || 0;
             fetch(API_FAC + '/Proformas/PrellenarViajes?clienteId=' + encodeURIComponent(cli) + '&desde=' + d + '&hasta=' + h + '&proformaId=' + encodeURIComponent(proformaId))
@@ -605,7 +605,7 @@
                     if (advertencias.length) msg += ' Atención: ' + advertencias.join(' ');
                     mostrarMensajeViajes(msg);
                 })
-                .catch(function (error) { alert(error.message || 'Error al traer viajes.'); });
+                .catch(function (error) { mostrarMensajeViajes(error.message || 'No se pudieron traer los viajes. Probá de nuevo.'); });
         }
 
         // ---------- Form: abrir / leer ----------
@@ -669,14 +669,18 @@
         }
         // Cerrar con cambios sin guardar (líneas traídas o datos editados) pide confirmación dentro del modal.
         var proformaConCambios = false;
-        function seguirEditandoProforma() { document.getElementById('avisoDescartarProforma').classList.add('d-none'); }
-        function descartarCambiosProforma() { proformaConCambios = false; seguirEditandoProforma(); $('#modalProforma').modal('hide'); }
+        function ocultarAvisoDescartar() { document.getElementById('avisoDescartarProforma').classList.add('d-none'); }
+        // El botón se oculta: el foco vuelve al modal para que Escape y Tab sigan andando.
+        function seguirEditandoProforma() { ocultarAvisoDescartar(); document.getElementById('modalProforma').focus(); }
+        function descartarCambiosProforma() { proformaConCambios = false; ocultarAvisoDescartar(); $('#modalProforma').modal('hide'); }
         function setModoLectura(ro) {
             var cont = document.getElementById('modalProforma');
             cont.querySelectorAll('input,select,textarea').forEach(function (e) { if (e.id === 'p_numero') return; e.disabled = ro; });
             SelectClientePredictivo.establecerDeshabilitado('p_cliente', ro);
             document.getElementById('btnGuardarBorrador').style.display = ro ? 'none' : '';
             document.getElementById('btnGenerar').style.display = ro ? 'none' : '';
+            // En modo ver no hay nada que cancelar (§6.2).
+            document.getElementById('btnCerrarProforma').textContent = ro ? 'Cerrar' : 'Cancelar';
             // botones de línea
             cont.querySelectorAll('#tablaConceptos button, .bloque-titulo button').forEach(function (b) { b.style.display = ro ? 'none' : ''; });
         }
@@ -827,7 +831,7 @@
                 document.getElementById('avisoDescartarProforma').classList.remove('d-none');
                 $('#modalProforma .modal-body').scrollTop(0);
             });
-            modalProforma.addEventListener('hidden.bs.modal', function () { proformaConCambios = false; seguirEditandoProforma(); });
+            modalProforma.addEventListener('hidden.bs.modal', function () { proformaConCambios = false; ocultarAvisoDescartar(); });
             initEstadosFiltro();
             var estadoUrl = new URLSearchParams(window.location.search).get('estado');
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
