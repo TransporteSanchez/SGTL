@@ -31,6 +31,7 @@ documento** y sirve de índice. Vale para el equipo y para cualquier IA que trab
 | `docs/diseno/` | Diseño técnico de un módulo: modelo de datos, contratos, cómo se integra | `<módulo>-diseno.md` o `<módulo>-integracion.md` |
 | `docs/design-system/` | Reglas visuales y de interfaz (botones, modales, tablas, textos) | `NN-tema.md`, numerados |
 | `docs/pruebas/` | Reportes de prueba, uno por recorrida (por ejemplo, los que genera la VM) | `AAAA-MM-DD-tema.md` |
+| `docs/pruebas/datos/` | Archivos de prueba con datos inventados (por ejemplo, Excel con el formato de Rukas). Nunca datos reales de clientes | `<módulo>-<caso>.<ext>` |
 
 Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion.sql`.
 
@@ -57,7 +58,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/diseno/cuenta-corriente-diseno.md` — cuenta corriente de clientes (módulo de Facu).
 - `docs/diseno/auditoria-integracion.md` — cómo se registra la auditoría de altas, bajas y modificaciones.
-- `docs/diseno/proforma-rukas-diseno.md` — proforma Rukas: qué hay que tocar y plan de desarrollo por etapas.
+- `docs/diseno/proforma-rukas-diseno.md` — proforma de plataforma (Rukas): base de datos, API, pantallas y plan de desarrollo por etapas.
 
 ### Design system
 

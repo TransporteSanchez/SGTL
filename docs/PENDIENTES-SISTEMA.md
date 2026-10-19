@@ -28,7 +28,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
-| 6 | Proforma Rukas: importar Excel de Rukas (rediseño) | Diseño acordado 18/10 (§10 del doc), falta OK de Facu y confirmar con Claudia | Doc commiteado | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
+| 6 | Proforma de plataforma (Rukas): importar el Excel y conciliar | **Diseño cerrado 19/10** (§10 del doc y plan), listo para el código; quedan preguntas a Claudia que no frenan | Doc sin commitear | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | Sin push | Solo ver que la VM encuentre `docs/equipo/PRUEBAS-VM-CLAUDE.md` (ver §11) |
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
@@ -209,21 +209,21 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 No es un bug de las pruebas: es un **rediseño de negocio** detectado al contrastar SGTL con las respuestas de Claudia.
 
-- Documento: `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`. **Diseño vigente: §10 (18/10/2026)**, que reemplaza al del 15/10 (PDF, estado En reclamo).
+- Documento: `docs/negocio/PROFORMA-CLIENTES-RUKAS.md`. **Diseño vigente: §10, actualizado el 19/10 con la reunión del equipo.**
 - Resumen del §10:
-  - Para clientes `Con_plataforma`, la proforma se crea **importando el Excel** que se exporta de Rukas.
-  - SGTL controla **línea por línea** contra los viajes por N° de transporte (tabla de 8 casos).
-  - Se factura por el **total de Rukas**, con el flujo actual de Facu.
-  - Si hay que corregir en Rukas, se **pide la corrección a Marfrig** y se **reimporta**.
-  - Después de facturar, se marca **"Cargada en Rukas"**.
+  - Para clientes `Con_plataforma`, se **importa el Excel** exportado de Rukas y SGTL lo **controla línea por línea** contra los viajes (por N° de transporte).
+  - Al importar se crea un **borrador**. **Si hay diferencias, no avanza:** se corrige en SGTL ("Volver a controlar") o se reclama a Marfrig (marca "Reclamo en Rukas", ícono en el listado) y se reemplaza el Excel. Si el importe no coincide, decide la persona. No hay "aceptar con observación".
+  - Con todo OK, **"Generar"** la deja **Aceptada** y pasa los viajes a Listo para facturar; los **adicionales** se toman de Rukas sin comparar.
+  - Se factura con el flujo actual de Facu y, al final, se carga el **N° de factura que figura en Rukas** (solo en estas proformas), que la deja cerrada.
   - Los clientes directos no cambian.
+  - **Diseño genérico:** "proforma de plataforma", con Rukas como primera plataforma (tabla `PLATAFORMAS` y un lector por plataforma). Un solo modal de proforma que se adapta según el cliente. Plan, base de datos y pantallas: `docs/diseno/proforma-rukas-diseno.md`.
 - 18/10: recorrida de solo lectura por Rukas y formato del Excel relevado con un archivo real (§12).
 - **Premisas del diseño, a confirmar con Claudia** (preguntas 7 y 8 del §11):
   - [ ] ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? Si lo hace Marfrig, revisar el flujo.
   - [ ] Con una proforma ya generada, ¿quién la corrige? Con el perfil de Transporte Sanchez **no hay opción de modificar, quitar transportes ni anular** una proforma en Proceso (revisado en el código de la pantalla); serían funciones de Marfrig. ¿Se lo piden a Marfrig por mail o por ticket? ¿Cuánto tarda?
 - [ ] **Con Facu:** OK al diseño (toca Facturación) y el N° de factura fiscal que se carga en Rukas (pregunta 9 del §11). Recomendación: guardar en la factura de SGTL letra, punto de venta, número y fecha fiscal, para todos los clientes. Se ve al final.
-- [ ] **IVA:** confirmar si los importes de Rukas son netos (pregunta 11 del §11). Hay que saberlo antes de la etapa 2.
-- Implementación: no empezada. Plan por etapas en `docs/diseno/proforma-rukas-diseno.md` (antes de empezar: traer el commit nuevo de Facu `4a84bb2`, que toca proformas y viajes).
+- [x] **IVA:** los importes de Rukas son **netos** (verificado el 19/10 con la factura `A00005-00000659` de la proforma 7450: neto = total de Rukas, más IVA 21 %). La factura de SGTL suma el IVA como en las propias.
+- **Diseño cerrado (19/10): listo para empezar el código** por la etapa 1. Implementación: no empezada. Plan por etapas en `docs/diseno/proforma-rukas-diseno.md`.
 
 ---
 
