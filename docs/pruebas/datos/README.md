@@ -14,4 +14,6 @@ Mismo formato que el Excel de Rukas (§12 de `docs/negocio/PROFORMA-CLIENTES-RUK
 
 **Preparación:** dos viajes de prueba de un cliente Rukas (`Con_plataforma`) con N° de transporte SAP **990001** y **990002**, remito y N° de entrega cargados.
 
-El archivo "todo OK" se arma después de la primera importación: el control muestra el importe de SGTL de cada viaje y con esos importes se genera `proforma-rukas-ok`.
+| `proforma-rukas-corregido (PROFORMA NRO 990100).xlsx` | 990100 | Versión corregida de la anterior, para **"Reemplazar Excel"** (etapa 3): 990001 y 990002 con el importe que da SGTL en la VM ($14.790: tarifa por km #5, 17,4 km × $850, relevado el 19/10) y el adicional de $15.000; sin el 990099. Con el borrador 990100 abierto, reemplazar por este archivo tiene que dar todo OK y habilitar Generar |
+
+Si cambia la tarifa #5 o los km de los viajes de prueba, hay que regenerar el archivo corregido con el importe nuevo.

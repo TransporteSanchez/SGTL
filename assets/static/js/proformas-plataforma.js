@@ -89,6 +89,7 @@
       '<div id="pp_previa" class="mt-2 text-muted"></div>' +
       '<div class="form-text mt-2">Al guardar el borrador se importa el archivo y se controla contra los viajes de SGTL.</div>';
     $id('pp_archivo').addEventListener('change', function () { leerArchivo(this.files && this.files[0]); });
+    $id('pp_numero').addEventListener('input', function () { this.dataset.automatico = 'false'; });
   }
 
   function importeTexto(t) {
@@ -118,8 +119,10 @@
         var datos = filas.slice(1).filter(function (f) { return f.some(function (c) { return String(c).trim() !== ''; }); });
         var total = datos.reduce(function (s, f) { return s + importeTexto(f[4]) + importeTexto(f[5]); }, 0);
         $id('pp_previa').textContent = datos.length + (datos.length === 1 ? ' transporte' : ' transportes') + ' · Total ' + nombrePlataforma() + ' ' + pesos(total);
+        // El N° sale del nombre del archivo; si se cambia de archivo, se reemplaza (salvo que la persona lo haya escrito a mano).
         var m = /PROFORMA\s*NRO\.?\s*(\d+)/i.exec(archivo.name);
-        if (m && !$id('pp_numero').value) $id('pp_numero').value = m[1];
+        var campo = $id('pp_numero');
+        if (m && (!campo.value || campo.dataset.automatico === 'true')) { campo.value = m[1]; campo.dataset.automatico = 'true'; }
       } catch (e) {
         errorEnModal('No se pudo leer el archivo. Revisá que sea el Excel exportado de ' + esc(nombrePlataforma()) + '.');
       }
@@ -252,7 +255,8 @@
   function volverAControlar(id) {
     var listo = SGTL.procesando('#pp_controlar');
     pedir(API + '/' + id + '/Controlar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuarioActual() }) })
-      .then(function (c) { mostrarControl(c); SGTL.toastExito('Control actualizado.'); },
+      // listo() antes de redibujar: devuelve Cerrar y la cruz y saca la marca de "procesando" del modal.
+      .then(function (c) { listo(); mostrarControl(c); SGTL.toastExito('Control actualizado.'); },
         function (e) { listo(); SGTL.toastError($('<div>').html(textoError(e, 'No se pudo volver a controlar.')).text()); });
   }
 
