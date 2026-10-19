@@ -408,6 +408,7 @@
     <Compile Include="Controllers\TarifasController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
     <Compile Include="Controllers\PresupuestosController.cs" />
+    <Compile Include="Controllers\DocumentacionController.cs" />
     <Compile Include="Controllers\EnviosPresupuestosController.cs" />
     <Compile Include="JwtConfig.cs" />
     <Compile Include="CLIENTES.cs">

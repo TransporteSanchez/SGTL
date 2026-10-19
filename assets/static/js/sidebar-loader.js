@@ -98,7 +98,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-facturacion.html" class="submenu-link">Facturación</a></li><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">E-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestión de contenido</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Integración WhatsApp</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
-              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
+              <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="manual-usuario.html" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="informe-version.html" class="submenu-link">Informe de versión</a></li></ul></li>
           </ul>
       </div>
   </div>`;
@@ -185,6 +185,8 @@ function aplicarPermisos() {
         return;
       }
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
+      // La documentación publicada está disponible para todos los usuarios activos.
+      permitidas.push('manual-usuario.html', 'informe-version.html');
       if (permitidas.indexOf('gestion-viajes.html') !== -1) permitidas.push('presupuestos.html');
       // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
       // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.

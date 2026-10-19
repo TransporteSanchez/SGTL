@@ -107,6 +107,7 @@ body {
 
 .login-card-brand {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     min-height: 72px;
@@ -118,6 +119,13 @@ body {
     width: min(100%, 210px);
     max-height: 72px;
     object-fit: contain;
+}
+
+.login-card-version {
+    margin-top: 0.3rem;
+    color: var(--login-muted-color);
+    font-size: 0.875rem;
+    line-height: 1.2;
 }
 
 .login-card h5 {
