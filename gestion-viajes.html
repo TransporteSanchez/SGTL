@@ -1524,6 +1524,9 @@
             $('#choferBuscar').on('input', buscarChoferInput);
             $(document).on('click', function (e) { if (!$(e.target).closest('#choferBuscar, #choferResultados').length) { $('#choferResultados').hide(); } });
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
+            // gestion-viajes.html?viaje=ID abre ese viaje para editar (enlace "Abrir viaje" del control de proforma de plataforma).
+            var viajeEnUrl = parseInt(new URLSearchParams(window.location.search).get('viaje'), 10);
+            if (viajeEnUrl > 0) abrirModalEditarViaje(viajeEnUrl);
         });
 
     </script>

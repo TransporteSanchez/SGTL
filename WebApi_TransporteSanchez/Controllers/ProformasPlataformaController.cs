@@ -641,6 +641,33 @@ VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
             }
         }
 
+        // Plataforma del cliente, para que el modal de proforma sepa si pide el archivo y con qué nombre.
+        [HttpGet]
+        [Route("Cliente/{clienteId:int}")]
+        public IHttpActionResult PlataformaDelCliente(int clienteId)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var cli = LeerCliente(db, clienteId);
+                    if (cli == null) return NotFound();
+                    bool conPlataforma = cli.Tipo_Cliente == ClientesController.TipoConPlataforma && cli.Plataforma_ID.HasValue;
+                    return Ok(new
+                    {
+                        ConPlataforma = conPlataforma,
+                        Plataforma = conPlataforma ? cli.Nombre : null,
+                        Codigo = conPlataforma ? cli.Codigo : null,
+                        PuedeLeer = conPlataforma && LectoresPlataforma.Obtener(cli.Codigo) != null
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo consultar la plataforma del cliente.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
         // Control guardado de una proforma de plataforma (para abrirla).
         [HttpGet]
         [Route("{id:int}")]

@@ -74,3 +74,4 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-18-merge-presupuestos-facu.md` — pruebas en la VM del merge de presupuestos de Facu y de los botones "+" de viajes.
 - `docs/pruebas/2026-10-18-verificacion-F1-alta-rapida.md` — verificación en la VM de la corrección del "+" de alta rápida (F1).
 - `docs/pruebas/2026-10-18-verificacion-F1-y-mejoras.md` — verificación en la VM de F1 y de las mejoras de la ronda del 18/10 (§13 de pendientes).
+- `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.

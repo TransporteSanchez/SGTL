@@ -19,6 +19,7 @@
     </style>
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
@@ -137,6 +138,8 @@
                         <div class="col-md-4"><label class="form-label">Vehículo requerido</label><input id="p_vehiculo" class="form-control"></div>
                         <div class="col-md-8"><label class="form-label">Observaciones logísticas</label><input id="p_obslog" class="form-control"></div>
                     </div>
+                    <!-- Proforma propia: conceptos. Con un cliente con plataforma se reemplaza por #bloquePlataforma (proformas-plataforma.js). -->
+                    <div id="bloqueConceptos">
                     <div class="bloque-titulo d-flex justify-content-between align-items-center">
                         <span>Detalle de conceptos</span>
                         <span>
@@ -154,6 +157,8 @@
                             <tbody id="cuerpoConceptos"></tbody>
                         </table>
                     </div>
+                    </div>
+                    <div id="bloquePlataforma" class="d-none"></div>
                     <div class="row">
                         <div class="col-md-6 col-lg-5 ms-auto">
                             <div class="bloque-titulo">Totales</div>
@@ -272,6 +277,8 @@
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-configuracion.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/proformas-plataforma.js"></script>
     <script src="assets/static/js/anulacion-factura-proforma.js"></script>
 
     <script>
@@ -359,6 +366,7 @@
             var dir = [(c.Calle || ''), (c.AlturaCalle || '')].join(' ').trim();
             setVal('p_cli_dir', dir);
             setVal('p_cli_tel', c.Telefono || '');
+            if (window.ProformaPlataforma) ProformaPlataforma.alCambiarCliente(id, c);
         }
 
         function descripcionCondicionIva(condicion) {
@@ -610,6 +618,7 @@
 
         // ---------- Form: abrir / leer ----------
         function limpiarForm() {
+            if (window.ProformaPlataforma) ProformaPlataforma.reiniciar();
             ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_fdesde', 'p_fhasta', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_tiemposervicio', 'p_obscom', 'p_condpart', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
             setVal('p_cliente', ''); SelectClientePredictivo.sincronizar('p_cliente'); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
             actualizarVisibilidadNumero(false);
@@ -663,6 +672,7 @@
                 document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
+                if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID);
                 proformaConCambios = false;
                 $('#modalProforma').modal('show');
             }).catch(function () { alert('No se pudo abrir la proforma.'); });
@@ -723,6 +733,8 @@
         }
         function guardarBorrador(cb) {
             if (!validarCamposRequeridos()) return;
+            // Cliente con plataforma: guardar el borrador es importar el archivo (proformas-plataforma.js).
+            if (window.ProformaPlataforma && ProformaPlataforma.activo()) { ProformaPlataforma.guardar(armarDto()); return; }
             var dto = armarDto();
             var id = dto.Proforma_ID;
             var url = API_FAC + '/Proformas' + (id ? '/' + id : '');
@@ -739,6 +751,7 @@
                 .catch(function () { mostrarMensajeProforma('Error de red al guardar.', 'danger'); });
         }
         function generarProforma() {
+            if (window.ProformaPlataforma && ProformaPlataforma.activo()) { ProformaPlataforma.generar(); return; }
             // primero guardar, luego generar
             guardarBorrador(function (id) {
                 fetch(API_FAC + '/Proformas/' + id + '/Generar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
