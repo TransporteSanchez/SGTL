@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 18/10/2026.**
+**Última actualización de este documento: 19/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -34,6 +34,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
 | 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | Primera tanda **OK en VM**; segunda tanda (C4 y mejoras del reporte) hecha | Sin push | Probar la segunda tanda (ver §13) |
 | 14 | Merge de Documentación de Facu (`04a394b`): manual de usuario e informes de versión | Hecho (19/10) | Sin push | Antes: verificar la base (ver §14) |
+| 15 | Mejoras de la meet del 18/10: reenviar WhatsApp, aviso al eliminar viaje, cambiar contraseña con código por WhatsApp, sacar `repositorio.zip` | **No hecho** (solo anotado) | — | Ver §15 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -608,3 +609,24 @@ Si `TablaManual` o `TablaVersiones` dan `NULL`, correr `database/documentacion/0
 
 - [ ] Avisarle a Facu: los scripts van en `database/<módulo>/NN_descripcion.sql` y la documentación en `docs/` según `docs/README.md` (se movieron los de presupuestos y documentación).
 - [ ] Design system de las dos pantallas nuevas: con la pasada de las pantallas de Facu (§10).
+
+---
+
+## 15. Mejoras de la meet del 18/10 — NO HECHAS (solo anotadas, 19/10)
+
+Surgieron en la meet del equipo para ver cómo quedó el proyecto. Las de WhatsApp tocan el módulo de Fede: **avisarle antes de hacerlas**.
+
+- [ ] **Viajes: acción "Reenviar WhatsApp"** (`gestion-viajes.html`, `ViajesController.cs`; módulo de Fede). Botón de fila en Gestionar viajes que le vuelve a mandar al chofer del viaje el mismo WhatsApp que se manda al confirmarlo. Sirve si el envío original falló o si hay que recordárselo. A definir: en qué estados se habilita (¿solo con chofer asignado y viaje no finalizado?), confirmación antes de mandar ("¿Reenviar el WhatsApp a <chofer>?") y que quede registrado el reenvío. Usa la plantilla que ya existe.
+- [ ] **Viajes: avisar al chofer por WhatsApp cuando se elimina el viaje** (módulo de Fede). **No es para hacer ya.** Al eliminar un viaje que ya se le había avisado al chofer, mandarle automáticamente un mensaje de que el viaje no se hace. Necesita una **plantilla nueva aprobada en Meta** (los mensajes iniciados por la empresa solo salen con plantilla). Ver también qué pasa si se cambia el chofer de un viaje ya avisado (¿avisar al anterior?).
+- [ ] **Cambiar contraseña con código por WhatsApp (doble factor).** Cómo está hoy (revisado en el código el 19/10):
+  - En el menú del usuario (`views/header.html`), "Cambiar Contraseña" es un link a `#`: **no hay pantalla** y ningún JS llama a la API.
+  - La API tiene `POST api/Usuarios/CambiarContrasena` (`UsuariosController.cs`): recibe usuario, contraseña actual y nueva, valida 8–20 caracteres con letras y números. Pero toma el **usuario del cuerpo del pedido, no de la sesión**, y devuelve "Usuario no encontrado" / "La contraseña actual es incorrecta" por separado (permite averiguar qué usuarios existen).
+  - **Las contraseñas se guardan y comparan en texto plano** (`LoginController.cs` y `CambiarContrasena` comparan `Contraseña ==`). Es lo primero a resolver si se toca seguridad (guardar con hash), y conviene mencionarlo en la tesis.
+  - Usuarios no tiene teléfono ni e-mail.
+
+  Propuesta: (1) pantalla "Cambiar contraseña" desde el menú, para el usuario logueado, tomando el usuario de la sesión; (2) agregar teléfono (celular) al alta y edición de usuarios, con script nuevo en `database/usuarios/`; (3) al pedir el cambio, la API genera un código de 6 dígitos, lo guarda con vencimiento corto (ej. 10 minutos) e intentos limitados, y lo manda por WhatsApp con una **plantilla de autenticación nueva en Meta** (coordinar con Fede); (4) el cambio solo se aplica con contraseña actual + código válido. Definir qué pasa con los usuarios que ya existen y no tienen teléfono.
+- [ ] **Sacar `repositorio.zip` de la raíz del repo.** Revisado el 19/10: pesa ~50 MB, entró en el **primer commit (`62e45b5`, 20/07, autor "Agus")** y está en todas las ramas (`main`, `rocionuvoli`, `facugodoy`, `fedemontenegro`). Es una copia vieja del proyecto (6751 archivos: páginas, `assets/`, API con `bin/` y `obj/`) del 20/07; parece la versión inicial que después se subió suelta, pero no se comparó archivo por archivo con el repo actual. **Trae un `Web.config` con la cadena de conexión con contraseña** (y `models/appsettings.json` con una clave). Pasos:
+  1. Confirmar con el equipo que nadie lo necesita.
+  2. `git rm repositorio.zip` en `rocionuvoli` (commit `Repo: sacar repositorio.zip`) y agregar `*.zip` al `.gitignore` (salvo `assets/extensions/`, que tiene `summernote-0.8.20-dist.zip`; ver si ese también sobra).
+  3. Borrarlo solo del último commit **no lo saca del historial**: la contraseña sigue visible en GitHub. Va junto con el 3.3 (password en `Web.config`): lo correcto es **cambiar la contraseña de la base en Azure** y, si se quiere, limpiar el historial (`git filter-repo`), que obliga a todo el equipo a volver a clonar. Decidirlo con el equipo.
+
