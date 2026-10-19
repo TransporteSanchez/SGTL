@@ -287,7 +287,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 + ". Google: " + (string.IsNullOrWhiteSpace(v.Km_Manual_Error_Google) ? "-" : Recortar(v.Km_Manual_Error_Google, 200)));
         }
 
-        private static List<object> ValidarCamposBloqueados(VIAJES actual, ViajeDto nuevo, string estado)
+        private static List<object> ValidarCamposBloqueados(VIAJES actual, ViajeDto nuevo, string estado, bool permiteTarifa = false)
         {
             var cambiados = new List<string>();
             if (actual.ClienteID != nuevo.ClienteID) cambiados.Add("cliente");
@@ -295,7 +295,7 @@ namespace WebApi_TransporteSanchez.Controllers
             if (actual.DestinoID != nuevo.DestinoID) cambiados.Add("destino");
             if (actual.ChoferID != nuevo.ChoferID) cambiados.Add("chofer");
             if (actual.CamionID != nuevo.CamionID) cambiados.Add("camión");
-            if (IdOpcional(actual.TarifaFijaID) != IdOpcional(nuevo.TarifaFijaID) || IdOpcional(actual.TarifaKmID) != IdOpcional(nuevo.TarifaKmID))
+            if (!permiteTarifa && (IdOpcional(actual.TarifaFijaID) != IdOpcional(nuevo.TarifaFijaID) || IdOpcional(actual.TarifaKmID) != IdOpcional(nuevo.TarifaKmID)))
                 cambiados.Add("tarifa");
 
             var errores = new List<object>();
@@ -993,10 +993,21 @@ SELECT CAST(CASE WHEN EXISTS (
                 {
                     // Una vez que el viaje salio, lo que define el cobro y el recorrido queda fijo:
                     // un cambio pedido por el cliente es otro viaje. Fechas y km se conservan tal cual.
-                    var erroresBloqueados = ValidarCamposBloqueados(viaje, viajeDto, estado);
+                    // Cliente con plataforma en Listo para facturar, fuera de una proforma generada o aceptada:
+                    // se pueden corregir tarifa y km para que coincidan con la plataforma (diseño 19/10).
+                    bool corrigeTarifa = estado == "Listo_para_facturar"
+                        && EsConPlataforma(TipoCliente(db, viaje.ClienteID));
+                    var erroresBloqueados = ValidarCamposBloqueados(viaje, viajeDto, estado, corrigeTarifa);
                     if (erroresBloqueados.Any())
                     {
                         return Content(HttpStatusCode.BadRequest, erroresBloqueados);
+                    }
+                    if (corrigeTarifa)
+                    {
+                        cambioKm = (viaje.Distancia_KM ?? "").Trim() != (viajeDto.Distancia_KM ?? "").Trim();
+                        viaje.Distancia_KM = viajeDto.Distancia_KM;
+                        viaje.TarifaFijaID = IdOpcional(viajeDto.TarifaFijaID);
+                        viaje.TarifaKmID = IdOpcional(viajeDto.TarifaKmID);
                     }
                 }
 

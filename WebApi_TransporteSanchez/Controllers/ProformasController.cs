@@ -83,6 +83,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public string Usu_Modi { get; set; }
             public DateTime? Fecha_Alta { get; set; }
+            // Propia o Plataforma (database/proformas-plataforma/01_plataformas_y_proformas.sql).
+            public string Tipo_Proforma { get; set; }
             public List<DetalleLineaDto> Detalle { get; set; }
         }
 
@@ -209,7 +211,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "FormaPago,PlazoPago,Validez,TiempoServicio,ObsComerciales,CondParticulares,Observaciones," +
             "ISNULL(Subtotal,0) AS Subtotal,ISNULL(Descuentos,0) AS Descuentos,ISNULL(SubtotalNeto,0) AS SubtotalNeto," +
             "ISNULL(IVA,0) AS IVA,ISNULL(OtrosImpuestos,0) AS OtrosImpuestos,ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS TotalGeneral," +
-            "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta FROM PROFORMAS ";
+            "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta,ISNULL(Tipo_Proforma,'Propia') AS Tipo_Proforma FROM PROFORMAS ";
 
         private static void InsertarDetalle(DbContext db, int pid, List<DetalleLineaDto> lineas)
         {
@@ -327,6 +329,15 @@ FROM (
 ) reservados
 WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
         }
+
+        // Las proformas de plataforma (Rukas) tienen su propio circuito (ProformasPlataformaController):
+        // no se editan, generan ni duplican por los endpoints de la proforma propia.
+        private static bool EsDePlataforma(DbContext db, int id)
+        {
+            return db.Database.SqlQuery<string>("SELECT ISNULL(Tipo_Proforma,'Propia') FROM PROFORMAS WHERE Proforma_ID=@id",
+                P("@id", id)).FirstOrDefault() == "Plataforma";
+        }
+        private const string ErrorEsDePlataforma = "Es una proforma de plataforma: se maneja desde el bloque del Excel de la plataforma.";
 
         private static void Auditar(DbContext db, string usuario, string accion, int id, string ant, string nue)
         {
@@ -627,6 +638,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     ActualizarCondicionIvaDesdeCliente(db, p);
                     var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
+                    if (EsDePlataforma(db, id)) return Content(HttpStatusCode.BadRequest, new { error = ErrorEsDePlataforma });
                     if (est == "Facturada" || TieneFacturaVigente(db, id)) return Content(HttpStatusCode.BadRequest, new { error = "No se puede editar una proforma Facturada." });
                     if (est != "Borrador") return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden editar proformas en estado Borrador." });
 
@@ -666,6 +678,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     var h = db.Database.SqlQuery<GenChk>(
                         "SELECT Estado, ClienteID, ISNULL(TotalGeneral,0) AS Total, Origen, Destino FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (h == null) return NotFound();
+                    if (EsDePlataforma(db, id)) return Content(HttpStatusCode.BadRequest, new { error = ErrorEsDePlataforma });
                     if (h.Estado != "Borrador") return Content(HttpStatusCode.BadRequest, new { error = "Solo se genera desde Borrador." });
 
                     var errores = new List<string>();
@@ -821,6 +834,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                 {
                     var o = db.Database.SqlQuery<ProformaDto>(SELECT_HEADER + " WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (o == null) return NotFound();
+                    if (o.Tipo_Proforma == "Plataforma") return Content(HttpStatusCode.BadRequest, new { error = ErrorEsDePlataforma });
                     o.Detalle = LeerDetalle(db, id);
                     if (ExtraerViajes(o.Detalle).Count > 0)
                         return Content(HttpStatusCode.Conflict, new

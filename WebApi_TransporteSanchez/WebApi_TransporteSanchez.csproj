@@ -407,6 +407,8 @@
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="Controllers\TarifasController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
+    <Compile Include="Controllers\ProformasPlataformaController.cs" />
+    <Compile Include="Plataformas\LectoresPlataforma.cs" />
     <Compile Include="Controllers\PresupuestosController.cs" />
     <Compile Include="Controllers\DocumentacionController.cs" />
     <Compile Include="Controllers\EnviosPresupuestosController.cs" />

@@ -856,9 +856,9 @@
         var origenesAll = [], destinosAll = [];
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
-        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false, presupuestoDelViaje = null;
+        var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false, presupuestoDelViaje = null, viajeTarifaEditable = false;
         // El recorrido y los km no se tocan si el viaje ya salió o si viene de un presupuesto aceptado.
-        function rutaFija() { return viajeBloqueado || !!presupuestoDelViaje; }
+        function rutaFija() { return (viajeBloqueado && !viajeTarifaEditable) || !!presupuestoDelViaje; }
         var distanciaManual = false, errorGoogleRuta = '', kmGuardadoViaje = '';
         var choferSearchTimer = null;
         var tiposClienteViaje = {};
@@ -1148,11 +1148,16 @@
         // Una vez que el viaje salió solo se completan los números de referencia: el recorrido y lo que define
         // el cobro quedan fijos (el backend lo valida igual). Un cambio pedido por el cliente es otro viaje.
         // Si el viaje viene de un presupuesto aceptado, cliente, recorrido, km y tarifa son los del presupuesto.
-        function bloquearDatosDelViaje(estado, presupuestoId) {
+        function bloquearDatosDelViaje(estado, presupuestoId, enProformaEstado) {
             viajeBloqueado = !viajeRegistrado(estado);
             presupuestoDelViaje = presupuestoId || null;
+            // Cliente con plataforma en Listo para facturar, fuera de una proforma generada o aceptada:
+            // tarifa y km se pueden corregir para que coincidan con la plataforma (la API lo valida igual).
+            viajeTarifaEditable = estado === 'Listo_para_facturar' && clienteConPlataforma() && !presupuestoDelViaje
+                && enProformaEstado !== 'Generada' && enProformaEstado !== 'Aceptada';
             $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
                 .prop('disabled', viajeBloqueado);
+            if (viajeTarifaEditable) $('input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', false);
             if (presupuestoDelViaje) {
                 $('#clienteSelect, #origenSelect, #destinoSelect, input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', true);
             }
@@ -1160,7 +1165,8 @@
             if (rutaFija()) usarDistanciaManual(false);
             var avisos = [];
             if (viajeBloqueado) {
-                avisos.push('El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas. '
+                avisos.push('El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas'
+                    + (viajeTarifaEditable ? ', y corregir la tarifa y los km. ' : '. ')
                     + 'Si el cliente pide otro recorrido, registralo como un viaje nuevo.');
             }
             if (presupuestoDelViaje) {
@@ -1236,7 +1242,7 @@
                                 .done(function (ch) { $('#choferSelectId').val(ch.Chofer_ID); $('#choferBuscar').val(ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')'); })
                                 .fail(function () { });
                         }
-                        bloquearDatosDelViaje(v.Estado, v.Presupuesto_ID);
+                        bloquearDatosDelViaje(v.Estado, v.Presupuesto_ID, v.EnProforma_Estado);
                         $('#ModalAltaViaje').modal('show');
                     })
                     .fail(function () { SGTL.toastError('No se pudo cargar el viaje. Probá de nuevo.'); });
