@@ -427,7 +427,10 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "CASE WHEN fac.FacturaID IS NOT NULL THEN 'Facturada' ELSE Estado END AS Estado, Usu_Alta AS UsuarioCreador " +
                         ",fac.FacturaID,fac.FacturaNumero,CAST(CASE WHEN fac.FacturaID IS NOT NULL " +
                         "AND fac.FacturaEstado='EMITIDO' AND NOT EXISTS (SELECT 1 FROM CUENTA_CORRIENTE_APLICACIONES a " +
-                        "WHERE a.ComprobanteDeudaID=fac.FacturaID AND a.Vigente=1) THEN 1 ELSE 0 END AS bit) AS FacturaCancelable FROM PROFORMAS " +
+                        "WHERE a.ComprobanteDeudaID=fac.FacturaID AND a.Vigente=1) THEN 1 ELSE 0 END AS bit) AS FacturaCancelable " +
+                        ",ISNULL(PROFORMAS.Tipo_Proforma,'Propia') AS Tipo_Proforma," +
+                        "(SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID) AS Plataforma," +
+                        "PROFORMAS.Plataforma_Numero, PROFORMAS.Plataforma_Reclamo_Fecha AS ReclamoFecha FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
                         "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
@@ -514,6 +517,11 @@ ORDER BY d.Proforma_ID, d.Orden";
             public int? FacturaID { get; set; }
             public string FacturaNumero { get; set; }
             public bool FacturaCancelable { get; set; }
+            // Proforma de plataforma (Rukas): tipo, nombre, N° en la plataforma y reclamo pendiente.
+            public string Tipo_Proforma { get; set; }
+            public string Plataforma { get; set; }
+            public string Plataforma_Numero { get; set; }
+            public DateTime? ReclamoFecha { get; set; }
         }
 
         private class ReporteProformaItem
@@ -596,6 +604,11 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                 using (var transaction = db.Database.BeginTransaction())
                 {
                     ActualizarCondicionIvaDesdeCliente(db, p);
+                    // Un cliente con plataforma factura solo por la proforma de plataforma (importando su archivo).
+                    var tipoCliente = db.Database.SqlQuery<string>("SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@c",
+                        P("@c", (object)p.ClienteID)).FirstOrDefault();
+                    if (tipoCliente == ClientesController.TipoConPlataforma)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Este cliente trabaja con una plataforma: la proforma se arma con el Excel de la plataforma." });
                     var viajeIds = ExtraerViajes(p.Detalle);
                     var errorViajes = ValidarViajesDisponibles(db, 0, p.ClienteID, viajeIds);
                     if (errorViajes != null) return Content(HttpStatusCode.Conflict, new { error = errorViajes });

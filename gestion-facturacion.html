@@ -501,11 +501,11 @@
                 if (puedeAnular) acc += '<button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Anular proforma (conserva el número y libera los viajes)" onclick="anular(' + x.Proforma_ID + ')"><i class="bi bi-x-circle"></i></button> ';
                 if (puedeBorrar) acc += '<button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar borrador" onclick="borrarProforma(' + x.Proforma_ID + ')"><i class="bi bi-trash"></i></button>';
                 return '<tr>' +
-                    '<td>' + esc(x.Numero || '—') + '</td>' +
+                    '<td>' + esc(x.Numero || (x.Tipo_Proforma === 'Plataforma' ? '' : '—')) + (window.ProformaPlataforma ? ProformaPlataforma.etiquetaListado(x) : '') + '</td>' +
                     '<td>' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td>' + badgeEstado(x.Estado) + '</td>' +
+                    '<td>' + badgeEstado(x.Estado) + (window.ProformaPlataforma ? ProformaPlataforma.reclamoListado(x) : '') + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
                     '<td class="text-center" style="white-space:nowrap;">' + acc + '</td></tr>';
             }).join('');

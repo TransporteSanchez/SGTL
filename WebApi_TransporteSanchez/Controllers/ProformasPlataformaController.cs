@@ -59,6 +59,13 @@ namespace WebApi_TransporteSanchez.Controllers
 
         public class UsuarioDto { public string Usuario { get; set; } }
 
+        public class ReclamoDto
+        {
+            public DateTime? Fecha { get; set; }
+            public string Motivo { get; set; }
+            public string Usuario { get; set; }
+        }
+
         public class LineaControlDto
         {
             public int Orden { get; set; }
@@ -221,6 +228,41 @@ FROM dbo.PROFORMAS pf
 LEFT JOIN dbo.PLATAFORMAS pl ON pl.Plataforma_ID = pf.PlataformaID
 LEFT JOIN dbo.PROFORMA_ADJUNTO a ON a.Proforma_ID = pf.Proforma_ID AND a.Tipo = 'Archivo'
 WHERE pf.Proforma_ID = @id;", P("@id", id)).FirstOrDefault();
+        }
+
+        // Guarda las líneas leídas y el archivo de la proforma (reemplaza lo que hubiera).
+        private static void GuardarLineasYArchivo(DbContext db, int id, LecturaArchivo lectura, byte[] archivo,
+            string nombreArchivo, string contentType, string usuario)
+        {
+            db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMA_PLATAFORMA_LINEA WHERE Proforma_ID=@id", P("@id", id));
+            foreach (var l in lectura.Lineas)
+                db.Database.ExecuteSqlCommand(@"
+INSERT dbo.PROFORMA_PLATAFORMA_LINEA (Proforma_ID,Orden,Referencia,Fecha,Ruta,Importe_Viaje,Adicionales)
+VALUES (@id,@orden,@ref,@fecha,@ruta,@imp,@adic);",
+                    P("@id", id), P("@orden", l.Orden), P("@ref", l.Referencia), P("@fecha", l.Fecha),
+                    P("@ruta", string.IsNullOrEmpty(l.Ruta) ? null : (l.Ruta.Length > 150 ? l.Ruta.Substring(0, 150) : l.Ruta)),
+                    P("@imp", l.ImporteViaje), P("@adic", l.Adicionales));
+
+            var nombre = string.IsNullOrWhiteSpace(nombreArchivo) ? "proforma.xlsx" : nombreArchivo.Trim();
+            nombre = nombre.Substring(nombre.LastIndexOfAny(new[] { '/', '\\' }) + 1);
+            if (nombre.Length > 260) nombre = nombre.Substring(nombre.Length - 260);
+            db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMA_ADJUNTO WHERE Proforma_ID=@id AND Tipo='Archivo'", P("@id", id));
+            db.Database.ExecuteSqlCommand(@"
+INSERT dbo.PROFORMA_ADJUNTO (Proforma_ID,Tipo,Nombre_Archivo,Content_Type,Archivo,Usu_Alta)
+VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
+                P("@id", id), P("@nombre", nombre),
+                P("@tipo", string.IsNullOrWhiteSpace(contentType) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : contentType),
+                P("@archivo", archivo), P("@u", UsuarioCorto(usuario)));
+        }
+
+        private static byte[] LeerBase64(string base64, out string error)
+        {
+            error = null;
+            byte[] archivo;
+            try { archivo = Convert.FromBase64String(base64 ?? ""); }
+            catch (FormatException) { error = "El archivo no es válido."; return null; }
+            if (archivo.Length == 0 || archivo.Length > MaxBytesArchivo) { error = "El archivo tiene que pesar como máximo 5 MB."; return null; }
+            return archivo;
         }
 
         // ======================= Control =======================
@@ -569,24 +611,8 @@ VALUES
                             P("@tiemposervicio", d.TiempoServicio), P("@obscom", d.ObsComerciales), P("@condpart", d.CondParticulares),
                             P("@u", usuario), P("@pl", cli.Plataforma_ID.Value), P("@num", numero)).First();
 
-                        foreach (var l in lectura.Lineas)
-                            db.Database.ExecuteSqlCommand(@"
-INSERT dbo.PROFORMA_PLATAFORMA_LINEA (Proforma_ID,Orden,Referencia,Fecha,Ruta,Importe_Viaje,Adicionales)
-VALUES (@id,@orden,@ref,@fecha,@ruta,@imp,@adic);",
-                                P("@id", id), P("@orden", l.Orden), P("@ref", l.Referencia), P("@fecha", l.Fecha),
-                                P("@ruta", string.IsNullOrEmpty(l.Ruta) ? null : (l.Ruta.Length > 150 ? l.Ruta.Substring(0, 150) : l.Ruta)),
-                                P("@imp", l.ImporteViaje), P("@adic", l.Adicionales));
-
-                        var nombre = string.IsNullOrWhiteSpace(d.NombreArchivo) ? "proforma.xlsx" : d.NombreArchivo.Trim();
-                        nombre = nombre.Substring(nombre.LastIndexOfAny(new[] { '/', '\\' }) + 1);
-                        if (nombre.Length > 260) nombre = nombre.Substring(nombre.Length - 260);
-                        db.Database.ExecuteSqlCommand(@"
-INSERT dbo.PROFORMA_ADJUNTO (Proforma_ID,Tipo,Nombre_Archivo,Content_Type,Archivo,Usu_Alta)
-VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
-                            P("@id", id), P("@nombre", nombre),
-                            P("@tipo", string.IsNullOrWhiteSpace(d.ContentType) ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" : d.ContentType),
-                            P("@archivo", archivo), P("@u", UsuarioCorto(usuario)));
-
+                        GuardarLineasYArchivo(db, id, lectura, archivo, d.NombreArchivo, d.ContentType, usuario);
+                        var nombre = d.NombreArchivo;
                         Controlar(db, id, d.ClienteID, cli.Nombre, lector, usuario);
                         Auditar(db, usuario, "INSERT", id, null,
                             "Alta de proforma de " + cli.Nombre + " " + numero + " (Borrador) importando " + nombre + ", " + lectura.Lineas.Count + " líneas");
@@ -638,6 +664,210 @@ VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo volver a controlar la proforma.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // "Reemplazar Excel": la plataforma corrigió la misma proforma; se reemplazan líneas y archivo,
+        // se vuelve a controlar y se cierra el reclamo pendiente.
+        [HttpPost]
+        [Route("{id:int}/ReemplazarArchivo")]
+        public IHttpActionResult ReemplazarArchivo(int id, [FromBody] ImportarDto d)
+        {
+            if (d == null || string.IsNullOrWhiteSpace(d.ArchivoBase64) || d.Filas == null)
+                return Content(HttpStatusCode.BadRequest, new { error = "Elegí el Excel corregido." });
+            string errorArchivo;
+            var archivo = LeerBase64(d.ArchivoBase64, out errorArchivo);
+            if (archivo == null) return Content(HttpStatusCode.BadRequest, new { error = errorArchivo });
+            var usuario = string.IsNullOrWhiteSpace(d.Usuario) ? "sistema" : d.Usuario.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (c.Tipo_Proforma != "Plataforma" || c.Estado != "Borrador" || !c.ClienteID.HasValue)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Solo se reemplaza el Excel de un borrador de plataforma." });
+                    var lector = LectoresPlataforma.Obtener(c.Codigo);
+                    if (lector == null) return Content(HttpStatusCode.BadRequest, new { error = "Todavía no se pueden leer archivos de " + c.Plataforma + "." });
+
+                    var numero = (d.NumeroPlataforma ?? "").Trim();
+                    if (numero == "") numero = lector.NumeroDesdeNombreArchivo(d.NombreArchivo) ?? "";
+                    if (numero != "" && numero != c.Plataforma_Numero)
+                        return Content(HttpStatusCode.BadRequest, new
+                        {
+                            error = "El archivo es de la proforma " + numero + " y este borrador es la " + c.Plataforma_Numero +
+                                ". Si " + c.Plataforma + " generó otra proforma, eliminá este borrador e importá la nueva."
+                        });
+
+                    var lectura = lector.Leer(d.Filas);
+                    if (lectura.Errores.Count > 0) return Content(HttpStatusCode.BadRequest, new { errores = lectura.Errores });
+
+                    using (var tx = db.Database.BeginTransaction())
+                    {
+                        GuardarLineasYArchivo(db, id, lectura, archivo, d.NombreArchivo, d.ContentType, usuario);
+                        bool teniaReclamo = c.Plataforma_Reclamo_Fecha.HasValue;
+                        db.Database.ExecuteSqlCommand(
+                            "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL WHERE Proforma_ID=@id", P("@id", id));
+                        Controlar(db, id, c.ClienteID.Value, c.Plataforma, lector, usuario);
+                        Auditar(db, usuario, "UPDATE", id, "Archivo=" + c.Nombre_Archivo,
+                            "Archivo reemplazado por " + d.NombreArchivo + ", " + lectura.Lineas.Count + " líneas" + (teniaReclamo ? "; reclamo cerrado" : ""));
+                        tx.Commit();
+                    }
+                    return Ok(ArmarControl(db, id));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Content(HttpStatusCode.BadRequest, new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo reemplazar el archivo.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // "Registrar reclamo": marca en el borrador que se espera una corrección de la plataforma (no es un estado).
+        [HttpPost]
+        [Route("{id:int}/Reclamo")]
+        public IHttpActionResult RegistrarReclamo(int id, [FromBody] ReclamoDto d)
+        {
+            var motivo = d == null ? "" : (d.Motivo ?? "").Trim();
+            if (motivo == "") return Content(HttpStatusCode.BadRequest, new { error = "Completá el motivo del reclamo." });
+            if (motivo.Length > 500) return Content(HttpStatusCode.BadRequest, new { error = "El motivo puede tener hasta 500 caracteres." });
+            var usuario = string.IsNullOrWhiteSpace(d.Usuario) ? "sistema" : d.Usuario.Trim();
+            var fecha = (d.Fecha ?? DateTime.Today).Date;
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (c.Tipo_Proforma != "Plataforma" || c.Estado != "Borrador")
+                        return Content(HttpStatusCode.BadRequest, new { error = "Solo se registra un reclamo en un borrador de plataforma." });
+                    db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=@f, Plataforma_Reclamo_Motivo=@m, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
+                        P("@f", fecha), P("@m", motivo), P("@u", usuario), P("@id", id));
+                    Auditar(db, usuario, "RECLAMO", id, null, "Reclamo en " + c.Plataforma + " (" + fecha.ToString("dd/MM/yyyy") + "): " + motivo);
+                    return Ok(ArmarControl(db, id));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo registrar el reclamo.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // "Cerrar reclamo": se resolvió sin un archivo nuevo.
+        [HttpPost]
+        [Route("{id:int}/Reclamo/Cerrar")]
+        public IHttpActionResult CerrarReclamo(int id, [FromBody] UsuarioDto body)
+        {
+            var usuario = body == null || string.IsNullOrWhiteSpace(body.Usuario) ? "sistema" : body.Usuario.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (!c.Plataforma_Reclamo_Fecha.HasValue) return Ok(ArmarControl(db, id));
+                    db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
+                        P("@u", usuario), P("@id", id));
+                    Auditar(db, usuario, "RECLAMO", id, "Reclamo: " + c.Plataforma_Reclamo_Motivo, "Reclamo cerrado");
+                    return Ok(ArmarControl(db, id));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo cerrar el reclamo.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // "Generar": solo con el control en OK. Asigna el número PF, arma los conceptos (una línea por transporte,
+        // código V{Viaje_ID}, IVA 21 %) y deja la proforma Aceptada (la plataforma ya la aceptó). Los viajes que
+        // seguían en Registrado pasan a Listo para facturar. Después se factura con el flujo de siempre.
+        [HttpPost]
+        [Route("{id:int}/Generar")]
+        public IHttpActionResult Generar(int id, [FromBody] UsuarioDto body)
+        {
+            var usuario = body == null || string.IsNullOrWhiteSpace(body.Usuario) ? "sistema" : body.Usuario.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (c.Tipo_Proforma != "Plataforma" || c.Estado != "Borrador" || !c.ClienteID.HasValue)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Solo se genera un borrador de plataforma." });
+                    var lector = LectoresPlataforma.Obtener(c.Codigo);
+                    if (lector == null) return Content(HttpStatusCode.BadRequest, new { error = "Todavía no se pueden leer archivos de " + c.Plataforma + "." });
+
+                    using (var tx = db.Database.BeginTransaction())
+                    {
+                        // Se vuelve a controlar: un viaje pudo cambiar desde la última vez.
+                        Controlar(db, id, c.ClienteID.Value, c.Plataforma, lector, usuario);
+                        var control = ArmarControl(db, id);
+                        if (control.Cantidad == 0 || control.Diferencias > 0)
+                        {
+                            tx.Commit();
+                            return Content(HttpStatusCode.Conflict, new
+                            {
+                                error = "No se puede generar: hay " + control.Diferencias + (control.Diferencias == 1 ? " diferencia." : " diferencias."),
+                                control
+                            });
+                        }
+
+                        db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMA_DETALLE WHERE Proforma_ID=@id", P("@id", id));
+                        foreach (var l in control.Lineas.OrderBy(x => x.Orden))
+                        {
+                            decimal precio = l.ImporteViaje + l.Adicionales;
+                            db.Database.ExecuteSqlCommand(@"
+INSERT dbo.PROFORMA_DETALLE (Proforma_ID,Orden,Codigo,Concepto,Descripcion,Cantidad,Unidad,PrecioUnitario,DescuentoPct,IvaPct,Subtotal)
+VALUES (@id,@orden,@codigo,@concepto,@desc,1,'Viaje',@precio,0,@iva,@precio);",
+                                P("@id", id), P("@orden", l.Orden), P("@codigo", "V" + l.ViajeID),
+                                P("@concepto", "Transporte " + l.Referencia + (string.IsNullOrEmpty(l.Ruta) ? "" : " · " + l.Ruta)),
+                                P("@desc", (l.Fecha.HasValue ? l.Fecha.Value.ToString("dd/MM/yyyy") + " - " : "") + c.Plataforma + " " + c.Plataforma_Numero
+                                    + (l.Adicionales > 0 ? " (incluye adicionales " + Pesos(l.Adicionales) + ")" : "")),
+                                P("@precio", precio), P("@iva", IvaPct));
+                        }
+
+                        int n = db.Database.SqlQuery<int>("SELECT NEXT VALUE FOR dbo.SEQ_PROFORMA").First();
+                        string numero = "PF-" + n.ToString("D8");
+                        db.Database.ExecuteSqlCommand(@"
+UPDATE dbo.PROFORMAS
+SET Numero=@num, Estado='Aceptada', FechaEmision=ISNULL(FechaEmision,GETDATE()),
+    Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL, Usu_Modi=@u, Fecha_Modi=GETDATE()
+WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuario), P("@id", id));
+
+                        var viajes = control.Lineas.Where(x => x.ViajeID.HasValue).Select(x => x.ViajeID.Value).Distinct().ToList();
+                        var pasan = db.Database.SqlQuery<int>(
+                            "SELECT Viaje_ID FROM dbo.VIAJES WHERE Estado='Registrado' AND Viaje_ID IN (" + string.Join(",", viajes) + ")").ToList();
+                        foreach (var v in pasan)
+                        {
+                            db.Database.ExecuteSqlCommand(
+                                "UPDATE dbo.VIAJES SET Estado='Listo_para_facturar', Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@v AND Estado='Registrado'",
+                                P("@u", UsuarioCorto(usuario)), P("@v", v));
+                            db.Database.ExecuteSqlCommand(
+                                "INSERT INTO AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen) " +
+                                "VALUES (GETDATE(),@u,'ESTADO','VIAJES',@k,'Estado=Registrado','Estado=Listo_para_facturar',@o)",
+                                P("@u", usuario), P("@k", "Viaje_ID=" + v), P("@o", "Proforma de " + c.Plataforma + " " + c.Plataforma_Numero + " generada"));
+                        }
+
+                        Auditar(db, usuario, "GENERAR", id, "Estado=Borrador",
+                            "Estado=Aceptada; Numero=" + numero + "; " + c.Plataforma + " " + c.Plataforma_Numero
+                            + (pasan.Count > 0 ? "; viajes a Listo para facturar: " + string.Join(", ", pasan.Select(v => "#" + v)) : ""));
+                        tx.Commit();
+                        return Ok(new { Proforma_ID = id, Numero = numero, Estado = "Aceptada", Message = "Proforma generada: " + numero + "." });
+                    }
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Content(HttpStatusCode.BadRequest, new { error = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo generar la proforma.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
