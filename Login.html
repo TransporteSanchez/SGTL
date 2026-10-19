@@ -101,6 +101,7 @@
                 <div class="login-card card">
                     <div class="login-card-brand text-center">
                         <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo de SGTL">
+                        <span id="versionSistema" class="login-card-version" aria-label="Versión del sistema" hidden></span>
                     </div>
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
                     <p class="login-subtitle text-center">Ingrese sus credenciales para continuar.</p>
@@ -265,6 +266,22 @@
 
         // Llamada a la API al cargar la página
         window.onload = loadContent;
+
+        // La versión se consulta sin sesión y no interfiere con el inicio de sesión.
+        fetch('http://localhost:50222/api/Documentacion/version-actual', { cache: 'no-store' })
+            .then(function (respuesta) {
+                if (!respuesta.ok) return null;
+                return respuesta.json();
+            })
+            .then(function (datos) {
+                if (!datos || typeof datos.version !== 'string') return;
+                const numero = datos.version.trim();
+                if (!numero) return;
+                const version = document.getElementById('versionSistema');
+                version.textContent = /^v/i.test(numero) ? numero : 'V' + numero;
+                version.hidden = false;
+            })
+            .catch(function () { /* El login funciona aunque no se pueda consultar la versión. */ });
 
         // Gestión del formulario de login
         document.getElementById('loginForm').addEventListener('submit', function (event) {
