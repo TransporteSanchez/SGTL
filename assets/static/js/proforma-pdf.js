@@ -53,7 +53,9 @@
         doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(20);
         doc.text('PROFORMA', bx + bw / 2, by + 8, { align: 'center' });
         doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
-        doc.text('N°: ' + txt(p.Numero), bx + 3, by + 15);
+        var esPlataforma = p.Tipo_Proforma === 'Plataforma';
+        // Un borrador de plataforma todavía no tiene N° PF: se identifica por el N° en la plataforma.
+        doc.text('N°: ' + (p.Numero || (esPlataforma ? 'Borrador' : '—')), bx + 3, by + 15);
         doc.text('Fecha: ' + txt(fdate(p.FechaEmision)), bx + 3, by + 20);
         doc.text('Estado: ' + txt(p.Estado), bx + 3, by + 25);
 
@@ -83,13 +85,28 @@
         doc.text('Contacto: ' + txt(p.Cli_Contacto), colB, ry + 15);
         y = chY + chH + 5;
 
-        // ---------- Datos del servicio ----------
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
-        doc.text('DATOS DEL SERVICIO', M, y); y += 5;
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
-        doc.text('Origen: ' + txt(p.Origen), colA, y); doc.text('Destino: ' + txt(p.Destino), colB, y); y += 5;
-        doc.text('Tipo de carga: ' + txt(p.TipoCarga), colA, y); doc.text('Peso / Volumen: ' + [p.Peso, p.Volumen].filter(Boolean).join(' / '), colB, y); y += 5;
-        doc.text('Fecha de carga: ' + txt(fdate(p.FechaCarga)), colA, y); doc.text('Entrega estimada: ' + txt(fdate(p.FechaEntrega)), colB, y); y += 6;
+        if (esPlataforma) {
+            // ---------- Proforma de plataforma (Rukas): tipo, N° en la plataforma, período y factura ----------
+            var plataforma = p.Plataforma || 'la plataforma';
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
+            doc.text('PROFORMA DE ' + plataforma.toUpperCase(), M, y); y += 5;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
+            doc.text('N° de proforma en ' + plataforma + ': ' + txt(p.Plataforma_Numero), colA, y);
+            doc.text('Período: ' + txt(fdate(p.FechaDesde)) + ' al ' + txt(fdate(p.FechaHasta)), colB, y); y += 5;
+            if (p.Plataforma_Factura_Numero) {
+                doc.text('Factura en ' + plataforma + ': ' + p.Plataforma_Factura_Numero +
+                    (p.Plataforma_Factura_Fecha ? ' del ' + fdate(p.Plataforma_Factura_Fecha) : ''), colA, y); y += 5;
+            }
+            y += 1;
+        } else {
+            // ---------- Datos del servicio ----------
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
+            doc.text('DATOS DEL SERVICIO', M, y); y += 5;
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
+            doc.text('Origen: ' + txt(p.Origen), colA, y); doc.text('Destino: ' + txt(p.Destino), colB, y); y += 5;
+            doc.text('Tipo de carga: ' + txt(p.TipoCarga), colA, y); doc.text('Peso / Volumen: ' + [p.Peso, p.Volumen].filter(Boolean).join(' / '), colB, y); y += 5;
+            doc.text('Fecha de carga: ' + txt(fdate(p.FechaCarga)), colA, y); doc.text('Entrega estimada: ' + txt(fdate(p.FechaEntrega)), colB, y); y += 6;
+        }
 
         // ---------- Tabla de conceptos (paginada) ----------
         var filas = (p.Detalle || []).map(function (l) {
@@ -176,16 +193,46 @@
         return doc;
     }
 
+    // Un borrador de plataforma todavía no tiene conceptos (se arman al generar): el PDF muestra las líneas
+    // del Excel importado, con el mismo formato que tendrán los conceptos.
+    function conLineasDePlataforma(p) {
+        if (p.Tipo_Proforma !== 'Plataforma' || (p.Detalle && p.Detalle.length)) return Promise.resolve(p);
+        return fetch(API + '/ProformasPlataforma/' + p.Proforma_ID)
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (c) {
+                if (!c || !c.Lineas) return p;
+                p.Detalle = c.Lineas.slice().sort(function (a, b) { return a.Orden - b.Orden; }).map(function (l) {
+                    var precio = (Number(l.ImporteViaje) || 0) + (Number(l.Adicionales) || 0);
+                    return {
+                        Cantidad: 1, Codigo: l.ViajeID ? 'V' + l.ViajeID : '',
+                        Concepto: 'Transporte ' + l.Referencia + (l.Ruta ? ' · ' + l.Ruta : ''),
+                        Descripcion: (l.Fecha ? fdate(l.Fecha) + ' - ' : '') + (c.Plataforma || '') + ' ' + (c.NumeroPlataforma || '') +
+                            (Number(l.Adicionales) ? ' (incluye adicionales ' + money(l.Adicionales) + ')' : ''),
+                        PrecioUnitario: precio, DescuentoPct: 0, IvaPct: 21, Subtotal: precio
+                    };
+                });
+                return p;
+            })
+            .catch(function () { return p; });
+    }
+
     function generar(id, modo) {
+        var logo = null;
         Promise.all([
             fetch(API + '/Proformas/' + id).then(function (r) { return r.ok ? r.json() : null; }),
             obtenerLogo()
         ]).then(function (res) {
-            var p = res[0], logo = res[1];
+            var p = res[0];
+            logo = res[1];
             if (!p) { alert('No se pudo obtener la proforma.'); return; }
+            return conLineasDePlataforma(p);
+        }).then(function (p) {
+            if (!p) return;
             var doc = construir(p, logo);
             if (!doc) return;
-            var nombre = 'Proforma_' + (p.Numero || ('ID' + p.Proforma_ID)) + '.pdf';
+            var nombre = 'Proforma_' + (p.Numero || (p.Tipo_Proforma === 'Plataforma'
+                ? (p.Plataforma || 'Plataforma') + '_' + (p.Plataforma_Numero || p.Proforma_ID)
+                : 'ID' + p.Proforma_ID)) + '.pdf';
             if (modo === 'imprimir') {
                 doc.autoPrint();
                 window.open(doc.output('bloburl'), '_blank');

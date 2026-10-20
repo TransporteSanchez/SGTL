@@ -85,6 +85,11 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Alta { get; set; }
             // Propia o Plataforma (database/proformas-plataforma/01_plataformas_y_proformas.sql).
             public string Tipo_Proforma { get; set; }
+            // Solo lectura, para el PDF de una proforma de plataforma: nombre, N° y factura en la plataforma.
+            public string Plataforma { get; set; }
+            public string Plataforma_Numero { get; set; }
+            public string Plataforma_Factura_Numero { get; set; }
+            public DateTime? Plataforma_Factura_Fecha { get; set; }
             public List<DetalleLineaDto> Detalle { get; set; }
         }
 
@@ -292,7 +297,9 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "FormaPago,PlazoPago,Validez,TiempoServicio,ObsComerciales,CondParticulares,Observaciones," +
             "ISNULL(Subtotal,0) AS Subtotal,ISNULL(Descuentos,0) AS Descuentos,ISNULL(SubtotalNeto,0) AS SubtotalNeto," +
             "ISNULL(IVA,0) AS IVA,ISNULL(OtrosImpuestos,0) AS OtrosImpuestos,ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS TotalGeneral," +
-            "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta,ISNULL(Tipo_Proforma,'Propia') AS Tipo_Proforma FROM PROFORMAS ";
+            "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta,ISNULL(Tipo_Proforma,'Propia') AS Tipo_Proforma," +
+            "(SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID) AS Plataforma," +
+            "Plataforma_Numero,Plataforma_Factura_Numero,Plataforma_Factura_Fecha FROM PROFORMAS ";
 
         private static void InsertarDetalle(DbContext db, int pid, List<DetalleLineaDto> lineas)
         {
@@ -558,7 +565,11 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                 using (var db = new DbContext(Cn()))
                 {
                     string sqlProformas = @"
-SELECT Proforma_ID, Numero,
+SELECT Proforma_ID,
+       -- La proforma de plataforma se distingue en el listado exportado: PF-00000010 (Rukas 990100).
+       LTRIM(ISNULL(Numero,'') + CASE WHEN Tipo_Proforma='Plataforma'
+            THEN ' (' + ISNULL((SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID),'Plataforma')
+                 + ' ' + ISNULL(Plataforma_Numero,'') + ')' ELSE '' END) AS Numero,
        ISNULL(FechaEmision,FechaCreacion) AS FechaInicio,
        FechaVencimiento AS FechaFin,
        Cli_RazonSocial AS Cliente, Cli_CUIT AS Cuit,
