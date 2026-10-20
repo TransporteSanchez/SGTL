@@ -65,6 +65,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/design-system/01-relevamiento-codigo.md` — relevamiento visual de las pantallas por código.
 - `docs/design-system/02-instructivo-capturas-vm.md` — cómo sacar las capturas en la VM.
 - `docs/design-system/03-decisiones.md` — las reglas que siguen las pantallas nuevas o tocadas.
+- `docs/design-system/04-relevamiento-funcional.md` — relevamiento de inconsistencias y mejoras de uso en las pantallas ya subidas (19/10/2026). No reemplaza los pendientes del §10.
 
 ### Pruebas
 
@@ -75,5 +76,5 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-18-verificacion-F1-alta-rapida.md` — verificación en la VM de la corrección del "+" de alta rápida (F1).
 - `docs/pruebas/2026-10-18-verificacion-F1-y-mejoras.md` — verificación en la VM de F1 y de las mejoras de la ronda del 18/10 (§13 de pendientes).
 - `docs/pruebas/2026-10-19-etapa2-proforma-plataforma.md` — pruebas en la VM de la etapa 2 de la proforma de plataforma (importar y controlar).
-- `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.
 - `docs/pruebas/2026-10-19-etapa3-proforma-plataforma.md` — pruebas en la VM de la etapa 3 de la proforma de plataforma (reclamo, reemplazar Excel y generar).
+- `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.
