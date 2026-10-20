@@ -341,6 +341,7 @@
     ver: { icono: 'bi-eye', clase: 'btn-outline-secondary', texto: 'Ver detalle' },
     editar: { icono: 'bi-pencil', clase: 'btn-outline-primary', texto: 'Editar' },
     pdf: { icono: 'bi-file-earmark-pdf', clase: 'btn-outline-secondary', texto: 'Descargar PDF' },
+    enviar: { icono: 'bi-envelope', clase: 'btn-outline-secondary', texto: 'Enviar por e-mail' },
     siguiente: { icono: 'bi-arrow-right-circle', clase: 'btn-outline-success', texto: '' },
     inactivar: { icono: 'bi-toggle-on', clase: 'btn-outline-secondary', texto: 'Inactivar' },
     activar: { icono: 'bi-toggle-off', clase: 'btn-outline-secondary', texto: 'Activar' },

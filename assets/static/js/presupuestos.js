@@ -83,14 +83,20 @@
             ['Pendiente', 'Aceptado', 'Rechazado'].forEach(function (estado) { opcion(selector, estado, estado); }); selector.value = p.estado || 'Pendiente'; selector.disabled = !!p.viajeId;
             selector.onchange = function () { cambiarEstado(p, selector); }; estadoCelda.appendChild(selector);
             tr.insertCell().textContent = p.viajeId ? '#' + p.viajeId : '—';
-            var td = tr.insertCell(), editar = document.createElement('button'), borrar = document.createElement('button'), enviar = document.createElement('button');
-            editar.type = 'button'; editar.className = 'btn btn-primary btn-sm'; editar.title = 'Editar presupuesto'; editar.setAttribute('aria-label', 'Editar presupuesto'); editar.innerHTML = '<i class="bi bi-pencil" aria-hidden="true"></i>'; editar.onclick = function () { abrir(p); }; td.appendChild(editar);
-            editar.disabled = p.estado !== 'Pendiente' || !!p.viajeId; if (editar.disabled) editar.title = 'Solo se editan presupuestos pendientes sin viaje';
-            borrar.type = 'button'; borrar.className = 'btn btn-danger btn-sm ms-1'; borrar.title = 'Eliminar'; borrar.setAttribute('aria-label', 'Eliminar presupuesto'); borrar.innerHTML = '<i class="bi bi-trash" aria-hidden="true"></i>'; borrar.onclick = function () { eliminar(p); }; td.appendChild(borrar);
-            borrar.disabled = !!p.viajeId;
-            enviar.type = 'button'; enviar.className = 'btn btn-success btn-sm ms-1'; enviar.title = 'Enviar E-mail'; enviar.setAttribute('aria-label', 'Enviar presupuesto por E-mail'); enviar.innerHTML = '<i class="bi bi-envelope" aria-hidden="true"></i>'; enviar.onclick = function () { abrirEnvio(p); }; td.appendChild(enviar);
-            var imprimir = document.createElement('button'); imprimir.type = 'button'; imprimir.className = 'btn btn-secondary btn-sm ms-1'; imprimir.title = 'Imprimir / PDF'; imprimir.setAttribute('aria-label', 'Imprimir / PDF presupuesto #' + p.id); imprimir.innerHTML = '<i class="bi bi-printer" aria-hidden="true"></i>'; imprimir.onclick = function () { imprimirPresupuesto(p); }; td.appendChild(imprimir);
-            var crear = document.createElement('button'); crear.type = 'button'; crear.className = 'btn btn-info btn-sm ms-1'; crear.title = p.viajeId ? 'Viaje ya generado' : 'Generar viaje'; crear.setAttribute('aria-label', 'Generar viaje desde presupuesto'); crear.innerHTML = '<i class="bi bi-truck" aria-hidden="true"></i>'; crear.disabled = p.estado !== 'Aceptado' || !!p.viajeId; crear.onclick = function () { abrirGenerarViaje(p); }; td.appendChild(crear);
+            // Botones de la fila con el design system (§1.4): editar, PDF, e-mail, siguiente paso (generar viaje), eliminar.
+            var td = tr.insertCell(); td.className = 'text-center';
+            var conViaje = !!p.viajeId;
+            var motivoGenerar = conViaje ? 'Ya se generó el viaje #' + p.viajeId : 'Solo se genera el viaje de un presupuesto aceptado';
+            td.innerHTML = SGTL.accionesFila([
+                SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: 'Solo se editan presupuestos pendientes sin viaje' }),
+                SGTL.botonFila('pdf', { id: p.id, texto: 'Imprimir / PDF' }),
+                SGTL.botonFila('enviar', { id: p.id }),
+                SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje, motivo: motivoGenerar }),
+                SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'Ya tiene un viaje generado: no se puede eliminar' })
+            ]);
+            var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); }, enviar: function () { abrirEnvio(p); },
+                siguiente: function () { abrirGenerarViaje(p); }, eliminar: function () { eliminar(p); } };
+            Array.prototype.forEach.call(td.querySelectorAll('[data-accion]'), function (boton) { boton.onclick = acciones[boton.getAttribute('data-accion')]; });
         });
     }
     function conservarOpcion(id, valor, texto) { if (!valor) return; var s = el(id); if (!Array.prototype.some.call(s.options, function (o) { return o.value === String(valor); })) opcion(s, valor, (texto || 'Registro ' + valor) + ' (histórico)'); s.value = String(valor); }
@@ -103,8 +109,17 @@
         modal.show();
     }
     function eliminar(p) {
-        if (!window.confirm('¿Eliminar el presupuesto #' + p.id + '?')) return;
-        pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).then(function () { aviso('mensaje', 'Presupuesto eliminado.', false); listar(); }).catch(function () { aviso('mensaje', 'No se pudo eliminar el presupuesto.', true); });
+        SGTL.confirmar({
+            titulo: '¿Eliminar el presupuesto #' + p.id + '?',
+            mensaje: 'No se puede deshacer.',
+            verbo: 'Eliminar',
+            peligro: true,
+            accion: function () {
+                return pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).catch(function () {
+                    var error = new Error('eliminar'); error.mensajeUsuario = 'No se pudo eliminar el presupuesto. Probá de nuevo.'; throw error;
+                });
+            }
+        }).then(function (eliminado) { if (eliminado) { aviso('mensaje', 'Presupuesto eliminado.', false); listar(); } });
     }
     function clientePresupuesto(p) { return clientes.find(function (c) { return String(c.Cliente_ID) === String(p.clienteId); }) || null; }
     function encabezadosEnvio() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }; }
