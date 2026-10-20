@@ -412,7 +412,7 @@ De paso quedaron corregidos R1 (CSV de clientes), R2 (`showErrorToast`), R3 (for
 | # | Qué hacer | Esperado |
 |---|---|---|
 | 1 | Login con un usuario admin | Íconos de usuario, candado y ojo visibles; entra al Dashboard; pestaña "Dashboard · SGTL" |
-| 2 | Abrir el menú completo | Todos los ítems con verbo (Gestionar cuenta corriente, Gestionar e-mail, Consultar auditoría, etc.); cada uno abre su pantalla |
+| 2 | Abrir el menú completo | Todas las subopciones con verbo (Gestionar cuenta corriente, Gestionar e-mail, etc.); Dashboard y Auditoría sin verbo; cada uno abre su pantalla |
 | 3 | Abrir, una por una: Gestionar y Listar camiones, Gestionar y Listar clientes, Gestionar y Listar usuarios, Grupos y permisos, Tarifas (las dos pestañas), Orígenes y destinos (las dos pestañas), Consultar auditoría, Gestionar contenido | Cada una carga su tabla con datos reales (no queda en "Cargando…" ni en el spinner) y sin errores en consola |
 | 4 | Gestionar camiones: Registrar camión `PRUEBA` (dominio `ZZ999ZZ`), editarlo, inactivarlo y eliminarlo | Toasts verdes en cada paso; el camión desaparece al final |
 | 5 | En Gestionar clientes, Gestionar usuarios y Tarifas: tocar el lápiz de una fila y después **Cancelar** | El modal se abre con los datos cargados (provincia/localidad, grupos, fechas DD/MM/AAAA) |
@@ -456,7 +456,7 @@ Si algo falla: anotar pantalla, paso y el error de consola, y no seguir tocando.
 | Configuración → E-mail | Gestionar e-mail |
 | Configuración → Gestión de contenido | Gestionar contenido |
 | Configuración → Integración WhatsApp | Gestionar integración de WhatsApp |
-| Auditoría | Consultar auditoría |
+| Auditoría | Auditoría (queda sin verbo: es ítem principal, 20/10) |
 
 Listar proformas y Gestionar proformas ya están en infinitivo. Dashboard no se renombra.
 

@@ -125,8 +125,10 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 
 ### 3.1 Menú y título
 
-- **Todos los ítems del menú empiezan con un verbo en infinitivo** (pedido de la profesora). El
-  **título de la pantalla es igual al ítem del menú**, con mayúscula solo al principio.
+- **Las subopciones del menú empiezan con un verbo en infinitivo** (pedido de la profesora). Los ítems
+  principales sin subopciones (Dashboard, Auditoría) y los nombres de sección (Choferes, Configuración…)
+  son sustantivos (cambio del 20/10). El **título de la pantalla es igual al ítem del menú**, con
+  mayúscula solo al principio.
 - Cambios de nombre (menú y título):
 
 | Hoy en el menú | Hoy en el título | Pasa a |
@@ -137,12 +139,12 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
 | Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
 | Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
-| Auditoría | Auditoría del sistema | Consultar auditoría |
+| Auditoría | Auditoría del sistema | Auditoría (ítem principal, sin verbo; 20/10) |
 | Viajes → Presupuestos | Gestionar presupuestos | Gestionar presupuestos (20/10) |
 | Documentación → Manual de usuario | Manual de usuario | Consultar manual de usuario (20/10) |
 | Documentación → Informe de versión | Informe de versión | Consultar informe de versión (20/10) |
 
-- **Excepción:** "Dashboard" queda como está.
+- **Ítems principales:** "Dashboard" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
 
