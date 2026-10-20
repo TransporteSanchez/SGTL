@@ -4,11 +4,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
+    <title>Iniciar sesión · Transporte Sánchez</title>
     <!-- Estilos reutilizados -->
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
 
     <style>
         /* Estilos personalizados */
@@ -104,15 +103,15 @@
                         <span id="versionSistema" class="login-card-version" aria-label="Versión del sistema" hidden></span>
                     </div>
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
-                    <p class="login-subtitle text-center">Ingrese sus credenciales para continuar.</p>
+                    <p class="login-subtitle text-center">Ingresá tus datos para continuar.</p>
                     <!-- Formulario -->
                     <form id="loginForm">
                         <div class="mb-3">
                             <label for="username" class="form-label">Usuario</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-user"></i></span>
+                                <span class="input-group-text"><i class="bi bi-person" aria-hidden="true"></i></span>
                                 <input type="text" class="form-control" id="username" name="username"
-                                    placeholder="Ingrese su usuario">
+                                    placeholder="Tu usuario">
                             </div>
                             <small id="userError" class="error-message"></small>
                         </div>
@@ -120,11 +119,11 @@
                         <div class="mb-3">
                             <label for="password" class="form-label">Contraseña</label>
                             <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-lock"></i></span>
+                                <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
                                 <input type="password" class="form-control" id="password" name="password"
-                                    placeholder="Ingrese su contraseña">
+                                    placeholder="Tu contraseña">
                                 <span class="input-group-text" id="togglePassword" onclick="togglePassword()">
-                                    <i class="fa fa-eye" id="eyeIcon"></i>
+                                    <i class="bi bi-eye" id="eyeIcon" aria-hidden="true"></i>
                                 </span>
                             </div>
                             <small id="passError" class="error-message"></small>
@@ -163,12 +162,12 @@
 
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
+                eyeIcon.classList.remove('bi-eye');
+                eyeIcon.classList.add('bi-eye-slash');
             } else {
                 passwordInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
+                eyeIcon.classList.remove('bi-eye-slash');
+                eyeIcon.classList.add('bi-eye');
             }
         }
 
@@ -372,11 +371,11 @@
             } else {
                 // Mostrar mensajes de error si los campos están vacíos
                 if (!username) {
-                    document.getElementById('userError').textContent = 'El usuario es requerido.';
+                    document.getElementById('userError').textContent = 'Completá el usuario.';
                     document.getElementById('userError').style.display = 'block';
                 }
                 if (!password) {
-                    document.getElementById('passError').textContent = 'La contraseña es requerida.';
+                    document.getElementById('passError').textContent = 'Completá la contraseña.';
                     document.getElementById('passError').style.display = 'block';
                 }
             }
