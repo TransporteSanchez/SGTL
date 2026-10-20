@@ -1,7 +1,7 @@
 // Marca SGTL tomada de GESTION_CONTENIDO. Restablecer vuelve a estos valores.
 window.SGTL_CONTENIDO_DEFAULT = {
     logo: './assets/static/images/logo/sgtl-logo.png',
-    favicon: './assets/compiled/svg/ts-icon.svg',
+    favicon: './assets/static/images/logo/sgtl-icono.png',
     fondo: '#e4eef8',
     menu: '#435ebe',
     pie: 'SGTL | un producto de Integra Analistas ®'
@@ -34,10 +34,11 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
         logoElement.src = logoUrl || './assets/static/images/logo/sgtl-logo.png';
     }
 
+    // El ícono de la pestaña es siempre el de SGTL: el logo completo no se lee a ese tamaño.
     const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
     favicon.rel = 'shortcut icon';
-    favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-    document.head.appendChild(favicon);
+    favicon.href = window.SGTL_CONTENIDO_DEFAULT.favicon;
+    if (!favicon.parentNode) document.head.appendChild(favicon);
 
     var marca = window.SGTL_CONTENIDO_DEFAULT;
     var fondo = colorFondo || marca.fondo;
