@@ -314,7 +314,8 @@
     var abrirReclamo = $id('pp_reclamo');
     if (abrirReclamo) abrirReclamo.addEventListener('click', function () {
       $id('pp_form_reclamo').classList.remove('d-none');
-      $id('pp_reclamo_fecha').value = new Date().toISOString().substring(0, 10);
+      var hoy = new Date();
+      $id('pp_reclamo_fecha').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
       $id('pp_reclamo_motivo').focus();
     });
     var cancelar = $id('pp_reclamo_cancelar');
@@ -325,7 +326,7 @@
     if (cerrarReclamo) cerrarReclamo.addEventListener('click', function () {
       var listo = SGTL.procesando('#pp_cerrar_reclamo');
       postJson(API + '/' + c.Proforma_ID + '/Reclamo/Cerrar', { Usuario: usuarioActual() })
-        .then(function (r) { mostrarControl(r); SGTL.toastExito('Reclamo cerrado.'); refrescarListado(); },
+        .then(function (r) { listo(); mostrarControl(r); SGTL.toastExito('Reclamo cerrado.'); refrescarListado(); },
           function (e) { listo(); SGTL.toastError($('<div>').html(textoError(e, 'No se pudo cerrar el reclamo.')).text()); });
     });
     var genCancelar = $id('pp_generar_cancelar');
@@ -335,6 +336,7 @@
   }
 
   function refrescarListado() {
+    if (window.SGTL) SGTL.ocultarTooltips();
     if (typeof window.buscarProformas === 'function' && window.profState) window.buscarProformas(window.profState.page);
   }
 
@@ -349,6 +351,7 @@
         ArchivoBase64: leido.base64, Filas: leido.filas, Usuario: usuarioActual()
       });
     }).then(function (r) {
+      listo();
       mostrarControl(r);
       SGTL.toastExito('Excel reemplazado.');
       refrescarListado();
@@ -365,7 +368,7 @@
     if (!texto) { motivo.focus(); return; }
     var listo = SGTL.procesando('#pp_reclamo_guardar');
     postJson(API + '/' + id + '/Reclamo', { Fecha: $id('pp_reclamo_fecha').value || null, Motivo: texto, Usuario: usuarioActual() })
-      .then(function (r) { mostrarControl(r); SGTL.toastExito('Reclamo registrado.'); refrescarListado(); },
+      .then(function (r) { listo(); mostrarControl(r); SGTL.toastExito('Reclamo registrado.'); refrescarListado(); },
         function (e) { listo(); errorEnModal(textoError(e, 'No se pudo registrar el reclamo.')); });
   }
 
@@ -381,6 +384,7 @@
     var listo = SGTL.procesando('#pp_generar_confirmar');
     postJson(API + '/' + id + '/Generar', { Usuario: usuarioActual() })
       .then(function (r) {
+        listo();
         window.proformaConCambios = false;
         refrescarListado();
         if (typeof window.cerrarProformaYMostrarMensaje === 'function') window.cerrarProformaYMostrarMensaje('Proforma generada: ' + r.Numero + '.', 'success');

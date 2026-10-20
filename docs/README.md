@@ -76,3 +76,4 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-18-verificacion-F1-y-mejoras.md` — verificación en la VM de F1 y de las mejoras de la ronda del 18/10 (§13 de pendientes).
 - `docs/pruebas/2026-10-19-etapa2-proforma-plataforma.md` — pruebas en la VM de la etapa 2 de la proforma de plataforma (importar y controlar).
 - `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.
+- `docs/pruebas/2026-10-19-etapa3-proforma-plataforma.md` — pruebas en la VM de la etapa 3 de la proforma de plataforma (reclamo, reemplazar Excel y generar).
