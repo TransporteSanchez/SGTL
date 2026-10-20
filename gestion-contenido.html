@@ -35,13 +35,14 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 
 </head>
 
 <body>
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
@@ -74,47 +75,20 @@
 
             <div class="page-heading">
 
-                <!--Notificaciones-->
-
-                <!-- Notificación de éxito -->
-                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                    <div class="toast align-items-center text-white bg-success border-0" role="alert" id="alert-success"
-                        aria-live="assertive" aria-atomic="true" style="display: none;">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                Cambios guardados exitosamente
-                            </div>
-                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                                aria-label="Close"></button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Notificación de error -->
-                <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                    <div class="toast align-items-center text-white bg-danger border-0" role="alert" id="alert-error"
-                        aria-live="assertive" aria-atomic="true" style="display: none;">
-                        <div class="d-flex">
-                            <div class="toast-body">
-                                Ocurrió un error al guardar los cambios
-                            </div>
-                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                                aria-label="Close"></button>
-                        </div>
-                    </div>
-                </div>
-
                 <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-                            <h4 class="card-title">Gestionar contenido</h4>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-gear me-2"></i>Gestionar contenido
+                            </h5>
+                            <p class="text-muted mb-0">Elegí el logo, los colores y el pie de página que ve todo el sistema.</p>
                         </div>
                         <div class="card-body">
                             <form id="settings" class="form form-horizontal">
                                 <div class="row">
                                     <div class="col-md-3">
-                                        <label for="logoInput">Logo</label>
+                                        <label for="logoInput" class="form-label">Logo</label>
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <div class="d-flex align-items-center gap-3 mb-2">
@@ -138,32 +112,31 @@
                                         </small>
                                     </div>
                                     <div class="col-md-3">
-                                        <label for="backgroundColorInput">Color de fondo</label>
+                                        <label for="backgroundColorInput" class="form-label">Color de fondo</label>
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <input type="color" id="backgroundColorInput" class="form-control"
                                             name="backgroundColorInput">
                                     </div>
                                     <div class="col-md-3">
-                                        <label for="menuColorInput">Color del menú</label>
+                                        <label for="menuColorInput" class="form-label">Color del menú</label>
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <input type="color" id="menuColorInput" class="form-control"
                                             name="menuColorInput">
                                     </div>
                                     <div class="col-md-3">
-                                        <label for="footerContentInput">Contenido del pie de página</label>
+                                        <label for="footerContentInput" class="form-label">Contenido del pie de página</label>
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <textarea id="footerContentInput" class="form-control" name="footerContentInput"
-                                            placeholder="Escribe el contenido del pie de página" rows="3"></textarea>
+                                            placeholder="SGTL | un producto de Integra Analistas ®" rows="3"></textarea>
                                     </div>
                                     <div class="col-sm-12 d-flex justify-content-end">
                                         <button type="button" class="btn btn-light-secondary me-1 mb-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmarRestablecerModal"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer valores por defecto</button>
+                                            id="btnRestablecer"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer valores por defecto</button>
                                         <button type="submit" class="btn btn-primary mb-1"
-                                            id="saveSettingsBtn">Confirmar</button>
+                                            id="saveSettingsBtn">Guardar</button>
 
                                     </div>
                                 </div>
@@ -175,34 +148,6 @@
 
 
             <!--Fin sección de la tabla-->
-
-            <!-- Modal de confirmación de restablecimiento -->
-            <div class="modal fade text-left" id="confirmarRestablecerModal" tabindex="-1" role="dialog"
-                aria-labelledby="confirmarRestablecerLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="confirmarRestablecerLabel">Confirmar actualización de contenido
-                            </h5>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                                <i data-feather="x"></i>
-                            </button>
-                        </div>
-                        <div class="modal-body">
-                            ¿Estás seguro que querés restablecer esta página a su diseño por defecto?
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                                <span class="d-none d-sm-block">Cancelar</span>
-                            </button>
-                            <button type="button" class="btn btn-primary ms-1" onclick="resetForm()">
-                                <span class="d-none d-sm-block">Confirmar</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
 
             <!-- Footer -->
             <footer>
@@ -222,6 +167,7 @@
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <script>
@@ -311,22 +257,15 @@
         }
 
 
-        // Confirmar cambios de gestión de contenido
-
+        // Guardar cambios de gestión de contenido
         document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
             event.preventDefault();
-
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
+            const listo = SGTL.procesando('#saveSettingsBtn', 'Guardando…');
 
             const logo = valorLogoEfectivo();
             const backgroundColor = document.getElementById('backgroundColorInput').value;
             const menuColor = document.getElementById('menuColorInput').value;
             const footerContent = document.getElementById('footerContentInput').value;
-
-            // Obtener el nombre de usuario desde localStorage
-            const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
 
             const settingsData = {
                 Logo: logo,
@@ -334,33 +273,21 @@
                 ColorBotonesMenu: menuColor,
                 ContenidoPiePagina: footerContent,
                 Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: usuarioModificador // Asigna el nombre de usuario al campo Usu_Modi
+                Usu_Modi: localStorage.getItem('username') || 'UsuarioDesconocido'
             };
 
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-
-            xhr.onload = function () {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    // Aplica los cambios en vivo (sin recargar la página).
-                    try { applyStyles(logo, backgroundColor, menuColor, footerContent); } catch (e) { }
-                    mostrarToastExito();
-                } else {
-                    notifyError('No se pudo guardar el contenido.');
-                }
-                // Restaura la vista SIEMPRE (evita el spinner infinito).
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            };
-
-            xhr.onerror = function () {
-                notifyError("Ocurrió un error al actualizar el contenido de la página.");
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            };
-
-            xhr.send(JSON.stringify(settingsData));
+            SGTL.ajax({
+                url: 'http://localhost:50222/api/GestionContenido/1',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(settingsData)
+            }, 'No se pudo guardar el contenido. Revisá la conexión y probá de nuevo.').then(function () {
+                // Aplica los cambios en vivo (sin recargar la página).
+                try { applyStyles(logo, backgroundColor, menuColor, footerContent); } catch (e) { }
+                mostrarToastExito();
+            }, function (error) {
+                notifyError(error.mensajeUsuario);
+            }).finally(listo);
         });
 
         function loadDefaultValues() {
@@ -377,81 +304,54 @@
         // Obtener el nombre de usuario desde localStorage
         const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
 
-        function resetForm() {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
+        // Vuelve a la marca SGTL (fondo, menú y pie); el logo queda como está.
+        function restablecerContenido() {
             var marca = window.SGTL_CONTENIDO_DEFAULT;
             const logoActual = valorLogoEfectivo() || marca.logo;
-            const defaultColorFondo = marca.fondo;
-            const defaultColorBotonesMenu = marca.menu;
-            const defaultContenidoPiePagina = marca.pie;
-
             const settingsData = {
                 Logo: logoActual,
-                ColorFondo: defaultColorFondo,
-                ColorBotonesMenu: defaultColorBotonesMenu,
-                ContenidoPiePagina: defaultContenidoPiePagina,
+                ColorFondo: marca.fondo,
+                ColorBotonesMenu: marca.menu,
+                ContenidoPiePagina: marca.pie,
                 Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: usuarioModificador // Asigna el nombre de usuario
+                Usu_Modi: usuarioModificador
             };
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('PUT', 'http://localhost:50222/api/GestionContenido/1', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-
-            xhr.onload = function () {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    document.getElementById('backgroundColorInput').value = defaultColorFondo;
-                    document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
-                    document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
-                    applyStyles(logoActual, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
-                    mostrarToastExito();
-                    try {
-                        var modalElement = document.getElementById('confirmarRestablecerModal');
-                        if (window.jQuery && jQuery.fn.modal) { jQuery(modalElement).modal('hide'); }
-                        else if (window.bootstrap && bootstrap.Modal) {
-                            (bootstrap.Modal.getInstance(modalElement) || new bootstrap.Modal(modalElement)).hide();
-                        }
-                    } catch (e) { }
-                } else {
-                    notifyError('Ocurrió un error al restablecer el contenido.');
-                }
-                // Restaura la vista SIEMPRE.
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            };
-
-            xhr.onerror = function () {
-                notifyError('Ocurrió un error al restablecer el contenido.');
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            };
-
-            xhr.send(JSON.stringify(settingsData));
+            return SGTL.ajax({
+                url: 'http://localhost:50222/api/GestionContenido/1',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify(settingsData)
+            }, 'No se pudo restablecer el contenido. Probá de nuevo.').then(function () {
+                document.getElementById('backgroundColorInput').value = marca.fondo;
+                document.getElementById('menuColorInput').value = marca.menu;
+                document.getElementById('footerContentInput').value = marca.pie;
+                applyStyles(logoActual, marca.fondo, marca.menu, marca.pie);
+            });
         }
 
-        // =================== Logo: URL o archivo (base64) ===================
+        document.getElementById('btnRestablecer').addEventListener('click', function () {
+            SGTL.confirmar({
+                titulo: '¿Restablecer los valores por defecto?',
+                mensaje: 'El fondo, el menú y el pie vuelven a los de SGTL. El logo no cambia.',
+                verbo: 'Restablecer',
+                accion: restablecerContenido
+            }).then(function (hecho) {
+                if (hecho) SGTL.toastExito('Valores por defecto restablecidos.');
+            });
+        });
+
         var MAX_LOGO_BYTES = 1024 * 1024; // 1 MB
         var uploadedLogoDataUrl = null;   // si hay archivo subido, tiene prioridad al guardar
 
         function esDataUri(v) { return typeof v === 'string' && v.indexOf('data:') === 0; }
 
         function notifyError(msg) {
-            if (typeof showErrorToast === 'function') showErrorToast(msg);
-            else alert(msg);
+            SGTL.toastError(msg);
         }
 
         // Muestra el toast de éxito de forma segura (sin romper el flujo si algo falla).
         function mostrarToastExito() {
-            try {
-                var el = document.getElementById('alert-success');
-                if (!el) return;
-                el.style.display = 'block';
-                if (window.bootstrap && bootstrap.Toast) { new bootstrap.Toast(el).show(); }
-                else if (window.jQuery && jQuery.fn.toast) { jQuery(el).toast('show'); }
-            } catch (e) { }
+            SGTL.toastExito('Cambios guardados.');
         }
 
         function setLogoPreview(src) {
