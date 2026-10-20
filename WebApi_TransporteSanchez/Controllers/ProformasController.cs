@@ -90,7 +90,88 @@ namespace WebApi_TransporteSanchez.Controllers
 
         public class CambioEstadoDto { public string Estado { get; set; } public string Usuario { get; set; } }
         public class UsuarioDto { public string Usuario { get; set; } }
-        private class PrecioPresupuestoViaje { public int ViajeID { get; set; } public string Datos { get; set; } }
+        // ======================= Importe de SGTL de un viaje =======================
+        // Un solo cálculo para "Traer viajes" (PrellenarViajes) y el control de la proforma de plataforma
+        // (ProformasPlataformaController), para que den lo mismo: presupuesto aceptado; si no, tarifa fija;
+        // si no, tarifa por km × km.
+
+        private class TarifaValor { public int Id { get; set; } public decimal Valor { get; set; } }
+        private class PresupuestoViaje { public int ViajeID { get; set; } public int Presupuesto_ID { get; set; } public string Datos { get; set; } }
+
+        internal class TarifasViaje
+        {
+            internal Dictionary<int, decimal> Fijas;
+            internal Dictionary<int, decimal> Kms;
+            internal Dictionary<int, int> PresupuestoId;
+            internal Dictionary<int, string> PresupuestoDatos;
+        }
+
+        internal class ImporteViajeResultado
+        {
+            internal decimal? Importe;          // null: sin tarifa o presupuesto inválido
+            internal string TarifaUsada;        // para mostrar: "Tarifa fija #3 · A → B · $528.747"
+            internal bool PresupuestoInvalido;  // tiene presupuesto aceptado sin un importe válido
+        }
+
+        internal static TarifasViaje CargarTarifas(DbContext db)
+        {
+            var presupuestos = db.Database.SqlQuery<PresupuestoViaje>(
+                "SELECT ViajeID, Presupuesto_ID, Datos FROM dbo.PRESUPUESTOS WHERE ViajeID IS NOT NULL AND Estado='Aceptado'").ToList();
+            return new TarifasViaje
+            {
+                Fijas = db.Database.SqlQuery<TarifaValor>("SELECT TarifaFija_ID AS Id, ValorFijoNeto AS Valor FROM dbo.TARIFAS_FIJAS")
+                    .ToList().ToDictionary(t => t.Id, t => t.Valor),
+                Kms = db.Database.SqlQuery<TarifaValor>("SELECT TarifaKm_ID AS Id, ValorKm AS Valor FROM dbo.TARIFAS_KM")
+                    .ToList().ToDictionary(t => t.Id, t => t.Valor),
+                PresupuestoId = presupuestos.ToDictionary(x => x.ViajeID, x => x.Presupuesto_ID),
+                PresupuestoDatos = presupuestos.ToDictionary(x => x.ViajeID, x => x.Datos)
+            };
+        }
+
+        private static readonly CultureInfo EsAr = new CultureInfo("es-AR");
+        private static string Pesos(decimal v) { return "$" + v.ToString("N0", EsAr); }
+
+        internal static ImporteViajeResultado ImporteViaje(TarifasViaje t, int viajeId, int? tarifaFijaId, int? tarifaKmId,
+            string distanciaKm, string origen, string destino)
+        {
+            var r = new ImporteViajeResultado();
+            if (t.PresupuestoDatos.ContainsKey(viajeId))
+            {
+                int presupuestoId = t.PresupuestoId[viajeId];
+                decimal importe;
+                try
+                {
+                    var json = Newtonsoft.Json.Linq.JObject.Parse(t.PresupuestoDatos[viajeId]);
+                    if (decimal.TryParse((string)json["importe"], NumberStyles.Number, CultureInfo.InvariantCulture, out importe) && importe >= 0)
+                    {
+                        r.Importe = importe;
+                        r.TarifaUsada = "Presupuesto #" + presupuestoId + " · " + Pesos(importe);
+                        return r;
+                    }
+                }
+                catch { }
+                r.PresupuestoInvalido = true;
+                r.TarifaUsada = "Presupuesto #" + presupuestoId + " sin importe válido";
+                return r;
+            }
+            if (tarifaFijaId.HasValue && tarifaFijaId.Value > 0 && t.Fijas.ContainsKey(tarifaFijaId.Value))
+            {
+                var valor = t.Fijas[tarifaFijaId.Value];
+                r.Importe = valor;
+                r.TarifaUsada = "Tarifa fija #" + tarifaFijaId.Value + " · " + origen + " → " + destino + " · " + Pesos(valor);
+                return r;
+            }
+            if (tarifaKmId.HasValue && tarifaKmId.Value > 0 && t.Kms.ContainsKey(tarifaKmId.Value))
+            {
+                decimal km = ParseDec(distanciaKm);
+                var valorKm = t.Kms[tarifaKmId.Value];
+                r.Importe = valorKm * km;
+                r.TarifaUsada = "Tarifa por km #" + tarifaKmId.Value + " · " + km.ToString("0.#", EsAr) + " km × " + Pesos(valorKm);
+                return r;
+            }
+            r.TarifaUsada = "Sin tarifa";
+            return r;
+        }
 
         // ======================= Helpers =======================
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
@@ -907,10 +988,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                 using (var db = new DbContext(Cn()))
                 {
                     var reservados = ViajesReservados(db, proformaId);
-                    var fijas = db.Set<TARIFAS_FIJAS>().Select(t => new { t.TarifaFija_ID, t.ValorFijoNeto }).ToList().ToDictionary(t => t.TarifaFija_ID, t => t.ValorFijoNeto);
-                    var kms = db.Set<TARIFAS_KM>().Select(t => new { t.TarifaKm_ID, t.ValorKm }).ToList().ToDictionary(t => t.TarifaKm_ID, t => t.ValorKm);
-                    var preciosPresupuesto = db.Database.SqlQuery<PrecioPresupuestoViaje>("SELECT ViajeID, Datos FROM dbo.PRESUPUESTOS WHERE ViajeID IS NOT NULL AND Estado='Aceptado'")
-                        .ToList().ToDictionary(x => x.ViajeID, x => x.Datos);
+                    var tarifas = CargarTarifas(db);
                     var tipoCliente = db.Database.SqlQuery<string>(
                         "SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@cli", P("@cli", clienteId)).FirstOrDefault();
                     bool conPlataforma = tipoCliente == ClientesController.TipoConPlataforma;
@@ -939,15 +1017,10 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                         if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }
                         if (!conPlataforma && f.Estado != "Entregado") { noEntregados.Add(f.Viaje_ID); continue; }
 
-                        decimal importe = 0;
-                        if (preciosPresupuesto.ContainsKey(f.Viaje_ID))
-                        {
-                            var presupuesto = Newtonsoft.Json.Linq.JObject.Parse(preciosPresupuesto[f.Viaje_ID]);
-                            if (!decimal.TryParse((string)presupuesto["importe"], NumberStyles.Number, CultureInfo.InvariantCulture, out importe) || importe < 0)
-                                throw new InvalidOperationException("El presupuesto del viaje #" + f.Viaje_ID + " no tiene un importe válido.");
-                        }
-                        else if (f.TarifaFijaID.HasValue && f.TarifaFijaID.Value > 0 && fijas.ContainsKey(f.TarifaFijaID.Value)) importe = fijas[f.TarifaFijaID.Value];
-                        else if (f.TarifaKmID.HasValue && f.TarifaKmID.Value > 0 && kms.ContainsKey(f.TarifaKmID.Value)) importe = kms[f.TarifaKmID.Value] * ParseDec(f.Distancia_KM);
+                        var calculo = ImporteViaje(tarifas, f.Viaje_ID, f.TarifaFijaID, f.TarifaKmID, f.Distancia_KM, f.Origen, f.Destino);
+                        if (calculo.PresupuestoInvalido)
+                            throw new InvalidOperationException("El presupuesto del viaje #" + f.Viaje_ID + " no tiene un importe válido.");
+                        decimal importe = calculo.Importe ?? 0;
                         if (importe <= 0) { sinTarifa.Add(f.Viaje_ID); continue; }
 
                         if (conPlataforma && f.Estado == "Registrado") registrados.Add(f.Viaje_ID);

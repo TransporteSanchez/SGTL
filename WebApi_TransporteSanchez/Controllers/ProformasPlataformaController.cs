@@ -163,9 +163,6 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Destino { get; set; }
         }
 
-        private class TarifaRow { public int Id { get; set; } public decimal Valor { get; set; } }
-        private class PresupuestoRow { public int ViajeID { get; set; } public int Presupuesto_ID { get; set; } public string Datos { get; set; } }
-
         private class CabeceraRow
         {
             public int Proforma_ID { get; set; }
@@ -313,13 +310,7 @@ SELECT DISTINCT r.ViajeID FROM (
     WHERE p.Proforma_ID <> @id AND p.Estado <> 'Anulada' AND UPPER(LEFT(LTRIM(RTRIM(ISNULL(pd.Codigo,''))), 1)) = 'V'
 ) r WHERE r.ViajeID IS NOT NULL;", P("@id", proformaId)).ToList());
 
-            var fijas = db.Database.SqlQuery<TarifaRow>("SELECT TarifaFija_ID AS Id, ValorFijoNeto AS Valor FROM dbo.TARIFAS_FIJAS")
-                .ToList().ToDictionary(t => t.Id, t => t.Valor);
-            var kms = db.Database.SqlQuery<TarifaRow>("SELECT TarifaKm_ID AS Id, ValorKm AS Valor FROM dbo.TARIFAS_KM")
-                .ToList().ToDictionary(t => t.Id, t => t.Valor);
-            var presupuestos = db.Database.SqlQuery<PresupuestoRow>(
-                "SELECT ViajeID, Presupuesto_ID, Datos FROM dbo.PRESUPUESTOS WHERE ViajeID IS NOT NULL AND Estado='Aceptado'")
-                .ToList().ToDictionary(x => x.ViajeID);
+            var tarifas = ProformasController.CargarTarifas(db);
 
             var reservar = new List<int>();
             foreach (var l in lineas)
@@ -355,7 +346,9 @@ SELECT DISTINCT r.ViajeID FROM (
                     else
                     {
                         reservar.Add(v.Viaje_ID);
-                        importeSgtl = ImporteSgtl(v, fijas, kms, presupuestos, out tarifa);
+                        var calculo = ProformasController.ImporteViaje(tarifas, v.Viaje_ID, v.TarifaFijaID, v.TarifaKmID, v.Distancia_KM, v.Origen, v.Destino);
+                        importeSgtl = calculo.Importe;
+                        tarifa = calculo.TarifaUsada;
                         var faltan = NumerosFaltantes(v, lector);
                         if (faltan.Count > 0)
                         {
@@ -413,47 +406,6 @@ WHERE Proforma_ID=@id;",
                 P("@desde", fechas.Count > 0 ? fechas.Min() : DateTime.Today),
                 P("@hasta", fechas.Count > 0 ? fechas.Max() : DateTime.Today),
                 P("@u", usuario), P("@id", proformaId));
-        }
-
-        // Importe de SGTL para el viaje, con el mismo criterio que "Traer viajes" (ProformasController.PrellenarViajes):
-        // presupuesto aceptado, si no tarifa fija, si no tarifa por km × km.
-        private static decimal? ImporteSgtl(ViajeRow v, Dictionary<int, decimal> fijas, Dictionary<int, decimal> kms,
-            Dictionary<int, PresupuestoRow> presupuestos, out string tarifa)
-        {
-            tarifa = null;
-            PresupuestoRow pres;
-            if (presupuestos.TryGetValue(v.Viaje_ID, out pres))
-            {
-                decimal importe;
-                try
-                {
-                    var json = Newtonsoft.Json.Linq.JObject.Parse(pres.Datos);
-                    if (decimal.TryParse((string)json["importe"], NumberStyles.Number, CultureInfo.InvariantCulture, out importe))
-                    {
-                        tarifa = "Presupuesto #" + pres.Presupuesto_ID + " · " + Pesos(importe);
-                        return importe;
-                    }
-                }
-                catch { }
-                tarifa = "Presupuesto #" + pres.Presupuesto_ID + " sin importe válido";
-                return null;
-            }
-            if (v.TarifaFijaID.HasValue && fijas.ContainsKey(v.TarifaFijaID.Value))
-            {
-                var valor = fijas[v.TarifaFijaID.Value];
-                tarifa = "Tarifa fija #" + v.TarifaFijaID.Value + " · " + v.Origen + " → " + v.Destino + " · " + Pesos(valor);
-                return valor;
-            }
-            if (v.TarifaKmID.HasValue && kms.ContainsKey(v.TarifaKmID.Value))
-            {
-                decimal km;
-                decimal.TryParse((v.Distancia_KM ?? "").Trim().Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out km);
-                var valorKm = kms[v.TarifaKmID.Value];
-                tarifa = "Tarifa por km #" + v.TarifaKmID.Value + " · " + km.ToString("0.#", EsAr) + " km × " + Pesos(valorKm);
-                return valorKm * km;
-            }
-            tarifa = "Sin tarifa";
-            return null;
         }
 
         private static string NombreNumero(string columna)
