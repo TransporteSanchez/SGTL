@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar sesión · Transporte Sánchez</title>
+    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
     <!-- Estilos reutilizados -->
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
@@ -103,7 +103,7 @@
                         <span id="versionSistema" class="login-card-version" aria-label="Versión del sistema" hidden></span>
                     </div>
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
-                    <p class="login-subtitle text-center">Ingresá tus datos para continuar.</p>
+                    <p class="login-subtitle text-center">Ingresá tus credenciales para continuar.</p>
                     <!-- Formulario -->
                     <form id="loginForm">
                         <div class="mb-3">
@@ -111,7 +111,7 @@
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-person" aria-hidden="true"></i></span>
                                 <input type="text" class="form-control" id="username" name="username"
-                                    placeholder="Tu usuario">
+                                    placeholder="Ingresá tu usuario">
                             </div>
                             <small id="userError" class="error-message"></small>
                         </div>
@@ -121,7 +121,7 @@
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
                                 <input type="password" class="form-control" id="password" name="password"
-                                    placeholder="Tu contraseña">
+                                    placeholder="Ingresá tu contraseña">
                                 <span class="input-group-text" id="togglePassword" onclick="togglePassword()">
                                     <i class="bi bi-eye" id="eyeIcon" aria-hidden="true"></i>
                                 </span>
@@ -371,11 +371,11 @@
             } else {
                 // Mostrar mensajes de error si los campos están vacíos
                 if (!username) {
-                    document.getElementById('userError').textContent = 'Completá el usuario.';
+                    document.getElementById('userError').textContent = 'El usuario es requerido.';
                     document.getElementById('userError').style.display = 'block';
                 }
                 if (!password) {
-                    document.getElementById('passError').textContent = 'Completá la contraseña.';
+                    document.getElementById('passError').textContent = 'La contraseña es requerida.';
                     document.getElementById('passError').style.display = 'block';
                 }
             }
