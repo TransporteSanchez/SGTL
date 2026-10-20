@@ -445,6 +445,11 @@ Si algo falla: anotar pantalla, paso y el error de consola, y no seguir tocando.
 
 **Pestañas del navegador (20/10):** todas las pantallas, también las de Facu y Fede y el login, pasan a "Pantalla · SGTL" (el login: "SGTL · Sistema de Gestión de Transporte y Logística"). Solo cambia el texto de la pestaña; en las de Facu y Fede se mantuvo el nombre que ya tenían. **Probar en la VM:** abrir varias pantallas y mirar la pestaña.
 
+**Colores y logo por defecto (20/10):**
+- El menú por defecto es el azul de los botones (`#435ebe`) y el fondo `#e4eef8`. Rocío restableció los valores en Gestionar contenido el 20/10.
+- El círculo de las iniciales se quedaba con el color viejo (verde) hasta recargar: ahora cambia junto con el menú al guardar o restablecer (`gestionContenido.js`). **Probar en la VM:** en Gestionar contenido, cambiar el color del menú y Guardar → el círculo cambia sin recargar.
+- [ ] **Logo de SGTL por defecto: falta que Rocío pase el archivo.** Cuando llegue: guardarlo en `assets/compiled/svg/` y apuntar ahí el default (`SGTL_CONTENIDO_DEFAULT.logo` y `favicon` en `gestionContenido.js`, el logo del menú en `sidebar-loader.js`, el del login y el `href` del ícono de cada pantalla, que hoy usan `ts-logo-text.svg` / `ts-icon.svg`). Ver también el logo que quedó guardado en la base (el valor de `GESTION_CONTENIDO.Logo` pisa al default; Restablecer no lo cambia).
+
 ### Falta aplicar (retomar después)
 
 **Menú y títulos en infinitivo (§3.1): hechos en todas las pantallas el 20/10**, también las de Facu y Fede: Gestionar cuenta corriente, Gestionar facturación, Gestionar e-mail, Gestionar integración de WhatsApp, Listar proformas (título), Gestionar presupuestos, Consultar manual de usuario y Consultar informe de versión. Solo cambian el texto del menú, el título visible y la pestaña (y dos mensajes que nombraban "Configuración > E-mail"); el PDF de cuenta corriente sigue titulado "Cuenta Corriente de Clientes". Los permisos van por archivo, así que no cambia quién ve qué. **Probar en la VM:** con un usuario admin y uno user, el menú muestra lo mismo que antes con los nombres nuevos. Renombrar no cambia permisos (van por archivo).

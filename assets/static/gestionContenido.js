@@ -44,6 +44,10 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     var menu = colorBotonesMenu || marca.menu;
     document.body.style.backgroundColor = fondo;
 
+    // El círculo de las iniciales lleva el color del menú; así cambia junto con él al guardar o restablecer.
+    const iniciales = document.getElementById('userInitials');
+    if (iniciales && iniciales.textContent.trim()) iniciales.style.backgroundColor = menu;
+
     // Aplicar color **solo** al sidebar-link activo
     const activeSidebarLinks = document.querySelectorAll('.sidebar-item.active .sidebar-link');
     activeSidebarLinks.forEach(link => {
