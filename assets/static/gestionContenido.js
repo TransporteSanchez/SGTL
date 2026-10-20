@@ -1,6 +1,6 @@
 // Marca SGTL tomada de GESTION_CONTENIDO. Restablecer vuelve a estos valores.
 window.SGTL_CONTENIDO_DEFAULT = {
-    logo: './assets/compiled/svg/ts-logo-text.svg',
+    logo: './assets/static/images/logo/sgtl-logo.png',
     favicon: './assets/compiled/svg/ts-icon.svg',
     fondo: '#e4eef8',
     menu: '#435ebe',
@@ -31,7 +31,7 @@ window.cargarEstilosContenido = function () {
 window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
     const logoElement = document.querySelector('.sidebar-header .logo img');
     if (logoElement) {
-        logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+        logoElement.src = logoUrl || './assets/static/images/logo/sgtl-logo.png';
     }
 
     const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');

@@ -77,7 +77,7 @@ function markActiveSidebarItem() {
           <div class="d-flex justify-content-between align-items-center">
               <div class="logo">
                   <a href="index.html">
-                      <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" style="width: 240px; height: 160px">
+                      <img src="./assets/static/images/logo/sgtl-logo.png" alt="Logo de SGTL" style="width: 220px; max-width: 100%; height: auto;">
                   </a>
               </div>
               <div class="sidebar-toggler x">

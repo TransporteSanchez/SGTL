@@ -92,7 +92,7 @@
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <div class="d-flex align-items-center gap-3 mb-2">
-                                            <img id="logoPreview" src="./assets/compiled/svg/ts-logo-text.svg"
+                                            <img id="logoPreview" src="./assets/static/images/logo/sgtl-logo.png"
                                                 alt="Vista previa del logo"
                                                 style="height:48px; max-width:200px; object-fit:contain; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:4px;">
                                             <div class="d-flex align-items-center">
@@ -107,7 +107,7 @@
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
                                             placeholder="Pegá una URL o ruta de imagen (o usá Examinar)">
                                         <small class="text-muted d-block mt-1" id="logoHelp">
-                                            Pegá una URL/ruta (ej. <code>./assets/compiled/svg/ts-logo-text.svg</code>) o subí un archivo
+                                            Pegá una URL/ruta (ej. <code>./assets/static/images/logo/sgtl-logo.png</code>) o subí un archivo
                                             (.png, .svg, .jpg, .webp, .ico). Máximo 1&nbsp;MB.
                                         </small>
                                     </div>
@@ -225,9 +225,9 @@
                                 uploadedLogoDataUrl = logoUrl;
                                 marcarArchivoCargado(true);
                             } else {
-                                document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+                                document.getElementById('logoInput').value = logoUrl || './assets/static/images/logo/sgtl-logo.png';
                             }
-                            setLogoPreview(logoUrl || './assets/compiled/svg/ts-logo-text.svg');
+                            setLogoPreview(logoUrl || './assets/static/images/logo/sgtl-logo.png');
                             document.getElementById('backgroundColorInput').value = colorFondo || window.SGTL_CONTENIDO_DEFAULT.fondo;
                             document.getElementById('menuColorInput').value = colorBotonesMenu || window.SGTL_CONTENIDO_DEFAULT.menu;
                             document.getElementById('footerContentInput').value = contenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
@@ -356,7 +356,7 @@
 
         function setLogoPreview(src) {
             var img = document.getElementById('logoPreview');
-            if (img) img.src = src || './assets/compiled/svg/ts-logo-text.svg';
+            if (img) img.src = src || './assets/static/images/logo/sgtl-logo.png';
         }
 
         function marcarArchivoCargado(cargado) {
