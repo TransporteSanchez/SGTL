@@ -41,11 +41,6 @@ namespace WebApi_TransporteSanchez.Plataformas
 
         // filas: celdas como texto, la primera es el encabezado.
         LecturaArchivo Leer(List<List<string>> filas);
-
-        // Formato del N° de factura tal como figura en la plataforma (etapa 6), como expresión regular
-        // compatible con .NET y JavaScript, y un ejemplo para la ayuda de la pantalla.
-        string FormatoFactura { get; }
-        string EjemploFactura { get; }
     }
 
     public static class LectoresPlataforma
@@ -80,10 +75,6 @@ namespace WebApi_TransporteSanchez.Plataformas
         public string Codigo { get { return "RUKAS"; } }
         public string ColumnaReferenciaViaje { get { return "Num_Transporte"; } }
         public string[] ColumnasNumerosObligatorios { get { return new[] { "Num_Transporte", "Num_Remito", "Num_de_Carga" }; } }
-
-        // Rukas muestra la factura en Cerrados como letra + punto de venta de 5 dígitos + número de 8: A00005-00000659.
-        public string FormatoFactura { get { return @"^[A-Z]\d{5}-\d{8}$"; } }
-        public string EjemploFactura { get { return "A00005-00000659"; } }
 
         public string NumeroDesdeNombreArchivo(string nombreArchivo)
         {

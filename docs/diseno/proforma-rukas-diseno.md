@@ -49,7 +49,7 @@ persona siempre sabe con qué sistema está trabajando.
 | Tipo de proforma | `Tipo_Proforma`: `Propia` / `Plataforma` | Propia / Plataforma, con el nombre: "Rukas 7594" |
 | Archivo importado | adjunto de la proforma | "Excel de Rukas" |
 | Reclamo | `Plataforma_Reclamo_*` | "Reclamo en Rukas" |
-| Factura cargada en la plataforma | `Plataforma_Factura_*` | "Factura en Rukas" |
+| Factura cargada en la plataforma | `Plataforma_Factura_*` (sin usar: etapa 6 descartada el 19/10) | — |
 
 ### Base de datos — script nuevo `database/proformas-plataforma/01_plataformas_y_proformas.sql`
 
@@ -61,7 +61,7 @@ Idempotente. Todo lo nuevo es nullable o tiene default, así que **no rompe el c
   - `Tipo_Proforma` (`Propia` / `Plataforma`, default `Propia`) y `PlataformaID`.
   - `Plataforma_Numero`: N° de la proforma en la plataforma.
   - `Plataforma_Reclamo_Fecha` y `Plataforma_Reclamo_Motivo` (decidido el 19/10: solo dos columnas). Con la fecha vacía no hay reclamo pendiente. Quién lo registró o lo cerró sale de `AUDITORIA`, igual que el historial. No se reutilizan `Observaciones` / `ObsComerciales` / `ObsLogisticas`: salen en el PDF y el formulario de la proforma comercial.
-  - `Plataforma_Factura_Numero`, `Plataforma_Factura_Fecha` (N° y fecha de la factura según la plataforma), `Plataforma_Factura_Usuario`, `Plataforma_Factura_Carga` (quién y cuándo los cargó). Etapa 6.
+  - `Plataforma_Factura_Numero`, `Plataforma_Factura_Fecha` (N° y fecha de la factura según la plataforma), `Plataforma_Factura_Usuario`, `Plataforma_Factura_Carga` (quién y cuándo los cargó). **Sin usar:** la etapa 6 se descartó el 19/10 (la factura interna hace de fiscal; ver §10 del documento de negocio); quedan reservadas para la integración con ARCA.
 - **Índice único filtrado:** (`ClienteID`, `PlataformaID`, `Plataforma_Numero`) para proformas de plataforma no anuladas (borrador incluido).
 - **Tabla nueva `PROFORMA_PLATAFORMA_LINEA`:**
   - Lo que trae el archivo: `Proforma_ID`, `Orden`, `Referencia` (para Rukas, el N° de transporte), `Fecha`, `Ruta`, `Importe_Viaje`, `Adicionales`.
@@ -83,7 +83,6 @@ Rocío corre el script en la base compartida. La base es una sola, así que avis
 | `POST {id}/Reclamo` / `DELETE {id}/Reclamo` | "Registrar reclamo" (fecha y motivo obligatorio) y "Cerrar reclamo". Solo en borrador. Con auditoría. |
 | `POST {id}/Generar` | Vuelve a controlar y, solo si todo está OK, asigna el número PF, pasa a `Aceptada`, arma los conceptos, pasa a Listo para facturar los viajes que seguían en Registrado (con auditoría) y cierra el reclamo si quedaba alguno. Si aparece una diferencia (alguien cambió un viaje en el medio), no genera y devuelve el control. |
 | `GET ViajesSinProforma?clienteId=` | Viajes del cliente con los números cargados (Registrado o Listo para facturar) que no están en ninguna proforma. Guía antes de generar en la plataforma (paso 0) y aviso del caso 7. |
-| `POST {id}/Factura` | Etapa 6: registra el N° y la fecha de la factura según la plataforma (para Rukas, formato `A00005-00000659`). Solo en proformas de plataforma facturadas. |
 | Eliminar un borrador de plataforma | Con el `Borrar` actual (libera los viajes), más sus líneas y su adjunto. |
 
 **Lectores, uno por plataforma** (por ejemplo `Plataformas/ILectorPlataforma.cs` y `Plataformas/LectorRukas.cs`). Es lo único propio de cada plataforma. El lector sabe:
@@ -106,7 +105,7 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
   - `Editar`, `Generar`, `Duplicar` y `PrellenarViajes` rechazan proformas de plataforma (tienen sus propios endpoints).
   - "Registrar proforma" **propia** para clientes `Con_plataforma`: **se bloquea** (todos sus viajes pasan por la plataforma, confirmado el 19/10).
   - El cálculo del importe SGTL de un viaje (tarifa fija, por km o presupuesto) se reutiliza desde `PrellenarViajes`, para que el control y "Traer viajes" den lo mismo.
-  - `Listar`, `Obtener` y `Reporte` devuelven `Tipo_Proforma`, el nombre de la plataforma, `Plataforma_Numero`, si hay reclamo pendiente y si falta el N° de factura en la plataforma.
+  - `Listar`, `Obtener` y `Reporte` devuelven `Tipo_Proforma`, el nombre de la plataforma, `Plataforma_Numero`, y si hay reclamo pendiente.
 - **`ViajesController.cs` / `gestion-viajes.html`:** permitir corregir tarifa y km de un viaje de cliente con plataforma que está sin proforma o en un borrador, también en "Listo para facturar".
 - **`ClientesController.cs`:** devolver y guardar `PlataformaID` (asignación automática mientras haya una sola plataforma).
 - **`FacturasController.cs`:** en principio, nada. La proforma llega `Aceptada` con conceptos y totales coherentes, que es lo que ya exige. Se verifica en la etapa 5.
@@ -129,7 +128,6 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
 | **Reclamo en {plataforma}** | — | Solo en borrador |
 | **Totales** | Igual | El mismo bloque, con lo de la plataforma (viajes + adicionales + IVA) |
 | **Condiciones comerciales** | Igual | Igual (forma y plazo de pago sirven para el vencimiento de la factura) |
-| **Factura en {plataforma}** | — | Solo si ya está facturada |
 | **Pie** | Cancelar · PDF · Guardar borrador · Generar proforma | **Los mismos botones** |
 
 **Los botones del pie, con el mismo significado:**
@@ -160,18 +158,17 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
 
 ### Bloque "Factura en {plataforma}"
 
-En una proforma de plataforma facturada: N° de factura con el formato guía (para Rukas `A00005-00000659`, validado al salir del campo), fecha y **Guardar**. Una vez guardado queda como dato de solo lectura y la proforma muestra "Cerrada en {plataforma}".
+**Descartado el 19/10:** la factura interna de SGTL hace de factura fiscal y la proforma termina en Facturada; no se registra el N° de la factura en la plataforma (§10 del documento de negocio).
 
 ### Listado de proformas
 
 - **N°:** "PF-00000123" con la etiqueta "{plataforma} 7594" al lado; un borrador de plataforma (todavía sin PF) muestra solo "{plataforma} 7594".
 - **Reclamo pendiente:** junto al estado, ícono de admiración (`bi-exclamation-circle`, color de advertencia) con tooltip y `aria-label` "Reclamo pendiente en {plataforma} desde el dd/mm".
-- **Falta el N° de factura en la plataforma:** el mismo tipo de ícono, con "Falta el N° de factura en {plataforma}".
 - **Filtros:** "Tipo" (Propia / Plataforma) y "Con reclamo pendiente".
 
 ### Textos
 
-Mismos nombres en todos lados: "Excel de {plataforma}", "N° de proforma en {plataforma}", "Reclamo en {plataforma}", "Factura en {plataforma}". Verbos en infinitivo en los botones (Elegir Excel, Reemplazar Excel, Volver a controlar, Registrar reclamo, Cerrar reclamo, Generar) y voseo en las ayudas.
+Mismos nombres en todos lados: "Excel de {plataforma}", "N° de proforma en {plataforma}", "Reclamo en {plataforma}". Verbos en infinitivo en los botones (Elegir Excel, Reemplazar Excel, Volver a controlar, Registrar reclamo, Cerrar reclamo, Generar) y voseo en las ayudas.
 
 ---
 
@@ -184,7 +181,7 @@ Mismos nombres en todos lados: "Excel de {plataforma}", "N° de proforma en {pla
 | **3. Reclamo, reemplazar y generar** | `Reclamo`, `ReemplazarArchivo`, `Generar`, `Anular`, ícono y filtro de reclamo en el listado, bloqueos en los endpoints de proforma propia | Registrar y cerrar un reclamo; ícono y tooltip en el listado. Reemplazar el Excel por uno corregido (cierra el reclamo). "Generar" deshabilitado con diferencias; con todo OK queda `Aceptada` con número PF y los viajes en Listo para facturar. Anular y verificar que los viajes quedan libres |
 | **4. Guía y avisos** | `ViajesSinProforma`: guía antes de generar en la plataforma y aviso del caso 7 | Viajes de prueba sin proforma aparecen en la guía y en el aviso; los de otra proforma no |
 | **5. Factura** | Emitir la factura desde una proforma de plataforma con el flujo de Facu | Neto = total de la plataforma, más IVA 21 % (para la proforma 7450 daría $4.931.551,02, igual que la factura real); viajes pasan a `Facturado`; PDF de factura y de proforma se ven bien; NC cancelatoria libera los viajes y se puede volver a importar |
-| **6. N° de factura en la plataforma** | `Factura`: cargar N° y fecha en la proforma facturada (la cierra), ícono en el listado de las que no lo tienen | Cargar el número con formato válido e inválido; la proforma figura como cerrada; el ícono desaparece |
+| ~~**6. N° de factura en la plataforma**~~ | **Descartada el 19/10:** la factura interna hace de fiscal y la proforma termina en Facturada (§10 del documento de negocio) | — |
 | **7. Cierre** | Recorrida completa con la VM, reporte en `docs/pruebas/`, pendientes al día, revisión a mano de Rocío y paso de `rocionuvoli` a `main` | — |
 
 Las etapas 2 y 3 son el núcleo (y se pueden probar en la misma ronda); con eso ya se puede mostrar el flujo completo en una demo (la factura de la etapa 5 debería funcionar sin cambios).

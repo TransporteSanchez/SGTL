@@ -86,17 +86,13 @@
         y = chY + chH + 5;
 
         if (esPlataforma) {
-            // ---------- Proforma de plataforma (Rukas): tipo, N° en la plataforma, período y factura ----------
+            // ---------- Proforma de plataforma (Rukas): tipo, N° en la plataforma y período ----------
             var plataforma = p.Plataforma || 'la plataforma';
             doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
             doc.text('PROFORMA DE ' + plataforma.toUpperCase(), M, y); y += 5;
             doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
             doc.text('N° de proforma en ' + plataforma + ': ' + txt(p.Plataforma_Numero), colA, y);
             doc.text('Período: ' + txt(fdate(p.FechaDesde)) + ' al ' + txt(fdate(p.FechaHasta)), colB, y); y += 5;
-            if (p.Plataforma_Factura_Numero) {
-                doc.text('Factura en ' + plataforma + ': ' + p.Plataforma_Factura_Numero +
-                    (p.Plataforma_Factura_Fecha ? ' del ' + fdate(p.Plataforma_Factura_Fecha) : ''), colA, y); y += 5;
-            }
             y += 1;
         } else {
             // ---------- Datos del servicio ----------

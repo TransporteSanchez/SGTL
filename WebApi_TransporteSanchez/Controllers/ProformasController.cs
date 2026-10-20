@@ -85,11 +85,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Alta { get; set; }
             // Propia o Plataforma (database/proformas-plataforma/01_plataformas_y_proformas.sql).
             public string Tipo_Proforma { get; set; }
-            // Solo lectura, para el PDF de una proforma de plataforma: nombre, N° y factura en la plataforma.
+            // Solo lectura, para el PDF de una proforma de plataforma: nombre y N° en la plataforma.
             public string Plataforma { get; set; }
             public string Plataforma_Numero { get; set; }
-            public string Plataforma_Factura_Numero { get; set; }
-            public DateTime? Plataforma_Factura_Fecha { get; set; }
             public List<DetalleLineaDto> Detalle { get; set; }
         }
 
@@ -299,7 +297,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "ISNULL(IVA,0) AS IVA,ISNULL(OtrosImpuestos,0) AS OtrosImpuestos,ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS TotalGeneral," +
             "FechaDesde,FechaHasta,Usu_Alta,Usu_Modi,Fecha_Alta,ISNULL(Tipo_Proforma,'Propia') AS Tipo_Proforma," +
             "(SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID) AS Plataforma," +
-            "Plataforma_Numero,Plataforma_Factura_Numero,Plataforma_Factura_Fecha FROM PROFORMAS ";
+            "Plataforma_Numero FROM PROFORMAS ";
 
         private static void InsertarDetalle(DbContext db, int pid, List<DetalleLineaDto> lineas)
         {
@@ -449,13 +447,7 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
 
         // ======================= Endpoints =======================
 
-        private const string ExisteFacturaVigente = @"EXISTS (SELECT 1
-                        FROM COMPROBANTES_PROFORMAS cp
-                        INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
-                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC')";
-
-        // tipo: Propia, Plataforma, Reclamo (de plataforma con reclamo pendiente) o SinFacturaPlataforma
-        // (de plataforma facturada sin el N° de factura de la plataforma).
+        // tipo: Propia, Plataforma o Reclamo (de plataforma con reclamo pendiente).
         private static StringBuilder CrearFiltroListado(string numero, int? clienteId, string estado,
             string desde, string hasta, string usuario, bool soloGeneradas, string tipo, out List<SqlParameter> ps)
         {
@@ -487,9 +479,6 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                 case "Propia": where.Append(" AND ISNULL(Tipo_Proforma,'Propia')='Propia' "); break;
                 case "Plataforma": where.Append(" AND Tipo_Proforma='Plataforma' "); break;
                 case "Reclamo": where.Append(" AND Tipo_Proforma='Plataforma' AND Plataforma_Reclamo_Fecha IS NOT NULL "); break;
-                case "SinFacturaPlataforma":
-                    where.Append(" AND Tipo_Proforma='Plataforma' AND Plataforma_Factura_Numero IS NULL AND " + ExisteFacturaVigente + " ");
-                    break;
             }
             if (!string.IsNullOrWhiteSpace(usuario)) { where.Append(" AND Usu_Alta LIKE @usu "); ps.Add(P("@usu", "%" + usuario.Trim() + "%")); }
             DateTime d;
@@ -534,10 +523,7 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "WHERE a.ComprobanteDeudaID=fac.FacturaID AND a.Vigente=1) THEN 1 ELSE 0 END AS bit) AS FacturaCancelable " +
                         ",ISNULL(PROFORMAS.Tipo_Proforma,'Propia') AS Tipo_Proforma," +
                         "(SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID) AS Plataforma," +
-                        "PROFORMAS.Plataforma_Numero, PROFORMAS.Plataforma_Reclamo_Fecha AS ReclamoFecha," +
-                        "CAST(CASE WHEN PROFORMAS.Tipo_Proforma='Plataforma' AND fac.FacturaID IS NOT NULL " +
-                        "AND PROFORMAS.Plataforma_Factura_Numero IS NULL THEN 1 ELSE 0 END AS bit) AS FaltaFacturaPlataforma," +
-                        "PROFORMAS.Plataforma_Factura_Numero AS FacturaPlataforma FROM PROFORMAS " +
+                        "PROFORMAS.Plataforma_Numero, PROFORMAS.Plataforma_Reclamo_Fecha AS ReclamoFecha FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
                         "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
@@ -633,8 +619,6 @@ ORDER BY d.Proforma_ID, d.Orden";
             public string Plataforma { get; set; }
             public string Plataforma_Numero { get; set; }
             public DateTime? ReclamoFecha { get; set; }
-            public bool FaltaFacturaPlataforma { get; set; }
-            public string FacturaPlataforma { get; set; }
         }
 
         private class ReporteProformaItem

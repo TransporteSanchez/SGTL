@@ -169,11 +169,13 @@ Pedir a **Claudia** un **PDF de ejemplo** de proforma Marfrig (aunque con datos 
 
 ## 10. Diseño acordado (actualizado el 19/10/2026 con la reunión del equipo; reemplaza el del 18/10)
 
-**Todavía no implementado.** Falta confirmar las premisas con Claudia (§11). Plan de desarrollo por etapas: `docs/diseno/proforma-rukas-diseno.md`.
+**Implementado en `rocionuvoli` (etapas 1–4, 19/10), pendiente de la recorrida final.** Quedan preguntas a Claudia (§11) que no cambian el flujo de SGTL. Plan de desarrollo por etapas: `docs/diseno/proforma-rukas-diseno.md`.
+
+**Factura interna, sin N° de Rukas (decidido por Rocío el 19/10, reemplaza la etapa 6):** SGTL no está conectado a ARCA, así que la **factura interna de SGTL cumple el rol de la factura fiscal**: es la que se carga en Rukas, y la proforma de Rukas termina en **Facturada**, igual que una propia. La factura real de ARCA queda fuera del sistema y SGTL no registra si se cargó en Rukas (es una tarea operativa, como mandar la factura por mail; si no se carga, Marfrig no paga y se ve en la cuenta corriente). Cuando SGTL se integre con ARCA, esa misma factura interna pasa a ser la fiscal (con CAE) y el circuito no cambia. Las columnas `Plataforma_Factura_*` (etapa 1) quedan sin usar, reservadas para esa integración.
 
 **Diseño genérico (decidido el 19/10):** el módulo se arma para cualquier **plataforma** de un cliente (un sistema del cliente con el que hay que conciliar); Rukas es la primera. En la base de datos y en el código se habla de "proforma de plataforma" (`Tipo_Proforma = 'Plataforma'`, tabla `PLATAFORMAS`); en la pantalla, los textos muestran el nombre de la plataforma ("Excel de Rukas", "Reclamo en Rukas"). Lo propio de cada plataforma (formato del archivo y con qué dato del viaje se cruza) va en un "lector" por plataforma. Este documento describe el caso concreto de Rukas; los nombres técnicos y las pantallas están en `docs/diseno/proforma-rukas-diseno.md` (§3 y §4).
 
-**Qué cambió el 19/10 (reunión del equipo y definiciones de Rocío):** con diferencias **la proforma no avanza**. Queda en **borrador** hasta que se corrige donde corresponda (SGTL o Rukas) y el control da todo OK; recién ahí se genera, y nace **Aceptada**. No existe "aceptar con observación": toda diferencia es un error de un lado o del otro. Si hay que reclamar a Marfrig, el borrador lleva la marca **"Reclamo en Rukas"**. Los **adicionales** se toman de Rukas sin comparar. Al cerrar se registra el **N° de factura** que figura en Rukas, solo para estas proformas.
+**Qué cambió el 19/10 (reunión del equipo y definiciones de Rocío):** con diferencias **la proforma no avanza**. Queda en **borrador** hasta que se corrige donde corresponda (SGTL o Rukas) y el control da todo OK; recién ahí se genera, y nace **Aceptada**. No existe "aceptar con observación": toda diferencia es un error de un lado o del otro. Si hay que reclamar a Marfrig, el borrador lleva la marca **"Reclamo en Rukas"**. Los **adicionales** se toman de Rukas sin comparar. Se factura con la factura interna de SGTL, sin registrar el N° de Rukas (ver la decisión de arriba).
 
 ### Premisas
 
@@ -184,7 +186,7 @@ Pedir a **Claudia** un **PDF de ejemplo** de proforma Marfrig (aunque con datos 
 5. **No hay API pública de Rukas.** La integración es manual: el Excel se exporta desde Rukas y se importa en SGTL.
 6. **La factura de TS se emite por el total de Rukas más IVA.** Los importes de Rukas son **netos** (verificado el 19/10 con una factura real: neto = total de la proforma en Rukas, más IVA 21 %). Como solo se genera la proforma cuando no hay diferencias, ese neto coincide con el de SGTL (tarifas netas) más los adicionales de Rukas.
 7. **El cliente Rukas ya está marcado:** `CLIENTES.Tipo_Cliente = 'Con_plataforma'` (se suma a qué plataforma pertenece, hoy siempre Rukas). Es lo que hace que el modal de proforma pida el Excel en lugar de "Traer viajes", y lo que hoy define qué números pide el viaje.
-8. **Rukas no factura:** la factura fiscal la emite TS (ARCA) y la carga en Rukas, que la muestra en Cerrados con número y fecha. Ese es el número que se registra en SGTL.
+8. **Rukas no factura:** la factura la emite TS y la carga en Rukas, que la muestra en Cerrados con número y fecha. Para SGTL, esa factura es la interna (ver la decisión de arriba): no se registra el número de Rukas.
 9. **No hay importes acordados por debajo de la tarifa** (confirmado por Rocío el 19/10): Rukas nunca paga menos de lo que da la tarifa por un acuerdo puntual. Lo único que puede haber de más son los adicionales, que vienen aparte. Por eso toda diferencia de importe es un error, y la proforma no avanza hasta corregirlo.
 
 ### Idea central
@@ -204,7 +206,7 @@ La factura sale **con el flujo actual de Facu, sin cambios**: proforma `Aceptada
 
 - **Borrador:** se crea al importar el Excel, tenga o no diferencias. Guarda el Excel, sus líneas y el resultado del control. No se puede facturar. Se puede volver a controlar, reemplazar el Excel, registrar un reclamo o eliminar.
 - **Aceptada:** al tocar **"Generar"**, que solo se habilita con el control en OK. Le asigna el número PF y la deja Aceptada directamente: Marfrig ya la aceptó en Rukas, así que no hay paso "Generada" ni "Marcar como aceptada".
-- **Facturada:** al emitir la factura, como hoy. Con el N° de factura de Rukas cargado queda **cerrada** (es un dato de la proforma, no un estado).
+- **Facturada:** al emitir la factura, como hoy. Es el final del circuito en SGTL.
 - **Anulada:** una Aceptada se puede anular antes de facturar; después, nota de crédito como hoy. Un borrador no se anula: se elimina.
 
 ### Flujo
@@ -218,7 +220,7 @@ La factura sale **con el flujo actual de Facu, sin cambios**: proforma `Aceptada
    - **El problema es de Rukas:** se reclama a Marfrig y se registra el reclamo en el borrador (ver "Reclamo en Rukas"). Cuando Marfrig corrige esa misma proforma, se exporta el Excel de nuevo y en el borrador se usa **"Reemplazar Excel"**, que vuelve a controlar. Si Marfrig la anula y genera otra (otro N°), se **elimina** el borrador y se importa la nueva.
 5. **Todo OK** (solo casos 1 y 7) → **"Generar"**: número PF, estado **Aceptada**. En ese momento los viajes que seguían en Registrado pasan a Listo para facturar.
 6. **Factura:** con el flujo actual. La proforma Rukas tiene **una línea de concepto por transporte** (importe del viaje + adicionales de Rukas). Los viajes pasan a `Facturado` al emitir la factura, como hoy.
-7. **Cerrar con el N° de factura de Rukas:** después de cargar la factura en Rukas, se registra en la proforma el **N° que figura en Rukas** (`A00005-00000659`) y su fecha. Con eso la proforma queda **cerrada**, como la solapa Cerrados de Rukas. Un listado muestra las proformas Rukas facturadas que todavía no tienen el número. Adjuntar el PDF de la factura queda para más adelante.
+7. **Cargar la factura en Rukas:** fuera de SGTL. Se sube la factura interna (en la tesis hace de fiscal). SGTL no lo registra: la proforma ya quedó Facturada en el paso 6.
 
 ### Reclamo en Rukas (decidido el 19/10)
 
@@ -341,7 +343,7 @@ Abiertas:
 6. ¿Qué hace hoy Claudia cuando un importe no coincide? Por lo visto (§12), reclama en Cierre de Reparto antes de dar conformidad. Confirmarlo.
 7. ¿"Generar proforma" en Rukas lo aprietan ellos o Marfrig? (premisa 2 de §10)
 8. Con una proforma ya generada, ¿la corrige Marfrig a pedido? ¿Por mail o por ticket? ¿Cuánto tarda? (premisa 3 de §10)
-9. ~~¿Dónde se guarda el N° de factura que se carga en Rukas?~~ **Decidido el 19/10 por Rocío: solo para proformas Rukas, solo el número y la fecha, en la proforma Rukas** (es lo que la cierra). No se toca la tabla de comprobantes de Facu. Adjuntar el PDF de la factura, más adelante. Cuando haya integración con ARCA (para todos los clientes), la factura de SGTL va a ser la fiscal y ese número podrá completarse solo.
+9. ~~¿Dónde se guarda el N° de factura que se carga en Rukas?~~ **En ningún lado (decidido por Rocío el 19/10, reemplaza la decisión anterior del mismo día de guardar N° y fecha en la proforma):** la factura que se carga en Rukas es la interna de SGTL, que ya tiene su número; la de ARCA queda fuera del sistema. Al integrar ARCA, la factura interna pasa a ser la fiscal. Ver la decisión al principio del §10.
 
    *Recomendación anterior (18/10), descartada por ahora:* guardar el N° fiscal en la factura de SGTL para todos los clientes:
    - **Campos:** letra, punto de venta (5 dígitos), número (8 dígitos), fecha fiscal y CAE opcional. Con eso se arma el formato que pide Rukas.
@@ -405,7 +407,7 @@ Según la capacitación de Rukas para empresas de transporte (septiembre 2025), 
    - comparar el importe de Rukas con la tarifa de SGTL **por viaje**.
 3. **Respaldo:** el adjunto pasa a ser opcional. Sirve para guardar el Excel exportado o la imagen de la factura que se sube a Rukas.
 4. **Pregunta 6 (§11), respondida en parte:** los reclamos se hacen en Cierre de Reparto, antes de dar conformidad. Una proforma ya generada la corrige Marfrig (TS no tiene esas opciones). Falta saber qué hace Claudia en la práctica.
-5. **Paso nuevo después de facturar en SGTL:** cargar la factura en Rukas. Esa carga sigue siendo manual (sin API), pero SGTL puede mostrar el N° y la fecha listos para copiar y marcar "Cargada en Rukas".
+5. **Paso nuevo después de facturar en SGTL:** cargar la factura en Rukas. Es manual (sin API) y queda fuera de SGTL (decisión del 19/10 en §10).
 
 El diseño que sale de todo esto está en el §10.
 

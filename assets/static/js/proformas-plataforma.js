@@ -304,7 +304,6 @@
       : 'Todo coincide con ' + nombrePlataforma() + '. Ya podés generar la proforma.');
 
     $id('bloquePlataforma').innerHTML =
-      bloqueFactura(c) +
       '<div class="bloque-titulo">Excel de ' + p + '</div>' +
       '<div class="mb-2"><span class="text-muted">Archivo:</span> ' + esc(c.NombreArchivo || '') +
       (c.FechaArchivo && window.SGTL ? ' <span class="text-muted">· importado el ' + SGTL.fecha(c.FechaArchivo, { hora: true }) + '</span>' : '') +
@@ -342,7 +341,6 @@
     var btn = $id('pp_controlar');
     if (btn) btn.addEventListener('click', function () { volverAControlar(c.Proforma_ID); });
     enlazarAcciones(c);
-    enlazarFactura(c);
 
     // Totales del modal con lo de la plataforma (netos + IVA 21 %), calculados por la API.
     var formato = function (v) { return window.SGTL ? SGTL.monto(v) : String(v); };
@@ -353,100 +351,9 @@
     if ($id('t_total')) $id('t_total').textContent = formato(c.Total);
   }
 
-  // ---------------------------------------------------------------- Factura en la plataforma (etapa 6)
-
-  // Con la factura emitida: el N° y la fecha que figuran en la plataforma. Una vez guardados, la proforma
-  // queda cerrada; si se cargaron mal, "Corregir" vuelve a mostrar el formulario (el cambio queda en la auditoría).
-  function bloqueFactura(c) {
-    if (!c.FacturaSgtl && !c.PlataformaFacturaNumero) return '';
-    return '<div class="bloque-titulo">Factura en ' + esc(nombrePlataforma()) + '</div><div id="pp_factura" class="mb-3">' + contenidoFactura(c, false) + '</div>';
-  }
-
-  function contenidoFactura(c, corrigiendo) {
-    var p = esc(nombrePlataforma());
-    if (c.PlataformaFacturaNumero && !corrigiendo) {
-      return '<div class="alert alert-light-success color-success py-2 mb-0 d-flex flex-wrap align-items-center gap-2">' +
-        '<span><i class="bi bi-check-circle me-1"></i><strong>Cerrada en ' + p + '.</strong> Factura ' + esc(c.PlataformaFacturaNumero) +
-        (c.PlataformaFacturaFecha && window.SGTL ? ' del ' + SGTL.fecha(c.PlataformaFacturaFecha) : '') +
-        (c.FacturaSgtl ? ' (en SGTL, ' + esc(c.FacturaSgtl) + ')' : '') +
-        (c.PlataformaFacturaUsuario ? '. La cargó ' + esc(c.PlataformaFacturaUsuario) + '.' : '.') + '</span>' +
-        (c.FacturaSgtl ? '<button type="button" class="btn btn-sm btn-light-secondary ms-auto" id="pp_fac_corregir">Corregir</button>' : '') +
-        '</div>';
-    }
-    var ejemplo = esc(c.EjemploFactura || '');
-    var valor = corrigiendo ? c.PlataformaFacturaNumero : (c.FacturaSugerida || '');
-    return (corrigiendo
-        ? '<div class="mb-2">Corregí el N° o la fecha de la factura tal como figuran en ' + p + '. El dato anterior queda en la auditoría.</div>'
-        : '<div class="mb-2">La factura ' + esc(c.FacturaSgtl) + ' ya está emitida. Cuando la cargues en ' + p +
-          ', completá el N° y la fecha que figuran ahí para cerrar la proforma.</div>') +
-      '<div class="row g-2 align-items-start">' +
-      '<div class="col-md-4"><label for="pp_fac_numero" class="form-label">N° de factura en ' + p + ' <span class="text-danger">*</span></label>' +
-      '<input id="pp_fac_numero" class="form-control" maxlength="20" placeholder="' + ejemplo + '" value="' + esc(valor || '') + '">' +
-      '<div class="invalid-feedback">Usá el formato ' + ejemplo + '.</div>' +
-      '<div class="form-text">' + (!corrigiendo && c.FacturaSugerida ? 'Sugerido desde la factura de SGTL; verificá que sea el que figura en ' + p + '.' : 'Formato: ' + ejemplo + '.') + '</div></div>' +
-      '<div class="col-md-3"><label for="pp_fac_fecha" class="form-label">Fecha <span class="text-danger">*</span></label>' +
-      '<input type="date" id="pp_fac_fecha" class="form-control"><div class="invalid-feedback">Completá la fecha.</div></div>' +
-      '<div class="col-md-5 d-flex align-items-end gap-2" style="min-height:62px">' +
-      (corrigiendo ? '<button type="button" class="btn btn-light-secondary" id="pp_fac_cancelar">Cancelar</button>' : '') +
-      '<button type="button" class="btn btn-primary" id="pp_fac_guardar">Guardar</button></div>' +
-      '</div>';
-  }
-
   function hoyLocal() {
     var hoy = new Date();
     return hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
-  }
-
-  function numeroFacturaValido(c, valor) {
-    if (!c.FormatoFactura) return !!valor;
-    try { return new RegExp(c.FormatoFactura).test(valor); } catch (e) { return !!valor; }
-  }
-
-  function enlazarFactura(c, corrigiendo) {
-    var corregir = $id('pp_fac_corregir');
-    if (corregir) corregir.addEventListener('click', function () { mostrarFormularioFactura(c, true); });
-    var cancelar = $id('pp_fac_cancelar');
-    if (cancelar) cancelar.addEventListener('click', function () { mostrarFormularioFactura(c, false); });
-    if ($id('pp_fac_numero')) enlazarFormularioFactura(c, !!corrigiendo);
-  }
-
-  function mostrarFormularioFactura(c, corrigiendo) {
-    var caja = $id('pp_factura');
-    if (!caja) return;
-    caja.innerHTML = contenidoFactura(c, corrigiendo);
-    enlazarFactura(c, corrigiendo);
-    if (corrigiendo && $id('pp_fac_numero')) $id('pp_fac_numero').focus();
-  }
-
-  function enlazarFormularioFactura(c, corrigiendo) {
-    var numero = $id('pp_fac_numero'), fecha = $id('pp_fac_fecha'), guardar = $id('pp_fac_guardar');
-    if (!numero || !fecha || !guardar) return;
-    fecha.value = corrigiendo && c.PlataformaFacturaFecha ? String(c.PlataformaFacturaFecha).substring(0, 10) : hoyLocal();
-    fecha.max = hoyLocal();
-    var normalizar = function () { numero.value = String(numero.value || '').toUpperCase().replace(/\s/g, ''); };
-    numero.addEventListener('blur', function () {
-      normalizar();
-      numero.classList.toggle('is-invalid', !!numero.value && !numeroFacturaValido(c, numero.value));
-    });
-    numero.addEventListener('input', function () { numero.classList.remove('is-invalid'); });
-    guardar.addEventListener('click', function () {
-      normalizar();
-      var okNumero = numeroFacturaValido(c, numero.value), okFecha = !!fecha.value;
-      numero.classList.toggle('is-invalid', !okNumero);
-      fecha.classList.toggle('is-invalid', !okFecha);
-      if (!okNumero) { numero.focus(); return; }
-      if (!okFecha) { fecha.focus(); return; }
-      limpiarError();
-      var listo = SGTL.procesando('#pp_fac_guardar');
-      postJson(API + '/' + c.Proforma_ID + '/Factura', {
-        Numero: numero.value, Fecha: fecha.value, NumeroAnterior: c.PlataformaFacturaNumero || '', Usuario: usuarioActual()
-      }).then(function (r) {
-        listo();
-        mostrarControl(r);
-        SGTL.toastExito(corrigiendo ? 'Factura de ' + nombrePlataforma() + ' corregida.' : 'Factura de ' + nombrePlataforma() + ' guardada. La proforma quedó cerrada.');
-        refrescarListado();
-      }, function (e) { listo(); errorEnModal(textoError(e, 'No se pudo guardar la factura.')); });
-    });
   }
 
   function enlazarAcciones(c) {
@@ -556,13 +463,10 @@
   function iconoAviso(texto) {
     return ' <i class="bi bi-exclamation-circle text-warning" role="img" data-bs-toggle="tooltip" data-bs-placement="top" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"></i>';
   }
-  // Junto al estado: reclamo pendiente (borrador) y falta el N° de factura en la plataforma (facturada).
+  // Junto al estado del borrador: reclamo pendiente en la plataforma.
   function avisosListado(x) {
-    var p = x.Plataforma || 'la plataforma';
-    var html = '';
-    if (x.ReclamoFecha) html += iconoAviso('Reclamo pendiente en ' + p + ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : ''));
-    if (x.FaltaFacturaPlataforma) html += iconoAviso('Falta el N° de factura en ' + p);
-    return html;
+    if (!x.ReclamoFecha) return '';
+    return iconoAviso('Reclamo pendiente en ' + (x.Plataforma || 'la plataforma') + ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : ''));
   }
 
   window.ProformaPlataforma = {
