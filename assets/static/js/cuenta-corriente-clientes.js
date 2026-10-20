@@ -99,6 +99,20 @@
             });
         });
     }
+    function cerrarModalYNotificar(idModal, mensaje) {
+        var modal = porId(idModal);
+        if (!window.SGTL || typeof window.SGTL.toastExito !== 'function') return;
+        if (!modal) {
+            window.SGTL.toastExito(mensaje);
+            return;
+        }
+        function notificar() {
+            modal.removeEventListener('hidden.bs.modal', notificar);
+            window.SGTL.toastExito(mensaje);
+        }
+        modal.addEventListener('hidden.bs.modal', notificar);
+        window.SGTL.modal(modal, 'hide');
+    }
     function mostrarFeedbackEnvio(tipo, texto) {
         var aviso = porId('envioComprobanteFeedback');
         aviso.className = 'alert alert-' + tipo;
@@ -356,7 +370,9 @@
             var filasAplicaciones = aplicaciones.map(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
                 aplicacion.Saldo = saldoProgresivo;
-                return '<tr class="cc-application-row d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
+                var claseCreditoAplicado = aplicacion.Tipo === 'REC' || aplicacion.Tipo === 'NC'
+                    ? ' cc-credit-application-row' : '';
+                return '<tr class="cc-application-row' + claseCreditoAplicado + ' d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
                     '<td></td><td>' + fecha(aplicacion.Fecha) + '</td>' +
                     (mostrarCliente ? '<td>' + escapar(aplicacion.Cliente || item.Cliente || '—') + '</td>' : '') + '<td class="cc-document cc-application-document">' +
                     '<i class="bi bi-arrow-return-right me-2" aria-hidden="true"></i>' + escapar(aplicacion.Comprobante) +
@@ -744,13 +760,8 @@
             Observaciones: porId('reciboObservaciones').value.trim() || null,
             Aplicaciones: aplicaciones
         }).then(function (recibo) {
-            var mensaje = porId('reciboMensaje');
-            mensaje.className = 'alert alert-success py-2';
-            mensaje.textContent = (recibo.Numero || 'Recibo emitido') + ' registrado correctamente por ' + dinero(recibo.Total) + '.';
-            porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
-            window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
-            boton.classList.add('d-none');
             reciboOperacion = null;
+            cerrarModalYNotificar('modalNuevoRecibo', 'Se generó el Recibo ' + (recibo.Numero || '') + ' correctamente.');
             cargarCuenta();
         }).catch(function (ex) {
             boton.disabled = false;
@@ -932,13 +943,10 @@
             IVA: comprobanteTipo === 'NC' ? importes.iva / 100 : null,
             OtrosImpuestos: importes.otros / 100, Observaciones: porId('cmpObservaciones').value.trim() || null
         }).then(function (comprobante) {
-            var mensaje = porId('cmpMensaje');
-            mensaje.className = 'alert alert-success py-2';
-            mensaje.textContent = comprobante.Numero + ' emitido correctamente por ' + dinero(comprobante.Total) + '.';
-            porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
-            window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', true);
-            boton.classList.add('d-none');
             comprobanteOperacion = null;
+            var nombre = comprobanteTipo === 'FAC' ? 'Factura' :
+                comprobanteTipo === 'NC' ? 'Nota de Crédito' : 'Nota de Débito';
+            cerrarModalYNotificar('modalNuevoComprobante', 'Se generó la ' + nombre + ' ' + (comprobante.Numero || '') + ' correctamente.');
             cargarCuenta();
         }).catch(function (ex) {
             boton.disabled = false;
