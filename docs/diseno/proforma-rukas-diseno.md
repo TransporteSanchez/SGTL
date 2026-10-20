@@ -80,6 +80,7 @@ Rocío corre el script en la base compartida. La base es una sola, así que avis
 | `POST Importar` | Recibe cliente, N° en la plataforma, nombre de archivo, archivo en base64 y las celdas como texto. Con el lector de la plataforma del cliente valida el archivo (caso 8: si falla, no crea nada). Crea la proforma de plataforma en `Borrador`, guarda líneas y adjunto, reserva los viajes que coinciden (`PROFORMAS_VIAJES`) y devuelve el control (casos 1–7). |
 | `POST {id}/Controlar` | **Volver a controlar:** recalcula las líneas del borrador contra los viajes actuales (después de corregir algo en SGTL) y actualiza las reservas. |
 | `POST {id}/ReemplazarArchivo` | Solo en borrador y con el mismo N° en la plataforma: reemplaza líneas y adjunto por los del archivo corregido y vuelve a controlar. Cierra el reclamo pendiente. |
+| `PUT {id}/Condiciones` | "Guardar borrador" de un borrador ya importado: guarda las condiciones comerciales (forma y plazo de pago, validez, tiempo del servicio, observaciones, condiciones particulares). Solo en borrador, con la auditoría de `ProformasController.Editar` (decidido el 19/10). |
 | `POST {id}/Reclamo` / `DELETE {id}/Reclamo` | "Registrar reclamo" (fecha y motivo obligatorio) y "Cerrar reclamo". Solo en borrador. Con auditoría. |
 | `POST {id}/Generar` | Vuelve a controlar y, solo si todo está OK, asigna el número PF, pasa a `Aceptada`, arma los conceptos, pasa a Listo para facturar los viajes que seguían en Registrado (con auditoría) y cierra el reclamo si quedaba alguno. Si aparece una diferencia (alguien cambió un viaje en el medio), no genera y devuelve el control. |
 | `GET ViajesSinProforma?clienteId=` | Viajes del cliente con los números cargados (Registrado o Listo para facturar) que no están en ninguna proforma. Guía antes de generar en la plataforma (paso 0) y aviso del caso 7. |
@@ -132,7 +133,7 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
 
 **Los botones del pie, con el mismo significado:**
 
-- **Guardar borrador:** la primera vez guarda el archivo elegido y crea el borrador (esa es la importación; no hay un botón "Importar"). Después guarda los cambios, como siempre.
+- **Guardar borrador:** la primera vez guarda el archivo elegido y crea el borrador (esa es la importación; no hay un botón "Importar"). Después guarda los cambios, como siempre: en un borrador de plataforma se editan solo las condiciones comerciales (el cliente y los conceptos salen del archivo). Antes de "Generar" se guardan, como en la propia.
 - **Generar proforma:** se habilita **solo con el control en OK**. Mientras no, debajo del resumen dice el motivo ("Para generar, corregí las 2 diferencias"), no como tooltip (en un botón deshabilitado no aparece). Pide confirmación porque consume un número PF: "¿Generar la proforma de {plataforma} 7594?" / "Se le asigna número y queda aceptada, lista para facturar." → Cancelar + Generar.
 - **Cancelar / Cerrar** y el aviso de cambios sin guardar: igual que en las propias.
 - **PDF:** igual, mostrando el tipo y el N° en la plataforma.
@@ -145,7 +146,7 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
    - Si el archivo es inválido (caso 8), el error sale **dentro del modal**, arriba, en rojo, diciendo qué está mal ("Falta la columna Importe Viajes").
 2. **Resumen del control:** "12 transportes · 10 coinciden · **2 con diferencias**", con **"Volver a controlar"** y, si hay diferencias, **"Registrar reclamo"**.
 3. **Tabla del control:** Transporte · Fecha · Ruta · Importe {plataforma} · Importe SGTL · Diferencia · Adicionales · Tarifa usada · Resultado.
-   - las diferencias primero y el filtro "Ver solo diferencias";
+   - las diferencias primero (el filtro "Ver solo diferencias" se **descartó** el 19/10: con tandas de 10 a 15 transportes, las diferencias ya se ven arriba);
    - **Resultado** con los colores del design system: verde "Coincide", rojo "Importe distinto" / "Sin viaje" / "Ya facturado", amarillo para avisos;
    - en cada diferencia, qué hacer en una línea ("Corregí la tarifa del viaje o registrá un reclamo") y el enlace **"Abrir viaje"**, que abre el viaje **en otra pestaña** para corregirlo sin perder el borrador;
    - "Tarifa usada": "Tarifa fija #3 · CD Córdoba → Villa María · $528.747" o "Tarifa por km #5 · 17,4 km × $850".
@@ -154,7 +155,7 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
 ### Bloque "Reclamo en {plataforma}"
 
 - Sin reclamo: el botón "Registrar reclamo" del resumen abre el modal **"Registrar reclamo"** (fecha, hoy por defecto, y motivo obligatorio) → Cancelar + Guardar.
-- Con reclamo: aviso amarillo con fecha, motivo y quién lo registró (de la auditoría), y el botón **"Cerrar reclamo"**.
+- Con reclamo: aviso amarillo con fecha y motivo, y el botón **"Cerrar reclamo"**. Mostrar quién lo registró se **descartó** el 19/10: el dato está en la auditoría (acción RECLAMO).
 
 ### Bloque "Factura en {plataforma}"
 

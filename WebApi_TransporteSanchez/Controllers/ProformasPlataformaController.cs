@@ -59,6 +59,19 @@ namespace WebApi_TransporteSanchez.Controllers
 
         public class UsuarioDto { public string Usuario { get; set; } }
 
+        // Condiciones comerciales de la cabecera: lo único que se edita en un borrador de plataforma (el cliente y
+        // los conceptos salen del archivo). Como en la proforma propia, solo en Borrador.
+        public class CondicionesDto
+        {
+            public string FormaPago { get; set; }
+            public string PlazoPago { get; set; }
+            public string Validez { get; set; }
+            public string TiempoServicio { get; set; }
+            public string ObsComerciales { get; set; }
+            public string CondParticulares { get; set; }
+            public string Usuario { get; set; }
+        }
+
         public class ReclamoDto
         {
             public DateTime? Fecha { get; set; }
@@ -731,6 +744,44 @@ VALUES
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo reemplazar el archivo.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // "Guardar borrador" de un borrador ya importado: guarda las condiciones comerciales (forma y plazo de pago,
+        // validez, tiempo del servicio, observaciones y condiciones particulares). Mismo criterio que
+        // ProformasController.Editar: solo en Borrador y con la misma auditoría.
+        [HttpPut]
+        [Route("{id:int}/Condiciones")]
+        public IHttpActionResult GuardarCondiciones(int id, [FromBody] CondicionesDto d)
+        {
+            if (d == null) return Content(HttpStatusCode.BadRequest, new { error = "Datos inválidos." });
+            var usuario = string.IsNullOrWhiteSpace(d.Usuario) ? "sistema" : d.Usuario.Trim();
+            Func<string, string> limpio = v => string.IsNullOrWhiteSpace(v) ? null : v.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (c.Tipo_Proforma != "Plataforma")
+                        return Content(HttpStatusCode.BadRequest, new { error = "No es una proforma de plataforma." });
+                    if (c.Estado != "Borrador")
+                        return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden editar proformas en estado Borrador." });
+                    db.Database.ExecuteSqlCommand(@"
+UPDATE dbo.PROFORMAS
+SET FormaPago=@formapago, PlazoPago=@plazopago, Validez=@validez, TiempoServicio=@tiempo,
+    ObsComerciales=@obscom, CondParticulares=@condpart, Usu_Modi=@u, Fecha_Modi=GETDATE()
+WHERE Proforma_ID=@id AND Estado='Borrador';",
+                        P("@formapago", limpio(d.FormaPago)), P("@plazopago", limpio(d.PlazoPago)), P("@validez", limpio(d.Validez)),
+                        P("@tiempo", limpio(d.TiempoServicio)), P("@obscom", limpio(d.ObsComerciales)), P("@condpart", limpio(d.CondParticulares)),
+                        P("@u", usuario), P("@id", id));
+                    Auditar(db, usuario, "UPDATE", id, null, "Edicion de proforma (Borrador): condiciones comerciales");
+                    return Ok(new { Message = "Borrador guardado." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo guardar el borrador.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
         }
 

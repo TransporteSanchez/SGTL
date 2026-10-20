@@ -7,7 +7,9 @@
   'use strict';
 
   var API = 'http://localhost:50222/api/ProformasPlataforma';
-  var estado = { activo: false, clienteId: null, plataforma: null, archivo: null, filas: null, base64: null, control: null };
+  var estado = { activo: false, clienteId: null, plataforma: null, archivo: null, filas: null, base64: null, control: null, soloLectura: false };
+  // Condiciones comerciales de la cabecera: lo único que se edita en un borrador ya importado.
+  var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', TiempoServicio: 'p_tiemposervicio', ObsComerciales: 'p_obscom', CondParticulares: 'p_condpart' };
 
   function $id(id) { return document.getElementById(id); }
   function esc(v) { return window.SGTL ? SGTL.escapar(v) : String(v == null ? '' : v); }
@@ -103,9 +105,9 @@
   }
 
   function desactivar() {
-    estado = { activo: false, clienteId: null, plataforma: null, archivo: null, filas: null, base64: null, control: null };
+    estado = { activo: false, clienteId: null, plataforma: null, archivo: null, filas: null, base64: null, control: null, soloLectura: false };
     var bloque = $id('bloquePlataforma');
-    if (bloque) bloque.innerHTML = '';
+    if (bloque) { bloque.innerHTML = ''; delete bloque.dataset.sinCambios; }
     if ($id('bloqueConceptos')) mostrarBloques(false);
     var gen = $id('btnGenerar');
     if (gen) { gen.disabled = false; gen.removeAttribute('title'); gen.classList.add('btn-success'); gen.classList.remove('btn-secondary'); }
@@ -123,6 +125,7 @@
 
   function renderNuevo(puedeLeer) {
     var p = esc(nombrePlataforma());
+    delete $id('bloquePlataforma').dataset.sinCambios;
     $id('bloquePlataforma').innerHTML =
       '<div class="bloque-titulo">Excel de ' + p + '</div>' +
       (puedeLeer ? '' : '<div class="alert alert-light-danger color-danger">Todavía no se pueden leer archivos de ' + p + '.</div>') +
@@ -209,10 +212,11 @@
     return pedir(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
   }
 
-  // "Guardar borrador" con un cliente con plataforma: importa el archivo y crea el borrador.
+  // "Guardar borrador" con un cliente con plataforma: la primera vez importa el archivo y crea el borrador;
+  // después guarda las condiciones comerciales, como la proforma propia.
   function guardar(dto) {
     limpiarError();
-    if (estado.control) { SGTL.toastExito('El borrador ya está guardado.'); return; }
+    if (estado.control) { guardarCondiciones(estado.control); return; }
     if (!estado.archivo || !estado.filas || !estado.base64) { errorEnModal('Elegí el Excel de ' + esc(nombrePlataforma()) + '.'); return; }
     var numero = ($id('pp_numero').value || '').trim();
     if (!numero) { errorEnModal('Completá el N° de proforma en ' + esc(nombrePlataforma()) + '.'); return; }
@@ -240,10 +244,41 @@
       });
   }
 
+  function enviarCondiciones(c) {
+    var cuerpo = { Usuario: usuarioActual() };
+    Object.keys(CONDICIONES).forEach(function (k) { cuerpo[k] = $id(CONDICIONES[k]) ? $id(CONDICIONES[k]).value : null; });
+    return pedir(API + '/' + c.Proforma_ID + '/Condiciones', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) });
+  }
+
+  function guardarCondiciones(c) {
+    if (c.Estado !== 'Borrador' || estado.soloLectura) return;
+    var listo = SGTL.procesando('#btnGuardarBorrador', 'Guardando…');
+    enviarCondiciones(c)
+      .then(function () {
+        listo();
+        window.proformaConCambios = false;
+        refrescarListado();
+        if (typeof window.cerrarProformaYMostrarMensaje === 'function') window.cerrarProformaYMostrarMensaje('Borrador guardado.', 'success');
+        else { SGTL.toastExito('Borrador guardado.'); $('#modalProforma').modal('hide'); }
+      }, function (e) {
+        listo();
+        errorEnModal(textoError(e, 'No se pudo guardar el borrador.'));
+      });
+  }
+
+  // En un borrador abierto para editar (no con "Ver"), las condiciones comerciales quedan editables y
+  // "Guardar borrador" las guarda. El resto de la cabecera sale del archivo.
+  function habilitarCondiciones() {
+    Object.keys(CONDICIONES).forEach(function (k) { var e = $id(CONDICIONES[k]); if (e) e.disabled = false; });
+    $id('btnGuardarBorrador').style.display = '';
+    $id('btnCerrarProforma').textContent = 'Cancelar';
+  }
+
   // ---------------------------------------------------------------- Borrador importado: control
 
-  function abrir(id) {
+  function abrir(id, soloLectura) {
     estado.activo = true;
+    estado.soloLectura = !!soloLectura;
     mostrarBloques(true);
     $id('bloquePlataforma').innerHTML = '<div class="text-muted">Cargando…</div>';
     pedir(API + '/' + id).then(mostrarControl, function (e) {
@@ -269,6 +304,9 @@
     // Los datos de la cabecera se guardan al importar; el borrador se maneja desde este bloque.
     if (typeof window.setModoLectura === 'function') window.setModoLectura(true);
     $id('btnCerrarProforma').textContent = 'Cerrar';
+    if (esBorrador && !estado.soloLectura) habilitarCondiciones();
+    // Lo que se escribe en este bloque (reclamo, reemplazo) se guarda con sus botones: no cuenta como cambio sin guardar.
+    $id('bloquePlataforma').dataset.sinCambios = 'true';
     var gen = $id('btnGenerar');
     gen.style.display = esBorrador ? '' : 'none';
     gen.disabled = !c.PuedeGenerar;
@@ -432,7 +470,9 @@
   function confirmarGenerar(id) {
     limpiarError();
     var listo = SGTL.procesando('#pp_generar_confirmar');
-    postJson(API + '/' + id + '/Generar', { Usuario: usuarioActual() })
+    // Como en la proforma propia: primero se guarda el borrador (las condiciones comerciales), después se genera.
+    var antes = !estado.soloLectura && estado.control ? enviarCondiciones(estado.control) : Promise.resolve();
+    antes.then(function () { return postJson(API + '/' + id + '/Generar', { Usuario: usuarioActual() }); })
       .then(function (r) {
         listo();
         window.proformaConCambios = false;

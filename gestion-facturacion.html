@@ -679,7 +679,7 @@
                 document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
-                if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID);
+                if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID, soloLectura);
                 proformaConCambios = false;
                 $('#modalProforma').modal('show');
             }).catch(function () { alert('No se pudo abrir la proforma.'); });
@@ -843,8 +843,8 @@
 
         document.addEventListener('DOMContentLoaded', function () {
             var modalProforma = document.getElementById('modalProforma');
-            modalProforma.addEventListener('input', function (e) { if (!e.target.disabled && e.target.id !== 'p_id') proformaConCambios = true; });
-            modalProforma.addEventListener('change', function (e) { if (!e.target.disabled && e.target.id !== 'p_id') proformaConCambios = true; });
+            modalProforma.addEventListener('input', function (e) { if (!e.target.disabled && e.target.id !== 'p_id' && !e.target.closest('[data-sin-cambios]')) proformaConCambios = true; });
+            modalProforma.addEventListener('change', function (e) { if (!e.target.disabled && e.target.id !== 'p_id' && !e.target.closest('[data-sin-cambios]')) proformaConCambios = true; });
             modalProforma.addEventListener('hide.bs.modal', function (e) {
                 if (!proformaConCambios || document.getElementById('btnGuardarBorrador').style.display === 'none') return;
                 e.preventDefault();
