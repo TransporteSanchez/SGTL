@@ -250,7 +250,18 @@ function guardaAccesoPagina(permitidas) {
   else { alert('No tenés pantallas asignadas. Contactá al administrador.'); }
 }
 
+// Mazer no deja partir los ítems del submenú y los nombres largos ("Gestionar integración de WhatsApp")
+// quedan cortados. Va acá y no en sgtl.css porque el menú está en todas las pantallas y no todas cargan ese CSS.
+function estilosMenu() {
+    if (document.getElementById('sgtl-estilos-menu')) return;
+    var estilo = document.createElement('style');
+    estilo.id = 'sgtl-estilos-menu';
+    estilo.textContent = '#sidebar .submenu .submenu-item .submenu-link { white-space: normal; line-height: 1.3; }';
+    document.head.appendChild(estilo);
+}
+
 function applySidebar(sidebarRoot, html) {
+    estilosMenu();
     sidebarRoot.innerHTML = html;
     var rol = '';
     try { rol = localStorage.getItem('userRole') || ''; } catch (e) { }
