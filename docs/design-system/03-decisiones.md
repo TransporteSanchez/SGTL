@@ -150,7 +150,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 - **Subtítulo de una línea en todas las pantallas**, que diga para qué sirve. Ejemplo: "Solo
   proformas ya generadas; los borradores están en Gestionar proformas".
 - A la derecha, en la misma línea: exportar y después el alta (§1.1 y §1.2).
-- **Pestaña del navegador:** `<title>Gestionar choferes · Transporte Sánchez</title>` (con tilde).
+- **Pestaña del navegador:** nombre de la pantalla y la sigla del sistema: `<title>Gestionar choferes · SGTL</title>`. El login lleva el nombre completo: `SGTL · Sistema de Gestión de Transporte y Logística`. Transporte Sánchez es el cliente, no el sistema (cambio del 20/10; antes era "· Transporte Sánchez").
 
 ### 3.3 Filtros
 
