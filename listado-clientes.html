@@ -4,50 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Listar clientes · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
         }
 
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaClientes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaClientes th,
-        #tablaClientes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        #tablaClientes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        .no-outline:focus {
-            outline: none !important;
-            box-shadow: none !important;
-            border: 1px solid #ced4da !important;
-            /* Mantiene el borde original */
-            background-color: #f8f9fa !important;
-            /* Mantiene el color de fondo original */
-        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -59,26 +22,20 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <style>
-        .no-outline:focus {
-            outline: none;
-            box-shadow: none;
-        }
-    </style>
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
+    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
-        <!--Barra lateral-->
         <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
@@ -109,97 +66,82 @@
                 </nav>
             </header>
 
-            <!-- Notificación de error -->
-            <div id="toastError"
-                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
-                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
-                <div class="d-flex">
-                    <div id="toastErrorMessage" class="toast-body">
-                        <!-- Mensaje dinámico se inserta acá -->
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Close"></button>
-                </div>
-            </div>
-
-            <section class="section">
-                <div class="card rounded me-4 ms-4 mt-4">
-                    <div class="card-header">
-                        <h5 class="card-title">Listar clientes</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <fieldset class="border p-4">
-                                    <form id="busquedaClienteForm" class="form">
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="txtCUIT_Cliente_Busqueda">CUIT</label>
-                                                <input type="text" class="form-control" id="txtCUIT_Cliente_Busqueda"
-                                                    placeholder="XX-XXXXXXXX-X" maxlength="13" autocomplete="off">
-                                                <div id="busquedaCuitError" class="text-danger small mt-1"
-                                                    style="display: none;"></div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="fechaRango">Fecha de alta</label>
-                                                <input type="text" class="form-control" id="fechaRango"
-                                                    placeholder="Desde y hasta">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3">
-                                            <div class="col-12">
-                                                <label class="me-3">Estado</label>
-                                                <div class="form-check form-check-inline">
-                                                    <input type="checkbox" class="form-check-input form-check-success"
-                                                        id="checkEstadoClienteHabilitado">
-                                                    <label class="form-check-label" for="checkEstadoClienteHabilitado">Habilitado</label>
-                                                </div>
-                                                <div class="form-check form-check-inline">
-                                                    <input type="checkbox" class="form-check-input form-check-danger"
-                                                        id="checkEstadoClienteDeshabilitado">
-                                                    <label class="form-check-label" for="checkEstadoClienteDeshabilitado">Deshabilitado</label>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3 align-items-center">
-                                            <div class="col-12 text-end">
-                                                <button type="button" class="btn btn-light"
-                                                    onclick="buscarClientes()">Buscar</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </fieldset>
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-people me-2"></i>Listar clientes
+                                </h5>
+                                <p class="text-muted mb-0">Consultá los clientes y sus datos; para cambiarlos andá a Gestionar clientes.</p>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <label>&nbsp;</label>
-                                <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                    <i class="bi bi-download"></i>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="btnExportar"
+                                    data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download" aria-hidden="true"></i>
                                 </button>
                             </div>
+                        </div>
+
+                        <div class="card-body">
+                            <form id="busquedaClienteForm" class="row g-3 align-items-end" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroRazonSocial" class="form-label">Razón social</label>
+                                    <input type="text" class="form-control" id="filtroRazonSocial"
+                                        placeholder="Distribuidora Norte" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroCuit" class="form-label">CUIT</label>
+                                    <input type="text" inputmode="numeric" class="form-control" id="filtroCuit"
+                                        placeholder="30-71234567-8" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-2">
+                                    <label for="fechaRango" class="form-label">Fecha de alta</label>
+                                    <input type="text" class="form-control" id="fechaRango"
+                                        placeholder="Desde y hasta">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-2">
+                                    <label for="filtroEstado" class="form-label">Estado</label>
+                                    <select id="filtroEstado" class="form-select">
+                                        <option value="Activo" selected>Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-lg-2 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
+                                </div>
+                            </form>
 
                             <div class="table-responsive mt-4">
-                                <table class="table table-striped" id="tablaClientes">
+                                <table class="table table-striped table-hover" id="tablaClientes">
                                     <thead>
                                         <tr>
-                                            <th>Razon Social</th>
+                                            <th>Razón social</th>
                                             <th>CUIT</th>
-                                            <th>Fecha de alta</th>
-                                            <th>Acciones</th>
+                                            <th class="text-center">Fecha de alta</th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody></tbody>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">Cargando…</td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
 
-                            <nav>
+                            <nav aria-label="Paginación de clientes">
                                 <ul class="pagination justify-content-end" id="pagination"></ul>
                             </nav>
                         </div>
                     </div>
-                </div>
-
-            </section>
+                </section>
+            </div>
 
             <!--Footer-->
 
@@ -209,86 +151,94 @@
                 <script src="./assets/static/js/footer.js"></script>
 
             </footer>
+
         </div>
 
-        <!-- Modal detalle cliente (solo lectura) -->
-        <div class="modal fade text-left" id="DetallesClienteModal" tabindex="-1" role="dialog"
-            aria-labelledby="DetallesClienteTitulo" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <!-- Modal Ver detalle del cliente -->
+        <div class="modal fade" id="detalleClienteModal" tabindex="-1" aria-labelledby="detalleClienteTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title" id="DetallesClienteTitulo">Detalles del cliente</h4>
-                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                            <i data-feather="x"></i>
-                        </button>
+                        <h5 class="modal-title" id="detalleClienteTitulo">Ver detalle del cliente</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body mt-2 mb-4 mx-2">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="col-md-6 col-12 mb-3">
-                                    <h6>Fecha de alta</h6>
-                                    <span id="detalleFechaAlta" class="badge bg-secondary"></span>
-                                </div>
-                                <div class="col-md-6 col-12 mb-3">
-                                    <h6>Última modificación</h6>
-                                    <span id="detalleFechaModi" class="badge bg-secondary"></span>
-                                </div>
+                    <div class="modal-body">
+                        <div class="d-flex flex-wrap gap-4 mb-4">
+                            <div><span class="text-muted me-1">Estado:</span><span id="detalleEstado"></span></div>
+                            <div><span class="text-muted me-1">Fecha de alta:</span><span id="detalleFechaAlta"></span></div>
+                            <div><span class="text-muted me-1">Última modificación:</span><span id="detalleFechaModi"></span></div>
+                        </div>
+
+                        <h6 class="mb-2">Datos fiscales</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-8">
+                                <span class="form-label d-block mb-0">Razón social</span>
+                                <p class="form-control-plaintext" id="detalleRazonSocial"></p>
                             </div>
-                            <div class="row">
-                                <div class="col-md-6 col-12 mt-2">
-                                    <label class="form-label" for="detalleRazonSocial">Razón social</label>
-                                    <input type="text" id="detalleRazonSocial" class="form-control no-outline"
-                                        readonly />
-                                </div>
-                                <div class="col-md-6 col-12 mt-2">
-                                    <label class="form-label" for="detalleCUIT">CUIT</label>
-                                    <input type="text" id="detalleCUIT" class="form-control no-outline" readonly />
-                                </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">CUIT</span>
+                                <p class="form-control-plaintext" id="detalleCuit"></p>
                             </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleCondFiscal">Condición fiscal</label>
-                                    <input type="text" id="detalleCondFiscal" class="form-control no-outline"
-                                        readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleTelefono">Teléfono</label>
-                                    <input type="text" id="detalleTelefono" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleEmail">Email</label>
-                                    <input type="text" id="detalleEmail" class="form-control no-outline" readonly />
-                                </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Condición de IVA</span>
+                                <p class="form-control-plaintext" id="detalleCondFiscal"></p>
                             </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleProvincia">Provincia</label>
-                                    <input type="text" id="detalleProvincia" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleLocalidad">Localidad</label>
-                                    <input type="text" id="detalleLocalidad" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleCalle">Calle</label>
-                                    <input type="text" id="detalleCalle" class="form-control no-outline" readonly />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleAltura">Altura</label>
-                                    <input type="text" id="detalleAltura" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleUsuAlta">Usuario de alta</label>
-                                    <input type="text" id="detalleUsuAlta" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleUsuModi">Usuario de modificación</label>
-                                    <input type="text" id="detalleUsuModi" class="form-control no-outline" readonly />
-                                </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Tipo de cliente</span>
+                                <p class="form-control-plaintext" id="detalleTipo"></p>
                             </div>
                         </div>
+
+                        <h6 class="mb-2">Contacto</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Teléfono</span>
+                                <p class="form-control-plaintext" id="detalleTelefono"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">E-mail</span>
+                                <p class="form-control-plaintext text-break" id="detalleEmail"></p>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-2">Domicilio</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Provincia</span>
+                                <p class="form-control-plaintext" id="detalleProvincia"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Localidad</span>
+                                <p class="form-control-plaintext" id="detalleLocalidad"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Calle</span>
+                                <p class="form-control-plaintext" id="detalleCalle"></p>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="form-label d-block mb-0">Altura</span>
+                                <p class="form-control-plaintext" id="detalleAltura"></p>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <span class="form-label d-block mb-0">Código postal</span>
+                                <p class="form-control-plaintext" id="detalleCodigoPostal"></p>
+                            </div>
+                        </div>
+
+                        <h6 class="mb-2">Registro</h6>
+                        <div class="row">
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Usuario de alta</span>
+                                <p class="form-control-plaintext" id="detalleUsuAlta"></p>
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <span class="form-label d-block mb-0">Usuario de modificación</span>
+                                <p class="form-control-plaintext" id="detalleUsuModi"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
@@ -296,32 +246,18 @@
 
     </div>
 
-    <!-- Scripts -->
-    <script src="assets/extensions/jquery/jqueryajax.js">
-    </script>
+
+    <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-
-    <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            // Opcional: Ocultar tooltips al salir
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-    </script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/clientes.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -337,13 +273,13 @@
                 if (typeof window.loadSidebar === 'function') {
                     await window.loadSidebar();
                 }
-                await loadSettings();  // o tu equivalente que llame applyStyles
-                adjustVisibilityBasedOnRole();  // si la página lo define
+                await loadSettings();
+                adjustVisibilityBasedOnRole();
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
             }
         };
 
@@ -390,563 +326,89 @@
             });
         }
 
-        // Aplicar estilos en distintos componentes de la página
-
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            document.body.style.backgroundColor = colorFondo || '#e4eef8';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#435ebe'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || 'SGTL | un producto de Integra Analistas ®';
-            }
-        }
-
-        // Lógica de logout y carga de nombre de usuario en el header
-        document.addEventListener("DOMContentLoaded", function () {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                window.location.href = 'login.html';
-            } else {
-                const nombre = localStorage.getItem('nombre');
-                const apellido = localStorage.getItem('apellido');
-                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function (event) {
-                        event.preventDefault();
-
-                        fetch('http://localhost:50222/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
-                        }).then(response => {
-                            if (response.ok) {
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('nombre');
-                                localStorage.removeItem('apellido');
-                                localStorage.removeItem('userRole');
-                                window.location.href = 'login.html';
-                            } else {
-                                alert('Error al cerrar sesión');
-                            }
-                        }).catch(error => {
-                            console.error('Error al realizar la solicitud de logout:', error);
-                            alert('Error al cerrar sesión');
-                        });
-                    });
-                }
-            }
-        });
     </script>
 
-    <!-- Get Activos -->
+    <!-- Buscar, listar y ver detalle -->
     <script>
-        $(document).ready(function () {
-            $('#checkEstadoClienteHabilitado').prop('checked', true);
-            buscarClientes();
-        });
-    </script>
-
-    <!-- Buscador, listado y detalle cliente -->
-    <script>
+        const API = API_CLIENTES;
+        const COLUMNAS_CLIENTES = 5;
         let pageSize = 15;
         let currentPage = 1;
+        let ultimaBusqueda = 0;
 
-        function formatearCUIT(input) {
-            const digits = input.val().replace(/[^\d]/g, '').slice(0, 11);
-            let formatted;
-            if (digits.length <= 2) {
-                formatted = digits;
-            } else if (digits.length <= 10) {
-                formatted = digits.slice(0, 2) + '-' + digits.slice(2);
-            } else {
-                formatted = digits.slice(0, 2) + '-' + digits.slice(2, 10) + '-' + digits.slice(10);
-            }
-            input.val(formatted);
+        function filaCliente(cliente) {
+            return `<tr>
+                <td>${SGTL.escapar(cliente.RazonSocial)}</td>
+                <td class="text-nowrap">${SGTL.escapar(formatearCUIT(cliente.CUIT_Cliente))}</td>
+                <td class="text-center text-nowrap">${fechaCliente(cliente.Fecha_Alta)}</td>
+                <td class="text-center">${SGTL.estado(estadoCliente(clienteActivo(cliente)))}</td>
+                <td class="text-center">${SGTL.accionesFila([SGTL.botonFila('ver', { id: cliente.Cliente_ID })])}</td>
+            </tr>`;
         }
 
-        function validarFormatoCUIT(cuit) {
-            return /^\d{2}-\d{8}-\d{1}$/.test(cuit);
-        }
-
-        function cuitDigitosAFormulario(digits) {
-            var d = String(digits || '').replace(/\D/g, '').slice(0, 11);
-            if (d.length <= 2) return d;
-            if (d.length <= 10) return d.slice(0, 2) + '-' + d.slice(2);
-            return d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10);
-        }
-
-        function condFiscalIntATexto(cond) {
-            var map = { 1: 'RI', 2: 'MT', 3: 'EX' };
-            return map[cond] != null ? map[cond] : String(cond);
-        }
-
-        // Función para obtener los nombres de la provincia y localidad
-        function obtenerNombres(provId, locId) {
-            let nombreProvincia = '';
-            let nombreLocalidad = '';
-
-            // Función para obtener el nombre de la provincia
-            function obtenerNombreProvincia() {
-                return $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                }).then(function (data) {
-                    nombreProvincia = data.Nombre_Provincia;
-                }).catch(function () {
-                    nombreProvincia = 'Provincia no encontrada';
-                });
-            }
-
-            // Función para obtener el nombre de la localidad
-            function obtenerNombreLocalidad() {
-                let url = `http://localhost:50222/api/Provincias/${provId}/Localidades`;
-                if (locId) {
-                    url += `?locId=${locId}`;
-                }
-                return $.ajax({
-                    url: url,
-                    type: 'GET'
-                }).then(function (data) {
-                    if (Array.isArray(data) && data.length > 0) {
-                        nombreLocalidad = data[0].Nombre_Localidad;
-                    } else {
-                        nombreLocalidad = 'Localidad no encontrada';
-                    }
-                }).catch(function () {
-                    nombreLocalidad = 'Localidad no encontrada';
-                });
-            }
-
-            // Ejecutar ambas solicitudes en paralelo
-            return $.when(obtenerNombreProvincia(), obtenerNombreLocalidad()).then(function () {
-                return {
-                    Nombre_Provincia: nombreProvincia,
-                    Nombre_Localidad: nombreLocalidad
-                };
-            });
-        }
-
-        function armarFiltrosBusquedaClientes() {
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            var fechaRangoTxt = ($('#fechaRango').val() || '').trim();
-            var fechaDesde = null;
-            var fechaHasta = null;
-            var startData = $('#fechaRango').data('start');
-            var endData = $('#fechaRango').data('end');
-            if (startData && endData) {
-                fechaDesde = startData + ' 00:00:00.000';
-                fechaHasta = endData + ' 23:59:59.999';
-            } else if (fechaRangoTxt) {
-                var fechas = fechaRangoTxt.split(' - ');
-                if (fechas.length === 2 && typeof moment !== 'undefined') {
-                    var m0 = moment(fechas[0], 'DD/MM/YYYY', true);
-                    var m1 = moment(fechas[1], 'DD/MM/YYYY', true);
-                    if (m0.isValid() && m1.isValid()) {
-                        fechaDesde = m0.format('YYYY-MM-DD') + ' 00:00:00.000';
-                        fechaHasta = m1.format('YYYY-MM-DD') + ' 23:59:59.999';
-                    }
-                }
-            }
-            var requestData = {};
-            if (cuitVal !== '') {
-                requestData.cuit = cuitVal.replace(/\D/g, '');
-            }
-            if (fechaDesde) {
-                requestData.fechaDesde = fechaDesde;
-            }
-            if (fechaHasta) {
-                requestData.fechaHasta = fechaHasta;
-            }
-            var estados = [];
-            if ($('#checkEstadoClienteHabilitado').is(':checked')) estados.push('Habilitado');
-            if ($('#checkEstadoClienteDeshabilitado').is(':checked')) estados.push('Deshabilitado');
-            if (estados.length) {
-                requestData.estadoCliente = estados.join(',');
-            }
-            return requestData;
-        }
-
-        $(document).ready(function () {
-            $('#fechaRango').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    format: 'DD/MM/YYYY',
-                    applyLabel: 'Aplicar',
-                    cancelLabel: 'Cancelar',
-                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    monthNames: [
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ]
-                }
-            });
-
-            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-                currentPage = 1;
-                buscarClientes(1);
-            });
-
-            $('#fechaRango').on('cancel.daterangepicker', function () {
-                $(this).val('');
-                $(this).removeData('start').removeData('end');
-                currentPage = 1;
-                buscarClientes(1);
-            });
-
-            $('#txtCUIT_Cliente_Busqueda, #fechaRango').on('input', function () {
-                if ($(this).attr('id') === 'fechaRango' && $(this).val().trim() === '') {
-                    $(this).removeData('start').removeData('end');
-                }
-                if ($(this).attr('id') === 'txtCUIT_Cliente_Busqueda' && $(this).val().trim() === '') {
-                    buscarClientes(currentPage);
-                }
-            });
-
-            $('#txtCUIT_Cliente_Busqueda').on('input', function () {
-                formatearCUIT($(this));
-                $(this).removeClass('is-invalid');
-                $('#busquedaCuitError').hide();
-            });
-
-            $('#txtCUIT_Cliente_Busqueda').on('blur', function () {
-                var cuit = $(this).val().trim();
-                if (cuit === '') {
-                    $(this).removeClass('is-invalid');
-                    $('#busquedaCuitError').hide();
-                    return;
-                }
-                if (!validarFormatoCUIT(cuit)) {
-                    $(this).addClass('is-invalid');
-                    $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                } else {
-                    $(this).removeClass('is-invalid');
-                    $('#busquedaCuitError').hide();
-                }
-            });
-        });
-
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return '—';
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        function mostrarDetalleCliente(registro) {
-            obtenerNombres(registro.ProvID, registro.LocID).then(function (nombres) {
-                $('#detalleRazonSocial').val(registro.Razon_Social || '');
-                $('#detalleCUIT').val(cuitDigitosAFormulario(registro.CUIT_Cliente));
-                $('#detalleCondFiscal').val(condFiscalIntATexto(registro.Cond_Fiscal));
-                $('#detalleTelefono').val(registro.Telefono || '');
-                $('#detalleEmail').val(registro.Email || '');
-                $('#detalleProvincia').val(nombres.Nombre_Provincia);
-                $('#detalleLocalidad').val(nombres.Nombre_Localidad);
-                $('#detalleCalle').val(registro.Calle || '');
-                $('#detalleAltura').val(registro.AlturaCalle ? String(registro.AlturaCalle).trim() : '');
-                $('#detalleUsuAlta').val(registro.Usu_Alta || '');
-                $('#detalleUsuModi').val(registro.Usu_Modi || '');
-                $('#detalleFechaAlta').text(formatFechaUTC3(registro.Fecha_Alta)).removeClass().addClass('badge bg-secondary');
-                $('#detalleFechaModi').text(formatFechaUTC3(registro.Fecha_Modi)).removeClass().addClass('badge bg-secondary');
-                $('#DetallesClienteModal').modal('show');
-            }).catch(function (err) {
-                console.error('Error al obtener nombres de provincia o localidad', err);
-            });
-        }
-
-        function abrirModalDetalleCliente(clienteId) {
-            $.ajax({
-                url: 'http://localhost:50222/api/Clientes/' + clienteId,
-                type: 'GET',
-                success: function (data) {
-                    mostrarDetalleCliente(data);
-                },
-                error: function () {
-                    mostrarToastError('No se pudieron cargar los datos del cliente.');
-                }
-            });
-        }
-
-        function buscarClientes(page) {
-            if (page === undefined || page === null) {
-                page = 1;
-            }
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
-                $('#txtCUIT_Cliente_Busqueda').addClass('is-invalid');
-                $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                return;
-            }
-
+        function buscarClientes(page = 1) {
+            const tbody = '#tablaClientes tbody';
+            const busqueda = ++ultimaBusqueda;
             currentPage = page;
-            var requestData = armarFiltrosBusquedaClientes();
-            requestData.page = page;
-            requestData.pageSize = pageSize;
+            SGTL.tabla.cargando(tbody, COLUMNAS_CLIENTES);
 
-            $.ajax({
-                url: 'http://localhost:50222/api/Clientes/Buscar',
+            SGTL.ajax({
+                url: API + '/Clientes/Buscar',
                 type: 'GET',
-                data: requestData,
-                success: function (data) {
-                    $('#tablaClientes tbody').empty();
-
-                    if (!data || !$.isArray(data.Results)) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">Respuesta inválida del servidor.</td></tr>');
-                        return;
-                    }
-
-                    if (data.Results.length === 0) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
-                    } else {
-                        data.Results.forEach(function (registro) {
-                            var idCliente = registro.Cliente_ID != null ? registro.Cliente_ID : registro.cliente_Id;
-                            var fechaAltaTxt = '';
-                            if (registro.Fecha_Alta) {
-                                fechaAltaTxt = new Date(registro.Fecha_Alta).toLocaleDateString('es-AR');
-                            }
-                            var razon = registro.RazonSocial != null ? registro.RazonSocial : registro.Razon_Social;
-                            var cuitTxt = String(registro.CUIT_Cliente || '').trim();
-                            var row = `
-                    <tr data-clienteid="${idCliente}">
-                        <td>${razon || ''}</td>
-                        <td>${cuitTxt}</td>
-                        <td>${fechaAltaTxt}</td>
-                        <td>
-                            <button type="button" class="btn btn-primary btn-detalle"
-                                data-clienteid="${idCliente}"
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="top"
-                                title="Más detalles"
-                                onclick="abrirModalDetalleCliente('${idCliente}')">
-                                <i class="bi bi-info-circle"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                            $('#tablaClientes tbody').append(row);
-                        });
-                    }
-                    renderPagination(data.TotalRecords, pageSize, page);
-                },
-                error: function (xhr, status, error) {
-                    console.error('Clientes/Buscar:', status, error, xhr.responseText);
-                    $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
-                }
-            });
-        }
-
-        function renderPagination(totalRecords, tamanioActual, currentPageNum) {
-            const totalPages = Math.ceil(totalRecords / tamanioActual);
-            const paginationContainer = $('#pagination');
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(paginationContainer.get(0), {
-                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPageNum,
+                data: Object.assign(filtrosBusquedaClientes(), { page: page, pageSize: pageSize })
+            }, 'No se pudieron cargar los clientes. Revisá la conexión y probá de nuevo.').then(function (data) {
+                if (busqueda !== ultimaBusqueda) return;
+                const registros = data.Results || [];
+                if (registros.length) SGTL.tabla.llenar(tbody, registros.map(filaCliente).join(''));
+                else SGTL.tabla.vacia(tbody, COLUMNAS_CLIENTES);
+                SGTL.tabla.paginacion('#pagination', {
+                    total: data.TotalRecords || 0,
+                    tamanioPagina: pageSize,
+                    pagina: page,
                     alCambiarPagina: function (pagina) { buscarClientes(pagina); },
                     alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarClientes(1); }
                 });
-                return;
-            }
-            paginationContainer.empty();
-
-            const prevDisabled = (totalPages === 0 || currentPageNum === 1) ? 'disabled' : '';
-            const nextDisabled = (totalPages === 0 || currentPageNum === totalPages) ? 'disabled' : '';
-
-            paginationContainer.append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarClientes(${currentPageNum - 1}); return false;">
-                        <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-                    </a>
-                </li>
-            `);
-
-            for (let i = 1; i <= totalPages && totalPages > 0; i++) {
-                const activeClass = currentPageNum === i ? 'active' : '';
-                paginationContainer.append(`
-                    <li class="page-item ${activeClass}">
-                        <a class="page-link" href="#" onclick="buscarClientes(${i}); return false;">${i}</a>
-                    </li>
-                `);
-            }
-
-            paginationContainer.append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" aria-label="Next" onclick="buscarClientes(${currentPageNum + 1}); return false;">
-                        <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                    </a>
-                </li>
-            `);
-        }
-
-    </script>
-
-    <!-- Generar reporte csv -->
-    <script>
-        async function generarReporteCSV() {
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
-                mostrarToastError('Corregí el formato del CUIT antes de exportar.');
-                return;
-            }
-            var requestData = Object.assign({ page: 1, pageSize: 10000 }, armarFiltrosBusquedaClientes());
-
-            try {
-                const response = await $.ajax({
-                    url: 'http://localhost:50222/api/Clientes/Buscar',
-                    type: 'GET',
-                    data: requestData
-                });
-
-                if (!response.Results || response.Results.length === 0) {
-                    mostrarToastError('No se encontraron registros para generar el reporte.');
-                    return;
-                }
-
-                const registrosCompletos = await Promise.all(response.Results.map(async function (r) {
-                    var id = r.Cliente_ID != null ? r.Cliente_ID : r.cliente_Id;
-                    const full = await $.ajax({
-                        url: 'http://localhost:50222/api/Clientes/' + id,
-                        type: 'GET'
-                    });
-                    full.Provincia = await obtenerNombreProvincia(full.ProvID);
-                    full.Localidad = await obtenerNombreLocalidad(full.ProvID, full.LocID);
-                    return full;
-                }));
-
-                generarCSV(registrosCompletos);
-            } catch (error) {
-                console.error('Error al generar el reporte:', error);
-                mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
-            }
-        }
-
-        function mostrarToastError(mensaje) {
-            $('#toastErrorMessage').text(mensaje);
-            const toast = new bootstrap.Toast(document.getElementById('toastError'));
-            toast.show();
-        }
-
-        async function obtenerNombreProvincia(provId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                });
-                return data.Nombre_Provincia || 'Provincia no encontrada';
-            } catch (error) {
-                console.error('Error obteniendo provincia:', error);
-                return 'Provincia no encontrada';
-            }
-        }
-
-        async function obtenerNombreLocalidad(provId, locId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
-                    type: 'GET'
-                });
-                if (Array.isArray(data) && data.length > 0) {
-                    return data[0].Nombre_Localidad;
-                }
-                return 'Localidad no encontrada';
-            } catch (error) {
-                console.error('Error obteniendo localidad:', error);
-                return 'Localidad no encontrada';
-            }
-        }
-
-        function generarCSV(data) {
-            const headers = [
-                'Cliente_ID', 'Razon_Social', 'CUIT_Cliente', 'Condicion_fiscal',
-                'Telefono', 'Email', 'Provincia', 'Localidad', 'Calle', 'Altura',
-                'Fecha_de_alta', 'Usuario_alta', 'Fecha_modificacion', 'Usuario_modificacion'
-            ];
-            let csvContent = headers.join(';') + '\n';
-            data.forEach(function (registro) {
-                var condTxt = typeof condFiscalIntATexto === 'function'
-                    ? condFiscalIntATexto(registro.Cond_Fiscal)
-                    : String(registro.Cond_Fiscal);
-                var row = [
-                    registro.Cliente_ID,
-                    registro.Razon_Social || '',
-                    registro.CUIT_Cliente || '',
-                    condTxt,
-                    registro.Telefono || '',
-                    registro.Email || '',
-                    registro.Provincia || '',
-                    registro.Localidad || '',
-                    registro.Calle || '',
-                    registro.AlturaCalle || '',
-                    (registro.Fecha_Alta != null ? formatFechaUTC3(registro.Fecha_Alta) : ''),
-                    registro.Usu_Alta || '',
-                    (registro.Fecha_Modi != null ? formatFechaUTC3(registro.Fecha_Modi) : ''),
-                    registro.Usu_Modi || ''
-                ];
-                csvContent += row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(';') + '\n';
+            }, function (error) {
+                if (busqueda !== ultimaBusqueda) return;
+                SGTL.tabla.vacia(tbody, COLUMNAS_CLIENTES, 'No se pudieron cargar los clientes.');
+                SGTL.tabla.paginacion('#pagination', { total: 0 });
+                SGTL.toastError(error.mensajeUsuario);
             });
-            var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'Listado_Clientes.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
         }
+
+        function verDetalleCliente(clienteId, boton) {
+            const listo = SGTL.procesando(boton);
+            SGTL.ajax({ url: `${API}/Clientes/${clienteId}`, type: 'GET' },
+                'No se pudo abrir el detalle del cliente. Probá de nuevo.').then(function (c) {
+                    return Promise.all([nombreProvinciaCliente(c.ProvID), nombreLocalidadCliente(c.ProvID, c.LocID)]).then(function (nombres) {
+                        $('#detalleEstado').html(SGTL.estado(estadoCliente(clienteActivo(c))));
+                        $('#detalleFechaAlta').text(fechaCliente(c.Fecha_Alta));
+                        $('#detalleFechaModi').text(fechaCliente(c.Fecha_Modi) || '—');
+                        $('#detalleRazonSocial').text(c.Razon_Social || '');
+                        $('#detalleCuit').text(formatearCUIT(c.CUIT_Cliente));
+                        $('#detalleCondFiscal').text(CONDICIONES_IVA[c.Cond_Fiscal] || '');
+                        $('#detalleTipo').text(TIPOS_CLIENTE[c.Tipo_Cliente] || TIPOS_CLIENTE.Directo);
+                        $('#detalleTelefono').text(c.Telefono || '');
+                        $('#detalleEmail').text(c.Email || '');
+                        $('#detalleProvincia').text(nombres[0]);
+                        $('#detalleLocalidad').text(nombres[1]);
+                        $('#detalleCalle').text(c.Calle || '');
+                        $('#detalleAltura').text(c.AlturaCalle ? String(c.AlturaCalle).trim() : '');
+                        $('#detalleCodigoPostal').text(c.CodigoPostal || '');
+                        $('#detalleUsuAlta').text(c.Usu_Alta || '');
+                        $('#detalleUsuModi').text(c.Usu_Modi || '');
+                        SGTL.modal('#detalleClienteModal', 'show');
+                    });
+                }).catch(function (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo abrir el detalle del cliente. Probá de nuevo.');
+                }).finally(listo);
+        }
+
+        $(function () {
+            prepararFiltrosClientes(buscarClientes);
+            $('#tablaClientes').on('click', '[data-accion="ver"]', function () { verDetalleCliente($(this).data('id'), this); });
+            buscarClientes(1);
+        });
     </script>
 
 </body>
