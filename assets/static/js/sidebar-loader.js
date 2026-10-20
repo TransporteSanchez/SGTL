@@ -114,7 +114,9 @@ var MENU_TO_PAGE = {
   'gestion de camiones': 'gestion-camiones.html',
   'listado de viajes': 'listado-viajes.html',
   'gestion de viajes': 'gestion-viajes.html',
+  'gestionar viajes': 'gestion-viajes.html',
   'presupuestos': 'presupuestos.html',
+  'gestionar presupuestos': 'presupuestos.html',
   'gestion de origenes y destinos': 'gestion-origenes-destinos.html',
   'gestion de tarifas': 'gestion-tarifas.html',
   'listado de clientes': 'listado-clientes.html',
@@ -142,7 +144,8 @@ var MENU_TO_PAGE = {
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
   'gestion de contenido': 'gestion-contenido.html',
-  'auditoria': 'gestion-auditoria.html'
+  'auditoria': 'gestion-auditoria.html',
+  'consultar auditoria': 'gestion-auditoria.html'
 };
 
 function normalizaPerm(s) {
@@ -187,7 +190,6 @@ function aplicarPermisos() {
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
       // La documentación publicada está disponible para todos los usuarios activos.
       permitidas.push('manual-usuario.html', 'informe-version.html');
-      if (permitidas.indexOf('gestion-viajes.html') !== -1) permitidas.push('presupuestos.html');
       // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
       // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.
       if (permitidas.indexOf('listado-facturas.html') !== -1 || permitidas.indexOf('gestion-facturacion.html') !== -1) {

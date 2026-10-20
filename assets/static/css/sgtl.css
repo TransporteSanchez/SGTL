@@ -45,6 +45,44 @@
     pointer-events: none;
 }
 
+/* Pestaña Usuarios por grupo */
+.lista-usuarios-grupo {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.lista-usuarios-item {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+    padding: .5rem .75rem;
+}
+
+.lista-usuarios-item:last-child {
+    border-bottom: 0 !important;
+}
+
+.lista-usuarios-check {
+    float: none;
+    flex: 0 0 auto;
+    margin: .25rem 0 0;
+}
+
+.lista-usuarios-control {
+    flex: 0 0 1rem;
+}
+
+.lista-usuarios-etiqueta {
+    min-width: 0;
+    margin: 0;
+}
+
+.texto-rol-admin {
+    color: #6c757d;
+    font-size: .875em;
+    white-space: nowrap;
+}
+
 /* §1.3 Cruz para borrar cada filtro */
 .sgtl-filtro {
     position: relative;

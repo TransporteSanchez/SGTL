@@ -27,6 +27,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
@@ -205,6 +206,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="modal fade" id="modalUsuariosGrupoGuardados" tabindex="-1" aria-labelledby="tituloUsuariosGrupoGuardados" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tituloUsuariosGrupoGuardados">Usuarios agregados al grupo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="mensajeUsuariosGrupoGuardados" class="mb-0"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
@@ -281,6 +299,9 @@
     <script>
         const API_BASE = 'http://localhost:50222/api';
         let gruposCache = [];
+        let usuariosGrupoCache = [];
+        let usuariosSeleccionadosGrupo = new Set();
+        let grupoUsuariosCargadoId = null;
 
         function showToast(message) {
             // Blindado: si el toast falla (API de Bootstrap), no debe cortar el flujo (ej. refresco de tablas).
@@ -489,18 +510,34 @@
                         return;
                     }
 
-                    let html = '<div class="row">';
-                    data.forEach(function (item) {
+                    const gruposMenu = agruparMenusPorPrincipal(data);
+                    let html = '<div class="row g-3">';
+                    gruposMenu.forEach(function (grupo, indice) {
+                        const estado = obtenerEstadoMenuPrincipal(grupo.Permisos);
+                        const grupoId = 'grupo_menu_' + indice;
                         html += `
-                            <div class="col-md-4 mb-2">
-                                <div class="form-check">
+                            <div class="col-12 col-md-6 col-xl-4">
+                                <div class="card border h-100 grupo-permisos" data-grupo-permisos="${grupoId}">
+                                    <div class="card-header bg-light py-2">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input chk-menu-principal" type="checkbox" id="${grupoId}" ${estado.checked ? 'checked' : ''}>
+                                            <label class="form-check-label" for="${grupoId}"><strong>${escapeHtml(grupo.Nombre)}</strong></label>
+                                        </div>
+                                    </div>
+                                    <div class="card-body py-2">`;
+                        grupo.Permisos.forEach(function (item) {
+                            html += `
+                                <div class="form-check ms-3 mb-2">
                                     <input class="form-check-input chk-menu" type="checkbox" value="${item.Menu_ID}" id="menu_${item.Menu_ID}" ${item.Asignado ? 'checked' : ''}>
                                     <label class="form-check-label" for="menu_${item.Menu_ID}">${escapeHtml(item.Menu_Nombre)}</label>
-                                </div>
-                            </div>`;
+                                </div>`;
+                        });
+                        html += '</div></div></div>';
                     });
                     html += '</div>';
                     cont.html(html);
+                    vincularSeleccionMenusPrincipales(cont);
+                    actualizarEstadosMenusPrincipales(cont);
                     $('#btnGuardarPermisos').prop('disabled', false);
                 },
                 error: function () {
@@ -508,6 +545,73 @@
                     $('#contenedorMenusGrupo').html('<div class="text-danger">Error al cargar permisos. No se pueden guardar cambios hasta que se carguen.</div>');
                 }
             });
+        }
+
+        function agruparMenusPorPrincipal(menus) {
+            const orden = ['General', 'Choferes', 'Camiones', 'Viajes', 'Clientes', 'Facturación', 'Configuración', 'Usuarios'];
+            const grupos = [];
+
+            (menus || []).forEach(function (menu) {
+                const nombre = String(menu.Menu_Principal || 'General').trim() || 'General';
+                let grupo = grupos.filter(function (item) { return item.Nombre === nombre; })[0];
+                if (!grupo) {
+                    grupo = { Nombre: nombre, Permisos: [] };
+                    grupos.push(grupo);
+                }
+                grupo.Permisos.push(menu);
+            });
+
+            return grupos.sort(function (a, b) {
+                const indiceA = orden.indexOf(a.Nombre);
+                const indiceB = orden.indexOf(b.Nombre);
+                const posicionA = indiceA === -1 ? orden.length : indiceA;
+                const posicionB = indiceB === -1 ? orden.length : indiceB;
+                return posicionA === posicionB ? a.Nombre.localeCompare(b.Nombre) : posicionA - posicionB;
+            });
+        }
+
+        function obtenerEstadoMenuPrincipal(permisos) {
+            const total = (permisos || []).length;
+            const seleccionados = (permisos || []).filter(function (permiso) {
+                return permiso.Asignado === true;
+            }).length;
+
+            return {
+                checked: total > 0 && seleccionados === total,
+                indeterminate: seleccionados > 0 && seleccionados < total
+            };
+        }
+
+        function actualizarEstadoMenuPrincipal($grupo) {
+            const permisos = [];
+            $grupo.find('.chk-menu').each(function () {
+                permisos.push({ Asignado: $(this).prop('checked') === true });
+            });
+
+            const estado = obtenerEstadoMenuPrincipal(permisos);
+            $grupo.find('.chk-menu-principal')
+                .prop('checked', estado.checked)
+                .prop('indeterminate', estado.indeterminate);
+        }
+
+        function actualizarEstadosMenusPrincipales(contenedor) {
+            contenedor.find('.grupo-permisos').each(function () {
+                actualizarEstadoMenuPrincipal($(this));
+            });
+        }
+
+        function vincularSeleccionMenusPrincipales(contenedor) {
+            contenedor
+                .off('change.permisosGrupo', '.chk-menu-principal')
+                .on('change.permisosGrupo', '.chk-menu-principal', function () {
+                    const $grupo = $(this).closest('.grupo-permisos');
+                    $grupo.find('.chk-menu').prop('checked', this.checked);
+                    actualizarEstadoMenuPrincipal($grupo);
+                })
+                .off('change.permisosGrupo', '.chk-menu')
+                .on('change.permisosGrupo', '.chk-menu', function () {
+                    actualizarEstadoMenuPrincipal($(this).closest('.grupo-permisos'));
+                });
         }
 
         function guardarMenusDeGrupo() {
@@ -536,45 +640,172 @@
         }
 
         function cargarUsuariosDeGrupo(grupoId) {
-            if (!grupoId) return;
+            const cont = $('#contenedorUsuariosGrupo');
+            $('#btnGuardarUsuariosGrupo').prop('disabled', true);
+            grupoUsuariosCargadoId = null;
+            usuariosGrupoCache = [];
+            usuariosSeleccionadosGrupo = new Set();
+
+            if (!grupoId) {
+                cont.html('<div class="text-muted">Seleccioná un grupo para ver sus usuarios.</div>');
+                return;
+            }
 
             $.ajax({
                 url: API_BASE + '/Grupos/' + grupoId + '/Usuarios',
                 type: 'GET',
                 success: function (data) {
-                    const cont = $('#contenedorUsuariosGrupo');
+                    if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
                     cont.empty();
+                    grupoUsuariosCargadoId = String(grupoId);
+                    usuariosGrupoCache = Array.isArray(data) ? data : [];
+                    usuariosSeleccionadosGrupo = new Set();
+
                     if (!data || !data.length) {
                         cont.html('<div class="text-muted">No hay usuarios disponibles.</div>');
+                        $('#btnGuardarUsuariosGrupo').prop('disabled', false);
                         return;
                     }
 
-                    let html = '<div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle me-1"></i>' +
-                        'Los usuarios con rol <strong>admin</strong> tienen acceso total por su rol y no requieren pertenecer a un grupo.</div><div class="row">';
-                    data.forEach(function (item) {
-                        const esAdmin = item.EsAdministrador === true || String(item.Rol || '').trim().toLowerCase() === 'admin';
-                        const estado = esAdmin ? 'disabled' : (item.Asignado ? 'checked' : '');
-                        const detalleAdmin = esAdmin
-                            ? '<span class="badge bg-secondary ms-1">- (admin)</span><small class="d-block text-muted">Acceso total por rol; no requiere grupo.</small>'
-                            : '';
-                        html += `
-                            <div class="col-md-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input chk-usuario" type="checkbox" value="${item.Usuario_ID}" id="usr_${item.Usuario_ID}" ${estado}>
-                                    <label class="form-check-label ${esAdmin ? 'text-muted' : ''}" for="usr_${item.Usuario_ID}">
-                                        ${escapeHtml(item.Nombre_Usuario)} - ${escapeHtml(item.NombreCompleto)}
-                                        ${detalleAdmin}
-                                    </label>
-                                </div>
-                            </div>`;
-                    });
-                    html += '</div>';
-                    cont.html(html);
+                    cont.html(
+                        '<div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle me-1"></i>' +
+                        'Los usuarios con rol <strong>admin</strong> tienen acceso total por su rol y no requieren pertenecer a un grupo.</div>' +
+                        '<div class="mb-2">' +
+                        '<label class="form-label" for="txtBuscarUsuarioGrupo">Buscar usuario</label>' +
+                        '<div class="input-group">' +
+                        '<span class="input-group-text"><i class="bi bi-search"></i></span>' +
+                        '<input type="search" class="form-control" id="txtBuscarUsuarioGrupo" placeholder="Buscá por usuario, nombre o apellido" autocomplete="off">' +
+                        '</div>' +
+                        '<div id="resumenUsuariosGrupo" class="form-text"></div>' +
+                        '</div>' +
+                        '<div id="listaUsuariosGrupo" class="lista-usuarios-grupo border rounded" role="list"></div>'
+                    );
+                    renderizarUsuariosGrupo('');
+                    vincularListaUsuariosGrupo(cont);
+                    $('#btnGuardarUsuariosGrupo').prop('disabled', false);
                 },
                 error: function () {
+                    if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
                     $('#contenedorUsuariosGrupo').html('<div class="text-danger">Error al cargar usuarios del grupo.</div>');
                 }
             });
+        }
+
+        function esAdministradorUsuarioGrupo(usuario) {
+            return usuario.EsAdministrador === true || String(usuario.Rol || '').trim().toLowerCase() === 'admin';
+        }
+
+        function normalizarBusquedaUsuariosGrupo(texto) {
+            return String(texto || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim();
+        }
+
+        function filtrarUsuariosGrupo(usuarios, texto) {
+            const termino = normalizarBusquedaUsuariosGrupo(texto);
+            return (usuarios || []).filter(function (usuario) {
+                if (!termino) return true;
+                return normalizarBusquedaUsuariosGrupo(usuario.Nombre_Usuario).includes(termino) ||
+                    normalizarBusquedaUsuariosGrupo(usuario.NombreCompleto).includes(termino);
+            });
+        }
+
+        function actualizarSeleccionUsuariosGrupo(seleccionados, usuarioId, seleccionado) {
+            const siguiente = new Set(seleccionados || []);
+            if (seleccionado) siguiente.add(usuarioId);
+            else siguiente.delete(usuarioId);
+            return siguiente;
+        }
+
+        function crearHtmlListaUsuariosGrupo(usuarios) {
+            if (!usuarios.length) {
+                return '<div class="text-muted text-center py-3">No hay usuarios que coincidan con la búsqueda.</div>';
+            }
+
+            return usuarios.map(function (usuario) {
+                const esAdmin = esAdministradorUsuarioGrupo(usuario);
+                const asignado = !esAdmin && usuario.Asignado === true;
+                const puedeIncorporarse = !esAdmin && !asignado;
+                const detalle = esAdmin
+                    ? '<span class="badge bg-secondary ms-1">admin</span><span class="texto-rol-admin"> - Acceso total por rol; no requiere grupo.</span>'
+                    : (asignado ? '<span class="badge estado-verde ms-1">Asignado</span>' : '');
+                const control = puedeIncorporarse
+                    ? `<input class="form-check-input chk-usuario lista-usuarios-check" type="checkbox" value="${usuario.Usuario_ID}" id="usr_${usuario.Usuario_ID}" ${usuariosSeleccionadosGrupo.has(usuario.Usuario_ID) ? 'checked' : ''}>`
+                    : '<span class="lista-usuarios-control" aria-hidden="true"></span>';
+                const etiqueta = puedeIncorporarse
+                    ? `<label class="lista-usuarios-etiqueta" for="usr_${usuario.Usuario_ID}">`
+                    : `<div class="lista-usuarios-etiqueta ${esAdmin ? 'text-muted' : ''}">`;
+                const cierreEtiqueta = puedeIncorporarse ? '</label>' : '</div>';
+                return `
+                    <div class="lista-usuarios-item border-bottom" role="listitem">
+                        ${control}
+                        ${etiqueta}
+                            <strong>${escapeHtml(usuario.Nombre_Usuario)}</strong> - ${escapeHtml(usuario.NombreCompleto)}
+                            ${detalle}
+                        ${cierreEtiqueta}
+                    </div>`;
+            }).join('');
+        }
+
+        function actualizarResumenUsuariosGrupo(usuariosVisibles) {
+            const total = usuariosGrupoCache.length;
+            const seleccionados = usuariosSeleccionadosGrupo.size;
+            const asignados = usuariosGrupoCache.filter(function (usuario) {
+                return !esAdministradorUsuarioGrupo(usuario) && usuario.Asignado === true;
+            }).length;
+            $('#resumenUsuariosGrupo').text(
+                'Mostrando ' + usuariosVisibles.length + ' de ' + total + ' usuarios. ' +
+                asignados + (asignados === 1 ? ' asignado. ' : ' asignados. ') +
+                seleccionados + (seleccionados === 1 ? ' por incorporar.' : ' por incorporar.')
+            );
+        }
+
+        function renderizarUsuariosGrupo(texto) {
+            const usuariosVisibles = filtrarUsuariosGrupo(usuariosGrupoCache, texto);
+            $('#listaUsuariosGrupo').html(crearHtmlListaUsuariosGrupo(usuariosVisibles));
+            actualizarResumenUsuariosGrupo(usuariosVisibles);
+        }
+
+        function vincularListaUsuariosGrupo(contenedor) {
+            contenedor
+                .off('input.usuariosGrupo', '#txtBuscarUsuarioGrupo')
+                .on('input.usuariosGrupo', '#txtBuscarUsuarioGrupo', function () {
+                    renderizarUsuariosGrupo($(this).val());
+                })
+                .off('change.usuariosGrupo', '.chk-usuario')
+                .on('change.usuariosGrupo', '.chk-usuario', function () {
+                    const usuarioId = parseInt($(this).val(), 10);
+                    usuariosSeleccionadosGrupo = actualizarSeleccionUsuariosGrupo(
+                        usuariosSeleccionadosGrupo,
+                        usuarioId,
+                        $(this).prop('checked') === true
+                    );
+                    actualizarResumenUsuariosGrupo(filtrarUsuariosGrupo(
+                        usuariosGrupoCache,
+                        $('#txtBuscarUsuarioGrupo').val()
+                    ));
+                });
+        }
+
+        function marcarUsuariosAgregadosGrupo(usuarioIds) {
+            const idsAgregados = new Set(usuarioIds || []);
+            usuariosGrupoCache = usuariosGrupoCache.map(function (usuario) {
+                return idsAgregados.has(usuario.Usuario_ID)
+                    ? Object.assign({}, usuario, { Asignado: true })
+                    : usuario;
+            });
+        }
+
+        function mostrarUsuariosGrupoGuardados(cantidad) {
+            const nombreGrupo = $('#selectGrupoUsuarios option:selected').text();
+            const detalleGrupo = nombreGrupo ? ' al grupo ' + nombreGrupo : '';
+            $('#mensajeUsuariosGrupoGuardados').text(
+                'Se agreg' + (cantidad === 1 ? 'ó ' : 'aron ') + cantidad +
+                (cantidad === 1 ? ' usuario' : ' usuarios') + detalleGrupo + '.'
+            );
+            $('#modalUsuariosGrupoGuardados').modal('show');
         }
 
         function guardarUsuariosDeGrupo() {
@@ -584,16 +815,29 @@
                 return;
             }
 
-            const ids = $('.chk-usuario:checked').map(function () {
-                return parseInt($(this).val(), 10);
-            }).get();
+            if (grupoUsuariosCargadoId !== String(grupoId)) {
+                alert('Esperá a que se carguen los usuarios del grupo antes de guardar.');
+                return;
+            }
+
+            const ids = Array.from(usuariosSeleccionadosGrupo);
+            if (!ids.length) {
+                alert('Seleccioná al menos un usuario para incorporar al grupo.');
+                return;
+            }
 
             $.ajax({
                 url: API_BASE + '/Grupos/' + grupoId + '/Usuarios',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({ UsuarioIds: ids }),
-                success: function () { showToast('Usuarios del grupo guardados.'); },
+                success: function () {
+                    if (grupoUsuariosCargadoId !== String(grupoId)) return;
+                    marcarUsuariosAgregadosGrupo(ids);
+                    usuariosSeleccionadosGrupo = new Set();
+                    renderizarUsuariosGrupo($('#txtBuscarUsuarioGrupo').val());
+                    mostrarUsuariosGrupoGuardados(ids.length);
+                },
                 error: function () { alert('No se pudo guardar la asignación de usuarios.'); }
             });
         }
