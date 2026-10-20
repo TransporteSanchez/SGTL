@@ -4,24 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Listar usuarios · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
         }
 
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        .table-responsive {
-            width: 100%;
-        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -29,29 +18,37 @@
         href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
         type="image/png">
 
+
+
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
+    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
         <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
             <header>
+
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
                         <a href="#" class="burger-btn d-block">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
+
+                        <!--btn para expandir Menú lateral-->
 
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -59,8 +56,12 @@
                             <span class="navbar-toggler-icon"></span>
                         </button>
 
+                        <!--Llamado a las opciones del header-->
+
                         <div id="header-container"></div>
+
                         <script src="./assets/static/js/header.js"></script>
+
                     </div>
                 </nav>
             </header>
@@ -69,59 +70,61 @@
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-                            <h5 class="card-title">Listar usuarios</h5>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-people-fill me-2"></i>Listar usuarios
+                            </h5>
+                            <p class="text-muted mb-0">Consultá los usuarios, sus grupos y las pantallas que ven; para cambiarlos andá a Gestionar usuarios.</p>
                         </div>
+
                         <div class="card-body">
-                            <form id="busquedaUsuarioForm" class="form">
-                                <div class="row">
-                                    <div class="col-md-3 mb-3">
-                                        <label for="txtuser-name-column" class="form-label">Nombre de usuario</label>
-                                        <input type="text" class="form-control" id="txtuser-name-column"
-                                            placeholder="jperez">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label for="txtfirst-name-column" class="form-label">Nombre</label>
-                                        <input type="text" class="form-control" id="txtfirst-name-column"
-                                            placeholder="Juan">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label for="txtlast-name-column" class="form-label">Apellido</label>
-                                        <input type="text" class="form-control" id="txtlast-name-column"
-                                            placeholder="Perez">
-                                    </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label class="form-label">Estado</label>
-                                        <div class="form-check">
-                                            <input type="checkbox" class="form-check-input form-check-success"
-                                                id="checkestadoactivo">
-                                            <label class="form-check-label" for="checkestadoactivo">Activo</label>
-                                        </div>
-                                        <div class="form-check">
-                                            <input type="checkbox" class="form-check-input form-check-danger"
-                                                id="checkestadoinactivo">
-                                            <label class="form-check-label" for="checkestadoinactivo">Inactivo</label>
-                                        </div>
-                                    </div>
+                            <form id="busquedaUsuarioForm" class="row g-3 align-items-end" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroUsuario" class="form-label">Nombre de usuario</label>
+                                    <input type="text" class="form-control" id="filtroUsuario" placeholder="jperez" autocomplete="off">
                                 </div>
-                                <button type="button" class="btn btn-light mb-4" id="btnBuscarUsuarios">Buscar</button>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroNombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="filtroNombre" placeholder="Juan" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-2">
+                                    <label for="filtroApellido" class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" id="filtroApellido" placeholder="Pérez" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-2">
+                                    <label for="filtroEstado" class="form-label">Estado</label>
+                                    <select id="filtroEstado" class="form-select">
+                                        <option value="Activo" selected>Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-lg-2 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
+                                </div>
                             </form>
 
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="tablaUsuarios">
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped table-hover" id="tablaUsuarios">
                                     <thead>
                                         <tr>
                                             <th>Nombre de usuario</th>
                                             <th>Nombre</th>
                                             <th>Apellido</th>
-                                            <th>Estado</th>
-                                            <th></th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody></tbody>
+                                    <tbody>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted py-4">Cargando…</td>
+                                        </tr>
+                                    </tbody>
                                 </table>
                             </div>
 
-                            <nav>
+                            <nav aria-label="Paginación de usuarios">
                                 <ul class="pagination justify-content-end" id="pagination"></ul>
                             </nav>
                         </div>
@@ -129,52 +132,72 @@
                 </section>
             </div>
 
+            <!--Footer-->
+
             <footer>
                 <div id="footer-container"></div>
+
                 <script src="./assets/static/js/footer.js"></script>
+
             </footer>
+
         </div>
 
-        <!-- Modal Detalles del Usuario -->
-        <div class="modal fade" id="DetallesUsuarioModal" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
+        <!-- Modal Ver detalle del usuario -->
+        <div class="modal fade" id="detalleUsuarioModal" tabindex="-1" aria-labelledby="detalleUsuarioTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title fw-bold text-primary">Detalles del usuario</h4>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <h5 class="modal-title" id="detalleUsuarioTitulo">Ver detalle del usuario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <div class="border rounded p-3">
-                            <label class="fw-bold d-block mb-2">Estado del usuario</label>
-                            <span id="modalEstadoUsuario" class="badge">—</span>
+                        <div class="d-flex flex-wrap gap-4 mb-4">
+                            <div><span class="text-muted me-1">Estado:</span><span id="detalleEstado"></span></div>
+                            <div><span class="text-muted me-1">Rol:</span><span id="detalleRol"></span></div>
                         </div>
 
-                        <div class="border rounded p-3 mt-3">
-                            <label class="fw-bold d-block mb-2">Grupos asignados</label>
-                            <ul id="modalGruposAsignados" class="list-unstyled mb-0">
-                                <li class="text-muted">Cargando…</li>
-                            </ul>
-                        </div>
-
-                        <div class="border rounded p-3 mt-3">
-                            <label class="fw-bold d-block mb-2">Permisos asignados por grupo</label>
-                            <div id="modalPermisosPorGrupo">
-                                <p class="text-muted mb-0">Cargando…</p>
+                        <h6 class="mb-2">Datos del usuario</h6>
+                        <div class="row mb-3">
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Nombre de usuario</span>
+                                <p class="form-control-plaintext" id="detalleUsuario"></p>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Nombre</span>
+                                <p class="form-control-plaintext" id="detalleNombre"></p>
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <span class="form-label d-block mb-0">Apellido</span>
+                                <p class="form-control-plaintext" id="detalleApellido"></p>
                             </div>
                         </div>
+
+                        <h6 class="mb-2">Grupos y pantallas que ve</h6>
+                        <div id="detalleGrupos"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
+
+    <!--Scripts-->
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
+    <!-- Carga de diseño y roles -->
     <script>
         window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
@@ -194,14 +217,13 @@
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
             }
         };
 
         function adjustVisibilityBasedOnRole() {
             const userRole = localStorage.getItem('userRole');
             const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-            if (!gestionarContenidoBtn) return;
 
             if (userRole && userRole.toLowerCase() === 'admin') {
                 gestionarContenidoBtn.style.display = 'block';
@@ -220,228 +242,133 @@
                         const data = JSON.parse(xhr.responseText);
                         if (data) {
                             const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
                         } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
                             reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
                         }
                     } else {
+                        console.error('Error en la petición:', xhr.statusText);
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
 
                 xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
                     reject(new Error('Error de red'));
                 };
 
                 xhr.send();
             });
         }
+
     </script>
 
+    <!-- Buscar, listar y ver detalle -->
     <script>
-        const API_BASE = 'http://localhost:50222/api';
+        const API = 'http://localhost:50222/api';
+        const COLUMNAS_USUARIOS = 5;
+        const LETRAS = /[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g;
         let pageSize = 15;
         let currentPage = 1;
+        let ultimaBusqueda = 0;
 
-        function escapeHtml(text) {
-            if (text == null) return '';
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
+        function filaUsuario(usuario) {
+            return `<tr>
+                <td>${SGTL.escapar(usuario.Nombre_Usuario)}</td>
+                <td>${SGTL.escapar(usuario.Nombre)}</td>
+                <td>${SGTL.escapar(usuario.Apellido)}</td>
+                <td class="text-center">${SGTL.estado(usuario.EstadoUsuario)}</td>
+                <td class="text-center">${SGTL.accionesFila([SGTL.botonFila('ver', { id: usuario.Usuario_ID })])}</td>
+            </tr>`;
         }
 
-        function buscarUsuarios(page) {
-            if (page == null) page = 1;
+        function buscarUsuarios(page = 1) {
+            const tbody = '#tablaUsuarios tbody';
+            const busqueda = ++ultimaBusqueda;
             currentPage = page;
+            SGTL.tabla.cargando(tbody, COLUMNAS_USUARIOS);
 
-            const nombreUsuario = $('#txtuser-name-column').val();
-            const nombre = $('#txtfirst-name-column').val();
-            const apellido = $('#txtlast-name-column').val();
-            const estadoActivo = $('#checkestadoactivo').is(':checked');
-            const estadoInactivo = $('#checkestadoinactivo').is(':checked');
-
-            let estadoUsuario = '';
-            if (estadoActivo && estadoInactivo) {
-                estadoUsuario = 'Activo,Inactivo';
-            } else if (estadoActivo) {
-                estadoUsuario = 'Activo';
-            } else if (estadoInactivo) {
-                estadoUsuario = 'Inactivo';
-            }
-
-            $.ajax({
-                url: API_BASE + '/Usuarios/Buscar',
+            SGTL.ajax({
+                url: API + '/Usuarios/Buscar',
                 type: 'GET',
                 data: {
-                    Nombre_Usuario: nombreUsuario,
-                    nombre: nombre,
-                    apellido: apellido,
-                    EstadoUsuario: estadoUsuario,
+                    nombreusuario: $('#filtroUsuario').val().trim(),
+                    nombre: $('#filtroNombre').val().trim(),
+                    apellido: $('#filtroApellido').val().trim(),
+                    EstadoUsuario: $('#filtroEstado').val(),
                     page: page,
                     pageSize: pageSize
-                },
-                success: function (data) {
-                    const tbody = $('#tablaUsuarios tbody');
-                    tbody.empty();
-
-                    if (!data.Results || data.Results.length === 0) {
-                        tbody.html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
-                    } else {
-                        data.Results.forEach(function (registro) {
-                            const estado = registro.EstadoUsuario || '';
-                            const estadoClass = estado === 'Activo' ? 'badge bg-success' : 'badge bg-danger';
-
-                            const $tr = $('<tr>');
-                            $tr.append($('<td>').text(registro.Nombre_Usuario || ''));
-                            $tr.append($('<td>').text(registro.Nombre || ''));
-                            $tr.append($('<td>').text(registro.Apellido || ''));
-                            $tr.append($('<td>').append($('<span>').addClass(estadoClass).text(estado)));
-
-                            const $btn = $('<button>')
-                                .addClass('btn btn-primary')
-                                .html('<i class="bi bi-info-circle"></i> Más detalles')
-                                .attr('data-bs-toggle', 'modal')
-                                .attr('data-bs-target', '#DetallesUsuarioModal')
-                                .attr('data-usuarioid', registro.Usuario_ID);
-                            $tr.append($('<td>').append($btn));
-                            tbody.append($tr);
-                        });
-                    }
-
-                    renderPagination(data.TotalRecords || 0, pageSize, page);
-                },
-                error: function (xhr) {
-                    console.error('Error en la búsqueda de usuarios:', xhr);
                 }
-            });
-        }
-
-        function rellenarModalDetallesUsuario(detalles) {
-            const estado = detalles.EstadoUsuario || '—';
-            const esActivo = estado === 'Activo';
-            $('#modalEstadoUsuario')
-                .text(estado)
-                .removeClass('bg-success bg-danger')
-                .addClass(esActivo ? 'bg-success' : 'bg-danger');
-
-            const $listaGrupos = $('#modalGruposAsignados');
-            $listaGrupos.empty();
-            if (!detalles.Grupos || detalles.Grupos.length === 0) {
-                $listaGrupos.append('<li class="text-muted">Ningún grupo asignado</li>');
-            } else {
-                detalles.Grupos.forEach(function (g) {
-                    $listaGrupos.append('<li class="mb-1">' + escapeHtml(g.Grupo_Nombre || '') + '</li>');
-                });
-            }
-
-            const $permisos = $('#modalPermisosPorGrupo');
-            $permisos.empty();
-            if (!detalles.Grupos || detalles.Grupos.length === 0) {
-                $permisos.append('<p class="text-muted mb-0">Sin permisos por grupo</p>');
-            } else {
-                detalles.Grupos.forEach(function (g) {
-                    const $bloque = $('<div>').addClass('mt-2');
-                    $bloque.append($('<h6>').addClass('fw-bold').text(g.Grupo_Nombre || ''));
-                    const $ul = $('<ul>').addClass('list-group');
-                    if (g.Menus && g.Menus.length) {
-                        g.Menus.forEach(function (m) {
-                            $ul.append($('<li>').addClass('list-group-item').text(m));
-                        });
-                    } else {
-                        $ul.append('<li class="list-group-item text-muted">Sin menús asignados</li>');
-                    }
-                    $bloque.append($ul);
-                    $permisos.append($bloque);
-                });
-            }
-        }
-
-        function renderPagination(totalRecords, pageSizeVal, page) {
-            const totalPages = Math.ceil(totalRecords / pageSizeVal) || 1;
-            const paginationContainer = $('#pagination');
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(paginationContainer.get(0), {
-                    total: totalRecords, tamanioPagina: pageSizeVal, pagina: page,
+            }, 'No se pudieron cargar los usuarios. Revisá la conexión y probá de nuevo.').then(function (data) {
+                if (busqueda !== ultimaBusqueda) return;
+                const registros = data.Results || [];
+                if (registros.length) SGTL.tabla.llenar(tbody, registros.map(filaUsuario).join(''));
+                else SGTL.tabla.vacia(tbody, COLUMNAS_USUARIOS);
+                SGTL.tabla.paginacion('#pagination', {
+                    total: data.TotalRecords || 0,
+                    tamanioPagina: pageSize,
+                    pagina: page,
                     alCambiarPagina: function (pagina) { buscarUsuarios(pagina); },
                     alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarUsuarios(1); }
                 });
-                return;
-            }
-            paginationContainer.empty();
-
-            const prevDisabled = page === 1 ? 'disabled' : '';
-            const nextDisabled = page >= totalPages ? 'disabled' : '';
-
-            paginationContainer.append(
-                '<li class="page-item ' + prevDisabled + '">' +
-                '<a class="page-link" href="#" aria-label="Previous" data-page="' + (page - 1) + '">' +
-                '<span aria-hidden="true"><i class="bi bi-chevron-left"></i></span></a></li>'
-            );
-
-            for (let i = 1; i <= totalPages; i++) {
-                const activeClass = page === i ? 'active' : '';
-                paginationContainer.append(
-                    '<li class="page-item ' + activeClass + '">' +
-                    '<a class="page-link" href="#" data-page="' + i + '">' + i + '</a></li>'
-                );
-            }
-
-            paginationContainer.append(
-                '<li class="page-item ' + nextDisabled + '">' +
-                '<a class="page-link" href="#" aria-label="Next" data-page="' + (page + 1) + '">' +
-                '<span aria-hidden="true"><i class="bi bi-chevron-right"></i></span></a></li>'
-            );
+            }, function (error) {
+                if (busqueda !== ultimaBusqueda) return;
+                SGTL.tabla.vacia(tbody, COLUMNAS_USUARIOS, 'No se pudieron cargar los usuarios.');
+                SGTL.tabla.paginacion('#pagination', { total: 0 });
+                SGTL.toastError(error.mensajeUsuario);
+            });
         }
 
-        $(document).ready(function () {
-            $('#checkestadoactivo').prop('checked', true);
+        function bloqueGrupo(grupo) {
+            const menus = grupo.Menus || [];
+            return `<div class="mb-3">
+                <p class="fw-bold mb-1">${SGTL.escapar(grupo.Grupo_Nombre)}</p>
+                ${menus.length
+                    ? `<ul class="mb-0">${menus.map(function (m) { return `<li>${SGTL.escapar(m)}</li>`; }).join('')}</ul>`
+                    : '<p class="text-muted mb-0">Todavía no tiene pantallas asignadas.</p>'}
+            </div>`;
+        }
 
-            $('#txtuser-name-column').on('input', function () {
+        function verDetalleUsuario(usuarioId, boton) {
+            const listo = SGTL.procesando(boton);
+            Promise.all([
+                SGTL.ajax({ url: `${API}/Usuarios/${usuarioId}`, type: 'GET' }),
+                SGTL.ajax({ url: `${API}/Usuarios/${usuarioId}/Detalles`, type: 'GET' })
+            ]).then(function (respuestas) {
+                const usuario = respuestas[0] || {};
+                const detalle = respuestas[1] || {};
+                const grupos = detalle.Grupos || [];
+                const esAdmin = (usuario.Rol || '').trim().toLowerCase() === 'admin';
+                $('#detalleEstado').html(SGTL.estado(usuario.EstadoUsuario || detalle.EstadoUsuario));
+                $('#detalleRol').text(usuario.Rol || '');
+                $('#detalleUsuario').text(usuario.Nombre_Usuario || '');
+                $('#detalleNombre').text(usuario.Nombre || '');
+                $('#detalleApellido').text(usuario.Apellido || '');
+                $('#detalleGrupos').html(grupos.length
+                    ? grupos.map(bloqueGrupo).join('')
+                    : `<p class="text-muted mb-0">${esAdmin ? 'Es administrador: ve todas las pantallas.' : 'Todavía no tiene grupos asignados.'}</p>`);
+                SGTL.modal('#detalleUsuarioModal', 'show');
+            }).catch(function (error) {
+                SGTL.toastError((error && error.mensajeUsuario) || 'No se pudo abrir el detalle del usuario. Probá de nuevo.');
+            }).finally(listo);
+        }
+
+        $(function () {
+            $('#filtroUsuario').on('input', function () {
                 this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9_\s´]/g, '');
             });
-
-            $('#txtfirst-name-column, #txtlast-name-column').on('input', function () {
-                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ\s´]/g, '');
+            $('#filtroNombre, #filtroApellido').on('input', function () {
+                this.value = this.value.replace(LETRAS, '');
             });
-
-            $('#btnBuscarUsuarios').on('click', function () { buscarUsuarios(1); });
-
-            $('#txtuser-name-column, #txtfirst-name-column, #txtlast-name-column').on('keypress', function (e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    buscarUsuarios(1);
-                }
+            SGTL.filtros(['#filtroUsuario', '#filtroNombre', '#filtroApellido', '#filtroEstado'], function () { buscarUsuarios(1); });
+            $('#busquedaUsuarioForm').on('submit', function (evento) {
+                evento.preventDefault();
+                buscarUsuarios(1);
             });
-
-            $('#pagination').on('click', 'a.page-link', function (e) {
-                e.preventDefault();
-                const page = parseInt($(this).data('page'), 10);
-                if (!isNaN(page) && page >= 1) buscarUsuarios(page);
-            });
-
-            $('#DetallesUsuarioModal').on('show.bs.modal', function (event) {
-                const button = $(event.relatedTarget);
-                const usuarioId = button.data('usuarioid');
-                $('#modalGruposAsignados').html('<li class="text-muted">Cargando…</li>');
-                $('#modalPermisosPorGrupo').html('<p class="text-muted mb-0">Cargando…</p>');
-                $('#modalEstadoUsuario').text('…').removeClass('bg-success bg-danger');
-
-                $.ajax({
-                    url: API_BASE + '/Usuarios/' + usuarioId + '/Detalles',
-                    type: 'GET',
-                    success: function (data) {
-                        rellenarModalDetallesUsuario(data);
-                    },
-                    error: function (xhr) {
-                        $('#modalGruposAsignados').html('<li class="text-danger">Error al cargar los detalles</li>');
-                        $('#modalPermisosPorGrupo').html('<p class="text-danger mb-0">Error al cargar los detalles</p>');
-                        $('#modalEstadoUsuario').text('—').removeClass('bg-success bg-danger');
-                        console.error('Error al obtener los detalles del usuario:', xhr);
-                    }
-                });
-            });
-
+            $('#tablaUsuarios').on('click', '[data-accion="ver"]', function () { verDetalleUsuario($(this).data('id'), this); });
             buscarUsuarios(1);
         });
     </script>
