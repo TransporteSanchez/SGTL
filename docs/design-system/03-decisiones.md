@@ -390,5 +390,7 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Íconos: solo Bootstrap Icons.** Se sacan Font Awesome (CDN, en login e inicio), Feather y
   Boxicons.
 - **Gestionar contenido sigue igual:** logo, pie, color de fondo y color del menú. "Restablecer"
-  vuelve a la marca SGTL: fondo `#e4eef8`, menú `#435ebe` y pie `SGTL | un producto de Integra Analistas ®`.
+  vuelve a la marca SGTL: logo `assets/static/images/logo/sgtl-logo.png`, fondo `#e4eef8`, menú `#435ebe` y
+  pie `SGTL | un producto de Integra Analistas ®` (el logo se suma el 20/10). El ícono de la pestaña es siempre
+  `sgtl-icono.png` (solo "SGTL"), aunque haya otro logo cargado.
   La barra de arriba (usuario y menú) queda en blanco, igual que el menú lateral.

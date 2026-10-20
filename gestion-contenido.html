@@ -301,12 +301,11 @@
         // Obtener el nombre de usuario desde localStorage
         const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
 
-        // Vuelve a la marca SGTL (fondo, menú y pie); el logo queda como está.
+        // Vuelve a la marca SGTL: logo, fondo, menú y pie.
         function restablecerContenido() {
             var marca = window.SGTL_CONTENIDO_DEFAULT;
-            const logoActual = valorLogoEfectivo() || marca.logo;
             const settingsData = {
-                Logo: logoActual,
+                Logo: marca.logo,
                 ColorFondo: marca.fondo,
                 ColorBotonesMenu: marca.menu,
                 ContenidoPiePagina: marca.pie,
@@ -322,14 +321,20 @@
                 document.getElementById('backgroundColorInput').value = marca.fondo;
                 document.getElementById('menuColorInput').value = marca.menu;
                 document.getElementById('footerContentInput').value = marca.pie;
-                applyStyles(logoActual, marca.fondo, marca.menu, marca.pie);
+                // Si había un archivo subido, se descarta y el campo vuelve a mostrar la ruta del logo de SGTL.
+                uploadedLogoDataUrl = null;
+                document.getElementById('logoFile').value = '';
+                marcarArchivoCargado(false);
+                document.getElementById('logoInput').value = marca.logo;
+                setLogoPreview(marca.logo);
+                applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
             });
         }
 
         document.getElementById('btnRestablecer').addEventListener('click', function () {
             SGTL.confirmar({
                 titulo: '¿Restablecer los valores por defecto?',
-                mensaje: 'El fondo, el menú y el pie vuelven a los de SGTL. El logo no cambia.',
+                mensaje: 'El logo, el fondo, el menú y el pie vuelven a los de SGTL.',
                 verbo: 'Restablecer',
                 accion: restablecerContenido
             }).then(function (hecho) {
