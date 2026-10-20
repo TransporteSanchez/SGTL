@@ -30,6 +30,7 @@ documento** y sirve de índice. Vale para el equipo y para cualquier IA que trab
 | `docs/negocio/` | Relevamientos y definiciones con el cliente, flujos operativos de la transportista | `TEMA.md` |
 | `docs/diseno/` | Diseño técnico de un módulo: modelo de datos, contratos, cómo se integra | `<módulo>-diseno.md` o `<módulo>-integracion.md` |
 | `docs/design-system/` | Reglas visuales y de interfaz (botones, modales, tablas, textos) | `NN-tema.md`, numerados |
+| `docs/tesis/` | Borrador del documento de la tesis, por partes, antes de pasarlo al Word | `NN-parte.md`, numerados |
 | `docs/pruebas/` | Reportes de prueba, uno por recorrida (por ejemplo, los que genera la VM) | `AAAA-MM-DD-tema.md` |
 | `docs/pruebas/datos/` | Archivos de prueba con datos inventados (por ejemplo, Excel con el formato de Rukas). Nunca datos reales de clientes | `<módulo>-<caso>.<ext>` |
 
@@ -68,6 +69,16 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/design-system/02-instructivo-capturas-vm.md` — cómo sacar las capturas en la VM.
 - `docs/design-system/03-decisiones.md` — las reglas que siguen las pantallas nuevas o tocadas.
 - `docs/design-system/04-relevamiento-funcional.md` — relevamiento de inconsistencias y mejoras de uso en las pantallas ya subidas (19/10/2026). No reemplaza los pendientes del §10.
+
+### Tesis
+
+- `docs/tesis/README.md` — índice del borrador de la tesis y lo que falta confirmar.
+- `docs/tesis/01-analisis-organizacional.md` — historial, introducción, empresa, problemas y requerimientos.
+- `docs/tesis/02-anteproyecto.md` — objetivos, impulsos, alcances, límites, evolutivos y factibilidad.
+- `docs/tesis/03-metodologia-y-sprints.md` — Scrum, Sprint 0, backlog y sprints 1 a 24.
+- `docs/tesis/04-arquitectura-y-diseno.md` — actores, arquitectura, despliegue, estados y DER.
+- `docs/tesis/05-pruebas-e-implementacion.md` — prueba del sistema e implementación.
+- `docs/tesis/06-fuentes-bibliografia-anexos.md` — fuentes, bibliografía y anexos.
 
 ### Pruebas
 
