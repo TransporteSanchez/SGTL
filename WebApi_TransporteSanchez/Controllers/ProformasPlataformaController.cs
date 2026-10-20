@@ -64,6 +64,9 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public string Numero { get; set; }
             public DateTime? Fecha { get; set; }
+            // N° que mostraba la pantalla al corregir ("" o null la primera vez): si otra persona lo cambió
+            // en el medio, no se pisa.
+            public string NumeroAnterior { get; set; }
             public string Usuario { get; set; }
         }
 
@@ -111,6 +114,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal TotalAdicionales { get; set; }
             public decimal TotalPlataforma { get; set; }
             public decimal TotalSgtl { get; set; }
+            // IVA y total de la proforma (netos de la plataforma + IVA 21 %), los mismos que se guardan y se facturan.
+            public decimal Iva { get; set; }
+            public decimal Total { get; set; }
             public bool PuedeGenerar { get; set; }
             // Etapa 6: factura de SGTL y N° / fecha de la factura según la plataforma (con eso queda cerrada).
             public string FacturaSgtl { get; set; }
@@ -207,6 +213,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
         private static readonly CultureInfo EsAr = new CultureInfo("es-AR");
         private static string Pesos(decimal v) { return "$" + v.ToString("N0", EsAr); }
+        private static decimal CalcularIva(decimal neto) { return decimal.Round(neto * IvaPct / 100m, 2, MidpointRounding.AwayFromZero); }
 
         private static string UsuarioCorto(string u)
         {
@@ -417,7 +424,7 @@ WHERE Linea_ID=@linea;",
 
             // Totales con lo de la plataforma (netos) + IVA, igual que ComputarTotales de la proforma propia.
             decimal subtotal = lineas.Sum(x => x.Importe_Viaje + x.Adicionales);
-            decimal iva = decimal.Round(subtotal * IvaPct / 100m, 2, MidpointRounding.AwayFromZero);
+            decimal iva = CalcularIva(subtotal);
             var fechas = lineas.Where(x => x.Fecha.HasValue).Select(x => x.Fecha.Value).ToList();
             db.Database.ExecuteSqlCommand(@"
 UPDATE dbo.PROFORMAS
@@ -552,6 +559,8 @@ ORDER BY cp.ComprobanteProforma_ID DESC;", P("@id", proformaId)).FirstOrDefault(
                 Avisos = new List<string>()
             };
             dto.TotalPlataforma = dto.TotalViajes + dto.TotalAdicionales;
+            dto.Iva = CalcularIva(dto.TotalPlataforma);
+            dto.Total = dto.TotalPlataforma + dto.Iva;
             dto.PuedeGenerar = c.Estado == "Borrador" && dto.Cantidad > 0 && dto.Diferencias == 0;
             var lector = LectoresPlataforma.Obtener(c.Codigo);
 
@@ -925,7 +934,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuari
         }
 
         // Etapa 6: N° y fecha de la factura tal como figura en la plataforma. Solo en una proforma de plataforma
-        // facturada y una sola vez: con eso queda cerrada (como la solapa Cerrados de Rukas).
+        // facturada: con eso queda cerrada (como la solapa Cerrados de Rukas). Se puede corregir si se cargó mal;
+        // el valor anterior queda en la auditoría.
         [HttpPost]
         [Route("{id:int}/Factura")]
         public IHttpActionResult RegistrarFactura(int id, [FromBody] FacturaPlataformaDto d)
@@ -945,8 +955,9 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuari
                         return Content(HttpStatusCode.BadRequest, new { error = "Todavía no se pueden leer archivos de " + c.Plataforma + "." });
                     if (c.Estado != "Facturada" || LeerFacturaSgtl(db, id) == null)
                         return Content(HttpStatusCode.BadRequest, new { error = "Primero emití la factura de la proforma." });
-                    if (!string.IsNullOrEmpty(c.Plataforma_Factura_Numero))
-                        return Content(HttpStatusCode.BadRequest, new { error = "La proforma ya tiene cargada la factura " + c.Plataforma_Factura_Numero + " de " + c.Plataforma + "." });
+                    var anterior = c.Plataforma_Factura_Numero ?? "";
+                    if (anterior != (d == null ? "" : (d.NumeroAnterior ?? "").Trim().ToUpperInvariant()))
+                        return Content(HttpStatusCode.Conflict, new { error = "Otra persona cambió la factura de " + c.Plataforma + ". Cerrá y volvé a abrir la proforma." });
                     if (numero == "")
                         return Content(HttpStatusCode.BadRequest, new { error = "Completá el N° de factura en " + c.Plataforma + "." });
                     if (numero.Length > 20 || !Regex.IsMatch(numero, lector.FormatoFactura))
@@ -957,15 +968,24 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuari
                     if (fecha > DateTime.Today)
                         return Content(HttpStatusCode.BadRequest, new { error = "La fecha de la factura no puede ser posterior a hoy." });
 
+                    if (anterior == numero && c.Plataforma_Factura_Fecha.HasValue && c.Plataforma_Factura_Fecha.Value.Date == fecha)
+                        return Ok(ArmarControl(db, id));
+
                     int n = db.Database.ExecuteSqlCommand(@"
 UPDATE dbo.PROFORMAS
 SET Plataforma_Factura_Numero=@num, Plataforma_Factura_Fecha=@f, Plataforma_Factura_Usuario=@u, Plataforma_Factura_Carga=GETDATE()
-WHERE Proforma_ID=@id AND Plataforma_Factura_Numero IS NULL;",
-                        P("@num", numero), P("@f", fecha), P("@u", UsuarioCorto(usuario)), P("@id", id));
+WHERE Proforma_ID=@id AND ISNULL(Plataforma_Factura_Numero,'')=@anterior;",
+                        P("@num", numero), P("@f", fecha), P("@u", UsuarioCorto(usuario)), P("@id", id), P("@anterior", anterior));
                     if (n == 0)
-                        return Content(HttpStatusCode.Conflict, new { error = "Otra persona ya cargó la factura de " + c.Plataforma + ". Cerrá y volvé a abrir la proforma." });
-                    Auditar(db, usuario, "FACTURA", id, null,
-                        "Factura en " + c.Plataforma + ": " + numero + " del " + fecha.ToString("dd/MM/yyyy") + "; proforma cerrada");
+                        return Content(HttpStatusCode.Conflict, new { error = "Otra persona cambió la factura de " + c.Plataforma + ". Cerrá y volvé a abrir la proforma." });
+                    string nuevo = "Factura en " + c.Plataforma + ": " + numero + " del " + fecha.ToString("dd/MM/yyyy");
+                    if (anterior == "")
+                        Auditar(db, usuario, "FACTURA", id, null, nuevo + "; proforma cerrada");
+                    else
+                        Auditar(db, usuario, "FACTURA", id,
+                            "Factura en " + c.Plataforma + ": " + anterior
+                                + (c.Plataforma_Factura_Fecha.HasValue ? " del " + c.Plataforma_Factura_Fecha.Value.ToString("dd/MM/yyyy") : ""),
+                            nuevo + " (corrección)");
                     return Ok(ArmarControl(db, id));
                 }
             }
