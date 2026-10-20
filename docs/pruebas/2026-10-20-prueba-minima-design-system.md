@@ -56,3 +56,14 @@ Camiones 2 y 3 (ZZ999ZZ, PRUEBA), solo en la memoria de la API falsa; al cerrar 
   Que `applyStyles` exista y `cargarEstilosContenido` no indica que el navegador usó una copia vieja del archivo
   (el servidor estático de Python no evita la caché). Verificar en la VM con Ctrl+F5.
 - **F3 y F4:** ya anotadas, no son de esta tanda.
+
+## Segunda pasada (Mac, 20/10, servidor de prueba sin caché)
+- **F1:** con la API devolviendo `"2024-01-01"` y `"2025-06-01"` (fecha sin hora, el caso del reporte), Editar camión
+  muestra 01/01/2024 y 01/06/2025. Corregida.
+- **F2:** no se reproduce. En Gestionar facturación `cargarEstilosContenido` existe, se aplica el pie configurado y la
+  consola solo muestra PerfectScrollbar (F3). En el primer intento de esta pasada el servidor estático cortó varias
+  conexiones (`ERR_CONNECTION_RESET`) y `sgtl-ui.js` y `header.js` no llegaron a cargarse; con una recarga anduvo.
+  Lo más probable es que en la prueba haya pasado lo mismo con `gestionContenido.js` (o que estuviera en caché):
+  es del servidor de prueba, no del código.
+- **Recorrida:** las 11 pantallas de la tanda cargan `SGTL`, muestran la pantalla y ninguna tabla queda en "Cargando…";
+  Dashboard, cuenta corriente, e-mail, WhatsApp, manual e informe de versión también abren con su título nuevo.
