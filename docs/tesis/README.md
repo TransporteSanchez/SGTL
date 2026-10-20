@@ -38,12 +38,16 @@ Pendiente:
    presupuesto aceptado o rechazado puede volver a Pendiente (parte 4, Facu); el orden del backlog
    pendiente (parte 3) y quién de la empresa es el administrador del sistema (parte 5).
 
-## Word
+## Word (versión principal)
 
-`docs/tesis/SGTL-Documentacion-Transporte-Sanchez.docx` (y su PDF) se genera desde estas seis partes:
-portada, índice con números de página, pie con numeración y los 21 diagramas como imagen. Si se
-cambia un `.md`, hay que volver a generarlo (pedírselo a Claude: el script toma las partes, renderiza
-los diagramas Mermaid con Chrome y arma el Word con Microsoft Word).
+`docs/tesis/SGTL-Documentacion-Transporte-Sanchez.docx` es el documento final de la tesis, con el
+membrete de Cervantes, las imágenes de la V1.5 y las correcciones hechas a mano. Al lado está su PDF.
 
-Faltan dos imágenes de la V1.5 que no se pudieron extraer: la ubicación en Google Maps y el plano del
-galpón. Están marcadas con un recuadro gris en el Word para pegarlas a mano.
+- **Los cambios se hacen en el Word**, no en los `.md`. Los `.md` quedan como borrador de origen y
+  referencia (el Word se generó desde ellos el 20/10/2026, pero después se editó a mano: regenerarlo
+  pisaría esas ediciones).
+- Quien lo cambie: abrirlo, actualizar la tabla de contenido (clic derecho → Actualizar campo →
+  Actualizar toda la tabla), guardarlo, exportar el PDF (Archivo → Guardar como → PDF) y commitear
+  los dos archivos juntos (`Docs: …`).
+- Word no se puede fusionar: antes de editarlo, hacer `git pull` y avisar al equipo, para que no lo
+  cambien dos personas a la vez.

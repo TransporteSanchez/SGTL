@@ -73,6 +73,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 ### Tesis
 
 - `docs/tesis/README.md` — índice del borrador de la tesis y lo que falta confirmar.
+- `docs/tesis/SGTL-Documentacion-Transporte-Sanchez.docx` — documento final de la tesis (versión principal; también en PDF).
 - `docs/tesis/01-analisis-organizacional.md` — historial, introducción, empresa, problemas y requerimientos.
 - `docs/tesis/02-anteproyecto.md` — objetivos, impulsos, alcances, límites, evolutivos y factibilidad.
 - `docs/tesis/03-metodologia-y-sprints.md` — Scrum, Sprint 0, backlog y sprints 1 a 24.
