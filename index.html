@@ -41,6 +41,16 @@
         .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(13,110,253,.55); outline-offset: -2px; }
         .grid-stack.editando .card-header { cursor: move; }
         #widgetsChecklist .form-check-input { cursor: pointer; }
+        /* Fila de "¡Bienvenido!" fija debajo de la barra de arriba: al bajar, las tarjetas pasan por detrás.
+           El alto de la barra y el relleno de la página los completa fijarEncabezadoTablero(). */
+        #encabezadoTablero {
+            position: sticky;
+            top: var(--alto-barra-superior, 90px);
+            z-index: 8;
+            background-color: var(--sgtl-fondo, #e4eef8);
+            margin: 0 calc(-1 * var(--relleno-pagina, 2rem)) 1rem;
+            padding: 1rem var(--relleno-pagina, 2rem);
+        }
     </style>
 </head>
 
@@ -75,7 +85,7 @@
             </header>
 
             <div id="main-content">
-                <div class="page-heading mt-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div class="page-heading d-flex justify-content-between align-items-center flex-wrap gap-2" id="encabezadoTablero">
                     <h3 class="mb-0">¡Bienvenido!</h3>
                     <div class="d-flex gap-2 align-items-center" id="dash-toolbar">
                         <div class="position-relative d-inline-block" id="widgetsMenu" style="display:none;">
@@ -235,6 +245,7 @@
 
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
+                if (window.fijarEncabezadoTablero) window.fijarEncabezadoTablero();
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
                 loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
@@ -550,6 +561,18 @@
                 try { ajustarAltoCalendario(); } catch (e) { }
             }
             window.ajustarWidgetsVivos = refrescarVivos;
+
+            // El alto de la barra de arriba y el relleno de la página cambian según el ancho de la pantalla.
+            function fijarEncabezadoTablero() {
+                var barra = document.querySelector('#main > header');
+                var contenido = document.getElementById('main-content');
+                var raiz = document.documentElement.style;
+                // Mientras la pantalla está oculta mide 0: en ese caso queda el valor por defecto (90 px).
+                if (barra && barra.offsetHeight) raiz.setProperty('--alto-barra-superior', barra.offsetHeight + 'px');
+                if (contenido) raiz.setProperty('--relleno-pagina', getComputedStyle(contenido).paddingLeft);
+            }
+            window.addEventListener('resize', fijarEncabezadoTablero);
+            window.fijarEncabezadoTablero = fijarEncabezadoTablero;
 
             window.initDashboardGrid = function () {
                 if (typeof GridStack === 'undefined') { return; } // si el CDN no cargó, el dashboard sigue estático

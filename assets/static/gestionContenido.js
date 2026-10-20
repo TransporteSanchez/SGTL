@@ -43,6 +43,8 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     var fondo = colorFondo || marca.fondo;
     var menu = colorBotonesMenu || marca.menu;
     document.body.style.backgroundColor = fondo;
+    // Para lo que tiene que tapar el contenido con el mismo color de fondo (por ejemplo, la fila fija del tablero).
+    document.documentElement.style.setProperty('--sgtl-fondo', fondo);
 
     // El círculo de las iniciales lleva el color del menú; así cambia junto con él al guardar o restablecer.
     const iniciales = document.getElementById('userInitials');
