@@ -532,9 +532,11 @@
             { id: 'camionEquipoFrio', max: 50 }
         ];
 
+        // La fecha va como día local: new Date('2024-01-01') es medianoche UTC y en Argentina daría el día anterior.
         function ponerFecha(id, valor) {
             const input = document.getElementById(id);
-            const fecha = valor ? new Date(valor) : null;
+            const partes = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(valor || ''));
+            const fecha = partes ? new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3])) : null;
             if (input._flatpickr) {
                 if (fecha && !isNaN(fecha.getTime())) input._flatpickr.setDate(fecha, false);
                 else input._flatpickr.clear();

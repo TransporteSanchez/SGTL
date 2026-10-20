@@ -420,6 +420,8 @@ De paso quedaron corregidos R1 (CSV de clientes), R2 (`showErrorToast`), R3 (for
 
 Si algo falla: anotar pantalla, paso y el error de consola, y no seguir tocando.
 
+**Resultado 20/10 (en la Mac con API falsa, no en la VM):** `docs/pruebas/2026-10-20-prueba-minima-design-system.md`. F1 (fecha de camión un día antes al editar) corregida; F2 (`cargarEstilosContenido` en Gestionar facturación) no se reprodujo en el código, parece caché del navegador: verificar con Ctrl+F5; F3 y F4 ya estaban anotadas. **Falta correr esta prueba en la VM.**
+
 **Prueba completa (después de la presentación)** (Ctrl+F5 en cada pantalla; consola F12 sin errores rojos). Usá datos de prueba `PRUEBA-CLAUDE`; no elimines nada que no hayas creado.
 
 | # | Pantalla | Qué hacer | Esperado |
