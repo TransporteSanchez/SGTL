@@ -8,6 +8,38 @@ Los diagramas están en Mermaid: se ven dibujados en GitHub y en Visual Studio C
 
 **Actualizado al 19/10/2026** (rama `rocionuvoli`, igual a `main`).
 
+### Cómo leer los diagramas
+
+Hay tres tipos de diagrama. Cada uno tiene sus propias referencias.
+
+**Diagramas de flujo** (§1, §4.2 y §5): cómo se avanza de un paso al siguiente.
+
+| Símbolo | Significa |
+|---|---|
+| Rectángulo | Un paso o una acción en SGTL ("Registrar viaje", "Generar proforma") |
+| Rombo | Una decisión o una pregunta ("¿Tipo de cliente?", "¿Todo coincide?"). Cada flecha que sale tiene la respuesta |
+| Flecha llena | El camino normal |
+| Flecha punteada | Un camino que solo se toma **si hay un error**: la corrección (por ejemplo, anular la factura con nota de crédito) |
+| Texto sobre una flecha | La condición o el botón que lleva al paso siguiente |
+
+**Diagramas de estados** (§2.1, §2.2, §3 y §4.4): en qué estados puede estar un viaje o una proforma y cómo pasa de uno a otro.
+
+| Símbolo | Significa |
+|---|---|
+| Caja redondeada | Un estado ("Registrado", "Aceptada") |
+| Punto negro | El comienzo (la flecha que sale es cómo se crea) o el final (por ejemplo, un borrador eliminado deja de existir) |
+| Flecha | Un cambio de estado posible. El texto dice qué lo provoca: un botón ("Generar"), algo que hace el sistema solo ("Se emite la factura") o una corrección ("Nota de crédito") |
+| Flechas de ida y vuelta | Se puede avanzar y también volver un paso atrás |
+
+**Diagrama de secuencia** (§4.1): quién hace qué, en orden, entre Transporte Sánchez, Rukas y SGTL.
+
+| Símbolo | Significa |
+|---|---|
+| Columna | Un participante (la persona de Transporte Sánchez, el sistema Rukas o SGTL) |
+| Flecha llena | Una acción de un participante sobre otro, de arriba hacia abajo en el orden en que pasan |
+| Flecha punteada | Lo que el otro devuelve o responde (por ejemplo, el control que muestra SGTL). Acá **no** significa error |
+| Recuadro "alt" | Pasos que solo ocurren en ese caso ("Hay diferencias") |
+
 ---
 
 ## 1. Mapa general
