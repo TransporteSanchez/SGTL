@@ -14,7 +14,6 @@
         #tablaConceptos td { vertical-align: middle; }
         #tablaConceptos input, #tablaConceptos select { min-width: 70px; }
         .totales dt { font-weight: 500; }
-        .badge-estado { font-size: .75rem; }
         .tbl-prof th, .tbl-prof td { vertical-align: middle; }
     </style>
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
@@ -101,7 +100,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="tituloModal">Registrar proforma</h5>
-                    <span id="badgeEstadoModal" class="badge bg-secondary ms-2"></span>
+                    <span id="badgeEstadoModal" class="ms-2"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -320,8 +319,13 @@
         function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
         function toIso(v) { v = (v || '').trim(); return v ? v : null; }
         function badgeEstado(e) {
-            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Aceptada': 'bg-success', 'Facturada': 'bg-success', 'Anulada': 'bg-dark' };
-            return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
+            return SGTL.estado(e || '');
+        }
+        // El título del modal usa la misma pastilla que la tabla (con el id, para poder reemplazarla).
+        function ponerBadgeEstado(id, estado) {
+            var nodo = document.getElementById(id);
+            if (!nodo) return;
+            nodo.outerHTML = badgeEstado(estado).replace('<span class="', '<span id="' + id + '" class="ms-2 ');
         }
         function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
         function setVal(id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); }
@@ -645,7 +649,7 @@
             limpiarForm();
             estadoActual = 'Borrador';
             document.getElementById('tituloModal').textContent = 'Registrar proforma';
-            document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge bg-secondary ms-2">Borrador</span>';
+            ponerBadgeEstado('badgeEstadoModal', 'Borrador');
             setModoLectura(false);
             proformaConCambios = false;
             $('#modalProforma').modal('show');
@@ -676,7 +680,7 @@
                 (p.Detalle || []).forEach(function (l) { agregarLinea(l); });
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
-                document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
+                ponerBadgeEstado('badgeEstadoModal', estadoActual);
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
                 if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID, soloLectura);

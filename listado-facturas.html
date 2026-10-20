@@ -9,7 +9,6 @@
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
         .pagination { justify-content: center; }
-        .badge-estado { font-size: .75rem; }
         .tbl-prof th, .tbl-prof td { vertical-align: middle; }
         .bloque-titulo { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 16px 0 10px; }
         .totales dt { font-weight: 500; }
@@ -17,6 +16,7 @@
     </style>
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
@@ -90,7 +90,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="d_titulo">Proforma</h5>
-                    <span id="d_badge" class="badge bg-secondary ms-2"></span>
+                    <span id="d_badge" class="ms-2"></span>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -187,6 +187,7 @@
     <script src="assets/static/js/proforma-pdf.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
 
     <script>
         window.onload = function () {
@@ -219,8 +220,12 @@
         function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
         function setTxt(id, v) { var el = document.getElementById(id); if (el) el.textContent = (v == null || v === '' ? '—' : v); }
         function badgeEstado(e) {
-            var m = { 'Borrador': 'bg-secondary', 'Generada': 'bg-primary', 'Aceptada': 'bg-success', 'Facturada': 'bg-success', 'Anulada': 'bg-dark' };
-            return '<span class="badge badge-estado ' + (m[e] || 'bg-secondary') + '">' + esc(e || '') + '</span>';
+            return SGTL.estado(e || '');
+        }
+        function ponerBadgeEstado(id, estado) {
+            var nodo = document.getElementById(id);
+            if (!nodo) return;
+            nodo.outerHTML = badgeEstado(estado).replace('<span class="', '<span id="' + id + '" class="ms-2 ');
         }
 
         function cargarClientes() {
@@ -366,7 +371,7 @@
             window.__profActual = id;
             fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
                 document.getElementById('d_titulo').textContent = 'Proforma ' + (p.Numero || ('#' + p.Proforma_ID));
-                document.getElementById('d_badge').outerHTML = '<span id="d_badge" class="badge ms-2 ' + (badgeEstado(p.Estado).match(/bg-\w+/)[0]) + '">' + esc(p.Estado || '') + '</span>';
+                ponerBadgeEstado('d_badge', p.Estado || '');
                 setTxt('d_numero', p.Numero); setTxt('d_femision', fdate(p.FechaEmision));
                 setTxt('d_cliente', p.Cli_RazonSocial); setTxt('d_cuit', p.Cli_CUIT); setTxt('d_dir', p.Cli_Direccion);
                 setTxt('d_tel', p.Cli_Telefono); setTxt('d_email', p.Cli_Email);

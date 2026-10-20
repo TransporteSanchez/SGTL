@@ -6,6 +6,7 @@
     <title>Gestionar e-mail · SGTL</title>
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <style>
         #app { display: none; }
@@ -198,6 +199,11 @@
                 contenedor.textContent = valor == null ? '' : String(valor);
                 return contenedor.innerHTML;
             }
+            function marcaSiNo(valor) {
+                return valor
+                    ? '<span class="badge rounded-pill estado-verde">Sí</span>'
+                    : '<span class="badge rounded-pill estado-gris">No</span>';
+            }
             function valores() {
                 return {
                     SmtpHost: campo('emailServidor').value.trim(),
@@ -246,12 +252,12 @@
                 campo('emailConfigTable').classList.toggle('d-none', configuraciones.length === 0);
                 configuraciones.forEach(function (configuracion) {
                     var fila = document.createElement('tr');
-                    fila.innerHTML = '<td><span class="badge bg-light-primary text-primary">' + escaparHtml(configuracion.Service || '-') + '</span></td>' +
+                    fila.innerHTML = '<td><span class="badge rounded-pill bg-white text-dark border">' + escaparHtml(configuracion.Service || '-') + '</span></td>' +
                         '<td>' + escaparHtml(configuracion.Name || 'Sin nombre') + '</td>' +
                         '<td>' + escaparHtml(configuracion.CredentialFromMailAddres || '-') + '</td>' +
                         '<td>' + escaparHtml(configuracion.SmtpHost || '-') + (configuracion.SmtpPort ? ':' + escaparHtml(configuracion.SmtpPort) : '') + '</td>' +
-                        '<td>' + (configuracion.UsaSsl ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>') + '</td>' +
-                        '<td>' + (configuracion.UsaTLS12 ? '<span class="badge bg-success">Sí</span>' : '<span class="badge bg-secondary">No</span>') + '</td>' +
+                        '<td>' + marcaSiNo(configuracion.UsaSsl) + '</td>' +
+                        '<td>' + marcaSiNo(configuracion.UsaTLS12) + '</td>' +
                         '<td>' + (configuracion.TienePassword ? '<span aria-label="Contraseña almacenada">********</span>' : '<span class="text-muted">—</span>') + '</td>' +
                         '<td class="text-end text-nowrap"><button type="button" class="btn btn-sm btn-outline-primary me-1" data-accion="editar" data-id="' + configuracion.Es_id + '" title="Editar"><i class="bi bi-pencil"></i><span class="visually-hidden">Editar</span></button>' +
                         '<button type="button" class="btn btn-sm btn-outline-success me-1" data-accion="probar" data-id="' + configuracion.Es_id + '" title="Probar conexión"><i class="bi bi-send-fill"></i><span class="visually-hidden">Probar conexión</span></button>' +

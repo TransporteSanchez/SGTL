@@ -27,7 +27,7 @@
         aviso.textContent = texto;
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    function estado(activo) { return activo ? '<span class="badge bg-success">Activo</span>' : '<span class="badge bg-secondary">Inactivo</span>'; }
+    function estado(activo) { return SGTL.estado(activo ? 'Activo' : 'Inactivo'); }
     function opciones(items, campoId, etiqueta, valorSeleccionado) {
         return items.filter(function (item) { return item.Activa !== false && item.Activo !== false; }).map(function (item) {
             var valor = item[campoId];
