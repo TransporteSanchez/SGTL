@@ -4,49 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Orígenes y destinos</title>
+    <title>Gestionar orígenes y destinos · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
         }
 
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaViajes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaViajes th,
-        #tablaViajes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaViajes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
     </style>
-
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
     <link rel="shortcut icon"
@@ -57,19 +22,19 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
+    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
         <div id="sidebar"></div>
 
@@ -102,176 +67,181 @@
             </header>
 
             <div class="page-heading">
-
-                <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header"><h5 class="card-title">Gestionar or&iacute;genes y destinos</h5></div>
+                        <div class="card-header">
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-calendar-check me-2"></i>Gestionar orígenes y destinos
+                            </h5>
+                            <p class="text-muted mb-0">Cargá los lugares de carga y de entrega de cada cliente para usarlos en los viajes y las tarifas.</p>
+                        </div>
+
                         <div class="card-body">
                             <ul class="nav nav-tabs" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-origenes" type="button" role="tab">Or&iacute;genes</button>
+                                    <button class="nav-link active" id="tab-origen" data-bs-toggle="tab" data-bs-target="#pane-origen" type="button" role="tab">Orígenes</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-destinos" type="button" role="tab">Destinos</button>
+                                    <button class="nav-link" id="tab-destino" data-bs-toggle="tab" data-bs-target="#pane-destino" type="button" role="tab">Destinos</button>
                                 </li>
                             </ul>
+
                             <div class="tab-content pt-4">
-                                <div class="tab-pane fade show active" id="pane-origenes" role="tabpanel">
-                            <div class="text-end mb-3">
-                                <button type="button" class="btn btn-success" onclick="abrirAltaOD('origen')">
-                                    <i class="bi bi-plus"></i> Nuevo origen
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="tabla_origen">
-                                    <thead><tr>
-                                        <th>#</th><th>Descripci&oacute;n</th><th>Cliente</th>
-                                        <th>Provincia</th><th>Localidad</th><th>Direcci&oacute;n</th><th>Acciones</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+                                <div class="tab-pane fade show active" id="pane-origen" role="tabpanel" aria-labelledby="tab-origen">
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-success" data-registrar="origen">
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar origen
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped table-hover" id="tabla_origen">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th><th>Descripción</th><th>Cliente</th>
+                                                    <th>Provincia</th><th>Localidad</th><th>Dirección</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                        </table>
+                                    </div>
+                                    <nav aria-label="Paginación de orígenes">
+                                        <ul class="pagination justify-content-end" id="paginacion_origen"></ul>
+                                    </nav>
                                 </div>
-                                <div class="tab-pane fade" id="pane-destinos" role="tabpanel">
-                            <div class="text-end mb-3">
-                                <button type="button" class="btn btn-success" onclick="abrirAltaOD('destino')">
-                                    <i class="bi bi-plus"></i> Nuevo destino
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="tabla_destino">
-                                    <thead><tr>
-                                        <th>#</th><th>Descripci&oacute;n</th><th>Cliente</th>
-                                        <th>Provincia</th><th>Localidad</th><th>Direcci&oacute;n</th><th>Acciones</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+
+                                <div class="tab-pane fade" id="pane-destino" role="tabpanel" aria-labelledby="tab-destino">
+                                    <div class="d-flex justify-content-end">
+                                        <button type="button" class="btn btn-success" data-registrar="destino">
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar destino
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive mt-3">
+                                        <table class="table table-striped table-hover" id="tabla_destino">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th><th>Descripción</th><th>Cliente</th>
+                                                    <th>Provincia</th><th>Localidad</th><th>Dirección</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                        </table>
+                                    </div>
+                                    <nav aria-label="Paginación de destinos">
+                                        <ul class="pagination justify-content-end" id="paginacion_destino"></ul>
+                                    </nav>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
-                </div>
-
-            <!--Fin sección de la tabla-->
+            </div>
 
             <!--Footer-->
 
             <footer>
                 <div id="footer-container"></div>
+
                 <script src="./assets/static/js/footer.js"></script>
+
             </footer>
+
         </div>
 
-    </div>
-
-
-    <!-- Modal alta/edición origen o destino -->
-    <div class="modal fade text-left" id="modalOD" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="tituloOD">Nuevo</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
-                </div>
-                <div class="modal-body">
-                    <div id="alertaOD" class="alert alert-light-danger color-danger" style="display:none;"></div>
-                    <form class="form" id="formOD">
-                        <input type="hidden" id="odTipo" value="">
-                        <input type="hidden" id="odId" value="">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Cliente</label>
-                                <select class="form-select" id="odCliente"><option value="">Seleccione un cliente</option></select>
+        <!-- Modal Registrar / Editar origen o destino -->
+        <div class="modal fade" id="modalOD" tabindex="-1" aria-labelledby="tituloOD" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tituloOD">Registrar origen</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoOD" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <form id="formOD" novalidate>
+                            <h6 class="mb-3">Datos</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6">
+                                    <label for="odCliente" class="form-label">Cliente <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="odCliente"></select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="odDescripcion" class="form-label">Descripción <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="odDescripcion" placeholder="Planta Córdoba" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Descripci&oacute;n</label>
-                                <input type="text" class="form-control" id="odDescripcion">
+                            <h6 class="mb-3">Domicilio</h6>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="odProvincia" class="form-label">Provincia <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="odProvincia"></select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="odLocalidad" class="form-label">Localidad <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="odLocalidad" disabled></select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-8">
+                                    <label for="odCalle" class="form-label">Calle</label>
+                                    <input type="text" class="form-control" id="odCalle" placeholder="Av. Circunvalación" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="odAltura" class="form-label">Altura</label>
+                                    <input type="text" class="form-control" id="odAltura" placeholder="1234" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Provincia</label>
-                                <select class="form-select" id="odProvincia"><option value="">Seleccione una provincia</option></select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Localidad</label>
-                                <select class="form-select" id="odLocalidad" disabled><option value="">Seleccione una localidad</option></select>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-8">
-                                <label class="form-label">Calle</label>
-                                <input type="text" class="form-control" id="odCalle">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Altura</label>
-                                <input type="text" class="form-control" id="odAltura">
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="guardarOD()">Confirmar</button>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarOD">Guardar</button>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- Modal eliminar -->
-    <div class="modal fade text-left" id="modalEliminarOD" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Confirmar eliminaci&oacute;n</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
-                </div>
-                <div class="modal-body">&iquest;Est&aacute; seguro que desea eliminar este registro?</div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarOD()">Eliminar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-<!--Scripts-->
+
+    <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
-    <script src="assets/static/js/pages/simple-datatables.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
-        window.onload = function () {
+        window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
 
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();
+                adjustVisibilityBasedOnRole();
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
+            }
         };
 
         function adjustVisibilityBasedOnRole() {
@@ -319,195 +289,221 @@
 
     </script>
 
-    <!-- Comportamiento tooltip -->
     <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-
-            // Manejo específico para tooltips en botones deshabilitados
-            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-
-    </script>
-
-    <!-- ================= ABM Orígenes y Destinos ================= -->
-    <script>
-        const API_OD = 'http://localhost:50222/api';
-        let odElimTipo = null, odElimId = null;
+        const API = 'http://localhost:50222/api';
+        const NOMBRES = { origen: 'origen', destino: 'destino' };
+        const tablas = {
+            origen: { datos: [], pagina: 1, tamanio: 15 },
+            destino: { datos: [], pagina: 1, tamanio: 15 }
+        };
+        let odTipo = 'origen';
+        let odEnEdicion = null;
+        let formularioOD = null;
 
         function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
         function rutaOD(tipo) { return tipo === 'origen' ? '/Origen' : '/Destino'; }
-        function idCampo(tipo, o) { return tipo === 'origen' ? o.Origen_ID : o.Destino_ID; }
+        function idOD(tipo, o) { return tipo === 'origen' ? o.Origen_ID : o.Destino_ID; }
+        function limpio(valor) { return String(valor == null ? '' : valor).trim(); }
 
-        function parseErr(xhr) {
-            try {
-                let r = xhr.responseJSON;
-                if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
-                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
-                if (r && r.Message) { return r.Message; }
-                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
-            } catch (e) { }
-            return 'Ocurrio un error. Revise los datos e intente nuevamente.';
-        }
-
-        function cargarCombo(url, sel, ph, map) {
-            const s = $(sel);
-            const d = $.Deferred();
-            $.ajax({ url: url, type: 'GET' })
-                .done(function (data) { s.empty().append('<option value="">' + ph + '</option>'); (data || []).forEach(function (it) { s.append(map(it)); }); })
-                .fail(function () { s.empty().append('<option value="">' + ph + '</option>'); })
-                .always(function () { d.resolve(); });
-            return d.promise();
+        // La API rechaza datos con una lista de { ErrorMessage } ya escritos para la pantalla.
+        function mensajeOD(error, porDefecto) {
+            const datos = error && error.xhr && error.xhr.responseJSON;
+            if (Array.isArray(datos) && datos.length) {
+                return datos.map(function (e) { return e.ErrorMessage || ''; }).filter(Boolean).join(' ') || porDefecto;
+            }
+            return (error && error.mensajeUsuario) || porDefecto;
         }
 
-        function cargarClientesOD() {
-            return cargarCombo(API_OD + '/Clientes', '#odCliente', 'Seleccione un cliente',
-                function (c) { return '<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'; });
-        }
-        function cargarProvinciasOD() {
-            return cargarCombo(API_OD + '/Provincias', '#odProvincia', 'Seleccione una provincia',
-                function (p) { return '<option value="' + p.Prov_ID + '">' + p.Nombre_Provincia + '</option>'; });
-        }
-        function cargarLocalidadesOD(provId, locSel) {
-            const s = $('#odLocalidad');
-            const d = $.Deferred();
-            if (!provId) { s.prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>'); d.resolve(); return d.promise(); }
-            $.ajax({ url: API_OD + '/Provincias/' + provId + '/Localidades', type: 'GET' })
-                .done(function (data) {
-                    s.prop('disabled', false).empty().append('<option value="">Seleccione una localidad</option>');
-                    (data || []).forEach(function (l) { s.append('<option value="' + l.Loc_ID + '">' + l.Nombre_Localidad + '</option>'); });
-                    if (locSel) { s.val(locSel); }
-                })
-                .fail(function () { s.prop('disabled', false).empty().append('<option value="">Seleccione una localidad</option>'); })
-                .always(function () { d.resolve(); });
-            return d.promise();
+        // ------------------------------------------------ Listados (paginados en la pantalla)
+
+        function filaOD(tipo, o) {
+            const id = idOD(tipo, o);
+            return `<tr>
+                <td>${SGTL.escapar(id)}</td>
+                <td>${SGTL.escapar(o.Descripcion || '')}</td>
+                <td>${SGTL.escapar(o.ClienteRazon || '')}</td>
+                <td>${SGTL.escapar(o.NombreProvincia || '')}</td>
+                <td>${SGTL.escapar(o.NombreLocalidad || '')}</td>
+                <td>${SGTL.escapar((limpio(o.Calle) + ' ' + limpio(o.AlturaCalle)).trim())}</td>
+                <td class="text-center">${SGTL.accionesFila([
+                    SGTL.botonFila('editar', { id: id, datos: { tipo: tipo } }),
+                    SGTL.botonFila('eliminar', { id: id, datos: { tipo: tipo } })
+                ])}</td>
+            </tr>`;
         }
 
-        function listarOD(tipo) {
-            $.ajax({ url: API_OD + rutaOD(tipo), type: 'GET' })
-                .done(function (data) {
-                    const tb = $('#tabla_' + tipo + ' tbody').empty();
-                    if (!data || !data.length) { tb.html('<tr><td colspan="7" class="text-center">Sin registros</td></tr>'); return; }
-                    data.forEach(function (o) {
-                        const id = idCampo(tipo, o);
-                        const dir = ((o.Calle || '') + ' ' + (o.AlturaCalle || '')).trim();
-                        tb.append('<tr>' +
-                            '<td>' + id + '</td>' +
-                            '<td>' + (o.Descripcion || '') + '</td>' +
-                            '<td>' + (o.ClienteRazon || '') + '</td>' +
-                            '<td>' + (o.NombreProvincia || '') + '</td>' +
-                            '<td>' + (o.NombreLocalidad || '') + '</td>' +
-                            '<td>' + dir + '</td>' +
-                            '<td><button class="btn btn-primary btn-sm" onclick="abrirEditarOD(\'' + tipo + '\',' + id + ')"><i class="bi bi-pencil"></i></button> ' +
-                            '<button class="btn btn-danger btn-sm ms-1" onclick="abrirEliminarOD(\'' + tipo + '\',' + id + ')"><i class="bi bi-trash"></i></button></td>' +
-                            '</tr>');
-                    });
-                })
-                .fail(function () { $('#tabla_' + tipo + ' tbody').html('<tr><td colspan="7" class="text-center">Sin registros</td></tr>'); });
-        }
-
-        function abrirAltaOD(tipo) {
-            document.getElementById('formOD').reset();
-            $('#odId').val('');
-            $('#odTipo').val(tipo);
-            $('#tituloOD').text(tipo === 'origen' ? 'Nuevo origen' : 'Nuevo destino');
-            $('#alertaOD').hide().empty();
-            $('#odLocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
-            $.when(cargarClientesOD(), cargarProvinciasOD()).always(function () {
-                $('#modalOD').modal('show');
+        function dibujar(tipo, pagina) {
+            const t = tablas[tipo];
+            const tbody = '#tabla_' + tipo + ' tbody';
+            const paginas = Math.max(1, Math.ceil(t.datos.length / t.tamanio));
+            t.pagina = Math.min(pagina || t.pagina, paginas);
+            const visibles = t.datos.slice((t.pagina - 1) * t.tamanio, t.pagina * t.tamanio);
+            if (visibles.length) SGTL.tabla.llenar(tbody, visibles.map(function (o) { return filaOD(tipo, o); }).join(''));
+            else SGTL.tabla.vacia(tbody, 7, tipo === 'origen' ? 'Todavía no hay orígenes cargados.' : 'Todavía no hay destinos cargados.');
+            SGTL.tabla.paginacion('#paginacion_' + tipo, {
+                total: t.datos.length,
+                tamanioPagina: t.tamanio,
+                pagina: t.pagina,
+                alCambiarPagina: function (p) { dibujar(tipo, p); },
+                alCambiarTamanio: function (tamanio) { t.tamanio = tamanio; dibujar(tipo, 1); }
             });
         }
 
-        function abrirEditarOD(tipo, id) {
-            document.getElementById('formOD').reset();
-            $('#odId').val(id);
-            $('#odTipo').val(tipo);
-            $('#tituloOD').text(tipo === 'origen' ? 'Editar origen' : 'Editar destino');
-            $('#alertaOD').hide().empty();
-            $.when(cargarClientesOD(), cargarProvinciasOD()).always(function () {
-                $.ajax({ url: API_OD + rutaOD(tipo) + '/' + id, type: 'GET' })
-                    .done(function (o) {
-                        $('#odCliente').val(o.ClienteID);
-                        $('#odDescripcion').val(o.Descripcion);
-                        $('#odCalle').val(o.Calle);
-                        $('#odAltura').val(o.AlturaCalle);
-                        $('#odProvincia').val(o.ProvID);
-                        cargarLocalidadesOD(o.ProvID, o.LocID).always(function () {
-                            $('#modalOD').modal('show');
-                        });
-                    })
-                    .fail(function () { alert('No se pudo cargar el registro.'); });
+        function listar(tipo) {
+            const tbody = '#tabla_' + tipo + ' tbody';
+            SGTL.tabla.cargando(tbody, 7);
+            return SGTL.ajax({ url: API + rutaOD(tipo), type: 'GET' },
+                'No se pudieron cargar los ' + (tipo === 'origen' ? 'orígenes' : 'destinos') + '. Revisá la conexión y probá de nuevo.').then(function (data) {
+                    tablas[tipo].datos = Array.isArray(data) ? data : [];
+                    dibujar(tipo);
+                }, function (error) {
+                    tablas[tipo].datos = [];
+                    SGTL.tabla.vacia(tbody, 7, 'No se pudieron cargar los datos.');
+                    SGTL.tabla.paginacion('#paginacion_' + tipo, { total: 0 });
+                    SGTL.toastError(error.mensajeUsuario);
+                });
+        }
+
+        // ------------------------------------------------ Formulario
+
+        function opciones(select, vacio, lista, valor, texto) {
+            select.innerHTML = '';
+            select.appendChild(new Option(vacio, ''));
+            (lista || []).forEach(function (item) { select.appendChild(new Option(item[texto], item[valor])); });
+        }
+
+        let combos = null;
+        function cargarCombos() {
+            if (!combos) {
+                combos = Promise.all([
+                    SGTL.ajax({ url: API + '/Clientes', type: 'GET' }),
+                    SGTL.ajax({ url: API + '/Provincias', type: 'GET' })
+                ]);
+                combos.catch(function () { combos = null; });
+            }
+            return combos.then(function (r) {
+                opciones(document.getElementById('odCliente'), 'Seleccioná un cliente', r[0], 'Cliente_ID', 'Razon_Social');
+                opciones(document.getElementById('odProvincia'), 'Seleccioná una provincia', r[1], 'Prov_ID', 'Nombre_Provincia');
             });
         }
 
-        function guardarOD() {
-            const tipo = $('#odTipo').val();
+        function cargarLocalidades(provinciaId) {
+            const select = document.getElementById('odLocalidad');
+            opciones(select, 'Seleccioná una localidad', [], '', '');
+            select.disabled = true;
+            if (!provinciaId) return Promise.resolve();
+            return SGTL.ajax({ url: `${API}/Provincias/${provinciaId}/Localidades`, type: 'GET' },
+                'No se pudieron cargar las localidades. Revisá la conexión y probá de nuevo.').then(function (data) {
+                    opciones(select, 'Seleccioná una localidad', data, 'Loc_ID', 'Nombre_Localidad');
+                    select.disabled = false;
+                });
+        }
+
+        function abrirOD(tipo, id) {
+            odTipo = tipo;
+            odEnEdicion = id || null;
+            SGTL.reiniciarFormulario('#formOD', '#avisoOD');
+            formularioOD.reiniciar();
+            $('#tituloOD').text((id ? 'Editar ' : 'Registrar ') + NOMBRES[tipo]);
+            const guardar = document.getElementById('btnGuardarOD');
+            guardar.disabled = true;
+            cargarLocalidades('');
+            SGTL.modal('#modalOD', 'show');
+
+            cargarCombos().then(function () {
+                if (!id) return;
+                return SGTL.ajax({ url: API + rutaOD(tipo) + '/' + id, type: 'GET' }).then(function (o) {
+                    $('#odCliente').val(o.ClienteID);
+                    $('#odDescripcion').val(o.Descripcion);
+                    $('#odCalle').val(limpio(o.Calle));
+                    $('#odAltura').val(limpio(o.AlturaCalle));
+                    $('#odProvincia').val(o.ProvID);
+                    return cargarLocalidades(o.ProvID).then(function () { $('#odLocalidad').val(o.LocID); });
+                });
+            }).then(function () { guardar.disabled = false; }, function () {
+                SGTL.modal('#modalOD', 'hide');
+                SGTL.toastError(id ? 'No se pudieron cargar los datos. Probá de nuevo.' : 'No se pudieron cargar los clientes y las provincias. Probá de nuevo.');
+            });
+        }
+
+        async function guardarOD() {
+            formularioOD.validarTodo();
+            if (!SGTL.revisarFormulario('#formOD', '#avisoOD')) return;
+            const tipo = odTipo;
             const dto = {
-                Descripcion: ($('#odDescripcion').val() || '').trim(),
-                ClienteID: parseInt($('#odCliente').val()) || 0,
-                ProvID: parseInt($('#odProvincia').val()) || 0,
-                LocID: parseInt($('#odLocalidad').val()) || 0,
-                Calle: ($('#odCalle').val() || '').trim(),
-                AlturaCalle: ($('#odAltura').val() || '').trim(),
+                Descripcion: $('#odDescripcion').val().trim(),
+                ClienteID: parseInt($('#odCliente').val(), 10) || 0,
+                ProvID: parseInt($('#odProvincia').val(), 10) || 0,
+                LocID: parseInt($('#odLocalidad').val(), 10) || 0,
+                Calle: $('#odCalle').val().trim(),
+                AlturaCalle: $('#odAltura').val().trim(),
                 Usu_Alta: usuarioActual(),
                 Usu_Modi: usuarioActual()
             };
-            const falt = [];
-            if (!dto.Descripcion) falt.push('Descripción');
-            if (!dto.ClienteID) falt.push('Cliente');
-            if (!dto.ProvID) falt.push('Provincia');
-            if (!dto.LocID) falt.push('Localidad');
-            if (falt.length) { $('#alertaOD').html('Complete los campos: ' + falt.join(', ') + '.').show(); return; }
 
-            const id = $('#odId').val();
-            const edit = id !== '' && id != null;
-            $.ajax({
-                url: edit ? (API_OD + rutaOD(tipo) + '/' + id) : (API_OD + rutaOD(tipo)),
-                type: edit ? 'PUT' : 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(dto),
-                success: function () {
-                    $('#modalOD').modal('hide');
-                    alert(edit ? 'Registro actualizado.' : 'Registro creado.');
-                    listarOD(tipo);
-                },
-                error: function (xhr) { $('#alertaOD').html(parseErr(xhr)).show(); }
+            const listo = SGTL.procesando('#btnGuardarOD', 'Guardando…');
+            let guardado = false;
+            try {
+                await SGTL.ajax({
+                    url: API + rutaOD(tipo) + (odEnEdicion ? '/' + odEnEdicion : ''),
+                    type: odEnEdicion ? 'PUT' : 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dto)
+                }, 'No se pudo guardar. Revisá la conexión y probá de nuevo.');
+                guardado = true;
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoOD', mensajeOD(error, 'No se pudo guardar. Probá de nuevo.'));
+            } finally {
+                listo();
+            }
+
+            if (!guardado) return;
+            const nombre = tipo === 'origen' ? 'Origen' : 'Destino';
+            SGTL.toastExito(nombre + (odEnEdicion ? ' guardado.' : ' registrado.'));
+            listar(tipo);
+            setTimeout(function () { SGTL.modal('#modalOD', 'hide'); }, 0);
+        }
+
+        function eliminarOD(tipo, id) {
+            const registro = tablas[tipo].datos.filter(function (o) { return String(idOD(tipo, o)) === String(id); })[0] || {};
+            const descripcion = limpio(registro.Descripcion);
+            SGTL.confirmar({
+                titulo: `¿Eliminar el ${NOMBRES[tipo]} ${descripcion || '#' + id}?`,
+                mensaje: 'No se puede deshacer.',
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({ url: API + rutaOD(tipo) + '/' + id, type: 'DELETE' },
+                        'No se pudo eliminar. Probá de nuevo.').catch(function (error) {
+                            error.mensajeUsuario = mensajeOD(error, 'No se pudo eliminar. Probá de nuevo.');
+                            throw error;
+                        });
+                }
+            }).then(function (eliminado) {
+                if (!eliminado) return;
+                SGTL.toastExito((tipo === 'origen' ? 'Origen' : 'Destino') + ' eliminado.');
+                listar(tipo);
             });
         }
 
-        function abrirEliminarOD(tipo, id) { odElimTipo = tipo; odElimId = id; $('#modalEliminarOD').modal('show'); }
-        function confirmarEliminarOD() {
-            if (!odElimTipo || !odElimId) { return; }
-            $.ajax({ url: API_OD + rutaOD(odElimTipo) + '/' + odElimId, type: 'DELETE' })
-                .done(function () {
-                    $('#modalEliminarOD').modal('hide');
-                    alert('Registro eliminado correctamente.');
-                    const t = odElimTipo; odElimTipo = null; odElimId = null;
-                    listarOD(t);
-                })
-                .fail(function (xhr) { $('#modalEliminarOD').modal('hide'); alert(parseErr(xhr)); });
-        }
-
-        $(document).ready(function () {
-            $('#odProvincia').on('change', function () { cargarLocalidadesOD($(this).val(), null); });
-            listarOD('origen');
-            listarOD('destino');
+        $(function () {
+            formularioOD = SGTL.validador([
+                { id: 'odCliente', requerido: 'Seleccioná un cliente.' },
+                { id: 'odDescripcion', requerido: 'Completá la descripción.' },
+                { id: 'odProvincia', requerido: 'Seleccioná una provincia.' },
+                { id: 'odLocalidad', requerido: 'Seleccioná una localidad.' },
+                { id: 'odAltura', max: 10 }
+            ]);
+            $('#odProvincia').on('change', function () {
+                cargarLocalidades(this.value).catch(function (error) { SGTL.avisoFormulario('#avisoOD', error.mensajeUsuario); });
+            });
+            $('[data-registrar]').on('click', function () { abrirOD($(this).data('registrar'), null); });
+            $('#btnGuardarOD').on('click', guardarOD);
+            $('#tabla_origen, #tabla_destino')
+                .on('click', '[data-accion="editar"]', function () { abrirOD($(this).data('tipo'), $(this).data('id')); })
+                .on('click', '[data-accion="eliminar"]', function () { eliminarOD($(this).data('tipo'), $(this).data('id')); });
+            listar('origen');
+            listar('destino');
         });
     </script>
 
