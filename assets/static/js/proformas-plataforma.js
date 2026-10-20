@@ -304,6 +304,7 @@
       : 'Todo coincide con ' + nombrePlataforma() + '. Ya podés generar la proforma.');
 
     $id('bloquePlataforma').innerHTML =
+      bloqueFactura(c) +
       '<div class="bloque-titulo">Excel de ' + p + '</div>' +
       '<div class="mb-2"><span class="text-muted">Archivo:</span> ' + esc(c.NombreArchivo || '') +
       (c.FechaArchivo && window.SGTL ? ' <span class="text-muted">· importado el ' + SGTL.fecha(c.FechaArchivo, { hora: true }) + '</span>' : '') +
@@ -341,6 +342,7 @@
     var btn = $id('pp_controlar');
     if (btn) btn.addEventListener('click', function () { volverAControlar(c.Proforma_ID); });
     enlazarAcciones(c);
+    enlazarFactura(c);
 
     // Totales del modal con lo de la plataforma (netos + IVA 21 %).
     var iva = Math.round(c.TotalPlataforma * 21) / 100;
@@ -352,6 +354,72 @@
     if ($id('t_total')) $id('t_total').textContent = formato(c.TotalPlataforma + iva);
   }
 
+  // ---------------------------------------------------------------- Factura en la plataforma (etapa 6)
+
+  // Con la factura emitida: el N° y la fecha que figuran en la plataforma. Una vez guardados, la proforma
+  // queda cerrada y el bloque es de solo lectura.
+  function bloqueFactura(c) {
+    if (!c.FacturaSgtl && !c.PlataformaFacturaNumero) return '';
+    var p = esc(nombrePlataforma());
+    var html = '<div class="bloque-titulo">Factura en ' + p + '</div>';
+    if (c.PlataformaFacturaNumero) {
+      return html + '<div class="alert alert-light-success color-success py-2 mb-3">' +
+        '<i class="bi bi-check-circle me-1"></i><strong>Cerrada en ' + p + '.</strong> Factura ' + esc(c.PlataformaFacturaNumero) +
+        (c.PlataformaFacturaFecha && window.SGTL ? ' del ' + SGTL.fecha(c.PlataformaFacturaFecha) : '') +
+        (c.FacturaSgtl ? ' (en SGTL, ' + esc(c.FacturaSgtl) + ')' : '') +
+        (c.PlataformaFacturaUsuario ? '. La cargó ' + esc(c.PlataformaFacturaUsuario) + '.' : '.') + '</div>';
+    }
+    var ejemplo = esc(c.EjemploFactura || '');
+    return html +
+      '<div class="mb-2">La factura ' + esc(c.FacturaSgtl) + ' ya está emitida. Cuando la cargues en ' + p +
+      ', completá el N° y la fecha que figuran ahí para cerrar la proforma.</div>' +
+      '<div class="row g-2 align-items-start mb-3">' +
+      '<div class="col-md-4"><label for="pp_fac_numero" class="form-label">N° de factura en ' + p + ' <span class="text-danger">*</span></label>' +
+      '<input id="pp_fac_numero" class="form-control" maxlength="20" placeholder="' + ejemplo + '" value="' + esc(c.FacturaSugerida || '') + '">' +
+      '<div class="invalid-feedback">Usá el formato ' + ejemplo + '.</div>' +
+      '<div class="form-text">' + (c.FacturaSugerida ? 'Sugerido desde la factura de SGTL; verificá que sea el que figura en ' + p + '.' : 'Formato: ' + ejemplo + '.') + '</div></div>' +
+      '<div class="col-md-3"><label for="pp_fac_fecha" class="form-label">Fecha <span class="text-danger">*</span></label>' +
+      '<input type="date" id="pp_fac_fecha" class="form-control"><div class="invalid-feedback">Completá la fecha.</div></div>' +
+      '<div class="col-md-2 d-flex align-items-end" style="min-height:62px"><button type="button" class="btn btn-primary" id="pp_fac_guardar">Guardar</button></div>' +
+      '</div>';
+  }
+
+  function hoyLocal() {
+    var hoy = new Date();
+    return hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+  }
+
+  function numeroFacturaValido(c, valor) {
+    if (!c.FormatoFactura) return !!valor;
+    try { return new RegExp(c.FormatoFactura).test(valor); } catch (e) { return !!valor; }
+  }
+
+  function enlazarFactura(c) {
+    var numero = $id('pp_fac_numero'), fecha = $id('pp_fac_fecha'), guardar = $id('pp_fac_guardar');
+    if (!numero || !fecha || !guardar) return;
+    fecha.value = hoyLocal();
+    fecha.max = hoyLocal();
+    var normalizar = function () { numero.value = String(numero.value || '').toUpperCase().replace(/\s/g, ''); };
+    numero.addEventListener('blur', function () {
+      normalizar();
+      numero.classList.toggle('is-invalid', !!numero.value && !numeroFacturaValido(c, numero.value));
+    });
+    numero.addEventListener('input', function () { numero.classList.remove('is-invalid'); });
+    guardar.addEventListener('click', function () {
+      normalizar();
+      var okNumero = numeroFacturaValido(c, numero.value), okFecha = !!fecha.value;
+      numero.classList.toggle('is-invalid', !okNumero);
+      fecha.classList.toggle('is-invalid', !okFecha);
+      if (!okNumero) { numero.focus(); return; }
+      if (!okFecha) { fecha.focus(); return; }
+      limpiarError();
+      var listo = SGTL.procesando('#pp_fac_guardar');
+      postJson(API + '/' + c.Proforma_ID + '/Factura', { Numero: numero.value, Fecha: fecha.value, Usuario: usuarioActual() })
+        .then(function (r) { listo(); mostrarControl(r); SGTL.toastExito('Factura de ' + nombrePlataforma() + ' guardada. La proforma quedó cerrada.'); refrescarListado(); },
+          function (e) { listo(); errorEnModal(textoError(e, 'No se pudo guardar la factura.')); });
+    });
+  }
+
   function enlazarAcciones(c) {
     var reemplazar = $id('pp_reemplazar'), archivo = $id('pp_reemplazo');
     if (reemplazar && archivo) {
@@ -361,8 +429,7 @@
     var abrirReclamo = $id('pp_reclamo');
     if (abrirReclamo) abrirReclamo.addEventListener('click', function () {
       $id('pp_form_reclamo').classList.remove('d-none');
-      var hoy = new Date();
-      $id('pp_reclamo_fecha').value = hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+      $id('pp_reclamo_fecha').value = hoyLocal();
       $id('pp_reclamo_motivo').focus();
     });
     var cancelar = $id('pp_reclamo_cancelar');
@@ -457,15 +524,21 @@
     if (x.Tipo_Proforma !== 'Plataforma') return '';
     return ' <span class="badge bg-light-secondary color-secondary">' + esc((x.Plataforma || 'Plataforma') + ' ' + (x.Plataforma_Numero || '')) + '</span>';
   }
-  function reclamoListado(x) {
-    if (!x.ReclamoFecha) return '';
-    var texto = 'Reclamo pendiente en ' + (x.Plataforma || 'la plataforma') + ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : '');
-    return ' <i class="bi bi-exclamation-circle text-warning" data-bs-toggle="tooltip" data-bs-placement="top" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"></i>';
+  function iconoAviso(texto) {
+    return ' <i class="bi bi-exclamation-circle text-warning" role="img" data-bs-toggle="tooltip" data-bs-placement="top" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"></i>';
+  }
+  // Junto al estado: reclamo pendiente (borrador) y falta el N° de factura en la plataforma (facturada).
+  function avisosListado(x) {
+    var p = x.Plataforma || 'la plataforma';
+    var html = '';
+    if (x.ReclamoFecha) html += iconoAviso('Reclamo pendiente en ' + p + ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : ''));
+    if (x.FaltaFacturaPlataforma) html += iconoAviso('Falta el N° de factura en ' + p);
+    return html;
   }
 
   window.ProformaPlataforma = {
     etiquetaListado: etiquetaListado,
-    reclamoListado: reclamoListado,
+    avisosListado: avisosListado,
     activo: function () { return estado.activo; },
     reiniciar: desactivar,
     // Al elegir el cliente: si trabaja con plataforma, el modal pide el archivo en vez de "Traer viajes".

@@ -5,6 +5,7 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using System.Net;
+using System.Text.RegularExpressions;
 using System.Web.Http;
 using WebApi_TransporteSanchez.Plataformas;
 
@@ -59,6 +60,13 @@ namespace WebApi_TransporteSanchez.Controllers
 
         public class UsuarioDto { public string Usuario { get; set; } }
 
+        public class FacturaPlataformaDto
+        {
+            public string Numero { get; set; }
+            public DateTime? Fecha { get; set; }
+            public string Usuario { get; set; }
+        }
+
         public class ReclamoDto
         {
             public DateTime? Fecha { get; set; }
@@ -104,6 +112,14 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal TotalPlataforma { get; set; }
             public decimal TotalSgtl { get; set; }
             public bool PuedeGenerar { get; set; }
+            // Etapa 6: factura de SGTL y N° / fecha de la factura según la plataforma (con eso queda cerrada).
+            public string FacturaSgtl { get; set; }
+            public string FacturaSugerida { get; set; }
+            public string PlataformaFacturaNumero { get; set; }
+            public DateTime? PlataformaFacturaFecha { get; set; }
+            public string PlataformaFacturaUsuario { get; set; }
+            public string FormatoFactura { get; set; }
+            public string EjemploFactura { get; set; }
             public List<LineaControlDto> Lineas { get; set; }
             public List<string> Avisos { get; set; }
         }
@@ -179,7 +195,12 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Plataforma_Reclamo_Motivo { get; set; }
             public string Nombre_Archivo { get; set; }
             public DateTime? Fecha_Archivo { get; set; }
+            public string Plataforma_Factura_Numero { get; set; }
+            public DateTime? Plataforma_Factura_Fecha { get; set; }
+            public string Plataforma_Factura_Usuario { get; set; }
         }
+
+        private class FacturaSgtlRow { public string Numero { get; set; } public string Sugerida { get; set; } }
 
         // ======================= Helpers =======================
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
@@ -232,7 +253,8 @@ SELECT TOP (1) Usuario_ID FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND Es
             return db.Database.SqlQuery<CabeceraRow>(@"
 SELECT pf.Proforma_ID, pf.Estado, pf.Numero, pf.Tipo_Proforma, pf.ClienteID, pl.Nombre AS Plataforma, pl.Codigo,
        pf.Plataforma_Numero, pf.FechaDesde, pf.FechaHasta, pf.Plataforma_Reclamo_Fecha, pf.Plataforma_Reclamo_Motivo,
-       a.Nombre_Archivo, a.Fecha_Alta AS Fecha_Archivo
+       a.Nombre_Archivo, a.Fecha_Alta AS Fecha_Archivo,
+       pf.Plataforma_Factura_Numero, pf.Plataforma_Factura_Fecha, pf.Plataforma_Factura_Usuario
 FROM dbo.PROFORMAS pf
 LEFT JOIN dbo.PLATAFORMAS pl ON pl.Plataforma_ID = pf.PlataformaID
 LEFT JOIN dbo.PROFORMA_ADJUNTO a ON a.Proforma_ID = pf.Proforma_ID AND a.Tipo = 'Archivo'
@@ -465,6 +487,21 @@ WHERE Proforma_ID=@id;",
             }).ToList();
         }
 
+        // Factura vigente de SGTL emitida desde la proforma, con el N° armado como lo muestra la plataforma
+        // (letra + punto de venta de 5 dígitos + número de 8) para sugerirlo. null si no está facturada.
+        private static FacturaSgtlRow LeerFacturaSgtl(DbContext db, int proformaId)
+        {
+            return db.Database.SqlQuery<FacturaSgtlRow>(@"
+SELECT TOP (1) 'FAC-' + RIGHT('00000000' + CONVERT(varchar(8), c.NumeroCorrelativo), 8) AS Numero,
+       CASE WHEN RTRIM(ISNULL(c.Letra,'')) <> '' AND RTRIM(ISNULL(c.Sucursal,'')) <> '' AND RTRIM(ISNULL(c.NumeroComprobante,'')) <> ''
+            THEN UPPER(RTRIM(c.Letra)) + RIGHT('00000' + RTRIM(c.Sucursal), 5) + '-' + RIGHT('00000000' + RTRIM(c.NumeroComprobante), 8)
+       END AS Sugerida
+FROM dbo.COMPROBANTES_PROFORMAS cp
+JOIN dbo.COMPROBANTES c ON c.Comprobante_ID = cp.ComprobanteID
+WHERE cp.ProformaID = @id AND cp.Vigente = 1 AND c.Tipo = 'FAC'
+ORDER BY cp.ComprobanteProforma_ID DESC;", P("@id", proformaId)).FirstOrDefault();
+        }
+
         // Arma lo que ve la pantalla: cabecera, líneas con su resultado, totales y avisos.
         private static ControlDto ArmarControl(DbContext db, int id)
         {
@@ -516,10 +553,23 @@ WHERE Proforma_ID=@id;",
             };
             dto.TotalPlataforma = dto.TotalViajes + dto.TotalAdicionales;
             dto.PuedeGenerar = c.Estado == "Borrador" && dto.Cantidad > 0 && dto.Diferencias == 0;
+            var lector = LectoresPlataforma.Obtener(c.Codigo);
+
+            // Etapa 6: con la factura emitida, el N° de la factura en la plataforma (sugerido desde la de SGTL).
+            dto.PlataformaFacturaNumero = c.Plataforma_Factura_Numero;
+            dto.PlataformaFacturaFecha = c.Plataforma_Factura_Fecha;
+            dto.PlataformaFacturaUsuario = c.Plataforma_Factura_Usuario;
+            if (lector != null) { dto.FormatoFactura = lector.FormatoFactura; dto.EjemploFactura = lector.EjemploFactura; }
+            var factura = LeerFacturaSgtl(db, id);
+            if (factura != null)
+            {
+                dto.FacturaSgtl = factura.Numero;
+                if (lector != null && factura.Sugerida != null && Regex.IsMatch(factura.Sugerida, lector.FormatoFactura))
+                    dto.FacturaSugerida = factura.Sugerida;
+            }
 
             // Caso 7 (aviso, no frena): viajes del cliente que no están en ninguna proforma. Solo en borrador:
             // después de generar ya no sirve. Es la misma lista que la guía de "Registrar proforma".
-            var lector = LectoresPlataforma.Obtener(c.Codigo);
             if (c.Estado == "Borrador" && c.ClienteID.HasValue && lector != null)
             {
                 var sueltos = ViajesSinProforma(db, c.ClienteID.Value, lector);
@@ -578,7 +628,8 @@ WHERE Proforma_ID=@id;",
                     var existente = db.Database.SqlQuery<CabeceraRow>(@"
 SELECT TOP (1) Proforma_ID, Estado, Numero, Tipo_Proforma, ClienteID, CAST(NULL AS nvarchar(60)) AS Plataforma,
        CAST(NULL AS varchar(20)) AS Codigo, Plataforma_Numero, FechaDesde, FechaHasta, Plataforma_Reclamo_Fecha,
-       Plataforma_Reclamo_Motivo, CAST(NULL AS nvarchar(260)) AS Nombre_Archivo, CAST(NULL AS datetime) AS Fecha_Archivo
+       Plataforma_Reclamo_Motivo, CAST(NULL AS nvarchar(260)) AS Nombre_Archivo, CAST(NULL AS datetime) AS Fecha_Archivo,
+       Plataforma_Factura_Numero, Plataforma_Factura_Fecha, Plataforma_Factura_Usuario
 FROM dbo.PROFORMAS
 WHERE Tipo_Proforma='Plataforma' AND ClienteID=@cli AND PlataformaID=@pl AND Plataforma_Numero=@num AND Estado<>'Anulada';",
                         P("@cli", d.ClienteID), P("@pl", cli.Plataforma_ID.Value), P("@num", numero)).FirstOrDefault();
@@ -870,6 +921,57 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuari
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo generar la proforma.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // Etapa 6: N° y fecha de la factura tal como figura en la plataforma. Solo en una proforma de plataforma
+        // facturada y una sola vez: con eso queda cerrada (como la solapa Cerrados de Rukas).
+        [HttpPost]
+        [Route("{id:int}/Factura")]
+        public IHttpActionResult RegistrarFactura(int id, [FromBody] FacturaPlataformaDto d)
+        {
+            var numero = d == null ? "" : Regex.Replace((d.Numero ?? "").ToUpperInvariant(), @"\s", "");
+            var usuario = d == null || string.IsNullOrWhiteSpace(d.Usuario) ? "sistema" : d.Usuario.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var c = LeerCabecera(db, id);
+                    if (c == null) return NotFound();
+                    if (c.Tipo_Proforma != "Plataforma")
+                        return Content(HttpStatusCode.BadRequest, new { error = "No es una proforma de plataforma." });
+                    var lector = LectoresPlataforma.Obtener(c.Codigo);
+                    if (lector == null)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Todavía no se pueden leer archivos de " + c.Plataforma + "." });
+                    if (c.Estado != "Facturada" || LeerFacturaSgtl(db, id) == null)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Primero emití la factura de la proforma." });
+                    if (!string.IsNullOrEmpty(c.Plataforma_Factura_Numero))
+                        return Content(HttpStatusCode.BadRequest, new { error = "La proforma ya tiene cargada la factura " + c.Plataforma_Factura_Numero + " de " + c.Plataforma + "." });
+                    if (numero == "")
+                        return Content(HttpStatusCode.BadRequest, new { error = "Completá el N° de factura en " + c.Plataforma + "." });
+                    if (numero.Length > 20 || !Regex.IsMatch(numero, lector.FormatoFactura))
+                        return Content(HttpStatusCode.BadRequest, new { error = "El N° de factura tiene que tener el formato " + lector.EjemploFactura + "." });
+                    if (!d.Fecha.HasValue)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Completá la fecha de la factura en " + c.Plataforma + "." });
+                    var fecha = d.Fecha.Value.Date;
+                    if (fecha > DateTime.Today)
+                        return Content(HttpStatusCode.BadRequest, new { error = "La fecha de la factura no puede ser posterior a hoy." });
+
+                    int n = db.Database.ExecuteSqlCommand(@"
+UPDATE dbo.PROFORMAS
+SET Plataforma_Factura_Numero=@num, Plataforma_Factura_Fecha=@f, Plataforma_Factura_Usuario=@u, Plataforma_Factura_Carga=GETDATE()
+WHERE Proforma_ID=@id AND Plataforma_Factura_Numero IS NULL;",
+                        P("@num", numero), P("@f", fecha), P("@u", UsuarioCorto(usuario)), P("@id", id));
+                    if (n == 0)
+                        return Content(HttpStatusCode.Conflict, new { error = "Otra persona ya cargó la factura de " + c.Plataforma + ". Cerrá y volvé a abrir la proforma." });
+                    Auditar(db, usuario, "FACTURA", id, null,
+                        "Factura en " + c.Plataforma + ": " + numero + " del " + fecha.ToString("dd/MM/yyyy") + "; proforma cerrada");
+                    return Ok(ArmarControl(db, id));
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo guardar la factura de la plataforma.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
         }
 
