@@ -4,28 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Auditoría</title>
+    <title>Consultar auditoría · Transporte Sánchez</title>
 
     <style>
-        #app { display: none; }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
+        #app {
+            display: none;
         }
-
-        .table-responsive { width: 100%; }
-
-        #tablaAuditoria { width: 100%; }
-        #tablaAuditoria th, #tablaAuditoria td { vertical-align: middle; }
-        #tablaAuditoria th { white-space: nowrap; }
-
-        .pagination { justify-content: center; }
-
-        .badge-accion { font-size: .75rem; letter-spacing: .3px; }
 
         .clave-cell {
             max-width: 220px;
@@ -48,37 +32,54 @@
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon"
+        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
+        type="image/png">
+
+
+
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
+    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
         <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
             <header>
+
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
                         <a href="#" class="burger-btn d-block">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
+
+                        <!--btn para expandir Menú lateral-->
+
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
+
+                        <!--Llamado a las opciones del header-->
+
                         <div id="header-container"></div>
+
                         <script src="./assets/static/js/header.js"></script>
+
                     </div>
                 </nav>
             </header>
@@ -87,74 +88,65 @@
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-                            <h5 class="card-title"><i class="bi bi-clipboard-data me-2"></i>Auditoría del sistema</h5>
-                            <p class="text-muted mb-0">Registro de todas las altas, bajas y modificaciones realizadas en el sistema.</p>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-clipboard-data me-2"></i>Consultar auditoría
+                            </h5>
+                            <p class="text-muted mb-0">Registro de las altas, bajas, modificaciones e inicios de sesión hechos en el sistema.</p>
                         </div>
 
                         <div class="card-body">
-                            <!-- Filtros -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label">Usuario</label>
+                            <form id="busquedaAuditoriaForm" class="row g-3 align-items-end" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fUsuario" class="form-label">Usuario</label>
                                     <div class="position-relative">
-                                        <input type="text" id="fUsuario" class="form-control" autocomplete="off"
-                                            placeholder="Todos — clic para elegir o escribí">
+                                        <input type="text" id="fUsuario" class="form-control" autocomplete="off" placeholder="Todos">
                                         <div id="usuarioDropdown" class="list-group position-absolute w-100 shadow-sm"
-                                            style="z-index:1050; max-height:230px; overflow-y:auto; display:none;"></div>
+                                            style="z-index: 1050; max-height: 230px; overflow-y: auto; display: none;"></div>
                                     </div>
                                 </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label">Entidad</label>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fEntidad" class="form-label">Entidad</label>
                                     <select id="fEntidad" class="form-select">
                                         <option value="">Todas</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Acción</label>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fAccion" class="form-label">Acción</label>
                                     <select id="fAccion" class="form-select">
                                         <option value="">Todas</option>
-                                        <option value="INSERT">Alta (INSERT)</option>
-                                        <option value="UPDATE">Modificación (UPDATE)</option>
-                                        <option value="DELETE">Baja (DELETE)</option>
+                                        <option value="INSERT">Alta</option>
+                                        <option value="UPDATE">Modificación</option>
+                                        <option value="DELETE">Baja</option>
                                         <option value="LOGIN">Inicio de sesión</option>
                                         <option value="LOGOUT">Cierre de sesión</option>
-                                        <option value="KM_MANUAL">Km cargados a mano</option>
+                                        <option value="KM_MANUAL">Km manual</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Desde</label>
-                                    <input type="text" id="fDesde" class="form-control" placeholder="AAAA-MM-DD">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fRango" class="form-label">Fecha</label>
+                                    <input type="text" id="fRango" class="form-control" placeholder="Desde y hasta">
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Hasta</label>
-                                    <input type="text" id="fHasta" class="form-control" placeholder="AAAA-MM-DD">
+                                <div class="col-12 col-sm-6 col-lg-6">
+                                    <label for="fTexto" class="form-label">Buscar en el detalle</label>
+                                    <input type="text" id="fTexto" class="form-control" placeholder="Texto en el registro o en los valores" autocomplete="off">
                                 </div>
-                                <div class="col-md-4 col-sm-6">
-                                    <label class="form-label">Buscar en el detalle</label>
-                                    <input type="text" id="fTexto" class="form-control" placeholder="Texto en clave o valores">
-                                </div>
-                                <div class="col-md-8 col-sm-6 d-flex align-items-end gap-2">
-                                    <button class="btn btn-primary" onclick="buscarAuditoria()">
-                                        <i class="bi bi-search me-1"></i>Buscar
+                                <div class="col-12 col-sm-6 col-lg-6 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
-                                    <button class="btn btn-light-secondary" onclick="limpiarFiltros()">
-                                        <i class="bi bi-eraser me-1"></i>Limpiar
-                                    </button>
-                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
                                 </div>
-                            </div>
+                            </form>
 
-                            <!-- Tabla -->
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="tablaAuditoria">
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped table-hover" id="tablaAuditoria">
                                     <thead>
                                         <tr>
-                                            <th>Fecha y hora</th>
+                                            <th class="text-center">Fecha y hora</th>
                                             <th>Usuario</th>
-                                            <th>Acción</th>
+                                            <th class="text-center">Acción</th>
                                             <th>Entidad</th>
                                             <th>Registro</th>
-                                            <th class="text-center">Detalle</th>
+                                            <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody id="cuerpoAuditoria">
@@ -163,340 +155,279 @@
                                 </table>
                             </div>
 
-                            <!-- Paginación -->
-                            <nav>
-                                <ul class="pagination mt-3" id="paginacion"></ul>
+                            <nav aria-label="Paginación de la auditoría">
+                                <ul class="pagination justify-content-end" id="paginacion"></ul>
                             </nav>
                         </div>
                     </div>
                 </section>
             </div>
 
+            <!--Footer-->
+
             <footer>
                 <div id="footer-container"></div>
-            </footer>
-        </div>
-    </div>
 
-    <!-- Modal detalle -->
-    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clipboard-data me-2"></i>Detalle del movimiento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body">
-                    <dl class="row mb-3">
-                        <dt class="col-sm-3">Fecha y hora</dt><dd class="col-sm-9" id="dFecha"></dd>
-                        <dt class="col-sm-3">Usuario</dt><dd class="col-sm-9" id="dUsuario"></dd>
-                        <dt class="col-sm-3">Acción</dt><dd class="col-sm-9" id="dAccion"></dd>
-                        <dt class="col-sm-3">Entidad</dt><dd class="col-sm-9" id="dEntidad"></dd>
-                        <dt class="col-sm-3">Registro</dt><dd class="col-sm-9" id="dClave"></dd>
-                        <dt class="col-sm-3">Origen</dt><dd class="col-sm-9" id="dOrigen"></dd>
-                    </dl>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <h6 class="text-danger">Valores anteriores</h6>
-                            <pre class="json-box" id="dAntes">—</pre>
-                        </div>
-                        <div class="col-md-6">
-                            <h6 class="text-success">Valores nuevos</h6>
-                            <pre class="json-box" id="dNuevos">—</pre>
+                <script src="./assets/static/js/footer.js"></script>
+
+            </footer>
+
+        </div>
+
+        <!-- Modal Ver detalle del movimiento -->
+        <div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="modalDetalleTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalDetalleTitulo">Ver detalle del movimiento</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <dl class="row mb-3">
+                            <dt class="col-sm-3">Fecha y hora</dt><dd class="col-sm-9" id="dFecha"></dd>
+                            <dt class="col-sm-3">Usuario</dt><dd class="col-sm-9" id="dUsuario"></dd>
+                            <dt class="col-sm-3">Acción</dt><dd class="col-sm-9" id="dAccion"></dd>
+                            <dt class="col-sm-3">Entidad</dt><dd class="col-sm-9" id="dEntidad"></dd>
+                            <dt class="col-sm-3">Registro</dt><dd class="col-sm-9 text-break" id="dClave"></dd>
+                            <dt class="col-sm-3">Origen</dt><dd class="col-sm-9" id="dOrigen"></dd>
+                        </dl>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Valores anteriores</h6>
+                                <pre class="json-box" id="dAntes">—</pre>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Valores nuevos</h6>
+                                <pre class="json-box" id="dNuevos">—</pre>
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- Scripts -->
+
+    <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
-        window.onload = function () {
+        window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            if (typeof window.loadHeader === 'function') window.loadHeader();
-            if (typeof window.loadFooter === 'function') window.loadFooter();
+            window.loadHeader();
+            window.loadFooter();
 
-            loadSettings()
-                .then(() => {
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar configuración:', error);
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                });
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();
+                adjustVisibilityBasedOnRole();
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
+            }
         };
+
+        function adjustVisibilityBasedOnRole() {
+            const userRole = localStorage.getItem('userRole');
+            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
+
+            if (userRole && userRole.toLowerCase() === 'admin') {
+                gestionarContenidoBtn.style.display = 'block';
+            } else {
+                gestionarContenidoBtn.style.display = 'none';
+            }
+        }
 
         async function loadSettings() {
             return new Promise((resolve, reject) => {
                 const xhr = new XMLHttpRequest();
                 xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
                 xhr.onload = function () {
                     if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            if (data && typeof applyStyles === 'function') {
-                                applyStyles(data.Logo, data.ColorFondo, data.ColorBotonesMenu, data.ContenidoPiePagina);
-                            }
-                        } catch (e) { /* si falla el theming, seguimos igual */ }
-                        resolve();
-                    } else { reject(new Error('Error en la carga de la API')); }
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        console.error('Error en la petición:', xhr.statusText);
+                        reject(new Error('Error en la carga de la API'));
+                    }
                 };
-                xhr.onerror = function () { reject(new Error('Error de red')); };
+
+                xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
+                    reject(new Error('Error de red'));
+                };
+
                 xhr.send();
             });
         }
+
     </script>
 
-    <!-- ================= Lógica de Auditoría ================= -->
     <script>
-        const API_AUD = 'http://localhost:50222/api';
-        let audState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
-        let audCache = {}; // id -> item, para el modal de detalle
+        const API = 'http://localhost:50222/api';
+        let pageSize = 15;
+        let currentPage = 1;
+        let ultimaBusqueda = 0;
+        let audCache = {};
+        let usuariosAudit = [];
 
-        function badgeAccion(accion) {
-            const map = {
-                'INSERT': 'bg-success', 'UPDATE': 'bg-warning', 'DELETE': 'bg-danger',
-                'LOGIN': 'bg-info', 'LOGOUT': 'bg-secondary', 'KM_MANUAL': 'bg-primary'
-            };
-            const label = {
-                'INSERT': 'Alta', 'UPDATE': 'Modificación', 'DELETE': 'Baja',
-                'LOGIN': 'Login', 'LOGOUT': 'Logout', 'KM_MANUAL': 'Km manual'
-            };
-            const a = (accion || '').toUpperCase();
-            const cls = map[a] || 'bg-dark';
-            return '<span class="badge badge-accion ' + cls + '">' + (label[a] || a) + '</span>';
+        function etiquetaAccion(accion) {
+            return SGTL.estado((accion || '').toUpperCase());
         }
 
-        function fmtFecha(iso) {
-            if (!iso) return '';
-            const d = new Date(iso);
-            if (isNaN(d.getTime())) return iso;
-            return d.toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        }
-
-        function esc(s) {
-            if (s === null || s === undefined) return '';
-            return String(s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
-        }
-
-        function prettyJson(txt) {
-            if (!txt) return '—';
-            try { return esc(JSON.stringify(JSON.parse(txt), null, 2)); }
-            catch (e) { return esc(txt); }
+        function prettyJson(texto) {
+            if (!texto) return '—';
+            try { return SGTL.escapar(JSON.stringify(JSON.parse(texto), null, 2)); }
+            catch (e) { return SGTL.escapar(texto); }
         }
 
         function cargarEntidades() {
-            fetch(API_AUD + '/Auditoria/Entidades')
-                .then(r => r.ok ? r.json() : [])
-                .then(list => {
-                    const sel = document.getElementById('fEntidad');
-                    (list || []).forEach(function (e) {
-                        const o = document.createElement('option');
-                        o.value = e; o.textContent = e;
-                        sel.appendChild(o);
-                    });
-                })
-                .catch(() => { });
+            SGTL.ajax({ url: API + '/Auditoria/Entidades', type: 'GET' }).then(function (lista) {
+                const select = document.getElementById('fEntidad');
+                (lista || []).forEach(function (e) { select.appendChild(new Option(e, e)); });
+            }, function () { });
         }
-
-        var usuariosAudit = [];
 
         function cargarUsuarios() {
-            fetch(API_AUD + '/Auditoria/Usuarios')
-                .then(r => r.ok ? r.json() : [])
-                .then(list => { usuariosAudit = (list || []).filter(Boolean); })
-                .catch(() => { usuariosAudit = []; });
+            SGTL.ajax({ url: API + '/Auditoria/Usuarios', type: 'GET' }).then(function (lista) {
+                usuariosAudit = (lista || []).filter(Boolean);
+            }, function () { usuariosAudit = []; });
         }
 
-        function renderUsuarioDropdown(filtro) {
-            var dd = document.getElementById('usuarioDropdown');
-            if (!dd) return;
-            var q = (filtro || '').toLowerCase();
-            var items = usuariosAudit.filter(function (u) { return u.toLowerCase().indexOf(q) !== -1; });
-            var html = '<button type="button" class="list-group-item list-group-item-action text-muted" data-val="">(Todos)</button>';
-            if (usuariosAudit.length === 0) {
-                html += '<span class="list-group-item disabled small text-muted">Sin usuarios para listar</span>';
-            } else if (!items.length) {
-                html += '<span class="list-group-item disabled small text-muted">Sin coincidencias</span>';
-            } else {
-                items.slice(0, 50).forEach(function (u) {
-                    html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + esc(u) + '">' + esc(u) + '</button>';
-                });
-            }
+        function mostrarUsuarios(filtro) {
+            const dd = document.getElementById('usuarioDropdown');
+            const q = (filtro || '').toLowerCase();
+            const items = usuariosAudit.filter(function (u) { return u.toLowerCase().indexOf(q) !== -1; });
+            let html = '<button type="button" class="list-group-item list-group-item-action text-muted" data-val="">Todos</button>';
+            if (!usuariosAudit.length) html += '<span class="list-group-item disabled small text-muted">Todavía no hay usuarios en la auditoría.</span>';
+            else if (!items.length) html += '<span class="list-group-item disabled small text-muted">No hay coincidencias.</span>';
+            else items.slice(0, 50).forEach(function (u) {
+                html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + SGTL.escapar(u) + '">' + SGTL.escapar(u) + '</button>';
+            });
             dd.innerHTML = html;
             dd.style.display = 'block';
         }
 
-        function ocultarUsuarioDropdown() {
-            var dd = document.getElementById('usuarioDropdown');
-            if (dd) dd.style.display = 'none';
+        function ocultarUsuarios() {
+            document.getElementById('usuarioDropdown').style.display = 'none';
         }
 
-        function buscarAuditoria(page) {
-            audState.page = page || 1;
-            const p = new URLSearchParams();
-            const u = document.getElementById('fUsuario').value.trim();
-            const en = document.getElementById('fEntidad').value;
-            const ac = document.getElementById('fAccion').value;
-            const de = document.getElementById('fDesde').value.trim();
-            const ha = document.getElementById('fHasta').value.trim();
-            const tx = document.getElementById('fTexto').value.trim();
-            if (u) p.append('usuario', u);
-            if (en) p.append('entidad', en);
-            if (ac) p.append('accion', ac);
-            if (de) p.append('desde', de);
-            if (ha) p.append('hasta', ha);
-            if (tx) p.append('texto', tx);
-            p.append('page', audState.page);
-            p.append('pageSize', audState.pageSize);
+        function buscarAuditoria(page = 1) {
+            const tbody = '#cuerpoAuditoria';
+            const busqueda = ++ultimaBusqueda;
+            currentPage = page;
+            const rango = SGTL.valorRango('#fRango');
+            const datos = { page: page, pageSize: pageSize };
+            const usuario = $('#fUsuario').val().trim();
+            const texto = $('#fTexto').val().trim();
+            if (usuario) datos.usuario = usuario;
+            if ($('#fEntidad').val()) datos.entidad = $('#fEntidad').val();
+            if ($('#fAccion').val()) datos.accion = $('#fAccion').val();
+            if (rango) { datos.desde = rango.desde; datos.hasta = rango.hasta; }
+            if (texto) datos.texto = texto;
+            SGTL.tabla.cargando(tbody, 6);
 
-            const cuerpo = document.getElementById('cuerpoAuditoria');
-            cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>';
-
-            fetch(API_AUD + '/Auditoria?' + p.toString())
-                .then(r => { if (!r.ok) throw new Error('Error ' + r.status); return r.json(); })
-                .then(data => renderTabla(data))
-                .catch(err => {
-                    cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">No se pudo cargar la auditoría. ' + esc(err.message) + '</td></tr>';
-                    document.getElementById('paginacion').innerHTML = '';
-                    document.getElementById('resumen').textContent = '';
+            SGTL.ajax({ url: API + '/Auditoria', type: 'GET', data: datos },
+                'No se pudo cargar la auditoría. Revisá la conexión y probá de nuevo.').then(function (data) {
+                    if (busqueda !== ultimaBusqueda) return;
+                    const items = data.items || [];
+                    audCache = {};
+                    if (!items.length) SGTL.tabla.vacia(tbody, 6);
+                    else SGTL.tabla.llenar(tbody, items.map(function (it) {
+                        audCache[it.Auditoria_ID] = it;
+                        return `<tr>
+                            <td class="text-center text-nowrap">${SGTL.fecha(it.Fecha, { segundos: true })}</td>
+                            <td>${SGTL.escapar(it.Usuario || '—')}</td>
+                            <td class="text-center">${etiquetaAccion(it.Accion)}</td>
+                            <td>${SGTL.escapar(it.Entidad || '—')}</td>
+                            <td class="clave-cell" title="${SGTL.escapar(it.Clave || '')}">${SGTL.escapar(it.Clave || '—')}</td>
+                            <td class="text-center">${SGTL.accionesFila([SGTL.botonFila('ver', { id: it.Auditoria_ID })])}</td>
+                        </tr>`;
+                    }).join(''));
+                    SGTL.tabla.paginacion('#paginacion', {
+                        total: Number(data.total || 0),
+                        tamanioPagina: pageSize,
+                        pagina: page,
+                        alCambiarPagina: function (p) { buscarAuditoria(p); },
+                        alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarAuditoria(1); }
+                    });
+                }, function (error) {
+                    if (busqueda !== ultimaBusqueda) return;
+                    SGTL.tabla.vacia(tbody, 6, 'No se pudo cargar la auditoría.');
+                    SGTL.tabla.paginacion('#paginacion', { total: 0 });
+                    SGTL.toastError(error.mensajeUsuario);
                 });
-        }
-
-        function renderTabla(data) {
-            const cuerpo = document.getElementById('cuerpoAuditoria');
-            audCache = {};
-            const items = data.items || [];
-            audState.totalPages = data.totalPages || 1;
-            audState.total = Number(data.total || 0);
-
-            if (!items.length) {
-                cuerpo.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Sin movimientos para los filtros seleccionados.</td></tr>';
-                renderPaginacion();
-                document.getElementById('resumen').textContent = '0 resultados';
-                return;
-            }
-
-            let html = '';
-            items.forEach(function (it) {
-                audCache[it.Auditoria_ID] = it;
-                html += '<tr>' +
-                    '<td>' + esc(fmtFecha(it.Fecha)) + '</td>' +
-                    '<td>' + esc(it.Usuario || '—') + '</td>' +
-                    '<td>' + badgeAccion(it.Accion) + '</td>' +
-                    '<td>' + esc(it.Entidad || '—') + '</td>' +
-                    '<td class="clave-cell" title="' + esc(it.Clave || '') + '">' + esc(it.Clave || '—') + '</td>' +
-                    '<td class="text-center"><button class="btn btn-sm btn-outline-primary" onclick="verDetalle(' + it.Auditoria_ID + ')"><i class="bi bi-eye"></i></button></td>' +
-                    '</tr>';
-            });
-            cuerpo.innerHTML = html;
-
-            document.getElementById('resumen').textContent =
-                data.total + ' resultado' + (data.total === 1 ? '' : 's') +
-                ' · página ' + data.page + ' de ' + audState.totalPages;
-
-            renderPaginacion();
-        }
-
-        function renderPaginacion() {
-            const ul = document.getElementById('paginacion');
-            const tp = audState.totalPages, pg = audState.page;
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(ul, {
-                    total: audState.total, tamanioPagina: audState.pageSize, pagina: pg,
-                    alCambiarPagina: function (pagina) { buscarAuditoria(pagina); },
-                    alCambiarTamanio: function (tamanio) { audState.pageSize = tamanio; buscarAuditoria(1); }
-                });
-                return;
-            }
-            if (tp <= 1) { ul.innerHTML = ''; return; }
-            let html = '';
-            html += '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + (pg - 1) + ')">«</a></li>';
-            const desde = Math.max(1, pg - 2), hasta = Math.min(tp, pg + 2);
-            if (desde > 1) html += '<li class="page-item"><a class="page-link" href="#" onclick="return irPagina(1)">1</a></li>' + (desde > 2 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : '');
-            for (let i = desde; i <= hasta; i++) {
-                html += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + i + ')">' + i + '</a></li>';
-            }
-            if (hasta < tp) html += (hasta < tp - 1 ? '<li class="page-item disabled"><span class="page-link">…</span></li>' : '') + '<li class="page-item"><a class="page-link" href="#" onclick="return irPagina(' + tp + ')">' + tp + '</a></li>';
-            html += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPagina(' + (pg + 1) + ')">»</a></li>';
-            ul.innerHTML = html;
-        }
-
-        function irPagina(p) {
-            if (p < 1 || p > audState.totalPages || p === audState.page) return false;
-            buscarAuditoria(p);
-            return false;
         }
 
         function verDetalle(id) {
             const it = audCache[id];
             if (!it) return;
-            document.getElementById('dFecha').textContent = fmtFecha(it.Fecha);
-            document.getElementById('dUsuario').textContent = it.Usuario || '—';
-            document.getElementById('dAccion').innerHTML = badgeAccion(it.Accion);
-            document.getElementById('dEntidad').textContent = it.Entidad || '—';
-            document.getElementById('dClave').textContent = it.Clave || '—';
-            document.getElementById('dOrigen').textContent = it.Origen || '—';
-            document.getElementById('dAntes').innerHTML = prettyJson(it.Valores_Anteriores);
-            document.getElementById('dNuevos').innerHTML = prettyJson(it.Valores_Nuevos);
-            $('#modalDetalle').modal('show');
+            $('#dFecha').text(SGTL.fecha(it.Fecha, { segundos: true }));
+            $('#dUsuario').text(it.Usuario || '—');
+            $('#dAccion').html(etiquetaAccion(it.Accion));
+            $('#dEntidad').text(it.Entidad || '—');
+            $('#dClave').text(it.Clave || '—');
+            $('#dOrigen').text(it.Origen || '—');
+            $('#dAntes').html(prettyJson(it.Valores_Anteriores));
+            $('#dNuevos').html(prettyJson(it.Valores_Nuevos));
+            SGTL.modal('#modalDetalle', 'show');
         }
 
-        function limpiarFiltros() {
-            ['fUsuario', 'fDesde', 'fHasta', 'fTexto'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('fEntidad').value = '';
-            document.getElementById('fAccion').value = '';
-            buscarAuditoria(1);
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.flatpickr) {
-                ['fDesde', 'fHasta'].forEach(id => flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }));
-            }
-            ['fUsuario', 'fTexto'].forEach(id => {
-                document.getElementById(id).addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter') { ocultarUsuarioDropdown(); buscarAuditoria(1); }
-                });
+        $(function () {
+            SGTL.rangoFechas('#fRango');
+            SGTL.filtros(['#fUsuario', '#fEntidad', '#fAccion', '#fRango', '#fTexto'], function () { ocultarUsuarios(); buscarAuditoria(1); });
+            $('#busquedaAuditoriaForm').on('submit', function (evento) {
+                evento.preventDefault();
+                ocultarUsuarios();
+                buscarAuditoria(1);
             });
 
-            // Combo de usuario (lista desplegable + filtrado al escribir)
-            var fu = document.getElementById('fUsuario');
-            fu.addEventListener('focus', function () { renderUsuarioDropdown(fu.value.trim()); });
-            fu.addEventListener('input', function () { renderUsuarioDropdown(fu.value.trim()); });
+            const fu = document.getElementById('fUsuario');
+            fu.addEventListener('focus', function () { mostrarUsuarios(fu.value.trim()); });
+            fu.addEventListener('input', function () { mostrarUsuarios(fu.value.trim()); });
             document.getElementById('usuarioDropdown').addEventListener('mousedown', function (e) {
-                var btn = e.target.closest('[data-val]');
-                if (!btn) return;
-                e.preventDefault(); // evita que el blur cierre antes del click
-                fu.value = btn.getAttribute('data-val') || '';
-                ocultarUsuarioDropdown();
+                const opcion = e.target.closest('[data-val]');
+                if (!opcion) return;
+                e.preventDefault();
+                fu.value = opcion.getAttribute('data-val') || '';
+                fu.dispatchEvent(new Event('input'));
+                ocultarUsuarios();
                 buscarAuditoria(1);
             });
             document.addEventListener('click', function (e) {
-                if (!e.target.closest('#fUsuario') && !e.target.closest('#usuarioDropdown')) ocultarUsuarioDropdown();
+                if (!e.target.closest('#fUsuario') && !e.target.closest('#usuarioDropdown')) ocultarUsuarios();
             });
 
+            $('#tablaAuditoria').on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); });
             cargarEntidades();
             cargarUsuarios();
             buscarAuditoria(1);
