@@ -301,7 +301,7 @@ body {
     line-height: var(--bs-body-line-height);
     color: var(--bs-body-color);
     text-align: var(--bs-body-text-align);
-    background-color: #19875430;
+    background-color: #e4eef8;
     -webkit-text-size-adjust: 100%;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0)
 }
@@ -23320,7 +23320,7 @@ body .bi:before,
 
 .navbar-fixed .navbar-top {
     position: sticky;
-    background-color: #f2fff8;
+    background-color: #fff;
     z-index: 9;
     top: 0;
     width: inherit
@@ -23438,7 +23438,7 @@ body .bi:before,
 }
 
 .layout-horizontal .main-navbar {
-    background-color: #f2fff8;
+    background-color: #fff;
     padding: 1rem
 }
 

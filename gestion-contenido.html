@@ -282,9 +282,9 @@
                                 document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
                             }
                             setLogoPreview(logoUrl || './assets/compiled/svg/ts-logo-text.svg');
-                            document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
-                            document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
-                            document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
+                            document.getElementById('backgroundColorInput').value = colorFondo || window.SGTL_CONTENIDO_DEFAULT.fondo;
+                            document.getElementById('menuColorInput').value = colorBotonesMenu || window.SGTL_CONTENIDO_DEFAULT.menu;
+                            document.getElementById('footerContentInput').value = contenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
 
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
@@ -364,13 +364,14 @@
         });
 
         function loadDefaultValues() {
+            var marca = window.SGTL_CONTENIDO_DEFAULT;
             console.log('Cargando valores por defecto...');
-            document.getElementById('logoInput').value = './assets/compiled/svg/ts-logo-text.svg';
-            document.getElementById('backgroundColorInput').value = '#b6d8c7';
-            document.getElementById('menuColorInput').value = '#198754';
-            document.getElementById('footerContentInput').value = '2025 &copy; Integra Analistas';
+            document.getElementById('logoInput').value = marca.logo;
+            document.getElementById('backgroundColorInput').value = marca.fondo;
+            document.getElementById('menuColorInput').value = marca.menu;
+            document.getElementById('footerContentInput').value = marca.pie;
 
-            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#b6d8c7', '#198754', '2025 &copy; Integra Analistas');
+            applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
         }
 
         // Obtener el nombre de usuario desde localStorage
@@ -381,14 +382,14 @@
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            const defaultLogo = './assets/compiled/svg/ts-logo-text.svg';
-            const defaultFavicon = './assets/compiled/svg/ts-icon.svg';
-            const defaultColorFondo = '#b6d8c7';
-            const defaultColorBotonesMenu = '#198754';
-            const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
+            var marca = window.SGTL_CONTENIDO_DEFAULT;
+            const logoActual = valorLogoEfectivo() || marca.logo;
+            const defaultColorFondo = marca.fondo;
+            const defaultColorBotonesMenu = marca.menu;
+            const defaultContenidoPiePagina = marca.pie;
 
             const settingsData = {
-                Logo: defaultLogo,
+                Logo: logoActual,
                 ColorFondo: defaultColorFondo,
                 ColorBotonesMenu: defaultColorBotonesMenu,
                 ContenidoPiePagina: defaultContenidoPiePagina,
@@ -402,16 +403,10 @@
 
             xhr.onload = function () {
                 if (xhr.status >= 200 && xhr.status < 300) {
-                    uploadedLogoDataUrl = null;
-                    marcarArchivoCargado(false);
-                    document.getElementById('logoInput').value = defaultLogo;
-                    setLogoPreview(defaultLogo);
                     document.getElementById('backgroundColorInput').value = defaultColorFondo;
                     document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
                     document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
-                    applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
-                    const favicon = document.querySelector('link[rel="shortcut icon"]');
-                    if (favicon) favicon.href = defaultFavicon;
+                    applyStyles(logoActual, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
                     mostrarToastExito();
                     try {
                         var modalElement = document.getElementById('confirmarRestablecerModal');

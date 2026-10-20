@@ -596,8 +596,7 @@
             favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
             document.head.appendChild(favicon);
 
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
+            document.body.style.backgroundColor = colorFondo || '#e4eef8';
 
             // Crear estilo CSS dinámico para color de texto en hover y activo
             const dynamicStyle = document.createElement('style');
@@ -605,32 +604,32 @@
         /* Estilo para items activos en el menú */
         .sidebar-item.active .sidebar-link,
         .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
 
         /* Hover en las opciones del menú */
         .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
 
         /* Estilo para el botón hamburguesa */
         .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
 
         /* Hover en el botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
 
         /* Estilo para el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
 
         /* Hover en el ícono de cerrar (sidebar-toggler) */
         .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${colorBotonesMenu || '#435ebe'} !important;
         }
     `;
             document.head.appendChild(dynamicStyle);
@@ -638,7 +637,7 @@
             // Configuración del contenido en el pie de página
             const footerContentElement = document.querySelector('.footer p');
             if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+                footerContentElement.innerHTML = contenidoPiePagina || 'SGTL | un producto de Integra Analistas ®';
             }
         }
         // Lógica de logout y carga de nombre de usuario en el header

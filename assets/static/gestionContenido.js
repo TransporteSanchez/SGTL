@@ -1,3 +1,23 @@
+// Marca SGTL tomada de GESTION_CONTENIDO. Restablecer vuelve a estos valores.
+window.SGTL_CONTENIDO_DEFAULT = {
+    logo: './assets/compiled/svg/ts-logo-text.svg',
+    favicon: './assets/compiled/svg/ts-icon.svg',
+    fondo: '#e4eef8',
+    menu: '#435ebe',
+    pie: 'SGTL | un producto de Integra Analistas ®'
+};
+
+function oscurecerColor(hex) {
+    var limpio = String(hex || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return '#364b98';
+    var canales = [0, 2, 4].map(function (i) {
+        return Math.max(0, Math.round(parseInt(limpio.substr(i, 2), 16) * 0.82));
+    });
+    return '#' + canales.map(function (n) {
+        return ('0' + n.toString(16)).slice(-2);
+    }).join('');
+}
+
 window.cargarEstilosContenido = function () {
     return fetch('http://localhost:50222/api/GestionContenido/1', { cache: 'no-store' })
         .then(function (respuesta) {
@@ -19,13 +39,15 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
     document.head.appendChild(favicon);
 
-    // Color de fondo general
-    document.body.style.backgroundColor = colorFondo || '#198754';
+    var marca = window.SGTL_CONTENIDO_DEFAULT;
+    var fondo = colorFondo || marca.fondo;
+    var menu = colorBotonesMenu || marca.menu;
+    document.body.style.backgroundColor = fondo;
 
     // Aplicar color **solo** al sidebar-link activo
     const activeSidebarLinks = document.querySelectorAll('.sidebar-item.active .sidebar-link');
     activeSidebarLinks.forEach(link => {
-        link.style.backgroundColor = colorBotonesMenu || '#198754'; // Color de fondo para el activo
+        link.style.backgroundColor = menu; // Color de fondo para el activo
         link.style.color = '#fff'; // Texto blanco
     });
 
@@ -35,7 +57,7 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     dynamicStyle.innerHTML = `
         /* Estilos solo para el enlace activo */
         .sidebar-item.active .sidebar-link {
-            background-color: ${colorBotonesMenu || '#198754'} !important;
+            background-color: ${menu} !important;
             color: #fff !important;
             font-weight: bold;
             border-radius: 5px;
@@ -43,7 +65,7 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
 
         /* Hover en el enlace activo */
         .sidebar-item.active .sidebar-link:hover {
-            background-color: ${colorBotonesMenu || '#156a3e'} !important;
+            background-color: ${oscurecerColor(menu)} !important;
         }
 
         /* Estilos normales para los enlaces no activos */
@@ -59,22 +81,22 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
 
         /* Botón hamburguesa */
         .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${menu} !important;
         }
 
         /* Hover en botón hamburguesa */
         .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#156a3e'} !important;
+            color: ${oscurecerColor(menu)} !important;
         }
 
         /* Hover en submenu-link */
         .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${menu} !important;
         }
 
         /* Aplica color al submenu-item activo */
         .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
+            color: ${menu} !important;
             font-weight: bold;
         }
     `;
@@ -83,7 +105,7 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     // Configuración del contenido en el pie de página
     const footerContentElement = document.querySelector('.footer p');
     if (footerContentElement) {
-        footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
+        footerContentElement.innerHTML = contenidoPiePagina || marca.pie;
     }
 
     console.log("Color del menú aplicado a .sidebar-item.active .sidebar-link y .submenu-item.active .submenu-link:", colorBotonesMenu);

@@ -385,4 +385,5 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Íconos: solo Bootstrap Icons.** Se sacan Font Awesome (CDN, en login e inicio), Feather y
   Boxicons.
 - **Gestionar contenido sigue igual:** logo, pie, color de fondo y color del menú. "Restablecer"
-  mantiene los valores actuales del código (`#b6d8c7` y `#198754`).
+  vuelve a la marca SGTL: fondo `#e4eef8`, menú `#435ebe` y pie `SGTL | un producto de Integra Analistas ®`.
+  La barra de arriba (usuario y menú) queda en blanco, igual que el menú lateral.

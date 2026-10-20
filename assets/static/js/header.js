@@ -57,7 +57,7 @@ function setupUserInfo() {
         userInitialsContainer.style.justifyContent = 'center';
         userInitialsContainer.style.width = '40px';
         userInitialsContainer.style.height = '40px';
-        userInitialsContainer.style.backgroundColor = menuColor || '#007bff'; // Fondo dinámico desde la API o color por defecto
+        userInitialsContainer.style.backgroundColor = menuColor || '#435ebe'; // Fondo dinámico desde la API o color por defecto
         userInitialsContainer.style.color = '#fff'; // Color del texto de las iniciales
         userInitialsContainer.style.borderRadius = '50%';
         userInitialsContainer.style.fontWeight = 'bold';
