@@ -137,7 +137,7 @@
         el('btnEnviarPresupuesto').disabled = true; el('btnEnviarPresupuesto').textContent = 'Enviar E-mail'; aviso('envioPresupuestoFeedback', '', false); modalEnvio.show();
         pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/email', { headers: encabezadosEnvio() }).then(function (r) {
             if (version !== secuenciaEnvio) return;
-            if (!r.Configurado) { el('envioPresupuestoPerfil').textContent = 'No hay un perfil SMTP asignado a Presupuestos. Configuralo en Configuración > E-mail.'; return; }
+            if (!r.Configurado) { el('envioPresupuestoPerfil').textContent = 'No hay un perfil SMTP asignado a Presupuestos. Configuralo en Configuración > Gestionar e-mail.'; return; }
             envioActual = r; el('envioPresupuestoDestino').value = r.Presupuesto.email || '';
             el('envioPresupuestoPerfil').textContent = '';
             el('btnEnviarPresupuesto').disabled = false;

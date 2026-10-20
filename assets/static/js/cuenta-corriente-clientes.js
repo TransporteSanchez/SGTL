@@ -122,7 +122,7 @@
             destino.value = datos.DestinatarioSugerido || '';
             if (!datos.Configurado) {
                 porId('envioComprobantePerfil').textContent = 'Facturación no tiene un perfil SMTP asignado.';
-                mostrarFeedbackEnvio('warning', 'Un administrador debe seleccionar el perfil SMTP desde Configuración > E-mail > Perfil para Facturación.');
+                mostrarFeedbackEnvio('warning', 'Un administrador debe seleccionar el perfil SMTP desde Configuración > Gestionar e-mail > Perfil para Facturación.');
                 return;
             }
             porId('envioComprobantePerfil').textContent = 'Se utilizará el Servicio ' + datos.Service + ' · ' + (datos.Perfil || datos.Remitente || 'perfil SMTP asignado') + '.';

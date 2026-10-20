@@ -432,7 +432,7 @@ De paso quedaron corregidos R1 (CSV de clientes), R2 (`showErrorToast`), R3 (for
 
 ### Falta aplicar (retomar después)
 
-**Menú** (`sidebar-loader.js`): Auditoría y Gestión de contenido ya se renombraron (20/10); los de Facturación y Configuración de Facu y Fede siguen con el texto viejo. Renombrar no cambia permisos (van por archivo).
+**Menú y títulos en infinitivo (§3.1): hechos en todas las pantallas el 20/10**, también las de Facu y Fede: Gestionar cuenta corriente, Gestionar facturación, Gestionar e-mail, Gestionar integración de WhatsApp, Listar proformas (título), Gestionar presupuestos, Consultar manual de usuario y Consultar informe de versión. Solo cambian el texto del menú, el título visible y la pestaña (y dos mensajes que nombraban "Configuración > E-mail"); el PDF de cuenta corriente sigue titulado "Cuenta Corriente de Clientes". Los permisos van por archivo, así que no cambia quién ve qué. **Probar en la VM:** con un usuario admin y uno user, el menú muestra lo mismo que antes con los nombres nuevos. Renombrar no cambia permisos (van por archivo).
 
 | Hoy en el menú | Pasa a |
 |---|---|

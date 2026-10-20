@@ -138,6 +138,9 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
 | Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
 | Auditoría | Auditoría del sistema | Consultar auditoría |
+| Viajes → Presupuestos | Gestionar presupuestos | Gestionar presupuestos (20/10) |
+| Documentación → Manual de usuario | Manual de usuario | Consultar manual de usuario (20/10) |
+| Documentación → Informe de versión | Informe de versión | Consultar informe de versión (20/10) |
 
 - **Excepción:** "Dashboard" queda como está.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
