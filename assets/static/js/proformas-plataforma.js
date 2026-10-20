@@ -297,6 +297,8 @@
     estado.plataforma = c.Plataforma || estado.plataforma;
     var p = esc(nombrePlataforma());
     var esBorrador = c.Estado === 'Borrador';
+    // Con "Ver" (ojo) el borrador es solo lectura: sin acciones, como la proforma propia (F1 de la prueba mínima del 19/10).
+    var editable = esBorrador && !estado.soloLectura;
 
     var titulo = $id('tituloModal');
     if (titulo) titulo.textContent = 'Proforma de ' + nombrePlataforma() + ' ' + (c.NumeroPlataforma || '');
@@ -304,11 +306,11 @@
     // Los datos de la cabecera se guardan al importar; el borrador se maneja desde este bloque.
     if (typeof window.setModoLectura === 'function') window.setModoLectura(true);
     $id('btnCerrarProforma').textContent = 'Cerrar';
-    if (esBorrador && !estado.soloLectura) habilitarCondiciones();
+    if (editable) habilitarCondiciones();
     // Lo que se escribe en este bloque (reclamo, reemplazo) se guarda con sus botones: no cuenta como cambio sin guardar.
     $id('bloquePlataforma').dataset.sinCambios = 'true';
     var gen = $id('btnGenerar');
-    gen.style.display = esBorrador ? '' : 'none';
+    gen.style.display = editable ? '' : 'none';
     gen.disabled = !c.PuedeGenerar;
     // Deshabilitado no tiene que parecer habilitado (verde con opacidad).
     gen.classList.toggle('btn-success', !!c.PuedeGenerar);
@@ -337,7 +339,7 @@
 
     var resumen = c.Cantidad + (c.Cantidad === 1 ? ' transporte' : ' transportes') + ' · ' + c.Coinciden + ' coinciden' +
       (c.Diferencias ? ' · <strong>' + c.Diferencias + ' con diferencias</strong>' : '');
-    var motivo = !esBorrador ? '' : (c.Diferencias
+    var motivo = !editable ? '' : (c.Diferencias
       ? 'Para generar, corregí ' + (c.Diferencias === 1 ? 'la diferencia' : 'las ' + c.Diferencias + ' diferencias') + '.'
       : 'Todo coincide con ' + nombrePlataforma() + '. Ya podés generar la proforma.');
 
@@ -346,16 +348,16 @@
       '<div class="mb-2"><span class="text-muted">Archivo:</span> ' + esc(c.NombreArchivo || '') +
       (c.FechaArchivo && window.SGTL ? ' <span class="text-muted">· importado el ' + SGTL.fecha(c.FechaArchivo, { hora: true }) + '</span>' : '') +
       ' <span class="text-muted">· N° en ' + p + ':</span> ' + esc(c.NumeroPlataforma || '') +
-      (esBorrador ? ' <button type="button" class="btn btn-sm btn-light-secondary ms-2" id="pp_reemplazar">Reemplazar Excel</button>' +
+      (editable ? ' <button type="button" class="btn btn-sm btn-light-secondary ms-2" id="pp_reemplazar">Reemplazar Excel</button>' +
         '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none">' : '') + '</div>' +
       (c.ReclamoFecha
         ? '<div class="alert alert-light-warning color-warning py-2 d-flex flex-wrap align-items-center gap-2">' +
           '<span><strong>Reclamo en ' + p + '</strong> desde el ' + (window.SGTL ? SGTL.fecha(c.ReclamoFecha) : '') + ': ' + esc(c.ReclamoMotivo || '') + '</span>' +
-          (esBorrador ? '<button type="button" class="btn btn-sm btn-light-secondary ms-auto" id="pp_cerrar_reclamo">Cerrar reclamo</button>' : '') + '</div>'
+          (editable ? '<button type="button" class="btn btn-sm btn-light-secondary ms-auto" id="pp_cerrar_reclamo">Cerrar reclamo</button>' : '') + '</div>'
         : '') +
       '<div class="d-flex flex-wrap align-items-center gap-2 mb-2"><span>' + resumen + '</span>' +
-      (esBorrador ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_controlar">Volver a controlar</button>' : '') +
-      (esBorrador && c.Diferencias && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_reclamo">Registrar reclamo</button>' : '') +
+      (editable ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_controlar">Volver a controlar</button>' : '') +
+      (editable && c.Diferencias && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_reclamo">Registrar reclamo</button>' : '') +
       '</div>' +
       '<div id="pp_form_reclamo" class="d-none border rounded p-2 mb-2">' +
       '<div class="fw-bold mb-2">Registrar reclamo</div><div class="row g-2">' +
