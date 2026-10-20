@@ -28,7 +28,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 4 | Limpieza SQL datos de prueba VM | **No hecho** (falta OK) | — | SQL listo abajo |
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
-| 6 | Proforma de plataforma (Rukas): importar el Excel y conciliar | **Diseño cerrado 19/10** (§10 del doc y plan), listo para el código; quedan preguntas a Claudia que no frenan | Doc commiteado (`093e20e`) | Ver `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` |
+| 6 | Proforma de plataforma (Rukas): importar el Excel y conciliar | Etapas 1–3 **probadas en VM** (falta verificar las correcciones de `67974f9`); etapas 4 (guía), 6 (factura en la plataforma), filtro Tipo, PDF e importe unificado **hechos el 19/10** | Commits del 19/10 (`81f0a06` a `8b3385b` y este), **sin push** | Ver §6 (cómo probar cada parte); después, etapa 7 (recorrida completa y pase a `main`) |
 | 10 | Relevamiento visual y design system | CSS/JS compartido y piloto en Choferes hechos; falta aplicar al resto (ver §10) | **Pusheado** (`020e892`) | **Piloto Choferes OK en VM (17/10)** |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | **Pusheado** (`ae6288d`) | **OK en la práctica:** la VM usó `docs/equipo/PRUEBAS-VM-CLAUDE.md` en todas las rondas del 18/10 |
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
@@ -205,7 +205,7 @@ Opcional: re-pruebas WhatsApp regla 3 en VM (`C:\pruebas-sgtl\prueba-viajes.ps1`
 
 ---
 
-## 6. Proforma Rukas (clientes Rukas / Marfrig) — SOLO DEFINICIÓN
+## 6. Proforma Rukas (clientes Rukas / Marfrig) — ETAPAS 1–4 Y 6 HECHAS; FALTA PROBAR 4 Y 6 Y LA ETAPA 7
 
 No es un bug de las pruebas: es un **rediseño de negocio** detectado al contrastar SGTL con las respuestas de Claudia.
 
