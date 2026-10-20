@@ -445,6 +445,21 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
             return null;
         }
 
+        private static string ValidarConceptosProforma(ProformaDto p)
+        {
+            if (p.Detalle != null && p.Detalle.Any(l => l == null || string.IsNullOrWhiteSpace(l.Concepto)))
+                return "Completá el concepto de cada línea de la proforma.";
+            return null;
+        }
+
+        private static bool TieneConceptosIncompletos(DbContext db, int proformaId)
+        {
+            return db.Database.SqlQuery<int>(
+                "SELECT COUNT(*) FROM PROFORMA_DETALLE WHERE Proforma_ID=@id " +
+                "AND NULLIF(LTRIM(RTRIM(ISNULL(Concepto,''))), '') IS NULL", P("@id", proformaId))
+                .FirstOrDefault() > 0;
+        }
+
         // ======================= Endpoints =======================
 
         // tipo: Propia, Plataforma o Reclamo (de plataforma con reclamo pendiente).
@@ -694,6 +709,8 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
             if (p == null) return BadRequest("Datos invalidos.");
             var errorRequeridos = ValidarCamposRequeridos(p);
             if (errorRequeridos != null) return Content(HttpStatusCode.BadRequest, new { error = errorRequeridos });
+            var errorConceptos = ValidarConceptosProforma(p);
+            if (errorConceptos != null) return Content(HttpStatusCode.BadRequest, new { error = errorConceptos });
             try
             {
                 ComputarTotales(p);
@@ -739,6 +756,8 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
             if (p == null) return BadRequest("Datos invalidos.");
             var errorRequeridos = ValidarCamposRequeridos(p);
             if (errorRequeridos != null) return Content(HttpStatusCode.BadRequest, new { error = errorRequeridos });
+            var errorConceptos = ValidarConceptosProforma(p);
+            if (errorConceptos != null) return Content(HttpStatusCode.BadRequest, new { error = errorConceptos });
             try
             {
                 ComputarTotales(p);
@@ -795,6 +814,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     if (!h.ClienteID.HasValue || h.ClienteID.Value <= 0) errores.Add("Falta el cliente.");
                     int lineas = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM PROFORMA_DETALLE WHERE Proforma_ID=@id", P("@id", id)).First();
                     if (lineas == 0) errores.Add("Debe tener al menos un concepto.");
+                    if (TieneConceptosIncompletos(db, id)) errores.Add("Completá el concepto de cada línea de la proforma.");
                     if (h.Total <= 0) errores.Add("El total debe ser mayor a cero.");
                     var yaFacturados = db.Database.SqlQuery<int>(
                         "SELECT v.Viaje_ID " + JOIN_VIAJES_DE_PROFORMA + " AND v.Estado='Facturado'", P("@id", id)).ToList();
@@ -843,6 +863,8 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     if (TieneFacturaVigente(db, id)) return Content(HttpStatusCode.BadRequest, new { error = "No se puede cambiar el estado de una proforma Facturada." });
                     if (!TransicionPermitida(est, body.Estado))
                         return Content(HttpStatusCode.BadRequest, new { error = "Transicion no permitida: " + est + " -> " + body.Estado });
+                    if (body.Estado.Trim() == "Aceptada" && TieneConceptosIncompletos(db, id))
+                        return Content(HttpStatusCode.BadRequest, new { error = "Completá el concepto de cada línea de la proforma antes de aceptarla." });
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET Estado=@e, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
                         P("@e", body.Estado.Trim()), P("@u", body.Usuario), P("@id", id));
                     Auditar(db, body.Usuario, "ESTADO", id, "Estado=" + est, "Estado=" + body.Estado.Trim());
@@ -946,6 +968,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     if (o == null) return NotFound();
                     if (o.Tipo_Proforma == "Plataforma") return Content(HttpStatusCode.BadRequest, new { error = ErrorEsDePlataforma });
                     o.Detalle = LeerDetalle(db, id);
+                    var errorConceptos = ValidarConceptosProforma(o);
+                    if (errorConceptos != null) return Content(HttpStatusCode.BadRequest, new { error = errorConceptos });
                     if (ExtraerViajes(o.Detalle).Count > 0)
                         return Content(HttpStatusCode.Conflict, new
                         {

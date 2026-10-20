@@ -26,6 +26,11 @@
         .cc-toggle-applications { color: #435ebe; padding: .2rem .4rem; text-decoration: none; }
         .cc-parent-row > td { border-bottom-color: #dce0ec; }
         .cc-application-row > td { background: #f7f8fc; border-bottom-color: #e8eaf2; }
+        .cc-credit-application-row { --bs-table-bg: #e0f2fe; --bs-table-accent-bg: #e0f2fe; }
+        .cc-credit-application-row > td { background-color: #e0f2fe; border-top: 1px solid #bae6fd; border-bottom-color: #bae6fd; }
+        .cc-table > tbody > .cc-credit-application-row:hover { --bs-table-accent-bg: #d3edfc; }
+        .cc-credit-application-row .cc-document { color: #2d6f99; }
+        .cc-credit-application-row .cc-application-document i { color: #3b82a8; }
         .cc-application-document { padding-left: 1rem !important; }
         .cc-application-document i { color: #7c8aa5; }
         .cc-document { color: #435ebe; font-weight: 600; white-space: nowrap; }
@@ -51,6 +56,11 @@
         body.theme-dark .cc-trace-item:not(:last-child)::after { background: #3c4054; }
         body.theme-dark .cc-parent-row > td { border-bottom-color: #3c4054; }
         body.theme-dark .cc-application-row > td { background: #242638; border-bottom-color: #343749; }
+        body.theme-dark .cc-credit-application-row { --bs-table-bg: #19384a; --bs-table-accent-bg: #19384a; }
+        body.theme-dark .cc-credit-application-row > td { background-color: #19384a; border-top-color: #315c75; border-bottom-color: #315c75; }
+        body.theme-dark .cc-table > tbody > .cc-credit-application-row:hover { --bs-table-accent-bg: #21465c; }
+        body.theme-dark .cc-credit-application-row .cc-document { color: #a7d8f5; }
+        body.theme-dark .cc-credit-application-row .cc-application-document i { color: #8ac4e8; }
         body.theme-dark .badge.cc-pending { background: #482a31; color: #ff8792; }
         body.theme-dark .badge.cc-partial { background: #493c24; color: #efb24f; }
         body.theme-dark .badge.cc-paid { background: #253f34; color: #66d19a; }
@@ -63,6 +73,7 @@
     </style>
 
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
 </head>
@@ -430,6 +441,7 @@
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script>if (window.loadSidebar) window.loadSidebar();</script>
     <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>

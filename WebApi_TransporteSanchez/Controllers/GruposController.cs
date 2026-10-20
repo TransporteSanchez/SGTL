@@ -8,9 +8,13 @@ using System.Data.Entity.Infrastructure;
 
 using System.Data.Entity.Validation;
 
+using System.Globalization;
+
 using System.Linq;
 
 using System.Net;
+
+using System.Text;
 
 using System.Web.Http;
 
@@ -26,10 +30,66 @@ namespace WebApi_TransporteSanchez.Controllers
 
     {
 
+        private static readonly string[] CatalogoMenuPermisos =
+        {
+            "Dashboard",
+            "Listado de choferes", "Gestión de choferes",
+            "Listado de camiones", "Gestión de camiones",
+            "Listado de viajes", "Gestión de viajes", "Gestión de orígenes y destinos", "Gestión de tarifas", "Presupuestos",
+            "Listado de clientes", "Gestión de clientes",
+            "Listado de proformas", "Gestión de proformas", "Cuenta Corriente",
+            "Facturación", "E-mail", "Gestión de contenido", "Integración WhatsApp",
+            "Listado de usuarios", "Gestión de usuarios", "Grupos y permisos",
+            "Auditoría"
+        };
+
+        private static readonly Dictionary<string, string> MenuPrincipalPorPermiso =
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "dashboard", "General" },
+                { "listado de choferes", "Choferes" },
+                { "gestion de choferes", "Choferes" },
+                { "listado de camiones", "Camiones" },
+                { "gestion de camiones", "Camiones" },
+                { "listado de viajes", "Viajes" },
+                { "gestion de viajes", "Viajes" },
+                { "gestion de origenes y destinos", "Viajes" },
+                { "gestion de tarifas", "Viajes" },
+                { "presupuestos", "Viajes" },
+                { "listado de clientes", "Clientes" },
+                { "gestion de clientes", "Clientes" },
+                { "listado de proformas", "Facturación" },
+                { "gestion de proformas", "Facturación" },
+                { "cuenta corriente", "Facturación" },
+                { "facturacion", "Configuración" },
+                { "e-mail", "Configuración" },
+                { "gestion de contenido", "Configuración" },
+                { "integracion whatsapp", "Configuración" },
+                { "listado de usuarios", "Usuarios" },
+                { "gestion de usuarios", "Usuarios" },
+                { "grupos y permisos", "Usuarios" },
+                { "auditoria", "General" }
+            };
+
         private static MENU BuscarMenu(IEnumerable<MENU> menus, params string[] nombres)
         {
             return menus.FirstOrDefault(menu => nombres.Any(nombre =>
-                string.Equals((menu.Menu_Nombre ?? string.Empty).Trim(), nombre, StringComparison.OrdinalIgnoreCase)));
+                string.Equals(NormalizarNombreMenu(menu.Menu_Nombre), NormalizarNombreMenu(nombre), StringComparison.OrdinalIgnoreCase)));
+        }
+
+        private static string NormalizarNombreMenu(string nombre)
+        {
+            return string.Concat((nombre ?? string.Empty).Trim().Normalize(NormalizationForm.FormD)
+                .Where(caracter => CharUnicodeInfo.GetUnicodeCategory(caracter) != UnicodeCategory.NonSpacingMark))
+                .Normalize(NormalizationForm.FormC);
+        }
+
+        private static string ObtenerMenuPrincipal(string nombreMenu)
+        {
+            string menuPrincipal;
+            return MenuPrincipalPorPermiso.TryGetValue(NormalizarNombreMenu(nombreMenu), out menuPrincipal)
+                ? menuPrincipal
+                : "General";
         }
 
         private static void AsegurarCatalogoMenuPermisos(SGTLAuditContext db)
@@ -79,11 +139,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 seModifico = true;
             }
 
-            foreach (var nombreMenu in new[]
-            {
-                "Gestión de proformas", "Listado de proformas", "Cuenta Corriente",
-                "Integración WhatsApp", "E-mail"
-            })
+            foreach (var nombreMenu in CatalogoMenuPermisos)
             {
                 if (BuscarMenu(menus, nombreMenu) != null) continue;
                 var menu = new MENU { Menu_Nombre = nombreMenu, Menu_Principal = 0 };
@@ -114,6 +170,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Menu_ID { get; set; }
 
             public string Menu_Nombre { get; set; }
+
+            /// <summary>Menú principal visual al que pertenece el permiso.</summary>
+            public string Menu_Principal { get; set; }
 
             public bool Asignado { get; set; }
 
@@ -704,9 +763,17 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
 
+                    var menusAsignados = new HashSet<int>(db.Set<GRUPOS_MENU>()
+
+                        .Where(gm => gm.GrupoID == id)
+
+                        .Select(gm => gm.MenuID)
+
+                        .ToList());
+
                     var menus = db.Set<MENU>()
 
-                        .OrderBy(m => m.Menu_Nombre)
+                        .ToList()
 
                         .Select(m => new MenuAsignacionDto
 
@@ -716,9 +783,15 @@ namespace WebApi_TransporteSanchez.Controllers
 
                             Menu_Nombre = m.Menu_Nombre,
 
-                            Asignado = db.Set<GRUPOS_MENU>().Any(gm => gm.GrupoID == id && gm.MenuID == m.Menu_ID)
+                            Menu_Principal = ObtenerMenuPrincipal(m.Menu_Nombre),
+
+                            Asignado = menusAsignados.Contains(m.Menu_ID)
 
                         })
+
+                        .OrderBy(m => m.Menu_Principal)
+
+                        .ThenBy(m => m.Menu_Nombre)
 
                         .ToList();
 
@@ -978,19 +1051,23 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         .ToList();
 
-                    var actuales = db.Set<GRUPOS_USUARIOS>().Where(x => x.GrupoID == id).ToList();
+                    var idsActuales = new HashSet<int>(db.Set<GRUPOS_USUARIOS>()
 
-                    if (actuales.Any())
+                        .Where(x => x.GrupoID == id)
 
-                    {
+                        .Select(x => x.UsuarioID)
 
-                        db.Set<GRUPOS_USUARIOS>().RemoveRange(actuales);
+                        .ToList());
 
-                    }
+                    var idsNuevos = idsAsignables
+
+                        .Where(usuarioId => !idsActuales.Contains(usuarioId))
+
+                        .ToList();
 
 
 
-                    foreach (var usuarioId in idsAsignables)
+                    foreach (var usuarioId in idsNuevos)
 
                     {
 
@@ -1010,7 +1087,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     db.SaveChanges();
 
-                    return Ok(new { message = "Usuarios del grupo guardados correctamente." });
+                    return Ok(new { message = "Usuarios agregados al grupo correctamente.", UsuariosAgregados = idsNuevos.Count });
 
                 }
 

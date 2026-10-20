@@ -79,7 +79,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Tipo { get; set; }
             public string Comprobante { get; set; }
             public DateTime FechaEmision { get; set; }
-            public DateTime FechaVencimiento { get; set; }
+            public DateTime? FechaVencimiento { get; set; }
             public decimal ImporteOriginal { get; set; }
             public decimal ImporteAplicado { get; set; }
             public decimal SaldoPendiente { get; set; }
@@ -451,7 +451,7 @@ WHERE (@clienteId IS NULL OR m.ClienteID=@clienteId) AND ISNULL(cl.EstadoCliente
                 {
                     if (clienteId.HasValue && !ClienteExiste(db, clienteId.Value)) return NotFound();
                     const string sql = @"
-WITH Deudas AS (
+WITH SinRelacionar AS (
     SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
            COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
            COALESCE((SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
@@ -465,19 +465,31 @@ WITH Deudas AS (
     WHERE (@clienteId IS NULL OR c.ClienteID=@clienteId) AND c.Estado='EMITIDO' AND c.Impacto='D'
     GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
              c.ComprobanteReferenciaID
+    UNION ALL
+    SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
+           COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
+           CAST(NULL AS varchar(200)) AS Origen
+    FROM dbo.COMPROBANTES c
+    JOIN dbo.CLIENTES cl ON cl.Cliente_ID=c.ClienteID AND ISNULL(cl.EstadoCliente,0)=1
+    LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID=c.Comprobante_ID
+    WHERE (@clienteId IS NULL OR c.ClienteID=@clienteId) AND c.Estado='EMITIDO'
+      AND c.Tipo='REC' AND c.Impacto='C'
+    GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total
 )
 SELECT Comprobante_ID AS ComprobanteID,ClienteID,Cliente,Tipo,
        Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
        FechaEmision,FechaVencimiento,CAST(Total AS decimal(18,2)) AS ImporteOriginal,
        CAST(Aplicado AS decimal(18,2)) AS ImporteAplicado,
        CAST(Total-Aplicado AS decimal(18,2)) AS SaldoPendiente,
-       CASE WHEN FechaVencimiento<CONVERT(date,GETDATE())
+       CASE WHEN Tipo='REC' AND Aplicado=0 THEN 'Sin imputar'
+            WHEN Tipo='REC' THEN 'Parcialmente imputado'
+            WHEN FechaVencimiento<CONVERT(date,GETDATE())
             THEN 'Vencido '+CONVERT(varchar(12),DATEDIFF(day,FechaVencimiento,CONVERT(date,GETDATE())))+' días'
             ELSE 'Vigente' END AS Situacion,
        CASE WHEN Aplicado=0 THEN 'Pendiente' ELSE 'Parcial' END AS Estado,
        COALESCE(Origen,'Comprobante directo') AS Origen
-FROM Deudas WHERE Total-Aplicado>0
-ORDER BY FechaVencimiento,Comprobante_ID;";
+FROM SinRelacionar WHERE Total-Aplicado>0
+ORDER BY CASE WHEN Tipo='REC' THEN 1 ELSE 0 END,FechaVencimiento,FechaEmision,Comprobante_ID;";
                     return Ok(db.Database.SqlQuery<PendienteCuentaDto>(sql, PEntero("@clienteId", clienteId)).ToList());
                 }
             }

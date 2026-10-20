@@ -3,6 +3,7 @@
 
     var API = 'http://localhost:50222/api';
     var estado = null;
+    var vencimientoEditado = false;
 
     function porId(id) { return document.getElementById(id); }
 
@@ -47,6 +48,21 @@
 
     function normalizarFecha(valor) {
         return valor ? String(valor).substring(0, 10) : '';
+    }
+
+    function sumarDiasAFechaIso(fechaIso, dias) {
+        var partes = String(fechaIso || '').split('-');
+        if (partes.length !== 3) return '';
+        var fecha = new Date(Number(partes[0]), Number(partes[1]) - 1, Number(partes[2]));
+        if (isNaN(fecha.getTime())) return '';
+        fecha.setDate(fecha.getDate() + dias);
+        var local = new Date(fecha.getTime() - fecha.getTimezoneOffset() * 60000);
+        return normalizarFecha(local.toISOString());
+    }
+
+    function actualizarVencimientoPredeterminado() {
+        if (vencimientoEditado) return;
+        porId('facFechaVencimiento').value = sumarDiasAFechaIso(porId('facFechaEmision').value, 10);
     }
 
     function nuevaClave() {
@@ -95,6 +111,8 @@
             '</div>';
         document.body.appendChild(contenedor.firstElementChild);
         porId('btnConfirmarFactura').addEventListener('click', emitir);
+        porId('facFechaEmision').addEventListener('change', actualizarVencimientoPredeterminado);
+        porId('facFechaVencimiento').addEventListener('change', function () { vencimientoEditado = true; });
     }
 
     function mostrarModal() {
@@ -128,7 +146,8 @@
         porId('facTotal').value = '';
         porId('facFechaEmision').max = hoyIso();
         porId('facFechaEmision').value = hoyIso();
-        porId('facFechaVencimiento').value = '';
+        vencimientoEditado = false;
+        actualizarVencimientoPredeterminado();
         porId('facObservaciones').value = '';
         porId('facResultado').classList.add('d-none');
         porId('facResultado').textContent = '';
@@ -167,9 +186,9 @@
             porId('facTotal').value = dinero(datos.TotalCalculado);
             estado.version = datos.VersionProforma;
             var emision = hoyIso();
-            var vencimiento = normalizarFecha(datos.FechaVencimientoSugerida);
             porId('facFechaEmision').value = emision;
-            porId('facFechaVencimiento').value = vencimiento && vencimiento >= emision ? vencimiento : emision;
+            vencimientoEditado = false;
+            actualizarVencimientoPredeterminado();
             if (!datos.Facturable) {
                 var texto = datos.MotivoBloqueo || 'La Proforma no puede facturarse.';
                 if (datos.FacturaVigente && datos.FacturaVigente.Numero)
