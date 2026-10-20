@@ -453,6 +453,33 @@
     return formatoKm.format(n);
   }
 
+  // "05/07/2026" escrito a mano → Date, o null si no es una fecha válida.
+  function leerFecha(texto) {
+    var partes = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(texto == null ? '' : texto).trim());
+    if (!partes) return null;
+    var d = new Date(Number(partes[3]), Number(partes[2]) - 1, Number(partes[1]));
+    if (d.getDate() !== Number(partes[1]) || d.getMonth() !== Number(partes[2]) - 1) return null;
+    return d;
+  }
+
+  // Date → "AAAA-MM-DD", lo que espera la API.
+  function fechaISO(valor) {
+    var d = aFecha(valor);
+    if (!d) return '';
+    return d.getFullYear() + '-' + dosCifras(d.getMonth() + 1) + '-' + dosCifras(d.getDate());
+  }
+
+  // Selector de una fecha para formularios (§7.1): se ve y se escribe DD/MM/AAAA.
+  // Para mandar a la API: SGTL.fechaISO(SGTL.leerFecha(input.value)).
+  function selectorFecha(objetivo, opciones) {
+    var input = elemento(objetivo);
+    if (!input || typeof window.flatpickr !== 'function') return null;
+    var configuracion = { dateFormat: 'd/m/Y', allowInput: true };
+    if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) configuracion.locale = 'es';
+    Object.keys(opciones || {}).forEach(function (clave) { configuracion[clave] = opciones[clave]; });
+    return window.flatpickr(input, configuracion);
+  }
+
   // Selector de rango "Desde y hasta" para filtros (§7.1). Se ve DD/MM/AAAA y guarda AAAA-MM-DD.
   function rangoFechas(objetivo, opciones) {
     var input = elemento(objetivo);
@@ -623,6 +650,80 @@
     avisoFormulario(aviso, '');
   }
 
+  // Validación de un formulario (§6.3). reglas: [{ id (del campo), requerido ('Completá el dominio.'),
+  // regex y mensaje, max, soloNumeros, soloLetras, mayusculas (solo letras y números, en mayúscula),
+  // validar(valor, campo) → mensaje o '' }]. Cada campo se valida al salir y el rojo se va apenas se
+  // corrige. Un error que viene de la API se marca con campo.dataset.errorRemoto.
+  function validador(reglas) {
+    function campoDe(regla) { return document.getElementById(regla.id); }
+
+    function errorDe(regla) {
+      var campo = campoDe(regla);
+      if (!campo || campo.disabled) return '';
+      var valor = String(campo.value == null ? '' : campo.value).trim();
+      if (!valor) return regla.requerido || '';
+      if (regla.regex && !regla.regex.test(valor)) return regla.mensaje || '';
+      if (typeof regla.validar === 'function') {
+        var mensaje = regla.validar(valor, campo);
+        if (mensaje) return mensaje;
+      }
+      return campo.dataset.errorRemoto || '';
+    }
+
+    function validar(regla) {
+      var campo = campoDe(regla);
+      if (!campo) return true;
+      var mensaje = errorDe(regla);
+      if (mensaje) marcarError(campo, mensaje);
+      else limpiarError(campo);
+      return !mensaje;
+    }
+
+    reglas.forEach(function (regla) {
+      var campo = campoDe(regla);
+      if (!campo) return;
+      if (campo.tagName === 'SELECT') {
+        campo.addEventListener('change', function () { validar(regla); });
+        return;
+      }
+      campo.addEventListener('blur', function () {
+        if (!campo.value.trim() && !campo.classList.contains('is-invalid')) return;
+        validar(regla);
+      });
+      campo.addEventListener('change', function () {
+        if (campo.value.trim() || campo.classList.contains('is-invalid')) validar(regla);
+      });
+      campo.addEventListener('input', function () {
+        if (regla.soloNumeros) campo.value = campo.value.replace(/[^0-9]/g, '');
+        if (regla.soloLetras) campo.value = campo.value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜñÑ\s´]/g, '');
+        if (regla.mayusculas) campo.value = campo.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+        if (regla.max && campo.value.length > regla.max) campo.value = campo.value.slice(0, regla.max);
+        delete campo.dataset.errorRemoto;
+        if (campo.classList.contains('is-invalid') && !errorDe(regla)) limpiarError(campo);
+      });
+    });
+
+    return {
+      // Valida todos los campos; devuelve true si están bien.
+      validarTodo: function () {
+        var bien = true;
+        reglas.forEach(function (regla) { if (!validar(regla)) bien = false; });
+        return bien;
+      },
+      validar: function (id) {
+        var regla = reglas.filter(function (r) { return r.id === id; })[0];
+        return regla ? validar(regla) : true;
+      },
+      // Al abrir el formulario: saca los errores que vinieron de la API.
+      reiniciar: function () {
+        reglas.forEach(function (regla) {
+          var campo = campoDe(regla);
+          if (campo) delete campo.dataset.errorRemoto;
+        });
+      }
+    };
+  }
+
   // ---------------------------------------------------------------- Exportar (§1.2)
 
   // Baja un CSV separado por punto y coma, con BOM para que Excel lea bien los acentos.
@@ -663,6 +764,10 @@
     km: km,
     rangoFechas: rangoFechas,
     valorRango: valorRango,
+    selectorFecha: selectorFecha,
+    leerFecha: leerFecha,
+    fechaISO: fechaISO,
+    validador: validador,
     filtros: filtros,
     marcarError: marcarError,
     limpiarError: limpiarError,
