@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Dashboard · Transporte Sánchez</title>
     <style>
         #app {
             display: none;
@@ -27,7 +27,6 @@
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
     <style>
         .grid-stack { background: transparent; }
@@ -77,15 +76,15 @@
                     <h3 class="mb-0">¡Bienvenido!</h3>
                     <div class="d-flex gap-2 align-items-center" id="dash-toolbar">
                         <div class="position-relative d-inline-block" id="widgetsMenu" style="display:none;">
-                            <button class="btn btn-light-secondary btn-sm" id="btnWidgets" type="button"><i class="fas fa-eye me-1"></i>Widgets</button>
+                            <button class="btn btn-light-secondary btn-sm" id="btnWidgets" type="button"><i class="bi bi-eye me-1"></i>Widgets</button>
                             <div class="card shadow-sm position-absolute end-0 mt-1 p-2" id="widgetsPanel" style="display:none; z-index:1050; min-width:230px;">
                                 <div id="widgetsChecklist"></div>
                             </div>
                         </div>
-                        <button class="btn btn-outline-secondary btn-sm" id="btnResetLayout" style="display:none;"><i class="fas fa-rotate-left me-1"></i>Restablecer</button>
+                        <button class="btn btn-outline-secondary btn-sm" id="btnResetLayout" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer</button>
                         <button class="btn btn-light-secondary btn-sm" id="btnCancelarLayout" style="display:none;">Cancelar</button>
-                        <button class="btn btn-primary btn-sm" id="btnGuardarLayout" style="display:none;"><i class="fas fa-check me-1"></i>Guardar</button>
-                        <button class="btn btn-primary btn-sm" id="btnPersonalizar"><i class="fas fa-sliders-h me-1"></i>Personalizar</button>
+                        <button class="btn btn-primary btn-sm" id="btnGuardarLayout" style="display:none;"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                        <button class="btn btn-primary btn-sm" id="btnPersonalizar"><i class="bi bi-sliders me-1"></i>Personalizar</button>
                     </div>
                 </div>
 
@@ -95,7 +94,7 @@
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-users me-2 text-primary"></i>
+                                    <i class="bi bi-people me-2 text-primary"></i>
                                     <h5 class="mb-0">Choferes activos</h5>
                                 </div>
                                 <div class="card-body">
@@ -114,7 +113,7 @@
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-truck me-2 text-success"></i>
+                                    <i class="bi bi-truck me-2 text-success"></i>
                                     <h5 class="mb-0">Camiones activos</h5>
                                 </div>
                                 <div class="card-body">
@@ -133,7 +132,7 @@
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-dollar-sign me-2 text-info"></i>
+                                    <i class="bi bi-currency-dollar me-2 text-info"></i>
                                     <h5 class="mb-0">Costo por viaje</h5>
                                 </div>
                                 <div class="card-body">
