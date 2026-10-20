@@ -4,70 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Gestionar camiones · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        #tablaCamiones tbody tr td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaCamiones {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaCamiones th,
-        #tablaCamiones td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaCamiones th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
-
-        .is-invalid-date {
-            border: 1px solid #dc3545 !important;
-            /* Contorno rojo */
-            background-image: none !important;
-            /* Elimina el ícono de advertencia */
-        }
-
-        .is-valid-date {
-            border: 1px solid #198754 !important;
-            /* Contorno verde */
-        }
-
-        .invalid-feedback-date {
-            display: none;
-            color: #dc3545;
-            font-size: 0.875em;
-            margin-top: 5px;
         }
     </style>
 
@@ -80,15 +21,15 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
@@ -125,144 +66,81 @@
             </header>
 
             <div class="page-heading">
-
-                <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header">
-
-                            <!--Notificaciones de éxito de Alta, Editar y Eliminar-->
-
-                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
-                                    <div class="d-flex">
-                                        <div class="toast-body">
-                                        </div>
-                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                    </div>
-                                </div>
+                        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-truck me-2"></i>Gestionar camiones
+                                </h5>
+                                <p class="text-muted mb-0">Registrá camiones, editá sus datos y cambiá su estado.</p>
                             </div>
-
-                            <!-- Notificación de error -->
-                            <div id="toastError"
-                                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
-                                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
-                                <div class="d-flex">
-                                    <div id="toastErrorMessage" class="toast-body">
-                                        <!-- Mensaje dinámico se inserta acá -->
-                                    </div>
-                                    <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                        data-bs-dismiss="toast" aria-label="Close"></button>
-                                </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="btnExportar"
+                                    data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-success" id="btnRegistrarCamion">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar camión
+                                </button>
                             </div>
-
-                            <h5 class="card-title">
-                                Gestionar camiones
-                            </h5>
                         </div>
 
                         <div class="card-body">
-                            <form id="busquedaCamionForm" class="form">
-                                <div class="row">
-                                    <div class="col-md-6 mb-4">
-                                        <fieldset class="border p-4">
-                                            <div class="row">
-
-                                                <!-- Input Dominio -->
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="dominioinput">Dominio</label>
-                                                    <input type="text" class="form-control" id="dominioinput"
-                                                        placeholder="ABC123 o AB123CD">
-                                                </div>
-
-                                                <!-- Input Fecha de Alta -->
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="fechaRango">Fecha de alta</label>
-                                                    <input type="text" class="form-control" id="fechaRango"
-                                                        placeholder="Desde y hasta">
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-md-12">
-                                                    <label class="me-3">Estado</label>
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox" class="form-check-input form-check-success"
-                                                            id="checkEstadoCamionActivo">
-                                                        <label class="form-check-label" for="checkEstadoCamionActivo">Activo</label>
-                                                    </div>
-                                                    <div class="form-check form-check-inline">
-                                                        <input type="checkbox" class="form-check-input form-check-danger"
-                                                            id="checkEstadoCamionInactivo">
-                                                        <label class="form-check-label" for="checkEstadoCamionInactivo">Inactivo</label>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="row">
-                                                <!-- Botón Buscar -->
-                                                <div class="col-md-12 mb-3 text-end">
-                                                    <button type="button" class="btn btn-light"
-                                                        onclick="buscarCamiones()">
-                                                        Buscar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </fieldset>
-                                    </div>
-
-                                    <!-- Botón Alta -->
-                                    <div class="col-md-6 mb-4">
-                                        <div class="row">
-                                            <div class="col-md-12 mb-4 text-end">
-                                                <button type="button" class="btn btn-success"
-                                                    onclick="abrirModalAltaCamion()" data-bs-toggle="tooltip"
-                                                    data-bs-placement="top" title="Registrar camión">
-                                                    <i class="bi bi-truck"></i>
-                                                    <i class="bi bi-plus"></i>
-                                                </button>
-                                                <label>&nbsp;</label>
-                                                <button type="button" class="btn btn-secondary"
-                                                    onclick="generarReporteCSV()" data-bs-toggle="tooltip"
-                                                    data-bs-placement="top" title="Generar reporte">
-                                                    <i class="bi bi-download"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
+                            <form id="busquedaCamionForm" class="row g-3 align-items-end" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroDominio" class="form-label">Dominio</label>
+                                    <input type="text" class="form-control" id="filtroDominio"
+                                        placeholder="AB123CD" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fechaRango" class="form-label">Fecha de alta</label>
+                                    <input type="text" class="form-control" id="fechaRango"
+                                        placeholder="Desde y hasta">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroEstado" class="form-label">Estado</label>
+                                    <select id="filtroEstado" class="form-select">
+                                        <option value="Activo" selected>Activo</option>
+                                        <option value="Inactivo">Inactivo</option>
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
                                 </div>
                             </form>
 
-                            <div class="table-responsive">
-                                <table class="table table-striped" id="tablaCamiones">
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped table-hover" id="tablaCamiones">
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Fecha de alta</th>
+                                            <th class="text-center">Fecha de alta</th>
                                             <th>Dominio</th>
                                             <th>Marca</th>
                                             <th>Modelo</th>
-                                            <th>Estado</th>
-                                            <th>Acciones</th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">Cargando…</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
 
-                            <!-- Paginación -->
-                            <nav>
-                                <ul class="pagination justify-content-end" id="pagination">
-                                </ul>
+                            <nav aria-label="Paginación de camiones">
+                                <ul class="pagination justify-content-end" id="pagination"></ul>
                             </nav>
                         </div>
                     </div>
                 </section>
             </div>
-
-            <!--Fin sección de la tabla-->
 
             <!--Footer-->
 
@@ -272,304 +150,114 @@
                 <script src="./assets/static/js/footer.js"></script>
 
             </footer>
-        </div>
-    </div>
 
-    <!-- Alta Modal -->
-    <div class="modal fade text-left" id="ModalAltaCamion" tabindex="-1" role="dialog"
-        aria-labelledby="ModalAltaCamionlabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="ModalAltaCamionlabel">Registrar camión nuevo</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
-                        role="alert">
+        </div>
+
+        <!-- Modal Registrar / Editar camión (el mismo formulario para las dos cosas) -->
+        <div class="modal fade" id="modalCamion" tabindex="-1" aria-labelledby="modalCamionTitulo"
+            aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalCamionTitulo">Registrar camión</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <form class="form" id="FormAltaCamion">
-                        <div class="row">
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="txtDominio" class="form-label">Dominio<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="txtDominio" class="form-control"
-                                        placeholder="ABC123 o AB123CD" name="dom-column" />
-                                    <div id="dominioError" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtMarca" class="form-label">Marca<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="txtMarca" class="form-control" placeholder="Renault"
-                                        name="m-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtModelo" class="form-label">Modelo<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="txtModelo" class="form-control" placeholder="17.250 E"
-                                        name="mo-column" />
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="txtañoModelo" class="form-label">Año del modelo <span
-                                            class="text-danger"> *</span></label>
-                                    <input type="number" id="txtañoModelo" class="form-control" name="y-column"
-                                        placeholder="2006" />
-                                    <div id="añoModeloError" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtTipo" class="form-label">Tipo<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="txtTipo" class="form-control" name="ty-column"
-                                        placeholder="Vehículo de carga" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtnumMotor" class="form-label">Número de motor<span
-                                            class="text-danger"> *</span></label>
-                                    <input type="text" id="txtnumMotor" class="form-control" name="nm-column"
-                                        placeholder="K4MJ999AB99999999" />
-                                    <div id="motorError" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtnumChasis" class="form-label">Número de chasis<span
-                                            class="text-danger"> *</span></label>
-                                    <input type="text" id="txtnumChasis" class="form-control" name="nc-column"
-                                        placeholder="9CDN8247CR2401010" />
-                                    <div id="chasisError" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="txtfechaCompra" class="form-label">Fecha de compra<span
-                                            class="text-danger"> *</span></label>
-                                    <input type="text" autocomplete="off" id="txtfechaCompra" class="form-control" name="fechaCompra" />
-                                    <div id="fechaCompraError" class="invalid-feedback-date" style="display: none;">
-                                    </div>
-                                </div>
 
-                                <div class="form-group">
-                                    <label for="txtfechaITV" class="form-label">Fecha de ITV<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" autocomplete="off" id="txtfechaITV" class="form-control" name="fechaITV" />
-                                    <div id="fechaITVError" class="invalid-feedback-date" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="txtequipoFrio" class="form-label">Equipo de frío</label>
-                                    <input type="text" id="txtequipoFrio" class="form-control"
-                                        placeholder="Caja cerrada isotérmica" name="e-column" />
-                                </div>
-                            </div>
+                    <div class="modal-body">
+                        <div id="avisoCamion" class="alert alert-light-danger color-danger"
+                            style="display: none;" role="alert"></div>
+                        <div class="d-flex flex-wrap gap-4 mb-4" id="datosEdicionCamion">
+                            <div><span class="text-muted me-1">Estado:</span><span id="estadoActualCamion"></span></div>
+                            <div><span class="text-muted me-1">Fecha de alta:</span><span id="fechaAltaCamion"></span></div>
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Cancelar</span>
-                    </button>
-                    <button type="submit" class="btn btn-primary ms-1" id="confirmarBtn">
-                        <i class="bx bx-check d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Confirmar</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+                        <form class="form" id="formCamion" novalidate>
+                            <h6 class="mb-3">Datos del camión</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-4">
+                                    <label for="camionDominio" class="form-label">Dominio <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionDominio" class="form-control" placeholder="AB123CD" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Sin espacios ni guiones</div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="camionMarca" class="form-label">Marca <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionMarca" class="form-control" placeholder="Renault" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="camionModelo" class="form-label">Modelo <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionModelo" class="form-control" placeholder="17.250 E" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="camionAnio" class="form-label">Año del modelo <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="numeric" id="camionAnio" class="form-control" placeholder="2006" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-8">
+                                    <label for="camionTipo" class="form-label">Tipo <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionTipo" class="form-control" placeholder="Vehículo de carga" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
 
-    <!-- Edit Modal -->
-    <div class="modal fade text-left" id="editarCamionModal" tabindex="-1" role="dialog"
-        aria-labelledby="editarCamionModallabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="editarCamionModallabel">Editar datos del camión</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="alertaCompletaCamposEdicion" class="alert alert-light-danger color-danger"
-                        style="display: none;" role="alert">
+                            <h6 class="mb-3">Identificación</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6">
+                                    <label for="camionMotor" class="form-label">Número de motor <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionMotor" class="form-control" placeholder="K4MJ999AB99999999" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Entre 8 y 17 letras y números</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="camionChasis" class="form-label">Número de chasis <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionChasis" class="form-control" placeholder="9CDN8247CR2401010" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">17 letras y números</div>
+                                </div>
+                            </div>
+
+                            <h6 class="mb-3">Fechas y equipamiento</h6>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <label for="camionFechaCompra" class="form-label">Fecha de compra <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionFechaCompra" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="camionFechaITV" class="form-label">Fecha de ITV <span class="text-danger">*</span></label>
+                                    <input type="text" id="camionFechaITV" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="camionEquipoFrio" class="form-label">Equipo de frío</label>
+                                    <input type="text" id="camionEquipoFrio" class="form-control" placeholder="Caja cerrada isotérmica" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <form class="form" id="FormEditarCamion">
-                        <div class="row">
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="editarDominio" class="form-label">Dominio<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="editarDominio" class="form-control"
-                                        placeholder="ABC123 o AB123CD" name="dom-column" />
-                                    <div id="dominioErrorEdit" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarMarca" class="form-label">Marca<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="editarMarca" class="form-control" placeholder="Renault"
-                                        name="m-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarModelo" class="form-label">Modelo<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="editarModelo" class="form-control" placeholder="17.250 E"
-                                        name="mo-column" />
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="editarañoModelo" class="form-label">Año del modelo <span
-                                            class="text-danger"> *</span></label>
-                                    <input type="number" id="editarañoModelo" class="form-control" name="y-column"
-                                        placeholder="2006" data-parsley-required="false" />
-                                    <div id="añoModeloErrorEdit" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarTipo" class="form-label">Tipo<span class="text-danger">
-                                            *</span></label>
-                                    <input type="text" id="editarTipo" class="form-control" name="ty-column"
-                                        placeholder="Vehículo de carga" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarnumMotor" class="form-label">Número de
-                                        motor<span class="text-danger"> *</span></label>
-                                    <input type="text" id="editarnumMotor" class="form-control" name="nm-column"
-                                        placeholder="K4MJ999AB99999999" data-parsley-required="true" />
-                                    <div id="motorErrorEdit" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarnumChasis" class="form-label">Número de
-                                        chasis<span class="text-danger"> *</span></label>
-                                    <input type="text" id="editarnumChasis" class="form-control" name="nc-column"
-                                        placeholder="9CDN8247CR2401010" />
-                                    <div id="chasisErrorEdit" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                            </div>
-                            <div class="col-md-4 col-12">
-                                <div class="form-group">
-                                    <label for="editarfechaCompra" class="form-label">Fecha de
-                                        compra<span class="text-danger"> *</span></label>
-                                    <input type="text" autocomplete="off" id="editarfechaCompra" class="form-control"
-                                        placeholder="01/01/2000" name="dc-column" />
-                                    <div id="fechaCompraErrorEdit" class="invalid-feedback" style="display: none;">
-                                    </div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarfechaITV" class="form-label">Fecha de
-                                        ITV<span class="text-danger"> *</span></label>
-                                    <input type="text" autocomplete="off" id="editarfechaITV" class="form-control" placeholder="01/01/2000"
-                                        name="di-column" />
-                                    <div id="fechaITVErrorEdit" class="invalid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarequipoFrio" class="form-label">Equipo de
-                                        frío</label>
-                                    <input type="text" id="editarequipoFrio" class="form-control"
-                                        placeholder="Caja cerrada isotérmica" name="e-column" />
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Cancelar</span>
-                    </button>
-                    <button type="submit" class="btn btn-primary ms-1" id="confirmarEdicion">
-                        <i class="bx bx-check d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Confirmar</span>
-                    </button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarCamion">Guardar</button>
+                    </div>
                 </div>
             </div>
         </div>
+
     </div>
 
-    <!-- Modal de confirmación de cambio de estado -->
-    <div class="modal fade text-left" id="confirmarEstadoCamionModal" tabindex="-1" role="dialog"
-        aria-labelledby="confirmarEstadoCamionLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmarEstadoCamionLabel">Confirmar cambio de estado</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-                <div class="modal-body" id="confirmarEstadoCamionBody"></div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="confirmarCambioEstadoCamion()">Confirmar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal de confirmación de eliminación -->
-    <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
-        aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="confirmarEliminarLabel">Confirmar eliminación</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    ¿Estás seguro que querés eliminar este camión de forma definitiva?
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Cancelar</span>
-                    </button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="confirmarEliminarCamion()">
-                        <i class="bx bx-check d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Confirmar</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
-
-    <!-- Comportamiento tooltip -->
-    <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-
-            // Manejo específico para tooltips en botones deshabilitados
-            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-
-    </script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -591,7 +279,7 @@
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
             }
         };
 
@@ -638,1104 +326,370 @@
             });
         }
 
-
     </script>
 
-    <!-- Buscador y listar -->
+    <!-- Buscar y listar -->
     <script>
-
-        $('#dominioinput').on('input', function (event) {
-            // Reemplaza cualquier carácter que no sea una letra o un número
-            this.value = this.value.replace(/[^A-Za-z0-9]/g, '');
-            // Limita la longitud a 7 caracteres
-            if (this.value.length > 7) {
-                this.value = this.value.slice(0, 7);
-            }
-        });
-
-        // Evento para ejecutar la búsqueda automáticamente al borrar un campo de entrada
-        $('#dominioinput').on('input', function () {
-            if ($(this).val().trim() === '') {
-                buscarCamiones();
-            }
-        });
-
-        function formatDate(isoDate) {
-            var date = new Date(isoDate);
-            var day = String(date.getDate()).padStart(2, '0');
-            var month = String(date.getMonth() + 1).padStart(2, '0');
-            var year = date.getFullYear();
-            return `${day}-${month}-${year}`;
-        }
-
-
-        // Constantes para el paginado
+        const API = 'http://localhost:50222/api';
+        const COLUMNAS_CAMIONES = 7;
         let pageSize = 15;
         let currentPage = 1;
+        let ultimaBusqueda = 0;
+        let camionesPagina = {};
 
-        function obtenerEstadosCamionSeleccionados() {
-            var estados = [];
-            if ($('#checkEstadoCamionActivo').is(':checked')) estados.push('Activo');
-            if ($('#checkEstadoCamionInactivo').is(':checked')) estados.push('Inactivo');
-            return estados.join(',');
+        // Fecha_Alta y Fecha_Modi se guardan con la hora UTC del navegador: se muestran 3 h antes
+        // (§2 de docs/PENDIENTES-SISTEMA.md).
+        function fechaCamion(valor) {
+            if (!valor) return '';
+            const fecha = new Date(valor);
+            if (isNaN(fecha.getTime())) return '';
+            return SGTL.fecha(new Date(fecha.getTime() - 3 * 60 * 60 * 1000), { hora: true });
         }
 
-        // Función para realizar la búsqueda de choferes con paginación
-        function buscarCamiones(page = 1) {
-            currentPage = page;
-            // Obtener el valor del campo de búsqueda
-            var dominio = $('#dominioinput').val();
-            var fechaDesde = $('#fechaRango').data('start');
-            var fechaHasta = $('#fechaRango').data('end');
-            var estadoCamion = obtenerEstadosCamionSeleccionados();
-
-            var requestData = {
-                dominio: dominio,
-                fechaDesde: fechaDesde || null,  // Agregar fecha desde si existe
-                fechaHasta: fechaHasta || null,  // Agregar fecha hasta si existe
-                page: page,
-                pageSize: pageSize
+        // La API suma un día a fechaHasta para incluirlo entero: va solo la fecha.
+        function filtrosBusqueda() {
+            const rango = SGTL.valorRango('#fechaRango');
+            return {
+                dominio: $('#filtroDominio').val().trim(),
+                fechaDesde: rango ? rango.desde : null,
+                fechaHasta: rango ? rango.hasta : null,
+                estadoCamion: $('#filtroEstado').val()
             };
+        }
 
-            // Agregar los parámetros de búsqueda al objeto de datos si tienen un valor
-            if (dominio !== '') requestData.dominio = dominio;
-            if (fechaDesde) requestData.fechaDesde = fechaDesde;
-            if (fechaHasta) requestData.fechaHasta = fechaHasta;
-            if (estadoCamion) requestData.estadoCamion = estadoCamion;
+        function filaCamion(camion) {
+            camionesPagina[camion.Camion_ID] = camion;
+            const activo = camion.EstadoCamion === 'Activo';
+            const acciones = SGTL.accionesFila([
+                SGTL.botonFila('editar', { id: camion.Camion_ID }),
+                SGTL.botonFila(activo ? 'inactivar' : 'activar', { id: camion.Camion_ID }),
+                SGTL.botonFila('eliminar', {
+                    id: camion.Camion_ID,
+                    deshabilitado: activo,
+                    motivo: 'No es posible eliminar un camión activo'
+                })
+            ]);
+            return `<tr>
+                <td>${SGTL.escapar(camion.Camion_ID)}</td>
+                <td class="text-center text-nowrap">${fechaCamion(camion.Fecha_Alta)}</td>
+                <td>${SGTL.escapar((camion.Dominio || '').trim())}</td>
+                <td>${SGTL.escapar(camion.Marca)}</td>
+                <td>${SGTL.escapar(camion.Modelo)}</td>
+                <td class="text-center">${SGTL.estado(camion.EstadoCamion)}</td>
+                <td class="text-center">${acciones}</td>
+            </tr>`;
+        }
 
-            // Realizar la solicitud AJAX GET al controlador
-            $.ajax({
-                url: 'http://localhost:50222/api/Camiones/Buscar',
+        function buscarCamiones(page = 1) {
+            const tbody = '#tablaCamiones tbody';
+            const busqueda = ++ultimaBusqueda;
+            currentPage = page;
+            SGTL.tabla.cargando(tbody, COLUMNAS_CAMIONES);
+
+            SGTL.ajax({
+                url: API + '/Camiones/Buscar',
                 type: 'GET',
-                data: requestData,
-                success: function (data) {
-                    // Limpiar la tabla antes de agregar nuevos registros
-                    $('#tablaCamiones tbody').empty();
-
-                    // Verificar si hay resultados
-                    if (data.Results.length === 0) {
-                        // Mostrar mensaje de que no se encontraron registros
-                        $('#tablaCamiones tbody').html('<tr><td colspan="7" class="text-center">No se encontraron registros</td></tr>');
-                    } else {
-                        // Iterar sobre los registros recibidos y agregarlos a la tabla
-                        data.Results.forEach(function (registro) {
-                            var estadoCamion = registro.EstadoCamion === 'Activo' ? 'Activo' : 'Inactivo';
-
-                            // Formatear las fechas
-                            var fechaCompra = formatDate(registro.FechaCompra);
-                            var fechaITV = formatDate(registro.FechaITV);
-                            var fechaAltaFormateada = formatFechaUTC3(registro.Fecha_Alta);
-
-                            // Construir la fila de la tabla con los botones de editar y eliminar
-                            var row = `
-                    <tr>
-                            <td>${registro.Camion_ID}</td>
-                            <td>${fechaAltaFormateada}</td>
-                            <td>${registro.Dominio.trim()}</td>
-                            <td>${registro.Marca}</td>
-                            <td>${registro.Modelo}</td>
-                            <td><span class="badge ${estadoCamion === 'Activo' ? 'bg-success' : 'bg-secondary'}">${estadoCamion}</span></td>
-                        <td>
-                            <button class="btn btn-primary" 
-                                    data-bs-toggle="tooltip" 
-                                    data-bs-placement="top" 
-                                    title="Editar"
-                                    onclick="abrirModalEdicion(${registro.Camion_ID})">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <span data-bs-toggle="tooltip" data-bs-placement="top"
-                                    title="${estadoCamion === 'Activo' ? 'No es posible eliminar un camión activo' : 'Eliminar'}">
-                                    <button class="btn btn-danger ms-1 ${estadoCamion === 'Activo' ? 'disabled' : ''}"
-                                        onclick="abrirModalEliminar(${registro.Camion_ID}, '${estadoCamion}')">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </span>
-                                <button class="btn btn-light btn-activar-inactivar-camion ms-1"
-                                    data-camionid="${registro.Camion_ID}"
-                                    data-estado="${estadoCamion}"
-                                    data-bs-toggle="tooltip"
-                                    data-bs-placement="top"
-                                    title="${estadoCamion === 'Activo' ? 'Inactivar' : 'Activar'}">
-                                    <i class="bi bi-arrow-repeat"></i>
-                                </button>
-                        </td>
-                    </tr>`;
-
-                            // Agregar la fila construida a la tabla de camiones
-                            $('#tablaCamiones tbody').append(row);
-                        });
-                    }
-
-                    // Renderizar la paginación
-                    renderPagination(data.TotalRecords, pageSize, page);
-                },
-                error: function (xhr, status, error) {
-                    // Manejar errores de la solicitud
-                    console.error(error);
+                data: Object.assign(filtrosBusqueda(), { page: page, pageSize: pageSize })
+            }, 'No se pudieron cargar los camiones. Revisá la conexión y probá de nuevo.').then(function (data) {
+                if (busqueda !== ultimaBusqueda) return;
+                const registros = data.Results || [];
+                const total = data.TotalRecords || 0;
+                if (!registros.length && total && page > 1) {
+                    buscarCamiones(page - 1);
+                    return;
                 }
-            });
-
-        }
-
-        // Función para datepicker de rango de fechas
-        $(document).ready(function () {
-            $('#fechaRango').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    cancelLabel: 'Borrar',
-                    format: 'DD/MM/YYYY',
-                    applyLabel: 'Aplicar',
-                    cancelLabel: 'Cancelar',
-                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    monthNames: [
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ]
-                }
-            });
-
-            // Evento cuando se selecciona un rango de fechas
-            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-            });
-
-            // Evento cuando se borra la fecha seleccionada (botón "Borrar" del datepicker)
-            $('#fechaRango').on('cancel.daterangepicker', function () {
-                $(this).val('');
-                $(this).removeData('start').removeData('end');
-                buscarCamiones();
-            });
-
-            // Evento adicional para detectar eliminación manual del input
-            $('#fechaRango').on('input', function () {
-                if ($(this).val().trim() === '') {
-                    $(this).removeData('start').removeData('end');
-                    buscarCamiones();
-                }
-            });
-        });
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        // Función para renderizar la paginación
-        function renderPagination(totalRecords, tamanioActual, currentPage) {
-            const totalPages = Math.ceil(totalRecords / tamanioActual);
-            const paginationContainer = $('#pagination');
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(paginationContainer.get(0), {
-                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                camionesPagina = {};
+                if (registros.length) SGTL.tabla.llenar(tbody, registros.map(filaCamion).join(''));
+                else SGTL.tabla.vacia(tbody, COLUMNAS_CAMIONES);
+                SGTL.tabla.paginacion('#pagination', {
+                    total: total,
+                    tamanioPagina: pageSize,
+                    pagina: page,
                     alCambiarPagina: function (pagina) { buscarCamiones(pagina); },
                     alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarCamiones(1); }
                 });
-                return;
-            }
-            paginationContainer.empty();
-
-            const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage === totalPages ? 'disabled' : '';
-
-            paginationContainer.append(`
-        <li class="page-item ${prevDisabled}">
-            <a class="page-link" href="#" aria-label="Previous" onclick="buscarCamiones(${currentPage - 1})">
-                <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-            </a>
-        </li>
-    `);
-
-            for (let i = 1; i <= totalPages; i++) {
-                const activeClass = currentPage === i ? 'active' : '';
-                paginationContainer.append(`
-            <li class="page-item ${activeClass}">
-                <a class="page-link" href="#" onclick="buscarCamiones(${i})">${i}</a>
-            </li>
-        `);
-            }
-
-            paginationContainer.append(`
-        <li class="page-item ${nextDisabled}">
-            <a class="page-link" href="#" aria-label="Next" onclick="buscarCamiones(${currentPage + 1})">
-                <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-            </a>
-        </li>
-    `);
-        }
-
-        // Función para abrir el modal de edición
-        function abrirModalEdicion(camionId) {
-            // Llamada a la función para cargar los datos
-            editarCamion(camionId);
-            $('#editarCamionModal').modal('show');
-        }
-
-        // Función para abrir el modal de eliminación
-        function abrirModalEliminar(camionId, estadoCamion) {
-            if (estadoCamion === 'Activo') return;
-            camionIdAEliminar = camionId;
-            $('#confirmarEliminarModal').modal('show');
-        }
-
-        $(document).ready(function () {
-            // Ejecutar la búsqueda inicial al cargar la página
-            $('#checkEstadoCamionActivo').prop('checked', true);
-            buscarCamiones(currentPage);
-        });
-
-    </script>
-
-    <!-- Alta -->
-    <script>
-        $(document).ready(function () {
-            // Selección de los campos requeridos
-            const camposRequeridos = [
-                '#txtDominio',
-                '#txtMarca',
-                '#txtModelo',
-                '#txtañoModelo',
-                '#txtTipo',
-                '#txtfechaCompra',
-                '#txtfechaITV',
-                '#txtnumMotor',
-                '#txtnumChasis'
-            ];
-
-            // Función para abrir el modal de alta de camiones
-            window.abrirModalAltaCamion = function () {
-                $('#ModalAltaCamion').modal('show');
-            };
-
-
-            // Función para validar campos requeridos
-            function validarCamposRequeridos() {
-                let camposIncompletos = false;
-
-                camposRequeridos.forEach(function (campo) {
-                    const input = $(campo);
-                    if (input.val().trim() === '') {
-                        input.addClass('is-invalid');
-                        camposIncompletos = true;
-                    } else {
-                        input.removeClass('is-invalid');
-                    }
-                });
-
-                if (camposIncompletos) {
-                    $('#alertaCompletaCampos')
-                        .text('Por favor, completá todos los campos requeridos.')
-                        .show();
-                } else {
-                    $('#alertaCompletaCampos').hide();
-                }
-
-                return !camposIncompletos;
-            }
-
-            // Función para validar un campo individual
-            function validarCampoIndividual(input) {
-                if (input.val().trim() === '') {
-                    input.addClass('is-invalid');
-                } else {
-                    input.removeClass('is-invalid');
-                    input.trigger('blur'); // Activar validación específica
-                }
-            }
-
-            // Ocultar alerta y errores cuando se empieza a escribir en cualquier campo
-            camposRequeridos.forEach(function (campo) {
-                $(campo).on('input', function () {
-                    // Ocultar la alerta de campos incompletos
-                    $('#alertaCompletaCampos').hide();
-
-                    // Remover errores de todos los campos
-                    camposRequeridos.forEach(function (c) {
-                        $(c).removeClass('is-invalid');
-                    });
-
-                    // Ocultar todos los mensajes de error
-                    $('.invalid-feedback, .invalid-feedback-date').hide();
-                });
-            });
-
-            $('#txtDominio').on('input', function () {
-                var maxLength = 7;
-                var valor = $(this).val().toUpperCase().slice(0, maxLength);
-                $(this).val(valor);
-            });
-
-            // Validaciones de Dominio
-            $('#txtDominio').on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#dominioError'),
-                    /^[A-Z]{2}[0-9]{3}[A-Z]{2}$|^[A-Z]{3}[0-9]{3}$/,
-                    'El dominio debe tener el formato AA123CC o AAA123.',
-                    7
-                );
-            });
-
-            $('#txtañoModelo').on('input', function () {
-                var valor = $(this).val().trim().slice(0, 4);
-                $(this).val(valor);
-            });
-
-            // Validación del Año del Modelo
-            $('#txtañoModelo').on('blur', function () {
-                var currentYear = new Date().getFullYear();
-                var value = $(this).val().trim();
-
-                if (value === '') {
-                    $(this).removeClass('is-invalid is-valid');
-                    $('#añoModeloError').hide();
-                    return;
-                }
-
-                if (!/^\d{4}$/.test(value) || parseInt(value) > currentYear) {
-                    $(this).removeClass('is-valid').addClass('is-invalid');
-                    $('#añoModeloError').text('El año del modelo no puede ser mayor al año actual.').show();
-                } else {
-                    $(this).removeClass('is-invalid').addClass('is-valid');
-                    $('#añoModeloError').hide();
-                }
-            });
-
-            $('#txtnumMotor, #txtnumChasis').on('input', function () {
-                var maxLength = 17;
-                var valor = $(this).val();
-
-                // Eliminar caracteres especiales (solo letras y números)
-                valor = valor.replace(/[^a-zA-Z0-9]/g, '');
-
-                // Convertir a mayúsculas y limitar longitud
-                valor = valor.toUpperCase().slice(0, maxLength);
-
-                $(this).val(valor);
-            });
-
-            $('#txtnumMotor').on('blur', function () {
-                const $input = $(this);
-                const $error = $('#motorError');
-                const valor = $input.val().trim();
-                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{8,17}$/; // mínimo 8, máximo 17
-
-                if (valor.length < 8 || valor.length > 17) {
-                    $error.text('El número de motor debe tener entre 8 y 17 caracteres.').show();
-                    $input.addClass('is-invalid');
-                } else if (!regex.test(valor)) {
-                    $error.text('El número de motor debe incluir letras y números.').show();
-                    $input.addClass('is-invalid');
-                } else {
-                    $error.hide();
-                    $input.removeClass('is-invalid').addClass('is-valid');
-                }
-            });
-
-            $('#txtnumChasis').on('blur', function () {
-                const $input = $(this);
-                const $error = $('#chasisError');
-                const valor = $input.val().trim();
-                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{17}$/;
-
-                if (valor.length < 17) {
-                    $error.text('El número de chasis debe tener 17 caracteres.').show();
-                    $input.addClass('is-invalid');
-                } else if (!regex.test(valor)) {
-                    $error.text('El número de chasis debe incluir letras y números.').show();
-                    $input.addClass('is-invalid');
-                } else {
-                    $error.hide();
-                    $input.removeClass('is-invalid').addClass('is-valid');
-                }
-            });
-
-            // Validación de fechas con mensajes personalizados
-            function validarFecha(input, errorContainer, mensajeFormato, mensajeFuturo) {
-                const valorFecha = input.val().trim();
-                const esValida = /^\d{4}-\d{2}-\d{2}$/.test(valorFecha);
-                const esFutura = new Date(valorFecha) > new Date();
-
-                if (!esValida) {
-                    input.addClass('is-invalid-date').removeClass('is-valid-date');
-                    errorContainer.text(mensajeFormato).show();
-                } else if (esFutura) {
-                    input.addClass('is-invalid-date').removeClass('is-valid-date');
-                    errorContainer.text(mensajeFuturo).show();
-                } else {
-                    input.removeClass('is-invalid-date').addClass('is-valid-date');
-                    errorContainer.hide();
-                }
-            }
-
-            $('#txtfechaCompra').on('blur', function () {
-                validarFecha($(this), $('#fechaCompraError'), 'La fecha de compra no tiene un formato válido (DD-MM-YYYY).', 'La fecha de compra no puede ser futura.');
-            });
-
-            $('#txtfechaITV').on('blur', function () {
-                validarFecha($(this), $('#fechaITVError'), 'La fecha de ITV no tiene un formato válido (DD-MM-YYYY).', 'La fecha de ITV no puede ser futura.');
-            });
-
-            // Limpiar validaciones al cerrar el modal
-            $('#ModalAltaCamion').on('hidden.bs.modal', function () {
-                camposRequeridos.forEach(function (campo) {
-                    $(campo).val('').removeClass('is-invalid is-valid is-invalid-date is-valid-date');
-                });
-
-                $('.invalid-feedback, .invalid-feedback-date').text('').hide();
-                $('#alertaCompletaCampos').hide();
-            });
-
-            // Evento al hacer clic en el botón "Confirmar"
-            $('#confirmarBtn').on('click', function () {
-                let tieneCamposVacios = false;
-                let tieneErrores = false;
-
-                camposRequeridos.forEach(function (campo) {
-                    const input = $(campo);
-                    validarCampoIndividual(input);
-                    if (input.val().trim() === '') {
-                        tieneCamposVacios = true;
-                    }
-                    if (input.hasClass('is-invalid') || input.hasClass('is-invalid-date')) {
-                        tieneErrores = true;
-                    }
-                });
-
-                if (tieneCamposVacios) {
-                    $('#alertaCompletaCampos').text('Por favor, completá todos los campos requeridos.').show();
-                    return;
-                } else {
-                    $('#alertaCompletaCampos').hide();
-                }
-
-                if (tieneErrores) {
-                    return;
-                }
-
-                registrarCamion();
-            });
-
-            // Función para registrar el camión
-            function registrarCamion() {
-                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
-                const fechaHoraActual = new Date().toISOString();
-
-                const nuevoCamion = {
-                    Dominio: $('#txtDominio').val().trim(),
-                    Marca: $('#txtMarca').val().trim(),
-                    Modelo: $('#txtModelo').val().trim(),
-                    AñoModelo: $('#txtañoModelo').val().trim(),
-                    Tipo: $('#txtTipo').val().trim(),
-                    FechaCompra: $('#txtfechaCompra').val().trim(),
-                    FechaITV: $('#txtfechaITV').val().trim(),
-                    NumMotor: $('#txtnumMotor').val().trim(),
-                    NumChasis: $('#txtnumChasis').val().trim(),
-                    EquipoFrio: $('#txtequipoFrio').val().trim(),
-                    EstadoCamion: 'Activo',
-                    Fecha_Alta: fechaHoraActual,
-                    Usu_Alta: usuarioLogueado,
-                    Fecha_Modi: fechaHoraActual,
-                    Usu_Modi: usuarioLogueado
-                };
-
-                $.ajax({
-                    url: 'http://localhost:50222/api/Camiones',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(nuevoCamion),
-                    success: function (response) {
-                        // Cerrar el modal de forma robusta (Bootstrap 5)
-                        try { $('#ModalAltaCamion').modal('hide'); } catch (e) { }
-                        try {
-                            var _el = document.getElementById('ModalAltaCamion');
-                            if (window.bootstrap && bootstrap.Modal && _el) {
-                                var _i = bootstrap.Modal.getInstance(_el) || bootstrap.Modal.getOrCreateInstance(_el);
-                                if (_i) _i.hide();
-                            }
-                        } catch (e) { }
-                        buscarCamiones(currentPage);
-                        mostrarToastExito('El camión se registró exitosamente.');
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error al agregar el camión:', error);
-                    }
-                });
-            }
-
-            // Función para mostrar el toast de éxito
-            function mostrarToastExito(mensaje) {
-                var toastElement = $('#alert-success');
-                toastElement.find('.toast-body').text(mensaje);
-                toastElement.show();
-                var toast = new bootstrap.Toast(toastElement[0]);
-                toast.show();
-                setTimeout(function () {
-                    toast.hide();
-                }, 5000);
-            }
-
-            // Función genérica para validar campos
-            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
-                var valor = input.val().trim().toUpperCase().slice(0, maxLength);
-                input.val(valor); // Limita la longitud y convierte a mayúsculas
-
-                if (valor === '') {
-                    input.removeClass('is-invalid is-valid');
-                    errorContainer.hide();
-                    return;
-                }
-
-                if (!regex.test(valor)) {
-                    input.removeClass('is-valid').addClass('is-invalid');
-                    errorContainer.text(mensajeError).show();
-                } else {
-                    input.removeClass('is-invalid').addClass('is-valid');
-                    errorContainer.hide();
-                }
-            }
-        });
-    </script>
-
-    <!-- Editor -->
-    <script>
-
-        // Función para formatear fechas del formato ISO al formato YYYY-MM-DD
-        function formatDateForInput(isoDate) {
-            var date = new Date(isoDate);
-            var year = date.getFullYear();
-            var month = String(date.getMonth() + 1).padStart(2, '0');
-            var day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        // Función para cargar los datos del camión en el modal de edición
-        function editarCamion(id) {
-            $.ajax({
-                url: 'http://localhost:50222/api/Camiones/' + id,
-                type: 'GET',
-                success: function (data) {
-                    if (data) {
-                        $('#editarDominio').val(data.Dominio);
-                        $('#editarMarca').val(data.Marca);
-                        $('#editarModelo').val(data.Modelo);
-                        $('#editarañoModelo').val(data.AñoModelo);
-                        $('#editarTipo').val(data.Tipo);
-                        $('#editarnumMotor').val(data.NumMotor);
-                        $('#editarnumChasis').val(data.NumChasis);
-                        $('#editarfechaCompra').val(formatDateForInput(data.FechaCompra));
-                        $('#editarfechaITV').val(formatDateForInput(data.FechaITV));
-                        $('#editarequipoFrio').val(data.EquipoFrio);
-
-                        $('#confirmarEdicion').attr('Camion_ID', id);
-                        validateAllFields(); // Validar todos los campos al cargar datos
-                    } else {
-                        console.error('Datos no encontrados para el camión con ID:', id);
-                    }
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error al cargar los datos del camión:', error);
-                    alert('Error al cargar los datos del camión. Por favor, intenta nuevamente.');
-                }
+            }, function (error) {
+                if (busqueda !== ultimaBusqueda) return;
+                SGTL.tabla.vacia(tbody, COLUMNAS_CAMIONES, 'No se pudieron cargar los camiones.');
+                SGTL.tabla.paginacion('#pagination', { total: 0 });
+                SGTL.toastError(error.mensajeUsuario);
             });
         }
 
-        // Función para validar todos los campos al cargar datos
-        $(document).ready(function () {
-            // Lista de campos requeridos en edición
-            const camposEdicion = [
-                '#editarDominio',
-                '#editarMarca',
-                '#editarModelo',
-                '#editarañoModelo',
-                '#editarTipo',
-                '#editarfechaCompra',
-                '#editarfechaITV',
-                '#editarnumMotor',
-                '#editarnumChasis'
-            ];
-
-            // Mostrar error solo si un campo está vacío al confirmar
-            function validarCamposRequeridosEdicion() {
-                let camposIncompletos = false;
-
-                camposEdicion.forEach(function (campo) {
-                    const input = $(campo);
-                    if (input.val().trim() === '') {
-                        input.addClass('is-invalid');
-                        camposIncompletos = true;
-                    }
-                });
-
-                if (camposIncompletos) {
-                    $('#alertaCompletaCamposEdicion')
-                        .text('Por favor, completá todos los campos requeridos.')
-                        .show();
-                } else {
-                    $('#alertaCompletaCamposEdicion').hide();
-                }
-
-                return !camposIncompletos;
-            }
-
-            // Validar un campo individual (como en alta)
-            function validarCampoIndividual(input) {
-                if (input.val().trim() === '') {
-                    input.addClass('is-invalid');
-                } else {
-                    input.removeClass('is-invalid');
-                    input.trigger('blur'); // Activar validación específica
-                }
-            }
-
-            // Ocultar alerta y errores cuando se empieza a escribir en cualquier campo
-            camposEdicion.forEach(function (campo) {
-                $(campo).on('input', function () {
-                    // Ocultar la alerta de campos incompletos
-                    $('#alertaCompletaCamposEdicion').hide();
-
-                    // Remover errores de todos los campos
-                    camposEdicion.forEach(function (c) {
-                        $(c).removeClass('is-invalid');
-                    });
-
-                    // Ocultar todos los mensajes de error
-                    $('.invalid-feedback, .invalid-feedback-date').hide();
-                });
-            });
-
-            // Validar fechas en blur (compra e ITV)
-            function validarFecha(input, errorContainer, mensajeFormato, mensajeFuturo) {
-                const valorFecha = input.val().trim();
-                const esValida = /^\d{4}-\d{2}-\d{2}$/.test(valorFecha);
-                const esFutura = new Date(valorFecha) > new Date();
-
-                if (!esValida) {
-                    input.addClass('is-invalid');
-                    errorContainer.text(mensajeFormato).show();
-                } else if (esFutura) {
-                    input.addClass('is-invalid');
-                    errorContainer.text(mensajeFuturo).show();
-                } else {
-                    input.removeClass('is-invalid').addClass('is-valid');
-                    errorContainer.hide();
-                }
-            }
-
-            $('#editarfechaCompra').on('blur', function () {
-                validarFecha($(this), $('#fechaCompraErrorEdit'), 'La fecha de compra no tiene un formato válido (DD-MM-YYYY).', 'La fecha de compra no puede ser futura.');
-            });
-
-            $('#editarfechaITV').on('blur', function () {
-                validarFecha($(this), $('#fechaITVErrorEdit'), 'La fecha de ITV no tiene un formato válido (DD-MM-YYYY).', 'La fecha de ITV no puede ser futura.');
-            });
-
-            // Dominio (input + blur)
-            $('#editarDominio').on('input', function () {
+        $(function () {
+            $('#filtroDominio').on('input', function () {
                 this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 7);
-            }).on('blur', function () {
-                validarCampo(
-                    $(this),
-                    $('#dominioErrorEdit'),
-                    /^[A-Z]{2}[0-9]{3}[A-Z]{2}$|^[A-Z]{3}[0-9]{3}$/,
-                    'El dominio debe tener el formato AA123CC o AAA123.',
-                    7
-                );
             });
-
-            // Motor (input + blur)
-            $('#editarnumMotor').on('input', function () {
-                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17);
-            }).on('blur', function () {
-                const valor = $(this).val().trim();
-                const $error = $('#motorErrorEdit');
-                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{8,17}$/;
-
-                if (valor.length < 8 || valor.length > 17) {
-                    $error.text('El número de motor debe tener entre 8 y 17 caracteres.').show();
-                    $(this).addClass('is-invalid');
-                } else if (!regex.test(valor)) {
-                    $error.text('El número de motor debe incluir letras y números.').show();
-                    $(this).addClass('is-invalid');
-                } else {
-                    $error.hide();
-                    $(this).removeClass('is-invalid').addClass('is-valid');
-                }
+            SGTL.rangoFechas('#fechaRango');
+            SGTL.filtros(['#filtroDominio', '#fechaRango', '#filtroEstado'], function () { buscarCamiones(1); });
+            $('#busquedaCamionForm').on('submit', function (evento) {
+                evento.preventDefault();
+                buscarCamiones(1);
             });
-
-            // Chasis (input + blur)
-            $('#editarnumChasis').on('input', function () {
-                this.value = this.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 17);
-            }).on('blur', function () {
-                const valor = $(this).val().trim();
-                const $error = $('#chasisErrorEdit');
-                const regex = /^(?=.*[A-Z])(?=.*\d)[A-Z0-9]{17}$/;
-
-                if (valor.length !== 17) {
-                    $error.text('El número de chasis debe tener 17 caracteres.').show();
-                    $(this).addClass('is-invalid');
-                } else if (!regex.test(valor)) {
-                    $error.text('El número de chasis debe incluir letras y números.').show();
-                    $(this).addClass('is-invalid');
-                } else {
-                    $error.hide();
-                    $(this).removeClass('is-invalid').addClass('is-valid');
-                }
-            });
-
-            // Validar año modelo (solo en blur)
-            $('#editarañoModelo').on('blur', function () {
-                const currentYear = new Date().getFullYear();
-                const value = $(this).val().trim();
-                const $error = $('#añoModeloErrorEdit');
-
-                if (value && (!/^\d{4}$/.test(value) || parseInt(value) > currentYear)) {
-                    $(this).addClass('is-invalid');
-                    $error.text('El año del modelo no puede ser mayor al actual.').show();
-                } else {
-                    $(this).removeClass('is-invalid').addClass('is-valid');
-                    $error.hide();
-                }
-            });
-
-            // Confirmar edición
-            $('#confirmarEdicion').on('click', function (event) {
-                event.preventDefault();
-
-                let tieneCamposVacios = false;
-                let tieneErrores = false;
-
-                camposEdicion.forEach(function (campo) {
-                    const input = $(campo);
-                    validarCampoIndividual(input);
-                    if (input.val().trim() === '') {
-                        tieneCamposVacios = true;
-                    }
-                    if (input.hasClass('is-invalid')) {
-                        tieneErrores = true;
-                    }
-                });
-
-                if (tieneCamposVacios) {
-                    $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos.').show();
-                    return;
-                } else {
-                    $('#alertaCompletaCamposEdicion').hide();
-                }
-
-                if (tieneErrores) {
-                    return;
-                }
-
-                const id = $(this).attr('Camion_ID');
-                const usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
-                const fechaHoraActual = new Date().toISOString();
-
-                const nuevoCamion = {
-                    Dominio: $('#editarDominio').val(),
-                    Marca: $('#editarMarca').val(),
-                    Modelo: $('#editarModelo').val(),
-                    AñoModelo: $('#editarañoModelo').val(),
-                    Tipo: $('#editarTipo').val(),
-                    NumMotor: $('#editarnumMotor').val(),
-                    NumChasis: $('#editarnumChasis').val(),
-                    FechaCompra: $('#editarfechaCompra').val(),
-                    FechaITV: $('#editarfechaITV').val(),
-                    EquipoFrio: $('#editarequipoFrio').val(),
-                    Fecha_Modi: fechaHoraActual,
-                    Usu_Modi: usuarioLogueado
-                };
-
-                $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/' + id,
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify(nuevoCamion),
-                    success: function (response) {
-                        mostrarToastExito('Los datos del camión se actualizaron exitosamente.');
-                        $('#editarCamionModal').modal('hide');
-                        buscarCamiones();
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error al actualizar el camión:', error);
-                        alert('Error al actualizar el camión. Por favor, intenta nuevamente.');
-                    }
-                });
-            });
-
-            // Función genérica para validar formato
-            function validarCampo(input, errorContainer, regex, mensajeError, maxLength) {
-                var valor = input.val().trim().toUpperCase().slice(0, maxLength);
-                input.val(valor);
-
-                if (valor === '') {
-                    input.removeClass('is-invalid is-valid');
-                    errorContainer.hide();
-                    return;
-                }
-
-                if (!regex.test(valor)) {
-                    input.removeClass('is-valid').addClass('is-invalid');
-                    errorContainer.text(mensajeError).show();
-                } else {
-                    input.removeClass('is-invalid').addClass('is-valid');
-                    errorContainer.hide();
-                }
-            }
+            buscarCamiones(1);
         });
-
     </script>
 
-    <!--Eliminar-->
+    <!-- Acciones de cada fila: activar / inactivar y eliminar -->
     <script>
-
-        var camionIdAEliminar;
-
-        // Función para mostrar el toast de éxito con mensaje dinámico
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje); // Establecer el texto del toast con el mensaje recibido
-            toastElement.show(); // Mostrar el toast
-
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show(); // Mostrar el toast usando Bootstrap
-
-            setTimeout(function () {
-                toast.hide(); // Ocultar el toast después de unos segundos
-            }, 5000); // Mostrar por 5 segundos
+        function usuarioActual(porDefecto) {
+            return localStorage.getItem('username') || porDefecto;
         }
 
-        // Función para confirmar la eliminación del camión
-        function confirmarEliminarCamion() {
-            if (camionIdAEliminar) {
-                var usuarioLogueado = localStorage.getItem('username') || "Desconocido";
+        function cambiarEstadoCamion(boton) {
+            const id = $(boton).data('id');
+            const nuevoEstado = $(boton).data('accion') === 'inactivar' ? 'Inactivo' : 'Activo';
+            const listo = SGTL.procesando(boton);
 
-                $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/Eliminar/' + camionIdAEliminar,
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify({
-                        Usu_Modi: usuarioLogueado
-                    }),
-                    success: function (response) {
-                        console.log('Camión marcado como eliminado:', response);
-                        mostrarToastExito('El camión se eliminó exitosamente.');
-                        $('#confirmarEliminarModal').modal('hide');
-                        camionIdAEliminar = null;
-                        buscarCamiones(currentPage); // Refrescar la tabla
-                    },
-                    error: function (xhr, status, error) {
-                        console.error('Error al eliminar el camión:', xhr.responseText || error);
-                    }
-                });
-            }
-        }
-
-    </script>
-
-    <!-- Activar/Inactivar camión -->
-    <script>
-        var camionIdACambiarEstado = null;
-        var estadoCamionNuevo = null;
-
-        function mostrarModalEstadoCamion() {
-            var modalElement = document.getElementById('confirmarEstadoCamionModal');
-            if (window.bootstrap && bootstrap.Modal && modalElement) {
-                bootstrap.Modal.getOrCreateInstance(modalElement).show();
-                return;
-            }
-            $('#confirmarEstadoCamionModal').modal('show');
-        }
-
-        function ocultarModalEstadoCamion() {
-            var modalElement = document.getElementById('confirmarEstadoCamionModal');
-            if (window.bootstrap && bootstrap.Modal && modalElement) {
-                var instancia = bootstrap.Modal.getInstance(modalElement);
-                if (instancia) instancia.hide();
-                return;
-            }
-            $('#confirmarEstadoCamionModal').modal('hide');
-        }
-
-        $(document).on('click', '.btn-activar-inactivar-camion', function () {
-            camionIdACambiarEstado = Number($(this).data('camionid'));
-            var estadoActual = String($(this).data('estado') || '').trim();
-            estadoCamionNuevo = estadoActual === 'Activo' ? 'Inactivo' : 'Activo';
-
-            $('#confirmarEstadoCamionBody').html(
-                '¿Confirmás cambiar el estado del camión a <strong>' + estadoCamionNuevo + '</strong>?'
-            );
-            mostrarModalEstadoCamion();
-        });
-
-        function confirmarCambioEstadoCamion() {
-            if (!camionIdACambiarEstado || !estadoCamionNuevo) return;
-
-            $.ajax({
-                url: 'http://localhost:50222/api/Camiones/EstadoCamion/' + camionIdACambiarEstado,
+            SGTL.ajax({
+                url: `${API}/Camiones/EstadoCamion/${id}`,
                 type: 'PUT',
                 contentType: 'application/json',
-                data: JSON.stringify({
-                    EstadoCamion: estadoCamionNuevo,
-                    Usu_Modi: localStorage.getItem('username') || 'sistema'
-                }),
-                success: function () {
-                    var mensaje = 'El camión fue ' + (estadoCamionNuevo === 'Activo' ? 'activado' : 'inactivado') + ' correctamente.';
-                    ocultarModalEstadoCamion();
-                    buscarCamiones(currentPage);
-                    mostrarToastExito(mensaje);
-                    camionIdACambiarEstado = null;
-                    estadoCamionNuevo = null;
-                },
-                error: function (xhr, status, error) {
-                    console.error('Error al cambiar el estado del camión:', xhr.responseText || error);
-                    mostrarToastError('No se pudo actualizar el estado del camión.');
-                }
+                data: JSON.stringify({ EstadoCamion: nuevoEstado, Usu_Modi: usuarioActual('sistema') })
+            }, 'No se pudo cambiar el estado del camión. Probá de nuevo.').then(function () {
+                SGTL.toastExito(nuevoEstado === 'Activo' ? 'Camión activado.' : 'Camión inactivado.');
+                buscarCamiones(currentPage);
+            }, function (error) {
+                listo();
+                SGTL.toastError(error.mensajeUsuario);
             });
         }
+
+        function eliminarCamion(id) {
+            const camion = camionesPagina[id] || {};
+            const dominio = (camion.Dominio || '').trim();
+
+            SGTL.confirmar({
+                titulo: dominio ? `¿Eliminar el camión ${dominio}?` : '¿Eliminar el camión?',
+                mensaje: 'No se puede deshacer.',
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({
+                        url: `${API}/Camiones/Eliminar/${id}`,
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        data: JSON.stringify({ Usu_Modi: usuarioActual('Desconocido') })
+                    }, 'No se pudo eliminar el camión. Probá de nuevo.');
+                }
+            }).then(function (eliminado) {
+                if (!eliminado) return;
+                SGTL.toastExito('Camión eliminado.');
+                buscarCamiones(currentPage);
+            });
+        }
+
+        $(function () {
+            $('#tablaCamiones')
+                .on('click', '[data-accion="editar"]', function () { abrirModalCamion($(this).data('id')); })
+                .on('click', '[data-accion="activar"], [data-accion="inactivar"]', function () { cambiarEstadoCamion(this); })
+                .on('click', '[data-accion="eliminar"]', function () { eliminarCamion($(this).data('id')); });
+        });
     </script>
 
-    <!-- Generar reporte CSV de camiones -->
+    <!-- Registrar y editar -->
     <script>
-        async function generarReporteCSV() {
-            var dominio = $('#dominioinput').val() || '';
-            var fechaDesde = $('#fechaRango').data('start') || null;
-            var fechaHasta = $('#fechaRango').data('end') || null;
-            var estadoCamion = obtenerEstadosCamionSeleccionados();
+        let camionEnEdicion = null;
+        let formularioCamion = null;
 
-            var requestData = {
-                dominio: dominio,
-                fechaDesde: fechaDesde || null,
-                fechaHasta: fechaHasta || null,
-                page: currentPage,
-                pageSize: pageSize
+        function fechaNoFutura(nombre) {
+            return function (valor) {
+                const fecha = SGTL.leerFecha(valor);
+                if (!fecha) return 'Escribí la fecha como DD/MM/AAAA.';
+                if (fecha > new Date()) return `La fecha de ${nombre} no puede ser posterior a hoy.`;
+                return '';
             };
-            if (estadoCamion) requestData.estadoCamion = estadoCamion;
+        }
 
-            try {
-                const response = await $.ajax({
-                    url: 'http://localhost:50222/api/Camiones/Buscar',
-                    type: 'GET',
-                    data: requestData
+        const reglasCamion = [
+            {
+                id: 'camionDominio', requerido: 'Completá el dominio.', mayusculas: true, max: 7,
+                regex: /^[A-Z]{2}[0-9]{3}[A-Z]{2}$|^[A-Z]{3}[0-9]{3}$/,
+                mensaje: 'El dominio tiene que ser como ABC123 o AB123CD.'
+            },
+            { id: 'camionMarca', requerido: 'Completá la marca.', max: 50 },
+            { id: 'camionModelo', requerido: 'Completá el modelo.', max: 50 },
+            {
+                id: 'camionAnio', requerido: 'Completá el año del modelo.', soloNumeros: true, max: 4,
+                regex: /^[0-9]{4}$/, mensaje: 'El año tiene que tener 4 números.',
+                validar: function (valor) {
+                    return Number(valor) > new Date().getFullYear() ? 'El año del modelo no puede ser posterior al actual.' : '';
+                }
+            },
+            { id: 'camionTipo', requerido: 'Completá el tipo.', max: 50 },
+            {
+                id: 'camionMotor', requerido: 'Completá el número de motor.', mayusculas: true, max: 17,
+                regex: /^(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{8,17}$/,
+                mensaje: 'El número de motor tiene que tener entre 8 y 17 letras y números.'
+            },
+            {
+                id: 'camionChasis', requerido: 'Completá el número de chasis.', mayusculas: true, max: 17,
+                regex: /^(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{17}$/,
+                mensaje: 'El número de chasis tiene que tener 17 letras y números.'
+            },
+            { id: 'camionFechaCompra', requerido: 'Completá la fecha de compra.', validar: fechaNoFutura('compra') },
+            { id: 'camionFechaITV', requerido: 'Completá la fecha de ITV.', validar: fechaNoFutura('ITV') },
+            { id: 'camionEquipoFrio', max: 50 }
+        ];
+
+        function ponerFecha(id, valor) {
+            const input = document.getElementById(id);
+            const fecha = valor ? new Date(valor) : null;
+            if (input._flatpickr) {
+                if (fecha && !isNaN(fecha.getTime())) input._flatpickr.setDate(fecha, false);
+                else input._flatpickr.clear();
+            }
+        }
+
+        function abrirModalCamion(id) {
+            const esAlta = !id;
+            camionEnEdicion = esAlta ? null : id;
+            SGTL.reiniciarFormulario('#formCamion', '#avisoCamion');
+            formularioCamion.reiniciar();
+            ponerFecha('camionFechaCompra', null);
+            ponerFecha('camionFechaITV', null);
+            $('#modalCamionTitulo').text(esAlta ? 'Registrar camión' : 'Editar camión');
+            $('#datosEdicionCamion').toggleClass('d-none', esAlta);
+            $('#estadoActualCamion, #fechaAltaCamion').empty();
+            const guardar = document.getElementById('btnGuardarCamion');
+            guardar.disabled = !esAlta;
+            SGTL.modal('#modalCamion', 'show');
+            if (esAlta) return;
+
+            SGTL.ajax({ url: `${API}/Camiones/${id}`, type: 'GET' },
+                'No se pudieron cargar los datos del camión. Probá de nuevo.').then(function (data) {
+                    $('#camionDominio').val((data.Dominio || '').trim());
+                    $('#camionMarca').val(data.Marca);
+                    $('#camionModelo').val(data.Modelo);
+                    $('#camionAnio').val(data.AñoModelo);
+                    $('#camionTipo').val(data.Tipo);
+                    $('#camionMotor').val(data.NumMotor);
+                    $('#camionChasis').val(data.NumChasis);
+                    $('#camionEquipoFrio').val(data.EquipoFrio);
+                    ponerFecha('camionFechaCompra', data.FechaCompra);
+                    ponerFecha('camionFechaITV', data.FechaITV);
+                    $('#estadoActualCamion').html(SGTL.estado(data.EstadoCamion));
+                    $('#fechaAltaCamion').text(fechaCamion(data.Fecha_Alta));
+                    guardar.disabled = false;
+                }).catch(function (error) {
+                    SGTL.modal('#modalCamion', 'hide');
+                    SGTL.toastError(error.mensajeUsuario);
                 });
+        }
 
-                if (response.Results.length === 0) {
-                    mostrarToastError('No se encontraron registros para generar el reporte.');
+        function datosCamion() {
+            const valor = function (id) { return document.getElementById(id).value.trim(); };
+            return {
+                Dominio: valor('camionDominio'),
+                Marca: valor('camionMarca'),
+                Modelo: valor('camionModelo'),
+                AñoModelo: valor('camionAnio'),
+                Tipo: valor('camionTipo'),
+                NumMotor: valor('camionMotor'),
+                NumChasis: valor('camionChasis'),
+                FechaCompra: SGTL.fechaISO(SGTL.leerFecha(valor('camionFechaCompra'))),
+                FechaITV: SGTL.fechaISO(SGTL.leerFecha(valor('camionFechaITV'))),
+                EquipoFrio: valor('camionEquipoFrio')
+            };
+        }
+
+        async function guardarCamion() {
+            const esAlta = !camionEnEdicion;
+            const boton = document.getElementById('btnGuardarCamion');
+
+            formularioCamion.validarTodo();
+            if (!SGTL.revisarFormulario('#formCamion', '#avisoCamion')) return;
+
+            const listo = SGTL.procesando(boton, 'Guardando…');
+            let guardado = false;
+            try {
+                const usuario = usuarioActual('Desconocido');
+                const ahora = new Date().toISOString();
+                const camion = datosCamion();
+                if (esAlta) {
+                    Object.assign(camion, {
+                        EstadoCamion: 'Activo',
+                        Fecha_Alta: ahora,
+                        Usu_Alta: usuario,
+                        Fecha_Modi: ahora,
+                        Usu_Modi: usuario
+                    });
+                } else {
+                    Object.assign(camion, { Fecha_Modi: ahora, Usu_Modi: usuario });
+                }
+                await SGTL.ajax({
+                    url: esAlta ? API + '/Camiones' : `${API}/Camiones/${camionEnEdicion}`,
+                    type: esAlta ? 'POST' : 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(camion)
+                }, 'No se pudo guardar el camión. Revisá la conexión y probá de nuevo.');
+                guardado = true;
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoCamion', error.mensajeUsuario || 'No se pudo guardar el camión. Probá de nuevo.');
+            } finally {
+                listo();
+            }
+
+            if (!guardado) return;
+            SGTL.toastExito(esAlta ? 'Camión registrado.' : 'Camión guardado.');
+            buscarCamiones(esAlta ? 1 : currentPage);
+            setTimeout(function () { SGTL.modal('#modalCamion', 'hide'); }, 0);
+        }
+
+        $(function () {
+            SGTL.selectorFecha('#camionFechaCompra', { maxDate: 'today' });
+            SGTL.selectorFecha('#camionFechaITV', { maxDate: 'today' });
+            formularioCamion = SGTL.validador(reglasCamion);
+            $('#btnRegistrarCamion').on('click', function () { abrirModalCamion(null); });
+            $('#btnGuardarCamion').on('click', guardarCamion);
+            $('#modalCamion').on('shown.bs.modal', function () {
+                if (!camionEnEdicion) $('#camionDominio').trigger('focus');
+            });
+        });
+    </script>
+
+    <!-- Exportar -->
+    <script>
+        // Exporta todo lo que coincide con los filtros, no solo la página visible.
+        async function exportarCamiones() {
+            const listo = SGTL.procesando('#btnExportar');
+            try {
+                const data = await SGTL.ajax({
+                    url: API + '/Camiones/Buscar',
+                    type: 'GET',
+                    data: Object.assign(filtrosBusqueda(), { page: 1, pageSize: 0 })
+                }, 'No se pudo exportar. Revisá la conexión y probá de nuevo.');
+                const registros = data.Results || [];
+                if (!registros.length) {
+                    SGTL.toastError('No hay camiones para exportar con los filtros elegidos.');
                     return;
                 }
 
-                generarCSV(response.Results);
+                SGTL.descargarCSV('Listado_Camiones.csv', [
+                    'ID', 'Dominio', 'Marca', 'Modelo', 'Año del modelo', 'Tipo',
+                    'Fecha de compra', 'Fecha de ITV', 'Número de motor', 'Número de chasis',
+                    'Equipo de frío', 'Estado', 'Fecha de alta', 'Usuario de alta',
+                    'Fecha de modificación', 'Usuario de modificación'
+                ], registros.map(function (r) {
+                    return [
+                        r.Camion_ID, (r.Dominio || '').trim(), r.Marca, r.Modelo, r.AñoModelo, r.Tipo,
+                        SGTL.fecha(r.FechaCompra), SGTL.fecha(r.FechaITV), r.NumMotor, r.NumChasis,
+                        r.EquipoFrio, r.EstadoCamion, fechaCamion(r.Fecha_Alta), r.Usu_Alta,
+                        fechaCamion(r.Fecha_Modi), r.Usu_Modi
+                    ];
+                }));
             } catch (error) {
-                console.error('Error al generar el reporte:', error);
-                mostrarToastError('Ocurrió un error al generar el reporte. Intentá de nuevo más tarde.');
+                SGTL.toastError(error.mensajeUsuario || 'No se pudo exportar. Probá de nuevo.');
+            } finally {
+                listo();
             }
         }
 
-        // Función para mostrar un toast de error con mensaje dinámico
-        function mostrarToastError(mensaje) {
-            $('#toastErrorMessage').text(mensaje);
-            const toast = new bootstrap.Toast(document.getElementById('toastError'));
-            toast.show();
-        }
-
-        // Función para generar el CSV con codificación UTF-8 con BOM
-        function generarCSV(data) {
-            // Definir las columnas del CSV con nombres personalizados
-            const headers = [
-                'Camion_ID', 'Dominio', 'Marca', 'Modelo', 'Año Modelo',
-                'Tipo', 'Fecha de Compra', 'Fecha de ITV', 'Número de Motor',
-                'Número de Chasis', 'Equipo de Frío', 'Estado',
-                'Fecha de Alta', 'Usuario de Alta', 'Fecha de Modificación', 'Usuario de Modificación'
-            ];
-
-            let csvContent = headers.join(";") + "\n";
-
-            data.forEach(function (registro) {
-                let row = [
-                    registro.Camion_ID,
-                    registro.Dominio.trim(),
-                    registro.Marca,
-                    registro.Modelo,
-                    registro.AñoModelo,
-                    registro.Tipo,
-                    formatFechaDDMMYYYY(registro.FechaCompra),
-                    formatFechaDDMMYYYY(registro.FechaITV),
-                    registro.NumMotor || '',
-                    registro.NumChasis || '',
-                    registro.EquipoFrio || '',
-                    registro.Estado || '',
-                    formatFechaUTC3(registro.Fecha_Alta),
-                    registro.Usu_Alta || '',
-                    registro.Fecha_Modi ? formatFechaUTC3(registro.Fecha_Modi) : '',
-                    registro.Usu_Modi || ''
-                ];
-
-                csvContent += row.map(value => `"${value}"`).join(";") + "\n";
-            });
-
-            // Agregar el BOM al inicio para asegurar la codificación UTF-8
-            let blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-
-            let url = URL.createObjectURL(blob);
-
-            let a = document.createElement("a");
-            a.href = url;
-            a.download = "Listado_Camiones.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
-        // Función para formatear la fecha en DD-MM-YYYY sin hora y minuto
-        function formatFechaDDMMYYYY(isoDate) {
-            if (!isoDate) return '';
-            const date = new Date(isoDate);
-
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = date.getFullYear();
-
-            return `${day}-${month}-${year}`;
-        }
-
-        // Función para formatear la fecha en DD/MM/YYYY hh:mm con UTC-3
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return '';
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-    </script>
-
-
-
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            if (window.flatpickr) {
-                ['txtfechaCompra','txtfechaITV','editarfechaCompra','editarfechaITV'].forEach(function (id) {
-                    if (document.getElementById(id)) { flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }); }
-                });
-            }
+        $(function () {
+            $('#btnExportar').on('click', exportarCamiones);
         });
     </script>
-</body>
 
+</body>
 
 </html>
