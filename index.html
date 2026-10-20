@@ -33,9 +33,11 @@
         .grid-stack { background: transparent; }
         .grid-stack-item-content { inset: 0; display: flex; }
         .grid-stack-item-content > .card { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
-        .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; }
-        .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
+        .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; padding: 1rem 1.25rem .5rem; }
+        .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .5rem 1.25rem 1rem; }
         #chart-viajes-mensual, #calendarioViajes { height: 100%; }
+        /* El gráfico ya se ajusta al alto de la tarjeta; lo que asoma son los cartelitos flotantes de ApexCharts. */
+        .grid-stack-item[gs-id="chart"] .card-body { overflow: hidden; }
         .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(13,110,253,.55); outline-offset: -2px; }
         .grid-stack.editando .card-header { cursor: move; }
         #widgetsChecklist .form-check-input { cursor: pointer; }
@@ -91,7 +93,7 @@
 
                 <div class="page-content">
                 <div class="grid-stack">
-                <div class="grid-stack-item" gs-id="choferes" gs-x="0" gs-y="0" gs-w="4" gs-h="2">
+                <div class="grid-stack-item" gs-id="choferes" gs-x="0" gs-y="0" gs-w="4" gs-h="3" gs-min-h="3">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
@@ -110,7 +112,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="camiones" gs-x="4" gs-y="0" gs-w="4" gs-h="2">
+                <div class="grid-stack-item" gs-id="camiones" gs-x="4" gs-y="0" gs-w="4" gs-h="3" gs-min-h="3">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
@@ -129,7 +131,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="costo" gs-x="8" gs-y="0" gs-w="4" gs-h="2">
+                <div class="grid-stack-item" gs-id="costo" gs-x="8" gs-y="0" gs-w="4" gs-h="3" gs-min-h="3">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header d-flex align-items-center">
@@ -146,7 +148,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="chart" gs-x="0" gs-y="2" gs-w="8" gs-h="5">
+                <div class="grid-stack-item" gs-id="chart" gs-x="0" gs-y="3" gs-w="8" gs-h="5" gs-min-h="4">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header">
@@ -158,7 +160,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="topclientes" gs-x="8" gs-y="2" gs-w="4" gs-h="5">
+                <div class="grid-stack-item" gs-id="topclientes" gs-x="8" gs-y="3" gs-w="4" gs-h="5" gs-min-h="4">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header">
@@ -172,7 +174,7 @@
                             </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="7" gs-w="12" gs-h="6">
+                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="8" gs-w="12" gs-h="6" gs-min-h="5">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header">
@@ -485,17 +487,31 @@
                 { id: 'calendario', label: 'Calendario de viajes' }
             ];
             var LAYOUT_DEFAULT = [
-                { id: 'choferes', x: 0, y: 0, w: 4, h: 2 },
-                { id: 'camiones', x: 4, y: 0, w: 4, h: 2 },
-                { id: 'costo', x: 8, y: 0, w: 4, h: 2 },
-                { id: 'chart', x: 0, y: 2, w: 8, h: 5 },
-                { id: 'topclientes', x: 8, y: 2, w: 4, h: 5 },
-                { id: 'calendario', x: 0, y: 7, w: 12, h: 6 }
+                { id: 'choferes', x: 0, y: 0, w: 4, h: 3 },
+                { id: 'camiones', x: 4, y: 0, w: 4, h: 3 },
+                { id: 'costo', x: 8, y: 0, w: 4, h: 3 },
+                { id: 'chart', x: 0, y: 3, w: 8, h: 5 },
+                { id: 'topclientes', x: 8, y: 3, w: 4, h: 5 },
+                { id: 'calendario', x: 0, y: 8, w: 12, h: 6 }
             ];
+            // Alto mínimo de cada tarjeta (en filas): por debajo de esto se esconde contenido.
+            var ALTO_MINIMO = { choferes: 3, camiones: 3, costo: 3, chart: 4, topclientes: 4, calendario: 5 };
 
             function el(id) { return document.getElementById(id); }
+            // makeWidget sobre una tarjeta que ya está en la grilla le crea un segundo nodo: al agrandarla o
+            // esconderla se tocaba ese y se guardaba el otro. Solo se agrega si todavía no está.
+            function agregarAlGrid(e) {
+                if (e.gridstackNode && GRID.engine.nodes.indexOf(e.gridstackNode) !== -1) return;
+                try { GRID.makeWidget(e); } catch (x) { }
+            }
             function itemEl(id) { return document.querySelector('.grid-stack-item[gs-id="' + id + '"]'); }
             function usuario() { try { return localStorage.getItem('username'); } catch (e) { return null; } }
+
+            // Alto disponible dentro del cuerpo de la tarjeta (sin el relleno).
+            function altoUtil(body) {
+                var cs = getComputedStyle(body);
+                return body.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0);
+            }
 
             function refrescarVivos() {
                 // Gráfico: ajustar altura al alto disponible del contenedor
@@ -503,7 +519,7 @@
                     var cc = document.getElementById('chart-viajes-mensual');
                     var body = cc ? cc.closest('.card-body') : null;
                     if (window.__viajesChart && body && body.clientHeight) {
-                        var h = Math.max(150, body.clientHeight - 8);
+                        var h = Math.max(150, altoUtil(body));
                         window.__viajesChart.updateOptions({ chart: { height: h } }, false, false);
                     } else {
                         window.dispatchEvent(new Event('resize'));
@@ -515,7 +531,7 @@
                     if (window.jQuery && $('#calendarioViajes').length && $.fn.fullCalendar) {
                         var cal = document.getElementById('calendarioViajes');
                         var body2 = cal ? cal.closest('.card-body') : null;
-                        var ch = (body2 && body2.clientHeight) ? (body2.clientHeight - 6) : 300;
+                        var ch = (body2 && body2.clientHeight) ? altoUtil(body2) : 300;
                         $('#calendarioViajes').fullCalendar('option', 'height', Math.max(180, ch));
                     }
                 } catch (e) { }
@@ -539,21 +555,35 @@
                 cargarLayout();
             };
 
+            // La API todavía no tiene /DashboardLayout (responde 404): mientras tanto el diseño se guarda
+            // en el navegador, por usuario. Si la API lo devuelve, tiene prioridad.
+            function claveLocal(u) { return 'sgtl-dashboard-' + u; }
+            function leerLocal(u) {
+                try { return JSON.parse(localStorage.getItem(claveLocal(u)) || 'null'); } catch (e) { return null; }
+            }
+            function guardarLocal(u, layout) {
+                try { localStorage.setItem(claveLocal(u), JSON.stringify(layout)); return true; } catch (e) { return false; }
+            }
+            function borrarLocal(u) {
+                try { localStorage.removeItem(claveLocal(u)); } catch (e) { }
+            }
+
             function cargarLayout() {
                 var u = usuario();
                 if (!u) { aplicarLayout(LAYOUT_DEFAULT, []); return; }
+                function aplicar(parsed) {
+                    parsed = parsed || leerLocal(u);
+                    if (parsed && parsed.items && parsed.items.length) aplicarLayout(parsed.items, parsed.hidden || []);
+                    else aplicarLayout(LAYOUT_DEFAULT, []);
+                }
                 fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u))
                     .then(function (r) { return r.ok ? r.json() : null; })
                     .then(function (data) {
                         var parsed = null;
                         if (data && data.Layout) { try { parsed = JSON.parse(data.Layout); } catch (e) { } }
-                        if (parsed && parsed.items && parsed.items.length) {
-                            aplicarLayout(parsed.items, parsed.hidden || []);
-                        } else {
-                            aplicarLayout(LAYOUT_DEFAULT, []);
-                        }
+                        aplicar(parsed);
                     })
-                    .catch(function () { aplicarLayout(LAYOUT_DEFAULT, []); });
+                    .catch(function () { aplicar(null); });
             }
 
             function aplicarLayout(items, hidden) {
@@ -565,10 +595,13 @@
                     var e = itemEl(w.id);
                     if (!e) return;
                     e.style.display = '';
-                    try { GRID.makeWidget(e); } catch (x) { }
+                    agregarAlGrid(e);
                 });
                 // aplicar posiciones de los visibles
-                var visibles = items.filter(function (it) { return hidden.indexOf(it.id) === -1; });
+                var visibles = items.filter(function (it) { return hidden.indexOf(it.id) === -1; }).map(function (it) {
+                    var minimo = ALTO_MINIMO[it.id] || 1;
+                    return Object.assign({}, it, { h: Math.max(it.h || minimo, minimo), minH: minimo });
+                });
                 GRID.load(visibles, false);
                 // ocultar los marcados
                 hidden.forEach(function (id) {
@@ -585,7 +618,7 @@
             function mostrarWidget(id) {
                 var e = itemEl(id); if (!e || !GRID) return;
                 e.style.display = '';
-                try { GRID.makeWidget(e); } catch (x) { }
+                agregarAlGrid(e);
                 setTimeout(refrescarVivos, 60);
             }
             function ocultarWidget(id) {
@@ -646,8 +679,13 @@
                 Array.prototype.forEach.call(el('widgetsChecklist').querySelectorAll('input[data-wid]'), function (cb) {
                     if (!cb.checked) hidden.push(cb.getAttribute('data-wid'));
                 });
-                var items = GRID.save(false); // [{id,x,y,w,h}, ...] de los visibles
-                var payload = { Nombre_Usuario: u, Layout: JSON.stringify({ items: items, hidden: hidden }) };
+                // A mano y no con GRID.save(): gridstack omite el alto de algunas tarjetas y al volver quedaban con el mínimo.
+                var items = GRID.engine.nodes.map(function (n) {
+                    return { id: n.id || (n.el && n.el.getAttribute('gs-id')), x: n.x, y: n.y, w: n.w, h: n.h };
+                });
+                var layout = { items: items, hidden: hidden };
+                guardarLocal(u, layout);
+                var payload = { Nombre_Usuario: u, Layout: JSON.stringify(layout) };
                 fetch(API_DL + '/DashboardLayout', {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
@@ -665,6 +703,7 @@
                     salirEdicion();
                 }
                 if (!u) { aplicarDefault(); return; }
+                borrarLocal(u);
                 fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u), { method: 'DELETE' })
                     .then(aplicarDefault).catch(aplicarDefault);
             }
