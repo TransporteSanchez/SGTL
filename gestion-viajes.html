@@ -108,7 +108,7 @@
                 <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header">
+                        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
 
                             <!--Notificaciones de Alta, Editar y Eliminar-->
 
@@ -125,9 +125,21 @@
                             </div>
 
 
-                            <h5 class="card-title">
-                                Gestionar viajes
-                            </h5>
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-calendar-check me-2"></i>Gestionar viajes
+                                </h5>
+                                <p class="text-muted mb-0">Registrá viajes, seguí su estado hasta la entrega y dejalos listos para facturar.</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" onclick="generarReporteCSV()"
+                                    data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-success" onclick="abrirModalAltaViaje()">
+                                    <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar viaje
+                                </button>
+                            </div>
                         </div>
 
                         <div class="card-body">
@@ -190,19 +202,6 @@
                                     </fieldset>
                                 </div>
 
-                                <!-- Columna derecha - Alta y reporte -->
-                                <div class="col-md-6 text-end">
-                                    <button type="button" class="btn btn-success" onclick="abrirModalAltaViaje()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar viaje">
-                                        <i class="bi bi-calendar-check"></i>
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                    <label>&nbsp;</label>
-                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                        <i class="bi bi-download"></i>
-                                    </button>
-                                </div>
 
                                 <!-- Tabla de resultados -->
                                 <div class="table-responsive mt-4">
@@ -219,8 +218,8 @@
                                                 <th>Número de remito</th>
                                                 <th>N° entrega Rukas</th>
                                                 <th>Cantidad de KM</th>
-                                                <th>Estado</th>
-                                                <th>Acciones</th>
+                                                <th class="text-center">Estado</th>
+                                                <th class="text-center">Acciones</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -579,8 +578,9 @@
             Facturado: 'bg-success'
         };
         function etiquetaEstado(e) { return ESTADO_LABEL[e] || e || '—'; }
+        // Colores del design system (§4): Registrado gris, En viaje / Entregado azul, Listo para facturar amarillo, Facturado verde.
         function badgeEstadoViaje(e) {
-            return '<span class="badge ' + (ESTADO_BADGE[e] || 'bg-secondary') + '">' + escHtml(etiquetaEstado(e)) + '</span>';
+            return SGTL.estado(e || '', etiquetaEstado(e));
         }
 
         var viajesPagina = {};
@@ -614,25 +614,22 @@
             const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en un borrador de proforma: quitalo de la proforma para eliminarlo'
                 : (desdePresupuesto ? 'Se generó desde el presupuesto #' + viaje.Presupuesto_ID + ': no se puede eliminar'
                 : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado')));
-            return `
-                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEditar}">
-                    <button class="btn btn-primary btn-sm ${bloqueado ? 'disabled' : ''}"
-                        onclick="abrirModalEditarViaje('${viaje.Viaje_ID}')">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                </span>
-                <span data-bs-toggle="tooltip" data-bs-placement="top" title="${tituloEliminar}">
-                    <button class="btn btn-danger btn-sm ms-1 ${registrado && !bloqueado && !enProforma && !desdePresupuesto ? '' : 'disabled'}"
-                        onclick="abrirModalEliminarViaje('${viaje.Viaje_ID}')">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </span>
-                <button class="btn btn-light btn-sm ms-1"
-                    data-bs-toggle="tooltip" data-bs-placement="top" title="Estado y entrega"
-                    onclick="abrirModalEstadoViaje('${viaje.Viaje_ID}')">
-                    <i class="bi bi-flag"></i>
-                </button>`;
+            const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
+            // Orden del design system (§1.4): editar, siguiente paso del circuito, eliminar.
+            return SGTL.accionesFila([
+                SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: motivo }),
+                SGTL.botonFila('siguiente', { id: viaje.Viaje_ID, texto: 'Estado y entrega', icono: 'bi-flag' }),
+                SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: tituloEliminar })
+            ]);
         }
+
+        // Botones de cada fila (SGTL.botonFila): se escuchan desde la tabla porque las filas se redibujan.
+        $(function () {
+            $('#tablaViajes')
+                .on('click', '[data-accion="editar"]', function () { abrirModalEditarViaje(String($(this).data('id'))); })
+                .on('click', '[data-accion="siguiente"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
+                .on('click', '[data-accion="eliminar"]', function () { abrirModalEliminarViaje(String($(this).data('id'))); });
+        });
 
         function buscarViajes(page = 1) {
             currentPage = page;
@@ -664,8 +661,8 @@
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
                                     <td>${escHtml(textoRef(viaje.Num_de_Carga))}</td>
                                     <td>${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
-                                    <td style="white-space:nowrap;">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge bg-light text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
-                                    <td style="white-space:nowrap;">${accionesViaje(viaje)}</td>
+                                    <td class="text-center text-nowrap">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge rounded-pill bg-white text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
+                                    <td class="text-center">${accionesViaje(viaje)}</td>
                                 </tr>
                             `;
                             tbody.append(row);

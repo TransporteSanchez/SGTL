@@ -62,6 +62,7 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
@@ -110,10 +111,19 @@
                 <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
-                        <div class="card-header">
-                            <h5 class="card-title">
-                                Listar viajes
-                            </h5>
+                        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-calendar-check me-2"></i>Listar viajes
+                                </h5>
+                                <p class="text-muted mb-0">Consultá los viajes y su estado; para cambiarlos andá a Gestionar viajes.</p>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary" id="btnExportar"
+                                    data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar">
+                                    <i class="bi bi-download" aria-hidden="true"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <form id="busquedaViajeForm" class="form">
@@ -148,15 +158,6 @@
                                                 onclick="buscarViajes()">Buscar</button>
                                         </div>
                                     </div>
-                                    <!-- Botón Generar Reporte -->
-                                    <div class="mb-3">
-                                        <label>&nbsp;</label>
-                                        <button type="button" class="btn btn-secondary d-block"
-                                            onclick="generarReporteCSV()" data-bs-toggle="tooltip"
-                                            data-bs-placement="top" title="Generar reporte">
-                                            <i class="bi bi-download"></i>
-                                        </button>
-                                    </div>
                                 </div>
                             </form>
                             <div class="table-responsive">
@@ -170,7 +171,8 @@
                                             <th>Destino</th>
                                             <th>Número de remito</th>
                                             <th>Cantidad de KM</th>
-                                            <th>Acciones</th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -281,6 +283,7 @@
         <script src="assets/extensions/jquery/jqueryajax.js"></script>
         <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
         <script src="assets/compiled/js/app.js"></script>
+        <script src="assets/static/js/sgtl-ui.js"></script>
         <script src="assets/static/js/components/sidebar.js"></script>
         <script src="assets/static/js/sidebar-loader.js"></script>
         <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
@@ -540,6 +543,63 @@
                 $('#DetallesViajeModal').modal('show');
             }
 
+            // Etiquetas de estado; los colores salen de SGTL.estado (§4 del design system).
+            const ESTADOS_VIAJE = {
+                Registrado: 'Registrado',
+                En_viaje: 'En viaje',
+                Entregado: 'Entregado',
+                Listo_para_facturar: 'Listo para facturar',
+                Facturado: 'Facturado'
+            };
+            let viajesPagina = {};
+
+            // Mismos filtros que la búsqueda; exporta todo lo filtrado, no solo la página visible (§1.2).
+            async function exportarViajes() {
+                const clienteIdRaw = $('#filtroClienteId').val().trim();
+                const datos = {
+                    fechaDesde: $('#fechaRangoInicioViaje').data('start') || null,
+                    fechaHasta: $('#fechaRangoInicioViaje').data('end') || null,
+                    fechaFinDesde: $('#fechaRangoFinViaje').data('start') || null,
+                    fechaFinHasta: $('#fechaRangoFinViaje').data('end') || null,
+                    page: 1,
+                    pageSize: 0
+                };
+                if (clienteIdRaw) datos.clienteId = parseInt(clienteIdRaw, 10);
+                const listo = SGTL.procesando('#btnExportar');
+                try {
+                    const data = await SGTL.ajax({ url: 'http://localhost:50222/api/Viajes/Buscar', type: 'GET', data: datos },
+                        'No se pudo exportar. Revisá la conexión y probá de nuevo.');
+                    const registros = data.Results || [];
+                    if (!registros.length) {
+                        SGTL.toastError('No hay viajes para exportar con los filtros elegidos.');
+                        return;
+                    }
+                    const limpio = function (v) { return String(v == null ? '' : v).trim(); };
+                    SGTL.descargarCSV('Listado_Viajes.csv', [
+                        'Número de viaje', 'Cliente', 'Fecha de inicio', 'Fecha de fin', 'Origen', 'Destino',
+                        'N° transporte SAP', 'Número de remito', 'N° entrega Rukas', 'Cantidad de KM', 'Estado'
+                    ], registros.map(function (v) {
+                        return [
+                            v.Viaje_ID, v.Cliente, formatearFecha(v.Fecha_Inicio), formatearFecha(v.Fecha_Fin), v.Origen, v.Destino,
+                            limpio(v.Num_Transporte), limpio(v.Num_Remito), limpio(v.Num_de_Carga), limpio(v.Distancia_KM),
+                            ESTADOS_VIAJE[v.Estado] || v.Estado
+                        ];
+                    }));
+                } catch (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo exportar. Probá de nuevo.');
+                } finally {
+                    listo();
+                }
+            }
+
+            $(function () {
+                $('#btnExportar').on('click', exportarViajes);
+                $('#tablaViajes').on('click', '[data-accion="ver"]', function () {
+                    const viaje = viajesPagina[$(this).data('id')];
+                    if (viaje) mostrarDetallesViaje(viaje);
+                });
+            });
+
             function buscarViajes(page = 1) {
                 const clienteIdRaw = $('#filtroClienteId').val().trim();
                 const fechaDesde = $('#fechaRangoInicioViaje').data('start') || null;
@@ -567,8 +627,10 @@
                         const tbody = $('#tablaViajes tbody');
                         tbody.empty();
 
+                        viajesPagina = {};
+                        data.Results.forEach(function (v) { viajesPagina[v.Viaje_ID] = v; });
                         if (data.Results.length === 0) {
-                            tbody.html('<tr><td colspan="8" class="text-center">No se encontraron registros</td></tr>');
+                            SGTL.tabla.vacia('#tablaViajes tbody', 9);
                         } else {
                             data.Results.forEach(function (viaje) {
                                 const row = `
@@ -580,11 +642,8 @@
                                         <td>${viaje.Destino}</td>
                                         <td>${viaje.Num_Remito}</td>
                                         <td>${viaje.Distancia_KM}</td>
-                                        <td>
-                                            <button class="btn btn-primary btn-sm" onclick='mostrarDetallesViaje(${JSON.stringify(viaje)})'>
-                                                <i class="bi bi-info-circle"></i>
-                                            </button>
-                                        </td>
+                                        <td class="text-center text-nowrap">${SGTL.estado(viaje.Estado || '', ESTADOS_VIAJE[viaje.Estado] || viaje.Estado)}</td>
+                                        <td class="text-center">${SGTL.accionesFila([SGTL.botonFila('ver', { id: viaje.Viaje_ID })])}</td>
                                     </tr>
                                 `;
                                 tbody.append(row);
