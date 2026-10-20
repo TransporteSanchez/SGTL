@@ -141,3 +141,10 @@
         width: 100%;
     }
 }
+
+/* Íconos de Bootstrap dentro de cajas flex (recuadro de un input, encabezado de tarjeta con d-flex):
+   Mazer les pone vertical-align: sub y, como el ícono queda en un bloque de 1rem, se ve corrido hacia abajo. */
+.input-group-text > .bi::before,
+.d-flex > .bi::before {
+    vertical-align: top;
+}
