@@ -57,7 +57,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string CondParticulares { get; set; }
         }
 
-        public class UsuarioDto { public string Usuario { get; set; } }
+        // Nombre propio: Swagger no admite dos clases con el mismo nombre (ProformasController.UsuarioDto).
+        public class UsuarioPlataformaDto { public string Usuario { get; set; } }
 
         // Condiciones comerciales de la cabecera: lo único que se edita en un borrador de plataforma (el cliente y
         // los conceptos salen del archivo). Como en la proforma propia, solo en Borrador.
@@ -655,7 +656,7 @@ VALUES
         // "Volver a controlar": recalcula el borrador contra los viajes actuales (después de corregir algo en SGTL).
         [HttpPost]
         [Route("{id:int}/Controlar")]
-        public IHttpActionResult VolverAControlar(int id, [FromBody] UsuarioDto body)
+        public IHttpActionResult VolverAControlar(int id, [FromBody] UsuarioPlataformaDto body)
         {
             var usuario = body == null || string.IsNullOrWhiteSpace(body.Usuario) ? "sistema" : body.Usuario.Trim();
             try
@@ -819,7 +820,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
         // "Cerrar reclamo": se resolvió sin un archivo nuevo.
         [HttpPost]
         [Route("{id:int}/Reclamo/Cerrar")]
-        public IHttpActionResult CerrarReclamo(int id, [FromBody] UsuarioDto body)
+        public IHttpActionResult CerrarReclamo(int id, [FromBody] UsuarioPlataformaDto body)
         {
             var usuario = body == null || string.IsNullOrWhiteSpace(body.Usuario) ? "sistema" : body.Usuario.Trim();
             try
@@ -847,7 +848,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
         // seguían en Registrado pasan a Listo para facturar. Después se factura con el flujo de siempre.
         [HttpPost]
         [Route("{id:int}/Generar")]
-        public IHttpActionResult Generar(int id, [FromBody] UsuarioDto body)
+        public IHttpActionResult Generar(int id, [FromBody] UsuarioPlataformaDto body)
         {
             var usuario = body == null || string.IsNullOrWhiteSpace(body.Usuario) ? "sistema" : body.Usuario.Trim();
             try
