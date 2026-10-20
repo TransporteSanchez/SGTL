@@ -108,6 +108,18 @@ namespace WebApi_TransporteSanchez.Controllers
             public List<string> Avisos { get; set; }
         }
 
+        public class ViajeSinProformaDto
+        {
+            public int ViajeID { get; set; }
+            public DateTime Fecha { get; set; }
+            public string Referencia { get; set; }
+            public string Origen { get; set; }
+            public string Destino { get; set; }
+            public string Estado { get; set; }
+            // Números que le faltan para pasar a Listo para facturar ("" si tiene todos).
+            public string Faltan { get; set; }
+        }
+
         // ======================= Filas de SQL =======================
         private class ClientePlataforma
         {
@@ -444,16 +456,61 @@ WHERE Proforma_ID=@id;",
             return null;
         }
 
+        private static string NombreNumero(string columna)
+        {
+            return columna == "Num_Transporte" ? "N° de transporte SAP"
+                : columna == "Num_Remito" ? "remito"
+                : columna == "Num_de_Carga" ? "N° de entrega" : columna;
+        }
+
         private static List<string> NumerosFaltantes(ViajeRow v, ILectorPlataforma lector)
         {
             var faltan = new List<string>();
             foreach (var col in lector.ColumnasNumerosObligatorios)
             {
-                if (col == "Num_Transporte" && string.IsNullOrWhiteSpace(v.Num_Transporte)) faltan.Add("N° de transporte SAP");
-                else if (col == "Num_Remito" && string.IsNullOrWhiteSpace(v.Num_Remito)) faltan.Add("remito");
-                else if (col == "Num_de_Carga" && string.IsNullOrWhiteSpace(v.Num_de_Carga)) faltan.Add("N° de entrega");
+                if ((col == "Num_Transporte" && string.IsNullOrWhiteSpace(v.Num_Transporte))
+                    || (col == "Num_Remito" && string.IsNullOrWhiteSpace(v.Num_Remito))
+                    || (col == "Num_de_Carga" && string.IsNullOrWhiteSpace(v.Num_de_Carga)))
+                    faltan.Add(NombreNumero(col));
             }
             return faltan;
+        }
+
+        // Guía antes de generar en la plataforma (paso 0) y aviso del caso 7: viajes del cliente en Registrado o
+        // Listo para facturar, con el dato con el que se cruza cargado (para Rukas, el N° de transporte), que no
+        // están en ninguna proforma no anulada (reserva o línea V{id}). Los que tienen la referencia pero les
+        // falta otro número también salen, marcados: si se tildan en la plataforma, el control los frena.
+        private static List<ViajeSinProformaDto> ViajesSinProforma(DbContext db, int clienteId, ILectorPlataforma lector)
+        {
+            string columna = lector.ColumnaReferenciaViaje;
+            if (Array.IndexOf(ColumnasViajePermitidas, columna) < 0)
+                throw new InvalidOperationException("El lector usa una columna de viaje no permitida.");
+
+            var filas = db.Database.SqlQuery<ViajeRow>(
+                "SELECT v.Viaje_ID, RTRIM(ISNULL(v." + columna + ",'')) AS Referencia, " +
+                "RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, " +
+                "RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado, v.TarifaFijaID, v.TarifaKmID, " +
+                "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Fecha_Inicio, " +
+                "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino " +
+                "FROM dbo.VIAJES v LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID " +
+                "WHERE v.ClienteID=@cli AND v.Estado IN ('Registrado','Listo_para_facturar') " +
+                "  AND RTRIM(ISNULL(v." + columna + ",'')) <> '' " +
+                "  AND NOT EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv JOIN dbo.PROFORMAS p ON p.Proforma_ID = pv.ProformaID " +
+                "                  WHERE pv.ViajeID = v.Viaje_ID AND p.Estado <> 'Anulada') " +
+                "  AND NOT EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd JOIN dbo.PROFORMAS p ON p.Proforma_ID = pd.Proforma_ID " +
+                "                  WHERE p.Estado <> 'Anulada' AND LTRIM(RTRIM(ISNULL(pd.Codigo,''))) = 'V' + CAST(v.Viaje_ID AS varchar(12))) " +
+                "ORDER BY v.Fecha_Inicio, v.Viaje_ID", P("@cli", clienteId)).ToList();
+
+            return filas.Select(v => new ViajeSinProformaDto
+            {
+                ViajeID = v.Viaje_ID,
+                Fecha = v.Fecha_Inicio,
+                Referencia = v.Referencia,
+                Origen = v.Origen,
+                Destino = v.Destino,
+                Estado = v.Estado,
+                Faltan = string.Join(", ", NumerosFaltantes(v, lector))
+            }).ToList();
         }
 
         // Arma lo que ve la pantalla: cabecera, líneas con su resultado, totales y avisos.
@@ -508,26 +565,19 @@ WHERE Proforma_ID=@id;",
             dto.TotalPlataforma = dto.TotalViajes + dto.TotalAdicionales;
             dto.PuedeGenerar = c.Estado == "Borrador" && dto.Cantidad > 0 && dto.Diferencias == 0;
 
-            // Caso 7: viajes del cliente con el N° de transporte cargado que no están en ninguna proforma ni en este archivo.
-            if (c.ClienteID.HasValue)
+            // Caso 7 (aviso, no frena): viajes del cliente que no están en ninguna proforma. Solo en borrador:
+            // después de generar ya no sirve. Es la misma lista que la guía de "Registrar proforma".
+            var lector = LectoresPlataforma.Obtener(c.Codigo);
+            if (c.Estado == "Borrador" && c.ClienteID.HasValue && lector != null)
             {
-                var sueltos = db.Database.SqlQuery<ViajeRow>(@"
-SELECT v.Viaje_ID, RTRIM(ISNULL(v.Num_Transporte,'')) AS Referencia, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte,
-       RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado,
-       v.TarifaFijaID, v.TarifaKmID, RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Fecha_Inicio,
-       '' AS Origen, '' AS Destino
-FROM dbo.VIAJES v
-WHERE v.ClienteID=@cli AND v.Estado IN ('Registrado','Listo_para_facturar')
-  AND RTRIM(ISNULL(v.Num_Transporte,'')) <> ''
-  AND NOT EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv JOIN dbo.PROFORMAS p ON p.Proforma_ID = pv.ProformaID
-                  WHERE pv.ViajeID = v.Viaje_ID AND p.Estado <> 'Anulada')
-ORDER BY v.Fecha_Inicio;", P("@cli", c.ClienteID.Value)).ToList();
+                var sueltos = ViajesSinProforma(db, c.ClienteID.Value, lector);
+                string dato = NombreNumero(lector.ColumnaReferenciaViaje);
                 if (sueltos.Count > 0)
                     dto.Avisos.Add((sueltos.Count == 1
-                        ? "Hay 1 viaje de este cliente con el N° de transporte cargado que no está en ninguna proforma: "
-                        : "Hay " + sueltos.Count + " viajes de este cliente con el N° de transporte cargado que no están en ninguna proforma: ")
-                        + string.Join(", ", sueltos.Select(s => "#" + s.Viaje_ID + " (" + s.Fecha_Inicio.ToString("dd/MM") + ")"))
-                        + ". Van en la próxima proforma de " + c.Plataforma + ".");
+                        ? "Hay 1 viaje de este cliente con el " + dato + " cargado que no está en ninguna proforma de " + c.Plataforma + ": "
+                        : "Hay " + sueltos.Count + " viajes de este cliente con el " + dato + " cargado que no están en ninguna proforma de " + c.Plataforma + ": ")
+                        + string.Join(", ", sueltos.Select(s => "#" + s.ViajeID + " (" + s.Fecha.ToString("dd/MM") + ")"))
+                        + ". Si no los tildaste en " + c.Plataforma + ", van en la próxima proforma.");
             }
             return dto;
         }
@@ -895,6 +945,36 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuari
             catch (Exception ex)
             {
                 return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo consultar la plataforma del cliente.", detalle = ex.InnerException?.Message ?? ex.Message });
+            }
+        }
+
+        // Guía antes de generar la proforma en la plataforma: viajes del cliente que todavía no están en ninguna proforma.
+        [HttpGet]
+        [Route("ViajesSinProforma")]
+        public IHttpActionResult ViajesSinProformaDelCliente(int clienteId)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var cli = LeerCliente(db, clienteId);
+                    if (cli == null) return NotFound();
+                    if (cli.Tipo_Cliente != ClientesController.TipoConPlataforma || !cli.Plataforma_ID.HasValue)
+                        return Content(HttpStatusCode.BadRequest, new { error = "El cliente no trabaja con una plataforma." });
+                    var lector = LectoresPlataforma.Obtener(cli.Codigo);
+                    if (lector == null)
+                        return Content(HttpStatusCode.BadRequest, new { error = "Todavía no se pueden leer archivos de " + cli.Nombre + "." });
+                    return Ok(new
+                    {
+                        Plataforma = cli.Nombre,
+                        Dato = NombreNumero(lector.ColumnaReferenciaViaje),
+                        Viajes = ViajesSinProforma(db, clienteId, lector)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudieron consultar los viajes sin proforma.", detalle = ex.InnerException?.Message ?? ex.Message });
             }
         }
 

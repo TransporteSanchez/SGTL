@@ -53,7 +53,53 @@
     estado.plataforma = info.Plataforma;
     mostrarBloques(true);
     renderNuevo(info.PuedeLeer);
+    if (info.PuedeLeer) cargarGuia(clienteId);
     actualizarGenerar();
+  }
+
+  // Paso 0: antes de generar la proforma en la plataforma, los viajes del cliente que todavía no están en
+  // ninguna proforma, con el N° para tildarlos allá. Es solo una ayuda: no frena nada.
+  function cargarGuia(clienteId) {
+    var caja = $id('pp_guia');
+    if (!caja) return;
+    caja.innerHTML = '<div class="text-muted small">Buscando viajes sin proforma…</div>';
+    pedir(API + '/ViajesSinProforma?clienteId=' + encodeURIComponent(clienteId)).then(function (r) {
+      if (!estado.activo || estado.clienteId !== parseInt(clienteId, 10) || !$id('pp_guia')) return;
+      renderGuia(r);
+    }, function (e) {
+      if ($id('pp_guia')) $id('pp_guia').innerHTML = '<div class="small text-danger">' + textoError(e, 'No se pudieron consultar los viajes sin proforma.') + '</div>';
+    });
+  }
+
+  function renderGuia(r) {
+    var p = esc(r.Plataforma || nombrePlataforma());
+    var viajes = r.Viajes || [];
+    var caja = $id('pp_guia');
+    if (!viajes.length) {
+      caja.innerHTML = '<div class="small text-muted">No hay viajes de este cliente con el ' + esc(r.Dato) + ' cargado fuera de una proforma.</div>';
+      return;
+    }
+    var conFaltantes = viajes.filter(function (v) { return v.Faltan; }).length;
+    var filas = viajes.map(function (v) {
+      return '<tr>' +
+        '<td>' + esc(v.Referencia) + '</td>' +
+        '<td>' + (window.SGTL ? SGTL.fecha(v.Fecha) : '') + '</td>' +
+        '<td>' + esc(v.Origen) + ' → ' + esc(v.Destino) + '</td>' +
+        '<td>' + (window.SGTL ? SGTL.estado(String(v.Estado || '').replace(/_/g, ' ')) : esc(v.Estado)) + '</td>' +
+        '<td>' + (v.Faltan ? '<span class="small text-danger">Le falta: ' + esc(v.Faltan) + '.</span> ' : '') +
+        '<a href="gestion-viajes.html?viaje=' + v.ViajeID + '" target="_blank" rel="noopener">Abrir viaje #' + v.ViajeID + '</a></td>' +
+        '</tr>';
+    }).join('');
+    caja.innerHTML =
+      '<details>' +
+      '<summary class="fw-bold">Viajes sin proforma (' + viajes.length + ') · guía para generar la proforma en ' + p + '</summary>' +
+      '<div class="form-text mb-2">Son los viajes de este cliente con el ' + esc(r.Dato) + ' cargado que todavía no están en ninguna proforma. ' +
+      'Usalos de guía para tildar los transportes al generar la proforma en ' + p + '.' +
+      (conFaltantes ? ' Completá los números que faltan antes de importar: si no, el control los marca.' : '') + '</div>' +
+      '<div class="table-responsive"><table class="table table-sm table-bordered align-middle mb-0"><thead class="table-light"><tr>' +
+      '<th>' + esc(r.Dato.charAt(0).toUpperCase() + r.Dato.slice(1)) + '</th><th>Fecha</th><th>Ruta</th><th>Estado</th><th></th>' +
+      '</tr></thead><tbody>' + filas + '</tbody></table></div>' +
+      '</details>';
   }
 
   function desactivar() {
@@ -89,7 +135,8 @@
       '<div class="form-text">Sale del nombre del archivo; corregilo si hace falta.</div></div>' +
       '</div>' +
       '<div id="pp_previa" class="mt-2 text-muted"></div>' +
-      '<div class="form-text mt-2">Al guardar el borrador se importa el archivo y se controla contra los viajes de SGTL.</div>';
+      '<div class="form-text mt-2">Al guardar el borrador se importa el archivo y se controla contra los viajes de SGTL.</div>' +
+      '<div id="pp_guia" class="mt-3"></div>';
     $id('pp_archivo').addEventListener('change', function () { leerArchivo(this.files && this.files[0]); });
     $id('pp_numero').addEventListener('input', function () { this.dataset.automatico = 'false'; });
   }
