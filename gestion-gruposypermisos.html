@@ -4,20 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Gestionar grupos y permisos · Transporte Sánchez</title>
 
     <style>
         #app {
             display: none;
         }
 
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
     </style>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
@@ -25,29 +18,37 @@
         href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
         type="image/png">
 
+
+
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
+    <script src="assets/static/js/initTheme.js"></script>
     <div id="app">
         <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
             <header>
+
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
                         <a href="#" class="burger-btn d-block">
                             <i class="bi bi-justify fs-3"></i>
                         </a>
+
+                        <!--btn para expandir Menú lateral-->
 
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
@@ -55,8 +56,12 @@
                             <span class="navbar-toggler-icon"></span>
                         </button>
 
+                        <!--Llamado a las opciones del header-->
+
                         <div id="header-container"></div>
+
                         <script src="./assets/static/js/header.js"></script>
+
                     </div>
                 </nav>
             </header>
@@ -65,18 +70,10 @@
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
-                                    <div class="d-flex">
-                                        <div class="toast-body"></div>
-                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="card-title">Gestionar grupos y permisos</h5>
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-people-fill me-2"></i>Gestionar grupos y permisos
+                            </h5>
+                            <p class="text-muted mb-0">Armá grupos, elegí qué pantallas ve cada uno y qué usuarios lo integran.</p>
                         </div>
 
                         <div class="card-body">
@@ -87,71 +84,79 @@
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-permisos" data-bs-toggle="tab"
-                                        data-bs-target="#pane-permisos" type="button" role="tab">Permisos por
-                                        grupo</button>
+                                        data-bs-target="#pane-permisos" type="button" role="tab">Permisos por grupo</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-usuarios" data-bs-toggle="tab"
-                                        data-bs-target="#pane-usuarios" type="button" role="tab">Usuarios por
-                                        grupo</button>
+                                        data-bs-target="#pane-usuarios" type="button" role="tab">Usuarios por grupo</button>
                                 </li>
                             </ul>
 
-                            <div class="tab-content pt-3">
-                                <div class="tab-pane fade show active" id="pane-grupos" role="tabpanel">
-                                    <div class="row g-3 align-items-end">
-                                        <div class="col-md-5">
-                                            <label for="txtBuscarGrupo" class="form-label">Buscar grupo</label>
-                                            <input type="text" id="txtBuscarGrupo" class="form-control"
-                                                placeholder="Ej: Administradores">
+                            <div class="tab-content pt-4">
+                                <div class="tab-pane fade show active" id="pane-grupos" role="tabpanel" aria-labelledby="tab-grupos">
+                                    <form id="busquedaGrupoForm" class="row g-3 align-items-end" novalidate>
+                                        <div class="col-12 col-sm-6 col-lg-4">
+                                            <label for="filtroGrupo" class="form-label">Nombre del grupo</label>
+                                            <input type="text" id="filtroGrupo" class="form-control" placeholder="Administración" autocomplete="off">
                                         </div>
-                                        <div class="col-md-7 text-md-end">
-                                            <button type="button" class="btn btn-light" id="btnBuscarGrupo">Buscar</button>
-                                            <button type="button" class="btn btn-success" data-bs-toggle="modal"
-                                                data-bs-target="#modalGrupoAlta">Alta</button>
+                                        <div class="col-12 col-sm-6 col-lg-8 d-flex justify-content-end gap-2">
+                                            <button type="submit" class="btn btn-light">
+                                                <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                            </button>
+                                            <button type="button" class="btn btn-success" id="btnRegistrarGrupo">
+                                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar grupo
+                                            </button>
                                         </div>
-                                    </div>
+                                    </form>
 
-                                    <div class="table-responsive mt-3">
-                                        <table class="table table-striped" id="tablaGrupos">
+                                    <div class="table-responsive mt-4">
+                                        <table class="table table-striped table-hover" id="tablaGrupos">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
                                                     <th>Grupo</th>
-                                                    <th class="text-end">Acciones</th>
+                                                    <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
-                                            <tbody></tbody>
+                                            <tbody>
+                                                <tr>
+                                                    <td colspan="3" class="text-center text-muted py-4">Cargando…</td>
+                                                </tr>
+                                            </tbody>
                                         </table>
                                     </div>
+
+                                    <nav aria-label="Paginación de grupos">
+                                        <ul class="pagination justify-content-end" id="pagination"></ul>
+                                    </nav>
                                 </div>
 
-                                <div class="tab-pane fade" id="pane-permisos" role="tabpanel">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
+                                <div class="tab-pane fade" id="pane-permisos" role="tabpanel" aria-labelledby="tab-permisos">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-12 col-md-6 col-lg-4">
                                             <label for="selectGrupoPermisos" class="form-label">Grupo</label>
                                             <select id="selectGrupoPermisos" class="form-select"></select>
                                         </div>
-                                        <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                                            <button type="button" class="btn btn-primary" id="btnGuardarPermisos" disabled>Guardar
-                                                permisos</button>
+                                        <div class="col-12 col-md-6 col-lg-8 d-flex justify-content-end">
+                                            <button type="button" class="btn btn-primary" id="btnGuardarPermisos" disabled>Guardar permisos</button>
                                         </div>
                                     </div>
-                                    <div class="mt-3" id="contenedorMenusGrupo"></div>
+                                    <p class="form-text mt-3 mb-2">Marcá las pantallas que ven los usuarios del grupo.</p>
+                                    <div id="contenedorMenusGrupo"></div>
                                 </div>
 
-                                <div class="tab-pane fade" id="pane-usuarios" role="tabpanel">
-                                    <div class="row g-3">
-                                        <div class="col-md-6">
+                                <div class="tab-pane fade" id="pane-usuarios" role="tabpanel" aria-labelledby="tab-usuarios">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-12 col-md-6 col-lg-4">
                                             <label for="selectGrupoUsuarios" class="form-label">Grupo</label>
                                             <select id="selectGrupoUsuarios" class="form-select"></select>
                                         </div>
-                                        <div class="col-md-6 d-flex align-items-end justify-content-md-end">
-                                            <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo">Guardar
-                                                usuarios del grupo</button>
+                                        <div class="col-12 col-md-6 col-lg-8 d-flex justify-content-end">
+                                            <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Guardar usuarios del grupo</button>
                                         </div>
                                     </div>
-                                    <div class="mt-3" id="contenedorUsuariosGrupo"></div>
+                                    <p class="form-text mt-3 mb-2">Los usuarios con rol admin ven todo por su rol: no hace falta sumarlos a un grupo.</p>
+                                    <div id="contenedorUsuariosGrupo"></div>
                                 </div>
                             </div>
                         </div>
@@ -159,61 +164,58 @@
                 </section>
             </div>
 
+            <!--Footer-->
+
             <footer>
                 <div id="footer-container"></div>
+
                 <script src="./assets/static/js/footer.js"></script>
+
             </footer>
+
         </div>
 
-        <!-- Modal Alta Grupo -->
-        <div class="modal fade" id="modalGrupoAlta" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
+        <!-- Modal Registrar / Editar grupo -->
+        <div class="modal fade" id="modalGrupo" tabindex="-1" aria-labelledby="modalGrupoTitulo"
+            aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Alta de grupo</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        <h5 class="modal-title" id="modalGrupoTitulo">Registrar grupo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
-                        <label for="txtNuevoGrupo" class="form-label">Nombre del grupo</label>
-                        <input type="text" id="txtNuevoGrupo" class="form-control" placeholder="Ej: Administradores">
+                        <div id="avisoGrupo" class="alert alert-light-danger color-danger"
+                            style="display: none;" role="alert"></div>
+                        <form id="formGrupo" novalidate>
+                            <label for="grupoNombre" class="form-label">Nombre del grupo <span class="text-danger">*</span></label>
+                            <input type="text" id="grupoNombre" class="form-control" placeholder="Administración" autocomplete="off">
+                            <div class="invalid-feedback"></div>
+                        </form>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" id="btnConfirmarAltaGrupo">Guardar</button>
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarGrupo">Guardar</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Modal Editar Grupo -->
-        <div class="modal fade" id="modalGrupoEdicion" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Editar grupo</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="grupoEdicionId">
-                        <label for="txtGrupoEdicion" class="form-label">Nombre del grupo</label>
-                        <input type="text" id="txtGrupoEdicion" class="form-control">
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" id="btnConfirmarEdicionGrupo">Guardar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 
+
+    <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
+    <!-- Carga de diseño y roles -->
     <script>
         window.onload = async function () {
             const loadingMessage = document.getElementById('loading-message');
@@ -233,14 +235,13 @@
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
             }
         };
 
         function adjustVisibilityBasedOnRole() {
             const userRole = localStorage.getItem('userRole');
             const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-            if (!gestionarContenidoBtn) return;
 
             if (userRole && userRole.toLowerCase() === 'admin') {
                 gestionarContenidoBtn.style.display = 'block';
@@ -259,365 +260,280 @@
                         const data = JSON.parse(xhr.responseText);
                         if (data) {
                             const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
                         } else {
+                            console.error('La respuesta de la API no contiene los datos esperados.');
                             reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
                         }
                     } else {
+                        console.error('Error en la petición:', xhr.statusText);
                         reject(new Error('Error en la carga de la API'));
                     }
                 };
 
                 xhr.onerror = function () {
+                    console.error('Error al cargar la configuración de la API.');
                     reject(new Error('Error de red'));
                 };
 
                 xhr.send();
             });
         }
+
     </script>
 
+    <!-- Grupos: listar, registrar, editar y eliminar -->
     <script>
-        const API_BASE = 'http://localhost:50222/api';
+        const API = 'http://localhost:50222/api';
         let gruposCache = [];
+        let pageSize = 15;
+        let currentPage = 1;
+        let grupoEnEdicion = null;
+        let formularioGrupo = null;
 
-        function showToast(message) {
-            // Blindado: si el toast falla (API de Bootstrap), no debe cortar el flujo (ej. refresco de tablas).
-            try {
-                const toastElement = $('#alert-success');
-                if (!toastElement.length) { return; }
-                toastElement.find('.toast-body').text(message);
-                toastElement.show();
-                if (window.bootstrap && bootstrap.Toast) {
-                    const toast = new bootstrap.Toast(toastElement[0]);
-                    toast.show();
-                    setTimeout(function () { try { toast.hide(); } catch (e) { } }, 3500);
-                } else {
-                    setTimeout(function () { toastElement.hide(); }, 3500);
-                }
-            } catch (e) { /* no-op */ }
-        }
-
-        function escapeHtml(text) {
-            return String(text || '').replace(/[&<>"']/g, function (c) {
-                return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
-            });
-        }
-
-        function cargarGrupos(filtro) {
-            $.ajax({
-                url: API_BASE + '/Grupos',
-                type: 'GET',
-                success: function (data) {
-                    gruposCache = Array.isArray(data) ? data : [];
-                    renderTablaGrupos(filtro || '');
-                    cargarCombosGrupos();
-                },
-                error: function (xhr) {
-                    alert('No se pudieron cargar los grupos.');
-                    console.error(xhr);
-                }
-            });
-        }
-
-        function renderTablaGrupos(filtro) {
-            const tbody = $('#tablaGrupos tbody');
-            tbody.empty();
-            const texto = (filtro || '').toLowerCase();
-            const rows = gruposCache.filter(function (g) {
+        function gruposFiltrados() {
+            const texto = $('#filtroGrupo').val().trim().toLowerCase();
+            return gruposCache.filter(function (g) {
                 return !texto || String(g.Grupo_Nombre || '').toLowerCase().includes(texto);
             });
+        }
 
-            if (!rows.length) {
-                tbody.html('<tr><td colspan="3" class="text-center">No hay grupos.</td></tr>');
-                return;
+        function dibujarGrupos(page = 1) {
+            const tbody = '#tablaGrupos tbody';
+            const filas = gruposFiltrados();
+            const paginas = Math.max(1, Math.ceil(filas.length / pageSize));
+            currentPage = Math.min(page, paginas);
+            const visibles = filas.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+            if (!visibles.length) {
+                SGTL.tabla.vacia(tbody, 3, $('#filtroGrupo').val().trim() ? undefined : 'Todavía no hay grupos cargados.');
+            } else {
+                SGTL.tabla.llenar(tbody, visibles.map(function (g) {
+                    return `<tr>
+                        <td>${SGTL.escapar(g.Grupo_ID)}</td>
+                        <td>${SGTL.escapar(g.Grupo_Nombre)}</td>
+                        <td class="text-center">${SGTL.accionesFila([
+                            SGTL.botonFila('editar', { id: g.Grupo_ID }),
+                            SGTL.botonFila('eliminar', { id: g.Grupo_ID })
+                        ])}</td>
+                    </tr>`;
+                }).join(''));
             }
-
-            rows.forEach(function (g) {
-                const $tr = $('<tr>');
-                $tr.append($('<td>').text(g.Grupo_ID));
-                $tr.append($('<td>').text(g.Grupo_Nombre || ''));
-
-                const $actions = $('<td>').addClass('text-end');
-                $actions.append(
-                    $('<button>')
-                        .addClass('btn btn-sm btn-primary me-1')
-                        .text('Editar')
-                        .on('click', function () {
-                            abrirEdicionGrupo(g.Grupo_ID, g.Grupo_Nombre);
-                        })
-                );
-                $actions.append(
-                    $('<button>')
-                        .addClass('btn btn-sm btn-danger')
-                        .text('Eliminar')
-                        .on('click', function () {
-                            eliminarGrupo(g.Grupo_ID);
-                        })
-                );
-                $tr.append($actions);
-                tbody.append($tr);
+            SGTL.tabla.paginacion('#pagination', {
+                total: filas.length,
+                tamanioPagina: pageSize,
+                pagina: currentPage,
+                alCambiarPagina: function (pagina) { dibujarGrupos(pagina); },
+                alCambiarTamanio: function (tamanio) { pageSize = tamanio; dibujarGrupos(1); }
             });
         }
 
-        function cargarCombosGrupos() {
-            const selPermisos = $('#selectGrupoPermisos');
-            const selUsuarios = $('#selectGrupoUsuarios');
-            selPermisos.empty();
-            selUsuarios.empty();
+        function cargarGrupos() {
+            SGTL.tabla.cargando('#tablaGrupos tbody', 3);
+            return SGTL.ajax({ url: API + '/Grupos', type: 'GET' },
+                'No se pudieron cargar los grupos. Revisá la conexión y probá de nuevo.').then(function (data) {
+                    gruposCache = Array.isArray(data) ? data : [];
+                    dibujarGrupos(currentPage);
+                    cargarCombosGrupos();
+                }, function (error) {
+                    SGTL.tabla.vacia('#tablaGrupos tbody', 3, 'No se pudieron cargar los grupos.');
+                    SGTL.tabla.paginacion('#pagination', { total: 0 });
+                    SGTL.toastError(error.mensajeUsuario);
+                });
+        }
 
-            if (!gruposCache.length) {
-                selPermisos.append('<option value="">Sin grupos</option>');
-                selUsuarios.append('<option value="">Sin grupos</option>');
-                $('#contenedorMenusGrupo').html('<div class="text-muted">No hay datos para mostrar.</div>');
-                $('#btnGuardarPermisos').prop('disabled', true);
-                $('#contenedorUsuariosGrupo').html('<div class="text-muted">No hay datos para mostrar.</div>');
-                return;
+        function grupoPorId(id) {
+            return gruposCache.filter(function (g) { return String(g.Grupo_ID) === String(id); })[0] || {};
+        }
+
+        function abrirModalGrupo(id) {
+            grupoEnEdicion = id || null;
+            SGTL.reiniciarFormulario('#formGrupo', '#avisoGrupo');
+            formularioGrupo.reiniciar();
+            $('#modalGrupoTitulo').text(id ? 'Editar grupo' : 'Registrar grupo');
+            $('#grupoNombre').val(id ? grupoPorId(id).Grupo_Nombre || '' : '');
+            SGTL.modal('#modalGrupo', 'show');
+        }
+
+        async function guardarGrupo() {
+            const esAlta = !grupoEnEdicion;
+            formularioGrupo.validarTodo();
+            if (!SGTL.revisarFormulario('#formGrupo', '#avisoGrupo')) return;
+
+            const nombre = $('#grupoNombre').val().trim();
+            const listo = SGTL.procesando('#btnGuardarGrupo', 'Guardando…');
+            let guardado = false;
+            try {
+                await SGTL.ajax({
+                    url: esAlta ? API + '/Grupos' : `${API}/Grupos/${grupoEnEdicion}`,
+                    type: esAlta ? 'POST' : 'PUT',
+                    contentType: 'application/json',
+                    data: JSON.stringify(esAlta
+                        ? { Grupo_Nombre: nombre, UsuarioLogueado: localStorage.getItem('username') || '' }
+                        : { Grupo_Nombre: nombre })
+                }, 'No se pudo guardar el grupo. Revisá la conexión y probá de nuevo.');
+                guardado = true;
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoGrupo', error.mensajeUsuario || 'No se pudo guardar el grupo. Probá de nuevo.');
+            } finally {
+                listo();
             }
 
-            gruposCache.forEach(function (g) {
-                const opt = '<option value="' + g.Grupo_ID + '">' + escapeHtml(g.Grupo_Nombre) + '</option>';
-                selPermisos.append(opt);
-                selUsuarios.append(opt);
-            });
-
-            cargarMenusDeGrupo(selPermisos.val());
-            cargarUsuariosDeGrupo(selUsuarios.val());
-        }
-
-        function mensajeErrorApi(xhr) {
-            const json = xhr.responseJSON;
-            if (!json) return 'No se pudo completar la operación. Revisá la consola.';
-            const msg = json.message || json.Message || json.ExceptionMessage;
-            if (msg) return msg;
-            if (Array.isArray(json.errors) && json.errors.length) return json.errors.join('\n');
-            if (json.detail) return json.detail;
-            return 'No se pudo completar la operación.';
-        }
-
-        function crearGrupo() {
-            const nombre = $('#txtNuevoGrupo').val().trim();
-            if (!nombre) {
-                alert('Ingresá el nombre del grupo.');
-                return;
-            }
-
-            const usuarioLogueado = localStorage.getItem('username') || '';
-            $.ajax({
-                url: API_BASE + '/Grupos',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ Grupo_Nombre: nombre, UsuarioLogueado: usuarioLogueado }),
-                success: function () {
-                    $('#modalGrupoAlta').modal('hide');
-                    $('#txtNuevoGrupo').val('');
-                    showToast('Grupo creado correctamente.');
-                    cargarGrupos($('#txtBuscarGrupo').val());
-                },
-                error: function (xhr) {
-                    let msg = mensajeErrorApi(xhr);
-                    if (xhr.status === 0) {
-                        msg = 'No se pudo conectar con el servidor. Verificá que la API esté en ejecución.';
-                    }
-                    alert(msg);
-                }
-            });
-        }
-
-        function abrirEdicionGrupo(id, nombre) {
-            $('#grupoEdicionId').val(id);
-            $('#txtGrupoEdicion').val(nombre || '');
-            $('#modalGrupoEdicion').modal('show');
-        }
-
-        function guardarEdicionGrupo() {
-            const id = $('#grupoEdicionId').val();
-            const nombre = $('#txtGrupoEdicion').val().trim();
-            if (!id || !nombre) {
-                alert('Completá el nombre del grupo.');
-                return;
-            }
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + id,
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify({ Grupo_Nombre: nombre }),
-                success: function () {
-                    $('#modalGrupoEdicion').modal('hide');
-                    showToast('Grupo actualizado.');
-                    cargarGrupos($('#txtBuscarGrupo').val());
-                },
-                error: function (xhr) {
-                    alert(mensajeErrorApi(xhr));
-                }
-            });
+            if (!guardado) return;
+            SGTL.toastExito(esAlta ? 'Grupo registrado.' : 'Grupo guardado.');
+            cargarGrupos();
+            setTimeout(function () { SGTL.modal('#modalGrupo', 'hide'); }, 0);
         }
 
         function eliminarGrupo(id) {
-            if (!confirm('¿Eliminar grupo y todas sus asignaciones?')) return;
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + id,
-                type: 'DELETE',
-                success: function () {
-                    showToast('Grupo eliminado.');
-                    cargarGrupos($('#txtBuscarGrupo').val());
-                },
-                error: function () {
-                    alert('No se pudo eliminar el grupo.');
+            const nombre = grupoPorId(id).Grupo_Nombre;
+            SGTL.confirmar({
+                titulo: nombre ? `¿Eliminar el grupo ${nombre}?` : '¿Eliminar el grupo?',
+                mensaje: 'Se quitan también sus permisos y sus usuarios. No se puede deshacer.',
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({ url: `${API}/Grupos/${id}`, type: 'DELETE' },
+                        'No se pudo eliminar el grupo. Probá de nuevo.');
                 }
+            }).then(function (eliminado) {
+                if (!eliminado) return;
+                SGTL.toastExito('Grupo eliminado.');
+                cargarGrupos();
             });
         }
 
-        // "Guardar permisos" solo se habilita con la lista de menús cargada: guardar con la
-        // lista vacía (por ejemplo, si falló la carga) le borraría todos los permisos al grupo.
+        $(function () {
+            formularioGrupo = SGTL.validador([{ id: 'grupoNombre', requerido: 'Completá el nombre del grupo.', max: 50 }]);
+            SGTL.filtros(['#filtroGrupo'], function () { dibujarGrupos(1); });
+            $('#busquedaGrupoForm').on('submit', function (evento) {
+                evento.preventDefault();
+                dibujarGrupos(1);
+            });
+            $('#tablaGrupos')
+                .on('click', '[data-accion="editar"]', function () { abrirModalGrupo($(this).data('id')); })
+                .on('click', '[data-accion="eliminar"]', function () { eliminarGrupo($(this).data('id')); });
+            $('#btnRegistrarGrupo').on('click', function () { abrirModalGrupo(null); });
+            $('#btnGuardarGrupo').on('click', guardarGrupo);
+            $('#formGrupo').on('submit', function (evento) { evento.preventDefault(); guardarGrupo(); });
+            $('#modalGrupo').on('shown.bs.modal', function () { $('#grupoNombre').trigger('focus'); });
+            cargarGrupos();
+        });
+    </script>
+
+    <!-- Permisos y usuarios por grupo -->
+    <script>
+        function cargarCombosGrupos() {
+            const selects = $('#selectGrupoPermisos, #selectGrupoUsuarios');
+            const anteriores = [$('#selectGrupoPermisos').val(), $('#selectGrupoUsuarios').val()];
+            selects.empty();
+            if (!gruposCache.length) {
+                selects.append(new Option('Todavía no hay grupos cargados', ''));
+                $('#contenedorMenusGrupo, #contenedorUsuariosGrupo').html('<p class="text-muted mb-0">Registrá un grupo en la pestaña Grupos.</p>');
+                $('#btnGuardarPermisos, #btnGuardarUsuariosGrupo').prop('disabled', true);
+                return;
+            }
+            gruposCache.forEach(function (g) {
+                selects.each(function () { this.appendChild(new Option(g.Grupo_Nombre, g.Grupo_ID)); });
+            });
+            if (anteriores[0] && grupoPorId(anteriores[0]).Grupo_ID) $('#selectGrupoPermisos').val(anteriores[0]);
+            if (anteriores[1] && grupoPorId(anteriores[1]).Grupo_ID) $('#selectGrupoUsuarios').val(anteriores[1]);
+            cargarMenusDeGrupo($('#selectGrupoPermisos').val());
+            cargarUsuariosDeGrupo($('#selectGrupoUsuarios').val());
+        }
+
+        function casilla(clase, prefijo, id, texto, marcada, extra) {
+            return `<div class="col-12 col-md-6 col-lg-4 mb-2">
+                <div class="form-check">
+                    <input class="form-check-input ${clase}" type="checkbox" value="${SGTL.escapar(id)}" id="${prefijo}${SGTL.escapar(id)}" ${marcada}>
+                    <label class="form-check-label" for="${prefijo}${SGTL.escapar(id)}">${texto}${extra || ''}</label>
+                </div>
+            </div>`;
+        }
+
         function cargarMenusDeGrupo(grupoId) {
+            const contenedor = $('#contenedorMenusGrupo');
             $('#btnGuardarPermisos').prop('disabled', true);
             if (!grupoId) return;
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + grupoId + '/Menus',
-                type: 'GET',
-                success: function (data) {
-                    if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
-                    const cont = $('#contenedorMenusGrupo');
-                    cont.empty();
-                    if (!data || !data.length) {
-                        cont.html('<div class="text-muted">No hay menús disponibles.</div>');
-                        return;
-                    }
-
-                    let html = '<div class="row">';
-                    data.forEach(function (item) {
-                        html += `
-                            <div class="col-md-4 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input chk-menu" type="checkbox" value="${item.Menu_ID}" id="menu_${item.Menu_ID}" ${item.Asignado ? 'checked' : ''}>
-                                    <label class="form-check-label" for="menu_${item.Menu_ID}">${escapeHtml(item.Menu_Nombre)}</label>
-                                </div>
-                            </div>`;
-                    });
-                    html += '</div>';
-                    cont.html(html);
-                    $('#btnGuardarPermisos').prop('disabled', false);
-                },
-                error: function () {
-                    if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
-                    $('#contenedorMenusGrupo').html('<div class="text-danger">Error al cargar permisos. No se pueden guardar cambios hasta que se carguen.</div>');
+            contenedor.html('<p class="text-muted mb-0">Cargando…</p>');
+            SGTL.ajax({ url: `${API}/Grupos/${grupoId}/Menus`, type: 'GET' }).then(function (data) {
+                if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
+                if (!data || !data.length) {
+                    contenedor.html('<p class="text-muted mb-0">Todavía no hay pantallas cargadas.</p>');
+                    return;
                 }
+                contenedor.html('<div class="row">' + data.map(function (item) {
+                    return casilla('chk-menu', 'menu_', item.Menu_ID, SGTL.escapar(item.Menu_Nombre), item.Asignado ? 'checked' : '');
+                }).join('') + '</div>');
+                $('#btnGuardarPermisos').prop('disabled', false);
+            }, function () {
+                if (String($('#selectGrupoPermisos').val()) !== String(grupoId)) return;
+                contenedor.html('<p class="text-danger mb-0">No se pudieron cargar los permisos. Elegí el grupo de nuevo para reintentar.</p>');
             });
         }
 
         function guardarMenusDeGrupo() {
             const grupoId = $('#selectGrupoPermisos').val();
-            if (!grupoId) {
-                alert('Seleccioná un grupo.');
-                return;
-            }
-            if (!$('.chk-menu').length) {
-                alert('No se cargaron los permisos del grupo, no se puede guardar.');
-                return;
-            }
-
-            const ids = $('.chk-menu:checked').map(function () {
-                return parseInt($(this).val(), 10);
-            }).get();
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + grupoId + '/Menus',
+            const ids = $('.chk-menu:checked').map(function () { return parseInt(this.value, 10); }).get();
+            const listo = SGTL.procesando('#btnGuardarPermisos', 'Guardando…');
+            SGTL.ajax({
+                url: `${API}/Grupos/${grupoId}/Menus`,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ MenuIds: ids }),
-                success: function () { showToast('Permisos guardados.'); },
-                error: function () { alert('No se pudieron guardar los permisos.'); }
-            });
+                data: JSON.stringify({ MenuIds: ids })
+            }, 'No se pudieron guardar los permisos. Probá de nuevo.').then(function () {
+                SGTL.toastExito('Permisos guardados.');
+            }, function (error) {
+                SGTL.toastError(error.mensajeUsuario);
+            }).finally(listo);
         }
 
         function cargarUsuariosDeGrupo(grupoId) {
+            const contenedor = $('#contenedorUsuariosGrupo');
+            $('#btnGuardarUsuariosGrupo').prop('disabled', true);
             if (!grupoId) return;
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + grupoId + '/Usuarios',
-                type: 'GET',
-                success: function (data) {
-                    const cont = $('#contenedorUsuariosGrupo');
-                    cont.empty();
-                    if (!data || !data.length) {
-                        cont.html('<div class="text-muted">No hay usuarios disponibles.</div>');
-                        return;
-                    }
-
-                    let html = '<div class="alert alert-info py-2 small mb-3"><i class="bi bi-info-circle me-1"></i>' +
-                        'Los usuarios con rol <strong>admin</strong> tienen acceso total por su rol y no requieren pertenecer a un grupo.</div><div class="row">';
-                    data.forEach(function (item) {
-                        const esAdmin = item.EsAdministrador === true || String(item.Rol || '').trim().toLowerCase() === 'admin';
-                        const estado = esAdmin ? 'disabled' : (item.Asignado ? 'checked' : '');
-                        const detalleAdmin = esAdmin
-                            ? '<span class="badge bg-secondary ms-1">- (admin)</span><small class="d-block text-muted">Acceso total por rol; no requiere grupo.</small>'
-                            : '';
-                        html += `
-                            <div class="col-md-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input chk-usuario" type="checkbox" value="${item.Usuario_ID}" id="usr_${item.Usuario_ID}" ${estado}>
-                                    <label class="form-check-label ${esAdmin ? 'text-muted' : ''}" for="usr_${item.Usuario_ID}">
-                                        ${escapeHtml(item.Nombre_Usuario)} - ${escapeHtml(item.NombreCompleto)}
-                                        ${detalleAdmin}
-                                    </label>
-                                </div>
-                            </div>`;
-                    });
-                    html += '</div>';
-                    cont.html(html);
-                },
-                error: function () {
-                    $('#contenedorUsuariosGrupo').html('<div class="text-danger">Error al cargar usuarios del grupo.</div>');
+            contenedor.html('<p class="text-muted mb-0">Cargando…</p>');
+            SGTL.ajax({ url: `${API}/Grupos/${grupoId}/Usuarios`, type: 'GET' }).then(function (data) {
+                if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
+                if (!data || !data.length) {
+                    contenedor.html('<p class="text-muted mb-0">Todavía no hay usuarios cargados.</p>');
+                    return;
                 }
+                contenedor.html('<div class="row">' + data.map(function (item) {
+                    const esAdmin = item.EsAdministrador === true || String(item.Rol || '').trim().toLowerCase() === 'admin';
+                    const texto = SGTL.escapar(item.Nombre_Usuario) + ' · ' + SGTL.escapar(item.NombreCompleto);
+                    const extra = esAdmin ? ' <span class="badge rounded-pill bg-white text-dark border ms-1">admin</span>' : '';
+                    return casilla('chk-usuario', 'usr_', item.Usuario_ID, texto, esAdmin ? 'disabled' : (item.Asignado ? 'checked' : ''), extra);
+                }).join('') + '</div>');
+                $('#btnGuardarUsuariosGrupo').prop('disabled', false);
+            }, function () {
+                if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
+                contenedor.html('<p class="text-danger mb-0">No se pudieron cargar los usuarios. Elegí el grupo de nuevo para reintentar.</p>');
             });
         }
 
         function guardarUsuariosDeGrupo() {
             const grupoId = $('#selectGrupoUsuarios').val();
-            if (!grupoId) {
-                alert('Seleccioná un grupo.');
-                return;
-            }
-
-            const ids = $('.chk-usuario:checked').map(function () {
-                return parseInt($(this).val(), 10);
-            }).get();
-
-            $.ajax({
-                url: API_BASE + '/Grupos/' + grupoId + '/Usuarios',
+            const ids = $('.chk-usuario:checked').map(function () { return parseInt(this.value, 10); }).get();
+            const listo = SGTL.procesando('#btnGuardarUsuariosGrupo', 'Guardando…');
+            SGTL.ajax({
+                url: `${API}/Grupos/${grupoId}/Usuarios`,
                 type: 'POST',
                 contentType: 'application/json',
-                data: JSON.stringify({ UsuarioIds: ids }),
-                success: function () { showToast('Usuarios del grupo guardados.'); },
-                error: function () { alert('No se pudo guardar la asignación de usuarios.'); }
-            });
+                data: JSON.stringify({ UsuarioIds: ids })
+            }, 'No se pudo guardar la asignación de usuarios. Probá de nuevo.').then(function () {
+                SGTL.toastExito('Usuarios del grupo guardados.');
+            }, function (error) {
+                SGTL.toastError(error.mensajeUsuario);
+            }).finally(listo);
         }
 
-        $(document).ready(function () {
-            $('#btnBuscarGrupo').on('click', function () {
-                renderTablaGrupos($('#txtBuscarGrupo').val());
-            });
-
-            $('#txtBuscarGrupo').on('keypress', function (e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    renderTablaGrupos($('#txtBuscarGrupo').val());
-                }
-            });
-
-            $('#btnConfirmarAltaGrupo').on('click', crearGrupo);
-            $('#btnConfirmarEdicionGrupo').on('click', guardarEdicionGrupo);
-            $('#selectGrupoPermisos').on('change', function () { cargarMenusDeGrupo($(this).val()); });
-            $('#selectGrupoUsuarios').on('change', function () { cargarUsuariosDeGrupo($(this).val()); });
+        $(function () {
+            $('#selectGrupoPermisos').on('change', function () { cargarMenusDeGrupo(this.value); });
+            $('#selectGrupoUsuarios').on('change', function () { cargarUsuariosDeGrupo(this.value); });
             $('#btnGuardarPermisos').on('click', guardarMenusDeGrupo);
             $('#btnGuardarUsuariosGrupo').on('click', guardarUsuariosDeGrupo);
-
-            cargarGrupos('');
         });
     </script>
 
