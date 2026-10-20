@@ -35,7 +35,7 @@
         .grid-stack-item-content > .card { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
         .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; padding: 1rem 1.25rem .5rem; }
         .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .5rem 1.25rem 1rem; }
-        #chart-viajes-mensual, #calendarioViajes { height: 100%; }
+        #chart-viajes-mensual { height: 100%; }
         /* El gráfico ya se ajusta al alto de la tarjeta; lo que asoma son los cartelitos flotantes de ApexCharts. */
         .grid-stack-item[gs-id="chart"] .card-body { overflow: hidden; }
         .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(13,110,253,.55); outline-offset: -2px; }
@@ -152,7 +152,7 @@
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Viajes - Evolución Mensual</h5>
+                                    <h5 class="mb-0">Viajes - Evolución mensual</h5>
                                 </div>
                                 <div class="card-body">
                                     <div id="chart-viajes-mensual"></div>
@@ -164,7 +164,7 @@
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                                 <div class="card-header">
-                                    <h5 class="mb-0">Top Clientes en facturación</h5>
+                                    <h5 class="mb-0">Top clientes en facturación</h5>
                                 </div>
                                 <div class="card-body p-0">
                                     <div id="top-clientes-list" class="list-group list-group-flush">
@@ -258,10 +258,14 @@
                         defaultView: 'month',
                         header: { left: 'prev,next', center: 'title', right: 'today' },
                         height: 'auto',
+                        // Semanas de ~85 px: entran el día, 2 viajes y el "+ más" sin hacer el mes tan alto.
+                        aspectRatio: 1.8,
                         fixedWeekCount: false,
                         eventLimit: 2,
                         titleFormat: 'MMM YYYY',
-                        events: eventos
+                        events: eventos,
+                        // Al cambiar de mes cambia la cantidad de semanas: la tarjeta se ajusta para mostrarlo entero.
+                        viewRender: function () { if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 0); }
                     });
                     if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 90);
                 })
@@ -513,6 +517,22 @@
                 return body.clientHeight - parseFloat(cs.paddingTop || 0) - parseFloat(cs.paddingBottom || 0);
             }
 
+            var ALTO_FILA = 62, MARGEN = 8;
+
+            function ajustarAltoCalendario() {
+                var cal = document.getElementById('calendarioViajes');
+                var item = itemEl('calendario');
+                if (!GRID || !cal || !item || item.style.display === 'none' || !item.gridstackNode) return;
+                var card = item.querySelector('.card');
+                var body = cal.closest('.card-body');
+                var cs = getComputedStyle(body);
+                var necesario = card.querySelector('.card-header').offsetHeight +
+                    parseFloat(cs.paddingTop || 0) + parseFloat(cs.paddingBottom || 0) + cal.scrollHeight;
+                var filas = Math.ceil((necesario + MARGEN * 2) / ALTO_FILA);
+                var nodo = item.gridstackNode;
+                if (nodo.h !== filas || nodo.minH !== filas) GRID.update(item, { h: filas, minH: filas });
+            }
+
             function refrescarVivos() {
                 // Gráfico: ajustar altura al alto disponible del contenedor
                 try {
@@ -526,15 +546,8 @@
                     }
                 } catch (e) { try { window.dispatchEvent(new Event('resize')); } catch (x) { } }
 
-                // Calendario: ajustar altura al alto disponible del contenedor
-                try {
-                    if (window.jQuery && $('#calendarioViajes').length && $.fn.fullCalendar) {
-                        var cal = document.getElementById('calendarioViajes');
-                        var body2 = cal ? cal.closest('.card-body') : null;
-                        var ch = (body2 && body2.clientHeight) ? altoUtil(body2) : 300;
-                        $('#calendarioViajes').fullCalendar('option', 'height', Math.max(180, ch));
-                    }
-                } catch (e) { }
+                // Calendario: se muestra el mes completo (alto natural) y la tarjeta toma el alto que necesita.
+                try { ajustarAltoCalendario(); } catch (e) { }
             }
             window.ajustarWidgetsVivos = refrescarVivos;
 
