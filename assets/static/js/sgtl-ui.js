@@ -139,7 +139,7 @@
     }
     if (xhr && (xhr.status === 400 || xhr.status === 409)) {
       var datos = xhr.responseJSON || {};
-      var texto = datos.mensaje || datos.Mensaje || datos.Message;
+      var texto = datos.mensaje || datos.Mensaje || datos.Message || datos.message;
       if (typeof texto === 'string' && texto.trim()) return texto.trim();
     }
     return porDefecto;
