@@ -93,4 +93,5 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-19-etapa3-proforma-plataforma.md` — pruebas en la VM de la etapa 3 de la proforma de plataforma (reclamo, reemplazar Excel y generar).
 - `docs/pruebas/2026-10-19-prueba-minima-proforma-plataforma.md` — prueba mínima en la VM de la proforma de plataforma antes de pasar `rocionuvoli` a las ramas y a `main` (instrucciones y resultados).
 - `docs/pruebas/2026-10-20-prueba-minima-design-system.md` — prueba mínima de la tanda del design system del 20/10 (hecha en la Mac con API falsa, no en la VM) y su seguimiento.
+- `docs/pruebas/2026-10-20-merge-facu.md` — pruebas en la VM del merge de Facu del 20/10 (proformas, cuenta corriente, grupos y permisos).
 - `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.
