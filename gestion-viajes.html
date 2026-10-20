@@ -214,9 +214,7 @@
                                                 <th>Fecha de fin</th>
                                                 <th>Origen</th>
                                                 <th>Destino</th>
-                                                <th>N° transporte SAP</th>
                                                 <th>Número de remito</th>
-                                                <th>N° entrega Rukas</th>
                                                 <th>Cantidad de KM</th>
                                                 <th class="text-center">Estado</th>
                                                 <th class="text-center">Acciones</th>
@@ -645,7 +643,7 @@
                     viajesPagina = {};
 
                     if (data.Results.length === 0) {
-                        tbody.html('<tr><td colspan="12" class="text-center">No se encontraron registros</td></tr>');
+                        tbody.html('<tr><td colspan="10" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (viaje) {
                             viajesPagina[viaje.Viaje_ID] = viaje;
@@ -657,9 +655,7 @@
                                     <td>${formatearFecha(viaje.Fecha_Fin)}</td>
                                     <td>${escHtml(viaje.Origen)}</td>
                                     <td>${escHtml(viaje.Destino)}</td>
-                                    <td>${escHtml(textoRef(viaje.Num_Transporte))}</td>
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
-                                    <td>${escHtml(textoRef(viaje.Num_de_Carga))}</td>
                                     <td>${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
                                     <td class="text-center text-nowrap">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge rounded-pill bg-white text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
                                     <td class="text-center">${accionesViaje(viaje)}</td>
@@ -673,7 +669,7 @@
                 },
                 error: function (xhr) {
                     console.error('Error al buscar viajes:', xhr);
-                    $('#tablaViajes tbody').html('<tr><td colspan="12" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
+                    $('#tablaViajes tbody').html('<tr><td colspan="10" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
                 }
             });
         }
