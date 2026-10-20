@@ -45,6 +45,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md` — cómo se trabaja entre la Mac y la VM Windows.
 - `docs/equipo/FLUJO-GIT.md` — circuito de ramas (`rocionuvoli`, `main`, `master`, ramas de Facu y Fede).
+- `docs/equipo/INSTRUCTIVO-PRUEBAS-VIAJES-Y-PROFORMAS.md` — paso a paso para probar a mano viajes, proforma propia y proforma de Rukas (con los tres casos), y guion para la presentación.
 - `docs/equipo/PRUEBAS-VM-CLAUDE.md` — instructivo para la sesión de IA que prueba en la VM.
 - `docs/equipo/merge-facugodoy-2026-10-17.md` — qué cambió con el merge de Facu (17/10/2026).
 
@@ -52,7 +53,8 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md` — cuestionario del relevamiento Marfrig + Rukas.
 - `docs/negocio/PROFORMA-CLIENTES-RUKAS.md` — definición de la proforma para clientes Rukas / Marfrig.
-- `docs/negocio/CHECKLIST-OPERACION-VIAJES.md` — guía operativa de gestión de viajes.
+- `docs/negocio/FLUJOS-VIAJES-Y-PROFORMAS.md` — diagramas de los flujos de viajes, proforma propia y proforma de Rukas, con todas las variantes (para la presentación y para probar).
+- `docs/negocio/CHECKLIST-OPERACION-VIAJES.md` — guía operativa de gestión de viajes. Desactualizada en la facturación de Rukas.
 
 ### Diseño técnico
 

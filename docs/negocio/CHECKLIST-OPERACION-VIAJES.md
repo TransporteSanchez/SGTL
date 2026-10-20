@@ -1,5 +1,7 @@
 # Checklist operativo — Gestión de viajes en SGTL
 
+> **Desactualizado en la parte de facturación de Rukas** (pasos 6 y 7 de clientes con plataforma): desde el 19/10/2026 la proforma de Rukas se arma importando el Excel de Rukas, no con "Traer viajes". La versión al día, con diagramas, está en `docs/negocio/FLUJOS-VIAJES-Y-PROFORMAS.md`.
+
 Guía corta para el equipo de la transportista. No hay API con Rukas: SGTL se mantiene **a mano**, con los datos que importan para el backoffice y para llegar a la proforma.
 
 ## Antes de empezar (una sola vez)
