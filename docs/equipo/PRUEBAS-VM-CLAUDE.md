@@ -44,9 +44,22 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
 
 ## 3. Datos de prueba
 
-- Todo lo que crees tiene que poder reconocerse: en un campo de texto libre (observaciones,
-  descripción, razón social) poné `PRUEBA-CLAUDE` + fecha, por ejemplo `PRUEBA-CLAUDE 18/10`.
-- **Anotá cada registro que crees o modifiques** (pantalla, ID, qué cambiaste). Va en el reporte.
+- **Usá datos verosímiles, no marcas de prueba.** El sistema se muestra en la tesis, así que
+  nada de `PRUEBA`, `CLAUDE`, `test` ni `asdf` en lo que se ve en pantalla. Ejemplos:
+  - Clientes: empresas inventadas con forma de reales ("Logística Pampeana S.R.L.",
+    "Alimentos La Serena S.A."). Nunca el nombre de una empresa real ni de un cliente que ya
+    esté en la base (QUICKFOOD, MARFRIG, Rukas).
+  - Orígenes y destinos: "Planta Pilar", "Depósito Córdoba Norte", con una calle y altura que
+    existan en Google Maps (si no, el cálculo de km falla).
+  - Remito, carga y transporte: con forma de número real (`0001-00012345`, `C-4521`).
+  - E-mail: siempre `@example.com` (dominio reservado, no llega a nadie), por ejemplo
+    `administracion@example.com`. Teléfonos: preguntale a Rocío cuál usar (WhatsApp manda
+    mensajes reales).
+  - CUIT: inventado y que no sea de una empresa real.
+- **Como el nombre ya no sirve para reconocerlos, la lista del reporte es lo que permite
+  limpiarlos.** Anotá cada registro que crees o modifiques (pantalla, tabla, ID, nombre que le
+  pusiste, qué cambiaste). El SQL de limpieza busca por ID **y** por ese nombre, para no
+  borrar nada que no sea tuyo.
 - No modifiques ni borres registros que no hayas creado vos en esta sesión.
 - **Antes de estas acciones, preguntale a Rocío**, porque tienen efectos fuera de la prueba:
   - Asignar chofer a un viaje o cambiarle el estado: puede **mandar un WhatsApp real** al
@@ -129,8 +142,8 @@ para que Rocío lo copie a la Mac. Formato:
 - <textos, usabilidad, validaciones que faltan, rendimiento…>
 
 ## Datos de prueba creados o modificados
-| Pantalla | ID | Qué se hizo |
-|---|---|---|
+| Pantalla | Tabla | ID | Nombre que se le puso | Qué se hizo |
+|---|---|---|---|---|
 
 ## SQL de limpieza propuesto (NO ejecutado)
 BEGIN TRAN; … SELECT @@ROWCOUNT; -- COMMIT; o ROLLBACK;
