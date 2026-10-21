@@ -606,7 +606,7 @@ Si algo da `NULL` (o `ModulosEmail` no incluye `PRESUPUESTOS`), correr los scrip
 - [x] **F1 — el "+" de alta rápida no abre en gestion-viajes** (`bootstrap is not defined` en `alta-rapida-ubicacion.js`, archivo de Facu). Corregido (`b4b12b5`): usa `window.bootstrap` si existe y si no jQuery. **OK en VM (18/10)**, 7 de 7 pruebas: crea origen y destino, los deja elegidos, se puede repetir sin recargar, un solo backdrop; en Presupuestos sigue andando. Reporte: `docs/pruebas/2026-10-18-verificacion-F1-alta-rapida.md`.
 - [ ] No concluyentes: 1b (Traer viajes de cliente directo: no hay viajes disponibles) y 4k (el importe del presupuesto coincide con el de la tarifa). Para 4k hace falta un viaje de presupuesto con importe distinto de la tarifa, con remito y transporte SAP.
 - [ ] **WhatsApp:** al generar el viaje #31 con el chofer de prueba "Prueba, Fede" pudo salir un mensaje real. Confirmar con Fede.
-- [ ] **Limpieza:** SQL en el reporte (presupuesto #5, viaje #31, origen #5, destino #6), corregido en la Mac. Lo corre Rocío.
+- [ ] **Limpieza:** el SQL actualizado es el de §13 ("Limpieza de las tres rondas del 18/10"); el del reporte quedó viejo porque los datos se renombraron el 21/10. Lo corre Rocío.
 - F2 y F3 del reporte son anteriores al merge: F2 (simple-datatables en gestion-viajes) ya estaba como F12 en §8; F3 (PerfectScrollbar y 404 de `api/DashboardLayout`) queda como F16 en §8.
 - Mejoras que salieron (no bloquean; detalle en el reporte):
   - Viaje de presupuesto: deshabilitar cliente, ruta, km y tarifa al editar, con aviso, en lugar de esperar el 409.
@@ -640,14 +640,16 @@ Salieron del reporte `docs/pruebas/2026-10-18-merge-presupuestos-facu.md`. Rocí
 
 **Limpieza de las tres rondas del 18/10 (SQL único, revisado en la Mac; lo corre Rocío).** Borra el presupuesto #5, el viaje #31 y las ubicaciones de prueba (origen 5, 6 y 7; destino 6, 7 y 8). El viaje #30 y el #32 ya se eliminaron desde la pantalla. Para volver a probar un viaje de presupuesto queda el #28 (presupuesto #1, datos del 17/10).
 
+**Datos renombrados el 21/10 (Rocío corrió el SQL):** para que no aparezca "PRUEBA-CLAUDE" en pantalla, el cliente 5 pasó a "Distribuidora del Sur S.A.", los orígenes 5, 6 y 7 a "Planta 1/2/3", los destinos 6, 7 y 8 a "Depósito 1/2/3" y el `Num_Transporte` del viaje #31 a `T-00031`. El SQL de abajo ya busca esos nombres. El cliente 5 no se borra: también tiene el viaje #29. Los orígenes 6 y 7 y los destinos 7 y 8 no tienen calle; si la limpieza se demora, igual aparecen en los combos.
+
 ```sql
 -- Controles previos (solo lectura)
 SELECT Presupuesto_ID, Estado, ViajeID FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID = 5;          -- ViajeID = 31
 SELECT Viaje_ID, ClienteID, OrigenID, DestinoID, Num_Remito FROM dbo.VIAJES WHERE Viaje_ID = 31; -- ClienteID = 5, origen 5, destino 6
 SELECT COUNT(*) AS EnProformas FROM dbo.PROFORMAS_VIAJES WHERE ViajeID = 31;                      -- 0
 SELECT COUNT(*) AS EnDetalle   FROM dbo.PROFORMA_DETALLE WHERE LTRIM(RTRIM(Codigo)) = 'V31';      -- 0
-SELECT Origen_ID, Descripcion  FROM dbo.ORIGEN  WHERE Origen_ID  IN (5, 6, 7);                    -- "PRUEBA-CLAUDE 18/10" y "… 18/10 B"
-SELECT Destino_ID, Descripcion FROM dbo.DESTINO WHERE Destino_ID IN (6, 7, 8);                    -- ídem
+SELECT Origen_ID, Descripcion  FROM dbo.ORIGEN  WHERE Origen_ID  IN (5, 6, 7);                    -- "Planta 1", "Planta 2", "Planta 3"
+SELECT Destino_ID, Descripcion FROM dbo.DESTINO WHERE Destino_ID IN (6, 7, 8);                    -- "Depósito 1", "Depósito 2", "Depósito 3"
 SELECT COUNT(*) AS OtrosViajes FROM dbo.VIAJES
  WHERE Viaje_ID <> 31 AND (OrigenID IN (5, 6, 7) OR DestinoID IN (6, 7, 8));                       -- 0
 
@@ -662,12 +664,14 @@ SELECT @@ROWCOUNT AS EvidenciasBorradas;     -- 0
 DELETE FROM dbo.VIAJES WHERE Viaje_ID = 31 AND ClienteID = 5;
 SELECT @@ROWCOUNT AS ViajesBorrados;         -- 1
 
-DELETE FROM dbo.ORIGEN WHERE (Origen_ID = 5 AND Descripcion = 'PRUEBA-CLAUDE 18/10')
-                          OR (Origen_ID IN (6, 7) AND Descripcion = 'PRUEBA-CLAUDE 18/10 B');
+DELETE FROM dbo.ORIGEN WHERE (Origen_ID = 5 AND Descripcion = N'Planta 1')
+                          OR (Origen_ID = 6 AND Descripcion = N'Planta 2')
+                          OR (Origen_ID = 7 AND Descripcion = N'Planta 3');
 SELECT @@ROWCOUNT AS OrigenesBorrados;       -- 3
 
-DELETE FROM dbo.DESTINO WHERE (Destino_ID = 6 AND Descripcion = 'PRUEBA-CLAUDE 18/10')
-                           OR (Destino_ID IN (7, 8) AND Descripcion = 'PRUEBA-CLAUDE 18/10 B');
+DELETE FROM dbo.DESTINO WHERE (Destino_ID = 6 AND Descripcion = N'Depósito 1')
+                           OR (Destino_ID = 7 AND Descripcion = N'Depósito 2')
+                           OR (Destino_ID = 8 AND Descripcion = N'Depósito 3');
 SELECT @@ROWCOUNT AS DestinosBorrados;       -- 3
 
 -- COMMIT; o ROLLBACK;
