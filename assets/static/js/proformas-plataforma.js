@@ -693,8 +693,9 @@
     $id('btnGenerar').style.display = editable ? '' : 'none';
     botonGenerar(!!c.PuedeGenerar);
     botonPdf(true);
-    if (c.FechaDesde && $id('p_fdesde')) $id('p_fdesde').value = String(c.FechaDesde).substring(0, 10);
-    if (c.FechaHasta && $id('p_fhasta')) $id('p_fhasta').value = String(c.FechaHasta).substring(0, 10);
+    // setVal (gestion-facturacion.html) también actualiza la fecha que se ve en el calendario (DD/MM/AAAA).
+    if (c.FechaDesde && $id('p_fdesde')) window.setVal('p_fdesde', String(c.FechaDesde).substring(0, 10));
+    if (c.FechaHasta && $id('p_fhasta')) window.setVal('p_fhasta', String(c.FechaHasta).substring(0, 10));
     plegarCliente(true);
     mostrarDatosCliente();
     pasos(esBorrador ? 3 : 0);

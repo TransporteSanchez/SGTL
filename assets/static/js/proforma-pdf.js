@@ -31,9 +31,15 @@
             .catch(function () { return null; });
     }
 
+    // Error con el aviso del sistema (§5.1); si la pantalla no carga sgtl-ui.js, el del navegador.
+    function avisarError(texto) {
+        if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
+        else window.alert(texto);
+    }
+
     function construir(p, logoDataUri) {
         var JsPDF = getJsPDF();
-        if (!JsPDF) { alert('No se pudo cargar el generador de PDF.'); return null; }
+        if (!JsPDF) { avisarError('No se pudo cargar el generador de PDF. Recargá la pantalla.'); return null; }
         var doc = new JsPDF({ unit: 'mm', format: 'a4' });
         var W = doc.internal.pageSize.getWidth();
         var H = doc.internal.pageSize.getHeight();
@@ -220,7 +226,7 @@
         ]).then(function (res) {
             var p = res[0];
             logo = res[1];
-            if (!p) { alert('No se pudo obtener la proforma.'); return; }
+            if (!p) { avisarError('No se pudo obtener la proforma. Probá de nuevo.'); return; }
             return conLineasDePlataforma(p);
         }).then(function (p) {
             if (!p) return;
@@ -235,7 +241,7 @@
             } else {
                 doc.save(nombre);
             }
-        }).catch(function () { alert('Error al generar el PDF.'); });
+        }).catch(function () { avisarError('No se pudo generar el PDF. Probá de nuevo.'); });
     }
 
     window.descargarProformaPDF = function (id) { generar(id, 'descargar'); };

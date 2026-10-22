@@ -62,7 +62,7 @@
 
     function actualizarVencimientoPredeterminado() {
         if (vencimientoEditado) return;
-        porId('facFechaVencimiento').value = sumarDiasAFechaIso(porId('facFechaEmision').value, 10);
+        ponerFecha('facFechaVencimiento', sumarDiasAFechaIso(porId('facFechaEmision').value, 10));
     }
 
     function nuevaClave() {
@@ -73,19 +73,40 @@
         });
     }
 
+    // Fechas con el calendario del sistema (§7.1): se ven DD/MM/AAAA y el campo guarda AAAA-MM-DD.
+    // Sin SGTL (por ejemplo, en los tests) el campo queda como texto y se usa su valor directo.
+    function prepararFecha(id) {
+        var campo = porId(id);
+        if (campo && !campo._flatpickr && window.SGTL && window.SGTL.selectorFecha) {
+            window.SGTL.selectorFecha(campo, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
+        }
+    }
+
+    function ponerFecha(id, valor) {
+        var campo = porId(id);
+        if (campo._flatpickr) { if (valor) campo._flatpickr.setDate(valor, false); else campo._flatpickr.clear(false); }
+        else campo.value = valor || '';
+    }
+
+    function limitarFecha(id, limite, valor) {
+        var campo = porId(id);
+        if (campo._flatpickr) campo._flatpickr.set(limite, valor || null);
+        else campo[limite === 'minDate' ? 'min' : 'max'] = valor || '';
+    }
+
     function crearModal() {
         if (porId('modalFacturarProforma')) return;
         var contenedor = document.createElement('div');
         contenedor.innerHTML =
             '<div class="modal fade" id="modalFacturarProforma" tabindex="-1" aria-hidden="true">' +
                 '<div class="modal-dialog modal-lg"><div class="modal-content">' +
-                    '<div class="modal-header"><div><h5 class="modal-title mb-0">Emitir Factura desde Proforma</h5>' +
+                    '<div class="modal-header"><div><h5 class="modal-title mb-0">Emitir factura</h5>' +
                         '<small class="text-muted" id="facProformaNumero">Comprobando disponibilidad…</small></div>' +
-                        '<button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>' +
+                        '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +
                     '<div class="modal-body">' +
-                        '<div id="facMensaje" class="alert alert-info mb-3">Validando Proforma…</div>' +
+                        '<div id="facMensaje" class="alert alert-info mb-3">Validando la proforma…</div>' +
                         '<div id="facFormulario" class="row g-3">' +
-                            '<div class="col-md-3"><label class="form-label">Tipo comprobante</label>' +
+                            '<div class="col-md-3"><label class="form-label">Tipo de comprobante</label>' +
                                 '<input id="facTipoComprobante" class="form-control" readonly></div>' +
                             '<div class="col-md-3"><label class="form-label">Letra</label>' +
                                 '<select id="facLetra" class="form-select"></select></div>' +
@@ -96,20 +117,22 @@
                             '<div class="col-md-4"><label class="form-label">Total a facturar</label>' +
                                 '<input id="facTotal" class="form-control text-end fw-bold" readonly></div>' +
                             '<div class="col-md-4"><label class="form-label">Fecha de emisión</label>' +
-                                '<input id="facFechaEmision" type="date" class="form-control"></div>' +
+                                '<input id="facFechaEmision" class="form-control" placeholder="DD/MM/AAAA"></div>' +
                             '<div class="col-md-4"><label class="form-label">Fecha de vencimiento</label>' +
-                                '<input id="facFechaVencimiento" type="date" class="form-control"></div>' +
-                            '<div class="col-12"><label class="form-label">Observaciones de la Factura</label>' +
+                                '<input id="facFechaVencimiento" class="form-control" placeholder="DD/MM/AAAA"></div>' +
+                            '<div class="col-12"><label class="form-label">Observaciones de la factura</label>' +
                                 '<textarea id="facObservaciones" class="form-control" rows="3" maxlength="2000"></textarea></div>' +
                         '</div>' +
                         '<div id="facResultado" class="alert alert-success mt-3 d-none"></div>' +
                     '</div>' +
                     '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>' +
                         '<button type="button" class="btn btn-primary" id="btnConfirmarFactura" disabled>' +
-                            '<i class="bi bi-receipt me-1"></i>Emitir Factura</button></div>' +
+                            '<i class="bi bi-receipt me-1"></i>Emitir factura</button></div>' +
                 '</div></div>' +
             '</div>';
         document.body.appendChild(contenedor.firstElementChild);
+        prepararFecha('facFechaEmision');
+        prepararFecha('facFechaVencimiento');
         porId('btnConfirmarFactura').addEventListener('click', emitir);
         porId('facFechaEmision').addEventListener('change', actualizarVencimientoPredeterminado);
         porId('facFechaVencimiento').addEventListener('change', function () { vencimientoEditado = true; });
@@ -144,8 +167,8 @@
         };
         porId('facProformaNumero').textContent = 'Proforma #' + id;
         porId('facTotal').value = '';
-        porId('facFechaEmision').max = hoyIso();
-        porId('facFechaEmision').value = hoyIso();
+        limitarFecha('facFechaEmision', 'maxDate', hoyIso());
+        ponerFecha('facFechaEmision', hoyIso());
         vencimientoEditado = false;
         actualizarVencimientoPredeterminado();
         porId('facObservaciones').value = '';
@@ -156,7 +179,7 @@
         porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         porId('facTipoComprobante').readOnly = true;
         porId('facNumeroComprobante').readOnly = true;
-        mostrarMensaje('Validando Proforma…', 'info');
+        mostrarMensaje('Validando la proforma…', 'info');
     }
 
     function abrir(id, alCompletar) {
@@ -164,7 +187,7 @@
         prepararModal(id, alCompletar);
         mostrarModal();
         if (!token()) {
-            mostrarMensaje('No hay una sesión activa. Iniciá sesión nuevamente para facturar.', 'danger');
+            mostrarMensaje('Tu sesión venció. Volvé a iniciar sesión para facturar.', 'danger');
             return;
         }
         var configuracion = window.ConfiguracionFacturacion && window.ConfiguracionFacturacion.cargar
@@ -178,7 +201,7 @@
         Promise.all([configuracion, proforma]).then(function (resultados) {
             var respuesta = resultados[1];
             if (!respuesta.ok) {
-                mostrarMensaje(mensajeError(respuesta, 'No se pudo validar la Proforma.'), 'danger');
+                mostrarMensaje(mensajeError(respuesta, 'No se pudo validar la proforma.'), 'danger');
                 return;
             }
             var datos = respuesta.json;
@@ -186,21 +209,21 @@
             porId('facTotal').value = dinero(datos.TotalCalculado);
             estado.version = datos.VersionProforma;
             var emision = hoyIso();
-            porId('facFechaEmision').value = emision;
+            ponerFecha('facFechaEmision', emision);
             vencimientoEditado = false;
             actualizarVencimientoPredeterminado();
             if (!datos.Facturable) {
-                var texto = datos.MotivoBloqueo || 'La Proforma no puede facturarse.';
+                var texto = datos.MotivoBloqueo || 'La proforma no se puede facturar.';
                 if (datos.FacturaVigente && datos.FacturaVigente.Numero)
                     texto += ' Factura vigente: ' + datos.FacturaVigente.Numero + '.';
                 mostrarMensaje(texto, 'warning');
                 return;
             }
-            mostrarMensaje('La Proforma está lista. Revisá las fechas antes de confirmar.', 'success');
+            mostrarMensaje('La proforma está lista. Revisá las fechas antes de emitir la factura.', 'success');
             estado.configuracionLista = true;
             porId('btnConfirmarFactura').disabled = false;
         }).catch(function (ex) {
-            mostrarMensaje('No se pudo conectar con el servicio de Facturación.', 'danger');
+            mostrarMensaje('No se pudo conectar con la facturación. Revisá la conexión y probá de nuevo.', 'danger');
         });
     }
 
@@ -233,26 +256,26 @@
             method: 'POST', headers: encabezados(true), body: JSON.stringify(solicitud)
         }).then(leerRespuesta).then(function (respuesta) {
             estado.enviando = false;
-            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir Factura';
+            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir factura';
             if (!respuesta.ok) {
                 boton.disabled = false;
-                mostrarMensaje(mensajeError(respuesta, 'No se pudo emitir la Factura.'),
+                mostrarMensaje(mensajeError(respuesta, 'No se pudo emitir la factura.'),
                     respuesta.status === 409 ? 'warning' : 'danger');
                 return;
             }
             var factura = respuesta.json;
-            mostrarMensaje('Factura emitida correctamente.', 'success');
+            mostrarMensaje('Factura emitida.', 'success');
             porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
             boton.classList.add('d-none');
             var resultado = porId('facResultado');
             resultado.classList.remove('d-none');
             resultado.innerHTML = '<strong>' + String(factura.Numero || 'Factura emitida') + '</strong> · ' +
                 dinero(factura.Total) + '<br><a class="alert-link" href="cuenta-corriente-clientes.html?clienteId=' +
-                encodeURIComponent(factura.ClienteID) + '">Ver Cuenta Corriente del cliente</a>' +
+                encodeURIComponent(factura.ClienteID) + '">Ver la cuenta corriente del cliente</a>' +
                 '<div class="mt-3 d-flex flex-wrap gap-2">' +
-                    '<button type="button" class="btn btn-sm btn-outline-dark" id="facImprimirFactura">' +
+                    '<button type="button" class="btn btn-sm btn-outline-secondary" id="facImprimirFactura">' +
                         '<i class="bi bi-printer me-1"></i>Imprimir</button>' +
-                    '<button type="button" class="btn btn-sm btn-danger" id="facDescargarFactura">' +
+                    '<button type="button" class="btn btn-sm btn-primary" id="facDescargarFactura">' +
                         '<i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>' +
                 '</div>';
             porId('facImprimirFactura').addEventListener('click', function () {
@@ -265,8 +288,8 @@
         }).catch(function () {
             estado.enviando = false;
             boton.disabled = false;
-            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir Factura';
-            mostrarMensaje('Error de red durante la emisión. Podés reintentar sin duplicar la Factura.', 'danger');
+            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir factura';
+            mostrarMensaje('No se pudo emitir por un problema de conexión. Podés reintentar: la factura no se duplica.', 'danger');
         });
     }
 

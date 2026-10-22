@@ -16,9 +16,9 @@
     </style>
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
-    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
 
 <body>
@@ -48,29 +48,25 @@
                                 <h5 class="card-title mb-0">Listar proformas</h5>
                                 <small class="text-muted">Solo proformas ya generadas (los borradores se ven en Gestionar proformas).</small>
                             </div>
-                            <button id="btnExportarListadoProformas" class="btn btn-outline-secondary" type="button" onclick="abrirExportacionProformas()"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar listado</button>
+                            <button id="btnExportarListadoProformas" class="btn btn-outline-secondary" type="button" onclick="abrirExportacionProformas()" data-bs-toggle="tooltip" title="Exportar" aria-label="Exportar"><i class="bi bi-download" aria-hidden="true"></i></button>
                         </div>
                         <div class="card-body">
-                            <div class="row g-2 mb-3">
-                                <div class="col-md-2 col-6"><label class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..."></div>
-                                <div class="col-md-3 col-6"><label for="fCliente" class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
-                                <div class="col-md-2 col-6"><label class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
-                                <div class="col-md-2 col-6"><label class="form-label">Desde</label><input id="fDesde" class="form-control" placeholder="AAAA-MM-DD"></div>
-                                <div class="col-md-2 col-6"><label class="form-label">Hasta</label><input id="fHasta" class="form-control" placeholder="AAAA-MM-DD"></div>
-                                <div class="col-md-1 col-6"><label class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="usuario"></div>
-                                <div class="col-12 d-flex align-items-center gap-2">
-                                    <span id="resumen" class="text-muted align-self-center"></span>
-                                    <div class="d-flex justify-content-end gap-2 ms-auto">
-                                        <button class="btn btn-light-secondary btn-sm" onclick="limpiarFiltros()">Limpiar</button>
-                                        <button class="btn btn-primary btn-sm" onclick="buscarProformas(1)"><i class="bi bi-search me-1"></i>Buscar</button>
-                                    </div>
+                            <!-- Filtros (§1.3 y §3.3): cada uno se borra con su cruz; Enter busca. -->
+                            <form id="busquedaProformaForm" class="row g-3 align-items-end mb-4" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3"><label for="fNumero" class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..." autocomplete="off"></div>
+                                <div class="col-12 col-sm-6 col-lg-3"><label for="fCliente" class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-12 col-sm-6 col-lg-3"><label for="fEstado" class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
+                                <div class="col-12 col-sm-6 col-lg-3"><label for="fFecha" class="form-label">Fecha</label><input id="fFecha" class="form-control" placeholder="Desde y hasta"></div>
+                                <div class="col-12 col-sm-6 col-lg-3"><label for="fUsuario" class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="Usuario" autocomplete="off"></div>
+                                <div class="col-12 col-sm-6 col-lg-9 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
                                 </div>
-                            </div>
+                            </form>
                             <div class="table-responsive">
-                                <table class="table table-hover tbl-prof">
+                                <table class="table table-striped table-hover tbl-prof">
                                     <thead><tr>
-                                        <th>Número</th><th>Fecha</th><th>Cliente</th>
-                                        <th class="text-end">Total</th><th>Estado</th><th>Usuario</th><th class="text-center">Ver</th>
+                                        <th>Número</th><th class="text-center">Fecha</th><th>Cliente</th>
+                                        <th class="text-end">Total</th><th class="text-center">Estado</th><th>Usuario</th><th class="text-center">Acciones</th>
                                     </tr></thead>
                                     <tbody id="cuerpoProformas"><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
@@ -91,7 +87,7 @@
                 <div class="modal-header">
                     <h5 class="modal-title" id="d_titulo">Proforma</h5>
                     <span id="d_badge" class="ms-2"></span>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Documento comercial sin validez fiscal.</p>
@@ -143,9 +139,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-dark" onclick="if(window.__profActual)imprimirProformaPDF(window.__profActual)"><i class="bi bi-printer me-1"></i>Imprimir</button>
-                    <button type="button" class="btn btn-primary" onclick="if(window.__profActual)descargarProformaPDF(window.__profActual)"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-outline-secondary" onclick="if(window.__profActual)imprimirProformaPDF(window.__profActual)"><i class="bi bi-printer me-1"></i>Imprimir</button>
+                    <button type="button" class="btn btn-primary" onclick="if(window.__profActual)descargarProformaPDF(window.__profActual)"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>
                 </div>
             </div>
         </div>
@@ -178,6 +174,7 @@
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
@@ -242,7 +239,6 @@
             });
         }
         function initEstados() { var s = document.getElementById('fEstado'); ESTADOS_GEN.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; }); }
-        function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { document.getElementById(i).value = ''; }); document.getElementById('fCliente').value = ''; SelectClientePredictivo.sincronizar('fCliente'); document.getElementById('fEstado').value = ''; buscarProformas(1); }
 
         function parametrosBusquedaProformas(page, pageSize) {
             var p = new URLSearchParams();
@@ -250,8 +246,8 @@
             if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
             if (val('fCliente')) p.append('clienteId', val('fCliente'));
             if (val('fEstado')) p.append('estado', val('fEstado'));
-            if (val('fDesde').trim()) p.append('desde', val('fDesde').trim());
-            if (val('fHasta').trim()) p.append('hasta', val('fHasta').trim());
+            var rango = SGTL.valorRango('#fFecha');
+            if (rango) { p.append('desde', rango.desde); p.append('hasta', rango.hasta); }
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
             p.append('page', page || 1); p.append('pageSize', pageSize == null ? profState.pageSize : pageSize);
             return p;
@@ -260,14 +256,19 @@
             profState.page = page || 1;
             var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
-            cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>';
+            SGTL.tabla.cargando(cuerpo, 7);
             fetch(API_FAC + '/Proformas?' + p.toString())
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                 .then(function (res) {
-                    if (!res.ok) { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Error: ' + esc(res.j.detalle || res.j.error || '') + '</td></tr>'; return; }
+                    if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
-                .catch(function () { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar las proformas.</td></tr>'; });
+                .catch(function () { errorGrilla(); });
+        }
+        function errorGrilla(mensaje) {
+            SGTL.tabla.vacia('#cuerpoProformas', 7, 'No se pudieron cargar las proformas.');
+            SGTL.tabla.paginacion('#paginacion', { total: 0 });
+            SGTL.toastError(mensaje || 'No se pudieron cargar las proformas. Revisá la conexión y probá de nuevo.');
         }
         function filtrosReporteProformas() {
             var filtros = [];
@@ -275,8 +276,8 @@
             var cliente = document.getElementById('fCliente');
             if (cliente && cliente.value) filtros.push('Cliente: ' + cliente.options[cliente.selectedIndex].text);
             if (val('fEstado')) filtros.push('Estado: ' + val('fEstado'));
-            if (val('fDesde').trim()) filtros.push('Desde: ' + val('fDesde').trim());
-            if (val('fHasta').trim()) filtros.push('Hasta: ' + val('fHasta').trim());
+            var rango = SGTL.valorRango('#fFecha');
+            if (rango) filtros.push('Fecha: ' + SGTL.fecha(rango.desde) + ' a ' + SGTL.fecha(rango.hasta));
             if (val('fUsuario').trim()) filtros.push('Usuario: ' + val('fUsuario').trim());
             return filtros.length ? filtros.join(' | ') : 'Sin filtros';
         }
@@ -304,9 +305,9 @@
             });
         }
         function exportarReporteProformas(formato) {
-            if (!window.ReportesProformas) { alert('No se pudo cargar el generador de reportes.'); return; }
+            if (!window.ReportesProformas) { SGTL.toastError('No se pudo cargar el generador de reportes. Recargá la pantalla.'); return; }
             var ventanaPrevia = formato === 'vistaPrevia' ? window.open('', '_blank') : null;
-            if (formato === 'vistaPrevia' && !ventanaPrevia) { alert('El navegador bloqueó la ventana de vista previa. Permití las ventanas emergentes e intentá nuevamente.'); return; }
+            if (formato === 'vistaPrevia' && !ventanaPrevia) { SGTL.toastError('El navegador bloqueó la vista previa. Permití las ventanas emergentes y probá de nuevo.'); return; }
             cambiarEstadoBotonesReporte(true, 'Generando…');
             fetch(API_FAC + '/Proformas/Reporte?' + parametrosBusquedaProformas(1, 0).toString())
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
@@ -324,7 +325,7 @@
                 })
                 .catch(function (error) {
                     if (ventanaPrevia && !ventanaPrevia.closed) ventanaPrevia.close();
-                    alert(error.message || 'No se pudo generar el reporte.');
+                    SGTL.toastError(error.message || 'No se pudo generar el reporte. Probá de nuevo.');
                 })
                 .finally(restaurarBotonesReporte);
         }
@@ -333,44 +334,41 @@
             var items = (data && data.items) || [];
             profState.totalPages = (data && data.totalPages) || 1;
             profState.total = Number((data && data.total) || 0);
-            if (!items.length) { cuerpo.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Sin proformas generadas.</td></tr>'; renderPag(); document.getElementById('resumen').textContent = '0 resultados'; return; }
-            cuerpo.innerHTML = items.map(function (x) {
+            if (!items.length) { SGTL.tabla.vacia(cuerpo, 7); renderPag(); return; }
+            SGTL.tabla.llenar(cuerpo, items.map(function (x) {
                 return '<tr>' +
                     '<td>' + esc(x.Numero || '—') + '</td>' +
-                    '<td>' + esc(fdate(x.Fecha)) + '</td>' +
+                    '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td>' + badgeEstado(x.Estado) + '</td>' +
+                    '<td class="text-center">' + badgeEstado(x.Estado) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
-                    '<td class="text-center" style="white-space:nowrap;"><button class="btn btn-sm btn-outline-primary" title="Ver" onclick="verDetalle(' + x.Proforma_ID + ')"><i class="bi bi-eye"></i></button> <button class="btn btn-sm btn-outline-dark" title="Descargar PDF" onclick="descargarProformaPDF(' + x.Proforma_ID + ')"><i class="bi bi-file-earmark-pdf"></i></button> ' +
-                    ((x.Estado || '') === 'Aceptada' && !x.FacturaID ? '<button class="btn btn-sm btn-success" title="Emitir Factura" onclick="facturarProforma(' + x.Proforma_ID + ')"><i class="bi bi-receipt"></i></button>' : '') +
-                    (x.FacturaID ? '<button class="btn btn-sm btn-success" disabled title="Facturada: ' + esc(x.FacturaNumero) + '"><i class="bi bi-check-circle"></i></button>' : '') + '</td></tr>';
-            }).join('');
-            document.getElementById('resumen').textContent = data.total + ' resultado' + (data.total === 1 ? '' : 's');
+                    '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
+            }).join(''));
             renderPag();
         }
+        // Orden de §1.4: ver, PDF y el siguiente paso (emitir factura), igual que en Gestionar proformas.
+        function accionesProforma(x) {
+            var id = x.Proforma_ID;
+            var siguiente;
+            if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'Facturada: ' + (x.FacturaNumero || '') });
+            else if ((x.Estado || '') === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt' });
+            else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true, motivo: (x.Estado || '') === 'Generada' ? 'Primero marcala como aceptada en Gestionar proformas' : 'Sin pasos pendientes' });
+            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id }), siguiente]);
+        }
         function renderPag() {
-            var ul = document.getElementById('paginacion'), tp = profState.totalPages, pg = profState.page;
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(ul, {
-                    total: profState.total, tamanioPagina: profState.pageSize, pagina: pg,
-                    alCambiarPagina: function (pagina) { buscarProformas(pagina); },
-                    alCambiarTamanio: function (tamanio) { profState.pageSize = tamanio; buscarProformas(1); }
-                });
-                return;
-            }
-            if (tp <= 1) { ul.innerHTML = ''; return; }
-            var h = '<li class="page-item ' + (pg <= 1 ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg - 1) + ')">«</a></li>';
-            for (var i = 1; i <= tp; i++) h += '<li class="page-item ' + (i === pg ? 'active' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + i + ')">' + i + '</a></li>';
-            h += '<li class="page-item ' + (pg >= tp ? 'disabled' : '') + '"><a class="page-link" href="#" onclick="return irPag(' + (pg + 1) + ')">»</a></li>';
-            ul.innerHTML = h;
+            SGTL.tabla.paginacion('#paginacion', {
+                total: profState.total, tamanioPagina: profState.pageSize, pagina: profState.page,
+                alCambiarPagina: function (pagina) { buscarProformas(pagina); },
+                alCambiarTamanio: function (tamanio) { profState.pageSize = tamanio; buscarProformas(1); }
+            });
         }
         function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
 
         function verDetalle(id) {
             window.__profActual = id;
             fetch(API_FAC + '/Proformas/' + id).then(function (r) { return r.json(); }).then(function (p) {
-                document.getElementById('d_titulo').textContent = 'Proforma ' + (p.Numero || ('#' + p.Proforma_ID));
+                document.getElementById('d_titulo').textContent = 'Ver proforma ' + (p.Numero || ('#' + p.Proforma_ID));
                 ponerBadgeEstado('d_badge', p.Estado || '');
                 setTxt('d_numero', p.Numero); setTxt('d_femision', fdate(p.FechaEmision));
                 setTxt('d_cliente', p.Cli_RazonSocial); setTxt('d_cuit', p.Cli_CUIT); setTxt('d_dir', p.Cli_Direccion);
@@ -389,11 +387,11 @@
                         '<td class="text-end">' + (l.IvaPct || 0) + '</td><td class="text-end">' + money(l.Subtotal) + '</td></tr>';
                 }).join('') : '<tr><td colspan="9" class="text-center text-muted">Sin conceptos.</td></tr>';
                 $('#modalDetalle').modal('show');
-            }).catch(function () { alert('No se pudo abrir la proforma.'); });
+            }).catch(function () { SGTL.toastError('No se pudo abrir la proforma. Probá de nuevo.'); });
         }
 
         function facturarProforma(id) {
-            if (!window.FacturacionProforma) { alert('No se pudo cargar el módulo de Facturación.'); return; }
+            if (!window.FacturacionProforma) { SGTL.toastError('No se pudo cargar la facturación. Recargá la pantalla.'); return; }
             window.FacturacionProforma.abrir(id, function () { buscarProformas(profState.page); });
         }
 
@@ -401,7 +399,17 @@
             initEstados();
             cargarClientes();
             buscarProformas(1);
-            if (window.flatpickr) { ['fDesde', 'fHasta'].forEach(function (id) { flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }); }); }
+            SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) buscarProformas(1); } });
+            SGTL.filtros(['#fNumero', '#fCliente', '#fEstado', '#fFecha', '#fUsuario'], function () {
+                SelectClientePredictivo.sincronizar('fCliente');
+                buscarProformas(1);
+            });
+            $('#fEstado, #fCliente').on('change', function () { buscarProformas(1); });
+            $('#busquedaProformaForm').on('submit', function (evento) { evento.preventDefault(); buscarProformas(1); });
+            $('#cuerpoProformas')
+                .on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); })
+                .on('click', '[data-accion="pdf"]', function () { descargarProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="siguiente"]', function () { facturarProforma($(this).data('id')); });
         });
     </script>
 </body>

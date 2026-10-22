@@ -918,3 +918,23 @@ funcionando (`sgtl-ui.js`).
 - [ ] Listar viajes → ojo de una fila: "Ver detalle del viaje" con cliente, origen, destino, chofer y camión por
   nombre; pie Cerrar.
 
+**Proformas (commit "Proformas: design system en gestionar y listar", pantallas de Facu, con el OK de Rocío del
+22/10):** Registrar proforma en verde, Exportar solo ícono, filtros en una fila con su cruz y sin Limpiar, un solo
+filtro "Fecha" (Desde y hasta) en lugar de Desde / Hasta en AAAA-MM-DD, sin el contador "N resultados" aparte.
+Acciones de cada fila con los botones del design system, en el mismo orden y deshabilitadas con el motivo cuando
+no aplican: ver, editar, PDF, siguiente paso (Marcar aceptada → Emitir factura) y anular / eliminar. Los 14 + 5
+`alert()` / `confirm()` y los modales propios ("Operación realizada", "Confirmar eliminación", "Cambiar estado")
+pasan a los avisos y la confirmación del sistema. Fechas del modal (período, carga, entrega) en DD/MM/AAAA con
+calendario (siguen guardando AAAA-MM-DD). Modales "Emitir factura" y "Anular factura": calendario del sistema,
+textos con mayúscula solo al principio y con tildes. PDF: errores con el aviso del sistema.
+- [ ] Gestionar proformas: cada fila muestra 5 botones; en un borrador, Editar y Eliminar habilitados y el siguiente
+  paso deshabilitado ("Primero generá la proforma"); en una Generada, Marcar aceptada → confirmación → toast.
+- [ ] Una Aceptada → Emitir factura: modal "Emitir factura", fechas DD/MM/AAAA, vencimiento a 10 días. **Solo con
+  datos de prueba: consume numeración real.**
+- [ ] Anular una proforma Generada: confirmación con el texto de qué pasa → toast "Proforma anulada.".
+- [ ] Eliminar un borrador: confirmación → toast "Borrador eliminado.".
+- [ ] Registrar proforma: guardar sin cliente → aviso rojo dentro del modal; fechas con calendario.
+- [ ] Proforma de Rukas (cliente con plataforma): el período se ve en DD/MM/AAAA después de importar el Excel.
+- [ ] Filtro Fecha: elegir un rango busca; la cruz lo borra. Exportar (ícono) abre el modal de Excel / PDF.
+- [ ] Listar proformas: ver, PDF y Emitir factura (solo en Aceptadas); el detalle se titula "Ver proforma …".
+

@@ -316,7 +316,9 @@
                 doc.save(resultado.nombreArchivo);
             }
         }).catch(function (error) {
-            alert(error && error.message ? error.message : 'No se pudo generar el PDF del comprobante.');
+            var texto = error && error.message ? error.message : 'No se pudo generar el PDF del comprobante. Probá de nuevo.';
+            if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
+            else window.alert(texto);
         });
     }
 
