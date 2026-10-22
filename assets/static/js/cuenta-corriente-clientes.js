@@ -945,7 +945,7 @@
                     'data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" data-vencimiento="' + escapar(item.FechaVencimiento || '') + '" ' +
                     'data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
             }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene facturas pendientes.</td></tr>';
-            porId('recibofacturas').querySelectorAll('.cc-recibo-aplicar').forEach(enlazarMascaraMonto);
+            porId('reciboFacturas').querySelectorAll('.cc-recibo-aplicar').forEach(enlazarMascaraMonto);
             actualizarResumenRecibo();
         }).catch(function (ex) {
             porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">No se pudieron cargar las facturas pendientes.</td></tr>';
