@@ -18,6 +18,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public int Cliente_ID { get; set; }
             public string Razon_Social { get; set; }
+            /// <summary>Columna fuera del EDMX (script 09_nombre_comercial_clientes.sql).</summary>
+            public string Nombre_Comercial { get; set; }
             public string CUIT_Cliente { get; set; }
             public int Cond_Fiscal { get; set; }
             public int ProvID { get; set; }
@@ -93,6 +95,12 @@ namespace WebApi_TransporteSanchez.Controllers
             public string CodigoPostal { get; set; }
         }
 
+        private class ClienteNombreComercialDto
+        {
+            public int Cliente_ID { get; set; }
+            public string Nombre_Comercial { get; set; }
+        }
+
         private static SqlParameter Parametro(string nombre, object valor)
         {
             return new SqlParameter(nombre, valor ?? DBNull.Value);
@@ -107,6 +115,13 @@ namespace WebApi_TransporteSanchez.Controllers
                 .First() == 1;
         }
 
+        private static bool TieneCampoNombreComercial(SGTLAuditContext db)
+        {
+            return db.Database.SqlQuery<int>(
+                "SELECT CASE WHEN COL_LENGTH('dbo.CLIENTES','Nombre_Comercial') IS NULL THEN 0 ELSE 1 END")
+                .First() == 1;
+        }
+
         private static void CompletarCodigosPostales(SGTLAuditContext db, IEnumerable<Cliente> clientes)
         {
             var lista = (clientes ?? Enumerable.Empty<Cliente>()).ToList();
@@ -118,11 +133,30 @@ namespace WebApi_TransporteSanchez.Controllers
                 cliente.CodigoPostal = codigos.ContainsKey(cliente.Cliente_ID) ? codigos[cliente.Cliente_ID] : null;
         }
 
+        private static void CompletarNombresComerciales(SGTLAuditContext db, IEnumerable<Cliente> clientes)
+        {
+            var lista = (clientes ?? Enumerable.Empty<Cliente>()).ToList();
+            if (!lista.Any() || !TieneCampoNombreComercial(db)) return;
+
+            var nombres = db.Database.SqlQuery<ClienteNombreComercialDto>(
+                "SELECT Cliente_ID,Nombre_Comercial FROM dbo.CLIENTES").ToDictionary(x => x.Cliente_ID, x => x.Nombre_Comercial);
+            foreach (var cliente in lista)
+                cliente.Nombre_Comercial = nombres.ContainsKey(cliente.Cliente_ID) ? nombres[cliente.Cliente_ID] : null;
+        }
+
         private static void GuardarCodigoPostal(SGTLAuditContext db, int clienteId, string codigoPostal)
         {
             db.Database.ExecuteSqlCommand(
                 "UPDATE dbo.CLIENTES SET CodigoPostal=@codigoPostal WHERE Cliente_ID=@clienteId",
                 Parametro("@codigoPostal", string.IsNullOrWhiteSpace(codigoPostal) ? null : codigoPostal.Trim()),
+                Parametro("@clienteId", clienteId));
+        }
+
+        private static void GuardarNombreComercial(SGTLAuditContext db, int clienteId, string nombreComercial)
+        {
+            db.Database.ExecuteSqlCommand(
+                "UPDATE dbo.CLIENTES SET Nombre_Comercial=@nombre WHERE Cliente_ID=@clienteId",
+                Parametro("@nombre", string.IsNullOrWhiteSpace(nombreComercial) ? null : nombreComercial.Trim()),
                 Parametro("@clienteId", clienteId));
         }
 
@@ -295,6 +329,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             && estados[cliente.Cliente_ID];
                     }
                     CompletarCodigosPostales(db, olist);
+                    CompletarNombresComerciales(db, olist);
 
                     if (olist == null || !olist.Any())
                     {
@@ -376,6 +411,12 @@ namespace WebApi_TransporteSanchez.Controllers
                             "SELECT CodigoPostal FROM dbo.CLIENTES WHERE Cliente_ID=@clienteId",
                             Parametro("@clienteId", id)).FirstOrDefault();
                     }
+                    if (TieneCampoNombreComercial(db))
+                    {
+                        clienteDto.Nombre_Comercial = db.Database.SqlQuery<string>(
+                            "SELECT Nombre_Comercial FROM dbo.CLIENTES WHERE Cliente_ID=@clienteId",
+                            Parametro("@clienteId", id)).FirstOrDefault();
+                    }
 
                     var estados = ObtenerEstadosClientes(db, new[] { id });
                     clienteDto.EstadoCliente = estados.ContainsKey(id) && estados[id];
@@ -429,6 +470,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (codigoPostal.Length > 20) return BadRequest("El código postal no puede superar los 20 caracteres.");
                     if (!TieneCampoCodigoPostal(db))
                         return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo CodigoPostal. Ejecutá el script 08_codigo_postal_clientes.sql." });
+                    var nombreComercial = (clienteDto.Nombre_Comercial ?? string.Empty).Trim();
+                    if (nombreComercial.Length > 100) return BadRequest("El nombre comercial no puede superar los 100 caracteres.");
+                    if (!TieneCampoNombreComercial(db))
+                        return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo Nombre_Comercial. Ejecutá el script 09_nombre_comercial_clientes.sql." });
 
                     var cuitNormalizado = NormalizarCUIT(clienteDto.CUIT_Cliente);
 
@@ -467,6 +512,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.SaveChanges();
                     GuardarTipoCliente(db, cliente.Cliente_ID, clienteDto.Tipo_Cliente);
                     GuardarCodigoPostal(db, cliente.Cliente_ID, codigoPostal);
+                    GuardarNombreComercial(db, cliente.Cliente_ID, nombreComercial);
                     db.Database.ExecuteSqlCommand(
                         "UPDATE dbo.CLIENTES SET EstadoCliente=1 WHERE Cliente_ID=@clienteId",
                         Parametro("@clienteId", cliente.Cliente_ID));
@@ -515,6 +561,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (codigoPostal.Length > 20) return BadRequest("El código postal no puede superar los 20 caracteres.");
                     if (!TieneCampoCodigoPostal(db))
                         return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo CodigoPostal. Ejecutá el script 08_codigo_postal_clientes.sql." });
+                    var nombreComercial = (value.Nombre_Comercial ?? string.Empty).Trim();
+                    if (nombreComercial.Length > 100) return BadRequest("El nombre comercial no puede superar los 100 caracteres.");
+                    if (!TieneCampoNombreComercial(db))
+                        return Content(HttpStatusCode.Conflict, new { message = "Falta instalar el campo Nombre_Comercial. Ejecutá el script 09_nombre_comercial_clientes.sql." });
 
                     CLIENTES oitem = db.Set<CLIENTES>().Find(id);
 
@@ -548,6 +598,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             GuardarTipoCliente(db, id, value.Tipo_Cliente);
                         }
                         GuardarCodigoPostal(db, id, codigoPostal);
+                        GuardarNombreComercial(db, id, nombreComercial);
                         return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
                     }
                     catch (DbEntityValidationException ex)

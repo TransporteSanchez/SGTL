@@ -176,6 +176,10 @@
                                 <span class="form-label d-block mb-0">CUIT</span>
                                 <p class="form-control-plaintext" id="detalleCuit"></p>
                             </div>
+                            <div class="col-12">
+                                <span class="form-label d-block mb-0">Nombre comercial</span>
+                                <p class="form-control-plaintext" id="detalleNombreComercial"></p>
+                            </div>
                             <div class="col-12 col-md-6">
                                 <span class="form-label d-block mb-0">Condición de IVA</span>
                                 <p class="form-control-plaintext" id="detalleCondFiscal"></p>
@@ -382,6 +386,7 @@
                         $('#detalleFechaAlta').text(fechaCliente(c.Fecha_Alta));
                         $('#detalleFechaModi').text(fechaCliente(c.Fecha_Modi) || '—');
                         $('#detalleRazonSocial').text(c.Razon_Social || '');
+                        $('#detalleNombreComercial').text(c.Nombre_Comercial || '—');
                         $('#detalleCuit').text(formatearCUIT(c.CUIT_Cliente));
                         $('#detalleCondFiscal').text(CONDICIONES_IVA[c.Cond_Fiscal] || '');
                         $('#detalleTipo').text(TIPOS_CLIENTE[c.Tipo_Cliente] || TIPOS_CLIENTE.Directo);

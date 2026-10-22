@@ -184,6 +184,11 @@
                                     <input type="text" inputmode="numeric" id="clienteCuit" class="form-control" placeholder="30-71234567-8" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
+                                <div class="col-12">
+                                    <label for="clienteNombreComercial" class="form-label">Nombre comercial</label>
+                                    <input type="text" id="clienteNombreComercial" class="form-control" placeholder="Nombre de fantasía o marca comercial" autocomplete="off" maxlength="100">
+                                    <div class="invalid-feedback"></div>
+                                </div>
                                 <div class="col-12 col-md-6">
                                     <label for="clienteCondFiscal" class="form-label">Condición de IVA <span class="text-danger">*</span></label>
                                     <select id="clienteCondFiscal" class="form-select">
@@ -565,6 +570,7 @@
                 'No se pudieron cargar los datos del cliente. Probá de nuevo.').then(function (data) {
                     clienteOriginal = data;
                     $('#clienteRazonSocial').val(data.Razon_Social || '');
+                    $('#clienteNombreComercial').val(data.Nombre_Comercial || '');
                     $('#clienteCuit').val(formatearCUIT(data.CUIT_Cliente));
                     $('#clienteCondFiscal').val(CONDICIONES_IVA[data.Cond_Fiscal] ? String(data.Cond_Fiscal) : '');
                     $('#clienteTipo').val(data.Tipo_Cliente === 'Con_plataforma' ? 'Con_plataforma' : 'Directo');
@@ -593,6 +599,7 @@
             return {
                 Cliente_ID: clienteEnEdicion ? parseInt(clienteEnEdicion, 10) : 0,
                 Razon_Social: valor('clienteRazonSocial'),
+                Nombre_Comercial: valor('clienteNombreComercial'),
                 CUIT_Cliente: valor('clienteCuit').replace(/\D/g, ''),
                 Cond_Fiscal: parseInt(valor('clienteCondFiscal'), 10),
                 Tipo_Cliente: valor('clienteTipo'),
