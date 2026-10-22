@@ -501,6 +501,12 @@
             return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
         }
         function textoRef(v) { var t = (v || '').toString().trim(); return t || '—'; }
+        // Km con coma decimal (§7.3): "402,3". Si lo guardado no es un número, se muestra tal cual.
+        function kmTabla(valor) {
+            var t = String(valor == null ? '' : valor).trim();
+            var n = Number(t.replace(',', '.'));
+            return t && isFinite(n) ? SGTL.km(n) : t;
+        }
 
         const ESTADO_LABEL = {
             Registrado: 'Registrado',
@@ -602,7 +608,7 @@
                                     <td>${escHtml(viaje.Origen)}</td>
                                     <td>${escHtml(viaje.Destino)}</td>
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
-                                    <td class="text-end">${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
+                                    <td class="text-end">${escHtml(kmTabla(viaje.Distancia_KM))}</td>
                                     <td class="text-center text-nowrap">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge rounded-pill bg-white text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
                                     <td class="text-center">${accionesViaje(viaje)}</td>
                                 </tr>
