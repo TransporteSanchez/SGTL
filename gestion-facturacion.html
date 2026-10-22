@@ -354,6 +354,7 @@
             var c = clientesMap[id];
             if (!c) return;
             setVal('p_cli_razon', c.Razon_Social || c.RazonSocial || '');
+            setVal('p_cli_nombre', c.Nombre_Comercial || c.NombreComercial || '');
             setVal('p_cli_cuit', c.CUIT_Cliente || c.CUIT || '');
             setVal('p_cli_condiva', descripcionCondicionIva(c.Cond_Fiscal));
             var dir = [(c.Calle || ''), (c.AlturaCalle || '')].join(' ').trim();
@@ -644,7 +645,12 @@
                 setVal('p_fhasta', p.FechaHasta ? p.FechaHasta.substring(0, 10) : '');
                 setVal('p_cliente', p.ClienteID || '');
                 SelectClientePredictivo.sincronizar('p_cliente');
-                setVal('p_cli_razon', p.Cli_RazonSocial); setVal('p_cli_nombre', p.Cli_NombreComercial); setVal('p_cli_cuit', p.Cli_CUIT);
+                setVal('p_cli_razon', p.Cli_RazonSocial);
+                // El nombre comercial que quedó en la proforma; el actual del cliente solo completa un borrador que no lo tiene.
+                var cliMap = clientesMap[p.ClienteID];
+                var nombreActual = cliMap && (cliMap.Nombre_Comercial || cliMap.NombreComercial);
+                setVal('p_cli_nombre', p.Cli_NombreComercial || (estadoActual === 'Borrador' && nombreActual) || '');
+                setVal('p_cli_cuit', p.Cli_CUIT);
                 setVal('p_cli_condiva', descripcionCondicionIva(p.Cli_CondIVA) || p.Cli_CondIVA || ''); setVal('p_cli_dir', p.Cli_Direccion); setVal('p_cli_tel', p.Cli_Telefono);
                 setVal('p_tiposervicio', p.TipoServicio); setVal('p_origen', p.Origen); setVal('p_destino', p.Destino);
                 setVal('p_tipocarga', p.TipoCarga); setVal('p_fcarga', p.FechaCarga ? p.FechaCarga.substring(0, 10) : ''); setVal('p_fentrega', p.FechaEntrega ? p.FechaEntrega.substring(0, 10) : '');

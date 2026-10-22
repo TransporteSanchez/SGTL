@@ -51,6 +51,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/equipo/PRUEBAS-VM-CLAUDE.md` — instructivo para la sesión de IA que prueba en la VM.
 - `docs/equipo/merge-facugodoy-2026-10-17.md` — qué cambió con el merge de Facu (17/10/2026).
 - `docs/equipo/merge-facugodoy-2026-10-22.md` — qué cambió con el merge de Facu (22/10/2026): contraseñas, cuenta corriente, presupuestos y facturación.
+- `docs/equipo/merge-fedemontenegro-2026-10-22.md` — qué cambió con el merge de Fede (22/10/2026): código de área del WhatsApp y nombre comercial del cliente.
 
 ### Negocio
 

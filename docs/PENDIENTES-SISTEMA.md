@@ -41,6 +41,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
 | 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); las contraseñas sin cifrar se resuelven con el merge de Facu (§21) | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
+| 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1398,3 +1399,42 @@ pudo compilar en la Mac.**
   - [ ] Probarlo con Facu: con su rama actualizada, abrir Codex en el repo y preguntarle "¿Qué reglas tenés que
     seguir para cambiar una pantalla?". Tiene que nombrar `docs/design-system/03-decisiones.md` y la lista de
     control de `AGENTS.md`.
+
+---
+
+## 22. Merge de Fede del 22/10 (`1bd31d3`) en `rocionuvoli` — HECHO, SIN PUSH NI PRUEBA EN VM (22/10)
+
+Un commit de Fede sobre `2a23274` (20/10). No chocó con nada (ni con el merge de Facu, §21). Rocío lo revisó punto por
+punto. Resumen para el equipo: `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
+
+**La base — ya aplicado:** la columna `CLIENTES.Nombre_Comercial` (nvarchar(100)) ya existe; Fede corrió el script
+(`COL_LENGTH` 200, verificado por Rocío el 22/10). El script pasó a `database/clientes/01_nombre_comercial_clientes.sql`
+(estaba suelto en `database/` con un "09" que se confundía con el de cuenta corriente); no hay que volver a correrlo.
+
+**Decisiones de Rocío (22/10):**
+1. **WhatsApp, código de área (de Fede, tal cual):** `PhoneNumberHelper.cs` reconoce las áreas de 4 dígitos (lista de
+   ENACOM) y arma bien el número para Meta: 3541 57-0360 → 54 3541 15 570360 (antes salía 54 354 15 1570360). La lista
+   no se verificó área por área: si a un chofer le falta su área, el número sale como antes.
+2. **Nombre comercial del cliente (de Fede):** campo opcional en Gestionar clientes, detalle de Listar clientes y API.
+   Ajustes: el script en `database/clientes/` (y el mensaje de la API que lo nombra), y en el campo un ejemplo ("Las
+   Lomas") con la instrucción debajo (§6.3).
+3. **Proformas (pantalla de Facu):** al elegir el cliente se completa su nombre comercial (de Fede). Al abrir una
+   proforma se muestra **el nombre que quedó guardado en ella**; el actual del cliente solo completa un borrador que no
+   lo tiene (Fede mostraba siempre el actual, y una proforma generada podía verse distinta de su PDF).
+
+**Cómo probar en la VM** (`git pull` → recompilar la API: cambiaron `ClientesController` y `PhoneNumberHelper` → Ctrl+F5):
+- [ ] Gestionar clientes: registrar un cliente de prueba con nombre comercial → se guarda; editarlo y borrarlo → queda
+  vacío. El campo muestra el ejemplo "Las Lomas" y la ayuda debajo. Listar clientes → Ver detalle muestra el nombre
+  comercial (o "—").
+- [ ] Gestionar proformas: registrar una proforma y elegir ese cliente → se completa el nombre comercial. Cambiar el
+  nombre comercial del cliente y volver a abrir una proforma **generada** de ese cliente → sigue mostrando el de la
+  proforma. Un **borrador** sin nombre comercial → muestra el actual del cliente.
+- [ ] WhatsApp: asignar un viaje directo a un chofer de prueba con área de 4 dígitos (por ejemplo 3541…) → en
+  `App_Data/whatsapp.log` el número sale como 54 + área de 4 + 15 + 6 dígitos. Uno de Córdoba capital (351…) y uno de
+  CABA (11…) siguen saliendo igual que antes.
+
+**Pendiente que salió del merge:**
+- [ ] **Auditoría de los campos de clientes que se guardan con SQL directo** (nombre comercial, código postal y tipo de
+  cliente): la auditoría solo registra lo que pasa por `SaveChanges`, así que esos cambios no quedan registrados.
+  Sumarlos a mano a `AUDITORIA` al guardar el cliente.
+
