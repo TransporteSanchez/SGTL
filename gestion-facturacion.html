@@ -387,6 +387,7 @@
                     datosExtraCliente.ciudad = nombres[0] || '';
                     datosExtraCliente.provincia = nombres[1] || '';
                     pintarDatosCliente();
+                    if (window.ProformaPlataforma) ProformaPlataforma.refrescarCliente();
                 });
             }
         }
@@ -405,26 +406,38 @@
                 ' aria-label="Editar cliente: no tenés permiso para editar clientes">' + enlace + '</span>';
         }
 
-        function pintarDatosCliente() {
-            var caja = document.getElementById('p_cli_resumen');
-            if (!caja) return;
+        // Los datos del cliente como texto (§6.3), en dos tamaños de la misma pieza (pedido de Rocío, 22/10): completo
+        // en la proforma propia, cada dato con su nombre; compacto en la de Rukas, donde lo principal es el Excel: una
+        // fila de cuatro columnas con el segundo dato en gris debajo. enlace: con "Editar cliente" a la derecha.
+        function htmlDatosCliente(opciones) {
+            opciones = opciones || {};
             var razon = val('p_cli_razon').trim();
-            caja.hidden = !val('p_cliente') || !razon;
-            if (caja.hidden) { caja.innerHTML = ''; return; }
             var nombre = val('p_cli_nombre').trim();
+            var comercial = nombre && nombre.toLowerCase() !== razon.toLowerCase() ? nombre : '';
+            var cuit = val('p_cli_cuit').trim();
+            if (window.formatearCUIT && cuit.replace(/\D/g, '').length === 11) cuit = formatearCUIT(cuit);
             var lugar = [datosExtraCliente.ciudad, datosExtraCliente.provincia && datosExtraCliente.provincia.toLowerCase() !== (datosExtraCliente.ciudad || '').toLowerCase() ? datosExtraCliente.provincia : '']
                 .filter(Boolean).join(', ');
             var lineaLugar = [lugar, datosExtraCliente.cp ? 'CP ' + datosExtraCliente.cp : ''].filter(Boolean).join(' · ');
-            var dato = function (etiqueta, valor, debajo) {
-                return '<div class="col-12 col-md-4"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">' + etiqueta + '</span>' +
+            var dato = function (etiqueta, valor, debajo, columna) {
+                return '<div class="' + (columna || 'col-12 col-md-4') + '"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">' + etiqueta + '</span>' +
                     '<div class="sgtl-dato-valor">' + esc(valor || '') + (debajo ? '<div class="suave">' + esc(debajo) + '</div>' : '') + '</div></div></div>';
             };
-            caja.innerHTML = '<div class="d-flex align-items-start gap-3"><div class="row g-2 flex-grow-1">' +
-                dato('Razón social', razon, nombre && nombre.toLowerCase() !== razon.toLowerCase() ? nombre : '') +
-                dato('CUIT', window.formatearCUIT && val('p_cli_cuit').replace(/\D/g, '').length === 11 ? formatearCUIT(val('p_cli_cuit')) : val('p_cli_cuit')) +
-                dato('Condición de IVA', val('p_cli_condiva')) +
-                dato('Domicilio', val('p_cli_dir'), lineaLugar) + dato('Teléfono', val('p_cli_tel')) + dato('E-mail', datosExtraCliente.email) +
-                '</div>' + (proformaSoloLectura ? '' : '<div class="flex-shrink-0">' + htmlEditarCliente() + '</div>') + '</div>';
+            var datos = opciones.compacto
+                ? dato('Cliente', razon, comercial, 'col-12 col-md-3') + dato('CUIT', cuit, val('p_cli_condiva'), 'col-12 col-md-2') +
+                  dato('Domicilio', val('p_cli_dir'), lineaLugar, 'col-12 col-md-3') +
+                  dato('Teléfono y e-mail', val('p_cli_tel'), datosExtraCliente.email, 'col-12 col-md-4')
+                : dato('Razón social', razon, comercial) + dato('CUIT', cuit) + dato('Condición de IVA', val('p_cli_condiva')) +
+                  dato('Domicilio', val('p_cli_dir'), lineaLugar) + dato('Teléfono', val('p_cli_tel')) + dato('E-mail', datosExtraCliente.email);
+            return '<div class="d-flex align-items-start gap-3"><div class="row g-2 flex-grow-1">' + datos + '</div>' +
+                (opciones.enlace ? '<div class="flex-shrink-0">' + htmlEditarCliente() + '</div>' : '') + '</div>';
+        }
+
+        function pintarDatosCliente() {
+            var caja = document.getElementById('p_cli_resumen');
+            if (!caja) return;
+            caja.hidden = !val('p_cliente') || !val('p_cli_razon').trim();
+            caja.innerHTML = caja.hidden ? '' : htmlDatosCliente({ enlace: !proformaSoloLectura });
         }
 
         // Ocultar la proforma para editar el cliente no es cerrarla: no pide descartar cambios y, al volver, sigue igual.

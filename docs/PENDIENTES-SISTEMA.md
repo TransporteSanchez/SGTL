@@ -1831,8 +1831,10 @@ escrita sobre esto.
   e-mail) con "Editar cliente". El enlace oculta la proforma sin perder lo cargado ni el aviso de cambios sin guardar,
   abre la edición y vuelve con los datos nuevos. En "Ver", sin el enlace. Sin permiso para Gestionar clientes, el
   enlace queda deshabilitado con el motivo (`sidebar-loader.js`: `window.sgtlPuedeEntrar`).
-- **Proforma de Rukas** (`proformas-plataforma.js`): "Editar datos del cliente" (paso 2) y "Ver datos" (paso 3 de un
-  borrador) pasan a "Editar cliente"; en solo lectura queda "Ver datos", que muestra el recuadro.
+- **Proforma de Rukas** (`proformas-plataforma.js`): los datos del cliente en una fila compacta (Cliente · CUIT ·
+  Domicilio · Teléfono y e-mail, con el segundo dato en gris), siempre a la vista: en el paso 2 debajo del campo y en
+  el paso 3 en el recuadro gris, arriba del Excel y el período. "Editar cliente" en el paso 2 y en un borrador; en
+  solo lectura, la fila sin el enlace. La proforma propia mantiene cada dato con su nombre (pedido de Rocío, 22/10).
 - **PDF de la proforma** (`proforma-pdf.js`): "Ciudad" con la provincia y el código postal; sin "Contacto".
 
 **Probar en la VM** (`pull`, **compilar la API** y Ctrl+F5):
@@ -1844,8 +1846,9 @@ escrita sobre esto.
 - [ ] 3. Gestionar clientes: registrar uno (el tipo se elige) y editar uno con dos borradores de proforma → "Cliente
   actualizado. También se actualizaron sus datos en 2 borradores de proforma."; abrir esos borradores: tienen los datos
   nuevos. Una proforma generada del mismo cliente no cambia.
-- [ ] 4. Proforma de Rukas: en el paso 2, "Editar cliente" en la línea del cliente; en el paso 3 de un borrador, en el
-  recuadro gris; con el ojo (solo lectura), "Ver datos".
+- [ ] 4. Proforma de Rukas: en el paso 2, la fila compacta del cliente con "Editar cliente" debajo del campo; en el
+  paso 3 de un borrador, la misma fila arriba del Excel y el período; con el ojo (solo lectura), la fila sin el
+  enlace. Editar el cliente desde el paso 3: la fila se actualiza sola.
 - [ ] 5. Guardar y generar un borrador y emitir su factura: la factura sale con los datos de la ficha del cliente.
 - [ ] 6. "Ver PDF" de un borrador: e-mail y "Ciudad" con el código postal; sin "Contacto".
 - [ ] 7. Con un usuario sin permiso para Gestionar clientes: "Editar cliente" deshabilitado con el motivo.

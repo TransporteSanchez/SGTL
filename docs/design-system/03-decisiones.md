@@ -413,6 +413,11 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   abierto (el tipo de cliente) se ve como texto con el motivo. El aviso dice también qué más se actualizó: "Cliente
   actualizado. También se actualizaron sus datos en el borrador de proforma #23." (o "en 3 borradores de proforma").
   Sin permiso para editar esa entidad, el enlace queda deshabilitado con el motivo (§1.4).
+  - **Dos tamaños de la misma pieza** (`htmlDatosCliente` en `gestion-facturacion.html`): completo en la proforma
+    propia, cada dato con su nombre (razón social, CUIT, condición de IVA, domicilio, teléfono, e-mail); compacto en la
+    de Rukas, donde lo principal es el Excel: una fila de cuatro columnas (Cliente · CUIT · Domicilio · Teléfono y
+    e-mail) con el segundo dato en gris debajo (nombre comercial, condición de IVA, localidad y código postal, e-mail).
+    Mismo recuadro, mismos nombres, mismo orden y el mismo "Editar cliente" (Rocío, 22/10).
 - `form-label` con `for` en todos los campos (tocar el nombre lleva al campo).
 
 ---
