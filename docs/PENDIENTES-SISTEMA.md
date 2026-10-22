@@ -42,6 +42,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); las contraseñas sin cifrar se resuelven con el merge de Facu (§21) | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
+| 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | En la Mac: las 25 pantallas cargan sin errores de JavaScript (API falsa) y pasan las 15 pruebas. Falta todo lo que necesita la API real | — | **Falta hacer** (ver §23) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1461,4 +1462,66 @@ punto. Resumen para el equipo: `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
 - [ ] **Auditoría de los campos de clientes que se guardan con SQL directo** (nombre comercial, código postal y tipo de
   cliente): la auditoría solo registra lo que pasa por `SaveChanges`, así que esos cambios no quedan registrados.
   Sumarlos a mano a `AUDITORIA` al guardar el cliente.
+
+---
+
+## 23. Prueba mínima antes de pasar `rocionuvoli` a las ramas del equipo — FALTA HACER (22/10)
+
+Para confirmar que lo pusheado el 21 y 22/10 (dashboard, estilo visual, merges de Facu y Fede, ajustes) anda en la VM
+**antes** de actualizar `facugodoy` y `fedemontenegro`. Son unos 20 minutos y no reemplazan las listas completas de
+§19 a §22. Versión: `rocionuvoli` en `5e8f679` o posterior.
+
+**Ya hecho en la Mac (22/10):** las 25 pantallas del menú cargan sin errores de JavaScript con una API falsa (se
+comprobó que el método detecta un error puesto a propósito) y pasan las 15 pruebas de `tests/`. La API (C#) no se
+pudo compilar: es el riesgo principal.
+
+**Lo hace Rocío** (la sesión de la VM no hace `pull`, no compila ni escribe contraseñas):
+- [ ] 1. `git pull` en `rocionuvoli`, compilar la API en Visual Studio: **sin errores**. Cambiaron los controllers de
+  autenticación, usuarios, comprobantes, facturas, proformas, proformas de plataforma, configuración de facturación y
+  clientes, y `PhoneNumberHelper`; se agregó `Security/ContrasenasSeguras.cs` y se borró `LoginController.cs`. También
+  está sin compilar `ViajesController` (`ResumenCosto` del dashboard, 21/10).
+- [ ] 2. Ejecutar la API y Live Server; Ctrl+F5.
+- [ ] 3. Entrar con tu usuario → entra. Desde ese momento tu contraseña queda con hash y solo entrás con una API de
+  este merge en adelante. Con una contraseña mal → "Usuario o contraseña incorrectos." (no dice si el usuario existe).
+- [ ] 4. Con un **usuario de prueba** (no el de todos los días): Cambiar contraseña → toast y vuelve al login; entra
+  con la nueva.
+
+**La sesión de la VM (o Rocío)**, siguiendo `docs/equipo/PRUEBAS-VM-CLAUDE.md` (reporte en
+`docs/pruebas/AAAA-MM-DD-prueba-minima-ramas.md`):
+- [ ] 5. **Recorrer el menú completo** (25 opciones): cada pantalla abre y carga datos, y en la consola (F12) no hay
+  errores rojos de JavaScript. Anotar cualquiera con la pantalla y el texto.
+- [ ] 6. Dashboard: el período se ve como selector; elegir Trimestre → cambian el texto de abajo y los números.
+  Personalizar → Widgets → bajar con la rueda hasta "Calendario de viajes"; Cancelar.
+- [ ] 7. Cuenta corriente: cuatro botones por fila (los que no aplican, grises con el motivo); el ojo de una factura
+  abre la vista completa; Ver PDF de una factura abre la vista previa con "Enviar por e-mail" en el pie (no enviar);
+  desplegar una factura con aplicados → grupo con la barra azul.
+- [ ] 8. **Con OK de Rocío (consume un número de recibo):** Registrar recibo a un cliente de prueba con facturas
+  pendientes, importe y Distribuir → reparte desde la que vence primero; Emitir → toast. Anotar el recibo.
+- [ ] 9. Presupuestos: Registrar presupuesto con un cliente de prueba, origen y destino → el mapa dibuja la ruta y
+  completa los km; el tiempo estimado se calcula con las fechas; Guardar. Anotar el presupuesto.
+- [ ] 10. Gestionar viajes: abre; la banderita de un viaje abre la ventana de tarjetas (Cancelar, sin cambiar nada).
+- [ ] 11. Gestionar clientes: está el campo "Nombre comercial". Configuración: la opción se llama "Gestionar tipos de
+  comprobante".
+
+**Si fallan el 1, el 3 o el 5, no se pasan las ramas:** se corrige primero en la Mac. Lo demás se anota y Rocío decide.
+
+**Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
+y mandarles este mensaje:
+
+> Facu, Fede: ya están sus ramas actualizadas con todo lo nuevo: el estilo visual y el design system en todas las
+> pantallas, y los merges de los dos del 22/10. Antes de seguir:
+> 1. Traigan su rama (`git pull` en `facugodoy` / `fedemontenegro`), recompilen la API y hagan Ctrl+F5.
+> 2. Las contraseñas ahora se guardan con hash: cuando entren con la API nueva, su usuario ya no entra con una
+>    versión vieja. Trabajen siempre con la rama al día.
+> 3. Si usan IA (Codex, Cursor, Claude): con la rama al día lee sola `AGENTS.md`, que manda seguir el design system
+>    (`docs/design-system/03-decisiones.md`) en todos los módulos. Antes de commitear, pídanle: "Revisá los cambios
+>    con la lista de control de AGENTS.md".
+> 4. Cómo quedaron sus cambios y por qué: Facu en `docs/equipo/merge-facugodoy-2026-10-22.md` y Fede en
+>    `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
+> 5. Prueben los flujos con el diseño nuevo y avísenme lo que vean. Queda para después (no son errores):
+>    - el formulario de alta de viaje y la proforma de Rukas: los estoy ajustando yo;
+>    - en proformas, "Descargar PDF" todavía baja el archivo directo (va a abrir la vista previa, como en presupuestos
+>      y cuenta corriente);
+>    - para charlar entre todos: fechas previstas y reales en presupuestos y viajes, y si en presupuestos se pueden
+>      cargar los km a mano cuando Google falla.
 
