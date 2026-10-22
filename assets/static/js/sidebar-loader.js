@@ -51,7 +51,8 @@ function markActiveSidebarItem() {
     sidebar.querySelectorAll('.sidebar-item').forEach((el) => el.classList.remove('active'));
     sidebar.querySelectorAll('.submenu-item').forEach((el) => el.classList.remove('active'));
   
-    const activeLinks = sidebar.querySelectorAll('a[href]');
+    // Solo los enlaces de las opciones: el logo también apunta a index.html y tapaba a Dashboard.
+    const activeLinks = sidebar.querySelectorAll('.sidebar-item a[href]');
     let activeLink = null;
   
     activeLinks.forEach((link) => {

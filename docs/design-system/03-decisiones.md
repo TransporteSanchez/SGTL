@@ -301,6 +301,8 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Uno solo: flatpickr** (local, `assets/extensions/flatpickr/`) **en español**
   (`l10n/es.js`: semana desde el lunes). Se sacan daterangepicker y moment (CDN), y el
   `type="date"` del navegador de cuenta corriente.
+  **Excepción (22/10):** moment sigue cargado solo en el dashboard, porque lo necesita FullCalendar 3
+  (calendario de próximos viajes); no se usa para fechas propias.
 - **Se ve y se escribe DD/MM/AAAA**; con hora, **DD/MM/AAAA HH:MM en 24 h**. A la API se le sigue
   mandando AAAA-MM-DD (`altInput: true`, `altFormat: 'd/m/Y'`, `dateFormat: 'Y-m-d'`): la API
   no cambia.
