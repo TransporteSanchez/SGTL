@@ -1524,6 +1524,29 @@ de JavaScript (se cumple la regla de corte). Pasos 6, 7, 9, 10 y 11 OK.
 - [ ] **Limpieza:** el presupuesto N° 7 (dato de prueba de la VM; el SQL corregido está al final del reporte) y los
   choferes de prueba que se ven en las listas ("CLAUDE, PRUEBACLAUDE" y "Prueba, Fede").
 
+**Mejoras del reporte que Rocío pidió hacer ya (22/10, commit "Interfaz: ajustes de la prueba mínima: montos,
+tiempo estimado, porcentajes y avisos"):**
+- Presupuestos: el importe calculado se ve "$ 1.775.000,00" y la ayuda "$ 2.500,00 por km × 710,0 km" (§7.3); lo que
+  se guarda no cambia. El tiempo estimado va en horas y minutos ("34 h", "10 h 30 min"), no "34:00".
+- Dashboard: los porcentajes llevan separador de miles ("+69.000 %").
+- Botones de fila deshabilitados (todo el sistema, `SGTL.botonFila`): el lector de pantalla dice la acción y el motivo
+  ("Editar recibo: solo se editan los recibos"); el globito sigue mostrando el motivo.
+- Cuenta corriente: la vista de solo lectura no muestra los asteriscos de obligatorio.
+- Documentación: si una versión o el manual no tienen PDF cargado, se dice en la página ("Esta versión no tiene el
+  informe cargado.") en lugar de "No se pudo cargar el PDF. Probá de nuevo.".
+- [ ] Probar en la VM (Ctrl+F5): un presupuesto nuevo (importe, ayuda y tiempo estimado con el formato nuevo);
+  Dashboard con Último mes (porcentajes grandes con punto de miles); cuenta corriente, ver una factura (sin asteriscos)
+  y registrar recibo (con asteriscos); Consultar informe de versión → 2.5 (el aviso nuevo).
+
+**Quedan del reporte:**
+- [ ] **Cuenta corriente, vista de la factura: letra y sucursal "—".** No es un dato faltante: `COMPROBANTES` guarda
+  `Letra` y `Sucursal`, pero la vista usa la API del PDF (`FacturasController`, `comprobantes/{id}`), que no las trae.
+  Propuesta: sumarlas a esa consulta (módulo de Facu, hay que recompilar) y mostrar el % de IVA cuando todas las líneas
+  tienen el mismo. Decide Rocío.
+- [ ] **Viajes:** km con punto en las tablas ("67.5") y Gestionar viajes sin "Ver detalle": los ve Rocío en su trabajo
+  de viajes (otra sesión).
+- [ ] **F2, PDF del manual:** después de lo demás.
+
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
 y mandarles este mensaje:
 

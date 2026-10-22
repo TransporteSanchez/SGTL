@@ -32,10 +32,15 @@ vm.runInNewContext([
     extraerFuncion('motivoRutaPresupuesto')
 ].join('\n'), sandbox, { filename: 'presupuestos.js' });
 
-assert.strictEqual(sandbox.duracionEstimada('2026-10-22T09:30', '2026-10-22T12:15'), '02:45',
+// En horas y minutos, no "02:45" (se leía como una hora del día; prueba mínima del 22/10).
+assert.strictEqual(sandbox.duracionEstimada('2026-10-22T09:30', '2026-10-22T12:15'), '2 h 45 min',
     'debe mostrar la diferencia entre inicio y fin');
-assert.strictEqual(sandbox.duracionEstimada('2026-10-22T23:30', '2026-10-24T01:00'), '25:30',
+assert.strictEqual(sandbox.duracionEstimada('2026-10-22T23:30', '2026-10-24T01:00'), '25 h 30 min',
     'debe incluir los d\u00edas transcurridos en el total de horas');
+assert.strictEqual(sandbox.duracionEstimada('2026-10-27T08:00', '2026-10-28T18:00'), '34 h',
+    'sin minutos sueltos van solo las horas');
+assert.strictEqual(sandbox.duracionEstimada('2026-10-27T08:00', '2026-10-27T08:45'), '45 min',
+    'menos de una hora va en minutos');
 assert.strictEqual(sandbox.duracionEstimada('2026-10-22T12:00', '2026-10-22T11:59'), '',
     'no debe calcular una duraci\u00f3n negativa');
 

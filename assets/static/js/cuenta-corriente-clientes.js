@@ -739,6 +739,7 @@
         window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', true);
         porId('btnEmitirComprobante').classList.add('d-none');
         porId('btnCerrarComprobante').textContent = 'Cerrar';
+        porId('modalNuevoComprobante').classList.toggle('cc-solo-lectura', true);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoComprobante')).show();
     }
 
@@ -766,6 +767,7 @@
         window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
         porId('btnDistribuirRecibo').classList.add('d-none');
         porId('btnEmitirRecibo').classList.add('d-none');
+        porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', true);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
     }
 
@@ -843,6 +845,7 @@
             boton.disabled = false;
             boton.classList.remove('d-none');
             boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Guardar';
+            porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', false);
             bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
         }).catch(function (ex) {
             window.SGTL.toastError(textoError(ex, 'No se pudo abrir el recibo. Probá de nuevo.'));
@@ -1032,6 +1035,7 @@
             porId('reciboError').textContent = textoError(ex, 'No se pudo cargar la configuración del recibo. Probá de nuevo.');
         });
         cargarFacturasRecibo();
+        porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', false);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
     }
     function aplicacionesRecibo() {
@@ -1366,6 +1370,7 @@
             porId('cmpError').textContent = textoError(ex, 'No se pudo cargar la configuración del comprobante. Probá de nuevo.');
             boton.disabled = true;
         });
+        porId('modalNuevoComprobante').classList.toggle('cc-solo-lectura', false);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoComprobante')).show();
     }
     function emitirComprobante() {

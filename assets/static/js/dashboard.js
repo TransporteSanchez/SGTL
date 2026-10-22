@@ -378,7 +378,7 @@
     var sube = cambio > 0;
     var clase = sube === subirEsBueno ? 'text-success' : 'text-danger';
     return '<span class="' + clase + ' fw-semibold"><i class="bi bi-arrow-' + (sube ? 'up' : 'down') + '-right" aria-hidden="true"></i> ' +
-      (sube ? '+' : '−') + Math.abs(cambio) + ' %</span>' + (corto ? '' : ' <span class="text-muted">vs. período anterior</span>');
+      (sube ? '+' : '−') + Math.abs(cambio).toLocaleString('es-AR') + ' %</span>' + (corto ? '' : ' <span class="text-muted">vs. período anterior</span>');
   }
 
   function mostrarIndicadores(t, ant) {
@@ -702,7 +702,7 @@
       var c = Math.round((actual - anterior) / anterior * 100);
       if (c === 0) return '<span class="text-muted">0 %</span>';
       return '<span class="text-nowrap"><i class="bi bi-arrow-' + (c > 0 ? 'up' : 'down') + '-right ' + (c > 0 ? 'text-success' : 'text-danger') + '" aria-hidden="true"></i> ' +
-        (c > 0 ? '+' : '−') + Math.abs(c) + ' %</span>';
+        (c > 0 ? '+' : '−') + Math.abs(c).toLocaleString('es-AR') + ' %</span>';
     }
 
     function fila(nombre, c, variacionHtml, esTotal) {

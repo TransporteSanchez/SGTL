@@ -146,7 +146,8 @@ function probarFormularioDeFacturaSoloLectura() {
         campos.cmpConcepto, campos.cmpNeto, campos.cmpIvaPct, campos.cmpIvaImporte, campos.cmpOtros,
         campos.cmpObservaciones];
     campos.modalNuevoComprobante = {
-        querySelectorAll: function () { return camposFormulario; }
+        querySelectorAll: function () { return camposFormulario; },
+        classList: crearClase()
     };
     let modalAbierto = false;
     const sandbox = {
@@ -181,6 +182,8 @@ function probarFormularioDeFacturaSoloLectura() {
     assert.match(campos.cmpDetalleLecturaCuerpo.innerHTML, /Servicio de transporte/,
         'la consulta debe mostrar el detalle del comprobante');
     assert.ok(modalAbierto, 'la consulta debe abrir el formulario en modo solo lectura');
+    assert.ok(campos.modalNuevoComprobante.classList.contains('cc-solo-lectura'),
+        'en solo lectura no se muestran los asteriscos de obligatorio');
 }
 
 function probarDistribucionDeRecibo() {

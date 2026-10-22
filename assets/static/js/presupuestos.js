@@ -44,12 +44,15 @@
     }); }
     function opcion(select, valor, texto) { var o = document.createElement('option'); o.value = valor; o.textContent = texto; select.appendChild(o); }
     function nombre(id) { var s = el(id); return s.selectedIndex > 0 ? s.options[s.selectedIndex].textContent : ''; }
-    // Tiempo estimado: la diferencia entre inicio y fin, en HH:MM (se calcula solo).
+    // Tiempo estimado: la diferencia entre inicio y fin, en horas y minutos ("34 h", "8 h 30 min"); se calcula solo.
+    // No va como "34:00" porque se lee como una hora del día.
     function duracionEstimada(inicio, fin) {
-        var desde = new Date(inicio), hasta = new Date(fin), minutos;
+        var desde = new Date(inicio), hasta = new Date(fin), minutos, horas, resto;
         if (!inicio || !fin || Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime()) || hasta < desde) return '';
         minutos = Math.round((hasta.getTime() - desde.getTime()) / 60000);
-        return String(Math.floor(minutos / 60)).padStart(2, '0') + ':' + String(minutos % 60).padStart(2, '0');
+        horas = Math.floor(minutos / 60); resto = minutos % 60;
+        if (!horas) return resto + ' min';
+        return horas.toLocaleString('es-AR') + ' h' + (resto ? ' ' + resto + ' min' : '');
     }
     function actualizarTiempoEstimado() { el('tiempo').value = duracionEstimada(el('fechaInicio').value, el('fechaFin').value); }
     function kilometrosRuta(resultado) {
@@ -179,8 +182,8 @@
             var importe = Number(tipo === 'fija' ? r.ValorFijoNeto : r.MontoCalculado);
             if (!Number.isFinite(importe) || importe < 0) throw new Error('Importe inválido');
             tarifa = {tipo: tipo, id: tipo === 'fija' ? r.TarifaFija_ID : r.TarifaKm_ID, valorKm: tipo === 'km' ? r.ValorKm : null, importe: importe.toFixed(2)};
-            el('importe').value = tarifa.importe;
-            el('tarifaInfo').textContent = tipo === 'fija' ? 'Tarifa fija #' + tarifa.id + '. Se utiliza la tarifa vigente o la más reciente registrada para la ruta.' : 'Tarifa por km #' + tarifa.id + ': $ ' + r.ValorKm + ' por km × ' + el('distancia').value + ' km.';
+            el('importe').value = SGTL.monto(tarifa.importe);
+            el('tarifaInfo').textContent = tipo === 'fija' ? 'Tarifa fija #' + tarifa.id + '. Se utiliza la tarifa vigente o la más reciente registrada para la ruta.' : 'Tarifa por km #' + tarifa.id + ': ' + SGTL.monto(r.ValorKm) + ' por km × ' + SGTL.km(el('distancia').value) + ' km.';
         }).catch(function (error) {
             if (version !== secuencia) return;
             var info = el('tarifaInfo');
@@ -274,7 +277,7 @@
         campos.forEach(function (k) { if (el(k)) el(k).value = p[k] || ''; }); ponerFechaHora('fechaInicio', p.fechaInicio); ponerFechaHora('fechaFin', p.fechaFin); actualizarTiempoEstimado();
         conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
         conservarOpcion('origenId', p.origenId, p.origen); conservarOpcion('destinoId', p.destinoId, p.destino); conservarOpcion('camionId', p.camionId, p.camion); conservarOpcion('choferId', p.choferId, p.chofer);
-        base = Object.assign({}, p); actual = Object.assign({}, p); if (p.tarifaId && p.tipoTarifa && p.importe !== undefined) { tarifa = {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)}; el('importe').value = p.importe; el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.'; }
+        base = Object.assign({}, p); actual = Object.assign({}, p); if (p.tarifaId && p.tipoTarifa && p.importe !== undefined) { tarifa = {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)}; el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.'; }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
         modal.show();
     }

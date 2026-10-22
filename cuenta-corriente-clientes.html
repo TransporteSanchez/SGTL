@@ -48,6 +48,8 @@
         .cc-table > tbody > tr.cc-application-last > td { border-bottom: 2px solid #d0d5dd; }
         .cc-application-row .cc-dato-aplicado { color: var(--sgtl-texto-suave); }
         .cc-application-document { padding-left: 1.75rem !important; }
+        /* En la vista de solo lectura no hay nada que completar: sin asteriscos de obligatorio. */
+        .cc-solo-lectura .form-label .text-danger { display: none; }
         .cc-application-document i { color: var(--sgtl-texto-suave); }
         .cc-document { color: #435ebe; font-weight: 600; white-space: nowrap; }
         .cc-debit { color: #dc3545; }

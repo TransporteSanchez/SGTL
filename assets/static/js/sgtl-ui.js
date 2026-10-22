@@ -386,8 +386,10 @@
 
     if (opciones.deshabilitado) {
       var motivo = opciones.motivo || texto;
+      // El globito muestra el motivo; el lector de pantalla dice la acción y el motivo ("Editar recibo: solo se editan…").
+      var etiqueta = texto && opciones.motivo ? texto + ': ' + motivo.charAt(0).toLowerCase() + motivo.slice(1) : motivo;
       return '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="' + escapar(motivo) + '">' +
-        '<button type="button" class="btn btn-sm ' + base.clase + '" disabled aria-label="' + escapar(motivo) + '">' + icono + '</button></span>';
+        '<button type="button" class="btn btn-sm ' + base.clase + '" disabled aria-label="' + escapar(etiqueta) + '">' + icono + '</button></span>';
     }
     return '<button type="button" class="btn btn-sm ' + base.clase + '" data-accion="' + escapar(accion) + '"' + atributos +
       ' data-bs-toggle="tooltip" title="' + escapar(texto) + '" aria-label="' + escapar(texto) + '">' + icono + '</button>';

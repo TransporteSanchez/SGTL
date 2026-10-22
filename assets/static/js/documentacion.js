@@ -43,7 +43,13 @@
     liberarPdf();
     informar('Cargando…');
     try {
-      var r = await respuesta(await fetch(api + ruta, { headers: headers(), cache: 'no-store' }), 'No se pudo cargar el PDF. Probá de nuevo.');
+      var crudo = await fetch(api + ruta, { headers: headers(), cache: 'no-store' });
+      // 404: el PDF no está cargado. Se dice en la página: reintentar no sirve.
+      if (crudo.status === 404) {
+        if (solicitud === secuencia) informar(tipo === 'versiones' ? 'Esta versión no tiene el informe cargado.' : 'El manual todavía no tiene el PDF cargado.');
+        return;
+      }
+      var r = await respuesta(crudo, 'No se pudo cargar el PDF. Probá de nuevo.');
       var pdf = await r.blob();
       if (solicitud !== secuencia) return;
       urlPdf = URL.createObjectURL(pdf);
