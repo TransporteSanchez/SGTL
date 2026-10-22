@@ -82,9 +82,23 @@ JOIN dbo.COMPROBANTES c ON c.Comprobante_ID = p.ComprobanteID
 WHERE (c.Estado = 'ANULADO' AND p.Vigente = 1)
    OR (c.Estado = 'EMITIDO' AND p.Vigente = 0);
 
-SELECT a.Aplicacion_ID FROM dbo.CUENTA_CORRIENTE_APLICACIONES a
-JOIN dbo.COMPROBANTES c ON c.Comprobante_ID = a.ComprobanteCreditoID
-WHERE a.Vigente = 1 AND c.Tipo = 'NC' AND c.ComprobanteReferenciaID <> a.ComprobanteDeudaID;
+SELECT c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total,
+       COUNT(CASE WHEN a.Vigente=1 THEN 1 END) AS AplicacionesVigentes,
+       COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
+       MIN(CASE WHEN a.Vigente=1 THEN a.ComprobanteDeudaID END) AS ComprobanteDeudaID
+FROM dbo.COMPROBANTES c
+LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID = c.Comprobante_ID
+WHERE c.Tipo = 'NC' AND c.ComprobanteReferenciaID IS NOT NULL
+GROUP BY c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total
+HAVING COUNT(CASE WHEN a.Vigente=1 THEN 1 END) <> 1
+    OR COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) <> c.Total
+    OR MIN(CASE WHEN a.Vigente=1 THEN a.ComprobanteDeudaID END) <> c.ComprobanteReferenciaID;
+
+SELECT c.Comprobante_ID FROM dbo.COMPROBANTES c
+LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID = c.Comprobante_ID
+WHERE c.Tipo = 'NC' AND c.ComprobanteReferenciaID IS NULL
+GROUP BY c.Comprobante_ID,c.Total
+HAVING COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) <> c.Total;
 
 SELECT pv.ProformaID, pv.ViajeID FROM dbo.PROFORMAS_VIAJES pv
 JOIN dbo.PROFORMAS p ON p.Proforma_ID = pv.ProformaID

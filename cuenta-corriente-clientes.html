@@ -120,15 +120,15 @@
                                         <i class="bi bi-file-earmark-plus me-1"></i>Comprobantes
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura directa"><i class="bi bi-receipt me-2"></i>Nueva factura directa</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura directa"><i class="bi bi-receipt me-2"></i>Factura directa</button></li>
                                         <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura desde proforma"><i class="bi bi-file-earmark-check me-2"></i>Factura desde proforma</button></li>
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de crédito"><i class="bi bi-file-earmark-minus me-2"></i>Nueva nota de crédito</button></li>
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de débito"><i class="bi bi-file-earmark-plus me-2"></i>Nueva nota de débito</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de crédito"><i class="bi bi-file-earmark-minus me-2"></i>Nota de crédito</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de débito"><i class="bi bi-file-earmark-plus me-2"></i>Nota de débito</button></li>
                                     </ul>
                                 </div>
 
                                 <button type="button" class="btn btn-primary" id="btnNuevoRecibo">
-                                    <i class="bi bi-wallet2 me-1"></i>Nuevo recibo
+                                    <i class="bi bi-wallet2 me-1"></i>Recibo
                                 </button>
                             </div>
                         </div>
@@ -239,11 +239,11 @@
     </div>
 
     <div class="modal fade" id="modalNuevoComprobante" tabindex="-1" aria-labelledby="cmpTitulo" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title" id="cmpTitulo">Nuevo comprobante</h5>
+                        <h5 class="modal-title" id="cmpTitulo">Registrar comprobante</h5>
                         <small class="text-muted">Generación manual para Cuenta Corriente.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -263,18 +263,40 @@
                             <select id="cmpReferencia" class="form-select"></select>
                             <div class="form-text" id="cmpReferenciaAyuda"></div>
                         </div>
+                        <div class="col-12 d-none" id="cmpAplicacionesGrupo">
+                            <div class="d-flex align-items-end gap-2 mb-2">
+                                <div class="flex-grow-1"><label class="form-label" for="cmpImporteTotalNC">Importe total a acreditar</label><input id="cmpImporteTotalNC" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
+                                <button type="button" class="btn btn-sm btn-primary mb-1" id="btnDistribuirNC"><i class="bi bi-diagram-3 me-1"></i>Distribuir</button>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover mb-2">
+                                    <thead><tr><th></th><th>Comprobante</th><th>Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
+                                    <tbody id="cmpFacturasNC"></tbody>
+                                </table>
+                            </div>
+                            <div class="cc-total-row"><span>Total NC: <strong id="cmpResumenNCTotal">$ 0,00</strong></span><span>Total aplicado: <strong id="cmpResumenNCAplicado">$ 0,00</strong></span><span>Diferencia: <strong id="cmpResumenNCDiferencia">$ 0,00</strong></span></div>
+                        </div>
+                        <div class="col-12 d-none" id="cmpSoloLecturaRelacion"></div>
+                        <div class="col-12 d-none" id="cmpDetalleLectura">
+                            <div class="cc-block-title">Detalle del comprobante</div>
+                            <div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th>Concepto</th><th class="text-end">Cant.</th><th>Unidad</th><th class="text-end">Total</th></tr></thead><tbody id="cmpDetalleLecturaCuerpo"></tbody></table></div>
+                        </div>
+                        <div class="col-12 d-none" id="cmpAplicacionesLectura">
+                            <div class="cc-block-title">Comprobantes aplicados</div>
+                            <div class="table-responsive"><table class="table table-sm table-hover mb-0"><thead><tr><th>Comprobante</th><th>Fecha</th><th>Concepto</th><th class="text-end">Importe aplicado</th></tr></thead><tbody id="cmpAplicacionesLecturaCuerpo"></tbody></table></div>
+                        </div>
                         <div class="col-12"><label class="form-label">Concepto</label><input id="cmpConcepto" class="form-control" maxlength="200" placeholder="Descripción del concepto"></div>
-                        <div class="col-md-4"><label class="form-label">Importe neto</label><input id="cmpNeto" type="number" min="0.01" step="0.01" class="form-control text-end" value="0.00"></div>
+                        <div class="col-md-4"><label class="form-label">Importe neto</label><input id="cmpNeto" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
                         <div class="col-md-2"><label class="form-label">IVA</label><select id="cmpIvaPct" class="form-select"><option value="0">0%</option><option value="10.5">10,5%</option><option value="21" selected>21%</option><option value="27">27%</option></select></div>
                         <div class="col-md-3"><label class="form-label">IVA calculado</label><input id="cmpIvaImporte" class="form-control text-end" readonly></div>
-                        <div class="col-md-3"><label class="form-label">Otros impuestos</label><input id="cmpOtros" type="number" min="0" step="0.01" class="form-control text-end" value="0.00"></div>
+                        <div class="col-md-3"><label class="form-label">Otros impuestos</label><input id="cmpOtros" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
                         <div class="col-12"><div class="cc-total-row"><span>Total: <strong id="cmpTotal">$ 0,00</strong></span></div></div>
                         <div class="col-12"><label class="form-label">Observaciones</label><textarea id="cmpObservaciones" class="form-control" rows="3" maxlength="2000"></textarea></div>
                     </div>
                     <div class="text-danger small text-end mt-2" id="cmpError" aria-live="polite"></div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-light-secondary" id="btnCerrarComprobante" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="btnEmitirComprobante"><i class="bi bi-check-circle me-1"></i>Emitir comprobante</button>
                 </div>
             </div>
@@ -282,11 +304,11 @@
     </div>
 
     <div class="modal fade" id="modalNuevoRecibo" tabindex="-1" aria-labelledby="modalNuevoReciboTitulo" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
-                        <h5 class="modal-title" id="modalNuevoReciboTitulo">Nuevo recibo</h5>
+                        <h5 class="modal-title" id="modalNuevoReciboTitulo">Registrar Recibo</h5>
                         <small class="text-muted">Registrar cobranza e imputar facturas pendientes.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -310,10 +332,10 @@
                         <div class="col-md-3"><label class="form-label" for="reciboNumeroComprobante">N° comprobante</label><input id="reciboNumeroComprobante" class="form-control" readonly></div>
                         <div class="col-md-4"><label class="form-label">Forma</label><select id="reciboFormaPago" class="form-select"><option>Transferencia</option><option>Efectivo</option><option>Cheque</option><option>Otro</option></select></div>
                         <div class="col-md-4"><label class="form-label">Referencia</label><input id="reciboReferencia" class="form-control"></div>
-                        <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="number" min="0.01" step="0.01" class="form-control text-end" value="0"></div>
+                        <div class="col-md-4"><label class="form-label">Importe</label><input id="reciboFormaImporte" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
                     </div>
 
-                    <div class="cc-block-title">3 · Imputación a comprobantes</div>
+                    <div class="d-flex align-items-center justify-content-between cc-block-title"><span>3 · Imputación a comprobantes</span><button type="button" class="btn btn-sm btn-primary" id="btnDistribuirRecibo"><i class="bi bi-diagram-3 me-1"></i>Distribuir</button></div>
                     <div class="table-responsive">
                         <table class="table table-sm table-hover">
                             <thead><tr><th></th><th>Comprobante</th><th>Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
@@ -346,25 +368,28 @@
                 </div>
                 <div class="modal-body" id="modalDetalleCuerpo"></div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-primary d-none" id="btnEnviarComprobanteMail">
-                        <i class="bi bi-envelope me-1"></i>Enviar por mail
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary d-none" id="btnEditarRecibo">
-                        <i class="bi bi-pencil me-1"></i>Editar recibo
-                    </button>
-                    <button type="button" class="btn btn-outline-warning d-none" id="btnAnularRecibo">
-                        <i class="bi bi-slash-circle me-1"></i>Anular recibo
-                    </button>
-                    <button type="button" class="btn btn-outline-danger d-none" id="btnEliminarRecibo">
-                        <i class="bi bi-trash me-1"></i>Eliminar recibo
-                    </button>
-                    <button type="button" class="btn btn-outline-secondary d-none" id="btnImprimirFactura">
-                        <i class="bi bi-printer me-1"></i>Imprimir
-                    </button>
-                    <button type="button" class="btn btn-primary d-none" id="btnDescargarFactura">
-                        <i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF
-                    </button>
+                    <button type="button" class="btn btn-outline-secondary d-none" id="btnVerComprobante"><i class="bi bi-eye me-1"></i>Ver</button>
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalVistaPreviaComprobante" tabindex="-1" aria-labelledby="tituloVistaPreviaComprobante" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloVistaPreviaComprobante">Vista previa del comprobante</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="vistaPreviaComprobanteFeedback" class="text-muted" role="status">Preparando vista previa…</div>
+                    <iframe id="vistaPreviaComprobanteDocumento" title="Vista previa del comprobante en PDF" style="display:none; width:100%; height:65vh; border:1px solid #dee2e6;"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <a id="descargarVistaPreviaComprobante" class="btn btn-outline-primary disabled" aria-disabled="true"><i class="bi bi-download me-1"></i>Descargar PDF</a>
+                    <button type="button" class="btn btn-primary" id="imprimirVistaPreviaComprobante" disabled><i class="bi bi-printer me-1"></i>Imprimir</button>
                 </div>
             </div>
         </div>
@@ -438,11 +463,20 @@
     </div>
 
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
-    <script src="assets/static/js/sidebar-loader.js"></script>
-    <script>if (window.loadSidebar) window.loadSidebar();</script>
+    <script>
+        window.__sgtlSidebarCuentaCorriente = document.getElementById('sidebar');
+        if (window.__sgtlSidebarCuentaCorriente) window.__sgtlSidebarCuentaCorriente.id = 'sidebar-pending';
+    </script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script>
+        if (window.__sgtlSidebarCuentaCorriente) {
+            window.__sgtlSidebarCuentaCorriente.id = 'sidebar';
+            delete window.__sgtlSidebarCuentaCorriente;
+        }
+    </script>
     <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>

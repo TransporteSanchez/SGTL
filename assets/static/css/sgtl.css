@@ -148,3 +148,8 @@
 .d-flex > .bi::before {
     vertical-align: top;
 }
+
+/* Formularios de emisión de Cuenta Corriente: ocupan el mismo alto visible que Recibo. */
+.sgtl-modal-formulario.modal-dialog-scrollable .modal-content {
+    height: 100%;
+}

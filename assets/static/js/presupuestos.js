@@ -4,7 +4,8 @@
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
-    var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
+    var mapaPresupuesto = null, directionsServicePresupuesto = null, directionsRendererPresupuesto = null, mapaPresupuestoListo = null, rutaPresupuestoSeq = 0;
+    var campos = ['id', 'email', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
     function el(id) { return document.getElementById(id); }
     function aviso(id, texto, error) { el(id).className = texto ? 'alert alert-' + (error ? 'danger' : 'success') : ''; el(id).textContent = texto; }
     function pedir(url, opciones) { return fetch(url, opciones).then(function (r) {
@@ -17,6 +18,131 @@
     }); }
     function opcion(select, valor, texto) { var o = document.createElement('option'); o.value = valor; o.textContent = texto; select.appendChild(o); }
     function nombre(id) { var s = el(id); return s.selectedIndex > 0 ? s.options[s.selectedIndex].textContent : ''; }
+    function mascaraHora(valor) {
+        var digitos = String(valor || '').replace(/\D/g, '').slice(0, 4);
+        return digitos.length > 2 ? digitos.slice(0, 2) + ':' + digitos.slice(2) : digitos;
+    }
+    function horaValida(valor) {
+        var partes = /^(\d{2}):(\d{2})$/.exec(String(valor || ''));
+        return !!partes && Number(partes[1]) <= 23 && Number(partes[2]) <= 59;
+    }
+    function combinarFechaYHora(fecha, hora) {
+        return fecha && horaValida(hora) ? fecha + 'T' + hora : '';
+    }
+    function duracionEstimada(inicio, fin) {
+        var desde = new Date(inicio), hasta = new Date(fin), minutos;
+        if (!inicio || !fin || Number.isNaN(desde.getTime()) || Number.isNaN(hasta.getTime()) || hasta < desde) return '';
+        minutos = Math.round((hasta.getTime() - desde.getTime()) / 60000);
+        return String(Math.floor(minutos / 60)).padStart(2, '0') + ':' + String(minutos % 60).padStart(2, '0');
+    }
+    function kilometrosRuta(resultado) {
+        var ruta = resultado && resultado.routes && resultado.routes[0], metros;
+        if (!ruta || !ruta.legs || !ruta.legs.length) return '';
+        metros = ruta.legs.reduce(function (total, tramo) { return total + (tramo.distance ? tramo.distance.value : 0); }, 0);
+        return metros > 0 ? (metros / 1000).toFixed(1) : '';
+    }
+    function distanciaCalculadaValida(valor) { return Number(valor) > 0; }
+    function validarDatosPresupuesto(inicio, fin, distancia) {
+        if (!inicio || !fin) return 'Completá fecha y hora de inicio y fin con formato HH:mm.';
+        if (fin < inicio) return 'La fecha y hora de fin no pueden ser anteriores a las de inicio.';
+        if (!distanciaCalculadaValida(distancia)) return 'Esperá el cálculo de la distancia con Google Maps antes de guardar.';
+        return '';
+    }
+    function direccionUbicacion(ubicacion) {
+        var partes = [], calleAltura;
+        if (!ubicacion) return '';
+        calleAltura = ((ubicacion.Calle || '').trim() + ' ' + (ubicacion.AlturaCalle || '').trim()).trim();
+        if (calleAltura) partes.push(calleAltura);
+        if (ubicacion.NombreLocalidad) partes.push(String(ubicacion.NombreLocalidad).trim());
+        if (ubicacion.NombreProvincia) partes.push(String(ubicacion.NombreProvincia).trim());
+        partes.push('Argentina');
+        return partes.join(', ');
+    }
+    function aplicarRutaPresupuesto(resultado) {
+        var distancia = kilometrosRuta(resultado), ruta = resultado && resultado.routes && resultado.routes[0], tramos;
+        if (!distancia || !ruta || !ruta.legs || !ruta.legs.length) return false;
+        tramos = ruta.legs;
+        el('distancia').value = distancia;
+        actualizarMensajeMapa('Distancia: ' + distancia + ' km, de ' + tramos[0].start_address + ' a ' + tramos[tramos.length - 1].end_address + '.', 'ok');
+        solicitarCalculo();
+        return true;
+    }
+    function fechaInicioCompleta() { return combinarFechaYHora(el('fechaInicio').value, el('horaInicio').value); }
+    function fechaFinCompleta() { return combinarFechaYHora(el('fechaFin').value, el('horaFin').value); }
+    function actualizarTiempoEstimado() { el('tiempo').value = duracionEstimada(fechaInicioCompleta(), fechaFinCompleta()); }
+    function cargarFechaYHora(fechaId, horaId, valor) {
+        var coincidencia = /^(\d{4}-\d{2}-\d{2})(?:T|\s)(\d{2}:\d{2})/.exec(String(valor || ''));
+        el(fechaId).value = coincidencia ? coincidencia[1] : '';
+        el(horaId).value = coincidencia ? coincidencia[2] : '';
+    }
+    function actualizarMensajeMapa(texto, tipo) {
+        var mensaje = el('mapaPresupuestoMsg');
+        mensaje.className = tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted');
+        mensaje.textContent = texto;
+    }
+    function limpiarRutaPresupuesto() {
+        rutaPresupuestoSeq++;
+        if (directionsRendererPresupuesto) directionsRendererPresupuesto.set('directions', null);
+        el('distancia').value = '';
+        actualizarMensajeMapa('Seleccioná origen y destino para calcular la distancia.');
+    }
+    function motivoRutaPresupuesto(status) {
+        if (status === 'NOT_FOUND' || status === 'ZERO_RESULTS') return 'Google no encontró el origen o el destino. Revisá la dirección en Orígenes y destinos.';
+        if (status === 'OVER_QUERY_LIMIT' || status === 'OVER_DAILY_LIMIT') return 'Se alcanzó el límite diario de consultas a Google Maps.';
+        if (status === 'REQUEST_DENIED') return 'Google Maps rechazó la consulta.';
+        return 'No se pudo calcular la ruta con Google Maps.';
+    }
+    function precisionUbicacion(waypoint) {
+        var tipos = (waypoint && waypoint.types) || [];
+        if (tipos.indexOf('country') >= 0 || tipos.indexOf('administrative_area_level_1') >= 0) return 'imprecisa';
+        var exactos = ['street_address', 'premise', 'subpremise', 'route', 'intersection', 'establishment', 'point_of_interest'];
+        return exactos.some(function (tipo) { return tipos.indexOf(tipo) >= 0; }) && !waypoint.partial_match ? 'exacta' : 'aproximada';
+    }
+    function rutaPresupuestoNoDisponible(motivo) {
+        if (directionsRendererPresupuesto) directionsRendererPresupuesto.set('directions', null);
+        el('distancia').value = '';
+        actualizarMensajeMapa(motivo + ' La distancia debe calcularse antes de guardar.', 'error');
+        solicitarCalculo();
+    }
+    function initMapaPresupuesto() {
+        if (mapaPresupuestoListo) return mapaPresupuestoListo;
+        if (!window.SGTLGoogleMaps) return Promise.reject(new Error('No se pudo cargar Google Maps.'));
+        mapaPresupuestoListo = window.SGTLGoogleMaps.cargar()
+            .then(function () { return Promise.all([google.maps.importLibrary('maps'), google.maps.importLibrary('routes')]); })
+            .then(function (bibliotecas) {
+                mapaPresupuesto = new bibliotecas[0].Map(el('mapaPresupuesto'), {
+                    center: { lat: -34.6, lng: -58.4 }, zoom: 5, mapTypeControl: false, streetViewControl: false
+                });
+                directionsServicePresupuesto = new bibliotecas[1].DirectionsService();
+                directionsRendererPresupuesto = new bibliotecas[1].DirectionsRenderer({ map: mapaPresupuesto, draggable: false });
+            }).catch(function (error) { mapaPresupuestoListo = null; throw error; });
+        return mapaPresupuestoListo;
+    }
+    function calcularRutaPresupuesto() {
+        var origenId = el('origenId').value, destinoId = el('destinoId').value, origen, destino, secuenciaRuta;
+        if (!origenId || !destinoId) { limpiarRutaPresupuesto(); solicitarCalculo(); return; }
+        origen = origenes.find(function (item) { return String(item.Origen_ID) === String(origenId); });
+        destino = destinos.find(function (item) { return String(item.Destino_ID) === String(destinoId); });
+        if (!origen || !destino) { rutaPresupuestoNoDisponible('No se encontraron las ubicaciones seleccionadas.'); return; }
+        secuenciaRuta = ++rutaPresupuestoSeq;
+        el('distancia').value = '';
+        solicitarCalculo();
+        actualizarMensajeMapa('Calculando ruta...');
+        initMapaPresupuesto().then(function () {
+            directionsServicePresupuesto.route({ origin: direccionUbicacion(origen), destination: direccionUbicacion(destino), travelMode: 'DRIVING', region: 'ar' }, function (resultado, estado) {
+                var ubicaciones, origenPrecision, destinoPrecision;
+                if (secuenciaRuta !== rutaPresupuestoSeq) return;
+                if (estado !== 'OK') { rutaPresupuestoNoDisponible(motivoRutaPresupuesto(estado)); return; }
+                ubicaciones = resultado.geocoded_waypoints || [];
+                origenPrecision = precisionUbicacion(ubicaciones[0]); destinoPrecision = precisionUbicacion(ubicaciones[1]);
+                if (origenPrecision === 'imprecisa' || destinoPrecision === 'imprecisa') {
+                    rutaPresupuestoNoDisponible('Google ubicó una dirección de forma imprecisa. Completá calle, altura y localidad.'); return;
+                }
+                directionsRendererPresupuesto.setDirections(resultado);
+                if (!aplicarRutaPresupuesto(resultado)) rutaPresupuestoNoDisponible('Google Maps no devolvió una distancia válida.');
+            });
+        }).catch(function () { if (secuenciaRuta === rutaPresupuestoSeq) rutaPresupuestoNoDisponible('No se pudo cargar Google Maps.'); });
+    }
     function opcionesRuta(origenId, destinoId) {
         el('agregarOrigenPresupuesto').disabled = !el('cliente').value;
         el('agregarDestinoPresupuesto').disabled = !el('cliente').value;
@@ -29,7 +155,7 @@
     function invalidarDocumento() { revision++; actual = null; }
     function reiniciar() {
         secuencia++; clearTimeout(timer); el('formulario').reset(); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
-        opcionesRuta(); aviso('mensajeForm', '', false); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
+        opcionesRuta(); limpiarRutaPresupuesto(); aviso('mensajeForm', '', false); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
     }
     function calcular() {
         var version = ++secuencia, tipo = el('tipoTarifa').value, url, params;
@@ -39,9 +165,10 @@
             if (!el('cliente').value || !el('origenId').value || !el('destinoId').value) { el('tarifaInfo').textContent = 'Seleccioná cliente, origen y destino para buscar la tarifa fija.'; return; }
             params = new URLSearchParams({clienteId: el('cliente').value, origenId: el('origenId').value, destinoId: el('destinoId').value}); url = '/TarifasFijas/PorRuta?';
         } else {
-            if (!el('fechaInicio').value || !el('fechaFin').value || !(Number(el('distancia').value) > 0)) { el('tarifaInfo').textContent = 'Completá las fechas y los kilómetros para calcular la tarifa.'; return; }
-            if (el('fechaFin').value < el('fechaInicio').value) { el('tarifaInfo').textContent = 'La fecha de fin no puede ser anterior a la de inicio.'; return; }
-            params = new URLSearchParams({fechaInicio: el('fechaInicio').value, fechaFin: el('fechaFin').value, km: el('distancia').value}); url = '/TarifasKm/Calcular?';
+            var inicio = fechaInicioCompleta(), fin = fechaFinCompleta();
+            if (!inicio || !fin || !distanciaCalculadaValida(el('distancia').value)) { el('tarifaInfo').textContent = 'Completá las fechas, horas y kilómetros para calcular la tarifa.'; return; }
+            if (fin < inicio) { el('tarifaInfo').textContent = 'La fecha y hora de fin no pueden ser anteriores a las de inicio.'; return; }
+            params = new URLSearchParams({fechaInicio: inicio, fechaFin: fin, km: el('distancia').value}); url = '/TarifasKm/Calcular?';
         }
         el('tarifaInfo').textContent = 'Calculando tarifa...';
         pedir(api + url + params.toString()).then(function (r) {
@@ -67,6 +194,7 @@
     function solicitarCalculo() { secuencia++; tarifa = null; el('importe').value = ''; clearTimeout(timer); timer = setTimeout(calcular, 250); }
     function datos() {
         var d = Object.assign({}, base || {}); campos.forEach(function (k) { d[k] = el(k).value; });
+        d.fechaInicio = fechaInicioCompleta(); d.fechaFin = fechaFinCompleta();
         d.clienteId = el('cliente').value; d.cliente = nombre('cliente'); d.origenId = el('origenId').value; d.origen = nombre('origenId'); d.destinoId = el('destinoId').value; d.destino = nombre('destinoId');
         d.camion = nombre('camionId'); d.chofer = nombre('choferId'); d.importe = tarifa.importe; d.tarifaId = tarifa.id; d.valorKm = tarifa.valorKm;
         if (!d.fecha) d.fecha = new Date().toLocaleDateString('en-CA'); return d;
@@ -103,6 +231,7 @@
     function abrir(p) {
         reiniciar(); el('tituloModal').textContent = 'Editar presupuesto #' + p.id;
         campos.forEach(function (k) { if (el(k)) el(k).value = p[k] || ''; }); conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
+        cargarFechaYHora('fechaInicio', 'horaInicio', p.fechaInicio); cargarFechaYHora('fechaFin', 'horaFin', p.fechaFin); actualizarTiempoEstimado();
         conservarOpcion('origenId', p.origenId, p.origen); conservarOpcion('destinoId', p.destinoId, p.destino); conservarOpcion('camionId', p.camionId, p.camion); conservarOpcion('choferId', p.choferId, p.chofer);
         base = Object.assign({}, p); actual = Object.assign({}, p); if (p.tarifaId && p.tipoTarifa && p.importe !== undefined) { tarifa = {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)}; el('importe').value = p.importe; el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.'; }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
@@ -174,7 +303,7 @@
     };
     el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Registrar presupuesto'; modal.show(); };
     el('filtro').oninput = dibujar;
-    el('cliente').onchange = function () { var c = clientes.find(function (x) { return String(x.Cliente_ID) === el('cliente').value; }); el('email').value = c && c.Email || ''; opcionesRuta(); solicitarCalculo(); };
+    el('cliente').onchange = function () { var c = clientes.find(function (x) { return String(x.Cliente_ID) === el('cliente').value; }); el('email').value = c && c.Email || ''; opcionesRuta(); limpiarRutaPresupuesto(); solicitarCalculo(); };
     ['agregarOrigenPresupuesto', 'agregarDestinoPresupuesto'].forEach(function (id) {
         el(id).addEventListener('click', function () {
             var tipo = id === 'agregarOrigenPresupuesto' ? 'Origen' : 'Destino';
@@ -183,16 +312,27 @@
                 if (tipo === 'Origen') { origenes.push(registro); origenActual = registro.Origen_ID; }
                 else { destinos.push(registro); destinoActual = registro.Destino_ID; }
                 opcionesRuta(origenActual, destinoActual);
-                el('distancia').value = '';
                 el(tipo === 'Origen' ? 'origenId' : 'destinoId').dispatchEvent(new Event('change', { bubbles: true }));
             }});
         });
     });
-    ['origenId','destinoId','fechaInicio','fechaFin','distancia','tipoTarifa'].forEach(function (k) { el(k).addEventListener('change', solicitarCalculo); });
-    el('distancia').addEventListener('input', solicitarCalculo);
+    ['origenId', 'destinoId'].forEach(function (id) { el(id).addEventListener('change', calcularRutaPresupuesto); });
+    ['fechaInicio', 'fechaFin'].forEach(function (id) { el(id).addEventListener('change', function () { actualizarTiempoEstimado(); solicitarCalculo(); }); });
+    ['horaInicio', 'horaFin'].forEach(function (id) {
+        el(id).addEventListener('input', function () {
+            this.value = mascaraHora(this.value);
+            this.setCustomValidity(this.value && !horaValida(this.value) ? 'Ingresá una hora válida con formato HH:mm.' : '');
+            actualizarTiempoEstimado(); solicitarCalculo();
+        });
+        el(id).addEventListener('blur', function () { this.setCustomValidity(this.value && !horaValida(this.value) ? 'Ingresá una hora válida con formato HH:mm.' : ''); });
+    });
+    el('tipoTarifa').addEventListener('change', solicitarCalculo);
     el('formulario').addEventListener('input', invalidarDocumento); el('formulario').addEventListener('change', invalidarDocumento);
     el('formulario').onsubmit = function (e) {
-        e.preventDefault(); if (el('fechaFin').value < el('fechaInicio').value) { aviso('mensajeForm', 'La fecha de fin no puede ser anterior a la de inicio.', true); return; }
+        var inicio = fechaInicioCompleta(), fin = fechaFinCompleta(), errorValidacion;
+        e.preventDefault();
+        errorValidacion = validarDatosPresupuesto(inicio, fin, el('distancia').value);
+        if (errorValidacion) { aviso('mensajeForm', errorValidacion, true); return; }
         if (!tarifa) { aviso('mensajeForm', 'Esperá el cálculo de una tarifa válida antes de guardar.', true); return; }
         if (guardando) return;
         var d = datos(), id = el('id').value, revisionGuardada = revision; guardando = true; el('guardar').disabled = true;
@@ -229,6 +369,15 @@
     }
     modal = bootstrap.Modal.getOrCreateInstance(el('modalPresupuesto'));
     modalVista = bootstrap.Modal.getOrCreateInstance(el('modalVistaPresupuesto'));
+    el('btnRecalcularRutaPresupuesto').onclick = calcularRutaPresupuesto;
+    el('modalPresupuesto').addEventListener('shown.bs.modal', function () {
+        initMapaPresupuesto().then(function () {
+            if (el('origenId').value && el('destinoId').value) calcularRutaPresupuesto();
+        }).catch(function () { rutaPresupuestoNoDisponible('No se pudo cargar Google Maps.'); });
+    });
+    if (window.SGTLGoogleMaps) window.SGTLGoogleMaps.alFallarAutenticacion(function () {
+        rutaPresupuestoNoDisponible('Google Maps rechazó la clave para este sitio.');
+    });
     el('imprimirVistaPresupuesto').onclick = function () {
         try { var vista = el('vistaPresupuestoDocumento').contentWindow; vista.focus(); vista.print(); }
         catch (error) { aviso('vistaPresupuestoFeedback', 'Usá el botón de impresión del visor PDF.', true); }

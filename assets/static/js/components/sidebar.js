@@ -1,4 +1,8 @@
 const isDesktop = (windowObj) => windowObj.innerWidth > 1200;
+const sidebarInicial = document.getElementById('sidebar');
+const temaControlaSidebar = Boolean(
+  window.sidebar && sidebarInicial && sidebarInicial.querySelectorAll('.sidebar-link').length
+);
 
 function setSubmenuState(item, open) {
   const submenu = item.querySelector('.submenu');
@@ -24,7 +28,7 @@ function initSubmenus(sidebarEl) {
     setSubmenuState(item, item.classList.contains('active'));
 
     const link = item.querySelector('.sidebar-link');
-    if (!link || link.dataset.boundClick === '1') return;
+    if (temaControlaSidebar || !link || link.dataset.boundClick === '1') return;
     link.addEventListener('click', (e) => {
       e.preventDefault();
       const submenu = item.querySelector('.submenu');
