@@ -280,7 +280,7 @@
 
             // Obtener los valores ingresados
             const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
+            const password = document.getElementById('password').value;
 
             // Limpiar mensajes de error previos
             marcarCampo('username', 'userError', '');
@@ -301,7 +301,6 @@
                         if (xhrLogin.status === 200) {  // Estado exitoso
                             try {
                                 const data = JSON.parse(xhrLogin.responseText);
-
                                 // Guardar token, rol, usuario, nombre y apellido en localStorage
                                 localStorage.setItem('token', data.Token);
                                 localStorage.setItem('username', data.Nombre_Usuario);
@@ -315,22 +314,9 @@
                                 console.error("Error al parsear la respuesta JSON de login:", e);
                                 mostrarToastError();
                             }
-                        } else if (xhrLogin.status === 401) {  // Error de autenticación
-                            try {
-                                const errorData = JSON.parse(xhrLogin.responseText);
-                                console.log("Errores de autenticación:", errorData);
-
-                                // Mostrar errores específicos
-                                if (errorData.Nombre_Usuario) marcarCampo('username', 'userError', errorData.Nombre_Usuario);
-                                if (errorData.Contraseña) marcarCampo('password', 'passError', errorData.Contraseña);
-                                if (errorData.General) {
-                                    document.getElementById('generalError').textContent = errorData.General;
-                                    document.getElementById('generalError').style.display = 'block';
-                                }
-                            } catch (e) {
-                                console.error("Error al parsear la respuesta JSON de error de login:", e);
-                                mostrarToastError();
-                            }
+                        } else if (xhrLogin.status === 401) {  // Credenciales inválidas
+                            document.getElementById('generalError').textContent = 'Usuario o contraseña incorrectos.';
+                            document.getElementById('generalError').style.display = 'block';
                         } else {  // Otros errores
                             console.error("Error al iniciar sesión. Estado HTTP:", xhrLogin.status);
                             mostrarToastError();

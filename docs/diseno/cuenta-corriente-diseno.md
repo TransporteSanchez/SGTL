@@ -230,3 +230,88 @@ Pruebas pendientes obligatorias en SQL Server y servicios:
 No se incluyen triggers de negocio ni stored procedures en esta propuesta.
 CHECK/FK no garantizan sumatorias entre filas, estados relacionados o inmutabilidad.
 Esos controles deben probarse en servicios antes de habilitar el módulo.
+
+## 9. Actualización propuesta — distribución de Recibos y Notas de Crédito
+
+Estado: aprobada funcional y técnicamente (21/10/2026).
+
+### Alcance acordado
+
+- El botón **Distribuir** estará en los formularios de Recibo y de Nota de Crédito
+  corriente.
+- Al distribuir, se tomarán todas las Facturas emitidas con saldo del cliente y se
+  imputará el importe disponible desde el vencimiento más antiguo al más reciente.
+  Ante igual vencimiento, el orden estable será fecha de emisión y luego ID de
+  comprobante.
+- Cada fila quedará seleccionada y con el importe aplicado: primero hasta su saldo
+  pendiente y, si queda remanente, parcialmente la siguiente. En Recibos, un excedente
+  puede quedar sin aplicar como sucede hoy. En NC corrientes, el total debe quedar
+  aplicado por completo.
+- La NC que anula una Factura procedente de una Proforma queda fuera de esta mecánica:
+  conserva una sola Factura, exige cancelarla por el total y mantiene la liberación de
+  viajes de la Proforma.
+- Los campos editables de importes de Cuenta Corriente usarán formato argentino:
+  miles con punto y decimales con coma. El navegador enviará al servidor el valor
+  numérico normalizado, con hasta dos decimales.
+
+### Alternativas evaluadas
+
+1. Guardar solo la primera Factura en `COMPROBANTES.ComprobanteReferenciaID` y usar
+   aplicaciones para las demás. Se descarta porque el encabezado pasaría a representar
+   una relación incompleta y confusa.
+2. Crear una nueva tabla de referencias múltiples para NC. Es válida, pero duplicaría
+   la relación que `CUENTA_CORRIENTE_APLICACIONES` ya conserva con importe, vigencia,
+   cliente y comprobantes de crédito/deuda.
+3. **Reutilizar `CUENTA_CORRIENTE_APLICACIONES` como relación canónica**. La NC corriente
+   no tendrá referencia única; sus aplicaciones vigentes serán sus Facturas vinculadas.
+   La referencia única se conserva solo para la NC cancelatoria de Proforma. Es la
+   alternativa elegida porque conserva auditoría, evita datos duplicados y sigue el
+   mismo modelo que los Recibos.
+
+### Interfaz y cálculo
+
+- Recibo: el importe de la forma de pago será el monto a distribuir. El botón llena la
+  grilla de aplicaciones sin emitir ni bloquear la edición manual posterior.
+- NC corriente: reemplaza la selección única de Factura por la misma grilla de
+  aplicaciones del Recibo y por un importe total a acreditar. El botón distribuye ese
+  total; el usuario puede ajustar luego cada fila dentro de su saldo pendiente.
+- Los totales de Neto, IVA y otros impuestos de la NC se calcularán a partir de las
+  aplicaciones. Para una aplicación parcial se prorratearán los componentes pendientes
+  de cada Factura a dos decimales; el ajuste de redondeo se asignará en la última
+  aplicación para que los componentes sumen exactamente el total del comprobante.
+- La máscara monetaria se centralizará en `assets/static/js/sgtl-ui.js`: aceptará
+  escritura con coma o punto decimal, mostrará `1.234,56` al perder foco y nunca
+  alterará el valor numérico enviado a la API. Se aplicará a los importes editables
+  de Recibos, Facturas directas, NC y ND, para no dejar formularios con criterios
+  distintos.
+
+### Contrato, persistencia y validaciones
+
+- `POST /api/comprobantes` recibirá `Aplicaciones[]` para una NC corriente, con
+  `ComprobanteID` e `Importe`. El servidor no aceptará importes negativos, repetidos,
+  con más de dos decimales, de otro cliente, de documentos no emitidos o superiores
+  al saldo vigente de cada Factura.
+- La suma de aplicaciones de una NC corriente deberá coincidir exactamente con su total.
+  Las validaciones, el cálculo de componentes y las inserciones se harán dentro de la
+  misma transacción serializable. La comprobación de reintento por `ClaveOperacion`
+  también comparará las aplicaciones.
+- Cuando exista `ProformaID`, la API exigirá una única aplicación a la Factura vigente
+  de esa Proforma y por el total; no habilitará distribución múltiple.
+- Se agregará una migración idempotente `database/cuenta-corriente/10_notas_credito_multiples_aplicaciones.sql` para adaptar el CHECK de referencias: una NC corriente
+  podrá no tener `ComprobanteReferenciaID`, mientras que las referencias existentes y
+  las NC cancelatorias conservarán sus restricciones. No se modificará el modelo EDMX.
+- Se actualizará la verificación posterior para comprobar que una NC con referencia
+  única coincida con su aplicación y que una NC sin referencia tenga aplicaciones
+  válidas del mismo cliente.
+
+### Pruebas previstas
+
+- Distribución FIFO completa, parcial, sin deuda, con excedente de Recibo y con fechas
+  de vencimiento iguales.
+- Máscara: parseo de `1.234,56`, normalización a dos decimales y rechazo de valores
+  inválidos.
+- API de NC: múltiples Facturas válidas, cliente distinto, saldo excedido, suma distinta
+  del total, reintento idempotente y NC cancelatoria de Proforma.
+- Recorrido manual en la VM: una cobranza de $500.000 sobre tres Facturas de $200.000
+  y una NC corriente distribuida sobre más de una Factura; además, la anulación de una
+  Factura de Proforma.

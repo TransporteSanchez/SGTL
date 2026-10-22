@@ -6,6 +6,7 @@ using System.Data.Entity.Core.EntityClient;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Text;
@@ -34,6 +35,13 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal? IVA { get; set; }
             public decimal OtrosImpuestos { get; set; }
             public string Observaciones { get; set; }
+            public List<AplicacionComprobanteRequest> Aplicaciones { get; set; }
+        }
+
+        public class AplicacionComprobanteRequest
+        {
+            public int ComprobanteID { get; set; }
+            public decimal Importe { get; set; }
         }
 
         public class FacturaReferenciaDto
@@ -41,6 +49,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ComprobanteID { get; set; }
             public string Numero { get; set; }
             public DateTime FechaEmision { get; set; }
+            public DateTime? FechaVencimiento { get; set; }
             public decimal Total { get; set; }
             public decimal ImporteAplicado { get; set; }
             public decimal SaldoPendiente { get; set; }
@@ -72,6 +81,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ClienteID { get; set; }
             public int NumeroCorrelativo { get; set; }
             public DateTime FechaEmision { get; set; }
+            public DateTime? FechaVencimiento { get; set; }
             public string Estado { get; set; }
             public decimal Neto { get; set; }
             public decimal IVA { get; set; }
@@ -79,6 +89,15 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Total { get; set; }
             public decimal Aplicado { get; set; }
             public decimal Pendiente { get { return Total - Aplicado; } }
+        }
+
+        private class AplicacionNotaCredito
+        {
+            public FacturaReferencia Factura { get; set; }
+            public decimal Importe { get; set; }
+            public decimal Neto { get; set; }
+            public decimal IVA { get; set; }
+            public decimal OtrosImpuestos { get; set; }
         }
 
         private class FacturaCancelatoriaProforma
@@ -171,6 +190,34 @@ namespace WebApi_TransporteSanchez.Controllers
                 neto += iva;
                 iva = 0;
             }
+        }
+
+        private static void CalcularComposicionAplicacion(FacturaReferencia factura, decimal importe,
+            out decimal neto, out decimal iva, out decimal otros)
+        {
+            decimal netoPendiente;
+            decimal ivaPendiente;
+            decimal otrosPendientes;
+            CalcularComposicionPendiente(factura, out netoPendiente, out ivaPendiente, out otrosPendientes);
+            if (importe <= 0 || factura.Pendiente <= 0)
+            {
+                neto = 0;
+                iva = 0;
+                otros = 0;
+                return;
+            }
+            if (importe == factura.Pendiente)
+            {
+                neto = netoPendiente;
+                iva = ivaPendiente;
+                otros = otrosPendientes;
+                return;
+            }
+
+            decimal proporcion = importe / factura.Pendiente;
+            neto = Math.Min(importe, Redondear(netoPendiente * proporcion));
+            otros = Math.Min(importe - neto, Redondear(otrosPendientes * proporcion));
+            iva = importe - neto - otros;
         }
 
         private static DateTime FechaArgentina()
@@ -280,14 +327,14 @@ FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.Cliente_ID=@id;";
         private static FacturaReferencia LeerFacturaReferencia(SqlConnection connection, SqlTransaction transaction, int id)
         {
             const string sql = @"
-SELECT c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estado,
+SELECT c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Estado,
        c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK)
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a WITH (UPDLOCK,HOLDLOCK)
        ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE c.Comprobante_ID=@id AND c.Tipo='FAC' AND c.Impacto='D'
-GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estado,
+GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Estado,
          c.Neto,c.IVA,c.OtrosImpuestos,c.Total;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
@@ -299,6 +346,7 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estad
                     {
                         ComprobanteID = (int)reader["Comprobante_ID"], ClienteID = (int)reader["ClienteID"],
                         NumeroCorrelativo = (int)reader["NumeroCorrelativo"], FechaEmision = (DateTime)reader["FechaEmision"],
+                        FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                         Estado = (string)reader["Estado"], Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
                         OtrosImpuestos = (decimal)reader["OtrosImpuestos"], Total = (decimal)reader["Total"],
                         Aplicado = (decimal)reader["Aplicado"]
@@ -352,8 +400,8 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
             }
         }
 
-        private static bool Coincide(ComprobanteExistente actual, EmitirComprobanteRequest request,
-            DateTime emision, DateTime? vencimiento, decimal iva, decimal total)
+        private static bool CoincideEncabezado(ComprobanteExistente actual, EmitirComprobanteRequest request,
+            DateTime emision, DateTime? vencimiento)
         {
             return actual.ClienteID == request.ClienteID && actual.Tipo == request.Tipo
                 && actual.FechaEmision.Date == emision && actual.FechaVencimiento == vencimiento
@@ -361,9 +409,43 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
                 && actual.Concepto == request.Concepto
                 && string.Equals(actual.Letra ?? string.Empty, request.Letra ?? string.Empty, StringComparison.Ordinal)
                 && string.Equals(actual.Sucursal ?? string.Empty, request.Sucursal ?? string.Empty, StringComparison.Ordinal)
-                && string.Equals(actual.Observaciones ?? string.Empty, request.Observaciones ?? string.Empty, StringComparison.Ordinal)
+                && string.Equals(actual.Observaciones ?? string.Empty, request.Observaciones ?? string.Empty, StringComparison.Ordinal);
+        }
+
+        private static bool Coincide(ComprobanteExistente actual, EmitirComprobanteRequest request,
+            DateTime emision, DateTime? vencimiento, decimal iva, decimal total)
+        {
+            return CoincideEncabezado(actual, request, emision, vencimiento)
                 && actual.Neto == request.Neto && actual.IVA == iva
                 && actual.OtrosImpuestos == request.OtrosImpuestos && actual.Total == total;
+        }
+
+        private static bool CoincideReintentoNotaCreditoCorriente(ComprobanteExistente actual,
+            EmitirComprobanteRequest request, DateTime emision, DateTime? vencimiento)
+        {
+            return CoincideEncabezado(actual, request, emision, vencimiento)
+                && actual.ReferenciaID == null;
+        }
+
+        private static bool CoincidenAplicaciones(SqlConnection connection, SqlTransaction transaction,
+            int comprobanteId, List<AplicacionComprobanteRequest> aplicaciones)
+        {
+            var guardadas = new Dictionary<int, decimal>();
+            const string sql = @"
+SELECT ComprobanteDeudaID,Importe
+FROM dbo.CUENTA_CORRIENTE_APLICACIONES WITH (UPDLOCK,HOLDLOCK)
+WHERE ComprobanteCreditoID=@credito AND Vigente=1;";
+            using (var command = new SqlCommand(sql, connection, transaction))
+            {
+                command.Parameters.Add(P("@credito", comprobanteId));
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read()) guardadas[(int)reader["ComprobanteDeudaID"]] = (decimal)reader["Importe"];
+                }
+            }
+            return guardadas.Count == aplicaciones.Count
+                && aplicaciones.All(x => guardadas.ContainsKey(x.ComprobanteID)
+                    && guardadas[x.ComprobanteID] == x.Importe);
         }
 
         [HttpGet]
@@ -377,13 +459,13 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
                     connection.Open();
                     ValidarAcceso(connection, null, "CC_CONSULTAR");
                     const string sql = @"
-SELECT c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
+SELECT c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE c.ClienteID=@cliente AND c.Tipo='FAC' AND c.Estado='EMITIDO'
-GROUP BY c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
-ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
+GROUP BY c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
+ORDER BY c.FechaVencimiento,c.FechaEmision,c.Comprobante_ID;";
                     var facturas = new List<FacturaReferenciaDto>();
                     using (var command = new SqlCommand(sql, connection))
                     {
@@ -409,6 +491,7 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
                                     ComprobanteID = (int)reader["Comprobante_ID"],
                                     Numero = Numero("FAC", (int)reader["NumeroCorrelativo"]),
                                     FechaEmision = (DateTime)reader["FechaEmision"],
+                                    FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                                     Total = total, ImporteAplicado = aplicado, SaldoPendiente = total - aplicado,
                                     NetoPendiente = netoPendiente, IVAPendiente = ivaPendiente,
                                     OtrosImpuestosPendiente = otrosPendientes,
@@ -541,28 +624,47 @@ ORDER BY c.Comprobante_ID DESC;";
                 return BadRequest("La fecha de vencimiento es obligatoria.");
             if (vencimiento.HasValue && vencimiento.Value < emision)
                 return BadRequest("El vencimiento no puede ser anterior a la emisión.");
-            if (request.Tipo == "NC" && !request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("La nota de crédito tiene que estar relacionada con una factura.");
+            request.Aplicaciones = request.Aplicaciones ?? new List<AplicacionComprobanteRequest>();
+            if (request.Aplicaciones.Count > 200)
+                return BadRequest("La nota de crédito supera la cantidad máxima de facturas aplicables.");
+            if (request.Aplicaciones.Any(x => x == null || x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
+                return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
+            if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
+                return BadRequest("No se puede aplicar dos veces la misma factura.");
+            bool notaCreditoCorriente = request.Tipo == "NC" && !request.ProformaID.HasValue;
+            if (notaCreditoCorriente && request.ComprobanteReferenciaID.HasValue)
+                return BadRequest("La nota de crédito corriente no admite una única factura de referencia.");
+            if (notaCreditoCorriente && request.Aplicaciones.Count == 0)
+                return BadRequest("La nota de crédito debe aplicarse a una o más facturas.");
+            if (request.Tipo == "NC" && request.ProformaID.HasValue && !request.ComprobanteReferenciaID.HasValue)
+                return BadRequest("La nota de crédito cancelatoria debe relacionarse con la factura de la proforma.");
+            if (request.Tipo == "NC" && request.ProformaID.HasValue && request.Aplicaciones.Count > 0)
+                return BadRequest("La nota de crédito cancelatoria no admite distribución múltiple.");
             if (request.Tipo != "NC" && request.ComprobanteReferenciaID.HasValue)
                 return BadRequest("Solo la nota de crédito admite una factura de referencia.");
+            if (request.Tipo != "NC" && request.Aplicaciones.Count > 0)
+                return BadRequest("Solo la nota de crédito admite aplicaciones a facturas.");
             if (request.ProformaID.HasValue && request.Tipo != "NC")
                 return BadRequest("La proforma solo se puede indicar al emitir una nota de crédito cancelatoria.");
             if (request.Concepto.Length == 0 || request.Concepto.Length > 200)
                 return BadRequest("El concepto es obligatorio y no puede superar los 200 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
                 return BadRequest("Las observaciones no pueden superar los 2000 caracteres.");
-            if (request.Neto <= 0 || request.Neto != Redondear(request.Neto))
-                return BadRequest("El importe neto debe ser mayor que cero y tener hasta dos decimales.");
-            if (request.IvaPct < 0 || request.IvaPct > 100 || request.IvaPct != Redondear(request.IvaPct))
-                return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
-            if (request.Tipo == "NC" && (!request.IVA.HasValue || request.IVA.Value < 0
-                || request.IVA.Value != Redondear(request.IVA.Value)))
-                return BadRequest("El importe de IVA de la nota de crédito no es válido.");
-            if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
-                return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
+            if (!notaCreditoCorriente)
+            {
+                if (request.Neto <= 0 || request.Neto != Redondear(request.Neto))
+                    return BadRequest("El importe neto debe ser mayor que cero y tener hasta dos decimales.");
+                if (request.IvaPct < 0 || request.IvaPct > 100 || request.IvaPct != Redondear(request.IvaPct))
+                    return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
+                if (request.Tipo == "NC" && (!request.IVA.HasValue || request.IVA.Value < 0
+                    || request.IVA.Value != Redondear(request.IVA.Value)))
+                    return BadRequest("El importe de IVA de la nota de crédito no es válido.");
+                if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
+                    return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
+            }
 
-            decimal iva = request.Tipo == "NC" ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m);
-            decimal total = request.Neto + iva + request.OtrosImpuestos;
+            decimal iva = notaCreditoCorriente ? 0 : (request.Tipo == "NC" ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m));
+            decimal total = notaCreditoCorriente ? 0 : request.Neto + iva + request.OtrosImpuestos;
             string impacto = request.Tipo == "NC" ? "C" : "D";
             string permiso = request.Tipo + "_EMITIR";
 
@@ -585,7 +687,11 @@ ORDER BY c.Comprobante_ID DESC;";
                             var existente = BuscarPorClave(connection, transaction, request.ClaveOperacion);
                             if (existente != null)
                             {
-                                if (!Coincide(existente, request, emision, vencimiento, iva, total))
+                                bool coincide = notaCreditoCorriente
+                                    ? CoincideReintentoNotaCreditoCorriente(existente, request, emision, vencimiento)
+                                        && CoincidenAplicaciones(connection, transaction, existente.ComprobanteID, request.Aplicaciones)
+                                    : Coincide(existente, request, emision, vencimiento, iva, total);
+                                if (!coincide)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
@@ -599,7 +705,6 @@ ORDER BY c.Comprobante_ID DESC;";
                                     existente.Tipo, existente.Total, Estado = "EMITIDO", Reintento = true
                                 });
                             }
-
                             var cliente = LeerCliente(connection, transaction, request.ClienteID);
                             if (cliente == null)
                             {
@@ -612,8 +717,9 @@ ORDER BY c.Comprobante_ID DESC;";
                                 return Content(HttpStatusCode.BadRequest, new { error = "El cliente está inactivo." });
                             }
 
+                            var aplicacionesNotaCredito = new List<AplicacionNotaCredito>();
                             FacturaReferencia referencia = null;
-                            if (request.ComprobanteReferenciaID.HasValue)
+                            if (request.Tipo == "NC" && request.ProformaID.HasValue)
                             {
                                 referencia = LeerFacturaReferencia(connection, transaction, request.ComprobanteReferenciaID.Value);
                                 if (referencia == null || referencia.ClienteID != request.ClienteID || referencia.Estado != "EMITIDO")
@@ -622,57 +728,93 @@ ORDER BY c.Comprobante_ID DESC;";
                                     return Content(HttpStatusCode.BadRequest,
                                         new { error = "La factura de referencia no es válida para este cliente." });
                                 }
-                                if (emision < referencia.FechaEmision.Date)
+                                if (emision < referencia.FechaEmision.Date || referencia.Pendiente <= 0)
+                                {
+                                    transaction.Rollback();
+                                    return Content(HttpStatusCode.Conflict,
+                                        new { error = "La factura relacionada ya no admite una nota de crédito cancelatoria." });
+                                }
+                                decimal netoPendiente;
+                                decimal ivaPendiente;
+                                decimal otrosPendientes;
+                                CalcularComposicionPendiente(referencia, out netoPendiente, out ivaPendiente, out otrosPendientes);
+                                if (request.Neto != netoPendiente || iva != ivaPendiente
+                                    || request.OtrosImpuestos != otrosPendientes || total != referencia.Pendiente)
+                                {
+                                    transaction.Rollback();
+                                    return Content(HttpStatusCode.Conflict, new
+                                    {
+                                        error = "Los importes de la factura cambiaron. Volvé a seleccionarla para actualizar el neto, el IVA y los impuestos."
+                                    });
+                                }
+                                if (!EsFacturaVigenteDeProforma(connection, transaction,
+                                    request.ProformaID.Value, referencia.ComprobanteID))
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La fecha del comprobante no puede ser anterior a la factura relacionada." });
+                                        new { error = "La factura indicada no es la factura vigente de la proforma." });
                                 }
-                                if (request.Tipo == "NC")
+                                if (referencia.Aplicado != 0)
                                 {
-                                    decimal netoPendiente;
-                                    decimal ivaPendiente;
-                                    decimal otrosPendientes;
-                                    CalcularComposicionPendiente(referencia, out netoPendiente, out ivaPendiente, out otrosPendientes);
-                                    if (referencia.Pendiente <= 0)
-                                    {
-                                        transaction.Rollback();
-                                        return Content(HttpStatusCode.Conflict, new
-                                        {
-                                            error = "La factura " + Numero("FAC", referencia.NumeroCorrelativo)
-                                                + " ya está cancelada."
-                                        });
-                                    }
-                                    if (request.Neto != netoPendiente || iva != ivaPendiente
-                                        || request.OtrosImpuestos != otrosPendientes || total != referencia.Pendiente)
-                                    {
-                                        transaction.Rollback();
-                                        return Content(HttpStatusCode.Conflict, new
-                                        {
-                                            error = "Los importes de la factura cambiaron. Volvé a seleccionarla para actualizar el neto, el IVA y los impuestos."
-                                        });
-                                    }
-                                    if (request.ProformaID.HasValue)
-                                    {
-                                        if (!EsFacturaVigenteDeProforma(connection, transaction,
-                                            request.ProformaID.Value, referencia.ComprobanteID))
-                                        {
-                                            transaction.Rollback();
-                                            return Content(HttpStatusCode.BadRequest, new
-                                            {
-                                                error = "La factura indicada no es la factura vigente de la proforma."
-                                            });
-                                        }
-                                        if (referencia.Aplicado != 0)
-                                        {
-                                            transaction.Rollback();
-                                            return Content(HttpStatusCode.Conflict, new
-                                            {
-                                                error = "La factura tiene movimientos en la cuenta corriente y no se puede cancelar por el total."
-                                            });
-                                        }
-                                    }
+                                    transaction.Rollback();
+                                    return Content(HttpStatusCode.Conflict,
+                                        new { error = "La factura tiene movimientos en cuenta corriente y no puede cancelarse por el total." });
                                 }
+                                aplicacionesNotaCredito.Add(new AplicacionNotaCredito
+                                {
+                                    Factura = referencia, Importe = total, Neto = netoPendiente,
+                                    IVA = ivaPendiente, OtrosImpuestos = otrosPendientes
+                                });
+                                if (request.Tipo == "NC" && request.ProformaID.HasValue && aplicacionesNotaCredito.Count != 1)
+                                {
+                                    transaction.Rollback();
+                                    return Content(HttpStatusCode.BadRequest,
+                                        new { error = "La nota de crédito cancelatoria debe aplicarse a una única factura." });
+                                }
+                            }
+                            else if (notaCreditoCorriente)
+                            {
+                                foreach (var aplicacion in request.Aplicaciones)
+                                {
+                                    var factura = LeerFacturaReferencia(connection, transaction, aplicacion.ComprobanteID);
+                                    if (factura == null || factura.ClienteID != request.ClienteID || factura.Estado != "EMITIDO")
+                                    {
+                                        transaction.Rollback();
+                                        return Content(HttpStatusCode.BadRequest,
+                                            new { error = "Una factura aplicada no es válida para este cliente." });
+                                    }
+                                    if (emision < factura.FechaEmision.Date)
+                                    {
+                                        transaction.Rollback();
+                                        return Content(HttpStatusCode.BadRequest,
+                                            new { error = "La fecha de la nota de crédito no puede ser anterior a la factura aplicada." });
+                                    }
+                                    if (aplicacion.Importe > factura.Pendiente)
+                                    {
+                                        transaction.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new
+                                        {
+                                            error = "El importe aplicado supera el saldo de la factura "
+                                                + Numero("FAC", factura.NumeroCorrelativo) + "."
+                                        });
+                                    }
+                                    decimal netoAplicado;
+                                    decimal ivaAplicado;
+                                    decimal otrosAplicados;
+                                    CalcularComposicionAplicacion(factura, aplicacion.Importe,
+                                        out netoAplicado, out ivaAplicado, out otrosAplicados);
+                                    aplicacionesNotaCredito.Add(new AplicacionNotaCredito
+                                    {
+                                        Factura = factura, Importe = aplicacion.Importe, Neto = netoAplicado,
+                                        IVA = ivaAplicado, OtrosImpuestos = otrosAplicados
+                                    });
+                                }
+                                request.Neto = aplicacionesNotaCredito.Sum(x => x.Neto);
+                                iva = aplicacionesNotaCredito.Sum(x => x.IVA);
+                                request.IVA = iva;
+                                request.OtrosImpuestos = aplicacionesNotaCredito.Sum(x => x.OtrosImpuestos);
+                                total = aplicacionesNotaCredito.Sum(x => x.Importe);
+                                request.IvaPct = request.Neto > 0 ? Redondear(iva * 100m / request.Neto) : 0;
                             }
 
                             int correlativo;
@@ -739,19 +881,22 @@ VALUES (@comprobante,@cliente,@tipo,'EMISION',@impacto,@total,@emision,@concepto
 
                             if (request.Tipo == "NC")
                             {
-                                using (var command = new SqlCommand(@"
+                                foreach (var aplicacion in aplicacionesNotaCredito)
+                                {
+                                    using (var command = new SqlCommand(@"
 INSERT dbo.CUENTA_CORRIENTE_APLICACIONES
  (ClienteID,ComprobanteCreditoID,ImpactoCredito,ComprobanteDeudaID,ImpactoDeuda,Importe,
   FechaAplicacion,Vigente,UsuarioAltaID)
 VALUES (@cliente,@credito,'C',@deuda,'D',@importe,@fecha,1,@usuario);", connection, transaction))
-                                {
-                                    command.Parameters.AddRange(new[]
                                     {
-                                        P("@cliente", request.ClienteID),P("@credito", comprobanteId),
-                                        P("@deuda", referencia.ComprobanteID),P("@importe", total),P("@fecha", emision),
-                                        P("@usuario", usuario.UsuarioID)
-                                    });
-                                    command.ExecuteNonQuery();
+                                        command.Parameters.AddRange(new[]
+                                        {
+                                            P("@cliente", request.ClienteID),P("@credito", comprobanteId),
+                                            P("@deuda", aplicacion.Factura.ComprobanteID),P("@importe", aplicacion.Importe),P("@fecha", emision),
+                                            P("@usuario", usuario.UsuarioID)
+                                        });
+                                        command.ExecuteNonQuery();
+                                    }
                                 }
                             }
 

@@ -189,14 +189,11 @@
                     </div>
                     <div class="bloque-titulo">Condiciones comerciales</div>
                     <div class="row g-2">
-                        <div class="col-md-3"><label class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Plazo de pago</label><input id="p_plazopago" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Validez</label><input id="p_validez" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Tiempo estimado del servicio</label><input id="p_tiemposervicio" class="form-control"></div>
-                        <div class="col-md-6"><label class="form-label">Observaciones comerciales</label><textarea id="p_obscom" class="form-control" rows="2"></textarea></div>
-                        <div class="col-md-6"><label class="form-label">Condiciones particulares</label><textarea id="p_condpart" class="form-control" rows="2"></textarea></div>
+                        <div class="col-md-4"><label class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Plazo de pago</label><input id="p_plazopago" class="form-control"></div>
+                        <div class="col-md-4"><label class="form-label">Validez</label><input id="p_validez" class="form-control"></div>
+                        <div class="col-12"><label class="form-label">Observaciones</label><textarea id="p_observaciones" class="form-control" rows="2"></textarea></div>
                     </div>
-                    <input id="p_observaciones" type="hidden">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" id="btnCerrarProforma" data-bs-dismiss="modal">Cancelar</button>
@@ -608,7 +605,7 @@
         // ---------- Form: abrir / leer ----------
         function limpiarForm() {
             if (window.ProformaPlataforma) ProformaPlataforma.reiniciar();
-            ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_fdesde', 'p_fhasta', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_tiemposervicio', 'p_obscom', 'p_condpart', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
+            ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_fdesde', 'p_fhasta', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
             setVal('p_cliente', ''); SelectClientePredictivo.sincronizar('p_cliente'); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
             actualizarVisibilidadNumero(false);
             limpiarMensajeViajes();
@@ -652,8 +649,8 @@
                 setVal('p_tiposervicio', p.TipoServicio); setVal('p_origen', p.Origen); setVal('p_destino', p.Destino);
                 setVal('p_tipocarga', p.TipoCarga); setVal('p_fcarga', p.FechaCarga ? p.FechaCarga.substring(0, 10) : ''); setVal('p_fentrega', p.FechaEntrega ? p.FechaEntrega.substring(0, 10) : '');
                 setVal('p_peso', p.Peso); setVal('p_volumen', p.Volumen); setVal('p_bultos', p.Bultos); setVal('p_vehiculo', p.VehiculoRequerido); setVal('p_obslog', p.ObsLogisticas);
-                setVal('p_formapago', p.FormaPago); setVal('p_plazopago', p.PlazoPago); setVal('p_validez', p.Validez); setVal('p_tiemposervicio', p.TiempoServicio);
-                setVal('p_obscom', p.ObsComerciales); setVal('p_condpart', p.CondParticulares); setVal('p_observaciones', p.Observaciones);
+                setVal('p_formapago', p.FormaPago); setVal('p_plazopago', p.PlazoPago); setVal('p_validez', p.Validez);
+                setVal('p_observaciones', p.Observaciones || [p.ObsComerciales, p.CondParticulares].filter(Boolean).join('\n'));
                 setVal('p_otros', p.OtrosImpuestos != null ? p.OtrosImpuestos : 0);
                 (p.Detalle || []).forEach(function (l) { agregarLinea(l); });
                 recalcularTotales();
@@ -696,8 +693,7 @@
                 TipoServicio: val('p_tiposervicio'), Origen: val('p_origen'), Destino: val('p_destino'), TipoCarga: val('p_tipocarga'),
                 FechaCarga: toIso(val('p_fcarga')), FechaEntrega: toIso(val('p_fentrega')),
                 Peso: val('p_peso'), Volumen: val('p_volumen'), Bultos: val('p_bultos'), VehiculoRequerido: val('p_vehiculo'), ObsLogisticas: val('p_obslog'),
-                FormaPago: val('p_formapago'), PlazoPago: val('p_plazopago'), Validez: val('p_validez'), TiempoServicio: val('p_tiemposervicio'),
-                ObsComerciales: val('p_obscom'), CondParticulares: val('p_condpart'), Observaciones: val('p_observaciones'),
+                FormaPago: val('p_formapago'), PlazoPago: val('p_plazopago'), Validez: val('p_validez'), Observaciones: val('p_observaciones'),
                 OtrosImpuestos: parseFloat(val('p_otros')) || 0,
                 Usu_Alta: usuario(), Usu_Modi: usuario(),
                 Detalle: lineas

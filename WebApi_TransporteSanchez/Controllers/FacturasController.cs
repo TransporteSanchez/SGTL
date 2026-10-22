@@ -136,9 +136,16 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Concepto { get; set; }
             public string Observaciones { get; set; }
             public string ProformaNumero { get; set; }
+            public List<ProformaIncluidaImpresion> Proformas { get; set; }
             public string ComprobanteReferenciaNumero { get; set; }
             public List<ComprobanteCanceladoImpresion> ComprobantesCancelados { get; set; }
             public List<ComprobanteDetalleImpresion> Detalle { get; set; }
+        }
+
+        private class ProformaIncluidaImpresion
+        {
+            public int ProformaID { get; set; }
+            public string Numero { get; set; }
         }
 
         private class ComprobanteCanceladoImpresion
@@ -567,6 +574,7 @@ WHERE c.Comprobante_ID=@id;";
                                     Concepto = (string)reader["Concepto"],
                                     Observaciones = reader["Observaciones"] as string,
                                     ProformaNumero = reader["ProformaNumero"] as string,
+                                    Proformas = new List<ProformaIncluidaImpresion>(),
                                     ComprobanteReferenciaNumero = reader["ComprobanteReferenciaNumero"] as string,
                                     ComprobantesCancelados = new List<ComprobanteCanceladoImpresion>(),
                                     Detalle = new List<ComprobanteDetalleImpresion>()
@@ -604,6 +612,27 @@ WHERE ComprobanteID=@id ORDER BY Orden,Detalle_ID;";
                                     Neto = (decimal)reader["Neto"],
                                     IVA = (decimal)reader["IVA"],
                                     Total = (decimal)reader["Total"]
+                                });
+                            }
+                        }
+                    }
+                    const string sqlProformas = @"
+SELECT p.Proforma_ID AS ProformaID,p.Numero
+FROM dbo.COMPROBANTES_PROFORMAS cp
+JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+WHERE cp.ComprobanteID=@id AND cp.Vigente=1
+ORDER BY cp.ComprobanteProforma_ID;";
+                    using (var command = new SqlCommand(sqlProformas, connection))
+                    {
+                        command.Parameters.Add(P("@id", id));
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                comprobante.Proformas.Add(new ProformaIncluidaImpresion
+                                {
+                                    ProformaID = (int)reader["ProformaID"],
+                                    Numero = reader["Numero"] as string
                                 });
                             }
                         }

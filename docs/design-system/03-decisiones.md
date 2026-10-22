@@ -155,7 +155,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 |---|---|---|
 | Listar proformas | Listar proformas generadas | Listar proformas |
 | Cuenta corriente | Cuenta Corriente de Clientes | Gestionar cuenta corriente |
-| Configuración → Facturación | Configuración de Facturación | Gestionar facturación |
+| Configuración → Facturación | Configuración de Facturación | Gestionar tipos de comprobante (22/10, idea de Facu; antes "Gestionar facturación") |
 | Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
 | Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
 | Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |

@@ -142,9 +142,9 @@ function loadDynamicBackgroundColor() {
 }
 
 // ===================== Cambiar contraseña =====================
-// Usa el endpoint que ya existía (api/Usuarios/CambiarContrasena): pide la contraseña actual y la nueva,
-// de 8 a 20 caracteres, con letras y números y distinta de la actual. Acá se validan las mismas reglas
-// antes de mandarla, con los avisos y la validación del sistema (§5 y §6.3 del design system).
+// Usa api/Usuarios/CambiarContrasena: pide la contraseña actual y la nueva, de 8 a 20 caracteres, con letras
+// y números y distinta de la actual. La API toma el usuario del token, no del pedido. Acá se validan las mismas
+// reglas antes de mandarla, con los avisos y la validación del sistema (§5 y §6.3 del design system).
 let formularioContrasena = null;
 
 function crearModalContrasena() {
@@ -209,7 +209,6 @@ function guardarContrasena(event) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') },
     body: JSON.stringify({
-      Nombre_Usuario: localStorage.getItem('username') || '',
       ContrasenaActual: document.getElementById('contrasenaActual').value,
       ContrasenaNueva: document.getElementById('contrasenaNueva').value
     })
@@ -222,11 +221,16 @@ function guardarContrasena(event) {
       setTimeout(cerrarSesion, 2500);
       return;
     }
-    // Los 400 y 404 traen un texto para el usuario ("La contraseña actual es incorrecta."); el resto, no (§9).
+    // Con la sesión vencida (401) va al login; los 400 y 409 traen un texto para el usuario; el resto, no (§9).
     return respuesta.json().catch(function () { return {}; }).then(function (datos) {
       listo();
-      const texto = (respuesta.status === 400 || respuesta.status === 404) && (datos.message || datos.Message);
-      SGTL.avisoFormulario('#avisoCambiarContrasena', texto || porDefecto);
+      if (respuesta.status === 401) {
+        SGTL.modal('#modalCambiarContrasena', 'hide');
+        SGTL.toastError('Tu sesión venció. Volvé a iniciar sesión.');
+        setTimeout(cerrarSesion, 2500);
+        return;
+      }
+      SGTL.avisoFormulario('#avisoCambiarContrasena', SGTL.mensajeError({ status: respuesta.status, responseJSON: datos }, porDefecto));
     });
   }, function () {
     listo();

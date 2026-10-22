@@ -92,6 +92,21 @@
         }[tipo] || 'Comprobante';
     }
 
+    function proformasFactura(factura) {
+        var proformas = Array.isArray(factura.Proformas) ? factura.Proformas.map(function (proforma) {
+            return texto(proforma && (proforma.Numero || proforma.ProformaNumero || proforma));
+        }) : [];
+        if (!proformas.length && factura.ProformaNumero) proformas.push(texto(factura.ProformaNumero));
+        return proformas.filter(function (numero, indice) {
+            return numero !== '—' && proformas.indexOf(numero) === indice;
+        });
+    }
+
+    function contenidoImpresionComprobante(factura) {
+        if (factura.Tipo === 'FAC') return { tipo: 'proformas', lineas: proformasFactura(factura) };
+        return { tipo: 'detalle' };
+    }
+
     function construir(factura, logo) {
         var Constructor = jsPDF();
         if (!Constructor) throw new Error('No se pudo cargar el generador de PDF.');
@@ -191,31 +206,45 @@
             y += altoRelacion + 4;
         }
 
-        var filas = (factura.Detalle || []).map(function (item) {
-            var descripcion = texto(item.Concepto);
-            if (item.Descripcion) descripcion += '\n' + item.Descripcion;
-            if (item.Unidad) descripcion += '\nUnidad: ' + item.Unidad;
-            return [
-                texto(item.Codigo), descripcion,
-                numero(item.Cantidad).toLocaleString('es-AR', { maximumFractionDigits: 2 }),
-                dinero(item.PrecioUnitario), dinero(item.Total)
-            ];
-        });
-        if (!filas.length) filas = [['', texto(factura.Concepto), '1', dinero(factura.Neto), dinero(factura.Total)]];
-        doc.autoTable({
-            head: [['Código', 'Descripción', 'Cantidad', 'P. unitario', 'Importe']],
-            body: filas,
-            startY: y,
-            margin: { left: margen, right: margen, bottom: 34 },
-            theme: 'grid',
-            styles: { fontSize: 8, cellPadding: 1.6, overflow: 'linebreak', lineColor: [70, 70, 70], lineWidth: 0.15 },
-            headStyles: { fillColor: [235, 235, 235], textColor: [15, 15, 15], halign: 'center', fontStyle: 'bold', lineColor: [45, 45, 45] },
-            columnStyles: {
-                0: { cellWidth: 23 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 22 },
-                3: { halign: 'right', cellWidth: 31 }, 4: { halign: 'right', cellWidth: 31 }
-            }
-        });
-        y = doc.lastAutoTable.finalY + 5;
+        var contenido = contenidoImpresionComprobante(factura);
+        if (contenido.tipo === 'proformas') {
+            var lineasProformas = contenido.lineas.length ? contenido.lineas : ['Sin Proformas asociadas.'];
+            var textoProformas = doc.splitTextToSize(lineasProformas.join('\n'), anchoUtil - 6);
+            var altoProformas = Math.max(13, 8 + (textoProformas.length * 3.5));
+            nuevaPaginaSiHaceFalta(altoProformas + 4);
+            prepararTexto(); doc.rect(margen, y, anchoUtil, altoProformas);
+            doc.setFillColor(colorFondo[0], colorFondo[1], colorFondo[2]); doc.rect(margen, y, anchoUtil, 5, 'F');
+            doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('PROFORMAS INCLUIDAS', margen + 3, y + 3.5);
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+            doc.text(textoProformas, margen + 3, y + 9);
+            y += altoProformas + 5;
+        } else {
+            var filas = (factura.Detalle || []).map(function (item) {
+                var descripcion = texto(item.Concepto);
+                if (item.Descripcion) descripcion += '\n' + item.Descripcion;
+                if (item.Unidad) descripcion += '\nUnidad: ' + item.Unidad;
+                return [
+                    texto(item.Codigo), descripcion,
+                    numero(item.Cantidad).toLocaleString('es-AR', { maximumFractionDigits: 2 }),
+                    dinero(item.PrecioUnitario), dinero(item.Total)
+                ];
+            });
+            if (!filas.length) filas = [['', texto(factura.Concepto), '1', dinero(factura.Neto), dinero(factura.Total)]];
+            doc.autoTable({
+                head: [['Código', 'Descripción', 'Cantidad', 'P. unitario', 'Importe']],
+                body: filas,
+                startY: y,
+                margin: { left: margen, right: margen, bottom: 34 },
+                theme: 'grid',
+                styles: { fontSize: 8, cellPadding: 1.6, overflow: 'linebreak', lineColor: [70, 70, 70], lineWidth: 0.15 },
+                headStyles: { fillColor: [235, 235, 235], textColor: [15, 15, 15], halign: 'center', fontStyle: 'bold', lineColor: [45, 45, 45] },
+                columnStyles: {
+                    0: { cellWidth: 23 }, 1: { cellWidth: 'auto' }, 2: { halign: 'right', cellWidth: 22 },
+                    3: { halign: 'right', cellWidth: 31 }, 4: { halign: 'right', cellWidth: 31 }
+                }
+            });
+            y = doc.lastAutoTable.finalY + 5;
+        }
 
         if (factura.Observaciones) {
             var observaciones = doc.splitTextToSize(factura.Observaciones, anchoUtil - 6);
@@ -306,15 +335,9 @@
         return partes.join('');
     }
 
-    function generar(id, modo) {
+    function descargar(id) {
         generarDocumento(id).then(function (resultado) {
-            var doc = resultado.documento;
-            if (modo === 'imprimir') {
-                doc.autoPrint();
-                window.open(doc.output('bloburl'), '_blank');
-            } else {
-                doc.save(resultado.nombreArchivo);
-            }
+            resultado.documento.save(resultado.nombreArchivo);
         }).catch(function (error) {
             var texto = error && error.message ? error.message : 'No se pudo generar el PDF del comprobante. Probá de nuevo.';
             if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
@@ -322,8 +345,16 @@
         });
     }
 
-    window.descargarComprobantePDF = function (id) { generar(id, 'descargar'); };
-    window.imprimirComprobantePDF = function (id) { generar(id, 'imprimir'); };
+    window.prepararComprobantePDF = function (id) {
+        return generarDocumento(id).then(function (resultado) {
+            return { blob: resultado.documento.output('blob'), nombreArchivo: resultado.nombreArchivo };
+        });
+    };
+    window.descargarComprobantePDF = function (id) { descargar(id); };
+    window.imprimirComprobantePDF = function (id) {
+        if (typeof window.abrirVistaPreviaComprobante === 'function') return window.abrirVistaPreviaComprobante(id);
+        return Promise.reject(new Error('No se pudo abrir la vista previa del comprobante.'));
+    };
     window.generarComprobantePDFParaEmail = function (id) {
         return generarDocumento(id).then(function (resultado) {
             return {

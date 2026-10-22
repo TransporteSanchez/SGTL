@@ -49,6 +49,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/equipo/INSTRUCTIVO-PRUEBAS-VIAJES-Y-PROFORMAS.md` — paso a paso para probar a mano viajes, proforma propia y proforma de Rukas (con los tres casos), y guion para la presentación.
 - `docs/equipo/PRUEBAS-VM-CLAUDE.md` — instructivo para la sesión de IA que prueba en la VM.
 - `docs/equipo/merge-facugodoy-2026-10-17.md` — qué cambió con el merge de Facu (17/10/2026).
+- `docs/equipo/merge-facugodoy-2026-10-22.md` — qué cambió con el merge de Facu (22/10/2026): contraseñas, cuenta corriente, presupuestos y facturación.
 
 ### Negocio
 
@@ -60,8 +61,11 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 ### Diseño técnico
 
 - `docs/diseno/cuenta-corriente-diseno.md` — cuenta corriente de clientes (módulo de Facu).
+- `docs/diseno/cuenta-corriente-distribucion-diseno.md` — plan de distribución de Recibos y Notas de Crédito.
 - `docs/diseno/auditoria-integracion.md` — cómo se registra la auditoría de altas, bajas y modificaciones.
 - `docs/diseno/proforma-rukas-diseno.md` — proforma de plataforma (Rukas): base de datos, API, pantallas y plan de desarrollo por etapas.
+- `docs/diseno/seguridad-contrasenas-diseno.md` — diseño del cambio de contraseña y migración a hashes seguros, sin segundo factor.
+- `docs/diseno/seguridad-contrasenas-plan.md` — plan de implementación y verificación del cambio seguro de contraseña.
 
 ### Design system
 

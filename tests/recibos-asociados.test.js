@@ -48,10 +48,20 @@ function renderizarFacturaConCreditoAplicado(tipo) {
         escapar: function (valor) { return String(valor || ''); },
         dinero: function (valor) { return '$ ' + Number(valor || 0).toFixed(2); },
         badgeEstado: function (estado) { return estado; },
-        botonDetalle: function () { return ''; }
+        window: {
+            SGTL: {
+                botonFila: function () { return ''; },
+                accionesFila: function () { return ''; }
+            }
+        }
     };
 
-    vm.runInNewContext(extraerFuncion('renderMovimientos'), sandbox,
+    vm.runInNewContext([
+        extraerFuncion('tipoComprobante'),
+        extraerFuncion('estadoRecibo'),
+        extraerFuncion('accionesComprobante'),
+        extraerFuncion('renderMovimientos')
+    ].join('\n'), sandbox,
         { filename: 'cuenta-corriente-clientes.js' });
     sandbox.renderMovimientos();
     return tabla.innerHTML;

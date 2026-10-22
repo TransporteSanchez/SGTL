@@ -84,7 +84,7 @@ WHERE c.Tipo=@tipo AND c.Activo=1;";
             {
                 command.Parameters.Add(P("@codigo", sucursal));
                 if (Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture) != 1)
-                    throw new InvalidOperationException("La sucursal seleccionada no está activa en Configuración > Gestionar facturación.");
+                    throw new InvalidOperationException("La sucursal seleccionada no está activa en Configuración > Gestionar tipos de comprobante.");
             }
         }
 

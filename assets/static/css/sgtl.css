@@ -1027,3 +1027,9 @@ body #loading-message .spinner-border {
 .sgtl-opcion-estado-bloque.deshabilitada {
     background-color: #f8f9fb;
 }
+
+/* Formularios de emisión de cuenta corriente (comprobante, recibo, factura desde proforma): extra grandes
+   y con el mismo alto visible, aunque tengan pocos campos (decisión de Rocío, 22/10). */
+.sgtl-modal-formulario.modal-dialog-scrollable .modal-content {
+    height: 100%;
+}

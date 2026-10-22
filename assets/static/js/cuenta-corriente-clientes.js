@@ -21,6 +21,10 @@
     var paginacionMovimientos = { total: 0, totalPages: 0 };
     var tamanioPagina = 15;
     var filtrosCuenta = null;
+    var modalVistaPreviaComprobante = null;
+    var urlVistaPreviaComprobante = null;
+    var secuenciaVistaPreviaComprobante = 0;
+    var idVistaPreviaComprobante = null;
 
     function porId(id) { return document.getElementById(id); }
 
@@ -97,7 +101,68 @@
             return (c === 'x' ? r : (r & 3 | 8)).toString(16);
         });
     }
-    function centavos(valor) { return Math.round(Number(valor || 0) * 100); }
+    function leerMontoCentavos(valor) {
+        if (window.SGTL && typeof window.SGTL.montoCentavos === 'function') return window.SGTL.montoCentavos(valor);
+        if (valor == null || String(valor).trim() === '') return null;
+        var numero = Number(valor);
+        if (!isFinite(numero) || numero < 0) return null;
+        var resultado = Math.round(numero * 100);
+        return Math.abs(numero * 100 - resultado) < 0.000001 ? resultado : null;
+    }
+    function centavos(valor) {
+        var resultado = leerMontoCentavos(valor);
+        return resultado == null ? 0 : resultado;
+    }
+    function primerMontoInvalido(campos) {
+        for (var indice = 0; indice < campos.length; indice += 1) {
+            if (leerMontoCentavos(campos[indice].valor) == null) return campos[indice].etiqueta;
+        }
+        return null;
+    }
+    function camposAplicacionSeleccionados(contenedor, claseCheck, claseAplicar) {
+        return Array.prototype.reduce.call(document.querySelectorAll(contenedor + ' tr'), function (campos, fila) {
+            var check = fila.querySelector(claseCheck);
+            var input = fila.querySelector(claseAplicar);
+            if (check && input && check.checked) {
+                var comprobante = fila.querySelector('.cc-document');
+                campos.push({
+                    etiqueta: 'El importe aplicado a ' + (comprobante ? comprobante.textContent.trim() : 'un comprobante'),
+                    valor: input.value
+                });
+            }
+            return campos;
+        }, []);
+    }
+    function formatearCentavos(valor) {
+        if (window.SGTL && typeof window.SGTL.formatearMontoCentavos === 'function') {
+            return window.SGTL.formatearMontoCentavos(valor);
+        }
+        return (Number(valor || 0) / 100).toFixed(2);
+    }
+    function enlazarMascaraMonto(campo) {
+        if (window.SGTL && typeof window.SGTL.enlazarMascaraMonto === 'function') {
+            window.SGTL.enlazarMascaraMonto(campo);
+        }
+    }
+    function distribuirImportePorVencimiento(importeCentavos, facturas) {
+        var restante = Math.max(0, Number(importeCentavos) || 0);
+        return (facturas || []).filter(function (factura) {
+            return Number(factura.SaldoCentavos || 0) > 0;
+        }).sort(function (a, b) {
+            var vencimiento = String(a.FechaVencimiento || '9999-12-31').localeCompare(String(b.FechaVencimiento || '9999-12-31'));
+            if (vencimiento) return vencimiento;
+            var emision = String(a.FechaEmision || '9999-12-31').localeCompare(String(b.FechaEmision || '9999-12-31'));
+            if (emision) return emision;
+            return Number(a.ComprobanteID) - Number(b.ComprobanteID);
+        }).reduce(function (aplicaciones, factura) {
+            var importe = Math.min(Number(factura.SaldoCentavos), restante);
+            if (importe > 0) {
+                aplicaciones.push({ ComprobanteID: Number(factura.ComprobanteID), ImporteCentavos: importe });
+                restante -= importe;
+            }
+            return aplicaciones;
+        }, []);
+    }
     function escapar(valor) {
         return String(valor == null ? '' : valor).replace(/&/g, '&amp;').replace(/</g, '&lt;')
             .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
@@ -171,7 +236,8 @@
         aviso.className = 'alert d-none';
         aviso.textContent = '';
     }
-    function abrirEnvioComprobante() {
+    function abrirEnvioComprobante(id) {
+        if (id != null) comprobanteActualId = Number(id);
         if (!comprobanteActualId) return;
         var boton = porId('btnConfirmarEnvioComprobante');
         var destino = porId('envioComprobanteDestino');
@@ -193,6 +259,75 @@
             porId('envioComprobantePerfil').textContent = 'No se pudo verificar la configuración de envío.';
             mostrarFeedbackEnvio('danger', textoError(error, 'No se pudo preparar el envío del comprobante. Probá de nuevo.'));
         });
+    }
+
+    function abrirVistaPreviaComprobante(id) {
+        if (!window.prepararComprobantePDF) return Promise.reject(new Error('No se pudo preparar el PDF del comprobante.'));
+        var version = ++secuenciaVistaPreviaComprobante;
+        var marco = porId('vistaPreviaComprobanteDocumento');
+        var descarga = porId('descargarVistaPreviaComprobante');
+        var imprimir = porId('imprimirVistaPreviaComprobante');
+        var feedback = porId('vistaPreviaComprobanteFeedback');
+        if (urlVistaPreviaComprobante) {
+            URL.revokeObjectURL(urlVistaPreviaComprobante);
+            urlVistaPreviaComprobante = null;
+        }
+        marco.onload = null;
+        marco.removeAttribute('src');
+        marco.style.display = 'none';
+        descarga.removeAttribute('href');
+        descarga.removeAttribute('download');
+        descarga.classList.add('disabled');
+        descarga.setAttribute('aria-disabled', 'true');
+        imprimir.disabled = true;
+        var item = buscarComprobante(Number(id));
+        idVistaPreviaComprobante = Number(id);
+        porId('tituloVistaPreviaComprobante').textContent = 'Ver PDF del comprobante' + (item && item.Comprobante ? ' ' + item.Comprobante : '');
+        feedback.className = 'text-center text-muted py-4';
+        feedback.textContent = 'Preparando el PDF…';
+        modalVistaPreviaComprobante.show();
+        return window.prepararComprobantePDF(id).then(function (resultado) {
+            if (version !== secuenciaVistaPreviaComprobante) return;
+            urlVistaPreviaComprobante = URL.createObjectURL(resultado.blob);
+            descarga.href = urlVistaPreviaComprobante;
+            descarga.download = resultado.nombreArchivo;
+            descarga.classList.remove('disabled');
+            descarga.setAttribute('aria-disabled', 'false');
+            marco.onload = function () {
+                if (version !== secuenciaVistaPreviaComprobante) return;
+                feedback.textContent = '';
+                imprimir.disabled = false;
+            };
+            marco.src = urlVistaPreviaComprobante;
+            marco.style.display = 'block';
+        }).catch(function (error) {
+            if (version !== secuenciaVistaPreviaComprobante) return;
+            feedback.className = 'alert alert-light-danger color-danger';
+            feedback.textContent = textoError(error, 'No se pudo generar el PDF del comprobante. Probá de nuevo.');
+        });
+    }
+
+    function imprimirVistaPreviaComprobante() {
+        try {
+            var vista = porId('vistaPreviaComprobanteDocumento').contentWindow;
+            vista.focus();
+            vista.print();
+        } catch (error) {
+            var feedback = porId('vistaPreviaComprobanteFeedback');
+            feedback.className = 'alert alert-warning';
+            feedback.textContent = 'Usá el botón de impresión del visor PDF.';
+        }
+    }
+
+    function limpiarVistaPreviaComprobante() {
+        secuenciaVistaPreviaComprobante += 1;
+        var marco = porId('vistaPreviaComprobanteDocumento');
+        marco.onload = null;
+        marco.removeAttribute('src');
+        if (urlVistaPreviaComprobante) {
+            URL.revokeObjectURL(urlVistaPreviaComprobante);
+            urlVistaPreviaComprobante = null;
+        }
     }
     function enviarComprobantePorEmail() {
         if (!comprobanteActualId) return;
@@ -299,8 +434,33 @@
     function badgeEstado(estado) {
         return window.SGTL.estado(estado);
     }
-    function botonDetalle(id) {
-        return window.SGTL.accionesFila([window.SGTL.botonFila('ver', { id: Number(id) })]);
+    function tipoComprobante(item) {
+        var tipo = String((item && item.Tipo) || '').toUpperCase();
+        if (['FAC', 'REC', 'NC', 'ND'].indexOf(tipo) !== -1) return tipo;
+        var coincidencia = /^(FAC|REC|NC|ND)-/.exec(String((item && item.Comprobante) || ''));
+        return coincidencia ? coincidencia[1] : '';
+    }
+    function estadoRecibo(item) {
+        return String(item.EstadoComprobante || item.EstadoDocumental || item.Estado || 'EMITIDO').toUpperCase();
+    }
+    // Botones de cada fila (§1.4): los mismos cuatro en todas, en este orden; lo que no se puede hacer queda
+    // deshabilitado con el motivo. Enviar por e-mail va en el pie de Ver PDF, como en presupuestos.
+    function accionesComprobante(item) {
+        var tipo = tipoComprobante(item);
+        var id = Number(item.ComprobanteID);
+        var esRecibo = tipo === 'REC';
+        var anulado = esRecibo && estadoRecibo(item) === 'ANULADO';
+        return window.SGTL.accionesFila([
+            window.SGTL.botonFila('ver', { id: id, datos: { tipo: tipo } }),
+            window.SGTL.botonFila('editar', {
+                id: id, texto: 'Editar recibo', deshabilitado: !esRecibo || anulado,
+                motivo: anulado ? 'El recibo está anulado: no se puede editar' : 'Solo se editan los recibos'
+            }),
+            window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'Este comprobante no tiene PDF' }),
+            anulado
+                ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
+                : window.SGTL.botonFila('anular', { id: id, texto: 'Anular recibo', deshabilitado: !esRecibo, motivo: 'Solo se anulan los recibos' })
+        ]);
     }
     function mostrarCarga() {
         window.SGTL.tabla.cargando('#ccTablaCuerpo', 10);
@@ -402,7 +562,7 @@
                 '</td><td class="cc-money">' + dinero(item.Debe) + '</td><td class="cc-money cc-credit">' +
                 dinero(item.Cancelado) + '</td><td class="cc-money cc-debit fw-bold">' + dinero(item.Saldo) +
                 '</td><td class="text-center">' + badgeEstado(item.Estado) + '</td><td class="text-center">' +
-                botonDetalle(item.ComprobanteID) + '</td></tr>';
+                accionesComprobante(item) + '</td></tr>';
             var saldoProgresivo = Number(item.Debe || 0);
             var filasAplicaciones = aplicaciones.map(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
@@ -417,7 +577,7 @@
                     '<td class="cc-money">—</td><td class="cc-money cc-credit">' + dinero(aplicacion.Importe) +
                     '</td><td class="cc-money fw-bold">' + dinero(saldoProgresivo) + '</td><td class="text-center">' +
                     badgeEstado(aplicacion.Estado || 'Aplicado') + '</td><td class="text-center">' +
-                    botonDetalle(aplicacion.ComprobanteID) + '</td></tr>';
+                    accionesComprobante(aplicacion) + '</td></tr>';
             }).join('');
             return filaPrincipal + filasAplicaciones;
         }).join('');
@@ -449,7 +609,7 @@
                 '<td class="text-center">' + fecha(item.FechaVencimiento) + '</td><td class="cc-money">' + dinero(item.ImporteOriginal) + '</td>' +
                 '<td class="cc-money cc-credit">' + dinero(item.ImporteAplicado) + '</td><td class="cc-money cc-debit fw-bold">' +
                 dinero(item.SaldoPendiente) + '</td><td>' + escapar(item.Situacion) + '</td><td class="text-center">' + badgeEstado(item.Estado) + '</td>' +
-                '<td class="text-center">' + botonDetalle(item.ComprobanteID) + '</td></tr>';
+                '<td class="text-center">' + accionesComprobante(item) + '</td></tr>';
         }).join(''));
     }
     function totalPaginasActual() {
@@ -506,6 +666,7 @@
         }
         return pendientes.find(function (item) { return item.ComprobanteID === id; });
     }
+    // Detalle chico: solo para comprobantes que no son factura, recibo ni nota (el resto abre su vista completa).
     function abrirDetalle(id) {
         var item = buscarComprobante(Number(id));
         if (!item) return;
@@ -520,17 +681,108 @@
             '<div class="col-md-4"><small class="text-muted d-block">Saldo</small><strong>' + dinero(saldo) + '</strong></div></div>' +
             '<div class="cc-block-title">Trazabilidad</div><div class="cc-trace-item"><div class="cc-trace-title">Origen</div>' +
             '<div class="cc-trace-text">' + escapar(item.Origen || 'Comprobante directo') + '</div></div>';
-        var esComprobanteImprimible = ['FAC', 'REC', 'NC', 'ND'].indexOf(item.Tipo) !== -1 ||
-            /^(FAC|REC|NC|ND)-/.test(String(item.Comprobante || ''));
-        var esRecibo = item.Tipo === 'REC' || /^REC-/.test(String(item.Comprobante || ''));
-        var estadoRecibo = String(item.EstadoComprobante || (String(item.Estado || '').toLowerCase() === 'anulado' ? 'ANULADO' : 'EMITIDO')).toUpperCase();
-        porId('btnImprimirFactura').classList.toggle('d-none', !esComprobanteImprimible);
-        porId('btnDescargarFactura').classList.toggle('d-none', !esComprobanteImprimible);
-        porId('btnEnviarComprobanteMail').classList.toggle('d-none', !esComprobanteImprimible);
-        porId('btnEditarRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'EMITIDO');
-        porId('btnAnularRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'EMITIDO');
-        porId('btnEliminarRecibo').classList.toggle('d-none', !esRecibo || estadoRecibo !== 'ANULADO');
         bootstrap.Modal.getOrCreateInstance(porId('modalDetalleComprobante')).show();
+    }
+
+    function presentarComprobanteSoloLectura(comprobante) {
+        var tipo = tipoComprobante(comprobante);
+        porId('cmpTitulo').textContent = 'Ver ' + nombreTipoComprobante(tipo) + ' ' + (comprobante.Numero || '');
+        var mensaje = porId('cmpMensaje');
+        mensaje.className = 'alert alert-info py-2';
+        mensaje.textContent = 'Consulta de solo lectura. Los datos del comprobante no se pueden modificar.';
+        var cliente = porId('cmpCliente');
+        cliente.innerHTML = '<option value="' + Number(comprobante.ClienteID || 0) + '">' +
+            escapar((comprobante.RazonSocial || 'Cliente') + (comprobante.CUIT ? ' — ' + comprobante.CUIT : '')) + '</option>';
+        cliente.value = String(Number(comprobante.ClienteID || 0));
+        window.SelectClientePredictivo.sincronizar(cliente);
+        ponerFecha('cmpFechaEmision', String(comprobante.FechaEmision || '').substring(0, 10));
+        ponerFecha('cmpFechaVencimiento', String(comprobante.FechaVencimiento || '').substring(0, 10));
+        var nombreTipo = nombreTipoComprobante(tipo);
+        porId('cmpTipoComprobante').value = nombreTipo.charAt(0).toUpperCase() + nombreTipo.slice(1);
+        porId('cmpLetra').innerHTML = '<option value="' + escapar(comprobante.Letra || '') + '">' + escapar(comprobante.Letra || '—') + '</option>';
+        porId('cmpLetra').value = comprobante.Letra || '';
+        porId('cmpSucursal').innerHTML = '<option value="' + escapar(comprobante.Sucursal || '') + '">' + escapar(comprobante.Sucursal || '—') + '</option>';
+        porId('cmpSucursal').value = comprobante.Sucursal || '';
+        porId('cmpNumeroComprobante').value = comprobante.Numero || '';
+        porId('cmpConcepto').value = comprobante.Concepto || '';
+        porId('cmpNeto').value = formatearCentavos(centavos(comprobante.Neto));
+        porId('cmpIvaPct').innerHTML = '<option value="">—</option>';
+        porId('cmpIvaPct').value = '';
+        porId('cmpIvaImporte').value = formatearCentavos(centavos(comprobante.IVA));
+        porId('cmpOtros').value = formatearCentavos(centavos(comprobante.OtrosImpuestos));
+        porId('cmpTotal').textContent = dinero(comprobante.Total);
+        porId('cmpObservaciones').value = comprobante.Observaciones || '';
+        porId('cmpError').textContent = '';
+        porId('cmpVencimientoGrupo').classList.toggle('d-none', !comprobante.FechaVencimiento);
+        porId('cmpReferenciaGrupo').classList.add('d-none');
+        porId('cmpAplicacionesGrupo').classList.add('d-none');
+        var relaciones = [];
+        if (comprobante.ProformaNumero) relaciones.push('<div class="col-md-6"><label class="form-label">Proforma</label><input class="form-control" disabled value="' + escapar(comprobante.ProformaNumero) + '"></div>');
+        if (comprobante.ComprobanteReferenciaNumero) relaciones.push('<div class="col-md-6"><label class="form-label">Comprobante relacionado</label><input class="form-control" disabled value="' + escapar(comprobante.ComprobanteReferenciaNumero) + '"></div>');
+        var bloqueRelacion = porId('cmpSoloLecturaRelacion');
+        bloqueRelacion.classList.toggle('d-none', !relaciones.length);
+        bloqueRelacion.innerHTML = relaciones.length ? '<div class="row g-3">' + relaciones.join('') + '</div>' : '';
+        var detalle = comprobante.Detalle || [];
+        porId('cmpDetalleLecturaCuerpo').innerHTML = detalle.map(function (linea) {
+            return '<tr><td>' + escapar(linea.Concepto || '') + (linea.Descripcion ? '<div class="small text-muted">' + escapar(linea.Descripcion) + '</div>' : '') +
+                '</td><td class="text-end">' + escapar(linea.Cantidad) + '</td><td>' + escapar(linea.Unidad || '') + '</td><td class="text-end">' + dinero(linea.Total) + '</td></tr>';
+        }).join('') || '<tr><td colspan="4" class="cc-empty">El comprobante no tiene detalle.</td></tr>';
+        porId('cmpDetalleLectura').classList.remove('d-none');
+        var aplicaciones = comprobante.ComprobantesCancelados || [];
+        porId('cmpAplicacionesLecturaCuerpo').innerHTML = aplicaciones.map(function (aplicacion) {
+            return '<tr><td>' + escapar(aplicacion.Numero || '') + '</td><td>' + fecha(aplicacion.FechaEmision) + '</td><td>' + escapar(aplicacion.Concepto || '') + '</td><td class="text-end">' + dinero(aplicacion.ImporteAplicado) + '</td></tr>';
+        }).join('');
+        porId('cmpAplicacionesLectura').classList.toggle('d-none', !aplicaciones.length);
+        porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
+        window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', true);
+        porId('btnEmitirComprobante').classList.add('d-none');
+        porId('btnCerrarComprobante').textContent = 'Cerrar';
+        bootstrap.Modal.getOrCreateInstance(porId('modalNuevoComprobante')).show();
+    }
+
+    function presentarReciboSoloLectura(recibo) {
+        porId('modalNuevoReciboTitulo').textContent = 'Ver recibo ' + (recibo.Numero || '');
+        ponerFecha('reciboFecha', String(recibo.Fecha || '').substring(0, 10));
+        seleccionarClienteFormulario('reciboCliente', recibo.ClienteID);
+        porId('reciboTipoComprobante').value = 'Recibo';
+        porId('reciboLetra').innerHTML = '<option value="' + escapar(recibo.Letra || '') + '">' + escapar(recibo.Letra || '—') + '</option>';
+        porId('reciboSucursal').innerHTML = '<option value="' + escapar(recibo.Sucursal || '') + '">' + escapar(recibo.Sucursal || '—') + '</option>';
+        porId('reciboNumeroComprobante').value = recibo.Numero || recibo.NumeroComprobante || '';
+        porId('reciboFormaPago').value = ({ TRANSFERENCIA: 'Transferencia', EFECTIVO: 'Efectivo', CHEQUE: 'Cheque', OTRO: 'Otro' })[String(recibo.FormaPago || '').toUpperCase()] || 'Otro';
+        porId('reciboReferencia').value = recibo.Referencia || '';
+        porId('reciboFormaImporte').value = formatearCentavos(centavos(recibo.Total));
+        porId('reciboObservaciones').value = recibo.Observaciones || '';
+        renderAplicacionesReciboEdicion(recibo.Aplicaciones);
+        porId('reciboResumenTotal').textContent = dinero(recibo.Total);
+        porId('reciboResumenAplicado').textContent = dinero((recibo.Aplicaciones || []).reduce(function (total, item) { return total + Number(item.Importe || 0); }, 0));
+        porId('reciboResumenDiferencia').textContent = dinero(0);
+        var mensaje = porId('reciboMensaje');
+        mensaje.className = 'alert alert-info py-2';
+        mensaje.textContent = 'Consulta de solo lectura. Los datos del recibo no se pueden modificar.';
+        porId('reciboError').textContent = '';
+        porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
+        window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
+        porId('btnDistribuirRecibo').classList.add('d-none');
+        porId('btnEmitirRecibo').classList.add('d-none');
+        bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
+    }
+
+    function abrirComprobanteSoloLectura(id, tipo) {
+        if (tipo === 'REC') {
+            apiGet('/recibos/' + Number(id)).then(presentarReciboSoloLectura).catch(function (ex) {
+                window.SGTL.toastError(textoError(ex, 'No se pudo abrir el recibo. Probá de nuevo.'));
+            });
+            return;
+        }
+        apiGet('/comprobantes/' + Number(id)).then(presentarComprobanteSoloLectura).catch(function (ex) {
+            window.SGTL.toastError(textoError(ex, 'No se pudo abrir el comprobante. Probá de nuevo.'));
+        });
+    }
+
+    // El ojo de la fila (§1.4) abre el comprobante completo en solo lectura, como en proformas.
+    function verComprobante(id, tipo) {
+        if (['FAC', 'REC', 'NC', 'ND'].indexOf(tipo) !== -1) abrirComprobanteSoloLectura(id, tipo);
+        else abrirDetalle(id);
     }
 
     function renderAplicacionesReciboEdicion(aplicaciones) {
@@ -565,7 +817,7 @@
             }[String(recibo.FormaPago || '').toUpperCase()] || 'Transferencia';
             porId('reciboFormaPago').value = formaVisual;
             porId('reciboReferencia').value = recibo.Referencia || '';
-            porId('reciboFormaImporte').value = Number(recibo.Total || 0).toFixed(2);
+            porId('reciboFormaImporte').value = formatearCentavos(centavos(recibo.Total));
             porId('reciboObservaciones').value = recibo.Observaciones || '';
             window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
             habilitarFecha('reciboFecha', true);
@@ -589,7 +841,6 @@
             boton.disabled = false;
             boton.classList.remove('d-none');
             boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Guardar';
-            bootstrap.Modal.getInstance(porId('modalDetalleComprobante')).hide();
             bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
         }).catch(function (ex) {
             window.SGTL.toastError(textoError(ex, 'No se pudo abrir el recibo. Probá de nuevo.'));
@@ -631,8 +882,9 @@
         var item = buscarComprobante(Number(comprobanteActualId));
         return item && item.Comprobante ? 'el recibo ' + item.Comprobante : 'el recibo';
     }
-    // Anular y eliminar se confirman con el modal compartido (§5.2), encima del detalle.
-    function anularReciboActual() {
+    // Anular y eliminar se confirman con el modal compartido (§5.2).
+    function anularReciboActual(id) {
+        if (id != null) comprobanteActualId = Number(id);
         if (!comprobanteActualId) return;
         var id = comprobanteActualId;
         window.SGTL.confirmar({
@@ -646,12 +898,13 @@
             }
         }).then(function (hecho) {
             if (!hecho) return;
-            cerrarModalYNotificar('modalDetalleComprobante', 'Recibo anulado.');
+            window.SGTL.toastExito('Recibo anulado.');
             cargarCuenta(paginaActual);
         });
     }
 
-    function eliminarReciboActual() {
+    function eliminarReciboActual(id) {
+        if (id != null) comprobanteActualId = Number(id);
         if (!comprobanteActualId) return;
         var id = comprobanteActualId;
         window.SGTL.confirmar({
@@ -664,7 +917,7 @@
             }
         }).then(function (hecho) {
             if (!hecho) return;
-            cerrarModalYNotificar('modalDetalleComprobante', 'Recibo eliminado.');
+            window.SGTL.toastExito('Recibo eliminado.');
             cargarCuenta(paginaActual);
         });
     }
@@ -685,9 +938,12 @@
                 return '<tr><td><input type="checkbox" class="form-check-input cc-recibo-check" data-id="' + Number(item.ComprobanteID) + '"></td>' +
                     '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td class="text-center">' + fecha(item.FechaVencimiento) + '</td>' +
                     '<td class="text-end">' + dinero(item.ImporteOriginal) + '</td><td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
-                    '<td class="text-end"><input type="number" min="0" step="0.01" class="form-control form-control-sm text-end cc-allocation-input cc-recibo-aplicar" ' +
-                    'data-id="' + Number(item.ComprobanteID) + '" data-pendiente="' + Number(item.SaldoPendiente) + '" disabled value="0.00"></td></tr>';
+                    '<td class="text-end"><input type="text" inputmode="decimal" class="form-control form-control-sm text-end cc-allocation-input cc-recibo-aplicar" ' +
+                    'data-id="' + Number(item.ComprobanteID) + '" data-pendiente="' + Number(item.SaldoPendiente) + '" ' +
+                    'data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" data-vencimiento="' + escapar(item.FechaVencimiento || '') + '" ' +
+                    'data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
             }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene facturas pendientes.</td></tr>';
+            porId('recibofacturas').querySelectorAll('.cc-recibo-aplicar').forEach(enlazarMascaraMonto);
             actualizarResumenRecibo();
         }).catch(function (ex) {
             porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">No se pudieron cargar las facturas pendientes.</td></tr>';
@@ -698,14 +954,45 @@
     function actualizarResumenRecibo(recalcularImporte) {
         var aplicado = 0;
         document.querySelectorAll('.cc-recibo-aplicar').forEach(function (input) {
-            if (!input.disabled) aplicado += Number(input.value || 0);
+            if (!input.disabled) aplicado += centavos(input.value);
         });
         var importe = porId('reciboFormaImporte');
-        if (recalcularImporte !== false) importe.value = aplicado.toFixed(2);
-        var total = Number(importe.value || 0);
-        porId('reciboResumenTotal').textContent = dinero(total);
-        porId('reciboResumenAplicado').textContent = dinero(aplicado);
-        porId('reciboResumenDiferencia').textContent = dinero(total - aplicado);
+        if (recalcularImporte !== false) importe.value = formatearCentavos(aplicado);
+        var total = centavos(importe.value);
+        porId('reciboResumenTotal').textContent = dinero(total / 100);
+        porId('reciboResumenAplicado').textContent = dinero(aplicado / 100);
+        porId('reciboResumenDiferencia').textContent = dinero((total - aplicado) / 100);
+    }
+    function distribuirRecibo() {
+        var importe = centavos(porId('reciboFormaImporte').value);
+        if (importe <= 0) {
+            porId('reciboError').textContent = 'Ingresá el importe que querés distribuir.';
+            return;
+        }
+        var filas = Array.prototype.slice.call(document.querySelectorAll('#reciboFacturas tr'));
+        var facturas = filas.map(function (fila) {
+            var input = fila.querySelector('.cc-recibo-aplicar');
+            return input ? {
+                ComprobanteID: Number(input.getAttribute('data-id')),
+                FechaVencimiento: input.getAttribute('data-vencimiento'),
+                FechaEmision: input.getAttribute('data-emision'),
+                SaldoCentavos: Number(input.getAttribute('data-pendiente-centavos') || 0)
+            } : null;
+        }).filter(Boolean);
+        var aplicaciones = distribuirImportePorVencimiento(importe, facturas);
+        var importesPorFactura = {};
+        aplicaciones.forEach(function (aplicacion) { importesPorFactura[aplicacion.ComprobanteID] = aplicacion.ImporteCentavos; });
+        filas.forEach(function (fila) {
+            var check = fila.querySelector('.cc-recibo-check');
+            var input = fila.querySelector('.cc-recibo-aplicar');
+            if (!check || !input) return;
+            var aplicado = importesPorFactura[Number(input.getAttribute('data-id'))] || 0;
+            check.checked = aplicado > 0;
+            input.disabled = aplicado <= 0;
+            input.value = formatearCentavos(aplicado);
+        });
+        porId('reciboError').textContent = '';
+        actualizarResumenRecibo(false);
     }
     function abrirNuevoRecibo() {
         var cliente = clienteActual();
@@ -720,7 +1007,7 @@
         porId('reciboNumeroComprobante').value = '';
         porId('reciboFormaPago').value = 'Transferencia';
         porId('reciboReferencia').value = '';
-        porId('reciboFormaImporte').value = '0.00';
+        porId('reciboFormaImporte').value = '0,00';
         porId('reciboObservaciones').value = '';
         porId('reciboError').textContent = '';
         var mensaje = porId('reciboMensaje');
@@ -731,6 +1018,7 @@
         porId('reciboTipoComprobante').disabled = true;
         porId('reciboNumeroComprobante').readOnly = true;
         porId('reciboFormaImporte').readOnly = false;
+        porId('btnDistribuirRecibo').classList.remove('d-none');
         var boton = porId('btnEmitirRecibo');
         boton.classList.remove('d-none'); boton.disabled = true;
         boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Emitir recibo';
@@ -766,6 +1054,10 @@
         if (!token()) { error.textContent = window.SGTL.mensajeError({ status: 401 }, ''); return; }
         if (!cliente) { error.textContent = 'Seleccioná un cliente.'; return; }
         var fechaRecibo = porId('reciboFecha').value;
+        var importeInvalido = primerMontoInvalido([
+            { etiqueta: 'El importe del recibo', valor: porId('reciboFormaImporte').value }
+        ].concat(camposAplicacionSeleccionados('#reciboFacturas', '.cc-recibo-check', '.cc-recibo-aplicar')));
+        if (importeInvalido) { error.textContent = importeInvalido + ' no es válido.'; return; }
         var total = centavos(porId('reciboFormaImporte').value);
         var aplicaciones = aplicacionesRecibo();
         var aplicado = aplicaciones.reduce(function (suma, item) { return suma + centavos(item.Importe); }, 0);
@@ -813,11 +1105,12 @@
         return 'nota de débito';
     }
     function recalcularComprobante() {
+        if (comprobanteTipo === 'NC') return actualizarResumenNotaCredito();
         var neto = centavos(porId('cmpNeto').value);
         var porcentaje = Number(porId('cmpIvaPct').value || 0);
         var iva = ivaComprobanteFijo == null ? Math.round(neto * porcentaje / 100) : ivaComprobanteFijo;
         var otros = centavos(porId('cmpOtros').value);
-        porId('cmpIvaImporte').value = (iva / 100).toFixed(2);
+        porId('cmpIvaImporte').value = formatearCentavos(iva);
         porId('cmpTotal').textContent = dinero((neto + iva + otros) / 100);
         return { neto: neto, iva: iva, otros: otros, total: neto + iva + otros };
     }
@@ -848,7 +1141,132 @@
         selectorIva.value = porcentaje;
         recalcularComprobante();
     }
+    function renderizarFacturasNotaCredito() {
+        var cuerpo = porId('cmpFacturasNC');
+        cuerpo.innerHTML = facturasReferencia.map(function (item) {
+            var vencimiento = item.FechaVencimiento || item.FechaEmision || '';
+            return '<tr><td><input type="checkbox" class="form-check-input cc-nc-check"></td>' +
+                '<td class="cc-document">' + escapar(item.Numero) + '</td><td>' + fecha(vencimiento) + '</td>' +
+                '<td class="text-end">' + dinero(item.Total) + '</td><td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
+                '<td class="text-end"><input type="text" inputmode="decimal" class="form-control form-control-sm text-end cc-allocation-input cc-nc-aplicar" ' +
+                'data-id="' + Number(item.ComprobanteID) + '" data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" ' +
+                'data-vencimiento="' + escapar(vencimiento) + '" data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
+        }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene facturas pendientes.</td></tr>';
+        cuerpo.querySelectorAll('.cc-nc-aplicar').forEach(enlazarMascaraMonto);
+        actualizarResumenNotaCredito();
+    }
+    function aplicacionesNotaCredito() {
+        var aplicaciones = [];
+        document.querySelectorAll('#cmpFacturasNC tr').forEach(function (fila) {
+            var check = fila.querySelector('.cc-nc-check');
+            var input = fila.querySelector('.cc-nc-aplicar');
+            if (check && input && check.checked && centavos(input.value) > 0) {
+                aplicaciones.push({ ComprobanteID: Number(input.getAttribute('data-id')), Importe: centavos(input.value) / 100 });
+            }
+        });
+        return aplicaciones;
+    }
+    function calcularComposicionNotaCredito(aplicaciones) {
+        return aplicaciones.reduce(function (total, aplicacion) {
+            var factura = facturasReferencia.find(function (item) { return Number(item.ComprobanteID) === aplicacion.ComprobanteID; });
+            if (!factura) return total;
+            var importe = centavos(aplicacion.Importe);
+            var pendiente = centavos(factura.SaldoPendiente);
+            if (importe <= 0 || pendiente <= 0) return total;
+            var netoPendiente = centavos(factura.NetoPendiente);
+            var otrosPendientes = centavos(factura.OtrosImpuestosPendiente);
+            var neto = importe === pendiente ? netoPendiente : Math.min(importe, Math.round(netoPendiente * importe / pendiente));
+            var otros = importe === pendiente ? otrosPendientes : Math.min(importe - neto, Math.round(otrosPendientes * importe / pendiente));
+            total.neto += neto;
+            total.otros += otros;
+            total.iva += importe - neto - otros;
+            total.total += importe;
+            return total;
+        }, { neto: 0, iva: 0, otros: 0, total: 0 });
+    }
+    function actualizarResumenNotaCredito() {
+        var solicitado = centavos(porId('cmpImporteTotalNC').value);
+        var aplicaciones = aplicacionesNotaCredito();
+        var composicion = calcularComposicionNotaCredito(aplicaciones);
+        porId('cmpNeto').value = formatearCentavos(composicion.neto);
+        porId('cmpIvaImporte').value = formatearCentavos(composicion.iva);
+        porId('cmpOtros').value = formatearCentavos(composicion.otros);
+        porId('cmpTotal').textContent = dinero(composicion.total / 100);
+        porId('cmpResumenNCTotal').textContent = dinero(solicitado / 100);
+        porId('cmpResumenNCAplicado').textContent = dinero(composicion.total / 100);
+        porId('cmpResumenNCDiferencia').textContent = dinero((solicitado - composicion.total) / 100);
+        ivaComprobanteFijo = composicion.iva;
+        return {
+            neto: composicion.neto, iva: composicion.iva, otros: composicion.otros,
+            total: composicion.total, aplicado: composicion.total, importeSolicitado: solicitado
+        };
+    }
+    function distribuirNotaCredito() {
+        var importe = centavos(porId('cmpImporteTotalNC').value);
+        if (importe <= 0) {
+            porId('cmpError').textContent = 'Ingresá el importe que querés distribuir.';
+            return;
+        }
+        var filas = Array.prototype.slice.call(document.querySelectorAll('#cmpFacturasNC tr'));
+        var facturas = filas.map(function (fila) {
+            var input = fila.querySelector('.cc-nc-aplicar');
+            return input ? {
+                ComprobanteID: Number(input.getAttribute('data-id')),
+                FechaVencimiento: input.getAttribute('data-vencimiento'),
+                FechaEmision: input.getAttribute('data-emision'),
+                SaldoCentavos: Number(input.getAttribute('data-pendiente-centavos') || 0)
+            } : null;
+        }).filter(Boolean);
+        var aplicaciones = distribuirImportePorVencimiento(importe, facturas);
+        var importesPorFactura = {};
+        aplicaciones.forEach(function (aplicacion) { importesPorFactura[aplicacion.ComprobanteID] = aplicacion.ImporteCentavos; });
+        filas.forEach(function (fila) {
+            var check = fila.querySelector('.cc-nc-check');
+            var input = fila.querySelector('.cc-nc-aplicar');
+            if (!check || !input) return;
+            var aplicado = importesPorFactura[Number(input.getAttribute('data-id'))] || 0;
+            check.checked = aplicado > 0;
+            input.disabled = aplicado <= 0;
+            input.value = formatearCentavos(aplicado);
+        });
+        porId('cmpError').textContent = '';
+        actualizarResumenNotaCredito();
+    }
     function cargarFacturasReferencia(tipo, clienteId) {
+        var grupoReferencia = porId('cmpReferenciaGrupo');
+        var grupoAplicaciones = porId('cmpAplicacionesGrupo');
+        facturasReferencia = [];
+        grupoReferencia.classList.add('d-none');
+        if (tipo !== 'NC') {
+            grupoAplicaciones.classList.add('d-none');
+            return Promise.resolve();
+        }
+        grupoAplicaciones.classList.remove('d-none');
+        if (!clienteId) {
+            porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus facturas pendientes.</td></tr>';
+            porId('btnEmitirComprobante').disabled = true;
+            actualizarResumenNotaCredito();
+            return Promise.resolve();
+        }
+        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Cargando facturas pendientes…</td></tr>';
+        porId('btnEmitirComprobante').disabled = true;
+        return apiGet('/clientes/' + clienteId + '/facturas-referencia').then(function (facturas) {
+            var clienteActualFormulario = clienteComprobanteActual();
+            if (comprobanteTipo !== 'NC' || !clienteActualFormulario || clienteActualFormulario.ClienteID !== clienteId) return;
+            facturasReferencia = (facturas || []).filter(function (item) { return centavos(item.SaldoPendiente) > 0; });
+            if (!facturasReferencia.length) {
+                porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">No hay facturas con saldo pendiente.</td></tr>';
+                porId('cmpMensaje').className = 'alert alert-warning py-2';
+                porId('cmpMensaje').textContent = 'El cliente no tiene facturas con saldo para emitir una nota de crédito.';
+                porId('btnEmitirComprobante').disabled = true;
+                actualizarResumenNotaCredito();
+                return;
+            }
+            renderizarFacturasNotaCredito();
+            porId('btnEmitirComprobante').disabled = false;
+        });
+    }
+    function cargarFacturasReferenciaLegado(tipo, clienteId) {
         var grupo = porId('cmpReferenciaGrupo');
         facturasReferencia = [];
         if (tipo !== 'NC') {
@@ -907,13 +1325,21 @@
         porId('cmpVencimientoGrupo').classList.toggle('d-none', tipo === 'NC');
         porId('cmpConcepto').value = '';
         porId('cmpIvaPct').querySelectorAll('.cc-iva-factura').forEach(function (opcion) { opcion.remove(); });
-        porId('cmpNeto').value = '0.00'; porId('cmpIvaPct').value = '21'; porId('cmpOtros').value = '0.00';
+        porId('cmpNeto').value = '0,00'; porId('cmpIvaPct').value = '21'; porId('cmpOtros').value = '0,00';
+        porId('cmpImporteTotalNC').value = '0,00';
+        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus facturas pendientes.</td></tr>';
+        porId('cmpSoloLecturaRelacion').classList.add('d-none');
+        porId('cmpSoloLecturaRelacion').innerHTML = '';
+        porId('cmpDetalleLectura').classList.add('d-none');
+        porId('cmpDetalleLecturaCuerpo').innerHTML = '';
+        porId('cmpAplicacionesLectura').classList.add('d-none');
+        porId('cmpAplicacionesLecturaCuerpo').innerHTML = '';
         ivaComprobanteFijo = null;
         porId('cmpObservaciones').value = ''; porId('cmpError').textContent = '';
         var mensaje = porId('cmpMensaje');
         mensaje.className = 'alert alert-info py-2';
         mensaje.textContent = tipo === 'NC'
-            ? 'Seleccioná la factura a la que se aplica la nota de crédito.'
+            ? 'Ingresá el importe y distribuí la nota de crédito entre las facturas pendientes.'
             : 'Completá los datos para emitir la ' + nombreTipoComprobante(tipo) + '.';
         porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', false);
@@ -925,6 +1351,7 @@
         porId('cmpIvaPct').disabled = tipo === 'NC';
         var boton = porId('btnEmitirComprobante');
         boton.classList.remove('d-none'); boton.disabled = true;
+        porId('btnCerrarComprobante').textContent = 'Cancelar';
         boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Emitir ' + nombreTipoComprobante(tipo);
         recalcularComprobante();
         cargarConfiguracionEmision(tipo, {
@@ -948,23 +1375,37 @@
         if (!cliente) { error.textContent = 'Seleccioná un cliente para emitir el comprobante.'; return; }
         var emision = porId('cmpFechaEmision').value;
         var vencimiento = comprobanteTipo === 'NC' ? null : porId('cmpFechaVencimiento').value;
-        var referencia = comprobanteTipo === 'NC' && porId('cmpReferencia').value
-            ? Number(porId('cmpReferencia').value) : null;
+        var referencia = null;
         var concepto = porId('cmpConcepto').value.trim();
+        var importeInvalido = comprobanteTipo === 'NC'
+            ? primerMontoInvalido([
+                { etiqueta: 'El importe total de la nota de crédito', valor: porId('cmpImporteTotalNC').value }
+            ].concat(camposAplicacionSeleccionados('#cmpFacturasNC', '.cc-nc-check', '.cc-nc-aplicar')))
+            : primerMontoInvalido([
+                { etiqueta: 'El importe neto', valor: porId('cmpNeto').value },
+                { etiqueta: 'Otros impuestos', valor: porId('cmpOtros').value }
+            ]);
+        if (importeInvalido) { error.textContent = importeInvalido + ' no es válido.'; return; }
+        var aplicaciones = comprobanteTipo === 'NC' ? aplicacionesNotaCredito() : [];
         var importes = recalcularComprobante();
         if (!emision) { error.textContent = 'Completá la fecha de emisión.'; return; }
         if (emision > hoyIso()) { error.textContent = 'La fecha de emisión no puede ser futura.'; return; }
         if (comprobanteTipo !== 'NC' && (!vencimiento || vencimiento < emision)) {
             error.textContent = 'El vencimiento debe ser igual o posterior a la emisión.'; return;
         }
-        if (comprobanteTipo === 'NC' && !referencia) { error.textContent = 'Seleccioná la factura relacionada.'; return; }
+        if (comprobanteTipo === 'NC' && !aplicaciones.length) { error.textContent = 'Seleccioná una o más facturas para aplicar la nota de crédito.'; return; }
         if (!concepto) { error.textContent = 'Ingresá el concepto del comprobante.'; return; }
         if (importes.neto <= 0) { error.textContent = 'El importe neto debe ser mayor que cero.'; return; }
         if (importes.otros < 0) { error.textContent = 'Otros impuestos no puede ser negativo.'; return; }
         if (comprobanteTipo === 'NC') {
-            var opcion = porId('cmpReferencia').selectedOptions[0];
-            var pendiente = opcion ? Number(opcion.getAttribute('data-pendiente') || 0) : 0;
-            if (importes.total !== pendiente) { error.textContent = 'Los importes tienen que coincidir con el saldo pendiente de la factura.'; return; }
+            if (importes.importeSolicitado <= 0) { error.textContent = 'Ingresá el importe total de la nota de crédito.'; return; }
+            if (importes.aplicado !== importes.importeSolicitado) {
+                error.textContent = 'El total aplicado debe coincidir con el importe de la nota de crédito.'; return;
+            }
+            var excedePendiente = Array.prototype.some.call(document.querySelectorAll('.cc-nc-aplicar'), function (input) {
+                return !input.disabled && centavos(input.value) > Number(input.getAttribute('data-pendiente-centavos') || 0);
+            });
+            if (excedePendiente) { error.textContent = 'Un importe aplicado supera el saldo pendiente de la factura.'; return; }
         }
 
         var listo = window.SGTL.procesando('#btnEmitirComprobante');
@@ -974,7 +1415,8 @@
             Concepto: concepto, Neto: importes.neto / 100, IvaPct: Number(porId('cmpIvaPct').value),
             Letra: porId('cmpLetra').value || null, Sucursal: porId('cmpSucursal').value || null,
             IVA: comprobanteTipo === 'NC' ? importes.iva / 100 : null,
-            OtrosImpuestos: importes.otros / 100, Observaciones: porId('cmpObservaciones').value.trim() || null
+            OtrosImpuestos: importes.otros / 100, Observaciones: porId('cmpObservaciones').value.trim() || null,
+            Aplicaciones: comprobanteTipo === 'NC' ? aplicaciones : null
         }).then(function (comprobante) {
             listo();
             comprobanteOperacion = null;
@@ -1296,6 +1738,8 @@
         });
         porId('btnNuevoRecibo').addEventListener('click', abrirNuevoRecibo);
         porId('btnEmitirRecibo').addEventListener('click', emitirRecibo);
+        porId('btnDistribuirRecibo').addEventListener('click', distribuirRecibo);
+        porId('btnDistribuirNC').addEventListener('click', distribuirNotaCredito);
         porId('btnEmitirComprobante').addEventListener('click', emitirComprobante);
         porId('cmpCliente').addEventListener('change', function () {
             actualizarClienteComprobante();
@@ -1311,23 +1755,24 @@
         porId('cmpIvaPct').addEventListener('change', recalcularComprobante);
         porId('cmpOtros').addEventListener('input', recalcularComprobante);
         porId('cmpReferencia').addEventListener('change', aplicarImportesFacturaReferencia);
+        porId('cmpImporteTotalNC').addEventListener('input', actualizarResumenNotaCredito);
         porId('btnExportarCuenta').addEventListener('click', abrirExportacionCuenta);
         porId('btnVistaPreviaListado').addEventListener('click', function () { exportarListadoPdf('vistaPrevia'); });
         porId('btnDescargarListadoExcel').addEventListener('click', exportarListadoExcel);
         porId('btnDescargarListadoPdf').addEventListener('click', function () { exportarListadoPdf('descargar'); });
-        porId('btnImprimirFactura').addEventListener('click', function () {
-            if (comprobanteActualId && window.imprimirComprobantePDF) window.imprimirComprobantePDF(comprobanteActualId);
-        });
-        porId('btnDescargarFactura').addEventListener('click', function () {
-            if (comprobanteActualId && window.descargarComprobantePDF) window.descargarComprobantePDF(comprobanteActualId);
-        });
-        porId('btnEnviarComprobanteMail').addEventListener('click', function () {
-            abrirEnvioComprobante();
-        });
         porId('btnConfirmarEnvioComprobante').addEventListener('click', enviarComprobantePorEmail);
-        porId('btnEditarRecibo').addEventListener('click', function () { abrirEditarRecibo(comprobanteActualId); });
-        porId('btnAnularRecibo').addEventListener('click', anularReciboActual);
-        porId('btnEliminarRecibo').addEventListener('click', eliminarReciboActual);
+        porId('imprimirVistaPreviaComprobante').addEventListener('click', imprimirVistaPreviaComprobante);
+        // "Enviar por e-mail" va en el pie de Ver PDF (como en presupuestos): cierra la vista y abre el envío.
+        porId('enviarVistaPreviaComprobante').addEventListener('click', function () {
+            var id = idVistaPreviaComprobante;
+            var vista = porId('modalVistaPreviaComprobante');
+            if (!id) return;
+            vista.addEventListener('hidden.bs.modal', function abrirLuego() {
+                vista.removeEventListener('hidden.bs.modal', abrirLuego);
+                abrirEnvioComprobante(id);
+            });
+            modalVistaPreviaComprobante.hide();
+        });
         document.querySelectorAll('.cc-tab').forEach(function (tab) {
             tab.addEventListener('click', function () { cambiarVista(tab.getAttribute('data-view')); });
         });
@@ -1349,7 +1794,15 @@
                 desplegar.setAttribute('aria-label', (expandir ? 'Ocultar' : 'Mostrar') + ' comprobantes aplicados');
                 return;
             }
-            var boton = event.target.closest('[data-accion="ver"]'); if (boton) abrirDetalle(boton.getAttribute('data-id'));
+            var boton = event.target.closest('button[data-accion]');
+            if (!boton) return;
+            var id = Number(boton.getAttribute('data-id'));
+            var accion = boton.getAttribute('data-accion');
+            if (accion === 'ver') verComprobante(id, boton.getAttribute('data-tipo'));
+            else if (accion === 'editar') abrirEditarRecibo(id);
+            else if (accion === 'pdf') abrirVistaPreviaComprobante(id);
+            else if (accion === 'anular') anularReciboActual(id);
+            else if (accion === 'eliminar') eliminarReciboActual(id);
         });
         porId('ccPagination').addEventListener('click', function (event) {
             var botonPagina = event.target.closest('button[data-page]');
@@ -1369,14 +1822,29 @@
             if (event.target.classList.contains('cc-recibo-check')) {
                 var input = event.target.closest('tr').querySelector('.cc-recibo-aplicar');
                 input.disabled = !event.target.checked;
-                input.value = event.target.checked ? Number(input.getAttribute('data-pendiente')).toFixed(2) : '0.00';
+                input.value = event.target.checked ? formatearCentavos(centavos(input.getAttribute('data-pendiente'))) : '0,00';
             }
             actualizarResumenRecibo();
         });
         porId('reciboFormaImporte').addEventListener('input', function () { actualizarResumenRecibo(false); });
+        porId('cmpFacturasNC').addEventListener('input', actualizarResumenNotaCredito);
+        porId('cmpFacturasNC').addEventListener('change', function (event) {
+            if (event.target.classList.contains('cc-nc-check')) {
+                var input = event.target.closest('tr').querySelector('.cc-nc-aplicar');
+                input.disabled = !event.target.checked;
+                input.value = event.target.checked ? formatearCentavos(Number(input.getAttribute('data-pendiente-centavos') || 0)) : '0,00';
+            }
+            actualizarResumenNotaCredito();
+        });
+        ['reciboFormaImporte', 'cmpNeto', 'cmpOtros', 'cmpImporteTotalNC'].forEach(function (id) {
+            enlazarMascaraMonto(porId(id));
+        });
     }
     function inicializar() {
         if (inicializada) return;
+        modalVistaPreviaComprobante = bootstrap.Modal.getOrCreateInstance(porId('modalVistaPreviaComprobante'));
+        window.abrirVistaPreviaComprobante = abrirVistaPreviaComprobante;
+        porId('modalVistaPreviaComprobante').addEventListener('hidden.bs.modal', limpiarVistaPreviaComprobante);
         inicializada = true; enlazarEventos(); mostrarCarga(); establecerRangoUltimos30Dias();
         ponerFecha('reciboFecha', hoyIso());
         cargarClientes().then(cargarCuenta).catch(mostrarError);

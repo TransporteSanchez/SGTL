@@ -515,6 +515,7 @@
 
   var formatoMonto = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
   var formatoMontoRedondo = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0, minimumFractionDigits: 0 });
+  var formatoMontoCampo = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   var formatoKm = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
   // "$ 1.234,56"; con { sinDecimales: true } "$ 1.235" (indicadores del tablero).
@@ -528,6 +529,60 @@
     var n = Number(valor);
     if (valor == null || valor === '' || !isFinite(n)) return '';
     return formatoKm.format(n);
+  }
+
+  // Lee un importe argentino y devuelve centavos. No acepta negativos ni más de dos decimales.
+  function montoCentavos(valor) {
+    if (valor == null || String(valor).trim() === '') return null;
+    if (typeof valor === 'number') {
+      if (!isFinite(valor) || valor < 0) return null;
+      var centavosNumero = Math.round(valor * 100);
+      return Math.abs(valor * 100 - centavosNumero) < 0.000001 ? centavosNumero : null;
+    }
+
+    var texto = String(valor).replace(/\s/g, '').trim();
+    if (!texto || texto.charAt(0) === '-') return null;
+    var partes;
+    var entero;
+    var decimal = '';
+    if (texto.indexOf(',') >= 0) {
+      if ((texto.match(/,/g) || []).length !== 1) return null;
+      partes = texto.split(',');
+      if (!/^\d{1,3}(\.\d{3})*$/.test(partes[0]) && !/^\d+$/.test(partes[0])) return null;
+      if (!/^\d{0,2}$/.test(partes[1])) return null;
+      entero = partes[0].replace(/\./g, '');
+      decimal = partes[1];
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(texto)) {
+      entero = texto.replace(/\./g, '');
+    } else if (/^\d+(\.\d{1,2})?$/.test(texto)) {
+      partes = texto.split('.');
+      entero = partes[0];
+      decimal = partes[1] || '';
+    } else {
+      return null;
+    }
+
+    var parteEntera = Number(entero);
+    if (!isFinite(parteEntera) || parteEntera < 0 || parteEntera > 90071992547409) return null;
+    var parteDecimal = decimal ? Number(decimal.length === 1 ? decimal + '0' : decimal) : 0;
+    return parteEntera * 100 + parteDecimal;
+  }
+
+  function formatearMontoCentavos(centavos) {
+    var valor = Number(centavos);
+    if (!isFinite(valor) || valor < 0 || Math.round(valor) !== valor) return '';
+    return formatoMontoCampo.format(valor / 100);
+  }
+
+  // La edición permanece libre; al salir del campo se normaliza para no interrumpir el cursor.
+  function enlazarMascaraMonto(objetivo) {
+    var input = elemento(objetivo);
+    if (!input || typeof input.addEventListener !== 'function') return null;
+    input.addEventListener('blur', function () {
+      var valor = montoCentavos(input.value);
+      input.value = valor == null ? '' : formatearMontoCentavos(valor);
+    });
+    return input;
   }
 
   // "05/07/2026" escrito a mano → Date, o null si no es una fecha válida.
@@ -863,6 +918,9 @@
     tabla: tabla,
     fecha: fecha,
     monto: monto,
+    montoCentavos: montoCentavos,
+    formatearMontoCentavos: formatearMontoCentavos,
+    enlazarMascaraMonto: enlazarMascaraMonto,
     km: km,
     rangoFechas: rangoFechas,
     valorRango: valorRango,

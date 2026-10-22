@@ -99,7 +99,7 @@
         var contenedor = document.createElement('div');
         contenedor.innerHTML =
             '<div class="modal fade" id="modalFacturarProforma" tabindex="-1" aria-hidden="true">' +
-                '<div class="modal-dialog modal-lg"><div class="modal-content">' +
+                '<div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario"><div class="modal-content">' +
                     '<div class="modal-header"><div><h5 class="modal-title mb-0">Emitir factura</h5>' +
                         '<small class="text-muted" id="facProformaNumero">Comprobando disponibilidad…</small></div>' +
                         '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +

@@ -22,6 +22,16 @@ using System.Web.UI.WebControls;
 
 using System.ComponentModel.DataAnnotations;
 
+using System.Security.Claims;
+
+using System.IdentityModel.Tokens.Jwt;
+
+using System.Text;
+
+using Microsoft.IdentityModel.Tokens;
+
+using WebApi_TransporteSanchez.Security;
+
 
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -869,6 +879,12 @@ namespace WebApi_TransporteSanchez.Controllers
 
             }
 
+            string mensajeContrasena;
+            if (!ContrasenasSeguras.CumplePolitica(value.Contraseña, out mensajeContrasena))
+            {
+                return Content(HttpStatusCode.BadRequest, new { message = mensajeContrasena });
+            }
+
 
 
             if (string.IsNullOrWhiteSpace(value.EstadoUsuario))
@@ -957,7 +973,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         Nombre_Usuario = value.Nombre_Usuario.Trim(),
 
-                        Contraseña = value.Contraseña,
+                        Contraseña = ContrasenasSeguras.CrearHash(value.Contraseña),
 
                         Rol = string.IsNullOrWhiteSpace(value.Rol) ? null : value.Rol.Trim(),
 
@@ -1223,7 +1239,14 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     // Contraseña vacía = se conserva la actual (la API ya no la devuelve al front)
 
-                    if (!string.IsNullOrWhiteSpace(value.Contraseña)) usuario.Contraseña = value.Contraseña;
+                    if (!string.IsNullOrWhiteSpace(value.Contraseña))
+                    {
+                        string mensajeContrasena;
+                        if (!ContrasenasSeguras.CumplePolitica(value.Contraseña, out mensajeContrasena))
+                            return Content(HttpStatusCode.BadRequest, new { message = mensajeContrasena });
+
+                        usuario.Contraseña = ContrasenasSeguras.CrearHash(value.Contraseña);
+                    }
 
                     usuario.Rol = string.IsNullOrWhiteSpace(value.Rol) ? null : value.Rol.Trim();
 
@@ -1385,8 +1408,6 @@ namespace WebApi_TransporteSanchez.Controllers
 
         {
 
-            public string Nombre_Usuario { get; set; }
-
             public string ContrasenaActual { get; set; }
 
             public string ContrasenaNueva { get; set; }
@@ -1413,13 +1434,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
-            // Validar campos requeridos
-
-            if (string.IsNullOrWhiteSpace(value.Nombre_Usuario) ||
-
-                string.IsNullOrWhiteSpace(value.ContrasenaActual) ||
-
-                string.IsNullOrWhiteSpace(value.ContrasenaNueva))
+            if (string.IsNullOrEmpty(value.ContrasenaActual) || string.IsNullOrEmpty(value.ContrasenaNueva))
 
             {
 
@@ -1427,58 +1442,16 @@ namespace WebApi_TransporteSanchez.Controllers
 
             }
 
+            string mensajeContrasena;
+            if (!ContrasenasSeguras.CumplePolitica(value.ContrasenaNueva, out mensajeContrasena))
+                return Content(HttpStatusCode.BadRequest, new { message = mensajeContrasena });
 
-
-            // Validar longitud mínima de 8 caracteres
-
-            if (value.ContrasenaNueva.Length < 8)
-
-            {
-
-                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que tener al menos 8 caracteres." });
-
-            }
-
-
-
-            // Validar longitud máxima de 20 caracteres
-
-            if (value.ContrasenaNueva.Length > 20)
-
-            {
-
-                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva no puede tener más de 20 caracteres." });
-
-            }
-
-
-
-            // Validar que sea alfanumérica (debe contener al menos una letra y un número)
-
-            bool tieneLetras = System.Text.RegularExpressions.Regex.IsMatch(value.ContrasenaNueva, @"[a-zA-Z]");
-
-            bool tieneNumeros = System.Text.RegularExpressions.Regex.IsMatch(value.ContrasenaNueva, @"[0-9]");
-
-
-
-            if (!tieneLetras || !tieneNumeros)
-
-            {
-
-                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que tener letras y números." });
-
-            }
-
-
-
-            if (value.ContrasenaActual == value.ContrasenaNueva)
-
-            {
-
+            if (string.Equals(value.ContrasenaActual, value.ContrasenaNueva, StringComparison.Ordinal))
                 return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que ser distinta de la actual." });
 
-            }
-
+            var nombreUsuario = ObtenerNombreUsuarioToken();
+            if (string.IsNullOrWhiteSpace(nombreUsuario))
+                return Unauthorized();
 
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -1493,128 +1466,93 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 {
 
-                    // Primero verificar que el usuario existe y la contraseña actual es correcta
+                    var usuario = db.Set<USUARIOS>().FirstOrDefault(u => u.Nombre_Usuario == nombreUsuario);
+                    if (usuario == null || !string.Equals(usuario.EstadoUsuario, "Activo", StringComparison.OrdinalIgnoreCase))
+                        return Unauthorized();
 
-                    var usuario = db.Set<USUARIOS>()
-
-                        .Where(u => u.Nombre_Usuario == value.Nombre_Usuario && u.Contraseña == value.ContrasenaActual)
-
-                        .Select(u => new { u.Usuario_ID, u.Nombre_Usuario })
-
-                        .FirstOrDefault();
-
-
-
-                    if (usuario == null)
-
-                    {
-
-                        // Verificar si el usuario existe pero la contraseña es incorrecta
-
-                        var existeUsuario = db.Set<USUARIOS>().Any(u => u.Nombre_Usuario == value.Nombre_Usuario);
-
-                        if (existeUsuario)
-
-                        {
-
-                            return Content(HttpStatusCode.BadRequest, new { message = "La contraseña actual es incorrecta." });
-
-                        }
-
-                        return Content(HttpStatusCode.NotFound, new { message = "Usuario no encontrado." });
-
-                    }
-
-
-
-                    // Preparar fecha de modificación
+                    if (!ContrasenasSeguras.Verificar(value.ContrasenaActual, usuario.Contraseña))
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se pudo cambiar la contraseña. Verificá los datos ingresados." });
 
                     var ahora = DateTime.Now;
-
                     var fechaModi = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second);
-
-
-
-                    // Ejecutar actualización directa con SQL
-
+                    var nuevoHash = ContrasenasSeguras.CrearHash(value.ContrasenaNueva);
                     var filasActualizadas = db.Database.ExecuteSqlCommand(
-
-                        @"UPDATE USUARIOS 
-
-                          SET Contraseña = @p0, Fecha_Modi = @p1, Usu_Modi = @p2 
-
-                          WHERE Nombre_Usuario = @p3",
-
-                        value.ContrasenaNueva,
-
+                        @"UPDATE dbo.USUARIOS
+                          SET Contraseña = @p0, Fecha_Modi = @p1, Usu_Modi = @p2
+                          WHERE Usuario_ID = @p3 AND Contraseña = @p4",
+                        nuevoHash,
                         fechaModi,
+                        nombreUsuario,
+                        usuario.Usuario_ID,
+                        usuario.Contraseña);
 
-                        value.Nombre_Usuario,
+                    if (filasActualizadas != 1)
+                        return Content(HttpStatusCode.Conflict, new { message = "No se pudo cambiar la contraseña. Volvé a intentarlo." });
 
-                        value.Nombre_Usuario
-
-                    );
-
-
-
-                    if (filasActualizadas > 0)
-
-                    {
-
-                        return Ok(new { message = "Contraseña cambiada exitosamente." });
-
-                    }
-
-                    else
-
-                    {
-
-                        return Content(HttpStatusCode.InternalServerError, new { message = "No se pudo actualizar la contraseña." });
-
-                    }
+                    RegistrarCambioContrasena(db, usuario.Usuario_ID, nombreUsuario);
+                    return Ok(new { message = "Contraseña cambiada correctamente." });
 
                 }
 
             }
 
-            catch (System.Data.SqlClient.SqlException ex)
+            catch
 
             {
 
-                return Content(HttpStatusCode.InternalServerError, new
-
-                {
-
-                    message = "Error en la base de datos",
-
-                    detail = ex.Message
-
-                });
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudo cambiar la contraseña." });
 
             }
 
-            catch (Exception ex)
+        }
 
+
+
+        private string ObtenerNombreUsuarioToken()
+        {
+            var authorization = Request != null ? Request.Headers.Authorization : null;
+            if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase) ||
+                string.IsNullOrWhiteSpace(authorization.Parameter))
+                return null;
+
+            try
             {
-
-                var inner = ex.InnerException;
-
-                while (inner?.InnerException != null) inner = inner.InnerException;
-
-                var innerMsg = inner?.Message ?? ex.InnerException?.Message ?? ex.Message;
-
-                return Content(HttpStatusCode.InternalServerError, new
-
+                SecurityToken tokenValidado;
+                var principal = new JwtSecurityTokenHandler().ValidateToken(authorization.Parameter, new TokenValidationParameters
                 {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = JwtConfig.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = JwtConfig.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                }, out tokenValidado);
 
-                    message = "Error inesperado",
-
-                    detail = innerMsg
-
-                });
-
+                var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
+                return claim == null || string.IsNullOrWhiteSpace(claim.Value) ? null : claim.Value;
             }
+            catch
+            {
+                return null;
+            }
+        }
 
+        private static void RegistrarCambioContrasena(SGTLAuditContext db, int usuarioId, string nombreUsuario)
+        {
+            try
+            {
+                db.Database.ExecuteSqlCommand(
+                    "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
+                    "VALUES (GETDATE(), @usuario, 'CAMBIO_CONTRASENA', 'USUARIOS', @clave, NULL, NULL, NULL)",
+                    new System.Data.SqlClient.SqlParameter("@usuario", nombreUsuario),
+                    new System.Data.SqlClient.SqlParameter("@clave", "Usuario_ID=" + usuarioId));
+            }
+            catch
+            {
+                // La auditoría no debe dejar al usuario sin poder cambiar su contraseña.
+            }
         }
 
 

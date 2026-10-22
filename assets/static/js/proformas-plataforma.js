@@ -10,7 +10,7 @@
   var API = 'http://localhost:50222/api/ProformasPlataforma';
   var estado = nuevoEstado();
   // Condiciones comerciales de la cabecera: lo único que se edita en un borrador ya importado.
-  var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', TiempoServicio: 'p_tiemposervicio', ObsComerciales: 'p_obscom', CondParticulares: 'p_condpart' };
+  var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', Observaciones: 'p_observaciones' };
   // En modo plataforma los datos del cliente van plegados en una línea y el período sale del Excel.
   var CAMPOS_CLIENTE = ['p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel'];
   var CAMPOS_PERIODO = ['p_fdesde', 'p_fhasta'];
@@ -441,8 +441,7 @@
       Moneda: dto.Moneda, FechaEmision: dto.FechaEmision, FechaVencimiento: dto.FechaVencimiento,
       Cli_RazonSocial: dto.Cli_RazonSocial, Cli_NombreComercial: dto.Cli_NombreComercial, Cli_CUIT: dto.Cli_CUIT,
       Cli_Direccion: dto.Cli_Direccion, Cli_Telefono: dto.Cli_Telefono,
-      FormaPago: dto.FormaPago, PlazoPago: dto.PlazoPago, Validez: dto.Validez, TiempoServicio: dto.TiempoServicio,
-      ObsComerciales: dto.ObsComerciales, CondParticulares: dto.CondParticulares
+      FormaPago: dto.FormaPago, PlazoPago: dto.PlazoPago, Validez: dto.Validez, Observaciones: dto.Observaciones
     };
     var boton = $id('pp_numero_controlar') || $id('pp_elegir');
     var listo = SGTL.procesando(boton, 'Controlando…');

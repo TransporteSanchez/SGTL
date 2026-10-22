@@ -1,15 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using System.Data.Entity;
 using System.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using System.Web.Http;
 using System.Net;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -23,157 +22,102 @@ namespace WebApi_TransporteSanchez.Controllers
             _config = config;
         }
 
-        // Clase que representa la solicitud de inicio de sesión
         public class LoginRequestDTO
         {
             public string Nombre_Usuario { get; set; }
             public string Contraseña { get; set; }
         }
 
-        // Clase que representa la respuesta de inicio de sesión
         public class LoginResponseDTO
         {
             public string Token { get; set; }
             public string Nombre_Usuario { get; set; }
-            public string Nombre { get; set; } // Agregar campo Nombre
-            public string Apellido { get; set; } // Agregar campo Apellido
+            public string Nombre { get; set; }
+            public string Apellido { get; set; }
             public string Rol { get; set; }
         }
 
         [HttpPost]
         public IHttpActionResult Login(LoginRequestDTO userLogin)
         {
-            // Validar que el objeto de solicitud y los campos no sean nulos o vacíos
-            if (userLogin == null || string.IsNullOrEmpty(userLogin.Nombre_Usuario) || string.IsNullOrEmpty(userLogin.Contraseña))
+            if (userLogin == null || string.IsNullOrWhiteSpace(userLogin.Nombre_Usuario) || string.IsNullOrEmpty(userLogin.Contraseña))
+                return Content(HttpStatusCode.BadRequest, new { error = "El usuario y la contraseña son obligatorios." });
+
+            try
             {
-                return Content(HttpStatusCode.BadRequest, new { error = "El nombre de usuario y la contraseña son obligatorios." });
-            }
-
-            var validationErrors = new Dictionary<string, string>();
-
-            // Verificar si el usuario existe en la base de datos
-            var userExists = UserExists(userLogin.Nombre_Usuario);
-
-            // Verificar si la contraseña es correcta (independientemente del usuario)
-            var isPasswordValid = IsPasswordValid(userLogin.Contraseña);
-
-            if (!userExists)
-            {
-                // Caso: Usuario no existe
-                if (isPasswordValid)
+                var connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+                using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // La contraseña es correcta, pero el usuario es incorrecto
-                    validationErrors["Nombre_Usuario"] = "Usuario incorrecto.";
-                }
-                else
-                {
-                    // Ambos son incorrectos
-                    validationErrors["General"] = "Usuario y contraseña incorrectos.";
-                }
-            }
-            else
-            {
-                // Usuario existe, verificar si la contraseña coincide con este usuario específico
-                var user = Authenticate(userLogin);
-                if (user == null)
-                {
-                    // Usuario existe pero la contraseña es incorrecta
-                    validationErrors["Contraseña"] = "Contraseña incorrecta.";
-                }
-                else
-                {
-                    // Usuario y contraseña son correctos, generar el token
-                    try
+                    var nombreUsuario = userLogin.Nombre_Usuario.Trim();
+                    var usuario = db.Set<USUARIOS>().FirstOrDefault(u => u.Nombre_Usuario.ToLower() == nombreUsuario.ToLower());
+
+                    if (usuario == null ||
+                        !string.Equals(usuario.EstadoUsuario, "Activo", StringComparison.OrdinalIgnoreCase) ||
+                        !ContrasenasSeguras.Verificar(userLogin.Contraseña, usuario.Contraseña))
                     {
-                        var token = Generate(user);
-
-                        // Auditoría: registrar el inicio de sesión (no pasa por SaveChanges).
-                        try
-                        {
-                            string cnAudit = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-                            string origenIp = null;
-                            try { origenIp = System.Web.HttpContext.Current?.Request?.UserHostAddress; } catch { }
-                            using (var dbAudit = new SGTLAuditContext(cnAudit))
-                            {
-                                dbAudit.Database.ExecuteSqlCommand(
-                                    "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
-                                    "VALUES (GETDATE(), @usu, 'LOGIN', 'USUARIOS', @clave, NULL, @detalle, @origen)",
-                                    new SqlParameter("@usu", (object)user.Nombre_Usuario ?? DBNull.Value),
-                                    new SqlParameter("@clave", "Usuario_ID=" + user.Usuario_ID),
-                                    new SqlParameter("@detalle", "Inicio de sesión"),
-                                    new SqlParameter("@origen", (object)origenIp ?? DBNull.Value));
-                            }
-                        }
-                        catch { }
-
-                        var response = new LoginResponseDTO
-                        {
-                            Token = token,
-                            Nombre_Usuario = user.Nombre_Usuario,
-                            Nombre = user.Nombre, // Incluir Nombre en la respuesta
-                            Apellido = user.Apellido, // Incluir Apellido en la respuesta
-                            Rol = user.Rol
-                        };
-
-                        return Ok(response);
+                        return Content(HttpStatusCode.Unauthorized, new { General = "Usuario o contraseña incorrectos." });
                     }
-                    catch (Exception ex)
+
+                    if (!ContrasenasSeguras.EsHashVigente(usuario.Contraseña))
                     {
-                        return Content(HttpStatusCode.InternalServerError, new { error = $"Error inesperado: {ex.Message}" });
+                        var valorHeredado = usuario.Contraseña;
+                        var hash = ContrasenasSeguras.CrearHash(userLogin.Contraseña);
+                        var filasActualizadas = db.Database.ExecuteSqlCommand(
+                            "UPDATE dbo.USUARIOS SET Contraseña = @p0 WHERE Usuario_ID = @p1 AND Contraseña = @p2",
+                            new SqlParameter("@p0", hash),
+                            new SqlParameter("@p1", usuario.Usuario_ID),
+                            new SqlParameter("@p2", valorHeredado));
+
+                        if (filasActualizadas != 1)
+                            return Content(HttpStatusCode.Unauthorized, new { General = "Usuario o contraseña incorrectos." });
+
+                        usuario.Contraseña = hash;
                     }
+
+                    RegistrarInicioSesion(db, usuario);
+                    return Ok(new LoginResponseDTO
+                    {
+                        Token = Generate(usuario),
+                        Nombre_Usuario = usuario.Nombre_Usuario,
+                        Nombre = usuario.Nombre,
+                        Apellido = usuario.Apellido,
+                        Rol = usuario.Rol
+                    });
                 }
             }
-
-            // Devolver los errores de validación con un estado 401 Unauthorized
-            if (validationErrors.Count > 0)
+            catch
             {
-                return Content(HttpStatusCode.Unauthorized, validationErrors);
-            }
-
-            return Ok();
-        }
-
-        // Método para verificar si el usuario existe en la base de datos
-        private bool UserExists(string nombreUsuario)
-        {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
-            {
-                return db.Set<USUARIOS>().Any(user => user.Nombre_Usuario.ToLower() == nombreUsuario.ToLower());
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo iniciar sesión." });
             }
         }
 
-        // Método para verificar si la contraseña es correcta para algún usuario (sin importar el nombre de usuario)
-        private bool IsPasswordValid(string password)
+        private static void RegistrarInicioSesion(SGTLAuditContext db, USUARIOS usuario)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
+            try
             {
-                return db.Set<USUARIOS>().Any(user => user.Contraseña == password);
+                string origenIp = null;
+                try { origenIp = System.Web.HttpContext.Current?.Request?.UserHostAddress; } catch { }
+                db.Database.ExecuteSqlCommand(
+                    "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
+                    "VALUES (GETDATE(), @usu, 'LOGIN', 'USUARIOS', @clave, NULL, @detalle, @origen)",
+                    new SqlParameter("@usu", (object)usuario.Nombre_Usuario ?? DBNull.Value),
+                    new SqlParameter("@clave", "Usuario_ID=" + usuario.Usuario_ID),
+                    new SqlParameter("@detalle", "Inicio de sesión"),
+                    new SqlParameter("@origen", (object)origenIp ?? DBNull.Value));
             }
-        }
-
-        // Método para autenticar un usuario específico por nombre de usuario y contraseña
-        private USUARIOS Authenticate(LoginRequestDTO userLogin)
-        {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
+            catch
             {
-                return db.Set<USUARIOS>().FirstOrDefault(user =>
-                    user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower() &&
-                    user.Contraseña == userLogin.Contraseña);
+                // La auditoría no debe impedir el inicio de sesión.
             }
         }
 
         private string Generate(USUARIOS user)
         {
             if (string.IsNullOrEmpty(JwtConfig.SecretKey))
-                throw new ArgumentException("La clave JWT no está configurada o es nula.");
+                throw new ArgumentException("La clave JWT no está configurada.");
 
             var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey));
             var credentials = new SigningCredentials(securitykey, SecurityAlgorithms.HmacSha256);
-
-            // Crear los Claims
             var claims = new[]
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),

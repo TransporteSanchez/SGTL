@@ -39,7 +39,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); queda anotado que las contraseñas se guardan sin cifrar | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); las contraseñas sin cifrar se resuelven con el merge de Facu (§21) | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
+| 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -731,13 +732,7 @@ Surgieron en la meet del equipo para ver cómo quedó el proyecto. Las de WhatsA
 
 - [ ] **Viajes: acción "Reenviar WhatsApp"** (`gestion-viajes.html`, `ViajesController.cs`; módulo de Fede). Botón de fila en Gestionar viajes que le vuelve a mandar al chofer del viaje el mismo WhatsApp que se manda al confirmarlo. Sirve si el envío original falló o si hay que recordárselo. A definir: en qué estados se habilita (¿solo con chofer asignado y viaje no finalizado?), confirmación antes de mandar ("¿Reenviar el WhatsApp a <chofer>?") y que quede registrado el reenvío. Usa la plantilla que ya existe.
 - [ ] **Viajes: avisar al chofer por WhatsApp cuando se elimina el viaje** (módulo de Fede). **No es para hacer ya.** Al eliminar un viaje que ya se le había avisado al chofer, mandarle automáticamente un mensaje de que el viaje no se hace. Necesita una **plantilla nueva aprobada en Meta** (los mensajes iniciados por la empresa solo salen con plantilla). Ver también qué pasa si se cambia el chofer de un viaje ya avisado (¿avisar al anterior?).
-- [ ] **Cambiar contraseña con código por WhatsApp (doble factor).** Cómo está hoy (revisado en el código el 19/10):
-  - En el menú del usuario (`views/header.html`), "Cambiar Contraseña" es un link a `#`: **no hay pantalla** y ningún JS llama a la API.
-  - La API tiene `POST api/Usuarios/CambiarContrasena` (`UsuariosController.cs`): recibe usuario, contraseña actual y nueva, valida 8–20 caracteres con letras y números. Pero toma el **usuario del cuerpo del pedido, no de la sesión**, y devuelve "Usuario no encontrado" / "La contraseña actual es incorrecta" por separado (permite averiguar qué usuarios existen).
-  - **Las contraseñas se guardan y comparan en texto plano** (`LoginController.cs` y `CambiarContrasena` comparan `Contraseña ==`). Es lo primero a resolver si se toca seguridad (guardar con hash), y conviene mencionarlo en la tesis.
-  - Usuarios no tiene teléfono ni e-mail.
-
-  Propuesta: (1) pantalla "Cambiar contraseña" desde el menú, para el usuario logueado, tomando el usuario de la sesión; (2) agregar teléfono (celular) al alta y edición de usuarios, con script nuevo en `database/usuarios/`; (3) al pedir el cambio, la API genera un código de 6 dígitos, lo guarda con vencimiento corto (ej. 10 minutos) e intentos limitados, y lo manda por WhatsApp con una **plantilla de autenticación nueva en Meta** (coordinar con Fede); (4) el cambio solo se aplica con contraseña actual + código válido. Definir qué pasa con los usuarios que ya existen y no tienen teléfono.
+- [x] **Cambio de contraseña básico seguro, sin WhatsApp.** Resuelto el 22/10: el usuario autenticado cambia su propia contraseña desde el encabezado con contraseña actual, nueva y confirmación. La API toma la identidad del JWT, guarda hashes PBKDF2 y migra valores heredados al iniciar sesión correctamente. El script `database/seguridad/01_ampliar_contrasena_usuarios.sql` **ya está corrido** en `sql-tesis` (verificado por Rocío el 22/10). Con el merge (§21) queda nuestra ventana de cambiar contraseña, adaptada a esta API. Diseño: `docs/diseno/seguridad-contrasenas-diseno.md`.
 - [ ] **Sacar `repositorio.zip` de la raíz del repo.** Revisado el 19/10: pesa ~50 MB, entró en el **primer commit (`62e45b5`, 20/07, autor "Agus")** y está en todas las ramas (`main`, `rocionuvoli`, `facugodoy`, `fedemontenegro`). Es una copia vieja del proyecto (6751 archivos: páginas, `assets/`, API con `bin/` y `obj/`) del 20/07; parece la versión inicial que después se subió suelta, pero no se comparó archivo por archivo con el repo actual. **Trae un `Web.config` con la cadena de conexión con contraseña** (y `models/appsettings.json` con una clave). Pasos:
   1. Confirmar con el equipo que nadie lo necesita.
   2. `git rm repositorio.zip` en `rocionuvoli` (commit `Repo: sacar repositorio.zip`) y agregar `*.zip` al `.gitignore` (salvo `assets/extensions/`, que tiene `summernote-0.8.20-dist.zip`; ver si ese también sobra).
@@ -1092,7 +1087,7 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   Mazer ("Toggle navigation", en inglés) que nunca se mostraba; se saca de todas, como en el dashboard.
 - [ ] El botón de las tres rayas y el menú de usuario siguen funcionando en cualquier pantalla.
 
-### Quedó sin tocar en el repaso del 22/10 — RESUELTO EL MISMO 22/10 (FALTA PROBAR EN VM), SALVO LAS CONTRASEÑAS SIN CIFRAR
+### Quedó sin tocar en el repaso del 22/10 — RESUELTO EL MISMO 22/10 (FALTA PROBAR EN VM); LAS CONTRASEÑAS, CON EL MERGE DE FACU (§21)
 
 - [x] **Mensajes de la API de Facu con mayúscula en el medio** (§9 del design system), por ejemplo "Solo se pueden
   anular Recibos emitidos.". **Hecho (22/10, commit "Facturación: mensajes de la API como el resto del sistema",
@@ -1132,7 +1127,8 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
     nueva corta o sin números (mensaje debajo del campo); actual incorrecta ("La contraseña actual es
     incorrecta." arriba del formulario); con datos correctos → toast, vuelve solo al login y se entra con la
     nueva. **Usar un usuario de prueba**, no el de Rocío ni los del equipo.
-- [ ] **Las contraseñas se guardan sin cifrar** (hallazgo del 22/10, seguridad). `USUARIOS.Contraseña` tiene el
+- [x] **Las contraseñas se guardan sin cifrar** (hallazgo del 22/10, seguridad). **Resuelto con el merge de Facu del 22/10
+  (§21): hash PBKDF2, falta probar en la VM.** `USUARIOS.Contraseña` tiene el
   texto tal cual: el login y el cambio de contraseña lo comparan directo en la consulta. Lo correcto es guardar un
   hash con sal (por ejemplo PBKDF2, que trae .NET Framework) y comparar el hash. Implica: cambiar el login, el
   alta y edición de usuarios y el cambio de contraseña; un script en `database/usuarios/` y un paso para pasar las
@@ -1287,3 +1283,104 @@ evidencia es el remito: firmado con el resultado (completa o parcial) o, en un r
   en rojo; adjuntar una imagen o PDF → guarda y aparece el clip. **Probado por Rocío en la VM el 22/10: OK.** Ya no
   queda ningún directo entregado sin evidencia.
 - [ ] Un viaje con plataforma: la evidencia sigue opcional y "Quitar" está.
+
+---
+
+## 21. Merge de Facu del 22/10 (`e0779bf`) en `rocionuvoli` — HECHO, SIN PUSH NI PRUEBA EN VM (22/10)
+
+Cuatro commits de Facu (`4edf511`, `634a097`, `9ead168`, `e0779bf`) armados sobre `e44f9b6` (21/10), antes del estilo
+visual y del design system en sus pantallas. Chocaron 14 archivos; Rocío decidió cada punto. Criterio: **la lógica de
+Facu, el diseño nuestro**. Resumen para el equipo: `docs/equipo/merge-facugodoy-2026-10-22.md`.
+
+**La base — ya aplicado, nada para correr:**
+- `database/seguridad/01_ampliar_contrasena_usuarios.sql` (contraseña de 50 a 255): ya estaba corrido (`max_length` 510,
+  verificado por Rocío el 22/10). Hay 11 usuarios activos y 1 inactivo (FFAVARO, no se usa: con el merge ya no entra).
+- `database/cuenta-corriente/10_notas_credito_multiples_aplicaciones.sql`: **corrido por Rocío el 22/10** (la restricción
+  `CK_CC_COMP_Referencia` ya no exige una factura de referencia en toda NC).
+
+**Ojo, base compartida:** cada usuario que entra con la API nueva queda con la contraseña en hash y desde ahí **no entra
+con una API sin este merge** (`main`, `fedemontenegro`, la VM antes del pull). FGODOY ya está así. Avisarle a Fede y
+pasar el merge a las ramas del equipo juntas.
+
+**Decisiones de Rocío (22/10):**
+1. **Seguridad (de Facu):** contraseñas con hash PBKDF2 que se convierten solas al entrar; el login dice siempre
+   "Usuario o contraseña incorrectos." y solo deja entrar a usuarios activos; la API de cambio de contraseña toma el
+   usuario del token; alta y edición de usuarios con la regla de 8 a 20 caracteres. **La ventana de cambiar contraseña
+   es la nuestra** (cierra la sesión al cambiarla), adaptada a su API: no manda el usuario y con la sesión vencida va al
+   login. Se sacó la de Facu de `views/header.html`.
+2. **Cuenta corriente:** de Facu, "Distribuir" en recibo y NC (por vencimiento), NC sobre varias facturas, montos
+   1.234,56 (`SGTL.montoCentavos` y compañía en `sgtl-ui.js`), arreglo del menú lateral. **Botones de la fila: cuatro
+   en todas** (Ver detalle · Editar · Ver PDF · Anular o Eliminar), deshabilitados con el motivo; "Enviar por e-mail"
+   en el pie de Ver PDF, como en presupuestos. **El ojo abre la vista completa de Facu** en solo lectura, sin agregarle
+   nada (el detalle chico queda solo para tipos que no sean factura, recibo o nota). Textos y títulos nuestros (§6.1);
+   ventanas de emisión extra grandes y con el alto del recibo, como las dejó Facu; anular y eliminar con la
+   confirmación del sistema; sus mensajes nuevos, en pantalla y en la API, con minúscula ("factura", "nota de crédito").
+3. **Presupuestos:** mapa de Google y km automáticos (de Facu). **Sin la distancia de Google no se guarda** (opción A),
+   con dos mensajes: si no encuentra la dirección, "Corregí la dirección en Orígenes y destinos para poder guardar el
+   presupuesto."; si falla Google, "Probá de nuevo más tarde". **Fecha y hora en un solo campo** (el nuestro, §7.1), no
+   los campos de hora separados de Facu; el tiempo estimado se calcula solo con inicio y fin (de Facu).
+4. **Facturación:** proformas propias y de Rukas con un solo campo "Observaciones" (las observaciones comerciales y
+   condiciones particulares viejas se ven ahí; el tiempo del servicio deja de verse: había una sola proforma con ese
+   dato y era de prueba); el PDF de la factura lista sus proformas; la pantalla pasa a **"Gestionar tipos de
+   comprobante"** (idea de Facu, con verbo por §3.1) en el menú, el título, la pestaña y el mensaje de la API; la
+   ventana "Emitir factura" desde una proforma queda con nuestro título y el tamaño de Facu.
+
+**Pruebas automáticas:** las 15 de JavaScript de `tests/` pasan; la de PowerShell (`contrasenas-seguras.test.ps1`)
+queda para la VM. En la Mac no hay Node: se corrieron con el JavaScriptCore de macOS
+y un adaptador mínimo (fuera del repo); antes se comprobó que con ese adaptador pasan todas en la rama de Facu. Se
+adaptaron a las decisiones de arriba: `cambiar-contrasena-header`, `emision-comprobantes`, `impresion-comprobantes`,
+`recibos-asociados`, `presupuestos-mapa-horarios`, `facturacion-proforma` y `tipos-comprobantes-menu`. **La API no se
+pudo compilar en la Mac.**
+
+**Cómo probar en la VM** (`git pull` → **recompilar la API**: cambiaron `AutenticacionController`, `UsuariosController`,
+`ComprobantesController`, `FacturasController`, `ProformasController`, `ProformasPlataformaController` y
+`FacturacionConfiguracionController`; se agregó `Security/ContrasenasSeguras.cs` y se borró `LoginController.cs` → Ctrl+F5):
+- [ ] La API compila sin errores.
+- [ ] Login con usuario o contraseña mal → "Usuario o contraseña incorrectos." (no dice cuál). Entrar con un usuario
+  de prueba → entra; volver a entrar → entra. En la base su contraseña empieza con `PBKDF2-SHA256$` (consulta de solo
+  lectura: `SELECT Nombre_Usuario, LEFT(Contraseña, 14) FROM dbo.USUARIOS WHERE Nombre_Usuario = '<usuario>';`).
+- [ ] Cambiar contraseña (menú del usuario): la actual mal → aviso dentro de la ventana; una nueva sin números → error
+  en el campo; bien → toast "Contraseña cambiada. Volvé a iniciar sesión con la nueva." y vuelve al login; entra con la nueva.
+- [ ] Gestionar usuarios: alta con contraseña "abc" → mensaje de 8 a 20 caracteres con letras y números; editar sin
+  tocar la contraseña → la conserva.
+- [ ] Cuenta corriente, botones de la fila: en una factura, Ver detalle y Ver PDF activos, Editar y Anular grises con el
+  motivo; en un recibo emitido, los cuatro activos; en uno anulado, Eliminar en lugar de Anular. Mismo lugar en todas
+  las filas, también en las aplicaciones desplegadas.
+- [ ] El ojo de una factura, una NC y un recibo → la vista completa en solo lectura ("Ver factura FAC-…"), fechas
+  DD/MM/AAAA, solo Cerrar. Después, "Emitir factura directa" abre el formulario vacío y editable.
+- [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; "Enviar por
+  e-mail" cierra el PDF y abre el envío.
+- [ ] Editar recibo desde la fila → abre el recibo. Anular → confirmación del sistema con motivo → "Recibo anulado.".
+  Eliminar uno anulado → "Recibo eliminado.".
+- [ ] Registrar recibo de un cliente de prueba con varias facturas: importe 500000 → al salir del campo "500.000,00";
+  Distribuir → reparte desde la que vence primero; se puede corregir a mano.
+- [ ] Emitir nota de crédito → grilla de facturas con saldo e importe total; Distribuir y emitir sobre dos facturas → baja
+  el saldo de las dos. La NC que anula la factura de una proforma sigue como antes (una factura, por el total).
+- [ ] Menú lateral en Cuenta corriente y Gestionar tipos de comprobante: tocar "Choferes" abre el submenú y otra vez lo
+  cierra (es el mismo punto de §20).
+- [ ] Presupuestos: elegir origen y destino → el mapa dibuja la ruta y completa la distancia (no se escribe); el tiempo
+  estimado sale de inicio y fin; con una dirección que Google no encuentra → el mensaje en rojo bajo el mapa y no guarda
+  (la distancia en rojo con "Falta la distancia…"); editar un presupuesto viejo → vuelve a calcular la ruta.
+- [ ] Generar viaje desde un presupuesto → el viaje tiene los km de Google.
+- [ ] Configuración: "Gestionar tipos de comprobante" en el menú, el título y la pestaña.
+- [ ] Proforma propia y de Rukas: Condiciones comerciales con Forma de pago, Plazo, Validez y Observaciones; guardar y
+  ver el PDF. Una proforma vieja con observaciones comerciales las muestra en Observaciones.
+- [ ] PDF de una factura de varias proformas: lista las proformas.
+- [ ] Emitir factura desde una proforma: ventana extra grande con el título "Emitir factura".
+- [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada archivo de `tests/` (tienen que imprimir `OK`).
+- [ ] PowerShell: `tests/contrasenas-seguras.test.ps1` (hash y verificación de contraseñas).
+
+**Pendientes que salieron del merge (no son para ahora):**
+- [ ] **Fechas previstas y reales** (charla con Rocío del 22/10). Hoy la hora del viaje se carga al registrarlo y, si
+  cambia, hay que editarla. Propuesta: en presupuestos, solo fechas (la hora no cambia el precio: la tarifa usa los km y
+  la fecha para la vigencia) y la hora se pide al generar el viaje; en viajes, "Salida prevista" y "Llegada prevista"
+  (como ya dice el dashboard), que es lo que recibe el chofer por WhatsApp; y lo real lo registra el sistema al cambiar
+  de estado: salida real al pasar a En viaje y entrega real con hora al marcar Entregado. Toca presupuestos, viajes, API,
+  base y el WhatsApp de Fede, y conviene resolver antes la §2 (de dónde sale la hora). Decidirlo con el equipo.
+- [ ] **Presupuestos: km a mano si Google falla** (opción B), como en viajes, con motivo que pase al viaje generado.
+  Hoy, sin la distancia de Google no se guarda.
+- [ ] **Documentación para cualquier IA:** `AGENTS.md` como puerta de entrada al design system (lo lee Codex, que usa
+  Facu, y también Cursor y Copilot), `CLAUDE.md` que lo incluya sin la excepción de los módulos de Facu y Fede,
+  `docs/design-system/03-decisiones.md` en presente y con las reglas que faltaban, y en `docs/equipo/FLUJO-GIT.md` pasar
+  los cambios grandes a las ramas del equipo antes de que sigan. **Aprobado por Rocío el 22/10: commit aparte, el
+  siguiente.**
