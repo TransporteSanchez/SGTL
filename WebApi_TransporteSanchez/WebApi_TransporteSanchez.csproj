@@ -428,11 +428,11 @@
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GestionContenidoController.cs" />
     <Compile Include="Controllers\GruposController.cs" />
-    <Compile Include="Controllers\LoginController.cs" />
     <Compile Include="Controllers\MenuController.cs" />
     <Compile Include="Controllers\OrigenController.cs" />
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
+    <Compile Include="Security\ContrasenasSeguras.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />

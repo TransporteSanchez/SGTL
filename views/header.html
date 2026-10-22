@@ -31,7 +31,7 @@
                 <li>
                     <h6 class="dropdown-header">Opciones</h6>
                 </li>
-                <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-gear me-2"></i> Cambiar Contraseña</a></li>
+                <li><a class="dropdown-item" href="#" id="cambiarContrasenaBtn" data-bs-toggle="modal" data-bs-target="#cambiarContrasenaModal"><i class="icon-mid bi bi-gear me-2"></i> Cambiar contraseña</a></li>
                 <hr class="dropdown-divider">
                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="icon-mid bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
             </ul>
@@ -53,6 +53,39 @@
         <span class="visually-hidden">Cargando...</span>
     </div>
     <p style="margin-top: 10px;">Redirigiendo al login...</p>
+</div>
+
+<div class="modal fade" id="cambiarContrasenaModal" tabindex="-1" aria-labelledby="cambiarContrasenaTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="cambiarContrasenaForm" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cambiarContrasenaTitulo">Cambiar contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">La nueva contraseña debe tener entre 8 y 20 caracteres e incluir al menos una letra y un número.</p>
+                    <div id="mensajeCambioContrasena" class="alert d-none" role="alert" aria-live="polite"></div>
+                    <div class="mb-3">
+                        <label for="contrasenaActual" class="form-label">Contraseña actual</label>
+                        <input type="password" class="form-control" id="contrasenaActual" autocomplete="current-password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contrasenaNueva" class="form-label">Nueva contraseña</label>
+                        <input type="password" class="form-control" id="contrasenaNueva" autocomplete="new-password" required>
+                    </div>
+                    <div class="mb-0">
+                        <label for="confirmacionContrasenaNueva" class="form-label">Repetí la nueva contraseña</label>
+                        <input type="password" class="form-control" id="confirmacionContrasenaNueva" autocomplete="new-password" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="guardarContrasenaBtn">Guardar contraseña</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 </body>
