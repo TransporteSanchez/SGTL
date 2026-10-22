@@ -78,19 +78,15 @@
                                     <label for="filtroNombre" class="form-label">Nombre</label>
                                     <input type="text" class="form-control" id="filtroNombre" placeholder="Juan" autocomplete="off">
                                 </div>
-                                <div class="col-12 col-sm-6 col-lg-2">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="filtroApellido" class="form-label">Apellido</label>
                                     <input type="text" class="form-control" id="filtroApellido" placeholder="Pérez" autocomplete="off">
                                 </div>
-                                <div class="col-12 col-sm-6 col-lg-2">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="filtroEstado" class="form-label">Estado</label>
-                                    <select id="filtroEstado" class="form-select">
-                                        <option value="Activo" selected>Activo</option>
-                                        <option value="Inactivo">Inactivo</option>
-                                        <option value="">Todos</option>
-                                    </select>
+                                    <select id="filtroEstado" class="form-select"><option value="Activo" selected>Activo</option><option value="Inactivo">Inactivo</option><option value="">Todos</option></select>
                                 </div>
-                                <div class="col-12 col-lg-2 d-flex justify-content-end">
+                                <div class="col-12 col-sm-12 col-lg-12 d-flex justify-content-end">
                                     <button type="submit" class="btn btn-light">
                                         <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
@@ -355,6 +351,7 @@
                 this.value = this.value.replace(LETRAS, '');
             });
             SGTL.filtros(['#filtroUsuario', '#filtroNombre', '#filtroApellido', '#filtroEstado'], function () { buscarUsuarios(1); });
+            $('#filtroEstado').on('change', function () { buscarUsuarios(1); });
             $('#busquedaUsuarioForm').on('submit', function (evento) {
                 evento.preventDefault();
                 buscarUsuarios(1);

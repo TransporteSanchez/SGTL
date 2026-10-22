@@ -81,24 +81,26 @@
                         <div class="card-body">
                             <form id="busquedaChoferForm" class="row g-3 align-items-end" novalidate>
                                 <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="txtnombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="txtnombre" placeholder="Juan" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="txtapellido" class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" id="txtapellido" placeholder="Pérez" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="txtdni" class="form-label">DNI</label>
-                                    <input type="text" inputmode="numeric" class="form-control" id="txtdni"
-                                        placeholder="30111222" autocomplete="off">
+                                    <input type="text" inputmode="numeric" class="form-control" id="txtdni" placeholder="30111222" autocomplete="off">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="fechaRango" class="form-label">Fecha de alta</label>
-                                    <input type="text" class="form-control" id="fechaRango"
-                                        placeholder="Desde y hasta">
+                                    <input type="text" class="form-control" id="fechaRango" placeholder="Desde y hasta">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="filtroEstado" class="form-label">Estado</label>
-                                    <select id="filtroEstado" class="form-select">
-                                        <option value="Activo" selected>Activo</option>
-                                        <option value="Inactivo">Inactivo</option>
-                                        <option value="">Todos</option>
-                                    </select>
+                                    <select id="filtroEstado" class="form-select"><option value="Activo" selected>Activo</option><option value="Inactivo">Inactivo</option><option value="">Todos</option></select>
                                 </div>
-                                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-end">
+                                <div class="col-12 col-sm-6 col-lg-9 d-flex justify-content-end">
                                     <button type="submit" class="btn btn-light">
                                         <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
@@ -441,6 +443,8 @@
         function filtrosBusqueda() {
             const rango = SGTL.valorRango('#fechaRango');
             return {
+                nombre: $('#txtnombre').val().trim(),
+                apellido: $('#txtapellido').val().trim(),
                 dni: $('#txtdni').val().trim(),
                 fechaDesde: rango ? rango.desde + ' 00:00:00.000' : null,
                 fechaHasta: rango ? rango.hasta + ' 23:59:59.999' : null,
@@ -511,8 +515,10 @@
             $('#txtdni').on('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
             });
-            SGTL.rangoFechas('#fechaRango');
-            SGTL.filtros(['#txtdni', '#fechaRango', '#filtroEstado'], function () { buscarChoferes(1); });
+            // §1.3: el rango busca al cerrar el calendario y el estado al elegirlo; el texto, con Enter o Buscar.
+            SGTL.rangoFechas('#fechaRango', { onClose: function (fechas) { if (fechas.length !== 1) buscarChoferes(1); } });
+            SGTL.filtros(['#txtnombre', '#txtapellido', '#txtdni', '#fechaRango', '#filtroEstado'], function () { buscarChoferes(1); });
+            $('#filtroEstado').on('change', function () { buscarChoferes(1); });
             $('#busquedaChoferForm').on('submit', function (evento) {
                 evento.preventDefault();
                 buscarChoferes(1);

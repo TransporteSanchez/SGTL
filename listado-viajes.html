@@ -87,6 +87,14 @@
                         <div class="card-body">
                             <form id="busquedaViajeForm" class="row g-3 align-items-end" novalidate>
                                 <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="idviajeinput" class="form-label">Número</label>
+                                    <input type="text" inputmode="numeric" class="form-control" id="idviajeinput" placeholder="123" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="clienteFiltroViaje" class="form-label">Cliente</label>
+                                    <select class="form-select" id="clienteFiltroViaje"><option value="">Todos</option></select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="fechaRangoInicioViaje" class="form-label">Fecha de inicio</label>
                                     <input type="text" class="form-control" id="fechaRangoInicioViaje" placeholder="Desde y hasta">
                                 </div>
@@ -95,12 +103,14 @@
                                     <input type="text" class="form-control" id="fechaRangoFinViaje" placeholder="Desde y hasta">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
-                                    <label for="clienteFiltroViaje" class="form-label">Cliente</label>
-                                    <select class="form-select" id="clienteFiltroViaje">
-                                        <option value="">Todos</option>
-                                    </select>
+                                    <label for="estadoFiltroViaje" class="form-label">Estado</label>
+                                    <select class="form-select" id="estadoFiltroViaje"><option value="">Todos</option></select>
                                 </div>
-                                <div class="col-12 col-sm-6 col-lg-3 d-flex justify-content-end">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="referenciaFiltroViaje" class="form-label">N° remito / transporte / entrega</label>
+                                    <input type="text" class="form-control" id="referenciaFiltroViaje" maxlength="20" placeholder="R-00101" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-12 col-lg-6 d-flex justify-content-end">
                                     <button type="submit" class="btn btn-light">
                                         <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
@@ -341,11 +351,15 @@
             function filtrosViajes() {
                 const inicio = SGTL.valorRango('#fechaRangoInicioViaje') || {};
                 const fin = SGTL.valorRango('#fechaRangoFinViaje') || {};
+                // Los mismos filtros que Gestionar viajes (§3.3): número, cliente, fechas, estado y referencia.
                 const datos = {
+                    idViaje: $('#idviajeinput').val().trim() || null,
                     fechaDesde: inicio.desde || null,
                     fechaHasta: inicio.hasta || null,
                     fechaFinDesde: fin.desde || null,
-                    fechaFinHasta: fin.hasta || null
+                    fechaFinHasta: fin.hasta || null,
+                    estado: $('#estadoFiltroViaje').val() || null,
+                    referencia: ($('#referenciaFiltroViaje').val() || '').trim() || null
                 };
                 const clienteId = $('#clienteFiltroViaje').val();
                 if (clienteId) datos.clienteId = parseInt(clienteId, 10);
@@ -467,9 +481,14 @@
                 ['#fechaRangoInicioViaje', '#fechaRangoFinViaje'].forEach(function (selector) {
                     SGTL.rangoFechas(selector, { onClose: function (fechas) { if (fechas.length !== 1) buscarViajes(1); } });
                 });
-                SGTL.filtros(['#fechaRangoInicioViaje', '#fechaRangoFinViaje', '#clienteFiltroViaje'], buscar);
+                Object.keys(ESTADOS_VIAJE).forEach(function (estado) {
+                    $('#estadoFiltroViaje').append($('<option>').val(estado).text(ESTADOS_VIAJE[estado]));
+                });
+                SGTL.filtros(['#idviajeinput', '#clienteFiltroViaje', '#fechaRangoInicioViaje', '#fechaRangoFinViaje',
+                    '#estadoFiltroViaje', '#referenciaFiltroViaje'], buscar);
                 SelectClientePredictivo.inicializar('clienteFiltroViaje', { placeholder: 'Todos los clientes' });
-                $('#clienteFiltroViaje').on('change', function () { buscarViajes(1); });
+                $('#clienteFiltroViaje, #estadoFiltroViaje').on('change', function () { buscarViajes(1); });
+                $('#idviajeinput').on('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
                 $('#busquedaViajeForm').on('submit', function (evento) { evento.preventDefault(); buscarViajes(1); });
                 $('#btnExportar').on('click', exportarViajes);
                 $('#tablaViajes').on('click', '[data-accion="ver"]', function () {

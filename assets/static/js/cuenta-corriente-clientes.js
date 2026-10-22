@@ -487,7 +487,6 @@
             var activa = tab.getAttribute('data-view') === vistaActual;
             tab.classList.toggle('active', activa); tab.setAttribute('aria-selected', activa ? 'true' : 'false');
         });
-        porId('ccSoloPendientes').checked = vistaActual === 'pendientes';
         renderTabla();
         renderPaginacion();
     }
@@ -1005,8 +1004,8 @@
         var filtros = ['Cliente: ' + (cliente ? etiquetaCliente(cliente) : 'Todos')];
         filtros.push('Desde: ' + (porId('ccDesde').value ? fecha(porId('ccDesde').value) : 'Sin límite'));
         filtros.push('Hasta: ' + (porId('ccHasta').value ? fecha(porId('ccHasta').value) : 'Sin límite'));
-        filtros.push('Comprobante: ' + (porId('ccTipo').selectedOptions[0].text || 'Todos'));
         filtros.push('Estado: ' + (porId('ccEstado').selectedOptions[0].text || 'Todos'));
+        filtros.push('Comprobante: ' + (porId('ccTipo').selectedOptions[0].text || 'Todos'));
         return filtros;
     }
     function cantidadListadoActual() {
@@ -1274,7 +1273,7 @@
                 onClose: function (fechas) { if (fechas.length !== 1) { sincronizarRango(); cargarCuenta(1); } }
             });
             // La cruz deja la fecha "sin límite" (§1.3) y vuelve a buscar.
-            filtrosCuenta = window.SGTL.filtros(['#ccCliente', '#ccFecha', '#ccTipo', '#ccEstado'], function () {
+            filtrosCuenta = window.SGTL.filtros(['#ccCliente', '#ccFecha', '#ccEstado', '#ccTipo'], function () {
                 window.SelectClientePredictivo.sincronizar('ccCliente');
                 sincronizarRango();
                 cargarCuenta(1);
@@ -1295,7 +1294,6 @@
             sincronizarRango();
             cargarCuenta(1);
         });
-        porId('ccSoloPendientes').addEventListener('change', function () { cambiarVista(this.checked ? 'pendientes' : 'movimientos'); });
         porId('btnNuevoRecibo').addEventListener('click', abrirNuevoRecibo);
         porId('btnEmitirRecibo').addEventListener('click', emitirRecibo);
         porId('btnEmitirComprobante').addEventListener('click', emitirComprobante);

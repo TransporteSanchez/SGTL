@@ -77,19 +77,23 @@
 
                         <div class="card-body">
                             <form id="busquedaUsuarioForm" class="row g-3 align-items-end" novalidate>
-                                <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="filtroUsuario" class="form-label">Nombre de usuario</label>
-                                    <input type="text" class="form-control" id="filtroUsuario" placeholder="fgodoy" autocomplete="off">
+                                    <input type="text" class="form-control" id="filtroUsuario" placeholder="jperez" autocomplete="off">
                                 </div>
-                                <div class="col-12 col-sm-6 col-lg-4">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroNombre" class="form-label">Nombre</label>
+                                    <input type="text" class="form-control" id="filtroNombre" placeholder="Juan" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="filtroApellido" class="form-label">Apellido</label>
+                                    <input type="text" class="form-control" id="filtroApellido" placeholder="Pérez" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="filtroEstado" class="form-label">Estado</label>
-                                    <select id="filtroEstado" class="form-select">
-                                        <option value="Activo" selected>Activo</option>
-                                        <option value="Inactivo">Inactivo</option>
-                                        <option value="">Todos</option>
-                                    </select>
+                                    <select id="filtroEstado" class="form-select"><option value="Activo" selected>Activo</option><option value="Inactivo">Inactivo</option><option value="">Todos</option></select>
                                 </div>
-                                <div class="col-12 col-lg-4 d-flex justify-content-end">
+                                <div class="col-12 col-sm-12 col-lg-12 d-flex justify-content-end">
                                     <button type="submit" class="btn btn-light">
                                         <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
@@ -346,6 +350,8 @@
                 type: 'GET',
                 data: {
                     nombreusuario: $('#filtroUsuario').val().trim(),
+                    nombre: $('#filtroNombre').val().trim(),
+                    apellido: $('#filtroApellido').val().trim(),
                     EstadoUsuario: $('#filtroEstado').val(),
                     page: page,
                     pageSize: pageSize
@@ -380,7 +386,11 @@
             $('#filtroUsuario').on('input', function () {
                 this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚñÑ0-9_\s´]/g, '');
             });
-            SGTL.filtros(['#filtroUsuario', '#filtroEstado'], function () { buscarUsuarios(1); });
+            $('#filtroNombre, #filtroApellido').on('input', function () {
+                this.value = this.value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜñÑ\s´]/g, '');
+            });
+            SGTL.filtros(['#filtroUsuario', '#filtroNombre', '#filtroApellido', '#filtroEstado'], function () { buscarUsuarios(1); });
+            $('#filtroEstado').on('change', function () { buscarUsuarios(1); });
             $('#busquedaUsuarioForm').on('submit', function (evento) {
                 evento.preventDefault();
                 buscarUsuarios(1);

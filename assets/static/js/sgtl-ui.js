@@ -514,7 +514,9 @@
       altInput: true,
       altFormat: 'd/m/Y',
       dateFormat: 'Y-m-d',
-      allowInput: true
+      allowInput: true,
+      // Clase propia para que "DD/MM/AAAA a DD/MM/AAAA" entre completo en un filtro angosto (sgtl.css).
+      altInputClass: 'form-control input sgtl-rango-fechas'
     };
     if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) configuracion.locale = 'es';
     Object.keys(opciones || {}).forEach(function (clave) { configuracion[clave] = opciones[clave]; });

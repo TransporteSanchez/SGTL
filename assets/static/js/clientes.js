@@ -108,8 +108,10 @@ async function exportarClientes() {
 // Filtros comunes: CUIT con guiones mientras se escribe, rango de fechas y cruz en cada campo.
 function prepararFiltrosClientes(buscar) {
     $('#filtroCuit').on('input', function () { this.value = formatearCUIT(this.value); });
-    SGTL.rangoFechas('#fechaRango');
+    // §1.3: el rango busca al cerrar el calendario y el estado al elegirlo; el texto, con Enter o Buscar.
+    SGTL.rangoFechas('#fechaRango', { onClose: function (fechas) { if (fechas.length !== 1) buscar(1); } });
     SGTL.filtros(['#filtroRazonSocial', '#filtroCuit', '#fechaRango', '#filtroEstado'], function () { buscar(1); });
+    $('#filtroEstado').on('change', function () { buscar(1); });
     $('#busquedaClienteForm').on('submit', function (evento) {
         evento.preventDefault();
         buscar(1);

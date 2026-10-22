@@ -298,6 +298,22 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     display: block;
 }
 
+/* Rango de fechas en un filtro angosto (pantallas de menos de 1366 px, cuatro filtros por fila): "DD/MM/AAAA a
+   DD/MM/AAAA" no entraba completo. Solo en ese ancho y con un rango elegido se achica apenas la letra y el
+   lugar de la cruz; el texto de ejemplo ("Desde y hasta") queda igual que en los demás campos. */
+@media (min-width: 992px) and (max-width: 1365.98px) {
+    .sgtl-filtro > .sgtl-rango-fechas:not(:placeholder-shown) {
+        padding-left: .6rem;
+        padding-right: 1.75rem;
+        font-size: .85rem;
+    }
+
+    .sgtl-filtro > .sgtl-rango-fechas ~ .sgtl-filtro-borrar {
+        right: .3rem;
+        padding: 0 .2rem;
+    }
+}
+
 .sgtl-filtro-borrar:hover,
 .sgtl-filtro-borrar:focus-visible {
     color: #212529;

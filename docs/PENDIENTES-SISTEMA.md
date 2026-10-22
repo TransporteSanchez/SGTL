@@ -1164,3 +1164,34 @@ la API falsa).
   aceptado.") y después Generar viaje (**con datos de prueba: crea un viaje real**); uno Aceptado sin viaje
   puede volver a Pendiente; uno con viaje tiene la banderita deshabilitada; Ver PDF → Enviar por e-mail abre el
   envío.
+
+### Filtros iguales en todas las pantallas (22/10) — SIN PUSH
+
+Commit "Interfaz: filtros iguales en todas las pantallas". Revisión de las 18 pantallas con filtros y regla
+elegida por Rocío (opción A), escrita en §1.3 y §3.3 del design system:
+- **Cuándo busca solo:** los desplegables buscan al elegir y el rango de fechas al cerrar el calendario; el texto,
+  con Enter o Buscar. **Buscar queda en todas.** Se suman al comportamiento: estado en choferes, camiones,
+  clientes y usuarios; entidad y acción en auditoría; tipo en las dos de proformas; rango en choferes, camiones,
+  clientes y auditoría.
+- **Mismos filtros en Listar y Gestionar:** Gestionar choferes suma Nombre y Apellido; Gestionar usuarios, Nombre
+  y Apellido; Listar viajes, Número, Estado y N° remito; Listar proformas, Tipo (usan la misma API).
+- **Mismo orden:** número o identificador → cliente o persona → fechas → estado → tipo → texto libre (proformas
+  Número · Cliente · Fecha · Estado · Tipo · Usuario; viajes Número · Cliente · Fecha de inicio · Fecha de fin ·
+  Estado · N° remito; cuenta corriente Cliente · Fecha · Estado financiero · Comprobante; auditoría Usuario ·
+  Fecha · Entidad · Acción · Buscar en el detalle).
+- **Mismo ancho:** cuatro campos por fila en todas (antes había de 2, 3 y 4 columnas mezclados).
+- **Textos:** "Número" (antes "Número de viaje"); ejemplos en lugar del nombre del campo ("jperez", "PF-00000010").
+- **Cuenta corriente:** se saca la casilla "Solo comprobantes sin relacionar" (repetía la pestaña).
+- **Orígenes y destinos y Tarifas** (ya tenían paginación) suman filtros en cada pestaña: Cliente y Descripción o
+  dirección; tarifas fijas Cliente, Vigencia (vigentes en algún día del rango) y Origen o destino; tarifas por km
+  Vigencia y Km del viaje (las que cubren esa distancia). "Registrar …" va al lado de Buscar, como en Grupos.
+- **Rango de fechas a 1280 px:** "DD/MM/AAAA a DD/MM/AAAA" no entraba completo; en pantallas de menos de 1366 px
+  la letra del rango elegido se achica apenas (`sgtl.css`).
+- [ ] Probar en la VM, en cada pantalla con filtros: elegir un estado o un tipo busca solo; escribir en un campo
+  de texto no busca hasta Enter o Buscar; elegir un rango busca al cerrar el calendario; cada cruz borra y busca.
+- [ ] Gestionar choferes y Gestionar usuarios: Nombre y Apellido filtran. Listar viajes: Número, Estado y
+  N° remito filtran. Listar proformas: Tipo filtra.
+- [ ] Orígenes y destinos: filtrar por cliente y por una parte de la dirección (sin tildes también encuentra).
+  Tarifas fijas: cliente, vigencia y origen o destino; tarifas por km: escribir 250 muestra solo las que cubren
+  250 km.
+- [ ] A 1280 px (o con el navegador más angosto) el rango de fechas elegido se lee completo.

@@ -91,10 +91,14 @@
                                 <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="fUsuario" class="form-label">Usuario</label>
                                     <div class="position-relative">
-                                        <input type="text" id="fUsuario" class="form-control" autocomplete="off" placeholder="Todos">
+                                        <input type="text" id="fUsuario" class="form-control" autocomplete="off" placeholder="jperez">
                                         <div id="usuarioDropdown" class="list-group position-absolute w-100 shadow-sm"
                                             style="z-index: 1050; max-height: 230px; overflow-y: auto; display: none;"></div>
                                     </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fRango" class="form-label">Fecha</label>
+                                    <input type="text" id="fRango" class="form-control" placeholder="Desde y hasta">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="fEntidad" class="form-label">Entidad</label>
@@ -113,10 +117,6 @@
                                         <option value="LOGOUT">Cierre de sesión</option>
                                         <option value="KM_MANUAL">Km manual</option>
                                     </select>
-                                </div>
-                                <div class="col-12 col-sm-6 col-lg-3">
-                                    <label for="fRango" class="form-label">Fecha</label>
-                                    <input type="text" id="fRango" class="form-control" placeholder="Desde y hasta">
                                 </div>
                                 <div class="col-12 col-sm-6 col-lg-6">
                                     <label for="fTexto" class="form-label">Buscar en el detalle</label>
@@ -394,8 +394,10 @@
         }
 
         $(function () {
-            SGTL.rangoFechas('#fRango');
+            // §1.3: el rango busca al cerrar el calendario y los desplegables al elegir; el texto, con Enter o Buscar.
+            SGTL.rangoFechas('#fRango', { onClose: function (fechas) { if (fechas.length !== 1) { ocultarUsuarios(); buscarAuditoria(1); } } });
             SGTL.filtros(['#fUsuario', '#fEntidad', '#fAccion', '#fRango', '#fTexto'], function () { ocultarUsuarios(); buscarAuditoria(1); });
+            $('#fEntidad, #fAccion').on('change', function () { ocultarUsuarios(); buscarAuditoria(1); });
             $('#busquedaAuditoriaForm').on('submit', function (evento) {
                 evento.preventDefault();
                 ocultarUsuarios();

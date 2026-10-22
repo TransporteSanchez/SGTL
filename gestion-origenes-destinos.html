@@ -80,12 +80,24 @@
 
                             <div class="tab-content pt-4">
                                 <div class="tab-pane fade show active" id="pane-origen" role="tabpanel" aria-labelledby="tab-origen">
-                                    <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn btn-success" data-registrar="origen">
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar origen
-                                        </button>
-                                    </div>
-                                    <div class="table-responsive mt-3">
+                                    <!-- Filtros (§1.3 y §3.3): el cliente busca al elegirlo; el texto, con Enter o Buscar; cada uno se borra con su cruz. -->
+                                    <form id="busquedaOrigenForm" class="row g-3 align-items-end" novalidate>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="fClienteOrigen" class="form-label">Cliente</label>
+                                            <select id="fClienteOrigen" class="form-select"><option value="">Todos los clientes</option></select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="fTextoOrigen" class="form-label">Descripción o dirección</label>
+                                            <input id="fTextoOrigen" class="form-control" placeholder="Depósito Rosario" autocomplete="off">
+                                        </div>
+                                        <div class="col-12 col-lg-6 d-flex justify-content-end gap-2">
+                                            <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                            <button type="button" class="btn btn-success" data-registrar="origen">
+                                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar origen
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div class="table-responsive mt-4">
                                         <table class="table table-striped table-hover" id="tabla_origen">
                                             <thead>
                                                 <tr>
@@ -103,12 +115,24 @@
                                 </div>
 
                                 <div class="tab-pane fade" id="pane-destino" role="tabpanel" aria-labelledby="tab-destino">
-                                    <div class="d-flex justify-content-end">
-                                        <button type="button" class="btn btn-success" data-registrar="destino">
-                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar destino
-                                        </button>
-                                    </div>
-                                    <div class="table-responsive mt-3">
+                                    <!-- Filtros (§1.3 y §3.3): el cliente busca al elegirlo; el texto, con Enter o Buscar; cada uno se borra con su cruz. -->
+                                    <form id="busquedaDestinoForm" class="row g-3 align-items-end" novalidate>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="fClienteDestino" class="form-label">Cliente</label>
+                                            <select id="fClienteDestino" class="form-select"><option value="">Todos los clientes</option></select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="fTextoDestino" class="form-label">Descripción o dirección</label>
+                                            <input id="fTextoDestino" class="form-control" placeholder="Depósito Rosario" autocomplete="off">
+                                        </div>
+                                        <div class="col-12 col-lg-6 d-flex justify-content-end gap-2">
+                                            <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                            <button type="button" class="btn btn-success" data-registrar="destino">
+                                                <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar destino
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <div class="table-responsive mt-4">
                                         <table class="table table-striped table-hover" id="tabla_destino">
                                             <thead>
                                                 <tr>
@@ -209,6 +233,7 @@
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -284,8 +309,8 @@
         const API = 'http://localhost:50222/api';
         const NOMBRES = { origen: 'origen', destino: 'destino' };
         const tablas = {
-            origen: { datos: [], pagina: 1, tamanio: 15 },
-            destino: { datos: [], pagina: 1, tamanio: 15 }
+            origen: { datos: [], pagina: 1, tamanio: 15, filtros: {} },
+            destino: { datos: [], pagina: 1, tamanio: 15, filtros: {} }
         };
         let odTipo = 'origen';
         let odEnEdicion = null;
@@ -323,16 +348,32 @@
             </tr>`;
         }
 
+        function sinTildes(texto) { return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase(); }
+        function cumpleFiltros(o, f) {
+            if (f.cliente && String(o.ClienteID) !== f.cliente) return false;
+            if (f.texto && sinTildes([o.Descripcion, o.NombreLocalidad, o.NombreProvincia, o.Calle, o.AlturaCalle].join(' ')).indexOf(f.texto) === -1) return false;
+            return true;
+        }
+        // Aplica los filtros de la pestaña (§1.3) y vuelve a la primera página.
+        function aplicarFiltros(tipo) {
+            const T = tipo === 'origen' ? 'Origen' : 'Destino';
+            SelectClientePredictivo.sincronizar('fCliente' + T);
+            tablas[tipo].filtros = { cliente: $('#fCliente' + T).val(), texto: sinTildes($('#fTexto' + T).val().trim()) };
+            dibujar(tipo, 1);
+        }
+
         function dibujar(tipo, pagina) {
             const t = tablas[tipo];
             const tbody = '#tabla_' + tipo + ' tbody';
-            const paginas = Math.max(1, Math.ceil(t.datos.length / t.tamanio));
+            const lista = t.datos.filter(function (o) { return cumpleFiltros(o, t.filtros); });
+            const paginas = Math.max(1, Math.ceil(lista.length / (t.tamanio || lista.length || 1)));
             t.pagina = Math.min(pagina || t.pagina, paginas);
-            const visibles = t.datos.slice((t.pagina - 1) * t.tamanio, t.pagina * t.tamanio);
+            const visibles = t.tamanio ? lista.slice((t.pagina - 1) * t.tamanio, t.pagina * t.tamanio) : lista;
             if (visibles.length) SGTL.tabla.llenar(tbody, visibles.map(function (o) { return filaOD(tipo, o); }).join(''));
+            else if (t.datos.length) SGTL.tabla.vacia(tbody, 7);
             else SGTL.tabla.vacia(tbody, 7, tipo === 'origen' ? 'Todavía no hay orígenes cargados.' : 'Todavía no hay destinos cargados.');
             SGTL.tabla.paginacion('#paginacion_' + tipo, {
-                total: t.datos.length,
+                total: lista.length,
                 tamanioPagina: t.tamanio,
                 pagina: t.pagina,
                 alCambiarPagina: function (p) { dibujar(tipo, p); },
@@ -493,6 +534,20 @@
             $('#tabla_origen, #tabla_destino')
                 .on('click', '[data-accion="editar"]', function () { abrirOD($(this).data('tipo'), $(this).data('id')); })
                 .on('click', '[data-accion="eliminar"]', function () { eliminarOD($(this).data('tipo'), $(this).data('id')); });
+            ['origen', 'destino'].forEach(function (tipo) {
+                const T = tipo === 'origen' ? 'Origen' : 'Destino';
+                SGTL.filtros(['#fCliente' + T, '#fTexto' + T], function () { aplicarFiltros(tipo); });
+                SelectClientePredictivo.inicializar('fCliente' + T, { placeholder: 'Todos los clientes' });
+                $('#fCliente' + T).on('change', function () { aplicarFiltros(tipo); });
+                $('#busqueda' + T + 'Form').on('submit', function (evento) { evento.preventDefault(); aplicarFiltros(tipo); });
+            });
+            SGTL.ajax({ url: API + '/Clientes', type: 'GET' }).then(function (clientes) {
+                ['Origen', 'Destino'].forEach(function (T) {
+                    const select = document.getElementById('fCliente' + T);
+                    (clientes || []).forEach(function (c) { select.appendChild(new Option(c.Razon_Social, c.Cliente_ID)); });
+                    SelectClientePredictivo.sincronizar('fCliente' + T);
+                });
+            }, function () { /* Sin la lista de clientes, el filtro queda en "Todos". */ });
             listar('origen');
             listar('destino');
         });

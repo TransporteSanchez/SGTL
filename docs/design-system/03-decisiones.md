@@ -51,6 +51,12 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
   cuenta corriente, borrar la fecha deja "sin límite", no "últimos 30 días".
 - Las casillas no llevan cruz. (El filtro de estado deja de ser casillas: ver §3.3.)
 - **Enter en cualquier filtro busca**, en todas las pantallas.
+- **Cuándo busca solo (22/10, opción A de Rocío):** los desplegables (estado, tipo, cliente,
+  entidad…) buscan al elegir; el rango de fechas, al cerrar el calendario con las dos fechas; los
+  campos de texto (número, nombre, DNI, dominio, referencia, texto libre) **no** buscan mientras se
+  escribe: buscan con Enter o con "Buscar". Por eso **"Buscar" está siempre**: es la forma de
+  buscar lo que se escribió, sirve en el celular (donde no se usa Enter) y vuelve a traer la lista
+  con todos los filtros.
 - La cruz se arma una sola vez en el JS compartido; las pantallas solo marcan qué campos son
   filtros. Bootstrap no la trae y no hace falta sumar librerías.
 
@@ -166,6 +172,19 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 - **Grilla a todo el ancho, sin recuadro propio** (la tarjeta ya es el recuadro): el texto
   arriba de cada campo (`form-label` con `for`), varios campos por fila, y "Buscar" al final de
   la última fila, a la derecha. Como auditoría.
+- **Mismo ancho para todos los campos** (22/10): cuatro por fila en pantalla de escritorio
+  (`col-12 col-sm-6 col-lg-3`); solo el texto libre de auditoría ocupa el doble. "Buscar" usa lo
+  que queda de la última fila (o una fila propia si no queda lugar).
+- **Mismo orden en todas las pantallas** (22/10): 1) número o identificador (número, nombre,
+  dominio, razón social); 2) cliente o persona; 3) fechas; 4) estado; 5) tipo y otros
+  desplegables; 6) texto libre (referencia, origen o destino, detalle). Por ejemplo: proformas
+  Número · Cliente · Fecha · Estado · Tipo · Usuario; viajes Número · Cliente · Fecha de inicio ·
+  Fecha de fin · Estado · N° remito.
+- **Listar y Gestionar de lo mismo tienen los mismos filtros** (choferes, camiones, clientes,
+  viajes, usuarios, proformas). Los textos de ejemplo de cada campo son un dato posible ("jperez",
+  "PF-00000010"), no el nombre del campo.
+- **Pantallas con pestañas** (orígenes y destinos, tarifas, grupos y permisos): cada pestaña tiene
+  sus filtros arriba de su tabla, y su botón de alta va al lado de "Buscar", a la derecha.
 - **Estado como desplegable** "Activo / Inactivo / Todos", con Activo elegido al entrar. La cruz
   lo pasa a "Todos" (§1.3). Reemplaza las dos casillas Activo / Inactivo.
 

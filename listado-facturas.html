@@ -53,13 +53,34 @@
                         <div class="card-body">
                             <!-- Filtros (§1.3 y §3.3): cada uno se borra con su cruz; Enter busca. -->
                             <form id="busquedaProformaForm" class="row g-3 align-items-end mb-4" novalidate>
-                                <div class="col-12 col-sm-6 col-lg-3"><label for="fNumero" class="form-label">Número</label><input id="fNumero" class="form-control" placeholder="PF-..." autocomplete="off"></div>
-                                <div class="col-12 col-sm-6 col-lg-3"><label for="fCliente" class="form-label">Cliente</label><select id="fCliente" class="form-select"><option value="">Todos</option></select></div>
-                                <div class="col-12 col-sm-6 col-lg-3"><label for="fEstado" class="form-label">Estado</label><select id="fEstado" class="form-select"><option value="">Todos</option></select></div>
-                                <div class="col-12 col-sm-6 col-lg-3"><label for="fFecha" class="form-label">Fecha</label><input id="fFecha" class="form-control" placeholder="Desde y hasta"></div>
-                                <div class="col-12 col-sm-6 col-lg-3"><label for="fUsuario" class="form-label">Usuario</label><input id="fUsuario" class="form-control" placeholder="Usuario" autocomplete="off"></div>
-                                <div class="col-12 col-sm-6 col-lg-9 d-flex justify-content-end">
-                                    <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fNumero" class="form-label">Número</label>
+                                    <input id="fNumero" class="form-control" placeholder="PF-00000010" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fCliente" class="form-label">Cliente</label>
+                                    <select id="fCliente" class="form-select"><option value="">Todos</option></select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fFecha" class="form-label">Fecha</label>
+                                    <input id="fFecha" class="form-control" placeholder="Desde y hasta">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fEstado" class="form-label">Estado</label>
+                                    <select id="fEstado" class="form-select"><option value="">Todos</option></select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fTipo" class="form-label">Tipo</label>
+                                    <select id="fTipo" class="form-select"><option value="">Todos</option><option value="Propia">Propia</option><option value="Plataforma">Plataforma</option><option value="Reclamo">Con reclamo pendiente</option></select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fUsuario" class="form-label">Usuario</label>
+                                    <input id="fUsuario" class="form-control" placeholder="jperez" autocomplete="off">
+                                </div>
+                                <div class="col-12 col-sm-12 col-lg-6 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
                                 </div>
                             </form>
                             <div class="table-responsive">
@@ -245,6 +266,7 @@
             if (val('fNumero').trim()) p.append('numero', val('fNumero').trim());
             if (val('fCliente')) p.append('clienteId', val('fCliente'));
             if (val('fEstado')) p.append('estado', val('fEstado'));
+            if (val('fTipo')) p.append('tipo', val('fTipo'));
             var rango = SGTL.valorRango('#fFecha');
             if (rango) { p.append('desde', rango.desde); p.append('hasta', rango.hasta); }
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
@@ -275,6 +297,8 @@
             var cliente = document.getElementById('fCliente');
             if (cliente && cliente.value) filtros.push('Cliente: ' + cliente.options[cliente.selectedIndex].text);
             if (val('fEstado')) filtros.push('Estado: ' + val('fEstado'));
+            var tipo = document.getElementById('fTipo');
+            if (tipo && tipo.value) filtros.push('Tipo: ' + tipo.options[tipo.selectedIndex].text);
             var rango = SGTL.valorRango('#fFecha');
             if (rango) filtros.push('Fecha: ' + SGTL.fecha(rango.desde) + ' a ' + SGTL.fecha(rango.hasta));
             if (val('fUsuario').trim()) filtros.push('Usuario: ' + val('fUsuario').trim());
@@ -399,11 +423,11 @@
             cargarClientes();
             buscarProformas(1);
             SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) buscarProformas(1); } });
-            SGTL.filtros(['#fNumero', '#fCliente', '#fEstado', '#fFecha', '#fUsuario'], function () {
+            SGTL.filtros(['#fNumero', '#fCliente', '#fFecha', '#fEstado', '#fTipo', '#fUsuario'], function () {
                 SelectClientePredictivo.sincronizar('fCliente');
                 buscarProformas(1);
             });
-            $('#fEstado, #fCliente').on('change', function () { buscarProformas(1); });
+            $('#fEstado, #fTipo, #fCliente').on('change', function () { buscarProformas(1); });
             $('#busquedaProformaForm').on('submit', function (evento) { evento.preventDefault(); buscarProformas(1); });
             $('#cuerpoProformas')
                 .on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); })
