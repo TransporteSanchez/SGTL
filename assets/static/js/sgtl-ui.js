@@ -48,6 +48,23 @@
     if (el) componente('modal', el, accion || 'show');
   }
 
+  // Un modal encima de otro (la confirmación pedida desde un modal abierto, §5.2): queda arriba con su
+  // propio fondo y, al cerrarse, el de abajo sigue abierto y con scroll (Bootstrap le sacaba modal-open).
+  document.addEventListener('show.bs.modal', function (evento) {
+    var abiertos = document.querySelectorAll('.modal.show').length;
+    evento.target.style.zIndex = abiertos ? String(1055 + abiertos * 20) : '';
+    if (!abiertos) return;
+    setTimeout(function () {
+      var fondos = document.querySelectorAll('.modal-backdrop');
+      var fondo = fondos[fondos.length - 1];
+      if (fondo) fondo.style.zIndex = String(1050 + abiertos * 20);
+    }, 0);
+  });
+
+  document.addEventListener('hidden.bs.modal', function () {
+    if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
+  });
+
   // Mientras un modal está procesando (§8) no se cierra: ni con la cruz, ni con Escape, ni con Cancelar.
   document.addEventListener('hide.bs.modal', function (evento) {
     if (evento.target && evento.target.dataset && evento.target.dataset.sgtlProcesando === 'true') {

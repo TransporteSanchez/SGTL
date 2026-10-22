@@ -22,33 +22,6 @@
             transform: translate(-50%, -50%);
             z-index: 9999;
         }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaViajes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaViajes th,
-        #tablaViajes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
-        #tablaViajes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        /* Centrar la paginación */
-        .pagination {
-            justify-content: center;
-        }
     </style>
 
 
@@ -58,7 +31,6 @@
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
     <link rel="stylesheet" href="./assets/static/css/sgtl.css">
 </head>
@@ -110,21 +82,6 @@
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
 
-                            <!--Notificaciones de Alta, Editar y Eliminar-->
-
-                            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                                <div class="toast align-items-center text-white bg-success border-0" role="alert"
-                                    id="alert-success" aria-live="assertive" aria-atomic="true" style="display: none;">
-                                    <div class="d-flex">
-                                        <div class="toast-body">
-                                        </div>
-                                        <button type="button" class="btn-close btn-close-white me-2 m-auto"
-                                            data-bs-dismiss="toast" aria-label="Close"></button>
-                                    </div>
-                                </div>
-                            </div>
-
-
                             <div>
                                 <h5 class="card-title mb-1">
                                     <i class="bi bi-calendar-check me-2"></i>Gestionar viajes
@@ -143,95 +100,72 @@
                         </div>
 
                         <div class="card-body">
-                            <div class="row">
-                                <!-- Columna izquierda - Filtros -->
-                                <div class="col-md-6">
-                                    <fieldset class="border p-4">
-                                        <form id="busquedaViajeForm" class="form">
-                                            <!-- Fila 1 -->
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label for="idviajeinput">Número de viaje</label>
-                                                    <input type="number" class="form-control" id="idviajeinput"
-                                                        placeholder="123">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="fechaRangoInicioViaje">Fecha de inicio</label>
-                                                    <input type="text" class="form-control" id="fechaRangoInicioViaje"
-                                                        placeholder="Desde y hasta">
-                                                </div>
-                                            </div>
-                                            <!-- Fila 2 -->
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label for="fechaRangoFinViaje">Fecha de fin</label>
-                                                    <input type="text" class="form-control" id="fechaRangoFinViaje"
-                                                        placeholder="Desde y hasta">
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="estadoFiltroViaje">Estado</label>
-                                                    <select class="form-select" id="estadoFiltroViaje">
-                                                        <option value="">Todos</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <!-- Fila 3 -->
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label for="clienteFiltroViaje">Cliente</label>
-                                                    <select class="form-select" id="clienteFiltroViaje">
-                                                        <option value="">Todos</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="referenciaFiltroViaje">N° remito / transporte / entrega</label>
-                                                    <input type="text" class="form-control" id="referenciaFiltroViaje"
-                                                        maxlength="20" placeholder="Cualquiera de los tres">
-                                                </div>
-                                            </div>
-                                            <!-- Fila 4 -->
-                                            <div class="row mb-3">
-                                                <div class="col-12 d-flex justify-content-end align-items-end">
-                                                    <button type="button" class="btn btn-light me-2"
-                                                        onclick="limpiarFiltrosViajes()">Limpiar</button>
-                                                    <button type="button" class="btn btn-light"
-                                                        onclick="buscarViajes()">Buscar</button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </fieldset>
+                            <!-- Filtros (§1.3 y §3.3): cada uno se borra con su cruz; Enter busca. -->
+                            <form id="busquedaViajeForm" class="row g-3 align-items-end" novalidate>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="idviajeinput" class="form-label">Número de viaje</label>
+                                    <input type="number" class="form-control" id="idviajeinput" placeholder="123">
                                 </div>
-
-
-                                <!-- Tabla de resultados -->
-                                <div class="table-responsive mt-4">
-                                    <table class="table table-striped" id="tablaViajes">
-                                        <thead>
-                                            <tr>
-                                                <th>Número de viaje</th>
-                                                <th>Cliente</th>
-                                                <th>Fecha de inicio</th>
-                                                <th>Fecha de fin</th>
-                                                <th>Origen</th>
-                                                <th>Destino</th>
-                                                <th>Número de remito</th>
-                                                <th>Cantidad de KM</th>
-                                                <th class="text-center">Estado</th>
-                                                <th class="text-center">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Contenido dinámico -->
-                                        </tbody>
-                                    </table>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fechaRangoInicioViaje" class="form-label">Fecha de inicio</label>
+                                    <input type="text" class="form-control" id="fechaRangoInicioViaje" placeholder="Desde y hasta">
                                 </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fechaRangoFinViaje" class="form-label">Fecha de fin</label>
+                                    <input type="text" class="form-control" id="fechaRangoFinViaje" placeholder="Desde y hasta">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="estadoFiltroViaje" class="form-label">Estado</label>
+                                    <select class="form-select" id="estadoFiltroViaje">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="clienteFiltroViaje" class="form-label">Cliente</label>
+                                    <select class="form-select" id="clienteFiltroViaje">
+                                        <option value="">Todos</option>
+                                    </select>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="referenciaFiltroViaje" class="form-label">N° remito / transporte / entrega</label>
+                                    <input type="text" class="form-control" id="referenciaFiltroViaje" maxlength="20"
+                                        placeholder="Cualquiera de los tres">
+                                </div>
+                                <div class="col-12 col-lg-6 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
+                                </div>
+                            </form>
 
-                                <!-- Paginación -->
-                                <nav>
-                                    <ul class="pagination justify-content-end" id="pagination">
-                                    </ul>
-                                </nav>
+                            <!-- Tabla ancha (§2.1): se desplaza hacia el costado y Acciones queda fija a la derecha. -->
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped table-hover sgtl-tabla-ancha" id="tablaViajes">
+                                    <thead>
+                                        <tr>
+                                            <th>Número de viaje</th>
+                                            <th>Cliente</th>
+                                            <th class="text-center">Fecha de inicio</th>
+                                            <th class="text-center">Fecha de fin</th>
+                                            <th>Origen</th>
+                                            <th>Destino</th>
+                                            <th>Número de remito</th>
+                                            <th class="text-end">Cantidad de KM</th>
+                                            <th class="text-center">Estado</th>
+                                            <th class="text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Contenido dinámico -->
+                                    </tbody>
+                                </table>
                             </div>
+
+                            <!-- Paginación -->
+                            <nav>
+                                <ul class="pagination justify-content-end" id="pagination">
+                                </ul>
+                            </nav>
                         </div>
 
                     </div>
@@ -258,9 +192,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h4 class="modal-title" id="ModalAltaViajelabel">Alta de viaje</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
@@ -378,13 +310,11 @@
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/static/js/alta-rapida-ubicacion.js"></script>
-    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
-    <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="assets/static/js/google-maps.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
@@ -489,50 +419,11 @@
         let pageSize = 15;
         let currentPage = 1;
 
-        // Filtros de rango: fecha de inicio y fecha de fin del viaje
+        // Filtros de rango (§7.1): fecha de inicio y fecha de fin del viaje. Al elegir el rango completo, busca.
         function initRangoFechaFiltro(selector) {
-            $(selector).daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    format: 'DD/MM/YYYY',
-                    applyLabel: 'Aplicar',
-                    cancelLabel: 'Borrar',
-                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    monthNames: [
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ]
-                }
+            SGTL.rangoFechas(selector, {
+                onClose: function (fechas) { if (fechas.length !== 1) buscarViajes(1); }
             });
-
-            $(selector).on('apply.daterangepicker', function (ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-                buscarViajes(1);
-            });
-
-            $(selector).on('cancel.daterangepicker', function () {
-                $(this).val('');
-                $(this).removeData('start').removeData('end');
-                buscarViajes(1);
-            });
-
-            $(selector).on('input', function () {
-                if (!$(this).val()) { $(this).removeData('start').removeData('end'); }
-            });
-        }
-
-        initRangoFechaFiltro('#fechaRangoInicioViaje');
-        initRangoFechaFiltro('#fechaRangoFinViaje');
-
-        function limpiarFiltrosViajes() {
-            $('#idviajeinput').val('');
-            $('#fechaRangoInicioViaje, #fechaRangoFinViaje').val('').removeData('start').removeData('end');
-            $('#estadoFiltroViaje').val('');
-            $('#clienteFiltroViaje').val('');
-            $('#referenciaFiltroViaje').val('');
-            buscarViajes(1);
         }
 
         function cargarFiltrosViajes() {
@@ -542,6 +433,7 @@
                 .done(function (data) {
                     var sc = $('#clienteFiltroViaje');
                     (data || []).forEach(function (c) { sc.append('<option value="' + c.Cliente_ID + '">' + escHtml(c.Razon_Social) + '</option>'); });
+                    SelectClientePredictivo.sincronizar('clienteFiltroViaje');
                 });
         }
 
@@ -587,10 +479,10 @@
             const idViaje = $('#idviajeinput').val().trim();
             return {
                 idViaje: idViaje || null,
-                fechaDesde: $('#fechaRangoInicioViaje').data('start') || null,
-                fechaHasta: $('#fechaRangoInicioViaje').data('end') || null,
-                fechaFinDesde: $('#fechaRangoFinViaje').data('start') || null,
-                fechaFinHasta: $('#fechaRangoFinViaje').data('end') || null,
+                fechaDesde: (SGTL.valorRango('#fechaRangoInicioViaje') || {}).desde || null,
+                fechaHasta: (SGTL.valorRango('#fechaRangoInicioViaje') || {}).hasta || null,
+                fechaFinDesde: (SGTL.valorRango('#fechaRangoFinViaje') || {}).desde || null,
+                fechaFinHasta: (SGTL.valorRango('#fechaRangoFinViaje') || {}).hasta || null,
                 estado: $('#estadoFiltroViaje').val() || null,
                 clienteId: $('#clienteFiltroViaje').val() || null,
                 referencia: ($('#referenciaFiltroViaje').val() || '').trim() || null
@@ -632,6 +524,7 @@
         function buscarViajes(page = 1) {
             currentPage = page;
             const requestData = Object.assign(filtrosViajes(), { page, pageSize });
+            SGTL.tabla.cargando('#tablaViajes tbody', 10);
 
             $.ajax({
                 url: 'http://localhost:50222/api/Viajes/Buscar',
@@ -643,7 +536,7 @@
                     viajesPagina = {};
 
                     if (data.Results.length === 0) {
-                        tbody.html('<tr><td colspan="10" class="text-center">No se encontraron registros</td></tr>');
+                        SGTL.tabla.vacia(tbody.get(0), 10);
                     } else {
                         data.Results.forEach(function (viaje) {
                             viajesPagina[viaje.Viaje_ID] = viaje;
@@ -651,12 +544,12 @@
                                 <tr>
                                     <td>${viaje.Viaje_ID}</td>
                                     <td>${escHtml(viaje.Cliente)}</td>
-                                    <td>${formatearFecha(viaje.Fecha_Inicio)}</td>
-                                    <td>${formatearFecha(viaje.Fecha_Fin)}</td>
+                                    <td class="text-center">${formatearFecha(viaje.Fecha_Inicio)}</td>
+                                    <td class="text-center">${formatearFecha(viaje.Fecha_Fin)}</td>
                                     <td>${escHtml(viaje.Origen)}</td>
                                     <td>${escHtml(viaje.Destino)}</td>
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
-                                    <td>${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
+                                    <td class="text-end">${escHtml((viaje.Distancia_KM || '').toString().trim())}</td>
                                     <td class="text-center text-nowrap">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge rounded-pill bg-white text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
                                     <td class="text-center">${accionesViaje(viaje)}</td>
                                 </tr>
@@ -669,7 +562,9 @@
                 },
                 error: function (xhr) {
                     console.error('Error al buscar viajes:', xhr);
-                    $('#tablaViajes tbody').html('<tr><td colspan="10" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
+                    SGTL.tabla.vacia('#tablaViajes tbody', 10, 'No se pudieron cargar los viajes.');
+                    SGTL.tabla.paginacion('#pagination', { total: 0 });
+                    SGTL.toastError(SGTL.mensajeError(xhr, 'No se pudieron cargar los viajes. Probá de nuevo.'));
                 }
             });
         }
@@ -722,57 +617,36 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = 'reporte_viajes_' + moment().format('YYYYMMDD_HHmm') + '.csv';
+            const ahora = new Date();
+            const dos = function (n) { return String(n).padStart(2, '0'); };
+            link.download = 'reporte_viajes_' + ahora.getFullYear() + dos(ahora.getMonth() + 1) + dos(ahora.getDate()) +
+                '_' + dos(ahora.getHours()) + dos(ahora.getMinutes()) + '.csv';
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
         }
 
+        // Paginación del design system (§2.2): no se muestra cuando no hay resultados.
         function renderPagination(totalRecords, tamanioActual, currentPage) {
-            const totalPages = Math.ceil(totalRecords / tamanioActual);
-            const paginationContainer = $('#pagination');
-            if (window.PaginacionSGTL) {
-                window.PaginacionSGTL.render(paginationContainer.get(0), {
-                    total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
-                    alCambiarPagina: function (pagina) { buscarViajes(pagina); },
-                    alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarViajes(1); }
-                });
-                return;
-            }
-            paginationContainer.empty();
-
-            const prevDisabled = currentPage === 1 ? 'disabled' : '';
-            const nextDisabled = currentPage >= totalPages ? 'disabled' : '';
-
-            paginationContainer.append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" onclick="buscarViajes(${currentPage - 1})">
-                        <i class="bi bi-chevron-left"></i>
-                    </a>
-                </li>
-            `);
-
-            for (let i = 1; i <= totalPages; i++) {
-                const activeClass = currentPage === i ? 'active' : '';
-                paginationContainer.append(`
-                    <li class="page-item ${activeClass}">
-                        <a class="page-link" href="#" onclick="buscarViajes(${i})">${i}</a>
-                    </li>
-                `);
-            }
-
-            paginationContainer.append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" onclick="buscarViajes(${currentPage + 1})">
-                        <i class="bi bi-chevron-right"></i>
-                    </a>
-                </li>
-            `);
+            SGTL.tabla.paginacion('#pagination', {
+                total: totalRecords, tamanioPagina: tamanioActual, pagina: currentPage,
+                alCambiarPagina: function (pagina) { buscarViajes(pagina); },
+                alCambiarTamanio: function (tamanio) { pageSize = tamanio; buscarViajes(1); }
+            });
         }
 
         $(document).ready(function () {
             cargarFiltrosViajes();
+            initRangoFechaFiltro('#fechaRangoInicioViaje');
+            initRangoFechaFiltro('#fechaRangoFinViaje');
+            SGTL.filtros(['#idviajeinput', '#fechaRangoInicioViaje', '#fechaRangoFinViaje', '#estadoFiltroViaje',
+                '#clienteFiltroViaje', '#referenciaFiltroViaje'], function () {
+                SelectClientePredictivo.sincronizar('clienteFiltroViaje');
+                buscarViajes(1);
+            });
+            // Mismo buscador de clientes que Listar viajes, proformas y cuenta corriente.
+            SelectClientePredictivo.inicializar('clienteFiltroViaje', { placeholder: 'Todos los clientes' });
             $('#estadoFiltroViaje, #clienteFiltroViaje').on('change', function () { buscarViajes(1); });
             $('#busquedaViajeForm').on('submit', function (e) { e.preventDefault(); buscarViajes(1); });
             buscarViajes(currentPage);
@@ -790,9 +664,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="ModalEstadoViajeLabel">Estado y entrega del viaje</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <div id="alertaEstadoViaje" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
@@ -1411,14 +1283,23 @@
 
         function quitarEvidenciaViaje() {
             var id = $('#estadoViajeId').val();
-            if (!id || !confirm('¿Quitar la evidencia adjunta de este viaje?')) return;
-            $.ajax({ url: API_VIAJES + '/Viajes/' + id + '/Evidencia?usuario=' + encodeURIComponent(usuarioActual()), type: 'DELETE' })
-                .done(function () {
-                    if (viajesPagina[id]) viajesPagina[id].Tiene_Evidencia = false;
-                    $('#evidenciaActual').hide();
-                    buscarViajes(currentPage);
-                })
-                .fail(function (xhr) { $('#alertaEstadoViaje').text(parsearError(xhr)).show(); });
+            if (!id) return;
+            SGTL.confirmar({
+                titulo: '¿Quitar la evidencia adjunta de este viaje?',
+                mensaje: 'No se puede deshacer.',
+                verbo: 'Quitar',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({ url: API_VIAJES + '/Viajes/' + id + '/Evidencia?usuario=' + encodeURIComponent(usuarioActual()), type: 'DELETE' },
+                        'No se pudo quitar la evidencia. Probá de nuevo.')
+                        .then(function () {
+                            if (viajesPagina[id]) viajesPagina[id].Tiene_Evidencia = false;
+                            $('#evidenciaActual').hide();
+                            buscarViajes(currentPage);
+                            SGTL.toastExito('Evidencia quitada.');
+                        });
+                }
+            });
         }
 
         function actualizarAyudaEstado() {
@@ -1461,9 +1342,18 @@
             if (falt.length) { $('#alertaEstadoViaje').text('No se puede guardar: ' + falt.join('; ') + '.').show(); return; }
 
             if (esDirecto(v) && dto.Estado === 'Entregado' && dto.Estado !== v.Estado && !file && !v.Tiene_Evidencia) {
-                if (!confirm('No adjuntaste evidencia de la entrega (remito firmado, foto o conforme). Es lo único que queda como constancia para este cliente. ¿Guardar igual?')) return;
+                SGTL.confirmar({
+                    titulo: '¿Guardar la entrega sin evidencia?',
+                    mensaje: 'No adjuntaste evidencia de la entrega (remito firmado, foto o conforme). Es lo único que queda como constancia para este cliente.',
+                    verbo: 'Guardar sin evidencia'
+                }).then(function (seguir) { if (seguir) guardarEstadoViaje(id, dto, file); });
+                return;
             }
+            guardarEstadoViaje(id, dto, file);
+        }
 
+        function guardarEstadoViaje(id, dto, file) {
+            var listo = SGTL.procesando('#guardarEstadoBtn');
             var subida = file ? subirEvidenciaViaje(id, file) : $.Deferred().resolve().promise();
             $.when(subida)
                 .then(function () {
@@ -1474,8 +1364,16 @@
                         data: JSON.stringify(dto)
                     });
                 })
-                .done(function () { $('#ModalEstadoViaje').modal('hide'); buscarViajes(currentPage); })
-                .fail(function (xhr) { $('#alertaEstadoViaje').text(xhr && xhr.status !== undefined ? parsearError(xhr) : 'No se pudo leer el archivo seleccionado.').show(); });
+                .done(function () {
+                    listo();
+                    $('#ModalEstadoViaje').modal('hide');
+                    buscarViajes(currentPage);
+                    SGTL.toastExito('Estado del viaje guardado.');
+                })
+                .fail(function (xhr) {
+                    listo();
+                    $('#alertaEstadoViaje').text(xhr && xhr.status !== undefined ? parsearError(xhr) : 'No se pudo leer el archivo seleccionado.').show();
+                });
         }
 
         // ===================== READY =====================

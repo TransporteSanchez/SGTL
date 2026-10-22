@@ -897,3 +897,24 @@ cambios en §5.1 y §11). Pedido: **que quede aplicado en todas las pantallas, s
 - [ ] Calendario de un filtro de fechas: tarjeta flotante, rango en azul.
 - [ ] Login: tipografía igual al resto del sistema.
 
+**Viajes (commit "Viajes: design system en gestionar y listar"):** filtros en una fila con su cruz (sin Limpiar),
+rango de fechas con flatpickr (sin `daterangepicker` ni `moment`), mismo buscador de clientes que proformas,
+tabla con texto a la izquierda, fechas centradas, km a la derecha y Acciones fija a la derecha, "Cargando…",
+"No hay resultados…" y paginador oculto sin resultados. Las dos confirmaciones nativas (quitar evidencia y
+entregar sin evidencia) pasan a la confirmación del sistema; guardar el estado avisa con un toast. Listar viajes:
+detalle "Ver detalle del viaje" en texto y con nombres (antes mostraba números de ID), pie con Cerrar. Se sacan el
+script de ejemplo de simple-datatables (error en consola), el `</script>` suelto (R5) y la cruz de Feather de los
+modales (quedaba vacía). Un modal de confirmación sobre otro modal queda arriba y, al cerrarse, el de abajo sigue
+funcionando (`sgtl-ui.js`).
+- [ ] Gestionar viajes: cada filtro (número, fechas, estado, cliente, referencia) muestra la cruz con valor; la cruz
+  lo vacía y vuelve a buscar; Enter busca. El rango de fechas busca al elegir las dos fechas.
+- [ ] Cliente: escribir parte del nombre filtra la lista; elegir uno busca. Igual en Listar viajes.
+- [ ] Tabla con muchas columnas: al desplazarla hacia el costado, Acciones queda fija a la derecha.
+- [ ] Estado y entrega de un viaje directo → Entregado sin evidencia → aparece "¿Guardar la entrega sin evidencia?"
+  encima; Cancelar vuelve al modal (que sigue andando); "Guardar sin evidencia" guarda y avisa "Estado del viaje
+  guardado.".
+- [ ] Quitar evidencia de un viaje que tenga: confirmación "¿Quitar la evidencia…?", Quitar → toast.
+- [ ] Exportar en Gestionar y en Listar viajes: baja el CSV con todo lo filtrado.
+- [ ] Listar viajes → ojo de una fila: "Ver detalle del viaje" con cliente, origen, destino, chofer y camión por
+  nombre; pie Cerrar.
+
