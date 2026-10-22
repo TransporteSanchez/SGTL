@@ -24,7 +24,7 @@
 <body>
     <script src="assets/static/js/initTheme.js"></script>
     <div id="loading-message" style="display:none;">
-        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando...</span></div>
+        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando…</span></div>
     </div>
 
     <div id="app">
@@ -151,7 +151,7 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalExportarProformasTitulo"><i class="bi bi-download me-2"></i>Exportar listado</h5>
+                    <h5 class="modal-title" id="modalExportarProformasTitulo">Exportar</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
@@ -161,7 +161,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListadoProformas" onclick="exportarReporteProformas('vistaPrevia')"><i class="bi bi-printer me-1"></i>Vista previa e imprimir</button>
-                    <button type="button" class="btn btn-success" id="btnDescargarListadoProformasExcel" onclick="exportarReporteProformas('excel')"><i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnDescargarListadoProformasExcel" onclick="exportarReporteProformas('excel')"><i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i>Exportar Excel</button>
                     <button type="button" class="btn btn-primary" id="btnDescargarListadoProformasPdf" onclick="exportarReporteProformas('pdf')"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</button>
                 </div>
             </div>

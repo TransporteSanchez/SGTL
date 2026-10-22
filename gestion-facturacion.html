@@ -26,7 +26,7 @@
 <body>
     <script src="assets/static/js/initTheme.js"></script>
     <div id="loading-message" style="display:none;">
-        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando...</span></div>
+        <div class="spinner-border" role="status" style="width:50px;height:50px;"><span class="visually-hidden">Cargando…</span></div>
     </div>
 
     <div id="app">
@@ -90,7 +90,7 @@
     </div>
 
     <!-- ============ Modal Proforma (crear/editar/ver) ============ -->
-    <div class="modal fade" id="modalProforma" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalProforma" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -103,13 +103,13 @@
                     <div id="avisoDescartarProforma" class="alert alert-light-warning color-warning d-none" role="alert">
                         <div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>
                         <button type="button" class="btn btn-sm btn-light-secondary" onclick="seguirEditandoProforma()">Seguir editando</button>
-                        <button type="button" class="btn btn-sm btn-warning ms-1" onclick="descartarCambiosProforma()">Descartar cambios</button>
+                        <button type="button" class="btn btn-sm btn-danger ms-1" onclick="descartarCambiosProforma()">Descartar cambios</button>
                     </div>
                     <input type="hidden" id="p_id">
                     <div class="bloque-titulo">Datos generales y del cliente</div>
                     <div class="row g-2">
                         <div id="p_numeroGrupo" class="col-md-2 d-none"><label class="form-label">Número proforma</label><input id="p_numero" class="form-control" readonly></div>
-                        <div id="p_clienteGrupo" class="col-md-6"><label for="p_cliente" class="form-label req">Cliente</label><select id="p_cliente" class="form-select" onchange="autocompletarCliente()"><option value="">Seleccionar…</option></select></div>
+                        <div id="p_clienteGrupo" class="col-md-6"><label for="p_cliente" class="form-label req">Cliente</label><select id="p_cliente" class="form-select" onchange="autocompletarCliente()"><option value="">Seleccioná un cliente</option></select></div>
                         <div class="col-md-3"><label class="form-label">Período: fecha de inicio</label><input id="p_fdesde" class="form-control" placeholder="DD/MM/AAAA"></div>
                         <div class="col-md-3"><label class="form-label">Período: fecha fin</label><input id="p_fhasta" class="form-control" placeholder="DD/MM/AAAA"></div>
                         <!-- Emisión (se completa al generar) y vencimiento de la proforma: no son el período de los viajes. -->
@@ -142,7 +142,7 @@
                         <span>Detalle de conceptos</span>
                         <span>
                             <button type="button" class="btn btn-sm btn-light-secondary" onclick="traerViajes()"><i class="bi bi-truck me-1"></i>Traer viajes</button>
-                            <button class="btn btn-sm btn-primary" onclick="agregarLinea()"><i class="bi bi-plus-lg me-1"></i>Agregar línea</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="agregarLinea()"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar línea</button>
                         </span>
                     </div>
                     <div id="viajesMensaje" class="alert alert-warning d-none mt-3" role="alert"></div>
@@ -195,7 +195,7 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="modalExportarProformasTitulo"><i class="bi bi-download me-2"></i>Exportar listado</h5>
+                    <h5 class="modal-title" id="modalExportarProformasTitulo">Exportar</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
@@ -205,7 +205,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-outline-secondary" id="btnVistaPreviaListadoProformas" onclick="exportarReporteProformas('vistaPrevia')"><i class="bi bi-printer me-1"></i>Vista previa e imprimir</button>
-                    <button type="button" class="btn btn-success" id="btnDescargarListadoProformasExcel" onclick="exportarReporteProformas('excel')"><i class="bi bi-file-earmark-excel me-1"></i>Exportar Excel</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnDescargarListadoProformasExcel" onclick="exportarReporteProformas('excel')"><i class="bi bi-file-earmark-excel me-1" aria-hidden="true"></i>Exportar Excel</button>
                     <button type="button" class="btn btn-primary" id="btnDescargarListadoProformasPdf" onclick="exportarReporteProformas('pdf')"><i class="bi bi-file-earmark-pdf me-1"></i>Exportar PDF</button>
                 </div>
             </div>
@@ -318,7 +318,7 @@
         function cargarClientes() {
             $.ajax({ url: API_FAC + '/Clientes', type: 'GET' }).done(function (data) {
                 var arr = data || [];
-                var opts = '<option value="">Seleccionar…</option>';
+                var opts = '<option value="">Seleccioná un cliente</option>';
                 var optsFiltro = '<option value="">Todos</option>';
                 arr.forEach(function (c) {
                     var id = c.Cliente_ID || c.ClienteID || c.Id;
@@ -331,7 +331,7 @@
                 });
                 document.getElementById('p_cliente').innerHTML = opts;
                 document.getElementById('fCliente').innerHTML = optsFiltro;
-                SelectClientePredictivo.inicializar('p_cliente', { placeholder: 'Seleccionar cliente' });
+                SelectClientePredictivo.inicializar('p_cliente', { placeholder: 'Seleccioná un cliente' });
                 SelectClientePredictivo.inicializar('fCliente', { placeholder: 'Todos los clientes' });
             });
         }
@@ -524,7 +524,7 @@
                 '<td><input type="number" step="0.01" class="form-control form-control-sm c-desc-pct text-end" value="' + (l.DescuentoPct != null ? l.DescuentoPct : 0) + '"></td>' +
                 '<td><select class="form-select form-select-sm c-iva">' + ivaSel + '</select></td>' +
                 '<td class="text-end c-subtotal">$ 0,00</td>' +
-                '<td style="white-space:nowrap;"><button class="btn btn-sm btn-outline-info" title="Duplicar" onclick="dupLinea(this)"><i class="bi bi-files"></i></button> <button class="btn btn-sm btn-outline-danger" title="Quitar" onclick="delLinea(this)"><i class="bi bi-trash"></i></button></td>';
+                '<td style="white-space:nowrap;"><button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="tooltip" title="Duplicar línea" aria-label="Duplicar línea" onclick="dupLinea(this)"><i class="bi bi-files" aria-hidden="true"></i></button> <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Quitar línea" aria-label="Quitar línea" onclick="delLinea(this)"><i class="bi bi-trash"></i></button></td>';
             tr.querySelectorAll('input,select').forEach(function (inp) { inp.addEventListener('input', recalcularTotales); inp.addEventListener('change', recalcularTotales); });
             return tr;
         }

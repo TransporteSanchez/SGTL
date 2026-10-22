@@ -814,7 +814,7 @@
       '<div class="small text-muted mb-2">Marcá los transportes que tiene que corregir ' + p + '. Pasan a "Esperando a ' + p + '".</div>' +
       (casillas ? '<div class="mb-3">' + casillas + '</div>' : '') +
       '<div class="row g-2">' +
-      '<div class="col-md-3"><label for="pp_reclamo_fecha" class="form-label">Fecha <span class="text-danger">*</span></label><input type="date" id="pp_reclamo_fecha" class="form-control"></div>' +
+      '<div class="col-md-3"><label for="pp_reclamo_fecha" class="form-label">Fecha <span class="text-danger">*</span></label><input id="pp_reclamo_fecha" class="form-control" placeholder="DD/MM/AAAA"></div>' +
       '<div class="col-md-9"><label for="pp_reclamo_motivo" class="form-label">Motivo <span class="text-danger">*</span></label>' +
       '<textarea id="pp_reclamo_motivo" class="form-control" rows="3" maxlength="' + MOTIVO_MAXIMO + '"></textarea>' +
       '<div class="invalid-feedback" id="pp_reclamo_error">Completá el motivo.</div>' +
@@ -825,6 +825,8 @@
 
     var motivo = $id('pp_reclamo_motivo');
     $id('pp_reclamo_fecha').value = editando ? String(c.ReclamoFecha).substring(0, 10) : hoyLocal();
+    // Calendario del sistema (§7.1): se ve DD/MM/AAAA y el campo sigue guardando AAAA-MM-DD.
+    if (window.SGTL && SGTL.selectorFecha) SGTL.selectorFecha($id('pp_reclamo_fecha'), { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
     var contar = function () { $id('pp_reclamo_contador').textContent = motivo.value.length + '/' + MOTIVO_MAXIMO; };
     // El motivo se arma con los transportes marcados hasta que la persona lo escribe a mano.
     var armar = function () {
