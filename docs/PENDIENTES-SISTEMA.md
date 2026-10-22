@@ -1082,4 +1082,9 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
 - [ ] Gestionar viajes → Registrar viaje: fechas de inicio y fin en DD/MM/AAAA HH:MM; editar un viaje existente
   las muestra igual; con tarifa por km, cambiar una fecha recalcula. Estado y entrega: fecha de entrega DD/MM/AAAA.
 - [ ] Cuenta corriente: elegir un rango en Fecha y cerrar el calendario → busca.
+- Títulos (commit "Interfaz: ícono de la sección en el título de cada pantalla"): §3.2 pedía el ícono de la
+  sección del menú a la izquierda del título y solo lo tenían tres pantallas de configuración, con íconos
+  distintos (sobre, recibo, WhatsApp). Ahora las 24 pantallas con menú lo tienen, igual al del menú (engranaje en
+  configuración).
+- [ ] Recorrer el menú: cada título lleva el mismo ícono que su sección del menú.
 
