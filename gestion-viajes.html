@@ -11,8 +11,41 @@
             display: none;
         }
 
-        #distanciaKm[readonly] {
-            background-color: #e9ecef;
+        /* Ruta del viaje (columna del mapa): km grandes, dirección corta y Recalcular. */
+        #mapaViaje {
+            height: 340px;
+            width: 100%;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+        }
+
+        .ruta-resumen {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-top: .6rem;
+        }
+
+        .ruta-resumen .ruta-km {
+            color: #25396f;
+            font-size: 1.15rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* Enlace dentro de un aviso amarillo (tarifa que falta): del mismo color, subrayado. */
+        #tarifaInfo.alert-warning a {
+            color: inherit;
+            font-weight: 700;
+            text-decoration: underline;
+        }
+
+        .ruta-resumen .ruta-texto {
+            flex: 1;
+            min-width: 0;
+            color: var(--sgtl-texto-suave);
+            font-size: .8rem;
+            line-height: 1.3;
         }
 
         #loading-message {
@@ -175,111 +208,138 @@
     </div>
 
 
-    <!-- Alta Modal -->
+    <!-- Registrar / Editar viaje (§6.3): cuatro bloques con subtítulo y la ruta a la derecha. Al editar, lo que ya no
+         se puede cambiar se ve como dato fijo (recuadro gris con el texto) y lo editable queda como campo. -->
     <div class="modal fade text-left" id="ModalAltaViaje" tabindex="-1" role="dialog"
-        aria-labelledby="ModalAltaViajelabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
+        aria-labelledby="ModalAltaViajelabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h4 class="modal-title" id="ModalAltaViajelabel">Alta de viaje</h4>
+                    <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="ModalAltaViajelabel"><span id="tituloViaje">Registrar viaje</span><span id="etiquetasViaje" class="d-inline-flex flex-wrap gap-1"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;"
-                        role="alert">
-                    </div>
-                    <div id="avisoViajeBloqueado" class="alert alert-light-warning color-warning" style="display: none;"
-                        role="alert">
-                    </div>
-                    <form class="form" id="FormAltaViaje">
+                    <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger d-none" role="alert"></div>
+                    <div id="avisoViajeBloqueado" class="alert py-2 d-none" role="status"></div>
+                    <form class="form" id="FormAltaViaje" novalidate>
                         <input type="hidden" id="viajeIdEdicion" value="">
-                        <input type="hidden" id="choferSelectId" value="">
                         <input type="hidden" id="tarifaFijaId" value="">
                         <input type="hidden" id="tarifaKmId" value="">
-                        <div class="row">
-                            <!-- Columna izquierda: formulario -->
+                        <!-- Km del viaje como los guarda la API (con punto): los pone Google o la distancia a mano. -->
+                        <input type="hidden" id="distanciaKm" value="">
+                        <div class="row g-4">
                             <div class="col-lg-7">
-                                <div class="mb-3">
-                                    <label for="clienteSelect" class="form-label">Cliente <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="clienteSelect"><option value="">Seleccioná un cliente</option></select>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
-                                        <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" aria-label="Registrar origen" title="Registrar origen" disabled>+</button></div>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
-                                        <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" aria-label="Registrar destino" title="Registrar destino" disabled>+</button></div>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="fechaInicio" class="form-label">Fecha y hora de inicio <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="fechaInicio" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="fechaFin" class="form-label">Fecha y hora de fin <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="fechaFin" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-6 mb-3">
-                                        <label for="camionSelect" class="form-label">Cami&oacute;n <span class="text-danger">*</span></label>
-                                        <select class="form-select" id="camionSelect"><option value="">Seleccioná un camión</option></select>
-                                    </div>
-                                    <div class="col-md-6 mb-3">
-                                        <label for="distanciaKm" class="form-label">Distancia (KM)</label>
-                                        <input type="number" min="0" step="0.01" class="form-control" id="distanciaKm" readonly placeholder="Se calcula con el mapa">
-                                        <div id="grupoMotivoKmManual" class="mt-2" style="display: none;">
-                                            <label for="motivoKmManual" class="form-label">Motivo de la distancia manual <span class="text-danger">*</span></label>
-                                            <input type="text" class="form-control" id="motivoKmManual" maxlength="200" placeholder="Ej.: dirección nueva que Google no encuentra">
-                                            <small class="text-muted">Queda registrado en Auditor&iacute;a con tu usuario.</small>
+                                <section class="sgtl-bloque" aria-labelledby="tituloBloqueRecorrido">
+                                    <div class="sgtl-bloque-titulo" id="tituloBloqueRecorrido">Recorrido</div>
+                                    <div class="sgtl-dato-fijo d-none" id="fijoRecorrido"></div>
+                                    <div id="camposRecorrido">
+                                        <div class="mb-3">
+                                            <label for="clienteSelect" class="form-label">Cliente <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="clienteSelect"><option value="">Seleccioná un cliente</option></select>
+                                            <div id="clienteEtiqueta" class="mt-1 d-none"><span class="badge rounded-pill bg-white text-dark border">Rukas</span></div>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
+                                                <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar origen" aria-label="Registrar origen" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
+                                                <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar destino" aria-label="Registrar destino" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="mb-3">
-                                    <label class="form-label d-block">Tipo de tarifa <span class="text-danger">*</span></label>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoFija" value="fija">
-                                        <label class="form-check-label" for="tarifaTipoFija">Tarifa fija</label>
+                                </section>
+
+                                <section class="sgtl-bloque" aria-labelledby="tituloBloqueAsignacion">
+                                    <div class="sgtl-bloque-titulo" id="tituloBloqueAsignacion">Fechas, camión y chofer</div>
+                                    <div class="sgtl-dato-fijo d-none" id="fijoAsignacion"></div>
+                                    <div id="camposAsignacion" class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="fechaInicio" class="form-label">Inicio <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="fechaInicio" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="fechaFin" class="form-label">Fin <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="fechaFin" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="camionSelect" class="form-label">Camión <span class="text-danger">*</span></label>
+                                            <select class="form-select" id="camionSelect"><option value="">Seleccioná un camión</option></select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label for="choferSelect" class="form-label">Chofer <span id="choferRequerido" class="text-danger">*</span></label>
+                                            <select class="form-select" id="choferSelect"><option value="">Seleccioná un chofer</option></select>
+                                        </div>
                                     </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoKm" value="km">
-                                        <label class="form-check-label" for="tarifaTipoKm">Tarifa por km</label>
+                                    <!-- Lo que le llega al chofer al guardar (ViajesController: alta, o cambio de chofer, recorrido o inicio). -->
+                                    <div id="avisoWhatsApp" class="alert alert-info sgtl-aviso-whatsapp py-2 mt-3 mb-0 d-none" role="status"></div>
+                                </section>
+
+                                <section class="sgtl-bloque" aria-labelledby="tituloBloqueTarifa">
+                                    <div class="sgtl-bloque-titulo" id="tituloBloqueTarifa">Tarifa <span class="text-danger" id="tarifaMarca">*</span></div>
+                                    <div class="sgtl-dato-fijo d-none" id="fijoTarifa"></div>
+                                    <div id="camposTarifa">
+                                        <div class="d-flex gap-3" role="radiogroup" aria-labelledby="tituloBloqueTarifa">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoFija" value="fija">
+                                                <label class="form-check-label" for="tarifaTipoFija">Fija</label>
+                                            </div>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoKm" value="km" checked>
+                                                <label class="form-check-label" for="tarifaTipoKm">Por km</label>
+                                            </div>
+                                        </div>
+                                        <div id="tarifaError" class="invalid-feedback"></div>
+                                        <div id="tarifaInfo" class="mt-2"></div>
+                                        <div id="tarifaSugerida" class="small text-muted mt-1 d-none"></div>
                                     </div>
-                                    <small id="tarifaInfo" class="text-muted d-block mt-1">Complet&aacute; cliente, origen y destino para cargar o calcular la tarifa.</small>
-                                </div>
-                                <div class="row">
-                                    <div class="col-md-4 mb-3" id="grupoNumTransporte">
-                                        <label for="numeroTransporte" class="form-label">N&deg; transporte SAP</label>
-                                        <input type="text" class="form-control" id="numeroTransporte" maxlength="20" placeholder="Figura en Rukas al despachar">
+                                </section>
+
+                                <section class="sgtl-bloque" aria-labelledby="tituloBloqueNumeros">
+                                    <div class="sgtl-bloque-titulo" id="tituloBloqueNumeros">Números de referencia</div>
+                                    <div class="row g-3">
+                                        <div class="col-md-4" id="grupoNumTransporte">
+                                            <label for="numeroTransporte" class="form-label">N&deg; transporte SAP</label>
+                                            <input type="text" class="form-control" id="numeroTransporte" maxlength="20" placeholder="8100452231" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-4" id="grupoNumRemito">
+                                            <label for="numeroRemito" class="form-label">N&uacute;mero de remito <span id="remitoOpcional" class="text-muted fw-normal">(opcional)</span></label>
+                                            <input type="text" class="form-control" id="numeroRemito" maxlength="20" placeholder="0001-00004521" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-4" id="grupoNumeroCarga">
+                                            <label for="numeroCarga" class="form-label">N&deg; entrega Rukas</label>
+                                            <input type="text" class="form-control" id="numeroCarga" maxlength="20" placeholder="2087745120" autocomplete="off">
+                                        </div>
                                     </div>
-                                    <div class="col-md-4 mb-3">
-                                        <label for="numeroRemito" class="form-label">N&uacute;mero de remito</label>
-                                        <input type="text" class="form-control" id="numeroRemito" maxlength="20" placeholder="N° del remito en papel del cargador">
-                                    </div>
-                                    <div class="col-md-4 mb-3" id="grupoNumeroCarga">
-                                        <label for="numeroCarga" class="form-label">N&deg; entrega Rukas</label>
-                                        <input type="text" class="form-control" id="numeroCarga" maxlength="20" placeholder="# de entrega que pide el bot">
-                                    </div>
-                                    <div class="col-12 mb-3">
-                                        <small class="text-muted" id="ayudaNumerosViaje">El remito lo emite el cliente/cargador; ac&aacute; solo se registra su n&uacute;mero.</small>
-                                    </div>
-                                </div>
-                                <div class="mb-3 position-relative">
-                                    <label for="choferBuscar" class="form-label">Chofer asignado <span id="choferRequerido" class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="choferBuscar" placeholder="Busc&aacute; por nombre, apellido o DNI..." autocomplete="off">
-                                    <div id="choferResultados" class="list-group position-absolute w-100" style="z-index:1080; display:none; max-height:200px; overflow:auto;"></div>
-                                </div>
+                                    <div class="form-text" id="ayudaNumerosViaje"></div>
+                                </section>
                             </div>
-                            <!-- Columna derecha: mapa -->
+
+                            <!-- Ruta: el mapa, los km y, si Google no puede calcularla, la distancia a mano con su motivo. -->
                             <div class="col-lg-5">
-                                <label class="form-label">Ruta y distancia</label>
-                                <div id="mapaViaje" style="height: 430px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
-                                <div class="d-flex justify-content-between align-items-center mt-2">
-                                    <small id="mapaViajeMsg" class="text-muted">Seleccion&aacute; origen y destino para calcular la distancia.</small>
-                                    <button type="button" class="btn btn-sm btn-light" id="btnRecalcularRuta" onclick="recalcularRutaViaje()">Recalcular</button>
+                                <div class="sgtl-bloque-titulo">Ruta</div>
+                                <div id="mapaViaje"></div>
+                                <div class="ruta-resumen">
+                                    <div class="ruta-km" id="rutaKm"></div>
+                                    <div class="ruta-texto" id="mapaViajeMsg">Elegí origen y destino para ver la ruta y la distancia.</div>
+                                    <button type="button" class="btn btn-outline-secondary" id="btnRecalcularRuta" onclick="recalcularRutaViaje()"
+                                        data-bs-toggle="tooltip" title="Recalcular la ruta" aria-label="Recalcular la ruta"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i></button>
+                                </div>
+                                <div id="rutaAviso" class="alert alert-warning py-2 small mt-2 mb-0 d-none" role="status"></div>
+                                <div id="grupoMotivoKmManual" class="alert alert-warning mt-2 mb-0 d-none">
+                                    <div class="small mb-2" id="kmManualMotivoGoogle"></div>
+                                    <div class="row g-2">
+                                        <div class="col-5">
+                                            <label for="kmManual" class="form-label">Distancia (km)</label>
+                                            <input type="text" inputmode="decimal" class="form-control" id="kmManual" placeholder="146,8" autocomplete="off" disabled>
+                                        </div>
+                                        <div class="col-7">
+                                            <label for="motivoKmManual" class="form-label">Motivo <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="motivoKmManual" maxlength="200" placeholder="Dirección nueva" autocomplete="off" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="form-text">Queda en Auditor&iacute;a con tu usuario.</div>
                                 </div>
                             </div>
                         </div>
@@ -292,7 +352,6 @@
             </div>
         </div>
     </div>
-
 
     <!--Scripts-->
     <script src="assets/compiled/js/app.js"></script>
@@ -717,17 +776,22 @@
 
         // Datos auxiliares
         var origenesAll = [], destinosAll = [];
-        var origenesData = {}, destinosData = {};
+        var origenesData = {}, destinosData = {}, choferesData = {}, camionesData = {};
         var mapaViaje = null, directionsService = null, directionsRenderer = null, mapaViajeListo = null;
         var rutaViajeSeq = 0, conservarKmGuardado = false, avisoRutaViaje = '', viajeBloqueado = false, presupuestoDelViaje = null, viajeTarifaEditable = false;
         // El recorrido y los km no se tocan si el viaje ya salió o si viene de un presupuesto aceptado.
         function rutaFija() { return (viajeBloqueado && !viajeTarifaEditable) || !!presupuestoDelViaje; }
         var distanciaManual = false, errorGoogleRuta = '', kmGuardadoViaje = '';
-        var choferSearchTimer = null;
         var tiposClienteViaje = {};
+        // Viaje abierto para editar (null al registrar): el aviso de WhatsApp compara contra lo que tenía.
+        var viajeEditado = null;
+        // Tarifa fija de la ruta elegida: undefined = falta la ruta, 'buscando', null = la ruta no tiene, o { id, valor }.
+        var tarifaFijaRuta, tarifaFijaSeq = 0, tarifaKmSeq = 0;
+        var formularioViaje = null;
+        const ETIQUETA_RUKAS = '<span class="badge rounded-pill bg-white text-dark border">Rukas</span>';
+        const ENLACE_TARIFAS = '<a href="gestion-tarifas.html" target="_blank" rel="noopener">Gestionar tarifas</a>';
 
         function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
-        function formatearParaInput(f) { return f ? String(f).substring(0, 16) : ''; }
 
         // Solo se muestra el texto de la API cuando rechaza un dato (400 o 409): el resto trae detalles técnicos.
         function parsearError(xhr) {
@@ -743,16 +807,41 @@
             } catch (e) { }
             return 'Ocurrió un error. Revisá los datos y probá de nuevo.';
         }
-        // El botón Guardar está abajo (después del mapa): se sube el modal para que el aviso se vea.
+        // Error de la API con el modal abierto (§5.1): arriba, dentro del modal, sin cerrarlo.
         function mostrarAlertaModal(msg) {
-            $('#alertaCompletaCampos').html(msg).show();
+            SGTL.avisoFormulario('#alertaCompletaCampos', msg);
             // El modal no tiene scroll propio: se desplaza el contenedor .modal.
             $('#ModalAltaViaje').scrollTop(0);
         }
-        function setTarifaInfo(txt, tipo) {
-            $('#tarifaInfo').removeClass('text-muted text-success text-danger')
-                .addClass(tipo === 'ok' ? 'text-success' : (tipo === 'error' ? 'text-danger' : 'text-muted'))
-                .text(txt);
+
+        // Km como los escribe la gente ("146,8") o como los guarda la API ("146.8").
+        function kmNumero(valor) {
+            var t = String(valor == null ? '' : valor).trim();
+            if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+            var n = Number(t);
+            return t && isFinite(n) ? n : NaN;
+        }
+        function mostrarKm(valor) {
+            var n = kmNumero(valor);
+            $('#rutaKm').text(isNaN(n) ? '' : SGTL.km(n) + ' km');
+        }
+
+        // ===================== TARIFA (resultado) =====================
+        // El importe y de dónde sale, en una línea (§7.3). tipo: 'ok' (importe), 'falta' (aviso amarillo: falta algo
+        // para cerrar, §4.1) o vacío (ayuda en gris). El rojo queda para el error del campo al tocar Guardar.
+        function setTarifaInfo(html, tipo) {
+            $('#tarifaInfo').removeClass('sgtl-totales alert alert-warning py-2 mb-0 small text-muted')
+                .addClass(tipo === 'ok' ? 'sgtl-totales' : (tipo === 'falta' ? 'alert alert-warning py-2 mb-0 small' : 'small text-muted'))
+                .html(html || '');
+            limpiarErrorTarifa();
+        }
+        function limpiarErrorTarifa() {
+            $('input[name="tipoTarifa"]').removeClass('is-invalid');
+            $('#tarifaError').removeClass('d-block').text('');
+        }
+        function textoImporteFija(valor) { return '<strong>' + SGTL.monto(valor) + '</strong><span>neto · tarifa fija de la ruta</span>'; }
+        function textoImporteKm(valorKm, km, monto) {
+            return '<strong>' + SGTL.monto(monto) + '</strong><span>neto · ' + SGTL.monto(valorKm) + ' por km × ' + SGTL.km(km) + ' km</span>';
         }
 
         // ===================== MAPA (Google Maps) =====================
@@ -774,20 +863,31 @@
             }
             return mapaViajeListo;
         }
+        // Sin ruta de Google, la distancia se carga a mano con su motivo (queda en Auditoría), debajo del mapa.
         function usarDistanciaManual(manual, errorGoogle) {
             manual = manual && !rutaFija();
             distanciaManual = manual;
             errorGoogleRuta = manual ? (errorGoogle || '') : '';
-            $('#distanciaKm').prop('readonly', !manual).attr('placeholder', manual ? 'Ingresala a mano' : 'Se calcula con el mapa');
-            $('#grupoMotivoKmManual').toggle(manual);
-            if (!manual) $('#motivoKmManual').val('');
+            $('#grupoMotivoKmManual').toggleClass('d-none', !manual);
+            $('#kmManual, #motivoKmManual').prop('disabled', !manual);
+            if (manual) {
+                $('#kmManualMotivoGoogle').text((errorGoogle || 'No se pudo calcular la ruta.') + ' Cargá la distancia a mano.');
+                var actual = $('#distanciaKm').val();
+                $('#kmManual').val(actual ? String(actual).replace('.', ',') : '');
+            } else {
+                $('#motivoKmManual').val('');
+                SGTL.limpiarError('#kmManual');
+                SGTL.limpiarError('#motivoKmManual');
+            }
         }
         function limpiarRutaViaje() {
             rutaViajeSeq++;
             if (directionsRenderer) directionsRenderer.set('directions', null);
             conservarKmGuardado = false;
             usarDistanciaManual(false);
-            msgMapa('Seleccioná origen y destino para calcular la distancia.');
+            mostrarKm('');
+            $('#rutaAviso').addClass('d-none').text('');
+            msgMapa('Elegí origen y destino para ver la ruta y la distancia.');
         }
         function construirDireccion(o) {
             if (!o) return '';
@@ -799,14 +899,19 @@
             partes.push('Argentina');
             return partes.join(', ');
         }
+        // "Blvd. Oroño 1200, S2000 Rosario, Santa Fe, Argentina" → "Blvd. Oroño 1200, Rosario".
+        function direccionCorta(dir) {
+            var partes = String(dir || '').split(',').map(function (p) { return p.trim().replace(/^[A-Z]?\d{4}[A-Z]{0,3}\s+/, ''); }).filter(Boolean);
+            if (partes.length > 1 && /^argentina$/i.test(partes[partes.length - 1])) partes.pop();
+            return partes.slice(0, 2).join(', ');
+        }
         function msgMapa(txt, tipo) {
-            $('#mapaViajeMsg').removeClass('text-danger text-success text-muted')
-                .addClass(tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted')).text(txt);
+            $('#mapaViajeMsg').toggleClass('text-danger', tipo === 'error').text(txt || '');
         }
         function motivoRutaFallida(status) {
-            if (status === 'NOT_FOUND' || status === 'ZERO_RESULTS') return 'Google no encontró el origen o el destino. Revisá la dirección en Orígenes y destinos.';
+            if (status === 'NOT_FOUND' || status === 'ZERO_RESULTS') return 'Google no encontró el origen o el destino.';
             if (status === 'OVER_QUERY_LIMIT' || status === 'OVER_DAILY_LIMIT') return 'Se alcanzó el límite diario de consultas a Google Maps.';
-            if (status === 'REQUEST_DENIED') return 'Google Maps rechazó la consulta (revisá la clave y las APIs habilitadas).';
+            if (status === 'REQUEST_DENIED') return 'Google Maps rechazó la consulta.';
             return 'No se pudo calcular la ruta con Google Maps.';
         }
         // Google nunca devuelve "no encontrado" con direcciones a medias: cae al centro de la localidad, la provincia
@@ -820,11 +925,16 @@
         }
         // Sin ruta no se bloquea el alta: la distancia se carga a mano y la tarifa por km se calcula igual.
         function rutaViajeNoDisponible(motivo) {
+            var kmCambia = !conservarKmGuardado && !rutaFija();
             if (directionsRenderer) directionsRenderer.set('directions', null);
-            if (!conservarKmGuardado && !rutaFija()) $('#distanciaKm').val('');
+            if (kmCambia) $('#distanciaKm').val('');
             conservarKmGuardado = false;
+            mostrarKm($('#distanciaKm').val());
+            $('#rutaAviso').addClass('d-none').text('');
             usarDistanciaManual(true, motivo);
-            msgMapa(motivo + (rutaFija() ? '' : ' Podés ingresar la distancia a mano.'), 'error');
+            // Si no se puede cargar a mano (recorrido fijo), el motivo queda debajo del mapa.
+            msgMapa(rutaFija() ? motivo : '', 'error');
+            if (kmCambia && tipoTarifa() === 'km') resolverTarifaKm();
         }
         function onRutaViajeCambiada() {
             var dir = directionsRenderer.getDirections();
@@ -834,25 +944,28 @@
             var km = (metros / 1000).toFixed(1);
             var desde = ruta.legs[0].start_address, hasta = ruta.legs[ruta.legs.length - 1].end_address;
             usarDistanciaManual(false);
+            $('#rutaAviso').toggleClass('d-none', !avisoRutaViaje).text(avisoRutaViaje);
+            avisoRutaViaje = '';
             if ((conservarKmGuardado || rutaFija()) && $('#distanciaKm').val()) {
                 conservarKmGuardado = false;
-                avisoRutaViaje = '';
-                msgMapa('Distancia guardada: ' + $('#distanciaKm').val() + ' km (la ruta de Google marca ' + km + ' km).'
-                    + (rutaFija() ? '' : ' Tocá Recalcular para actualizarla.'), 'ok');
+                var guardados = $('#distanciaKm').val();
+                mostrarKm(guardados);
+                msgMapa((presupuestoDelViaje ? 'Distancia del presupuesto' : 'Distancia guardada')
+                    + (Math.abs(kmNumero(guardados) - Number(km)) >= 0.1 ? ' (Google hoy marca ' + SGTL.km(Number(km)) + ' km)' : '') + '.');
                 return;
             }
             conservarKmGuardado = false;
             $('#distanciaKm').val(km);
-            msgMapa('Distancia: ' + km + ' km, de ' + desde + ' a ' + hasta + '. ' + (avisoRutaViaje || 'Ruta sugerida por Google.'), 'ok');
-            avisoRutaViaje = '';
-            if ($('input[name="tipoTarifa"]:checked').val() === 'km') { resolverTarifaKm(); }
+            mostrarKm(km);
+            msgMapa(direccionCorta(desde) + ' → ' + direccionCorta(hasta));
+            if (tipoTarifa() === 'km') resolverTarifaKm();
         }
         function calcularRutaViaje() {
             var oId = $('#origenSelect').val(), dId = $('#destinoSelect').val();
-            if (!oId || !dId) { msgMapa('Seleccioná origen y destino para calcular la distancia.'); return; }
+            if (!oId || !dId) { msgMapa('Elegí origen y destino para ver la ruta y la distancia.'); return; }
             var dirO = construirDireccion(origenesData[oId]), dirD = construirDireccion(destinosData[dId]);
             var seq = ++rutaViajeSeq;
-            msgMapa('Calculando ruta...');
+            msgMapa('Calculando la ruta…');
             initMapaViaje().then(function () {
                 directionsService.route({ origin: dirO, destination: dirD, travelMode: 'DRIVING', region: 'ar' }, function (res, status) {
                     if (seq !== rutaViajeSeq) return;
@@ -860,13 +973,13 @@
                     var wp = res.geocoded_waypoints || [];
                     var pO = precisionUbicacion(wp[0]), pD = precisionUbicacion(wp[1]);
                     if (pO === 'imprecisa' || pD === 'imprecisa') {
-                        rutaViajeNoDisponible('Google no pudo ubicar ' + (pO === 'imprecisa' ? 'el origen' : 'el destino') + ' con la dirección cargada en Orígenes y destinos.');
+                        rutaViajeNoDisponible('Google no pudo ubicar ' + (pO === 'imprecisa' ? 'el origen' : 'el destino') + ' con la dirección cargada.');
                         return;
                     }
                     var aprox = [];
                     if (pO === 'aproximada') aprox.push('el origen');
                     if (pD === 'aproximada') aprox.push('el destino');
-                    avisoRutaViaje = aprox.length ? 'Ubicación aproximada para ' + aprox.join(' y ') + ': revisá la calle y altura en Orígenes y destinos.' : '';
+                    avisoRutaViaje = aprox.length ? 'Ubicación aproximada para ' + aprox.join(' y ') + ': revisá la calle y la altura en Gestionar orígenes y destinos.' : '';
                     directionsRenderer.setDirections(res);
                 });
             }).catch(function () {
@@ -879,6 +992,7 @@
         }
 
         // ===================== COMBOS =====================
+        // Cliente con el buscador compartido (§1.3): los de plataforma llevan la etiqueta "Rukas" en la lista.
         function cargarClientesViaje() {
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
@@ -887,10 +1001,12 @@
                     tiposClienteViaje = {};
                     (data || []).forEach(function (c) {
                         tiposClienteViaje[c.Cliente_ID] = c.Tipo_Cliente || 'Directo';
-                        s.append('<option value="' + c.Cliente_ID + '">' + escHtml(c.Razon_Social) + (c.Tipo_Cliente === 'Con_plataforma' ? ' (Rukas)' : '') + '</option>');
+                        var opcion = $('<option>').val(c.Cliente_ID).text(c.Razon_Social || ('Cliente #' + c.Cliente_ID));
+                        if (c.Tipo_Cliente === 'Con_plataforma') opcion.attr('data-etiqueta', 'Rukas');
+                        s.append(opcion);
                     });
                 })
-                .always(function () { d.resolve(); });
+                .always(function () { SelectClientePredictivo.sincronizar('clienteSelect'); d.resolve(); });
             return d.promise();
         }
 
@@ -900,26 +1016,58 @@
         }
 
         // Con plataforma: los tres números se completan a medida que aparecen (planta, entrega) y se exigen
-        // recién para pasar a "Listo para facturar". Directo: solo remito, opcional.
+        // recién para pasar a "Listo para facturar"; el chofer es opcional. Directo: solo remito, opcional.
         function aplicarReglasTipoCliente() {
             var conPlataforma = clienteConPlataforma();
-            $('#grupoNumTransporte, #grupoNumeroCarga').toggle(conPlataforma);
-            $('#numeroRemito').attr('placeholder', conPlataforma ? 'N° del remito en papel del cargador' : 'Opcional: remito o comprobante del cliente');
-            $('#ayudaNumerosViaje').text(conPlataforma
-                ? 'Podés guardar el viaje sin estos números y completarlos después. Son obligatorios para marcarlo "Listo para facturar".'
-                : 'El remito lo emite el cliente/cargador; acá solo se registra su número.');
+            $('#clienteEtiqueta').toggleClass('d-none', !conPlataforma);
+            $('#grupoNumTransporte, #grupoNumeroCarga').toggleClass('d-none', !conPlataforma);
+            $('#grupoNumRemito').toggleClass('col-md-4', conPlataforma).toggleClass('col-md-6', !conPlataforma);
+            $('#remitoOpcional').toggleClass('d-none', conPlataforma);
+            $('#numeroRemito').attr('placeholder', conPlataforma ? '0012-00078812' : '0001-00004521');
+            $('#ayudaNumerosViaje').text(conPlataforma && !viajeBloqueado ? 'Se pueden cargar después. Hacen falta para marcarlo listo para facturar.' : '');
             // Directo: el chofer recibe la hoja de ruta por WhatsApp al registrar el viaje.
-            $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted', conPlataforma).toggleClass('text-danger', !conPlataforma);
+            $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted fw-normal', conPlataforma).toggleClass('text-danger', !conPlataforma);
+            reglasViaje.chofer.requerido = conPlataforma ? '' : 'Seleccioná un chofer.';
+            actualizarAvisoWhatsApp();
         }
+        // Camiones activos (VIA-07); al editar, el del viaje se agrega aunque ya no lo esté.
         function cargarCamionesViaje() {
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Camiones', type: 'GET' })
                 .done(function (data) {
+                    camionesData = {};
                     var s = $('#camionSelect').empty().append('<option value="">Seleccioná un camión</option>');
-                    (data || []).forEach(function (cm) { s.append('<option value="' + cm.Camion_ID + '">' + (cm.Dominio || '').trim() + '</option>'); });
+                    (data || []).forEach(function (cm) {
+                        camionesData[cm.Camion_ID] = cm;
+                        if ((cm.EstadoCamion || 'Activo') === 'Activo') s.append($('<option>').val(cm.Camion_ID).text((cm.Dominio || '').trim()));
+                    });
                 })
                 .always(function () { d.resolve(); });
             return d.promise();
+        }
+        function textoChofer(ch) { return (ch.Apellido || '').trim() + ', ' + (ch.Nombre || '').trim() + ' (DNI ' + (ch.DNI || '').trim() + ')'; }
+        function nombreChofer(ch) { return ((ch.Nombre || '').trim() + ' ' + (ch.Apellido || '').trim()).trim(); }
+        // Choferes activos por apellido en el buscador compartido: se elige de la lista o se escribe nombre, apellido o DNI.
+        function cargarChoferesViaje() {
+            var d = $.Deferred();
+            $.ajax({ url: API_VIAJES + '/Choferes', type: 'GET' })
+                .done(function (data) { choferesData = {}; (data || []).forEach(function (ch) { choferesData[ch.Chofer_ID] = ch; }); })
+                // Sin choferes cargados la API responde 404.
+                .fail(function () { choferesData = {}; })
+                .always(function () {
+                    var s = $('#choferSelect').empty().append('<option value="">Seleccioná un chofer</option>');
+                    Object.keys(choferesData).map(function (k) { return choferesData[k]; })
+                        .filter(function (ch) { return (ch.EstadoChofer || 'Activo') === 'Activo'; })
+                        .sort(function (a, b) { return textoChofer(a).localeCompare(textoChofer(b), 'es'); })
+                        .forEach(function (ch) { s.append($('<option>').val(ch.Chofer_ID).text(textoChofer(ch))); });
+                    SelectClientePredictivo.sincronizar('choferSelect');
+                    d.resolve();
+                });
+            return d.promise();
+        }
+        function asegurarOpcion(select, id, texto) {
+            if (!(id > 0) || $(select).find('option[value="' + id + '"]').length) return;
+            $(select).append($('<option>').val(id).text(texto));
         }
         function cargarOrigenesDestinos() {
             var d = $.Deferred();
@@ -936,9 +1084,9 @@
                 return;
             }
             so.prop('disabled', false).empty().append('<option value="">Seleccioná un origen</option>');
-            origenesAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { so.append('<option value="' + o.Origen_ID + '">' + o.Descripcion + '</option>'); });
+            origenesAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { so.append($('<option>').val(o.Origen_ID).text(o.Descripcion)); });
             sd.prop('disabled', false).empty().append('<option value="">Seleccioná un destino</option>');
-            destinosAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { sd.append('<option value="' + o.Destino_ID + '">' + o.Descripcion + '</option>'); });
+            destinosAll.filter(function (o) { return o.ClienteID === clienteId; }).forEach(function (o) { sd.append($('<option>').val(o.Destino_ID).text(o.Descripcion)); });
             if (origenSel) so.val(origenSel);
             if (destinoSel) sd.val(destinoSel);
         }
@@ -949,165 +1097,283 @@
             $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', !cid);
             filtrarOrigenDestino(cid, null, null);
             $('#distanciaKm').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
+            tarifaFijaRuta = undefined;
             limpiarRutaViaje();
-            setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
+            resolverTarifa();
+            if ($('#clienteBuscar').hasClass('is-invalid')) formularioViaje.validar('clienteBuscar');
         }
 
         // ===================== TARIFA AUTOMÁTICA =====================
+        // "Por km" viene elegida (decisión de Rocío, 22/10). Si la ruta tiene tarifa fija, una línea gris lo dice.
+        function tipoTarifa() { return $('input[name="tipoTarifa"]:checked').val() || ''; }
+        function tarifaEditable() { return !rutaFija(); }
         function resolverTarifa() {
-            var tipo = $('input[name="tipoTarifa"]:checked').val();
-            if (tipo === 'fija') { resolverTarifaFija(); }
-            else if (tipo === 'km') { resolverTarifaKm(); }
+            if (!tarifaEditable()) return;
+            if (tipoTarifa() === 'fija') resolverTarifaFija(); else resolverTarifaKm();
+        }
+        // Busca la tarifa fija de la ruta: con Fija elegida es la tarifa; con Por km, la línea gris que avisa que existe.
+        function consultarTarifaFijaRuta() {
+            var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val();
+            var seq = ++tarifaFijaSeq;
+            var listo = $.Deferred();
+            if (!c || !o || !d) { tarifaFijaRuta = undefined; return listo.resolve().promise(); }
+            tarifaFijaRuta = 'buscando';
+            $.ajax({ url: API_VIAJES + '/TarifasFijas/PorRuta', type: 'GET', data: { clienteId: c, origenId: o, destinoId: d } })
+                .done(function (r) { if (seq === tarifaFijaSeq) tarifaFijaRuta = { id: r.TarifaFija_ID, valor: r.ValorFijoNeto }; })
+                .fail(function () { if (seq === tarifaFijaSeq) tarifaFijaRuta = null; })
+                .always(function () { if (seq === tarifaFijaSeq) listo.resolve(); });
+            return listo.promise();
+        }
+        function mostrarSugerenciaFija() {
+            var hay = tipoTarifa() === 'km' && tarifaEditable() && tarifaFijaRuta && tarifaFijaRuta.id;
+            $('#tarifaSugerida').toggleClass('d-none', !hay).text(hay ? 'Esta ruta tiene tarifa fija de ' + SGTL.monto(tarifaFijaRuta.valor) + '.' : '');
         }
         function resolverTarifaFija() {
-            if (presupuestoDelViaje) return;
-            var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val();
             $('#tarifaKmId').val('');
-            if (!c || !o || !d) { $('#tarifaFijaId').val(''); setTarifaInfo('Para la tarifa fija: elegí cliente, origen y destino.'); return; }
-            setTarifaInfo('Buscando tarifa fija...');
-            $.ajax({ url: API_VIAJES + '/TarifasFijas/PorRuta', type: 'GET', data: { clienteId: c, origenId: o, destinoId: d } })
-                .done(function (r) { $('#tarifaFijaId').val(r.TarifaFija_ID); setTarifaInfo('Tarifa fija #' + r.TarifaFija_ID + ' — Valor neto: $' + r.ValorFijoNeto, 'ok'); })
-                .fail(function () { $('#tarifaFijaId').val(''); setTarifaInfo('No hay tarifa fija cargada para esa ruta (cliente/origen/destino).', 'error'); });
+            mostrarSugerenciaFija();
+            if (tarifaFijaRuta === undefined) { $('#tarifaFijaId').val(''); setTarifaInfo('Elegí origen y destino para ver la tarifa.'); return; }
+            if (tarifaFijaRuta === 'buscando') { $('#tarifaFijaId').val(''); setTarifaInfo('Buscando la tarifa…'); return; }
+            if (!tarifaFijaRuta) {
+                $('#tarifaFijaId').val('');
+                setTarifaInfo('No hay tarifa fija para esta ruta. Elegí Por km o cargala en ' + ENLACE_TARIFAS + '.', 'falta');
+                return;
+            }
+            $('#tarifaFijaId').val(tarifaFijaRuta.id);
+            setTarifaInfo(textoImporteFija(tarifaFijaRuta.valor), 'ok');
         }
         function resolverTarifaKm() {
-            if (presupuestoDelViaje) return;
-            var fi = $('#fechaInicio').val(), ff = $('#fechaFin').val(), km = $('#distanciaKm').val();
+            var fi = $('#fechaInicio').val(), ff = $('#fechaFin').val(), km = kmNumero($('#distanciaKm').val());
+            var seq = ++tarifaKmSeq;
             $('#tarifaFijaId').val('');
-            if (!fi || !ff) { $('#tarifaKmId').val(''); setTarifaInfo('Para la tarifa por km: completá las fechas de inicio y fin.'); return; }
-            if (!km || parseFloat(km) <= 0) { $('#tarifaKmId').val(''); setTarifaInfo('Para la tarifa por km: elegí origen y destino para calcular la distancia.'); return; }
-            setTarifaInfo('Calculando tarifa por km...');
+            mostrarSugerenciaFija();
+            if (!fi || !ff) { $('#tarifaKmId').val(''); setTarifaInfo('Completá el inicio y el fin para calcular la tarifa por km.'); return; }
+            if (!(km > 0)) {
+                $('#tarifaKmId').val('');
+                setTarifaInfo(distanciaManual ? 'Cargá la distancia para calcular la tarifa por km.' : 'Elegí origen y destino para calcular la distancia y la tarifa.');
+                return;
+            }
+            setTarifaInfo('Calculando la tarifa…');
             $.ajax({ url: API_VIAJES + '/TarifasKm/Calcular', type: 'GET', data: { fechaInicio: fi, fechaFin: ff, km: km } })
-                .done(function (r) { $('#tarifaKmId').val(r.TarifaKm_ID); setTarifaInfo('Tarifa por km #' + r.TarifaKm_ID + ' — $' + r.ValorKm + '/km · Monto: $' + r.MontoCalculado, 'ok'); })
-                .fail(function (xhr) { $('#tarifaKmId').val(''); setTarifaInfo('No hay tarifa por km para ese período y distancia. ' + parsearError(xhr), 'error'); });
+                .done(function (r) {
+                    if (seq !== tarifaKmSeq) return;
+                    $('#tarifaKmId').val(r.TarifaKm_ID);
+                    setTarifaInfo(textoImporteKm(r.ValorKm, km, r.MontoCalculado), 'ok');
+                })
+                .fail(function (xhr) {
+                    if (seq !== tarifaKmSeq) return;
+                    $('#tarifaKmId').val('');
+                    // 400: la API explica qué falta (fechas al revés, km negativos); 404: no hay tarifa para el viaje.
+                    setTarifaInfo((xhr && xhr.status === 400 ? SGTL.escapar(parsearError(xhr))
+                        : 'No hay tarifa por km para esas fechas y esa distancia. Cargala en ' + ENLACE_TARIFAS + '.'), 'falta');
+                });
+        }
+        // Al abrir un viaje: el importe de la tarifa que tiene guardada (o el del presupuesto), sin volver a buscarla.
+        function importeGuardado(v) {
+            var km = kmNumero(v.Distancia_KM);
+            var porTarifa = function () {
+                if (v.TarifaFijaID > 0) {
+                    return SGTL.ajax({ url: API_VIAJES + '/Tarifas/Fijas/' + v.TarifaFijaID, type: 'GET' })
+                        .then(function (t) { return { importe: t.ValorFijoNeto, detalle: 'tarifa fija de la ruta', html: textoImporteFija(t.ValorFijoNeto) }; });
+                }
+                if (v.TarifaKmID > 0) {
+                    return SGTL.ajax({ url: API_VIAJES + '/Tarifas/Km/' + v.TarifaKmID, type: 'GET' })
+                        .then(function (t) {
+                            var monto = Math.round(Number(t.ValorKm) * (km || 0) * 100) / 100;
+                            return { importe: monto, detalle: SGTL.monto(t.ValorKm) + ' por km × ' + SGTL.km(km || 0) + ' km', html: textoImporteKm(t.ValorKm, km || 0, monto) };
+                        });
+                }
+                return Promise.resolve(null);
+            };
+            if (!v.Presupuesto_ID) return porTarifa();
+            // Del presupuesto: el importe que aceptó el cliente (el mismo que usa la proforma).
+            return SGTL.ajax({ url: API_VIAJES + '/Presupuestos', type: 'GET' })
+                .then(function (lista) {
+                    var p = (lista || []).filter(function (x) { return x.id === v.Presupuesto_ID; })[0];
+                    var importe = p ? Number(String(p.importe == null ? '' : p.importe).replace(',', '.')) : NaN;
+                    return isFinite(importe) && String(p.importe).trim() !== '' ? { importe: importe, detalle: 'la del presupuesto #' + v.Presupuesto_ID } : porTarifa();
+                }, porTarifa);
         }
 
-        // ===================== BUSCADOR DE CHOFER =====================
-        function buscarChoferInput() {
-            var q = $('#choferBuscar').val().trim();
-            $('#choferSelectId').val('');
-            clearTimeout(choferSearchTimer);
-            if (q.length < 2) { $('#choferResultados').hide().empty(); return; }
-            choferSearchTimer = setTimeout(function () {
-                $.ajax({ url: API_VIAJES + '/Choferes/Buscar', type: 'GET', data: { busqueda: q, estadoChofer: 'Activo', page: 1, pageSize: 8 } })
-                    .done(function (data) {
-                        var res = (data && data.Results) || [];
-                        var box = $('#choferResultados').empty();
-                        if (!res.length) { box.append('<span class="list-group-item">Sin resultados</span>').show(); return; }
-                        res.forEach(function (ch) {
-                            var texto = ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')';
-                            $('<button type="button" class="list-group-item list-group-item-action"></button>')
-                                .text(texto).on('click', function () { seleccionarChofer(ch.Chofer_ID, texto); }).appendTo(box);
-                        });
-                        box.show();
-                    })
-                    .fail(function () { $('#choferResultados').hide().empty(); });
-            }, 300);
+        // ===================== AVISO DE WHATSAPP =====================
+        // Lo que le llega al chofer al guardar, a la vista debajo del chofer (decisión de Rocío, 22/10). La API manda
+        // la hoja de ruta al registrar y, en un viaje registrado, si cambian el chofer, el recorrido o el inicio.
+        function cambioHojaDeRuta() {
+            var o = viajeEditado;
+            return (o.ChoferID > 0 ? String(o.ChoferID) : '') !== String($('#choferSelect').val() || '')
+                || String(o.OrigenID) !== String($('#origenSelect').val()) || String(o.DestinoID) !== String($('#destinoSelect').val())
+                || o.inicio !== $('#fechaInicio').val();
         }
-        function seleccionarChofer(id, texto) { $('#choferSelectId').val(id); $('#choferBuscar').val(texto); $('#choferResultados').hide().empty(); }
+        function actualizarAvisoWhatsApp() {
+            var ch = choferesData[$('#choferSelect').val()];
+            var texto = '';
+            if (ch && !viajeBloqueado) {
+                texto = !viajeEditado || cambioHojaDeRuta()
+                    ? 'Al guardar, <strong>' + SGTL.escapar(nombreChofer(ch)) + '</strong> recibe la hoja de ruta por WhatsApp.'
+                    : 'Si cambiás ' + (presupuestoDelViaje ? 'el chofer o el inicio' : 'el chofer, el recorrido o el inicio') + ', se le reenvía la hoja de ruta por WhatsApp.';
+            }
+            $('#avisoWhatsApp').toggleClass('d-none', !texto).html(texto);
+        }
 
         // ===================== ABRIR MODAL =====================
         function viajeRegistrado(estado) { return !estado || estado === 'Registrado'; }
 
+        function etiquetaInformativa(texto) { return '<span class="badge rounded-pill bg-white text-dark border">' + SGTL.escapar(texto) + '</span>'; }
+        // Estado y etiquetas informativas del título (§4.3): "En borrador #23", "Del presupuesto #12".
+        function etiquetasDelViaje(v) {
+            var html = badgeEstadoViaje(v.Estado || 'Registrado');
+            if (v.EnProforma_ID) html += ' ' + etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador #' + v.EnProforma_ID)));
+            if (v.Presupuesto_ID) html += ' ' + etiquetaInformativa('Del presupuesto #' + v.Presupuesto_ID);
+            return html;
+        }
+        function textoRecorridoFijo() {
+            var o = origenesData[$('#origenSelect').val()], d = destinosData[$('#destinoSelect').val()];
+            return '<div><strong>' + SGTL.escapar($('#clienteSelect option:selected').text()) + '</strong>' + (clienteConPlataforma() ? ' ' + ETIQUETA_RUKAS : '') + '</div>' +
+                '<div>' + SGTL.escapar(o ? o.Descripcion : '—') + ' → ' + SGTL.escapar(d ? d.Descripcion : '—') + '</div>';
+        }
+        function textoAsignacionFija(v) {
+            var ch = choferesData[v.ChoferID], cm = camionesData[v.CamionID];
+            return '<div>' + SGTL.fecha(v.Fecha_Inicio, { hora: true }) + ' a ' + SGTL.fecha(v.Fecha_Fin, { hora: true }) + '</div>' +
+                '<div><span class="suave">Camión</span> ' + SGTL.escapar(cm ? (cm.Dominio || '').trim() : '—') +
+                ' · <span class="suave">Chofer</span> ' + SGTL.escapar(ch ? nombreChofer(ch) : 'sin asignar') + '</div>';
+        }
+
         // Una vez que el viaje salió solo se completan los números de referencia: el recorrido y lo que define
         // el cobro quedan fijos (el backend lo valida igual). Un cambio pedido por el cliente es otro viaje.
         // Si el viaje viene de un presupuesto aceptado, cliente, recorrido, km y tarifa son los del presupuesto.
-        function bloquearDatosDelViaje(estado, presupuestoId, enProformaEstado) {
+        // Lo que no se puede cambiar se ve como dato fijo (§6.3): el bloque muestra un resumen en texto en lugar de
+        // los campos, que siguen cargados (y deshabilitados) para armar lo que se manda a la API.
+        function bloquearDatosDelViaje(v) {
+            v = v || {};
+            var estado = v.Estado;
             viajeBloqueado = !viajeRegistrado(estado);
-            presupuestoDelViaje = presupuestoId || null;
+            presupuestoDelViaje = v.Presupuesto_ID || null;
             // Cliente con plataforma en Listo para facturar, fuera de una proforma generada o aceptada:
             // tarifa y km se pueden corregir para que coincidan con la plataforma (la API lo valida igual).
             viajeTarifaEditable = estado === 'Listo_para_facturar' && clienteConPlataforma() && !presupuestoDelViaje
-                && enProformaEstado !== 'Generada' && enProformaEstado !== 'Aceptada';
-            $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
-                .prop('disabled', viajeBloqueado);
+                && v.EnProforma_Estado !== 'Generada' && v.EnProforma_Estado !== 'Aceptada';
+            var recorridoFijo = viajeBloqueado || !!presupuestoDelViaje;
+            var asignacionFija = viajeBloqueado;
+            var tarifaFija = rutaFija();
+
+            SelectClientePredictivo.establecerDeshabilitado('clienteSelect', recorridoFijo);
+            if (recorridoFijo) $('#origenSelect, #destinoSelect').prop('disabled', true);
+            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', recorridoFijo || !$('#clienteSelect').val());
+            $('#camposRecorrido').toggleClass('d-none', recorridoFijo);
+            $('#fijoRecorrido').toggleClass('d-none', !recorridoFijo).html(recorridoFijo ? textoRecorridoFijo() : '');
+
+            $('#fechaInicio, #fechaFin, #camionSelect').prop('disabled', asignacionFija);
+            SelectClientePredictivo.establecerDeshabilitado('choferSelect', asignacionFija);
             sincronizarFechasBloqueadas();
-            if (viajeTarifaEditable) $('input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', false);
-            if (presupuestoDelViaje) {
-                $('#clienteSelect, #origenSelect, #destinoSelect, input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', true);
-            }
-            $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', rutaFija() || !$('#clienteSelect').val());
+            $('#camposAsignacion').toggleClass('d-none', asignacionFija);
+            $('#fijoAsignacion').toggleClass('d-none', !asignacionFija).html(asignacionFija ? textoAsignacionFija(v) : '');
+
+            $('input[name="tipoTarifa"]').prop('disabled', tarifaFija);
+            $('#camposTarifa').toggleClass('d-none', tarifaFija);
+            $('#tarifaMarca').toggleClass('d-none', tarifaFija);
+            $('#fijoTarifa').toggleClass('d-none', !tarifaFija).html('');
+            $('#btnRecalcularRuta').toggleClass('d-none', rutaFija());
             if (rutaFija()) usarDistanciaManual(false);
-            var avisos = [];
+
+            // Un aviso de una línea según el caso.
+            var aviso = '', tipo = 'warning';
             if (viajeBloqueado) {
-                avisos.push('El viaje está ' + estado.replace(/_/g, ' ') + ': solo podés completar los números de remito, transporte SAP y entrega Rukas'
-                    + (viajeTarifaEditable ? ', y corregir la tarifa y los km. ' : '. ')
-                    + 'Si el cliente pide otro recorrido, registralo como un viaje nuevo.');
+                var plataforma = clienteConPlataforma();
+                if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
+                else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
+                    + ': solo se ' + (plataforma ? 'completan los números de referencia.' : 'completa el número de remito.')
+                    + (estado === 'En_viaje' ? ' Si cambia el recorrido, registrá otro viaje.' : '');
+            } else if (presupuestoDelViaje) {
+                tipo = 'info';
+                aviso = 'El cliente, el recorrido, los km y la tarifa son los del presupuesto #' + presupuestoDelViaje + '.';
             }
-            if (presupuestoDelViaje) {
-                avisos.push('Este viaje se generó desde el presupuesto #' + presupuestoDelViaje + ', aceptado por el cliente: '
-                    + 'el cliente, el recorrido, los km y la tarifa son los del presupuesto y no se pueden cambiar. '
-                    + (viajeBloqueado ? '' : 'Podés modificar el chofer, el camión, las fechas y los números de referencia. ')
-                    + 'Si cambia el recorrido, hace falta un presupuesto nuevo.');
-            }
-            $('#avisoViajeBloqueado').toggle(avisos.length > 0).text(avisos.join(' '));
+            $('#avisoViajeBloqueado').removeClass('alert-warning alert-info').addClass('alert-' + tipo).toggleClass('d-none', !aviso).text(aviso);
+            aplicarReglasTipoCliente();
         }
 
         function resetFormViaje() {
-            document.getElementById('FormAltaViaje').reset();
-            bloquearDatosDelViaje(null);
+            viajeEditado = null;
+            SGTL.reiniciarFormulario('#FormAltaViaje', '#alertaCompletaCampos');
+            if (formularioViaje) formularioViaje.reiniciar();
             if (window.fpInicio) fpInicio.clear();
             if (window.fpFin) fpFin.clear();
-            $('#viajeIdEdicion').val(''); $('#choferSelectId').val(''); $('#tarifaFijaId').val(''); $('#tarifaKmId').val('');
-            $('#choferBuscar').val(''); $('#choferResultados').hide().empty();
-            $('input[name="tipoTarifa"]').prop('checked', false);
+            $('#viajeIdEdicion, #tarifaFijaId, #tarifaKmId, #distanciaKm').val('');
+            $('#tarifaTipoKm').prop('checked', true);
+            bloquearDatosDelViaje(null);
             $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
             $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
             $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', true);
-            $('#alertaCompletaCampos').hide().empty();
-            $('#distanciaKm').val('');
+            SelectClientePredictivo.sincronizar('clienteSelect');
+            SelectClientePredictivo.sincronizar('choferSelect');
+            $('#etiquetasViaje').empty();
             kmGuardadoViaje = '';
-            setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
+            tarifaFijaRuta = undefined;
+            setTarifaInfo('Elegí origen y destino para calcular la distancia y la tarifa.');
+            $('#tarifaSugerida').addClass('d-none').text('');
             limpiarRutaViaje();
             aplicarReglasTipoCliente();
         }
 
         function abrirModalAltaViaje() {
             resetFormViaje();
-            $('#ModalAltaViajelabel').text('Registrar viaje');
+            $('#tituloViaje').text('Registrar viaje');
             cargarClientesViaje();
             cargarCamionesViaje();
+            cargarChoferesViaje();
             cargarOrigenesDestinos();
-            $('#ModalAltaViaje').modal('show');
+            SGTL.modal('#ModalAltaViaje', 'show');
         }
 
         function abrirModalEditarViaje(id) {
             resetFormViaje();
             $('#viajeIdEdicion').val(id);
-            $('#ModalAltaViajelabel').text('Editar viaje');
-            $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarOrigenesDestinos()).always(function () {
+            $('#tituloViaje').text('Editar viaje #' + id);
+            $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarChoferesViaje(), cargarOrigenesDestinos()).always(function () {
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
-                        if (v.Facturada === true) {
-                            SGTL.toastError('No se puede editar el viaje porque pertenece a una proforma Facturada.');
+                        if (v.Facturada === true || v.Estado === 'Facturado') {
+                            SGTL.toastError('El viaje #' + id + ' está facturado: no se puede modificar.');
                             return;
                         }
+                        $('#etiquetasViaje').html(etiquetasDelViaje(v));
                         $('#clienteSelect').val(v.ClienteID);
+                        SelectClientePredictivo.sincronizar('clienteSelect');
                         aplicarReglasTipoCliente();
                         $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', !v.ClienteID);
                         filtrarOrigenDestino(v.ClienteID, v.OrigenID, v.DestinoID);
+                        var cm = camionesData[v.CamionID];
+                        asegurarOpcion('#camionSelect', v.CamionID, cm ? (cm.Dominio || '').trim() + ' (inactivo)' : 'Camión #' + v.CamionID);
                         $('#camionSelect').val(v.CamionID);
+                        var ch = choferesData[v.ChoferID];
+                        asegurarOpcion('#choferSelect', v.ChoferID, ch ? textoChofer(ch) + ' (inactivo)' : 'Chofer #' + v.ChoferID);
+                        $('#choferSelect').val(v.ChoferID > 0 ? v.ChoferID : '');
+                        SelectClientePredictivo.sincronizar('choferSelect');
                         $('#distanciaKm').val((v.Distancia_KM || '').toString().trim());
                         kmGuardadoViaje = $('#distanciaKm').val();
                         conservarKmGuardado = !!kmGuardadoViaje;
+                        mostrarKm(kmGuardadoViaje);
                         $('#numeroTransporte').val((v.Num_Transporte || '').trim());
                         $('#numeroRemito').val((v.Num_Remito || '').trim());
                         $('#numeroCarga').val((v.Num_de_Carga || '').trim());
-                        if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, true); else $('#fechaInicio').val(formatearParaInput(v.Fecha_Inicio));
-                        if (window.fpFin) fpFin.setDate(v.Fecha_Fin, true); else $('#fechaFin').val(formatearParaInput(v.Fecha_Fin));
-                        if (v.TarifaFijaID && v.TarifaFijaID > 0) {
-                            $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID);
-                            setTarifaInfo('Tarifa fija asignada #' + v.TarifaFijaID + '.', 'ok');
-                        } else if (v.TarifaKmID && v.TarifaKmID > 0) {
-                            $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID);
-                            setTarifaInfo('Tarifa por km asignada #' + v.TarifaKmID + '.', 'ok');
-                        }
-                        if (v.ChoferID && v.ChoferID > 0) {
-                            $.ajax({ url: API_VIAJES + '/Choferes/' + v.ChoferID, type: 'GET' })
-                                .done(function (ch) { $('#choferSelectId').val(ch.Chofer_ID); $('#choferBuscar').val(ch.Apellido + ', ' + ch.Nombre + ' (DNI ' + (ch.DNI || '').trim() + ')'); })
-                                .fail(function () { });
-                        }
-                        bloquearDatosDelViaje(v.Estado, v.Presupuesto_ID, v.EnProforma_Estado);
-                        $('#ModalAltaViaje').modal('show');
+                        // Sin disparar onChange: al abrir no se recalcula la tarifa guardada.
+                        if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, false); else $('#fechaInicio').val(String(v.Fecha_Inicio || '').substring(0, 16));
+                        if (window.fpFin) fpFin.setDate(v.Fecha_Fin, false); else $('#fechaFin').val(String(v.Fecha_Fin || '').substring(0, 16));
+                        if (v.TarifaFijaID > 0) { $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID); }
+                        else if (v.TarifaKmID > 0) { $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID); }
+                        viajeEditado = { ChoferID: v.ChoferID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
+                        bloquearDatosDelViaje(v);
+                        setTarifaInfo('Buscando la tarifa…');
+                        importeGuardado(v).then(function (r) {
+                            if (!r) { setTarifaInfo('El viaje no tiene tarifa asignada.'); return; }
+                            var html = '<strong>' + SGTL.monto(r.importe) + '</strong> <span class="suave">neto · ' + SGTL.escapar(r.detalle) + '</span>';
+                            if (rutaFija()) $('#fijoTarifa').html(html);
+                            else setTarifaInfo('<strong>' + SGTL.monto(r.importe) + '</strong><span>neto · ' + SGTL.escapar(r.detalle) + '</span>', 'ok');
+                        }).catch(function () {
+                            if (rutaFija()) $('#fijoTarifa').text('No se pudo leer el importe de la tarifa.');
+                            else setTarifaInfo('No se pudo leer el importe de la tarifa guardada.');
+                        });
+                        if (tarifaEditable()) consultarTarifaFijaRuta().always(mostrarSugerenciaFija);
+                        actualizarAvisoWhatsApp();
+                        SGTL.modal('#ModalAltaViaje', 'show');
                     })
                     .fail(function () { SGTL.toastError('No se pudo cargar el viaje. Probá de nuevo.'); });
             });
@@ -1119,7 +1385,7 @@
             return distanciaManual && km !== '' && km !== kmGuardadoViaje;
         }
         function construirViajeDto() {
-            var tipo = $('input[name="tipoTarifa"]:checked').val();
+            var tipo = tipoTarifa();
             var manual = kmCargadosAMano();
             return {
                 Km_Manual_Motivo: manual ? ($('#motivoKmManual').val() || '').trim() : '',
@@ -1133,7 +1399,7 @@
                 Num_Transporte: ($('#numeroTransporte').val() || '').trim(),
                 Fecha_Inicio: $('#fechaInicio').val(),
                 Fecha_Fin: $('#fechaFin').val(),
-                ChoferID: parseInt($('#choferSelectId').val()) || 0,
+                ChoferID: parseInt($('#choferSelect').val()) || 0,
                 CamionID: parseInt($('#camionSelect').val()) || 0,
                 TarifaFijaID: tipo === 'fija' ? (parseInt($('#tarifaFijaId').val()) || 0) : 0,
                 TarifaKmID: tipo === 'km' ? (parseInt($('#tarifaKmId').val()) || 0) : 0,
@@ -1150,24 +1416,51 @@
             if (wa.Status === 'payload_error') { SGTL.toastError('No se envió WhatsApp: revisá el teléfono del chofer.'); return; }
             SGTL.toastError('No se pudo enviar el WhatsApp al chofer. Avisale por otro medio.');
         }
-        function guardarViaje() {
-            var dto = construirViajeDto();
-            var tipo = $('input[name="tipoTarifa"]:checked').val();
-            var falt = [];
-            if (!dto.ClienteID) falt.push('Cliente');
-            if (!dto.OrigenID) falt.push('Origen');
-            if (!dto.DestinoID) falt.push('Destino');
-            if (!dto.ChoferID && !clienteConPlataforma()) falt.push('Chofer');
-            if (!dto.CamionID) falt.push('Camión');
-            if (!dto.Fecha_Inicio) falt.push('Fecha de inicio');
-            if (!dto.Fecha_Fin) falt.push('Fecha de fin');
-            if (kmCargadosAMano() && !dto.Km_Manual_Motivo) falt.push('Motivo de la distancia manual');
-            if (!tipo) falt.push('Tipo de tarifa');
-            else if (tipo === 'fija' && !dto.TarifaFijaID) falt.push('Tarifa fija (no se encontró para esa ruta)');
-            else if (tipo === 'km' && !dto.TarifaKmID) falt.push('Tarifa por km (no se pudo calcular)');
-            $('#alertaCompletaCampos').hide().empty();
-            if (falt.length) { mostrarAlertaModal('Completá o revisá: ' + falt.join(', ') + '.'); return; }
 
+        // Campos del formulario (§6.3): cada uno con su mensaje debajo. Cliente y chofer se validan en el campo que
+        // se ve (el buscador); el select de abajo guarda el valor.
+        var reglasViaje = {
+            cliente: { id: 'clienteBuscar', requerido: 'Seleccioná un cliente.', validar: function () { return $('#clienteSelect').val() ? '' : 'Elegí un cliente de la lista.'; } },
+            origen: { id: 'origenSelect', requerido: 'Seleccioná un origen.' },
+            destino: { id: 'destinoSelect', requerido: 'Seleccioná un destino.' },
+            inicio: { id: 'fechaInicio', requerido: 'Elegí la fecha y hora de inicio.' },
+            fin: {
+                id: 'fechaFin', requerido: 'Elegí la fecha y hora de fin.',
+                validar: function (valor) { var fi = $('#fechaInicio').val(); return fi && valor < fi ? 'No puede ser anterior al inicio.' : ''; }
+            },
+            camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.' },
+            chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? '' : 'Elegí un chofer de la lista.'; } },
+            km: { id: 'kmManual', validar: function (valor) { return kmNumero(valor) > 0 ? '' : 'Escribí los km con números, por ejemplo 146,8.'; } },
+            motivo: { id: 'motivoKmManual', requerido: '' }
+        };
+        function crearFormularioViaje() {
+            formularioViaje = SGTL.validador(Object.keys(reglasViaje).map(function (k) { return reglasViaje[k]; }));
+        }
+
+        // La tarifa no es un campo: si falta, se marcan los dos radios en rojo con el mensaje debajo.
+        function validarTarifa() {
+            // Sin ruta todavía, los que se marcan son origen y destino.
+            if (!tarifaEditable() || !$('#origenSelect').val() || !$('#destinoSelect').val()) { limpiarErrorTarifa(); return true; }
+            var tipo = tipoTarifa();
+            if (tipo === 'fija' ? $('#tarifaFijaId').val() : $('#tarifaKmId').val()) { limpiarErrorTarifa(); return true; }
+            $('input[name="tipoTarifa"]').addClass('is-invalid');
+            $('#tarifaError').addClass('d-block').text(tipo === 'fija' ? 'Esta ruta no tiene tarifa fija: elegí Por km.'
+                : 'Falta la tarifa por km: revisá las fechas y la distancia, o cargala en Gestionar tarifas.');
+            return false;
+        }
+
+        function guardarViaje() {
+            reglasViaje.motivo.requerido = kmCargadosAMano() ? 'Completá el motivo.' : '';
+            formularioViaje.validarTodo();
+            validarTarifa();
+            if (!SGTL.revisarFormulario('#FormAltaViaje', '#alertaCompletaCampos')) {
+                // El foco va al primer campo marcado; si es un buscador, sin abrir su lista encima de los demás errores.
+                var activo = document.activeElement;
+                if (activo && activo.closest('.cliente-select-predictivo')) activo.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+                return;
+            }
+
+            var dto = construirViajeDto();
             var id = $('#viajeIdEdicion').val();
             var esEdicion = id !== '' && id != null;
             var listo = SGTL.procesando('#confirmarBtn');
@@ -1178,12 +1471,12 @@
                 data: JSON.stringify(dto),
                 success: function (r) {
                     listo();
-                    $('#ModalAltaViaje').modal('hide');
+                    SGTL.modal('#ModalAltaViaje', 'hide');
                     SGTL.toastExito(esEdicion ? 'Viaje guardado.' : 'Viaje registrado.');
                     avisarWhatsApp(r && r.WhatsApp);
                     buscarViajes(1);
                 },
-                error: function (xhr) { listo(); mostrarAlertaModal(SGTL.escapar(parsearError(xhr))); }
+                error: function (xhr) { listo(); mostrarAlertaModal(parsearError(xhr)); }
             });
         }
 
@@ -1473,11 +1766,20 @@
         $(document).ready(function () {
             if (window.flatpickr) {
                 // Calendario del sistema (§7.1): se ve DD/MM/AAAA HH:MM y el campo sigue guardando AAAA-MM-DD HH:MM.
-                var alCambiarFecha = function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); };
+                var alCambiarFecha = function () {
+                    if (tipoTarifa() === 'km' && tarifaEditable()) resolverTarifaKm();
+                    if ($('#fechaFin').val()) formularioViaje.validar('fechaFin');
+                    actualizarAvisoWhatsApp();
+                };
                 window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
                 window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
                 window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', onDayCreate: diaEntrega });
             }
+            // Cliente y chofer: el mismo buscador que los filtros y Registrar proforma (lista que se recorre o se filtra
+            // escribiendo). Va antes del validador, que se engancha al campo que se ve.
+            SelectClientePredictivo.inicializar('clienteSelect', { placeholder: 'Seleccioná un cliente', idCampo: 'clienteBuscar' });
+            SelectClientePredictivo.inicializar('choferSelect', { placeholder: 'Seleccioná un chofer', idCampo: 'choferBuscar', textoVacio: 'No hay choferes que coincidan.' });
+            crearFormularioViaje();
             $('#formEstadoViaje').on('submit', confirmarEstadoViaje);
             $('#estadoViajeOpciones').on('change', function () {
                 SGTL.avisoFormulario('#alertaEstadoViaje', '');
@@ -1486,11 +1788,21 @@
             });
             $('#ModalAltaViaje').on('shown.bs.modal', function () {
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
-                else { initMapaViaje().catch(function () { msgMapa('No se pudo cargar Google Maps. Podés ingresar la distancia a mano.', 'error'); usarDistanciaManual(true, 'No se pudo cargar Google Maps.'); }); }
+                else { initMapaViaje().catch(function () { msgMapa(''); usarDistanciaManual(true, 'No se pudo cargar Google Maps.'); }); }
             });
             SGTLGoogleMaps.alFallarAutenticacion(function () { rutaViajeNoDisponible('Google Maps rechazó la clave para este sitio.'); });
-            $('#distanciaKm').on('change', function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); });
+            // Distancia a mano: se escribe con coma ("146,8") y se guarda con punto, como la devuelve Google.
+            $('#kmManual').on('change', function () {
+                var n = kmNumero(this.value);
+                $('#distanciaKm').val(n > 0 ? String(n) : '');
+                mostrarKm($('#distanciaKm').val());
+                if (tipoTarifa() === 'km') resolverTarifaKm();
+            });
             $('#clienteSelect').on('change', onClienteChangeViaje);
+            $('#choferSelect').on('change', function () {
+                actualizarAvisoWhatsApp();
+                if ($('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
+            });
             $('#agregarOrigenViaje, #agregarDestinoViaje').on('click', function () {
                 var tipo = this.id === 'agregarOrigenViaje' ? 'Origen' : 'Destino';
                 AltaRapidaUbicacion.abrir({ tipo: tipo, clienteId: $('#clienteSelect').val(), clienteNombre: $('#clienteSelect option:selected').text(), modalPadre: 'ModalAltaViaje', alCrear: function (registro) {
@@ -1499,18 +1811,22 @@
                     filtrarOrigenDestino(parseInt($('#clienteSelect').val(), 10), tipo === 'Origen' ? registro.Origen_ID : $('#origenSelect').val(), tipo === 'Destino' ? registro.Destino_ID : $('#destinoSelect').val());
                     $('#distanciaKm, #tarifaFijaId, #tarifaKmId').val('');
                     limpiarRutaViaje();
-                    setTarifaInfo('Calculá la ruta y la tarifa para la nueva ubicación.');
                     $(tipo === 'Origen' ? '#origenSelect' : '#destinoSelect').trigger('change');
                 }});
             });
+            // Nueva ruta: se calcula el recorrido (y con él los km y la tarifa por km) y se busca la tarifa fija.
             $('#origenSelect, #destinoSelect').on('change', function () {
                 conservarKmGuardado = false;
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
-                if ($('input[name="tipoTarifa"]:checked').val() === 'fija') { resolverTarifaFija(); }
+                else { $('#distanciaKm').val(''); limpiarRutaViaje(); }
+                if (tipoTarifa() === 'fija') setTarifaInfo('Buscando la tarifa…');
+                else if (!$('#distanciaKm').val()) resolverTarifaKm();
+                consultarTarifaFijaRuta().always(function () {
+                    if (tipoTarifa() === 'fija') resolverTarifaFija(); else mostrarSugerenciaFija();
+                });
+                actualizarAvisoWhatsApp();
             });
-            $('input[name="tipoTarifa"]').on('change', resolverTarifa);
-            $('#choferBuscar').on('input', buscarChoferInput);
-            $(document).on('click', function (e) { if (!$(e.target).closest('#choferBuscar, #choferResultados').length) { $('#choferResultados').hide(); } });
+            $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
             // gestion-viajes.html?viaje=ID abre ese viaje para editar (enlace "Abrir viaje" del control de proforma de plataforma).
             var viajeEnUrl = parseInt(new URLSearchParams(window.location.search).get('viaje'), 10);

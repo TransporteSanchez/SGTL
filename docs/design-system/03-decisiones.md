@@ -21,7 +21,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, accion })` |
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
-| Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError` |
+| Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
+| Elegir de una lista larga (cliente, chofer, §6.3) | `SelectClientePredictivo.inicializar(select, { placeholder, textoVacio, idCampo })` (`assets/static/js/select-cliente-predictivo.js`) |
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
 | Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)` |
@@ -289,6 +290,10 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
   **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
 - **Nunca `alert()`.**
+- **Lo que se manda afuera al guardar se avisa antes, a la vista** (22/10, viajes): un aviso azul
+  (`alert alert-info sgtl-aviso-whatsapp`, con el ícono de WhatsApp) junto al dato que lo dispara, con el nombre de
+  quien lo recibe: "Al guardar, Martín Ledesma recibe la hoja de ruta por WhatsApp." Después de guardar, el toast
+  dice si salió o no.
 - Los mensajes fijos de ayuda dentro de la página o del modal ("Guardar no realiza ninguna
   prueba de conexión SMTP…") se quedan: son notas, no avisos.
 - Una sola función compartida para los toasts (en el JS compartido), que no dependa de
@@ -357,10 +362,24 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   - el cursor va al primer campo con error.
 - **Cada campo se valida al salir de él**, no en cada tecla, y el rojo se va apenas se corrige.
 - **Opción vacía de los desplegables:** "Seleccioná un cliente" (voseo).
+- **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros.
+  Al hacer clic muestra la lista completa, que se recorre con la rueda o las flechas (Enter elige); escribir
+  filtra por cualquier parte del texto (nombre, apellido o DNI). No hace falta saberse el dato de memoria (22/10).
 - **Ayudas:** el texto gris dentro del campo es un ejemplo ("30111222"); las instrucciones van
   debajo, en chico (`form-text`): "Sin puntos ni espacios".
 - **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",
-  "Forma de pago").
+  "Forma de pago"). El subtítulo es uno solo para todo el sistema: `<section class="sgtl-bloque">` con
+  `<div class="sgtl-bloque-titulo">` (chico, en negrita, con una línea fina debajo; viajes, 22/10). Cuenta corriente
+  (`.cc-block-title`) y proformas (`.bloque-titulo`) todavía tienen su propia copia: pendiente pasarlas.
+- **Lo que no se puede editar** (22/10, primero en viajes): **nunca un campo deshabilitado**; se ve como texto.
+  Una caja blanca con borde se edita; un texto, no.
+  - Si es un bloque entero (el recorrido de un viaje que ya salió), un recuadro gris con el resumen en texto en el
+    lugar del bloque, con su subtítulo (`.sgtl-dato-fijo`).
+  - Si es un campo suelto (el número de una proforma), su etiqueta y el valor en texto, como en Ver detalle.
+  - Arriba, un aviso de una línea dice por qué: "Ya salió: solo se completa el número de remito." Lo editable
+    sigue como campo, en su lugar de siempre.
+  - Las demás pantallas todavía usan campos deshabilitados (Registrar proforma, el recibo de cuenta corriente):
+    pendiente revisarlas.
 - `form-label` con `for` en todos los campos (tocar el nombre lleva al campo).
 
 ---

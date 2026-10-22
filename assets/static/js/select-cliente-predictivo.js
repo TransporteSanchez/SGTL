@@ -1,6 +1,9 @@
 /* Selector de clientes con búsqueda predictiva.
  * Conserva el <select> original como fuente de valor para no modificar los
  * formularios, filtros ni llamadas existentes.
+ * Sirve para cualquier lista (también choferes): opciones placeholder, textoVacio ("No hay choferes que
+ * coincidan.") e idCampo (id del campo visible, para validarlo con SGTL.validador). Una <option> con
+ * data-etiqueta="Rukas" muestra esa etiqueta en la lista. Flechas para moverse, Enter para elegir, Escape cierra.
  */
 (function (window, document) {
     'use strict';
@@ -28,7 +31,8 @@
             '.cliente-select-predictivo{position:relative}' +
             '.cliente-select-predictivo-menu{position:absolute;z-index:1080;top:calc(100% + 2px);left:0;right:0;max-height:240px;overflow-y:auto;background:#fff;border:1px solid #ced4da;border-radius:.375rem;box-shadow:0 .5rem 1rem rgba(0,0,0,.15)}' +
             '.cliente-select-predictivo-menu button{display:block;width:100%;padding:.5rem .75rem;border:0;background:#fff;color:inherit;text-align:left}' +
-            '.cliente-select-predictivo-menu button:hover,.cliente-select-predictivo-menu button:focus{background:#f1f3f5;outline:0}' +
+            '.cliente-select-predictivo-menu button:hover,.cliente-select-predictivo-menu button:focus,.cliente-select-predictivo-menu button.activa{background:#f1f3f5;outline:0}' +
+            '.cliente-select-predictivo-menu button.con-etiqueta{display:flex;align-items:center;justify-content:space-between;gap:.5rem}' +
             '.cliente-select-predictivo-menu .cliente-select-predictivo-vacio{padding:.5rem .75rem;color:#6c757d;font-size:.875rem}';
         document.head.appendChild(estilos);
     }
@@ -51,7 +55,7 @@
         contenedor.className = 'cliente-select-predictivo';
         var campo = document.createElement('input');
         campo.type = 'text';
-        campo.id = select.id + '_busqueda_' + contador;
+        campo.id = opciones.idCampo || (select.id + '_busqueda_' + contador);
         campo.className = select.className || 'form-select';
         campo.autocomplete = 'off';
         campo.setAttribute('role', 'combobox');
@@ -78,10 +82,25 @@
                 return {
                     valor: opcion.value,
                     texto: opcion.textContent || '',
+                    etiqueta: opcion.getAttribute('data-etiqueta') || '',
                     deshabilitada: opcion.disabled,
                     seleccionada: opcion.selected
                 };
             });
+        }
+
+        var activa = -1;
+
+        function botones() { return lista.querySelectorAll('button[role="option"]'); }
+
+        // Resalta la opción a la que se llega con las flechas y la deja a la vista.
+        function resaltar(indice) {
+            var todos = botones();
+            if (!todos.length) { activa = -1; return; }
+            activa = Math.max(0, Math.min(indice, todos.length - 1));
+            Array.prototype.forEach.call(todos, function (boton, i) { boton.classList.toggle('activa', i === activa); });
+            todos[activa].scrollIntoView({ block: 'nearest' });
+            campo.setAttribute('aria-activedescendant', todos[activa].id);
         }
 
         function mostrarLista(mostrar) {
@@ -112,19 +131,34 @@
                 return !opcion.deshabilitada && normalizar(opcion.texto).indexOf(consulta) !== -1;
             });
             lista.innerHTML = '';
+            activa = -1;
+            campo.removeAttribute('aria-activedescendant');
 
             if (!coincidencias.length) {
                 var vacio = document.createElement('div');
                 vacio.className = 'cliente-select-predictivo-vacio';
-                vacio.textContent = 'No hay clientes que coincidan.';
+                vacio.textContent = opciones.textoVacio || 'No hay clientes que coincidan.';
                 lista.appendChild(vacio);
             } else {
-                coincidencias.forEach(function (opcion) {
+                coincidencias.forEach(function (opcion, i) {
                     var boton = document.createElement('button');
                     boton.type = 'button';
+                    boton.id = lista.id + '_' + i;
+                    boton.tabIndex = -1;
                     boton.setAttribute('role', 'option');
                     boton.setAttribute('aria-selected', opcion.seleccionada ? 'true' : 'false');
-                    boton.textContent = opcion.texto;
+                    if (opcion.etiqueta) {
+                        boton.classList.add('con-etiqueta');
+                        var texto = document.createElement('span');
+                        texto.textContent = opcion.texto;
+                        var etiqueta = document.createElement('span');
+                        etiqueta.className = 'badge rounded-pill bg-white text-dark border';
+                        etiqueta.textContent = opcion.etiqueta;
+                        boton.appendChild(texto);
+                        boton.appendChild(etiqueta);
+                    } else {
+                        boton.textContent = opcion.texto;
+                    }
                     boton.addEventListener('mousedown', function (evento) {
                         evento.preventDefault();
                         seleccionar(opcion.valor);
@@ -146,10 +180,18 @@
             renderizar(campo.value);
         });
         campo.addEventListener('keydown', function (evento) {
+            var abierta = !lista.classList.contains('d-none');
             if (evento.key === 'Escape') mostrarLista(false);
-            if (evento.key === 'ArrowDown' && lista.classList.contains('d-none')) {
+            if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
                 evento.preventDefault();
-                renderizar(campo.value);
+                if (!abierta) renderizar(campo.value);
+                resaltar(activa < 0 ? 0 : activa + (evento.key === 'ArrowDown' ? 1 : -1));
+            }
+            // Enter con una opción resaltada la elige; si no, sigue de largo (en los filtros, busca).
+            if (evento.key === 'Enter' && abierta && activa >= 0) {
+                evento.preventDefault();
+                var elegida = botones()[activa];
+                if (elegida) elegida.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
             }
         });
         document.addEventListener('mousedown', function (evento) {

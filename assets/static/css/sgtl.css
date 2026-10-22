@@ -1073,3 +1073,52 @@ body #loading-message .spinner-border {
 .sgtl-modal-formulario.modal-dialog-scrollable .modal-content {
     height: 100%;
 }
+
+/* ======================================================================================
+   §6.3 Formularios largos (22/10, primero en viajes): subtítulo de bloque y lo que no se edita.
+   ====================================================================================== */
+
+/* Subtítulo de cada bloque de un formulario largo ("Recorrido", "Tarifa"): chico, en negrita y con una línea fina. */
+.sgtl-bloque + .sgtl-bloque {
+    margin-top: 1.5rem;
+}
+
+.sgtl-bloque-titulo {
+    margin-bottom: .75rem;
+    padding-bottom: .375rem;
+    border-bottom: 1px solid var(--sgtl-borde);
+    color: var(--sgtl-texto);
+    font-size: .8125rem;
+    font-weight: 700;
+}
+
+/* Al editar, un bloque entero que no se puede cambiar: recuadro gris con el resumen en texto (no campos
+   deshabilitados). Un campo suelto que no se edita va como en Ver detalle: su etiqueta y el valor en texto. */
+.sgtl-dato-fijo {
+    padding: .6rem .9rem;
+    border: 1px solid #e9ecef;
+    border-radius: .75rem;
+    background-color: #fafbfc;
+    color: var(--sgtl-texto);
+    font-size: .875rem;
+}
+
+.sgtl-dato-fijo > * + * {
+    margin-top: .125rem;
+}
+
+.sgtl-dato-fijo .suave {
+    color: var(--sgtl-texto-suave);
+}
+
+/* Aviso de lo que se le manda a alguien por WhatsApp al guardar (la hoja de ruta al chofer). */
+body .alert.alert-info.sgtl-aviso-whatsapp::before {
+    content: "\f618";
+    color: #198754;
+}
+
+/* Buscador de clientes o choferes: la opción a la que se llega con las flechas. */
+body .cliente-select-predictivo-menu button.activa {
+    background-color: #f2f4f7 !important;
+    color: var(--sgtl-texto);
+}

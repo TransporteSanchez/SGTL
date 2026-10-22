@@ -52,7 +52,8 @@ AGENTS.md"):
    `SGTL.avisoFormulario`. **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)
 7. **Formularios con `SGTL.validador`:** asterisco rojo en lo obligatorio, `form-label` con `for`, el error
-   debajo de cada campo y "Revisá los campos marcados." arriba. (§6.3)
+   debajo de cada campo y "Revisá los campos marcados." arriba. Los largos, en bloques con `.sgtl-bloque-titulo`; lo
+   que no se puede editar se ve como texto (`.sgtl-dato-fijo`), nunca como campo deshabilitado. (§6.3)
 8. **Textos:** voseo ("Completá", "Seleccioná", "Probá de nuevo"), **mayúscula solo al principio** (también
    "la factura", "el recibo", "la nota de crédito", "la proforma" dentro de un texto), títulos y botones sin
    punto, mensajes con punto, sin inglés a la vista. **Nunca un error técnico** en pantalla ni en los mensajes de
