@@ -11,9 +11,6 @@
     <style>
         #app { display: none; }
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
-        .whatsapp-card { max-width: 1180px; }
-        .whatsapp-icon { color: #25d366; }
-        .whatsapp-note { border-left: 4px solid #25d366; }
     </style>
 </head>
 <body>
@@ -31,13 +28,12 @@
             </header>
             <div class="page-heading">
                 <section class="section">
-                    <div class="card whatsapp-card rounded mx-4 mt-4">
+                    <div class="card rounded mx-4 mt-4">
                         <div class="card-header">
-                            <h5 class="card-title mb-1"><i class="bi bi-whatsapp whatsapp-icon me-2"></i>Gestionar integración de WhatsApp</h5>
+                            <h5 class="card-title mb-1"><i class="bi bi-whatsapp me-2"></i>Gestionar integración de WhatsApp</h5>
                             <small class="text-muted">Envío de la hoja de ruta al chofer mediante WhatsApp Business Cloud API (Meta).</small>
                         </div>
                         <div class="card-body">
-                            <div id="waFeedback" class="alert d-none mb-3" role="status"></div>
                             <form id="whatsappForm" class="row g-3">
                                 <div class="col-12">
                                     <div class="form-check form-switch">
@@ -48,12 +44,14 @@
                                 </div>
                                 <div class="col-12"><h6 class="mb-0 mt-2">Cuenta de Meta</h6></div>
                                 <div class="col-md-8">
-                                    <label for="waAccessToken" class="form-label">Access Token</label>
+                                    <label for="waAccessToken" class="form-label">Token de acceso</label>
                                     <input type="text" class="form-control" id="waAccessToken" autocomplete="off" placeholder="Token permanente de Meta">
+                                    <div class="form-text">En Meta figura como "Access Token".</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="waPhoneNumberId" class="form-label">Phone Number ID</label>
-                                    <input type="text" class="form-control" id="waPhoneNumberId" placeholder="Ej. 1231034956770859">
+                                    <label for="waPhoneNumberId" class="form-label">ID del número de teléfono</label>
+                                    <input type="text" class="form-control" id="waPhoneNumberId" placeholder="1231034956770859">
+                                    <div class="form-text">En Meta figura como "Phone Number ID".</div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="waApiVersion" class="form-label">Versión de API</label>
@@ -75,21 +73,21 @@
                                 </div>
                                 <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
                                     <small class="text-muted">Última modificación: <span id="waMeta">—</span></small>
-                                    <button type="submit" class="btn btn-primary" id="btnGuardar"><i class="bi bi-save me-1"></i>Guardar</button>
+                                    <button type="submit" class="btn btn-primary" id="btnGuardar">Guardar</button>
                                 </div>
                             </form>
                         </div>
                     </div>
-                    <div class="card whatsapp-card rounded mx-4 mt-4">
+                    <div class="card rounded mx-4 mt-4">
                         <div class="card-header">
-                            <h6 class="card-title mb-1"><i class="bi bi-send me-2"></i>Cuándo se envía</h6>
+                            <h6 class="card-title mb-1">Cuándo se envía</h6>
                             <small class="text-muted">El mensaje se envía al celular cargado en la ficha del chofer.</small>
                         </div>
                         <div class="card-body">
-                            <div class="alert alert-light whatsapp-note">
+                            <div class="alert alert-light">
                                 Se envía al registrar un viaje con chofer asignado y al editar un viaje si se cambia el chofer. En los viajes de clientes con plataforma (Rukas) el chofer es opcional: si se carga sin chofer, el mensaje sale cuando se le asigna. Si el envío falla, el viaje se guarda igual y el error queda en <code>App_Data/whatsapp.log</code>.
                             </div>
-                            <p class="mb-2">La plantilla debe tener 7 variables en el cuerpo, en este orden:</p>
+                            <p class="mb-2">La plantilla tiene que tener 7 variables en el cuerpo, en este orden:</p>
                             <ol class="mb-3">
                                 <li>Nombre del chofer</li>
                                 <li>N° de viaje</li>
@@ -99,7 +97,7 @@
                                 <li>Remito / N° de entrega</li>
                                 <li>Enlace de la ruta en Google Maps</li>
                             </ol>
-                            <label class="form-label">Formato del enlace de ruta</label>
+                            <div class="form-label">Formato del enlace de ruta</div>
                             <code class="d-block p-3 rounded bg-light text-break">https://www.google.com/maps/dir/?api=1&amp;origin={origen}&amp;destination={destino}&amp;travelmode=driving</code>
                         </div>
                     </div>
@@ -111,18 +109,13 @@
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script>
         (function () {
             var API_WA = 'http://localhost:50222/api/WhatsAppConfig/1';
 
             function campo(id) { return document.getElementById(id); }
-            function mostrar(tipo, texto) {
-                var aviso = campo('waFeedback');
-                aviso.className = 'alert alert-' + tipo;
-                aviso.textContent = texto;
-            }
-            function ocultar() { campo('waFeedback').className = 'alert d-none'; campo('waFeedback').textContent = ''; }
 
             function syncEnabledLabel() {
                 campo('waEnabledLabel').textContent = campo('waEnabled').checked ? 'Habilitado' : 'Deshabilitado';
@@ -139,30 +132,34 @@
                 campo('waCountryCode').value = data.DefaultCountryCode || '54';
                 var meta = '—';
                 if (data.Fecha_Modi) {
-                    try { meta = new Date(data.Fecha_Modi).toLocaleString('es-AR'); } catch (e) { meta = data.Fecha_Modi; }
+                    meta = SGTL.fecha(data.Fecha_Modi, { hora: true }) || '—';
                     if (data.Usu_Modi) meta += ' · ' + data.Usu_Modi;
                 }
                 campo('waMeta').textContent = meta;
             }
 
-            function leerError(respuesta) {
+            // Esta API manda en "Message" un texto para el usuario (en los 400 y en sus 500 propios, que traen
+            // "Detail" con la excepción). "Detail" y el "Message" genérico de Web API no se muestran (§9).
+            function leerError(respuesta, porDefecto) {
                 return respuesta.json().catch(function () { return null; }).then(function (cuerpo) {
-                    throw new Error((cuerpo && (cuerpo.Message || cuerpo.Detail)) || respuesta.statusText);
+                    var propio = cuerpo && cuerpo.Message && (respuesta.status === 400 || cuerpo.Detail !== undefined);
+                    throw new Error(propio ? cuerpo.Message : porDefecto);
                 });
+            }
+            function sinConexion() {
+                throw new Error('No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.');
             }
 
             function loadConfig() {
                 return fetch(API_WA).then(function (r) {
-                    if (!r.ok) return leerError(r);
+                    if (!r.ok) return leerError(r, 'No se pudo cargar la configuración de WhatsApp. Probá de nuevo.');
                     return r.json();
-                }).then(fillForm);
+                }, sinConexion).then(fillForm);
             }
 
             function saveConfig(e) {
                 e.preventDefault();
-                ocultar();
-                var boton = campo('btnGuardar');
-                boton.disabled = true;
+                var listo = SGTL.procesando('#btnGuardar');
 
                 var payload = {
                     Enabled: campo('waEnabled').checked,
@@ -180,15 +177,15 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 }).then(function (r) {
-                    if (!r.ok) return leerError(r);
+                    if (!r.ok) return leerError(r, 'No se pudo guardar la configuración de WhatsApp. Probá de nuevo.');
                     return r.json();
-                }).then(function (cuerpo) {
+                }, sinConexion).then(function (cuerpo) {
+                    listo();
                     if (cuerpo && cuerpo.Config) fillForm(cuerpo.Config);
-                    mostrar('success', 'Configuración de WhatsApp guardada correctamente.');
+                    SGTL.toastExito('Configuración de WhatsApp guardada.');
                 }).catch(function (error) {
-                    mostrar('danger', error.message || 'No se pudo guardar la configuración de WhatsApp.');
-                }).finally(function () {
-                    boton.disabled = false;
+                    listo();
+                    SGTL.toastError(error.message || 'No se pudo guardar la configuración de WhatsApp. Probá de nuevo.');
                 });
             }
 
@@ -215,7 +212,7 @@
                     await loadSettings();
                     if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
                 } catch (error) {
-                    console.error('No se pudo cargar la estructura o el diseño de Integración WhatsApp.', error);
+                    console.error('No se pudo cargar la estructura o el diseño de Gestionar integración de WhatsApp.', error);
                 } finally {
                     campo('app').style.display = 'block';
                     campo('loading-message').style.display = 'none';
@@ -223,7 +220,7 @@
                 try {
                     await loadConfig();
                 } catch (error) {
-                    mostrar('danger', error.message || 'No se pudo cargar la configuración de WhatsApp. Verificá que exista la tabla WHATSAPP_CONFIG.');
+                    SGTL.toastError(error.message || 'No se pudo cargar la configuración de WhatsApp. Probá de nuevo.');
                 }
             };
         })();
