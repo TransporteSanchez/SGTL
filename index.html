@@ -366,7 +366,19 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="ultimos" gs-x="0" gs-y="20" gs-w="8" gs-h="6" gs-min-h="4">
+                <div class="grid-stack-item" gs-id="kmchofer" gs-x="0" gs-y="20" gs-w="6" gs-h="5" gs-min-h="4">
+                    <div class="grid-stack-item-content">
+                        <div class="card rounded custom-card h-100 dash-grafico dash-periodo">
+                            <div class="card-header">
+                                <h5 class="mb-0">Km por chofer</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="grafico-choferes"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid-stack-item" gs-id="ultimos" gs-x="0" gs-y="25" gs-w="12" gs-h="6" gs-min-h="4">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100 dash-periodo">
                             <div class="card-header">
@@ -391,7 +403,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="topclientes" gs-x="8" gs-y="20" gs-w="4" gs-h="6" gs-min-h="3">
+                <div class="grid-stack-item" gs-id="topclientes" gs-x="6" gs-y="20" gs-w="6" gs-h="5" gs-min-h="3">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                             <div class="card-header d-flex align-items-center">
@@ -406,7 +418,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="comparativa" gs-x="0" gs-y="26" gs-w="12" gs-h="6" gs-min-h="4">
+                <div class="grid-stack-item" gs-id="comparativa" gs-x="0" gs-y="31" gs-w="12" gs-h="6" gs-min-h="4">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100 dash-periodo">
                             <div class="card-header">
@@ -434,7 +446,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="32" gs-w="12" gs-h="6" gs-min-h="5">
+                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="37" gs-w="12" gs-h="6" gs-min-h="5">
                     <div class="grid-stack-item-content">
                         <div class="card rounded custom-card h-100">
                             <div class="card-header">
@@ -583,6 +595,7 @@
                 { id: 'proximos', label: 'Próximos viajes' },
                 { id: 'kmmes', label: 'Km por mes' },
                 { id: 'kmcamion', label: 'Km por camión' },
+                { id: 'kmchofer', label: 'Km por chofer' },
                 { id: 'ultimos', label: 'Últimos viajes' },
                 { id: 'topclientes', label: 'Top clientes en facturación' },
                 { id: 'comparativa', label: 'Comparativa por mes' },
@@ -603,15 +616,16 @@
                 { id: 'proximos', x: 8, y: 9, w: 4, h: 6 },
                 { id: 'kmmes', x: 0, y: 15, w: 6, h: 5 },
                 { id: 'kmcamion', x: 6, y: 15, w: 6, h: 5 },
-                { id: 'ultimos', x: 0, y: 20, w: 8, h: 6 },
-                { id: 'topclientes', x: 8, y: 20, w: 4, h: 6 },
-                { id: 'comparativa', x: 0, y: 26, w: 12, h: 6 },
-                { id: 'calendario', x: 0, y: 32, w: 12, h: 6 }
+                { id: 'kmchofer', x: 0, y: 20, w: 6, h: 5 },
+                { id: 'topclientes', x: 6, y: 20, w: 6, h: 5 },
+                { id: 'ultimos', x: 0, y: 25, w: 12, h: 6 },
+                { id: 'comparativa', x: 0, y: 31, w: 12, h: 6 },
+                { id: 'calendario', x: 0, y: 37, w: 12, h: 6 }
             ];
             // Alto mínimo de cada tarjeta (en filas): por debajo de esto se esconde contenido.
             var ALTO_MINIMO = {
                 kpiviajes: 2, kpientregados: 2, kpipendientes: 2, kpirechazo: 2, kpikm: 2, costo: 2, choferes: 2, camiones: 2,
-                revisar: 4, itv: 3, viajesmes: 4, proximos: 4, kmmes: 4, kmcamion: 4, ultimos: 4, topclientes: 3, comparativa: 4, calendario: 5
+                revisar: 4, itv: 3, viajesmes: 4, proximos: 4, kmmes: 4, kmcamion: 4, kmchofer: 4, ultimos: 4, topclientes: 3, comparativa: 4, calendario: 5
             };
 
             function el(id) { return document.getElementById(id); }
@@ -719,6 +733,12 @@
             function aplicarLayout(items, hidden) {
                 hidden = hidden || [];
                 if (!GRID) return;
+                // Tarjetas agregadas después de que el usuario guardó su diseño: van al final, no encima de otras.
+                var guardadas = items.map(function (it) { return it.id; });
+                var fondo = items.reduce(function (m, it) { return Math.max(m, (it.y || 0) + (it.h || 1)); }, 0);
+                items = items.concat(LAYOUT_DEFAULT.filter(function (d) {
+                    return guardadas.indexOf(d.id) === -1 && hidden.indexOf(d.id) === -1;
+                }).map(function (d) { return Object.assign({}, d, { y: fondo + d.y }); }));
                 GRID.batchUpdate();
                 // asegurar que todos estén visibles y en el grid
                 WIDGETS.forEach(function (w) {

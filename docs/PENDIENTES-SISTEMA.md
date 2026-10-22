@@ -38,7 +38,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 16 | Diagramas de los flujos para que Facu y Fede prueben y para la presentación con la profesora | **Primera versión hecha (19/10):** viajes y proformas (propia y Rukas) + instructivo de prueba y guion | Commit del 19/10 | Ver §16 |
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
-| 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar e ITV de camiones | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`) | Recompilar la API y probar (ver §19) |
+| 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`); km por chofer **sin pushear** | Recompilar la API y probar (ver §19) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -824,7 +824,12 @@ Pedido de Rocío (21/10): filtros, gráficos, últimos viajes, próximos viajes 
 - De paso: los ejes abreviados dicen "5 mil" (antes "5 K" y "12,5 k" mezclados) y el número de la barra más larga de Km por camión ya no se corta en pantallas angostas.
 - Visto en la prueba: los enlaces del sistema salen verdes (`a` de `assets/compiled/css/app.css`), aunque el §11 del design system dice azul. Afecta a todas las pantallas; no se tocó.
 
-Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 px: los cuatro períodos, un rango a mano, detalle desde las tres listas, calendario, Personalizar (ocultar, guardar, recargar) y las dos tarjetas nuevas con casos de cada motivo. Falta con datos reales.
+**Tercera tanda (21/10, pedida por Rocío): Km por chofer.** Tarjeta nueva, igual a Km por camión: km del período por chofer, los 8 con más km y el resto en "Otros". Los viajes sin chofer (con plataforma se puede asignar después) van juntos en gris como "Sin chofer"; un chofer inactivo aparece igual (en el globito dice "Inactivo").
+- En las dos tarjetas (camión y chofer) cada barra dice "7.559 km · 18 viajes". Si no entra (celular), solo los km; los viajes y el % del total quedan en el globito.
+- Diseño por defecto: Km por mes y Km por camión en una fila, Km por chofer y Top clientes en la siguiente, y Últimos viajes a todo el ancho.
+- Si alguien ya guardó su diseño, las tarjetas que se agreguen después aparecen al final (antes podían quedar encimadas).
+
+Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 px: los cuatro períodos, un rango a mano, detalle desde las tres listas, calendario, Personalizar (ocultar, guardar, recargar, y un diseño guardado sin la tarjeta nueva), las tarjetas de Para revisar e ITV con casos de cada motivo y Km por chofer con viajes sin chofer y un chofer inactivo. Falta con datos reales.
 
 **Cómo probar en la VM** (`git pull` → recompilar la API → Ctrl+F5 en el dashboard):
 - [ ] Al entrar: Trimestre marcado, debajo del título "Del 01/08/2026 al … · comparado con el 01/05/2026 al …", todas las tarjetas con datos y sin errores nuevos en la consola (los de F16 siguen).
@@ -840,9 +845,9 @@ Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 p
 - [ ] Para revisar: cada viaje listado cumple su motivo (abrirlo en Gestionar viajes y mirar estado, fechas, proforma y evidencia). Al revés: pasar uno a En viaje, o meterlo en una proforma, y recargar → sale de la lista.
 - [ ] Para revisar con muchos viajes viejos: si aparecen viajes de prueba antiguos, sirve para decidir la limpieza (§4).
 - [ ] ITV de camiones: comparar con la fecha de ITV de cada camión activo en Gestionar camiones (vence a los 12 meses). Confirmar con Rocío si el plazo es de 12 meses para todos.
+- [ ] Km por chofer: con Último mes, los km de un chofer coinciden con la suma de sus viajes en Gestionar viajes. Los viajes sin chofer aparecen como "Sin chofer".
 
-**Ideas para sumar** (pedido de "ver qué más tiene valor"; Rocío decide). Hechas el 21/10: Para revisar e ITV de camiones (ver arriba). Quedan:
-- [ ] **Km y viajes por chofer**: el mismo gráfico que por camión, con un selector Camión / Chofer. Solo frente.
+**Ideas para sumar** (pedido de "ver qué más tiene valor"; Rocío decide). Hechas el 21/10: Para revisar, ITV de camiones y Km por chofer (ver arriba). Quedan:
 - [ ] **Rechazos por cliente o por destino**: dónde se concentran. Solo frente.
 - [ ] **Facturación del período y deuda vencida**: fechas en `dashboard/top-clientes-facturacion` y un total de saldo vencido. Es cuenta corriente: coordinar con Facu.
 - [ ] **Uso de la flota**: % de camiones con al menos un viaje en el período y días sin viajes de cada uno. Solo frente.

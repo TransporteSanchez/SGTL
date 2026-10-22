@@ -340,7 +340,8 @@
     mostrarIndicadores(total, anterior);
     graficoViajes(grupos.lista, p);
     graficoKm(grupos.lista, p);
-    graficoCamiones(actual, total);
+    graficoReparto('camion', actual, total);
+    graficoReparto('chofer', actual, total);
     tablaUltimos(actual);
     tablaComparativa(grupos, total, p);
     if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 60);
@@ -351,7 +352,7 @@
       el(id).textContent = '—';
       el(id + '-detalle').textContent = '';
     });
-    ['grafico-viajes', 'grafico-km', 'grafico-camiones'].forEach(function (id) { mensajeGrafico(id, texto); });
+    ['grafico-viajes', 'grafico-km', 'grafico-camiones', 'grafico-choferes'].forEach(function (id) { mensajeGrafico(id, texto); });
     el('ultimos-viajes').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>';
     el('comparativa-meses').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>';
   }
@@ -547,69 +548,101 @@
     });
   }
 
-  // Km del período repartidos por camión. Más de 8 camiones: el resto va a "Otros".
-  function graficoCamiones(viajes, total) {
-    var porCamion = {};
+  // Cómo se agrupan los km del período en "Km por camión" y "Km por chofer".
+  var REPARTOS = {
+    camion: {
+      grafico: 'grafico-camiones', plural: 'camiones',
+      clave: function (v) { return v.CamionID || 0; },
+      nombre: function (id) { return dominio(id); },
+      detalle: function (id) { var c = dash.camiones[id]; return c ? [c.Marca, c.Modelo].filter(Boolean).join(' ') : ''; },
+      sinAsignar: 'Sin camión'
+    },
+    chofer: {
+      grafico: 'grafico-choferes', plural: 'choferes',
+      clave: function (v) { return v.ChoferID > 0 ? v.ChoferID : 0; },
+      nombre: function (id) { return nombreChofer(id) || 'Chofer ' + id; },
+      detalle: function (id) { var c = dash.choferes[id]; return c && String(c.EstadoChofer || '').toLowerCase() !== 'activo' ? 'Inactivo' : ''; },
+      // Con plataforma el chofer puede asignarse después: esos viajes van juntos, en gris.
+      sinAsignar: 'Sin chofer'
+    }
+  };
+
+  // Km y viajes del período por camión o por chofer. Más de 8: el resto va a "Otros".
+  function graficoReparto(tipo, viajes, total) {
+    var como = REPARTOS[tipo];
+    var grupos = {};
     viajes.forEach(function (v) {
-      var c = porCamion[v.CamionID] || (porCamion[v.CamionID] = { id: v.CamionID, km: 0, viajes: 0 });
-      c.km += v._km;
-      c.viajes++;
+      var id = como.clave(v);
+      var g = grupos[id] || (grupos[id] = { id: id, km: 0, viajes: 0 });
+      g.km += v._km;
+      g.viajes++;
     });
-    var filas = Object.keys(porCamion).map(function (k) { return porCamion[k]; })
-      .filter(function (c) { return c.km > 0; })
+    var filas = Object.keys(grupos).map(function (k) { return grupos[k]; })
+      .filter(function (g) { return g.km > 0; })
       .sort(function (a, b) { return b.km - a.km; });
-    if (!filas.length) { mensajeGrafico('grafico-camiones', 'No hay km cargados en el período.'); return; }
+    if (!filas.length) { mensajeGrafico(como.grafico, 'No hay km cargados en el período.'); return; }
     if (filas.length > 8) {
       var resto = filas.splice(7);
-      filas.push({ otros: resto.length, km: resto.reduce(function (s, c) { return s + c.km; }, 0), viajes: resto.reduce(function (s, c) { return s + c.viajes; }, 0) });
+      filas.push({ otros: resto.length, km: resto.reduce(function (s, g) { return s + g.km; }, 0), viajes: resto.reduce(function (s, g) { return s + g.viajes; }, 0) });
     }
-    filas.forEach(function (c) {
-      var cam = dash.camiones[c.id];
-      c.nombre = c.otros ? 'Otros ' + c.otros : dominio(c.id);
-      c.detalle = c.otros ? c.otros + ' camiones' : (cam ? [cam.Marca, cam.Modelo].filter(Boolean).join(' ') : '');
+    filas.forEach(function (g) {
+      g.gris = !!g.otros || (!g.id && !!como.sinAsignar);
+      g.nombre = g.otros ? 'Otros ' + g.otros : (!g.id && como.sinAsignar ? como.sinAsignar : como.nombre(g.id));
+      g.detalle = g.otros ? g.otros + ' ' + como.plural : (g.id ? como.detalle(g.id) : '');
     });
-    var textoKm = function (v) { return formatoEntero.format(v) + ' km'; };
-    var anchoNumeros = anchoTexto(filas.map(function (c) { return textoKm(Math.round(c.km)); }));
-    // ApexCharts pone el número centrado sobre el final de la barra: se corre medio texto para que quede afuera.
-    var corrimiento = Math.ceil(anchoNumeros / 2) + 6;
-    // El eje se estira lo justo para que el número de la barra más larga entre a la derecha (depende del ancho).
-    var eje = function (ancho) {
-      var lugar = Math.max(80, ancho - 100);
-      var libre = Math.max(lugar - anchoNumeros - 12, lugar * 0.4);
-      return escalaRedonda(Math.max(filas[0].km * lugar / libre, filas[0].km * 1.1));
+    var textoLargo = function (g) { return formatoEntero.format(Math.round(g.km)) + ' km · ' + cantidadViajes(g.viajes); };
+    var textoCorto = function (g) { return formatoEntero.format(Math.round(g.km)) + ' km'; };
+    var anchoLargo = anchoTexto(filas.map(textoLargo));
+    var anchoCorto = anchoTexto(filas.map(textoCorto));
+    var anchoNombres = Math.min(120, anchoTexto(filas.map(function (g) { return g.nombre; })));
+    // Lo que depende del ancho de la tarjeta: si "km · viajes" no entra a la derecha de la barra, solo los km
+    // (los viajes quedan en el globito). El eje se estira lo justo para que el número de la barra más larga entre.
+    var medidas = function (ancho) {
+      var lugar = Math.max(80, ancho - anchoNombres - 30);
+      var corto = lugar - anchoLargo - 12 < lugar * 0.45;
+      var anchoNumero = corto ? anchoCorto : anchoLargo;
+      var libre = Math.max(lugar - anchoNumero - 12, lugar * 0.4);
+      return {
+        escala: escalaRedonda(Math.max(filas[0].km * lugar / libre, filas[0].km * 1.1)),
+        texto: corto ? textoCorto : textoLargo
+      };
     };
     var opciones = $.extend(true, base(), {
       chart: { type: 'bar' },
-      series: [{ name: 'Km', data: filas.map(function (c) { return Math.round(c.km * 10) / 10; }) }],
-      colors: filas.map(function (c) { return c.otros ? GRIS : AZUL; }),
+      series: [{ name: 'Km', data: filas.map(function (g) { return Math.round(g.km * 10) / 10; }) }],
+      colors: filas.map(function (g) { return g.gris ? GRIS : AZUL; }),
       plotOptions: { bar: { horizontal: true, distributed: true, borderRadius: 4, borderRadiusApplication: 'end', dataLabels: { position: 'top' } } },
-      dataLabels: {
-        enabled: true, offsetX: corrimiento, textAnchor: 'start',
-        formatter: textoKm,
-        style: { colors: [TINTA], fontSize: '12px', fontWeight: 600 }
-      },
+      dataLabels: { enabled: true, textAnchor: 'start', offsetX: 8, style: { colors: [TINTA], fontSize: '12px', fontWeight: 600 } },
       xaxis: {
-        categories: filas.map(function (c) { return c.nombre; }), min: 0,
+        categories: filas.map(function (g) { return g.nombre; }), min: 0,
         axisBorder: { show: false }, axisTicks: { show: false },
         labels: { formatter: compacto }
       },
-      yaxis: { labels: { style: { colors: TINTA, fontSize: '12px' }, maxWidth: 110 } },
+      yaxis: {
+        labels: {
+          style: { colors: TINTA, fontSize: '12px' }, maxWidth: 120,
+          // ApexCharts mide el número de la barra con este formato para centrarlo en la punta: vacío para los
+          // números, así el texto arranca justo después de la barra (los nombres se muestran igual).
+          formatter: function (v) { return typeof v === 'number' ? '' : v; }
+        }
+      },
       grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
       tooltip: {
         custom: function (o) {
-          var c = filas[o.dataPointIndex];
-          return '<div class="px-2 py-1"><strong>' + esc(c.nombre) + '</strong>' + (c.detalle ? ' <span class="text-muted">' + esc(c.detalle) + '</span>' : '') +
-            '<br>' + esc(SGTL.km(c.km)) + ' km en ' + esc(cantidadViajes(c.viajes)) + ' · ' + esc(porcentaje(c.km, total.km)) + ' del total</div>';
+          var g = filas[o.dataPointIndex];
+          return '<div class="px-2 py-1"><strong>' + esc(g.nombre) + '</strong>' + (g.detalle ? ' <span class="text-muted">' + esc(g.detalle) + '</span>' : '') +
+            '<br>' + esc(SGTL.km(g.km)) + ' km en ' + esc(cantidadViajes(g.viajes)) + ' · ' + esc(porcentaje(g.km, total.km)) + ' del total</div>';
         }
       }
     });
-    dibujar('grafico-camiones', opciones, function (alto, ancho) {
+    dibujar(como.grafico, opciones, function (alto, ancho) {
       var lugar = (alto - 40) / filas.length;
-      var escala = eje(ancho);
+      var m = medidas(ancho);
       return {
         chart: { height: alto },
         plotOptions: { bar: { barHeight: Math.max(6, Math.min(24, Math.floor(lugar * 0.6))) + 'px' } },
-        xaxis: { max: escala.max, tickAmount: escala.marcas }
+        xaxis: { max: m.escala.max, tickAmount: m.escala.marcas },
+        dataLabels: { formatter: function (v, o) { return m.texto(filas[o.dataPointIndex]); } }
       };
     });
   }
