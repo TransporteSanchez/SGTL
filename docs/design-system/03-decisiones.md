@@ -104,9 +104,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **"Ver PDF"** abre la vista previa del PDF dentro del sistema (no en una pestaña nueva): título "Ver PDF del
   presupuesto" / "Ver PDF del comprobante FAC-00000012", y el pie **Cerrar · Enviar por e-mail · Imprimir ·
   Descargar PDF** (este último, el principal). **"Enviar por e-mail" va en ese pie, no como botón de la fila**:
-  así se ve lo que se manda y la fila no se llena de botones (presupuestos y cuenta corriente, 22/10).
-  **Pendiente:** Gestionar proformas y Listar proformas todavía bajan el PDF directo ("Descargar PDF"); van a
-  pasar a esta vista previa (`docs/PENDIENTES-SISTEMA.md` §21). No las tomes de ejemplo.
+  así se ve lo que se manda y la fila no se llena de botones (presupuestos, cuenta corriente y proformas, 22/10).
+  Si el módulo no envía por e-mail (proformas, por ahora), el pie es Cerrar · Imprimir · Descargar PDF.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué** ("No es posible eliminar un chofer activo"). No se oculta: así todas las filas tienen los
   mismos botones en el mismo lugar.

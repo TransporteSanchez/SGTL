@@ -217,32 +217,124 @@
             .catch(function () { return p; });
     }
 
-    function generar(id, modo) {
+    // Arma el PDF de la proforma: devuelve { doc, nombre } o rechaza con un mensaje para el usuario.
+    function preparar(id) {
         var logo = null;
-        Promise.all([
+        return Promise.all([
             fetch(API + '/Proformas/' + id).then(function (r) { return r.ok ? r.json() : null; }),
             obtenerLogo()
         ]).then(function (res) {
             var p = res[0];
             logo = res[1];
-            if (!p) { avisarError('No se pudo obtener la proforma. Probá de nuevo.'); return; }
+            if (!p) throw new Error('No se pudo obtener la proforma. Probá de nuevo.');
             return conLineasDePlataforma(p);
         }).then(function (p) {
-            if (!p) return;
             var doc = construir(p, logo);
-            if (!doc) return;
-            var nombre = 'Proforma_' + (p.Numero || (p.Tipo_Proforma === 'Plataforma'
-                ? (p.Plataforma || 'Plataforma') + '_' + (p.Plataforma_Numero || p.Proforma_ID)
-                : 'ID' + p.Proforma_ID)) + '.pdf';
-            if (modo === 'imprimir') {
-                doc.autoPrint();
-                window.open(doc.output('bloburl'), '_blank');
-            } else {
-                doc.save(nombre);
-            }
-        }).catch(function () { avisarError('No se pudo generar el PDF. Probá de nuevo.'); });
+            if (!doc) throw new Error('No se pudo generar el PDF. Probá de nuevo.');
+            var idProforma = p.Proforma_ID || id;
+            var numero = p.Numero || (p.Tipo_Proforma === 'Plataforma'
+                ? (p.Plataforma || 'Plataforma') + '_' + (p.Plataforma_Numero || idProforma)
+                : 'ID' + idProforma);
+            return { doc: doc, nombre: 'Proforma_' + numero + '.pdf', numero: p.Numero || (p.Plataforma_Numero ? (p.Plataforma || '') + ' ' + p.Plataforma_Numero : '#' + idProforma) };
+        });
     }
 
+    function generar(id, modo) {
+        preparar(id).then(function (r) {
+            if (modo === 'imprimir') {
+                r.doc.autoPrint();
+                window.open(r.doc.output('bloburl'), '_blank');
+            } else {
+                r.doc.save(r.nombre);
+            }
+        }).catch(function (e) { avisarError(e && e.message ? e.message : 'No se pudo generar el PDF. Probá de nuevo.'); });
+    }
+
+    // ---------------------------------------------------------------- Ver PDF (§1.4)
+    // Vista previa dentro del sistema, igual que en presupuestos y cuenta corriente: Cerrar · Imprimir · Descargar PDF.
+    // Proformas no tiene envío por e-mail (queda para ver con Facu). Se puede abrir encima del formulario de la proforma.
+    var vista = null, urlVista = null, secuenciaVista = 0;
+
+    function porId(id) { return document.getElementById(id); }
+
+    function crearVista() {
+        var contenedor = document.createElement('div');
+        contenedor.innerHTML =
+            '<div class="modal fade" id="modalVistaProforma" tabindex="-1" aria-labelledby="tituloVistaProforma" aria-hidden="true">' +
+            '<div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">' +
+            '<div class="modal-header"><h5 class="modal-title" id="tituloVistaProforma">Ver PDF de la proforma</h5>' +
+            '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +
+            '<div class="modal-body"><div id="vistaProformaFeedback" class="text-center text-muted py-4" role="status">Preparando el PDF…</div>' +
+            '<iframe id="vistaProformaDocumento" title="Vista previa de la proforma en PDF" style="display:none; width:100%; height:65vh; border:1px solid #dee2e6;"></iframe></div>' +
+            '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>' +
+            '<button type="button" class="btn btn-outline-secondary" id="imprimirVistaProforma" disabled><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</button>' +
+            '<a id="descargarVistaProforma" class="btn btn-primary disabled" aria-disabled="true"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Descargar PDF</a></div>' +
+            '</div></div></div>';
+        var modal = contenedor.firstChild;
+        document.body.appendChild(modal);
+        porId('imprimirVistaProforma').addEventListener('click', function () {
+            try { var w = porId('vistaProformaDocumento').contentWindow; w.focus(); w.print(); }
+            catch (e) { mostrarErrorVista('No se pudo imprimir desde acá. Usá el botón de impresión del visor del PDF.'); }
+        });
+        // Encima de otra ventana (el formulario de la proforma): queda arriba con su fondo oscuro.
+        modal.addEventListener('show.bs.modal', function () {
+            if (document.querySelector('.modal.show')) modal.style.zIndex = 1065;
+        });
+        modal.addEventListener('shown.bs.modal', function () {
+            if (modal.style.zIndex) {
+                var fondos = document.querySelectorAll('.modal-backdrop');
+                if (fondos.length) fondos[fondos.length - 1].style.zIndex = 1060;
+            }
+        });
+        modal.addEventListener('hidden.bs.modal', function () {
+            secuenciaVista++;
+            modal.style.zIndex = '';
+            var marco = porId('vistaProformaDocumento');
+            marco.onload = null; marco.removeAttribute('src');
+            if (urlVista) { URL.revokeObjectURL(urlVista); urlVista = null; }
+            // Si quedó abierta otra ventana debajo, Bootstrap le sacó al body la clase que la deja desplazarse.
+            if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
+        });
+        return bootstrap.Modal.getOrCreateInstance(modal);
+    }
+
+    function mostrarErrorVista(texto) {
+        var aviso = porId('vistaProformaFeedback');
+        aviso.className = 'alert alert-light-danger color-danger';
+        aviso.textContent = texto;
+    }
+
+    function verPDF(id) {
+        if (!vista) vista = crearVista();
+        var version = ++secuenciaVista;
+        var marco = porId('vistaProformaDocumento'), descarga = porId('descargarVistaProforma'), imprimir = porId('imprimirVistaProforma');
+        if (urlVista) { URL.revokeObjectURL(urlVista); urlVista = null; }
+        marco.onload = null; marco.removeAttribute('src'); marco.style.display = 'none';
+        descarga.removeAttribute('href'); descarga.removeAttribute('download');
+        descarga.classList.add('disabled'); descarga.setAttribute('aria-disabled', 'true');
+        imprimir.disabled = true;
+        porId('tituloVistaProforma').textContent = 'Ver PDF de la proforma';
+        var aviso = porId('vistaProformaFeedback');
+        aviso.className = 'text-center text-muted py-4'; aviso.textContent = 'Preparando el PDF…';
+        vista.show();
+        preparar(id).then(function (r) {
+            if (version !== secuenciaVista) return;
+            porId('tituloVistaProforma').textContent = 'Ver PDF de la proforma ' + r.numero;
+            urlVista = URL.createObjectURL(r.doc.output('blob'));
+            descarga.href = urlVista; descarga.download = r.nombre;
+            descarga.classList.remove('disabled'); descarga.setAttribute('aria-disabled', 'false');
+            marco.onload = function () {
+                if (version !== secuenciaVista) return;
+                aviso.className = 'd-none'; aviso.textContent = '';
+                imprimir.disabled = false;
+            };
+            marco.src = urlVista; marco.style.display = 'block';
+        }).catch(function (e) {
+            if (version === secuenciaVista) mostrarErrorVista(e && e.message ? e.message : 'No se pudo generar el PDF de la proforma. Probá de nuevo.');
+        });
+    }
+
+    window.verProformaPDF = verPDF;
     window.descargarProformaPDF = function (id) { generar(id, 'descargar'); };
     window.imprimirProformaPDF = function (id) { generar(id, 'imprimir'); };
 })();

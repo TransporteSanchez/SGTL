@@ -197,7 +197,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" id="btnCerrarProforma" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-outline-secondary" id="btnPdfForm" onclick="pdfDesdeForm()"><i class="bi bi-file-earmark-pdf me-1"></i>PDF</button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnPdfForm" onclick="pdfDesdeForm()"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Ver PDF</button>
                     <button type="button" class="btn btn-primary" id="btnGuardarBorrador" onclick="guardarBorrador()"><i class="bi bi-save me-1"></i>Guardar borrador</button>
                     <button type="button" class="btn btn-success" id="btnGenerar" onclick="generarProforma()"><i class="bi bi-file-earmark-check me-1"></i>Generar proforma</button>
                 </div>
@@ -503,7 +503,7 @@
             var botones = [
                 SGTL.botonFila('ver', { id: id }),
                 SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador', motivo: 'Solo se editan los borradores' }),
-                SGTL.botonFila('pdf', { id: id })
+                SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' })
             ];
             if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'Facturada: ' + (x.FacturaNumero || '') }));
             else if (estado === 'Generada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Marcar aceptada', icono: 'bi-check2-circle', datos: { paso: 'aceptar' } }));
@@ -833,7 +833,7 @@
             window.FacturacionProforma.abrir(id, function () { buscarProformas(profState.page); });
         }
 
-        function pdfDesdeForm() { var id = parseInt(val('p_id')); if (!id) { mostrarMensajeProforma('Guardá la proforma primero para generar el PDF.', 'danger'); return; } descargarProformaPDF(id); }
+        function pdfDesdeForm() { var id = parseInt(val('p_id')); if (!id) { mostrarMensajeProforma('Guardá la proforma primero para generar el PDF.', 'danger'); return; } verProformaPDF(id); }
 
         function anularFactura(id) {
             if (!window.FacturacionProformaAnulacion) { SGTL.toastError('No se pudo cargar la anulación. Recargá la pantalla.'); return; }
@@ -869,7 +869,7 @@
             $('#cuerpoProformas')
                 .on('click', '[data-accion="ver"]', function () { verProforma($(this).data('id')); })
                 .on('click', '[data-accion="editar"]', function () { editarProforma($(this).data('id')); })
-                .on('click', '[data-accion="pdf"]', function () { descargarProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="pdf"]', function () { verProformaPDF($(this).data('id')); })
                 .on('click', '[data-accion="siguiente"]', function () {
                     if ($(this).data('paso') === 'aceptar') marcarAceptada($(this).data('id'));
                     else facturarProforma($(this).data('id'));

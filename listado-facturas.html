@@ -161,8 +161,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-outline-secondary" onclick="if(window.__profActual)imprimirProformaPDF(window.__profActual)"><i class="bi bi-printer me-1"></i>Imprimir</button>
-                    <button type="button" class="btn btn-primary" onclick="if(window.__profActual)descargarProformaPDF(window.__profActual)"><i class="bi bi-file-earmark-pdf me-1"></i>Descargar PDF</button>
                 </div>
             </div>
         </div>
@@ -377,7 +375,7 @@
             if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'Facturada: ' + (x.FacturaNumero || '') });
             else if ((x.Estado || '') === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt' });
             else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true, motivo: (x.Estado || '') === 'Generada' ? 'Primero marcala como aceptada en Gestionar proformas' : 'Sin pasos pendientes' });
-            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id }), siguiente]);
+            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }), siguiente]);
         }
         function renderPag() {
             SGTL.tabla.paginacion('#paginacion', {
@@ -431,7 +429,7 @@
             $('#busquedaProformaForm').on('submit', function (evento) { evento.preventDefault(); buscarProformas(1); });
             $('#cuerpoProformas')
                 .on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); })
-                .on('click', '[data-accion="pdf"]', function () { descargarProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="pdf"]', function () { verProformaPDF($(this).data('id')); })
                 .on('click', '[data-accion="siguiente"]', function () { facturarProforma($(this).data('id')); });
         });
     </script>

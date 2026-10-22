@@ -1406,9 +1406,16 @@ y una línea más marcada cierra el grupo. Las columnas no cambian y el celeste 
   base y el WhatsApp de Fede, y conviene resolver antes la §2 (de dónde sale la hora). Decidirlo con el equipo.
 - [ ] **Presupuestos: km a mano si Google falla** (opción B), como en viajes, con motivo que pase al viaje generado.
   Hoy, sin la distancia de Google no se guarda.
-- [ ] **Proformas: "Ver PDF" con vista previa.** Gestionar y Listar proformas todavía bajan el PDF directo
-  ("Descargar PDF"); pasarlas a la vista previa con Enviar por e-mail en el pie, como presupuestos y cuenta corriente
-  (§1.4 del design system). Módulo de Facu.
+- [x] **Proformas: "Ver PDF" con vista previa.** Gestionar y Listar proformas bajaban el PDF directo ("Descargar PDF").
+  **Hecho (22/10, commit "Proformas: Ver PDF abre la vista previa, como presupuestos y cuenta corriente", con el OK de
+  Rocío; módulo de Facu):** el botón de la fila y el "Ver PDF" del formulario de la proforma abren la ventana "Ver PDF de
+  la proforma …" con Cerrar · Imprimir · Descargar PDF (`proforma-pdf.js`, `verProformaPDF`); desde el formulario queda
+  encima de él. El detalle de Listar proformas queda solo con Cerrar (§6.2). No hace falta recompilar.
+  - [ ] Probar en la VM (Ctrl+F5): en Listar y en Gestionar proformas, Ver PDF de una proforma generada → vista previa
+    con su número en el título; Imprimir y Descargar PDF funcionan. Abrir una proforma y tocar "Ver PDF" en el
+    formulario → la vista queda encima; al cerrarla, el formulario sigue abierto y se puede usar. Una de Rukas también.
+- [ ] **Proformas: enviar por e-mail** (no existe hoy; solo hay envío de facturas y presupuestos). Iría en el pie de Ver
+  PDF, como en presupuestos. Necesita API y elegir el perfil de correo. **Verlo con Facu** (decisión de Rocío, 22/10).
 - [x] **Documentación para cualquier IA. Hecho (22/10, commit "Documentación: AGENTS.md como entrada al design
   system para cualquier IA").** Pedido de Rocío: que cualquier IA del equipo (Facu usa Codex; puede pasar a Claude o
   Cursor) siga el design system completo.
@@ -1589,8 +1596,6 @@ y mandarles este mensaje:
 >    `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
 > 5. Prueben los flujos con el diseño nuevo y avísenme lo que vean. Queda para después (no son errores):
 >    - el formulario de alta de viaje y la proforma de Rukas: los estoy ajustando yo;
->    - en proformas, "Descargar PDF" todavía baja el archivo directo (va a abrir la vista previa, como en presupuestos
->      y cuenta corriente);
 >    - para charlar entre todos: fechas previstas y reales en presupuestos y viajes, y si en presupuestos se pueden
 >      cargar los km a mano cuando Google falla.
 

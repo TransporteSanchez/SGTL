@@ -52,6 +52,10 @@ descartó funcionalidad tuya; lo que cambió es cómo se ve y cómo se llama.
   administradores. En Grupos y permisos, tu permiso "Facturación" (grupo Configuración) pasa al grupo Facturación como
   "Gestión de tipos de comprobante": la API lo renombra sola conservando las asignaciones (`GruposController`). Si el
   manual de usuario nombra la ruta vieja, hay que actualizarlo.
+- **Proformas, Ver PDF:** el botón de PDF de Gestionar y Listar proformas (y el del formulario) ya no descarga directo:
+  abre la vista previa "Ver PDF de la proforma …" con Cerrar · Imprimir · Descargar PDF, como presupuestos y cuenta
+  corriente (`proforma-pdf.js`, `verProformaPDF`). El detalle de Listar proformas queda solo con Cerrar. Enviar la
+  proforma por e-mail no existe todavía: lo vemos con vos.
 - **Registrar recibo:** en el merge se había roto el id `reciboFacturas` (al pasar tus mensajes a minúscula) y no cargaban
   las facturas pendientes. Ya está corregido, con una prueba nueva (`tests/ids-de-pantallas.test.js`).
 
