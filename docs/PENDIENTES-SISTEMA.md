@@ -1101,11 +1101,14 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   `FacturacionConfiguracionController.cs`, `EnviosPresupuestosController.cs` y `EnviosComprobantesController.cs`.
   Algunas son textos que se guardan en la base (concepto del movimiento, auditoría): revisarlas una por una y
   cambiar solo lo que se muestra. Es C#: recompilar y probar en la VM. **Módulo de Facu: coordinarlo con él.**
-- [ ] **SheetJS (`xlsx@0.18.5`) tiene vulnerabilidades conocidas** (contaminación de prototipo al leer un archivo y
-  una expresión regular que se puede trabar). Se carga desde jsdelivr en `cuenta-corriente-clientes.html`,
-  `gestion-facturacion.html` y `listado-facturas.html` (exportar a Excel y, en proformas, leer el Excel de Rukas).
-  Las versiones corregidas (0.19.3 o posteriores) ya no se publican en npm sino en `cdn.sheetjs.com`: hay que
-  decidir de dónde cargarla (o copiarla a `assets/extensions/`) y volver a probar exportar e importar el Excel.
+- [x] **SheetJS (`xlsx@0.18.5`) tenía vulnerabilidades conocidas** (contaminación de prototipo al leer un archivo y
+  una expresión regular que se puede trabar). **Hecho (22/10, commit "Interfaz: SheetJS 0.20.3 en una copia
+  local"):** se copió la 0.20.3 de `cdn.sheetjs.com` a `assets/extensions/sheetjs/xlsx.full.min.js` (decisión de
+  Rocío: copia local, como flatpickr) y `cuenta-corriente-clientes.html`, `gestion-facturacion.html` y
+  `listado-facturas.html` la cargan de ahí. En la Mac: exportar el Excel de cuenta corriente y leer el Excel de
+  Rukas de `docs/pruebas/datos/` funcionan igual.
+  - [ ] Probar en la VM: Exportar → Excel en cuenta corriente y en las dos pantallas de proformas; en un borrador
+    de Rukas, importar uno de los Excel de `docs/pruebas/datos/` (con datos de prueba).
 - [ ] **"Cambiar contraseña" del menú de usuario no hace nada** (es un link a `#`). Ya anotado como R4 en §10 y,
   con la propuesta del código por WhatsApp, en §15. Decidir si se implementa o se saca del menú.
 - [ ] **El filtro de Presupuestos no tiene botón "Buscar"**: filtra mientras se escribe (sobre la lista ya cargada),
