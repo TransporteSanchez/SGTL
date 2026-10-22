@@ -150,7 +150,7 @@ Pantallas: `gestion-viajes.html`, `listado-viajes.html`. Regla de negocio:
 | **VIA-07** | Media | El combo de camión trae todos los no Eliminados, **incluye Inactivos**. `ValidarViaje` no lo rechaza. Choferes sí se buscan con otro criterio (autocomplete). | Se puede asignar un camión dado de baja operativa. | Filtrar `EstadoCamion == 'Activo'` o validar en API. |
 | **VIA-08** | Baja | Cliente en gestión: select completo. En listado: autocomplete. Chofer en el modal: sí busca. Camión y origen/destino: no. | Inconsistente; con muchos clientes el select de filtro se hace largo. | **Ya mapeado §5** (choices.js). Mientras tanto, reutilizar el buscador de clientes de Facu. |
 | **VIA-09** | Media | WhatsApp se manda al guardar un viaje nuevo (gestión). No hay reenvío. Generar viaje desde presupuesto **no llama** a la notificación (`PresupuestosController` `{id}/viaje`). | Si el envío falla, o si el viaje nació de un presupuesto, el chofer no tiene hoja de ruta hasta que alguien edite y vuelva a guardar. | **Reenvío ya mapeado §15.** El hueco del presupuesto es nuevo: o se notifica al generar, o se avisa “este viaje no se le mandó al chofer”. |
-| **VIA-10** | Decisión | Evidencia: el checklist de directos la marca como recomendada. La UI pregunta con `confirm()` si falta; la API no la exige. | Coherente con “recomendado”, pero se pueden dejar directos Entregados sin constancia. | Decidir si se exige (API + UI) o se deja la recomendación, sin `confirm()` nativo cuando se unifique el design system. |
+| **VIA-10** | Decisión | Evidencia: el checklist de directos la marca como recomendada. La UI pregunta con `confirm()` si falta; la API no la exige. | Coherente con “recomendado”, pero se pueden dejar directos Entregados sin constancia. | Decidir si se exige (API + UI) o se deja la recomendación, sin `confirm()` nativo cuando se unifique el design system. **Decidido el 22/10: obligatoria en directos, con cualquier resultado (API + pantalla).** |
 | **VIA-11** | Baja | No hay campo Observaciones en el viaje (tampoco en el modelo que usa la pantalla). Proformas, facturas y recibos sí tienen. | No hay dónde dejar una nota operativa ni marcar un registro de prueba. | **Ya mapeado §13** como pendiente de decidir si el negocio lo necesita. |
 | **VIA-12** | Media | El circuito Rukas oculta SAP / entrega y salta de Registrado a Listo para facturar. El directo va Registrado → En viaje → Entregado. Eso está bien y alineado al checklist. Lo que falla es el texto de Facturado (VIA-05) y el botón de estado (VIA-06). | — | No cambiar el flujo; sí los textos y bloqueos. |
 | **VIA-13** | Baja | En un viaje Listo para facturar de cliente plataforma, la distancia se cambia con Recalcular, no a mano (salvo que Google falle). Es así por diseño (reporte 19/10). | Puede sorprender si se quiere corregir un km sin tocar Google. | Dejarlo; documentarlo en la ayuda del campo. |
@@ -316,7 +316,8 @@ Estas no se “corrigen”: hay que elegir.
    plataforma no existe. Si propias tampoco lo necesitan, un solo botón
    “Generar” que deje Aceptada. Si sí, hay que explicarlo en el modal.
 4. **¿La evidencia de entrega en clientes directos es obligatoria o
-   recomendada?** Hoy es recomendada con un `confirm()`.
+   recomendada?** Decidido el 22/10: obligatoria, también en un rechazo (el remito con la
+   nota del cliente). Falta confirmar con Claudia qué vuelve cuando hay rechazo.
 5. **¿El viaje necesita Observaciones?** Anotado en §13, sin decisión.
 6. **¿Presupuestos notifica al chofer al generar el viaje?** Hoy no. Coordinar
    con Fede (y con el reenvío del §15).

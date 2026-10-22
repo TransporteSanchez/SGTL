@@ -141,6 +141,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? TarifaKmID { get; set; }
             public DateTime Fecha_Inicio { get; set; }
             public string Tipo_Cliente { get; set; }
+            public bool Tiene_Evidencia { get; set; }
         }
 
         public const string EstadoRegistrado = "Registrado";
@@ -227,7 +228,8 @@ namespace WebApi_TransporteSanchez.Controllers
         private const string SELECT_ESTADO =
             "SELECT v.Viaje_ID, v.Estado, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, " +
             "RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, v.TarifaFijaID, v.TarifaKmID, v.Fecha_Inicio, " +
-            "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente " +
+            "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
+            "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
             "FROM VIAJES v LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID ";
 
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
@@ -543,7 +545,8 @@ SELECT CAST(CASE WHEN EXISTS (
 
         // POST: api/Viajes/{id}/Estado
         // Avanza/retrocede un paso del ciclo y registra el resultado de entrega
-        // (opcional con plataforma; obligatorio en clientes directos para pasar a Entregado).
+        // (opcional con plataforma; obligatorio en clientes directos para pasar a Entregado, con la evidencia).
+        // La pantalla sube la evidencia antes de llamar a este metodo.
         [HttpPost]
         [Route("api/Viajes/{id:int}/Estado")]
         public IHttpActionResult CambiarEstado(int id, [FromBody] CambioEstadoViajeDto body)
@@ -679,10 +682,13 @@ SELECT CAST(CASE WHEN EXISTS (
             {
                 using (var db = new SGTLAuditContext(Cn()))
                 {
-                    var estado = EstadoActual(db, id);
-                    if (estado == null) return NotFound();
-                    if (estado == EstadoFacturado)
+                    var v = db.Database.SqlQuery<EstadoViajeRow>(SELECT_ESTADO + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (v == null) return NotFound();
+                    if (v.Estado == EstadoFacturado)
                         return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje ya está facturado: no se puede quitar la evidencia." } });
+                    // En un directo entregado la evidencia es obligatoria: se reemplaza subiendo otra, no se quita.
+                    if (v.Estado == EstadoEntregado && !EsConPlataforma(v.Tipo_Cliente))
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje está entregado y la evidencia es obligatoria: para cambiarla, subí otra." } });
 
                     int borradas = db.Database.ExecuteSqlCommand("DELETE FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id", P("@id", id));
                     if (borradas > 0)
@@ -734,13 +740,16 @@ SELECT CAST(CASE WHEN EXISTS (
 
             bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
 
-            // Directo: SGTL es la unica constancia de la entrega.
+            // Directo: SGTL es la unica constancia de la entrega, por eso la evidencia (remito firmado, o con la
+            // nota de rechazo) es obligatoria con cualquier resultado.
             if (!conPlataforma && nuevo == EstadoEntregado)
             {
                 if (resultado == null)
                     errores.Add(new { PropertyName = "Resultado_Entrega", ErrorMessage = "Para marcar el viaje como entregado indicá el resultado de la entrega." });
                 if (!fechaEntrega.HasValue)
                     errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "Para marcar el viaje como entregado indicá la fecha de entrega." });
+                if (!v.Tiene_Evidencia)
+                    errores.Add(new { PropertyName = "Evidencia", ErrorMessage = "Para marcar el viaje como entregado adjuntá la evidencia de la entrega (remito firmado o con la nota de rechazo)." });
             }
 
             // Con plataforma: los tres numeros recien existen despues de cargar en planta y entregar,

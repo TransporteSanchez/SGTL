@@ -88,7 +88,7 @@ stateDiagram-v2
 ```
 
 - Se avanza o se vuelve **de a un paso**, con el botón "Estado y entrega" de la fila.
-- **Entregado** pide el resultado (Completa, Parcial o Rechazo) y la fecha de entrega. La **evidencia** (foto o PDF del remito firmado) se recomienda; se adjunta en el mismo modal.
+- **Entregado** pide el resultado (Completa, Parcial o Rechazo) y la fecha de entrega. La **evidencia** (foto o PDF del remito firmado, o con la nota del cliente si hubo rechazo) es obligatoria desde el 22/10, con cualquier resultado; se adjunta en la misma ventana.
 - **Facturado** no se elige a mano: lo pone la factura y lo saca la nota de crédito.
 - Solo los viajes **Entregados** entran en una proforma propia ("Traer viajes").
 

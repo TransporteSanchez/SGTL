@@ -923,9 +923,8 @@ funcionando (`sgtl-ui.js`).
   lo vacía y vuelve a buscar; Enter busca. El rango de fechas busca al elegir las dos fechas.
 - [ ] Cliente: escribir parte del nombre filtra la lista; elegir uno busca. Igual en Listar viajes.
 - [ ] Tabla con muchas columnas: al desplazarla hacia el costado, Acciones queda fija a la derecha.
-- [ ] Cambiar estado (banderita) de un viaje directo → Entregado sin evidencia → aparece "¿Guardar la entrega sin evidencia?"
-  encima; Cancelar vuelve al modal (que sigue andando); "Guardar sin evidencia" guarda y avisa "Estado del viaje
-  guardado.".
+- [x] ~~Entregado sin evidencia → "¿Guardar la entrega sin evidencia?"~~: desde el 22/10 la evidencia es obligatoria
+  en los directos y ya no pregunta (ver "Viajes: evidencia obligatoria…" al final del §20).
 - [ ] Quitar evidencia de un viaje que tenga: confirmación "¿Quitar la evidencia…?", Quitar → toast.
 - [ ] Exportar en Gestionar y en Listar viajes: baja el CSV con todo lo filtrado.
 - [ ] Listar viajes → ojo de una fila: "Ver detalle del viaje" con cliente, origen, destino, chofer y camión por
@@ -1215,7 +1214,7 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   (lo pone la factura).
 - **Entregado (directo):** resultado, fecha y evidencia van dentro de la tarjeta y se ven al elegirla. Resultado
   y fecha obligatorios, marcados en rojo con su mensaje; la fecha no puede ser anterior al inicio del viaje (el
-  calendario no deja elegirla). Sin evidencia sigue preguntando "¿Guardar la entrega sin evidencia?".
+  calendario no deja elegirla). La evidencia pasa a obligatoria en el commit siguiente (sección siguiente).
 - **Listo para facturar (con plataforma):** resultado y fecha **opcionales** dentro de la tarjeta (lo que diga
   Rukas; el dashboard los usa para "Parcial" y "Con rechazo"). **Evidencia opcional (nuevo):** antes no se
   ofrecía; la ayuda aclara que la constancia ya está en Rukas y se adjunta para tener el viaje completo en SGTL.
@@ -1232,8 +1231,8 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   registrado.", "Datos de la entrega del viaje #N guardados.".
 - **Listar viajes:** el detalle suma "Evidencia de la entrega" con el enlace "Ver evidencia adjunta".
 - [ ] Probar en la VM con un viaje directo **de prueba**: Registrado → En viaje; En viaje → Entregado sin
-  completar nada (resultado y fecha en rojo, "Revisá los campos marcados."); completar y guardar sin evidencia
-  (pregunta) y con una foto o PDF; abrirlo de nuevo: "Datos de la entrega" arriba, cambiar la fecha y guardar sin
+  completar nada (resultado, fecha y evidencia en rojo, "Revisá los campos marcados."); completar y adjuntar una
+  foto o PDF; abrirlo de nuevo: "Datos de la entrega" arriba, cambiar la fecha y guardar sin
   elegir estado; elegir En viaje y volver a tocarla (se desmarca); volver a En viaje y ver en Listar viajes que el
   resultado y la fecha quedaron vacíos.
 - [ ] Viaje con plataforma de prueba: sin N° entrega Rukas la tarjeta "Listo para facturar" está gris con el
@@ -1242,3 +1241,39 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   "Datos de la entrega" arriba; vuelve a Registrado y el resultado queda vacío. Un viaje facturado tiene la
   banderita deshabilitada.
 - [ ] Listar viajes → Ver detalle de un viaje con evidencia: el enlace la abre.
+
+### Viajes: evidencia obligatoria al entregar un viaje directo (22/10) — commit "Viajes: evidencia obligatoria al entregar un viaje directo", SIN PUSH, FALTA COMPILAR Y PROBAR EN VM
+
+Decisión de Rocío (cierra la pregunta 4 de `docs/design-system/04-relevamiento-funcional.md`): en un viaje directo
+SGTL es la única constancia de la entrega; sin el adjunto, "Entregado" depende solo de que alguien lo marque. La
+evidencia es el remito: firmado con el resultado (completa o parcial) o, en un rechazo, con la nota del cliente
+("no recibo conforme"). Es obligatoria con **cualquier resultado**, también Rechazo. Con plataforma sigue opcional.
+- **API (`ViajesController`, hay que compilar):** `POST Viajes/{id}/Estado` rechaza pasar (o dejar) un viaje
+  directo en Entregado sin evidencia: "Para marcar el viaje como entregado adjuntá la evidencia de la entrega
+  (remito firmado o con la nota de rechazo).". `DELETE Viajes/{id}/Evidencia` no deja quitarla de un directo
+  entregado ("…para cambiarla, subí otra."); subir otra la reemplaza, como antes. La pantalla sube la evidencia
+  antes de cambiar el estado, así que la API ya la encuentra.
+- **Pantalla:** la evidencia lleva `*` y se marca en rojo si falta ("Adjuntá el remito firmado (o con la nota de
+  rechazo)."); ayuda "Foto o PDF del remito firmado, o con la nota de rechazo."; se va la pregunta "¿Guardar la
+  entrega sin evidencia?"; en un directo entregado no está "Quitar" (dice "Para cambiarla, elegí otro archivo.").
+- **Viajes ya entregados sin evidencia:** siguen así hasta que alguien los abra; para corregirles algo hay que
+  adjuntarla. El dashboard los sigue marcando "Sin evidencia". Para ver cuántos hay (solo lectura):
+  ```sql
+  SELECT v.Viaje_ID, c.Razon_Social, v.Fecha_Inicio, v.Fecha_Entrega
+  FROM VIAJES v LEFT JOIN CLIENTES c ON c.Cliente_ID = v.ClienteID
+  WHERE v.Estado = 'Entregado' AND ISNULL(c.Tipo_Cliente, 'Directo') <> 'Con_plataforma'
+    AND NOT EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID)
+  ORDER BY v.Viaje_ID;
+  ```
+- **Facturación (de Facu, sin tocar):** esos viajes viejos todavía entran en "Traer viajes". Si se quiere, Facu
+  puede sumar un aviso "sin evidencia"; hablarlo con él.
+- [ ] **Preguntar a Claudia:** cuando una entrega se rechaza, ¿el remito vuelve igual (con la firma o una nota
+  del cliente, tipo "no recibo conforme") o vuelve otro papel? Si a veces no vuelve nada, decidir si el rechazo
+  queda como excepción.
+- [ ] Probar en la VM (recompilar la API; Ctrl+F5), con un viaje directo **de prueba** en En viaje: elegir
+  Entregado y Guardar sin adjuntar: la evidencia en rojo con su mensaje, no guarda. Con resultado Rechazo, fecha y
+  una foto: guarda ("Viaje #N entregado.") y aparece el clip.
+- [ ] Abrirlo de nuevo: no está "Quitar", la ayuda dice "Para cambiarla, elegí otro archivo."; elegir otro archivo
+  y guardar lo reemplaza (el enlace abre el nuevo).
+- [ ] Un directo ya entregado sin evidencia (del `SELECT`): cambiarle la fecha sin adjuntar → evidencia en rojo.
+- [ ] Un viaje con plataforma: la evidencia sigue opcional y "Quitar" está.

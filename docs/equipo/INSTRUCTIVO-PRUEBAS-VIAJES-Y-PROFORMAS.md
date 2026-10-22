@@ -53,8 +53,8 @@ Pantalla: **Gestionar viajes**. Botones de cada fila: Editar (lápiz), **Cambiar
 ### 1.2 Seguir un viaje directo hasta Entregado
 
 1. Banderita "Cambiar estado" → tarjeta **En viaje** → Guardar.
-2. Banderita → tarjeta **Entregado**: dentro de la tarjeta pide **resultado** (Completa / Parcial / Rechazo) y **fecha de entrega**. Sin eso no deja (quedan en rojo).
-3. Adjuntá una **evidencia** (foto o PDF): aparece el clip en el listado. Si el viaje ya está entregado, la banderita muestra arriba "Datos de la entrega" para corregirlos o adjuntar la evidencia después, sin cambiar el estado.
+2. Banderita → tarjeta **Entregado**: dentro de la tarjeta pide **resultado** (Completa / Parcial / Rechazo), **fecha de entrega** y **evidencia** (foto o PDF del remito firmado, o con la nota de rechazo). Sin eso no deja (quedan en rojo).
+3. Con la evidencia adjunta aparece el clip en el listado. Si el viaje ya está entregado, la banderita muestra arriba "Datos de la entrega" para corregirlos o reemplazar la evidencia (no se puede quitar), sin cambiar el estado.
 4. Probá saltear un paso (de Registrado directo a Entregado): no deja, se avanza o se vuelve de a uno.
 5. Volvé a abrir "Editar": ahora solo se pueden cambiar los números (remito). El recorrido, el chofer y la tarifa quedan fijos porque el viaje ya salió.
 

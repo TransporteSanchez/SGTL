@@ -690,7 +690,7 @@
                                     <input type="text" class="form-control" id="fechaEntrega" placeholder="DD/MM/AAAA" autocomplete="off">
                                 </div>
                                 <div class="col-12">
-                                    <label for="evidenciaArchivo" class="form-label">Evidencia de la entrega <span class="text-muted" id="evidenciaMarca">(recomendada)</span></label>
+                                    <label for="evidenciaArchivo" class="form-label">Evidencia de la entrega <span class="text-danger" id="evidenciaMarca">*</span></label>
                                     <div id="evidenciaActual" class="mb-2" style="display: none;">
                                         <i class="bi bi-paperclip" aria-hidden="true"></i>
                                         <a href="#" id="evidenciaVer" target="_blank" rel="noopener">Ver evidencia adjunta</a>
@@ -1217,7 +1217,7 @@
         const ESTADOS_VIAJE = {
             Registrado: { texto: 'Vuelve a quedar cargado y se puede editar todo.', aviso: 'registrado' },
             En_viaje: { texto: 'El camión salió con la carga.', aviso: 'en viaje' },
-            Entregado: { texto: 'Se entregó. Indicá el resultado y la fecha, y adjuntá la evidencia.', aviso: 'entregado' },
+            Entregado: { texto: 'Se entregó. Indicá el resultado y la fecha, y adjuntá el remito firmado.', aviso: 'entregado' },
             Listo_para_facturar: { texto: 'La entrega ya figura en Rukas y el viaje tiene los números y la tarifa para facturar.', aviso: 'listo para facturar' }
         };
 
@@ -1302,16 +1302,21 @@
             SGTL.modal('#ModalEstadoViaje', 'show');
         }
 
-        // Directo: resultado y fecha obligatorios y evidencia recomendada (SGTL es la única constancia). Con plataforma,
-        // todo opcional: la constancia está en Rukas y acá se adjunta solo para tener el viaje completo.
+        // Directo: resultado, fecha y evidencia obligatorios, con cualquier resultado (SGTL es la única constancia; en
+        // un rechazo, el remito con la nota). Con plataforma, todo opcional: la constancia está en Rukas y acá se
+        // adjunta solo para tener el viaje completo. La API valida lo mismo.
         function pedirEntrega(obligatoria) {
+            var v = viajeEstado || {};
             reglasEntrega.resultado.requerido = obligatoria ? 'Seleccioná el resultado de la entrega.' : '';
             reglasEntrega.fecha.requerido = obligatoria ? 'Elegí la fecha de entrega.' : '';
-            $('#resultadoEntregaMarca, #fechaEntregaMarca').toggleClass('text-danger', obligatoria).toggleClass('text-muted', !obligatoria)
+            reglasEntrega.evidencia.requerido = obligatoria && !v.Tiene_Evidencia ? 'Adjuntá el remito firmado (o con la nota de rechazo).' : '';
+            $('#resultadoEntregaMarca, #fechaEntregaMarca, #evidenciaMarca').toggleClass('text-danger', obligatoria).toggleClass('text-muted', !obligatoria)
                 .text(obligatoria ? '*' : '(opcional)');
-            $('#evidenciaMarca').text(obligatoria ? '(recomendada)' : '(opcional)');
-            $('#evidenciaAyuda').text((obligatoria ? 'Remito firmado, foto de la entrega o conforme del cliente.'
-                : 'La constancia ya está en Rukas; adjuntala si querés tener el viaje completo en SGTL.') + ' JPG, PNG, WEBP o PDF hasta 5 MB.');
+            $('#evidenciaAyuda').text((obligatoria ? 'Foto o PDF del remito firmado, o con la nota de rechazo.'
+                : 'La constancia ya está en Rukas; adjuntala si querés tener el viaje completo en SGTL.') +
+                (v.Tiene_Evidencia ? ' Para cambiarla, elegí otro archivo.' : '') + ' JPG, PNG, WEBP o PDF hasta 5 MB.');
+            // En un directo entregado no se quita: se reemplaza subiendo otra.
+            $('#evidenciaQuitarBtn').toggle(!(obligatoria && v.Estado === 'Entregado'));
         }
 
         // Si elige volver a un estado anterior a la entrega, se borran el resultado y la fecha: los campos quedan grises.
@@ -1356,6 +1361,7 @@
                         .then(function () {
                             if (viajesPagina[id]) viajesPagina[id].Tiene_Evidencia = false;
                             $('#evidenciaActual').hide();
+                            if (viajeEstado) pedirEntrega(esDirecto(viajeEstado));
                             buscarViajes(currentPage);
                             SGTL.toastExito('Evidencia quitada.');
                         });
@@ -1366,6 +1372,15 @@
         // Datos de la entrega (§6.3): cada campo se marca en rojo con su mensaje. Si son obligatorios lo decide pedirEntrega.
         var reglasEntrega = {
             resultado: { id: 'resultadoEntrega' },
+            evidencia: {
+                id: 'evidenciaArchivo',
+                validar: function (valor, campo) {
+                    var file = (campo.files || [])[0];
+                    if (!file) return '';
+                    if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].indexOf(file.type) < 0) return 'Tiene que ser una imagen (JPG, PNG o WEBP) o un PDF.';
+                    return file.size > 5 * 1024 * 1024 ? 'No puede pesar más de 5 MB.' : '';
+                }
+            },
             fecha: {
                 id: 'fechaEntrega',
                 validar: function (fecha) {
@@ -1377,15 +1392,7 @@
         var formularioEntrega = SGTL.validador([
             reglasEntrega.resultado,
             reglasEntrega.fecha,
-            {
-                id: 'evidenciaArchivo',
-                validar: function (valor, campo) {
-                    var file = (campo.files || [])[0];
-                    if (!file) return '';
-                    if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].indexOf(file.type) < 0) return 'Tiene que ser una imagen (JPG, PNG o WEBP) o un PDF.';
-                    return file.size > 5 * 1024 * 1024 ? 'No puede pesar más de 5 MB.' : '';
-                }
-            }
+            reglasEntrega.evidencia
         ]);
 
         function confirmarEstadoViaje(evento) {
@@ -1415,16 +1422,6 @@
                 Usuario: usuarioActual()
             };
             var file = conEntrega ? ($('#evidenciaArchivo')[0].files || [])[0] : null;
-
-            // Directo: al marcarlo entregado sin evidencia, pregunta (corregir los datos después no vuelve a preguntar).
-            if (conEntrega && esDirecto(v) && nuevo !== v.Estado && !file && !v.Tiene_Evidencia) {
-                SGTL.confirmar({
-                    titulo: '¿Guardar la entrega sin evidencia?',
-                    mensaje: 'No adjuntaste evidencia de la entrega (remito firmado, foto o conforme). Es lo único que queda como constancia para este cliente.',
-                    verbo: 'Guardar sin evidencia'
-                }).then(function (seguir) { if (seguir) guardarEstadoViaje(v, dto, file); });
-                return;
-            }
             guardarEstadoViaje(v, dto, file);
         }
 
