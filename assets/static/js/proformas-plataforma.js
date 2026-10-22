@@ -151,46 +151,75 @@
     resumen.textContent = partes.length ? '· ' + partes.join(' · ') : '· forma y plazo de pago sin completar';
   }
 
-  // Pasos: 1 Cliente, 2 Excel de la plataforma, 3 Control y generar.
+  function valorCampo(id) { return ($id(id) && $id(id).value || '').trim(); }
+
+  // Pasos: 1 Cliente, 2 Excel de la plataforma, 3 Control y generar. En el paso 3 los pasos hechos muestran
+  // su resultado (el cliente y el archivo), así no hace falta repetirlos más abajo.
   function pasos(actual) {
     var ol = $id('pp_pasos');
     if (!ol) return;
     ol.classList.toggle('d-none', !actual);
+    var c = estado.control;
+    var hechos = [null, null];
+    if (actual === 3) {
+      hechos[0] = esc(valorCampo('p_cli_razon') || 'Cliente') +
+        ' <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
+        (estado.datosAbiertos ? 'ocultar datos' : 'ver datos') + '</button>';
+      if (c) {
+        var titulo = c.FechaArchivo ? ' title="Importado el ' + esc(fecha(c.FechaArchivo, { hora: true })) + '"' : '';
+        hechos[1] = '<span' + titulo + '>' + esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma()) + '</span>' +
+          (c.FechaDesde ? ' <span class="fw-normal text-muted">· ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') + '</span>' : '');
+      }
+    }
     var nombres = ['Cliente', 'Excel de ' + nombrePlataforma(), 'Control y generar'];
     ol.innerHTML = nombres.map(function (nombre, i) {
       var n = i + 1;
-      if (n < actual) return '<li class="hecho"><i class="bi bi-check-circle-fill" aria-hidden="true"></i>' + esc(nombre) + '</li>';
+      if (n < actual) return '<li class="hecho"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span>' + (hechos[i] || esc(nombre)) + '</span></li>';
       return '<li' + (n === actual ? ' class="actual" aria-current="step"' : '') + '><span class="sgtl-paso-numero">' + n + '</span>' + esc(nombre) + '</li>';
     }).join('');
+    var boton = $id('pp_datos_boton');
+    if (boton) boton.addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; mostrarDatosCliente(); pasos(3); });
   }
 
-  // Datos del cliente en una línea; "Editar datos" (o "Ver datos" en solo lectura) despliega los campos de siempre.
-  function ficha() {
-    var caja = $id('pp_ficha');
-    if (!caja) return;
-    var valor = function (id) { return ($id(id) && $id(id).value || '').trim(); };
-    var partes = [valor('p_cli_condiva'), valor('p_cli_dir'), valor('p_cli_tel')].filter(Boolean);
-    var lectura = $id('p_cli_razon') && $id('p_cli_razon').disabled;
-    caja.innerHTML =
-      '<span class="badge rounded-pill bg-white text-dark border me-1">' + esc(nombrePlataforma()) + '</span>' +
-      esc(partes.join(' · ')) +
-      ' <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
-      (estado.datosAbiertos ? 'Ocultar datos del cliente' : (lectura ? 'Ver datos del cliente' : 'Editar datos del cliente')) + '</button>';
+  // Los campos del cliente de siempre, desplegados o plegados.
+  function mostrarDatosCliente() {
     CAMPOS_CLIENTE.forEach(function (id) {
       var col = columna(id);
       if (!col) return;
       col.classList.toggle('d-none', !estado.datosAbiertos);
       if (estado.datosAbiertos) col.removeAttribute('data-pp-oculto'); else col.setAttribute('data-pp-oculto', '');
     });
-    $id('pp_datos_boton').addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; ficha(); });
   }
 
-  // Pie: el motivo por el que no se puede generar va al lado del botón (en uno deshabilitado no hay tooltip).
-  function motivoPie(texto, error) {
+  // Paso 2: datos del cliente en una línea, debajo del cliente; "Editar datos del cliente" despliega los campos.
+  function ficha() {
+    var caja = $id('pp_ficha');
+    if (!caja) return;
+    var partes = [valorCampo('p_cli_condiva'), valorCampo('p_cli_dir'), valorCampo('p_cli_tel')].filter(Boolean);
+    caja.innerHTML =
+      '<span class="badge rounded-pill bg-white text-dark border me-1">' + esc(nombrePlataforma()) + '</span>' +
+      esc(partes.join(' · ')) +
+      ' <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" id="pp_ficha_boton" aria-expanded="' + estado.datosAbiertos + '">' +
+      (estado.datosAbiertos ? 'Ocultar datos del cliente' : 'Editar datos del cliente') + '</button>';
+    mostrarDatosCliente();
+    $id('pp_ficha_boton').addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; ficha(); });
+  }
+
+  // En el paso 3 el cliente ya no se cambia: el campo y la línea de datos se pliegan (quedan en los pasos).
+  function plegarCliente(plegar) {
+    [$id('p_clienteGrupo'), $id('pp_ficha'), $id('p_numeroGrupo')].forEach(function (el) {
+      if (!el) return;
+      if (plegar) ocultar(el);
+      else if (el.hasAttribute('data-pp-oculto')) { el.classList.remove('d-none'); el.removeAttribute('data-pp-oculto'); }
+    });
+  }
+
+  // Pie: qué falta para generar, al lado del botón (en uno deshabilitado no hay tooltip). Es una nota, no un error.
+  function motivoPie(texto, icono) {
     var span = $id('pp_pie_motivo');
     if (!span) return;
-    span.textContent = texto || '';
-    span.className = 'me-auto small ' + (error ? 'text-danger' : 'text-muted');
+    span.innerHTML = texto ? '<i class="bi ' + (icono || 'bi-info-circle') + ' me-1" aria-hidden="true"></i>' + esc(texto) : '';
+    span.className = 'me-auto small text-muted';
   }
 
   function mostrarBotonesPie(mostrar) {
@@ -229,6 +258,7 @@
     estado.archivo = null; estado.filas = null; estado.base64 = null; estado.numero = null; estado.control = null;
     if (!reactivar) estado.datosAbiertos = false;
     modoPlataforma(true);
+    plegarCliente(false);
     pasos(2);
     ficha();
     plegarCondiciones(true);
@@ -236,7 +266,7 @@
     if (estado.puedeLeer) cargarGuia(clienteId);
     botonGenerar(false);
     botonPdf(false);
-    motivoPie('Elegí el Excel de ' + nombrePlataforma() + ' para controlarlo.');
+    motivoPie('Al elegir el Excel se guarda como borrador y se controla contra los viajes.');
   }
 
   function desactivar() {
@@ -254,13 +284,12 @@
     var bloque = $id('bloquePlataforma');
     delete bloque.dataset.sinCambios;
     bloque.innerHTML =
-      '<div class="bloque-titulo">Excel de ' + p + '</div>' +
       (estado.puedeLeer ? '' : '<div class="alert alert-light-danger color-danger">Todavía no se pueden leer archivos de ' + p + '.</div>') +
-      '<div class="sgtl-zona-archivo" id="pp_zona">' +
+      '<div class="sgtl-zona-archivo mt-3" id="pp_zona">' +
       '<i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>' +
       '<div class="my-2"><button type="button" class="btn btn-primary" id="pp_elegir"' + (estado.puedeLeer ? '' : ' disabled') + '>' +
       '<i class="bi bi-upload me-1"></i>Elegir Excel de ' + p + '</button></div>' +
-      '<div class="form-text mt-0">Exportalo en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel. Al elegirlo se controla y se guarda como borrador.</div>' +
+      '<div class="form-text mt-0">o arrastralo acá · Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel</div>' +
       '<input type="file" id="pp_archivo" class="d-none" accept=".xlsx" aria-label="Excel de ' + p + '">' +
       '<div id="pp_archivo_estado"></div>' +
       '</div>' +
@@ -318,8 +347,8 @@
     }).join('');
     caja.innerHTML =
       '<details>' +
-      '<summary class="small"><i class="bi bi-truck me-1" aria-hidden="true"></i>' + plural(viajes.length, 'viaje', 'viajes') + ' de este cliente sin proforma · guía para tildarlos en ' + p +
-      (conFaltantes ? ' · <span class="text-danger">' + plural(conFaltantes, 'con números faltantes', 'con números faltantes') + '</span>' : '') + '</summary>' +
+      '<summary class="small"><i class="bi bi-truck me-1" aria-hidden="true"></i>' + plural(viajes.length, 'viaje', 'viajes') + ' sin proforma para tildar en ' + p +
+      (conFaltantes ? ' <span class="badge rounded-pill estado-amarillo ms-1">' + plural(conFaltantes, 'con números faltantes', 'con números faltantes') + '</span>' : '') + '</summary>' +
       '<div class="table-responsive mt-2"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta mb-0"><thead><tr>' +
       '<th>' + esc(r.Dato.charAt(0).toUpperCase() + r.Dato.slice(1)) + '</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-center">Estado</th><th>Falta</th><th class="text-center">Acciones</th>' +
       '</tr></thead><tbody>' + filas + '</tbody></table></div>' +
@@ -501,13 +530,15 @@
   };
   var COLOR_RESULTADO = { Coincide: 'verde', Faltan_numeros: 'amarillo', Sin_tarifa: 'amarillo' };
 
-  // Grupos de la tabla, según quién resuelve cada diferencia.
-  function grupos(p) {
+  // Grupos de la tabla, según quién resuelve cada diferencia. El resumen de arriba usa el mismo ícono y color.
+  function grupos() {
+    var p = esc(nombrePlataforma());
     return [
-      { clave: 'SGTL', titulo: 'Para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar.' },
-      { clave: 'Revisar', titulo: 'Para revisar', ayuda: 'Mirá la tarifa usada: si el viaje está bien, reclamalo a ' + p + '; si no, corregí el viaje.' },
-      { clave: 'Plataforma', titulo: 'Para reclamar a ' + p, ayuda: 'Están mal en el Excel de ' + p + ': registrá el reclamo.' },
-      { clave: 'Esperando', titulo: 'Esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel.' }
+      { clave: 'SGTL', icono: 'bi-tools text-danger', titulo: 'Para corregir en SGTL', resumen: 'para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar' },
+      { clave: 'Revisar', icono: 'bi-question-circle-fill text-warning', titulo: 'Para revisar', resumen: 'para revisar', ayuda: 'Mirá la tarifa usada: si el viaje está bien, reclamalo; si no, corregilo' },
+      { clave: 'Plataforma', icono: 'bi-megaphone-fill text-danger', titulo: 'Para reclamar a ' + p, resumen: 'para reclamar a ' + p, ayuda: 'Vienen mal en el Excel: registrá el reclamo' },
+      { clave: 'Esperando', icono: 'bi-hourglass-split text-primary', titulo: 'Esperando a ' + p, resumen: 'esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel' },
+      { clave: 'Coincide', icono: 'bi-check-circle-fill text-success', titulo: 'Coinciden', resumen: 'coinciden' }
     ];
   }
   function grupoDe(l) { return l.Coincide ? 'Coincide' : (l.Reclamada ? 'Esperando' : (l.Responsable || 'Revisar')); }
@@ -519,10 +550,25 @@
       ' data-bs-toggle="tooltip" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>';
   }
 
+  // Lo único del detalle que la etiqueta no dice (qué número falta, qué filas, qué viajes). Lo demás ya está
+  // en la etiqueta o en la ayuda del grupo.
+  function detalleCorto(l) {
+    var d = l.Detalle || '', m;
+    switch (l.Resultado) {
+      case 'Faltan_numeros': m = /le falta: (.*?)\.?$/.exec(d); return m ? 'Falta ' + m[1] : d;
+      case 'Repetido_en_SGTL': m = /: (#[^.]*)/.exec(d); return m ? 'Viajes ' + m[1] : d;
+      case 'Repetido_en_archivo': m = /\(filas ([^)]*)\)/.exec(d); return m ? 'Filas ' + m[1] : d;
+      case 'Dato_invalido': m = /del Excel: (.*?)\.?$/.exec(d); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) : d;
+      case 'Coincide': case 'Importe_distinto': case 'Sin_viaje': case 'Ya_facturado': case 'En_otra_proforma': case 'Sin_tarifa': return '';
+      default: return d;
+    }
+  }
+
   function filaLinea(l, oculta) {
-    var resultado = '<span class="badge rounded-pill estado-' + (COLOR_RESULTADO[l.Resultado] || 'rojo') + '">' + esc(RESULTADOS[l.Resultado] || l.Resultado || '') + '</span>';
-    // En "Importe distinto" el detalle repite las columnas: no se muestra.
-    var detalle = l.Detalle && l.Resultado !== 'Importe_distinto' ? '<div class="small text-muted mt-1">' + esc(l.Detalle) + '</div>' : '';
+    var corto = detalleCorto(l);
+    var resultado = '<span class="badge rounded-pill estado-' + (COLOR_RESULTADO[l.Resultado] || 'rojo') + '"' +
+      (l.Detalle ? ' title="' + esc(l.Detalle) + '"' : '') + '>' + esc(RESULTADOS[l.Resultado] || l.Resultado || '') + '</span>' +
+      (corto ? '<div class="small text-muted">' + esc(corto) + '</div>' : '');
     var tarifa = l.TarifaUsada
       ? ' <i class="bi bi-info-circle text-muted" tabindex="0" data-bs-toggle="tooltip" title="' + esc(l.TarifaUsada) + '" aria-label="Tarifa usada: ' + esc(l.TarifaUsada) + '"></i>'
       : '';
@@ -530,7 +576,7 @@
       : (l.Resultado === 'Sin_viaje'
         ? '<a class="btn btn-sm btn-outline-primary pp-abrir-viaje" href="gestion-viajes.html" target="_blank" rel="noopener" data-bs-toggle="tooltip" title="Ir a Gestionar viajes para registrarlo" aria-label="Ir a Gestionar viajes para registrarlo"><i class="bi bi-truck" aria-hidden="true"></i></a>'
         : '');
-    return '<tr' + (oculta ? ' class="pp-coincide d-none"' : '') + '>' +
+    return '<tr' + (oculta ? ' class="pp-coincide d-none"' : (l.Coincide ? ' class="pp-coincide"' : '')) + '>' +
       '<td class="text-nowrap">' + esc(l.Referencia) + '</td>' +
       '<td class="text-center text-nowrap">' + fecha(l.Fecha) + '</td>' +
       '<td>' + esc(l.Ruta || '') + '</td>' +
@@ -538,7 +584,7 @@
       '<td class="text-end text-nowrap">' + (l.ImporteSgtl != null ? pesos(l.ImporteSgtl) : '—') + tarifa + '</td>' +
       '<td class="text-end text-nowrap">' + (l.Diferencia ? pesos(l.Diferencia) : '') + '</td>' +
       '<td class="text-end text-nowrap">' + (l.Adicionales ? pesos(l.Adicionales) : '') + '</td>' +
-      '<td class="text-center">' + resultado + detalle + '</td>' +
+      '<td class="text-center">' + resultado + '</td>' +
       '<td class="text-center">' + accion + '</td>' +
       '</tr>';
   }
@@ -546,62 +592,86 @@
   function tablaControl(c) {
     var p = esc(nombrePlataforma());
     var lineas = c.Lineas || [];
-    var cuerpo = grupos(p).map(function (g) {
+    // Con diferencias, las que coinciden van plegadas; sin diferencias (o ya generada) se ven todas.
+    var plegadas = c.Diferencias > 0 && c.Estado === 'Borrador';
+    var cuerpo = grupos().map(function (g) {
       var del = lineas.filter(function (l) { return grupoDe(l) === g.clave; });
       if (!del.length) return '';
-      return '<tbody><tr class="sgtl-grupo"><th colspan="9">' + g.titulo + ' (' + del.length + ')' +
-        (estado.soloLectura ? '' : ' <span class="fw-normal small text-muted">· ' + g.ayuda + '</span>') + '</th></tr>' +
-        del.map(function (l) { return filaLinea(l, false); }).join('') + '</tbody>';
+      var titulo = '<i class="bi ' + g.icono + ' me-1" aria-hidden="true"></i>' + g.titulo + ' (' + del.length + ')';
+      if (g.clave === 'Coincide') {
+        titulo = '<button type="button" class="btn btn-link p-0 fw-bold text-body text-decoration-none" id="pp_ver_coinciden" aria-expanded="' + !plegadas + '">' +
+          '<i class="bi ' + (plegadas ? 'bi-chevron-right' : 'bi-chevron-down') + ' me-1" aria-hidden="true"></i>' + titulo + '</button>';
+      }
+      return '<tbody><tr class="sgtl-grupo" id="pp_grupo_' + g.clave + '"><th colspan="9"><div class="d-flex flex-wrap justify-content-between gap-1">' +
+        '<span>' + titulo + '</span>' +
+        (g.ayuda && !estado.soloLectura && c.Estado === 'Borrador' ? '<span class="fw-normal small text-muted">' + g.ayuda + '</span>' : '') +
+        '</div></th></tr>' +
+        del.map(function (l) { return filaLinea(l, g.clave === 'Coincide' && plegadas); }).join('') + '</tbody>';
     }).join('');
-    var coinciden = lineas.filter(function (l) { return l.Coincide; });
-    if (coinciden.length) {
-      // Con diferencias, las que coinciden van plegadas; sin diferencias (o ya generada) se ven todas.
-      var plegadas = c.Diferencias > 0 && c.Estado === 'Borrador';
-      cuerpo += '<tbody><tr class="sgtl-grupo"><th colspan="9">' +
-        '<button type="button" class="btn btn-link p-0 fw-bold text-body text-decoration-none" id="pp_ver_coinciden" aria-expanded="' + !plegadas + '">' +
-        '<i class="bi ' + (plegadas ? 'bi-chevron-right' : 'bi-chevron-down') + ' me-1" aria-hidden="true"></i>Coinciden (' + coinciden.length + ')</button></th></tr>' +
-        coinciden.map(function (l) { return filaLinea(l, plegadas); }).join('') + '</tbody>';
-    }
     return '<div class="table-responsive"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta align-middle mb-2"><thead><tr>' +
       '<th>Transporte</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-end">Importe ' + p + '</th><th class="text-end">Importe SGTL</th>' +
       '<th class="text-end">Diferencia</th><th class="text-end">Adicionales</th><th class="text-center">Resultado</th><th class="text-center">Acciones</th>' +
       '</tr></thead>' + cuerpo + '</table></div>';
   }
 
-  // Aviso de arriba: cuántas diferencias hay y de quién son, con las acciones al lado.
-  function avisoControl(c, editable) {
+  function etiqueta(icono, texto, atributos) {
+    return '<button type="button" class="sgtl-etiqueta"' + (atributos || '') + '><i class="bi ' + icono + '" aria-hidden="true"></i>' + texto + '</button>';
+  }
+
+  // Una sola línea arriba de la tabla: a la izquierda cuántos hay de cada grupo (cada etiqueta lleva a su grupo),
+  // el reclamo pendiente y los avisos; a la derecha, todas las acciones del control.
+  function barraControl(c, editable) {
     var p = esc(nombrePlataforma());
-    if (c.Diferencias === 0) {
-      return '<div class="alert alert-light-success color-success d-flex flex-wrap align-items-center gap-2">' +
-        '<i class="bi bi-check-circle fs-5" aria-hidden="true"></i><div class="me-auto"><div class="fw-bold">' +
-        (c.Cantidad === 1 ? 'El transporte coincide' : 'Los ' + c.Cantidad + ' transportes coinciden') + ' con ' + p + '</div>' +
-        (editable ? '<div class="small">Ya podés generar la proforma.</div>' : '') + '</div>' +
-        (editable ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1"></i>Volver a controlar</button>' : '') +
-        '</div>';
+    var lineas = c.Lineas || [];
+    var orden = grupos();
+    orden.unshift(orden.pop());
+    var etiquetas = orden.map(function (g) {
+      var n = lineas.filter(function (l) { return grupoDe(l) === g.clave; }).length;
+      if (!n) return '';
+      var texto = g.clave === 'Coincide' && n === c.Cantidad
+        ? (n === 1 ? 'El transporte coincide' : 'Los ' + n + ' coinciden') + (editable ? ' · lista para generar' : '')
+        : n + ' ' + g.resumen;
+      return etiqueta(g.icono, texto, ' data-grupo="' + g.clave + '"');
+    }).join('');
+    if (c.ReclamoFecha) {
+      etiquetas += etiqueta('bi-chat-left-text text-warning', 'Reclamo del ' + fecha(c.ReclamoFecha), ' data-panel="pp_panel_reclamo" aria-expanded="false"');
     }
-    var partes = [];
-    if (c.PorCorregir) partes.push(c.PorCorregir + ' para corregir en SGTL');
-    if (c.PorRevisar) partes.push(c.PorRevisar + ' para revisar');
-    if (c.PorReclamar) partes.push(c.PorReclamar + ' para reclamar a ' + nombrePlataforma());
-    if (c.Esperando) partes.push(c.Esperando + ' esperando a ' + nombrePlataforma());
-    var reclamo = c.ReclamoFecha
-      ? '<div class="small mt-1"><i class="bi bi-exclamation-circle me-1" aria-hidden="true"></i>Reclamo en ' + p + ' desde el ' + fecha(c.ReclamoFecha) + ': ' + esc(c.ReclamoMotivo || '') + '</div>'
-      : '';
-    var botones = !editable ? '' :
-      '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1"></i>Volver a controlar</button>' +
-      '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_reclamo">' + (c.ReclamoFecha ? 'Editar reclamo' : 'Registrar reclamo') + '</button>' +
-      (c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-light-secondary" id="pp_cerrar_reclamo">Cerrar reclamo</button>' : '');
-    return '<div class="alert alert-light-danger color-danger d-flex flex-wrap align-items-center gap-2">' +
-      '<div class="me-auto"><div class="fw-bold">' + c.Diferencias + ' de ' + plural(c.Cantidad, 'transporte no coincide', 'transportes no coinciden') + ' con ' + p + '</div>' +
-      '<div class="small">' + esc(partes.join(' · ')) + '</div>' + reclamo + '</div>' +
-      '<div class="d-flex flex-wrap gap-2">' + botones + '</div></div>';
+    if ((c.Avisos || []).length) {
+      var m = /Hay (\d+) viaje/.exec(c.Avisos[0]);
+      var n = m ? parseInt(m[1], 10) : 0;
+      etiquetas += etiqueta('bi-exclamation-triangle-fill text-warning',
+        n ? plural(n, 'viaje fuera de esta proforma', 'viajes fuera de esta proforma') : 'Avisos', ' data-panel="pp_panel_avisos" aria-expanded="false"');
+    }
+    var acciones = !editable ? '' :
+      '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
+      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '') +
+      '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reemplazar"><i class="bi bi-file-earmark-arrow-up me-1" aria-hidden="true"></i>Reemplazar Excel</button>' +
+      '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">';
+    return '<div class="d-flex flex-wrap align-items-center gap-2 mb-2">' +
+      '<div class="d-flex flex-wrap align-items-center gap-2 me-auto">' + etiquetas + '</div>' +
+      '<div class="d-flex flex-wrap gap-2 ms-auto">' + acciones + '</div></div>';
+  }
+
+  // Paneles que abren las etiquetas del reclamo y de los avisos: el texto largo queda a un clic.
+  function panelesControl(c, editable) {
+    var p = esc(nombrePlataforma());
+    var reclamo = !c.ReclamoFecha ? '' :
+      '<div id="pp_panel_reclamo" class="d-none border rounded p-2 mb-2 small">' +
+      '<div class="d-flex flex-wrap align-items-start gap-2"><div class="me-auto" style="white-space: pre-line">' +
+      '<span class="fw-bold">Reclamo en ' + p + ' del ' + fecha(c.ReclamoFecha) + '.</span> ' + esc(c.ReclamoMotivo || '') + '</div>' +
+      (editable ? '<div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar reclamo</button>' +
+        '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_cerrar_reclamo"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cerrar reclamo</button></div>' : '') +
+      '</div></div>';
+    var avisos = !(c.Avisos || []).length ? '' :
+      '<div id="pp_panel_avisos" class="d-none border rounded p-2 mb-2 small">' +
+      c.Avisos.map(function (a) { return '<div>' + esc(a) + '</div>'; }).join('') + '</div>';
+    return reclamo + avisos;
   }
 
   function mostrarControl(c) {
     estado.activo = true;
     estado.control = c;
     estado.plataforma = c.Plataforma || estado.plataforma;
-    var p = esc(nombrePlataforma());
     var esBorrador = c.Estado === 'Borrador';
     // Con "Ver" (ojo) el borrador es solo lectura: sin acciones, como la proforma propia.
     var editable = esBorrador && !estado.soloLectura;
@@ -622,29 +692,22 @@
     botonPdf(true);
     if (c.FechaDesde && $id('p_fdesde')) $id('p_fdesde').value = String(c.FechaDesde).substring(0, 10);
     if (c.FechaHasta && $id('p_fhasta')) $id('p_fhasta').value = String(c.FechaHasta).substring(0, 10);
+    plegarCliente(true);
+    mostrarDatosCliente();
     pasos(esBorrador ? 3 : 0);
-    ficha();
     resumirCondiciones();
-    motivoPie(!editable ? '' : (c.Diferencias
+    motivoPie(editable && c.Diferencias
       ? 'Para generar, resolvé ' + (c.Diferencias === 1 ? 'la diferencia' : 'las ' + c.Diferencias + ' diferencias') + '.'
-      : ''), c.Diferencias > 0);
+      : '', 'bi-lock');
 
-    var periodo = c.FechaDesde ? ' · período ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' a ' + fecha(c.FechaHasta) : '') : '';
     $id('bloquePlataforma').innerHTML =
-      '<div class="bloque-titulo">Control contra los viajes de SGTL</div>' +
-      '<div class="d-flex flex-wrap align-items-center gap-2 small text-muted mb-3">' +
-      '<i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>' +
-      '<span class="text-body">' + esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma()) + '</span>' +
-      (c.FechaArchivo ? '<span>· importado el ' + fecha(c.FechaArchivo, { hora: true }) + '</span>' : '') +
-      '<span>' + periodo + '</span>' +
-      (editable ? '<button type="button" class="btn btn-sm btn-outline-secondary ms-auto" id="pp_reemplazar"><i class="bi bi-arrow-repeat me-1"></i>Reemplazar Excel</button>' +
-        '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">' : '') +
-      '</div>' +
-      avisoControl(c, editable) +
-      '<div id="pp_form_reclamo" class="d-none border rounded p-3 mb-3"></div>' +
-      (c.Avisos || []).map(function (a) {
-        return '<div class="alert alert-light-warning color-warning py-2 small"><i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>' + esc(a) + '</div>';
-      }).join('') +
+      // Sin pasos (proforma ya generada) el cliente, el archivo y el período no se ven en otro lado.
+      (esBorrador ? '' : '<div class="small text-muted mb-2"><span class="text-body">' + esc(valorCampo('p_cli_razon')) + '</span>' +
+        ' · <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> ' + esc(c.NombreArchivo || '') +
+        (c.FechaDesde ? ' · ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '') + '</div>') +
+      barraControl(c, editable) +
+      panelesControl(c, editable) +
+      '<div id="pp_form_reclamo" class="d-none border rounded p-3 mb-2"></div>' +
       tablaControl(c) +
       '<div class="d-flex justify-content-end flex-wrap align-items-baseline gap-3 small text-muted">' +
       '<span>Neto ' + monto(c.TotalPlataforma) + '</span><span>IVA 21 % ' + monto(c.Iva) + '</span>' +
@@ -663,6 +726,14 @@
   function hoyLocal() {
     var hoy = new Date();
     return hoy.getFullYear() + '-' + String(hoy.getMonth() + 1).padStart(2, '0') + '-' + String(hoy.getDate()).padStart(2, '0');
+  }
+
+  function plegarCoinciden(plegar) {
+    var boton = $id('pp_ver_coinciden');
+    if (!boton) return;
+    boton.setAttribute('aria-expanded', String(!plegar));
+    boton.querySelector('.bi').className = 'bi me-1 ' + (plegar ? 'bi-chevron-right' : 'bi-chevron-down');
+    Array.prototype.forEach.call(document.querySelectorAll('#bloquePlataforma tr.pp-coincide'), function (tr) { tr.classList.toggle('d-none', plegar); });
   }
 
   function enlazarAcciones(c) {
@@ -684,11 +755,21 @@
           function (e) { listo(); SGTL.toastError($('<div>').html(textoError(e, 'No se pudo cerrar el reclamo.')).text()); });
     });
     var verCoinciden = $id('pp_ver_coinciden');
-    if (verCoinciden) verCoinciden.addEventListener('click', function () {
-      var abierto = this.getAttribute('aria-expanded') === 'true';
-      this.setAttribute('aria-expanded', String(!abierto));
-      this.querySelector('.bi').className = 'bi me-1 ' + (abierto ? 'bi-chevron-right' : 'bi-chevron-down');
-      Array.prototype.forEach.call(bloque.querySelectorAll('tr.pp-coincide'), function (tr) { tr.classList.toggle('d-none', abierto); });
+    if (verCoinciden) verCoinciden.addEventListener('click', function () { plegarCoinciden(this.getAttribute('aria-expanded') === 'true'); });
+    // Etiquetas del resumen: llevan a su grupo de la tabla o abren su panel.
+    Array.prototype.forEach.call(bloque.querySelectorAll('.sgtl-etiqueta'), function (b) {
+      b.addEventListener('click', function () {
+        if (b.dataset.panel) {
+          var panel = $id(b.dataset.panel);
+          var abrir = panel.classList.contains('d-none');
+          panel.classList.toggle('d-none', !abrir);
+          b.setAttribute('aria-expanded', String(abrir));
+          return;
+        }
+        if (b.dataset.grupo === 'Coincide') plegarCoinciden(false);
+        var fila = $id('pp_grupo_' + b.dataset.grupo);
+        if (fila) fila.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
     });
     // Al volver de corregir un viaje en la otra pestaña se vuelve a controlar solo.
     Array.prototype.forEach.call(bloque.querySelectorAll('.pp-abrir-viaje'), function (a) {
