@@ -686,6 +686,19 @@
         bootstrap.Modal.getOrCreateInstance(porId('modalDetalleComprobante')).show();
     }
 
+    // % de IVA para la vista en solo lectura: va en cada línea del detalle; si todas tienen el mismo, se muestra. Sin
+    // detalle (factura directa) sale de IVA ÷ neto, solo si da una alícuota válida. Si no, "—".
+    function porcentajeIvaLectura(comprobante) {
+        var alicuotas = [0, 10.5, 21, 27];
+        var distintos = (comprobante.Detalle || []).map(function (linea) { return Number(linea.IvaPct); })
+            .filter(function (n, i, lista) { return isFinite(n) && lista.indexOf(n) === i; });
+        var porcentaje = distintos.length === 1 ? distintos[0] : null;
+        if (porcentaje == null && !distintos.length && Number(comprobante.Neto) > 0) {
+            var calculado = Math.round(Number(comprobante.IVA || 0) / Number(comprobante.Neto) * 1000) / 10;
+            if (alicuotas.indexOf(calculado) !== -1) porcentaje = calculado;
+        }
+        return porcentaje == null ? '—' : String(porcentaje).replace('.', ',') + '%';
+    }
     function presentarComprobanteSoloLectura(comprobante) {
         var tipo = tipoComprobante(comprobante);
         porId('cmpTitulo').textContent = 'Ver ' + nombreTipoComprobante(tipo) + ' ' + (comprobante.Numero || '');
@@ -708,7 +721,7 @@
         porId('cmpNumeroComprobante').value = comprobante.Numero || '';
         porId('cmpConcepto').value = comprobante.Concepto || '';
         porId('cmpNeto').value = formatearCentavos(centavos(comprobante.Neto));
-        porId('cmpIvaPct').innerHTML = '<option value="">—</option>';
+        porId('cmpIvaPct').innerHTML = '<option value="">' + escapar(porcentajeIvaLectura(comprobante)) + '</option>';
         porId('cmpIvaPct').value = '';
         porId('cmpIvaImporte').value = formatearCentavos(centavos(comprobante.IVA));
         porId('cmpOtros').value = formatearCentavos(centavos(comprobante.OtrosImpuestos));

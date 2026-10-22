@@ -115,6 +115,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ClienteID { get; set; }
             public string Tipo { get; set; }
             public string Numero { get; set; }
+            // Letra y sucursal con que se emitió: las muestra la vista en solo lectura de cuenta corriente.
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public DateTime FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
             public string Moneda { get; set; }
@@ -518,6 +521,7 @@ WHERE c.ClaveOperacion=@clave;";
                     const string sql = @"
 SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,
        c.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
+       c.Letra,c.Sucursal,
        c.FechaEmision,c.FechaVencimiento,c.Moneda,c.Estado AS EstadoDocumental,
        CASE WHEN c.Estado='ANULADO' THEN 'Anulado'
             WHEN c.Impacto='D' AND COALESCE(a.ImporteAplicado,0)=0 THEN 'Pendiente'
@@ -553,6 +557,8 @@ WHERE c.Comprobante_ID=@id;";
                                     ClienteID = (int)reader["ClienteID"],
                                     Tipo = (string)reader["Tipo"],
                                     Numero = (string)reader["Numero"],
+                                    Letra = reader["Letra"] as string,
+                                    Sucursal = reader["Sucursal"] as string,
                                     FechaEmision = (DateTime)reader["FechaEmision"],
                                     FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                                     Moneda = (string)reader["Moneda"],

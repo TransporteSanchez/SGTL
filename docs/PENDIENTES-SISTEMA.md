@@ -1539,10 +1539,14 @@ tiempo estimado, porcentajes y avisos"):**
   y registrar recibo (con asteriscos); Consultar informe de versión → 2.5 (el aviso nuevo).
 
 **Quedan del reporte:**
-- [ ] **Cuenta corriente, vista de la factura: letra y sucursal "—".** No es un dato faltante: `COMPROBANTES` guarda
-  `Letra` y `Sucursal`, pero la vista usa la API del PDF (`FacturasController`, `comprobantes/{id}`), que no las trae.
-  Propuesta: sumarlas a esa consulta (módulo de Facu, hay que recompilar) y mostrar el % de IVA cuando todas las líneas
-  tienen el mismo. Decide Rocío.
+- [x] **Cuenta corriente, vista de la factura: letra y sucursal "—".** No era un dato faltante: `COMPROBANTES` guarda
+  `Letra` y `Sucursal`, pero la vista usa la API del PDF (`FacturasController`, `comprobantes/{id}`), que no las traía.
+  **Hecho (22/10, commit "Cuenta corriente: la vista de la factura muestra letra, sucursal y % de IVA", con el OK de
+  Rocío; módulo de Facu, avisarle):** la consulta suma `Letra` y `Sucursal`, y la vista muestra el % de IVA cuando todas
+  las líneas tienen el mismo (sin detalle, sale de IVA ÷ neto si da 0, 10,5, 21 o 27 %; si no, "—"). **Hay que
+  recompilar la API.**
+  - [ ] Probar en la VM: ver la FAC-00000001 → letra, sucursal y "21%"; una factura de proforma con líneas de distinto IVA
+    → "—". El PDF de la factura sale igual que antes.
 - [ ] **Viajes:** km con punto en las tablas ("67.5") y Gestionar viajes sin "Ver detalle": los ve Rocío en su trabajo
   de viajes (otra sesión).
 - [ ] **F2, PDF del manual:** después de lo demás.

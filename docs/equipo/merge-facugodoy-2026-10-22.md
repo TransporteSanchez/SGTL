@@ -43,6 +43,14 @@ descartó funcionalidad tuya; lo que cambió es cómo se ve y cómo se llama.
 | Nombre de la pantalla de Configuración | "Tipos de comprobantes" | "Gestionar tipos de comprobante" | Tu idea (el nombre viejo no decía qué hace), con el verbo que pide §3.1 |
 | Cuenta corriente: orden de los scripts | Truco de renombrar `#sidebar` alrededor de `app.js` | Mismo orden que el resto de las pantallas; tu arreglo de `sidebar.js` queda | Con tu arreglo y ese orden alcanza; se confirma en la VM |
 
+## Después del merge (22/10)
+
+- **`FacturasController`, `comprobantes/{id}`** (la API del PDF, que también usa tu vista en solo lectura) ahora devuelve
+  `Letra` y `Sucursal`: la vista mostraba "—" porque esa consulta no las traía. La vista muestra además el % de IVA
+  cuando todas las líneas tienen el mismo. El PDF no cambia.
+- **Registrar recibo:** en el merge se había roto el id `reciboFacturas` (al pasar tus mensajes a minúscula) y no cargaban
+  las facturas pendientes. Ya está corregido, con una prueba nueva (`tests/ids-de-pantallas.test.js`).
+
 ## Para tener en cuenta
 
 - **Base compartida y contraseñas:** cada usuario que entra con la API nueva queda con hash y ya no entra con una

@@ -162,7 +162,7 @@ function probarFormularioDeFacturaSoloLectura() {
         bootstrap: { Modal: { getOrCreateInstance: function () { return { show: function () { modalAbierto = true; } }; } } },
         window: { SelectClientePredictivo: { sincronizar: function () {}, establecerDeshabilitado: function () {} } }
     };
-    vm.runInNewContext(extraerFuncion('tipoComprobante') + '\n' + extraerFuncion('presentarComprobanteSoloLectura'), sandbox,
+    vm.runInNewContext(extraerFuncion('tipoComprobante') + '\n' + extraerFuncion('porcentajeIvaLectura') + '\n' + extraerFuncion('presentarComprobanteSoloLectura'), sandbox,
         { filename: 'cuenta-corriente-clientes.js' });
     sandbox.presentarComprobanteSoloLectura({
         ComprobanteID: 17, Tipo: 'FAC', Numero: 'FAC-00000017', ClienteID: 4, RazonSocial: 'Cliente SA', CUIT: '30-12345678-9',
@@ -182,6 +182,8 @@ function probarFormularioDeFacturaSoloLectura() {
     assert.match(campos.cmpDetalleLecturaCuerpo.innerHTML, /Servicio de transporte/,
         'la consulta debe mostrar el detalle del comprobante');
     assert.ok(modalAbierto, 'la consulta debe abrir el formulario en modo solo lectura');
+    assert.match(campos.cmpIvaPct.innerHTML, />21%</,
+        'sin % en las líneas, el IVA sale de IVA ÷ neto cuando da una alícuota válida (210 / 1000 = 21%)');
     assert.ok(campos.modalNuevoComprobante.classList.contains('cc-solo-lectura'),
         'en solo lectura no se muestran los asteriscos de obligatorio');
 }
