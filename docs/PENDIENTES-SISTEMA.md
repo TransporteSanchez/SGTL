@@ -43,7 +43,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
-| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | Commits `cea8407`, `72c1600` y `dd6034c` en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §24) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1636,7 +1636,7 @@ y mandarles este mensaje. **Hecho (22/10):** `facugodoy`, `fedemontenegro` y `ma
 
 ---
 
-## 24. Viajes: registrar, editar y ver detalle — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (22/10)
+## 24. Viajes: registrar, editar y ver detalle — PUSHEADO, FALTA PROBAR EN VM (22/10)
 
 Pedido de Rocío: mejorar registrar un viaje, editarlo y su detalle. Se relevaron los tres modales con una API simulada
 (datos inventados) y Rocío aprobó la propuesta con capturas en tres vueltas. Commits en `rocionuvoli`: `cea8407`
