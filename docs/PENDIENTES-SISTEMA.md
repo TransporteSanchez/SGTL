@@ -42,7 +42,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); las contraseñas sin cifrar se resuelven con el merge de Facu (§21) | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
-| 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | En la Mac: las 25 pantallas cargan sin errores de JavaScript (API falsa) y pasan las 15 pruebas. Falta todo lo que necesita la API real | — | **Falta hacer** (ver §23) |
+| 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; falta pasar las ramas (ver §23) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1411,9 +1411,10 @@ y una línea más marcada cierra el grupo. Las columnas no cambian y el celeste 
   Rocío; módulo de Facu):** el botón de la fila y el "Ver PDF" del formulario de la proforma abren la ventana "Ver PDF de
   la proforma …" con Cerrar · Imprimir · Descargar PDF (`proforma-pdf.js`, `verProformaPDF`); desde el formulario queda
   encima de él. El detalle de Listar proformas queda solo con Cerrar (§6.2). No hace falta recompilar.
-  - [ ] Probar en la VM (Ctrl+F5): en Listar y en Gestionar proformas, Ver PDF de una proforma generada → vista previa
+  - [x] Probar en la VM (Ctrl+F5): en Listar y en Gestionar proformas, Ver PDF de una proforma generada → vista previa
     con su número en el título; Imprimir y Descargar PDF funcionan. Abrir una proforma y tocar "Ver PDF" en el
     formulario → la vista queda encima; al cerrarla, el formulario sigue abierto y se puede usar. Una de Rukas también.
+    **OK en la reprueba (22/10)** (PF-00000001, PF-00000004 y PF-00000010 de Rukas).
 - [ ] **Proformas: enviar por e-mail** (no existe hoy; solo hay envío de facturas y presupuestos). Iría en el pie de Ver
   PDF, como en presupuestos. Necesita API y elegir el perfil de correo. **Verlo con Facu** (decisión de Rocío, 22/10).
 - [x] **Documentación para cualquier IA. Hecho (22/10, commit "Documentación: AGENTS.md como entrada al design
@@ -1473,7 +1474,7 @@ punto. Resumen para el equipo: `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
 
 ---
 
-## 23. Prueba mínima antes de pasar `rocionuvoli` a las ramas del equipo — FALTA HACER (22/10)
+## 23. Prueba mínima antes de pasar `rocionuvoli` a las ramas del equipo — OK EN VM (22/10), FALTA PASAR LAS RAMAS
 
 Para confirmar que lo pusheado el 21 y 22/10 (dashboard, estilo visual, merges de Facu y Fede, ajustes) anda en la VM
 **antes** de actualizar `facugodoy` y `fedemontenegro`. Son unos 20 minutos y no reemplazan las listas completas de
@@ -1522,7 +1523,8 @@ de JavaScript (se cumple la regla de corte). Pasos 6, 7, 9, 10 y 11 OK.
   con una prueba nueva (`tests/ids-de-pantallas.test.js`) que controla que cada id que busca el JS de cuenta corriente y
   presupuestos exista en su HTML. Visto en la Mac con la API falsa: cargan las facturas y Distribuir reparte desde la que
   vence primero.
-  - [ ] Repetir el paso 8 en la VM (con OK de Rocío: consume un número de recibo). También abrir Editar recibo.
+  - [x] Repetir el paso 8 en la VM (con OK de Rocío: consume un número de recibo). También abrir Editar recibo.
+    **OK en la reprueba (22/10):** se emitió el REC-00000014 y Editar recibo abre bien.
 - [ ] **F2 (media): el PDF del manual de usuario no carga** (la API tarda 29 s y devuelve 500). No es de este push
   (`DocumentacionController` sin cambios desde el 18/10). Para ver si el PDF guardado es muy grande:
   `SELECT DATALENGTH(Pdf) FROM dbo.MANUAL_USUARIO WHERE ManualUsuario_ID = 1;` (solo lee). Módulo de Facu.
@@ -1541,9 +1543,10 @@ tiempo estimado, porcentajes y avisos"):**
 - Cuenta corriente: la vista de solo lectura no muestra los asteriscos de obligatorio.
 - Documentación: si una versión o el manual no tienen PDF cargado, se dice en la página ("Esta versión no tiene el
   informe cargado.") en lugar de "No se pudo cargar el PDF. Probá de nuevo.".
-- [ ] Probar en la VM (Ctrl+F5): un presupuesto nuevo (importe, ayuda y tiempo estimado con el formato nuevo);
+- [x] Probar en la VM (Ctrl+F5): un presupuesto nuevo (importe, ayuda y tiempo estimado con el formato nuevo);
   Dashboard con Último mes (porcentajes grandes con punto de miles); cuenta corriente, ver una factura (sin asteriscos)
-  y registrar recibo (con asteriscos); Consultar informe de versión → 2.5 (el aviso nuevo).
+  y registrar recibo (con asteriscos); Consultar informe de versión → 2.5 (el aviso nuevo). **OK en la reprueba (22/10)**,
+  con el presupuesto N° 7 abierto para editar.
 
 **Quedan del reporte:**
 - [x] **Cuenta corriente, vista de la factura: letra y sucursal "—".** No era un dato faltante: `COMPROBANTES` guarda
@@ -1552,8 +1555,9 @@ tiempo estimado, porcentajes y avisos"):**
   Rocío; módulo de Facu, avisarle):** la consulta suma `Letra` y `Sucursal`, y la vista muestra el % de IVA cuando todas
   las líneas tienen el mismo (sin detalle, sale de IVA ÷ neto si da 0, 10,5, 21 o 27 %; si no, "—"). **Hay que
   recompilar la API.**
-  - [ ] Probar en la VM: ver la FAC-00000001 → letra, sucursal y "21%"; una factura de proforma con líneas de distinto IVA
-    → "—". El PDF de la factura sale igual que antes.
+  - [x] Probar en la VM: ver la FAC-00000001 → letra, sucursal y "21%"; una factura de proforma con líneas de distinto IVA
+    → "—". El PDF de la factura sale igual que antes. **OK en la reprueba (22/10)**: letra "A", sucursal "0001" y "21%";
+    el caso de IVA distinto no se probó.
 - [ ] **Viajes:** km con punto en las tablas ("67.5") y Gestionar viajes sin "Ver detalle": los ve Rocío en su trabajo
   de viajes (otra sesión).
 - [ ] **F2, PDF del manual:** después de lo demás.
@@ -1566,10 +1570,11 @@ API sigue exigiendo admin para modificar. En Grupos y permisos, el permiso "Fact
 Configuración y confundía) pasa al grupo Facturación como **"Gestión de tipos de comprobante"**: la API lo renombra sola
 al abrir los permisos, conservando el mismo permiso y sus asignaciones. Título con el ícono de Facturación y el mensaje
 de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, `FacturacionConfiguracionController`).
-- [ ] Probar en la VM: como admin, Facturación termina en "Gestionar tipos de comprobante" y Configuración ya no la
+- [x] Probar en la VM: como admin, Facturación termina en "Gestionar tipos de comprobante" y Configuración ya no la
   tiene; al entrar, el menú abre Facturación con la opción marcada. Gestionar grupos y permisos → Permisos: en
   Facturación aparece "Gestión de tipos de comprobante" y ya no hay "Facturación" en Configuración (los grupos que lo
-  tenían lo siguen teniendo). Con un usuario que no es admin: no ve la opción.
+  tenían lo siguen teniendo). Con un usuario que no es admin: no ve la opción. **OK en la reprueba (22/10)** como admin;
+  lo del usuario que no es admin lo mira Rocío a mano (hay que escribir la contraseña).
 - [ ] **Pendiente (decisión de Rocío, 22/10): pasar todos los permisos a los nombres del menú** ("Gestionar choferes",
   "Listar viajes", "Gestionar cuenta corriente"…), como pide §3.1 del design system. Hoy el catálogo de Grupos y
   permisos usa "Gestión de…", "Listado de…". Implica: renombrar los 23 en `GruposController` conservando las
@@ -1580,6 +1585,16 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
 - [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
   Integración WhatsApp y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no
   le da acceso a nadie. Marcarlos como "solo administradores" o sacarlos del listado. Catálogo de Facu: verlo con él.
+
+**Reprueba del 22/10** (la sesión de la VM sobre `c778c0a`; reporte en `docs/pruebas/2026-10-22-reprueba-ramas.md`):
+**los 8 puntos OK** y sin errores de JavaScript. Se emitió el REC-00000014 (distribuidora-powerful S.A., $ 100.000,00,
+aplicado a FAC-00000004 y FAC-00000005). Después se subió "Cuenta corriente: las tres tarjetas del resumen tienen la
+misma altura" (`1a78bd8`, solo visual): lo mira Rocío a mano.
+- [ ] Mejoras que dejó el reporte, para que decida Rocío: asterisco y error debajo del campo en la referencia del recibo
+  (§6.3); "710.0 km" con punto en el texto del mapa de presupuestos; PF-00000004 dice "Factura" en Listar proformas y
+  "Facturada" en Gestionar; la cruz de "Ver proforma" sin `aria-label` y el foco que no vuelve al formulario;
+  "Auditoria" y "Cuenta Corriente" en Grupos y permisos (van con el renombre de permisos de arriba); el grupo
+  "PRUEBA-CLAUDE 20/10" a la vista (limpieza).
 
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
 y mandarles este mensaje:
