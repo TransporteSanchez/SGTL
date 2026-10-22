@@ -266,6 +266,7 @@
     if (estado.puedeLeer) cargarGuia(clienteId);
     botonGenerar(false);
     botonPdf(false);
+    window.proformaConCambios = false;
     motivoPie('Al elegir el Excel se guarda como borrador y se controla contra los viajes.');
   }
 
@@ -282,17 +283,18 @@
   function renderNuevo() {
     var p = esc(nombrePlataforma());
     var bloque = $id('bloquePlataforma');
-    delete bloque.dataset.sinCambios;
+    // Elegir el Excel lo guarda solo: no cuenta como cambio sin guardar (sí los datos del cliente y las condiciones).
+    bloque.dataset.sinCambios = 'true';
     bloque.innerHTML =
       (estado.puedeLeer ? '' : '<div class="alert alert-light-danger color-danger">Todavía no se pueden leer archivos de ' + p + '.</div>') +
       '<div class="sgtl-zona-archivo mt-3" id="pp_zona">' +
       '<span class="sgtl-zona-icono"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i></span>' +
-      '<div class="fw-bold mt-2">Excel de ' + p + '</div>' +
-      '<div class="my-2"><button type="button" class="btn btn-primary" id="pp_elegir"' + (estado.puedeLeer ? '' : ' disabled') + '>' +
-      '<i class="bi bi-upload me-1"></i>Elegir archivo</button></div>' +
-      '<div class="form-text mt-0">o arrastralo acá · Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel</div>' +
+      '<div class="sgtl-zona-texto"><div class="fw-bold">Excel de ' + p + '</div>' +
+      '<div class="small text-muted">Arrastralo acá o elegilo. Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel.</div></div>' +
+      '<button type="button" class="btn btn-primary" id="pp_elegir"' + (estado.puedeLeer ? '' : ' disabled') + '>' +
+      '<i class="bi bi-upload me-1" aria-hidden="true"></i>Elegir archivo</button>' +
       '<input type="file" id="pp_archivo" class="d-none" accept=".xlsx" aria-label="Excel de ' + p + '">' +
-      '<div id="pp_archivo_estado"></div>' +
+      '<div id="pp_archivo_estado" class="w-100"></div>' +
       '</div>' +
       '<div id="pp_guia" class="mt-3"></div>';
 
@@ -404,11 +406,11 @@
       estado.numero = numeroDelNombre(archivo.name);
       var datos = leido.filas.slice(1).filter(function (f) { return f.some(function (c) { return String(c).trim() !== ''; }); });
       var total = datos.reduce(function (s, f) { return s + importeTexto(f[4]) + importeTexto(f[5]); }, 0);
-      info.innerHTML = '<div class="mt-2 small"><i class="bi bi-file-earmark-check me-1 text-success" aria-hidden="true"></i>' + esc(archivo.name) +
+      info.innerHTML = '<div class="small"><i class="bi bi-file-earmark-check me-1 text-success" aria-hidden="true"></i>' + esc(archivo.name) +
         ' · ' + plural(datos.length, 'transporte', 'transportes') + ' · Total ' + esc(nombrePlataforma()) + ' ' + pesos(total) + '</div>';
       if (estado.numero) { importar(); return; }
       info.innerHTML +=
-        '<div class="row justify-content-center mt-2"><div class="col-md-6 text-start">' +
+        '<div class="row mt-2"><div class="col-md-6">' +
         '<label for="pp_numero" class="form-label">N° de proforma en ' + esc(nombrePlataforma()) + ' <span class="text-danger">*</span></label>' +
         '<div class="input-group"><input id="pp_numero" class="form-control" maxlength="30" inputmode="numeric">' +
         '<button type="button" class="btn btn-primary" id="pp_numero_controlar">Controlar</button></div>' +
@@ -658,14 +660,14 @@
   function panelesControl(c, editable) {
     var p = esc(nombrePlataforma());
     var reclamo = !c.ReclamoFecha ? '' :
-      '<div id="pp_panel_reclamo" class="d-none sgtl-panel sgtl-panel-amarillo mb-3 small">' +
+      '<div id="pp_panel_reclamo" class="d-none alert alert-warning mb-3">' +
       '<div class="d-flex flex-wrap align-items-start gap-2"><div class="me-auto" style="white-space: pre-line">' +
       '<span class="fw-bold">Reclamo en ' + p + ' del ' + fecha(c.ReclamoFecha) + '.</span> ' + esc(c.ReclamoMotivo || '') + '</div>' +
       (editable ? '<div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar reclamo</button>' +
         '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_cerrar_reclamo"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cerrar reclamo</button></div>' : '') +
       '</div></div>';
     var avisos = !(c.Avisos || []).length ? '' :
-      '<div id="pp_panel_avisos" class="d-none sgtl-panel mb-3 small">' +
+      '<div id="pp_panel_avisos" class="d-none alert alert-info mb-3">' +
       c.Avisos.map(function (a) { return '<div>' + esc(a) + '</div>'; }).join('') + '</div>';
     return reclamo + avisos;
   }
@@ -680,7 +682,8 @@
 
     modoPlataforma(true);
     var titulo = $id('tituloModal');
-    if (titulo) titulo.textContent = (c.Numero ? 'Proforma ' + c.Numero + ' · ' : 'Proforma de ') + nombrePlataforma() + ' ' + (c.NumeroPlataforma || '');
+    if (titulo) titulo.textContent = (editable ? 'Editar proforma ' : 'Ver proforma ') +
+      (c.Numero ? c.Numero + ' · ' : 'de ') + nombrePlataforma() + ' ' + (c.NumeroPlataforma || '');
     if ($id('p_id')) $id('p_id').value = c.Proforma_ID;
     // Los datos de la cabecera se guardan al importar; el borrador se maneja desde este bloque.
     if (typeof window.setModoLectura === 'function') window.setModoLectura(true);

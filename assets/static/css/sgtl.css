@@ -60,29 +60,16 @@
 }
 
 /* Tabla con muchas columnas dentro de un modal: celdas más angostas para que entre sin desplazarse.
-   Más específica que la de Mazer para .table-sm (1rem).
-   Rayas y resaltado más suaves, con el azul de la marca. */
-table.table.sgtl-tabla-compacta {
-    --bs-table-striped-bg: rgba(67, 94, 190, .025);
-    --bs-table-hover-bg: rgba(67, 94, 190, .06);
-}
-
+   El resto (encabezado, rayado) es el de §12. Más específica que la de Mazer para .table-sm (1rem). */
 table.table.sgtl-tabla-compacta tr td,
 table.table.sgtl-tabla-compacta tr th {
-    padding: .45rem .5rem;
+    padding: .5rem .55rem;
 }
 
-table.table.sgtl-tabla-compacta > thead th {
-    font-size: .8rem;
-    color: #6c757d;
-    background-color: #fafbfc;
-    border-bottom: 1px solid #e9ecef;
-}
-
-/* Tabla dentro de una tarjeta: borde fino y esquinas redondeadas, como las tarjetas de Mazer. */
+/* Tabla fuera de una tarjeta (dentro de un modal): el mismo recuadro que §12 le da en una tarjeta. */
 .sgtl-tabla-tarjeta {
-    border: 1px solid #e9ecef;
-    border-radius: .75rem;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio-chico);
     overflow: hidden;
 }
 
@@ -115,10 +102,10 @@ table.table.sgtl-tabla-compacta > thead th {
 /* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve): fondo
    apenas gris, sin rayas ni resaltado; el título va en una etiqueta de estado (§4). */
 table.table tr.sgtl-grupo > th {
-    background-color: #fafbfc;
+    background-color: #fff;
     box-shadow: none;
     font-weight: 400;
-    border-top: 1px solid #e9ecef;
+    border-top: 1px solid var(--sgtl-borde);
 }
 
 /* §4.3 Etiqueta que además es un botón (lleva a su grupo o abre un panel): un poco más grande. */
@@ -136,17 +123,13 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     border-color: currentColor;
 }
 
-/* Panel con texto o un formulario dentro de un bloque (un reclamo, un aviso): tarjeta suave. */
+/* Formulario dentro de un bloque (por ejemplo, registrar un reclamo): recuadro gris claro, como un aviso
+   neutro (§12). Los avisos con texto usan .alert. */
 .sgtl-panel {
-    padding: .75rem 1rem;
-    border: 1px solid #e9ecef;
-    border-radius: .75rem;
-    background-color: #fafbfc;
-}
-
-.sgtl-panel-amarillo {
-    border-color: #ffe7a1;
-    background-color: #fffaeb;
+    padding: .85rem 1rem;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio-chico);
+    background-color: #f8f9fb;
 }
 
 /* Totales en una línea: neto, IVA y total destacado. */
@@ -156,15 +139,16 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     align-items: baseline;
     gap: .25rem 1.5rem;
     padding: .55rem 1rem;
-    border-radius: .75rem;
-    background-color: #f4f5f7;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio-chico);
+    background-color: #f8f9fb;
     font-size: .875rem;
-    color: #6c757d;
+    color: var(--sgtl-texto-suave);
 }
 
 .sgtl-totales strong {
     font-size: 1.1rem;
-    color: #25396f;
+    color: var(--sgtl-texto);
 }
 
 /* §6.3 Formulario por pasos: círculos unidos por una línea; hecho (verde), actual (azul) y pendiente (gris). */
@@ -177,7 +161,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     padding: 0;
     margin: 0 0 1rem;
     font-size: .875rem;
-    color: #6c757d;
+    color: var(--sgtl-texto-suave);
 }
 
 .sgtl-pasos > li {
@@ -192,7 +176,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     height: 2px;
     margin-right: .15rem;
     border-radius: 2px;
-    background-color: #dee2e6;
+    background-color: var(--sgtl-borde-campo);
 }
 
 .sgtl-pasos > li.hecho + li::before {
@@ -206,7 +190,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     justify-content: center;
     width: 1.6rem;
     height: 1.6rem;
-    border: 2px solid #ced4da;
+    border: 2px solid var(--sgtl-borde-campo);
     border-radius: 50%;
     background-color: #fff;
     font-size: .75rem;
@@ -214,7 +198,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 }
 
 .sgtl-pasos > .hecho {
-    color: #495057;
+    color: var(--sgtl-texto);
 }
 
 .sgtl-pasos > .hecho .sgtl-paso-numero {
@@ -224,43 +208,57 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 }
 
 .sgtl-pasos > .actual {
-    color: #435ebe;
+    color: var(--sgtl-marca);
     font-weight: 700;
 }
 
 .sgtl-pasos > .actual .sgtl-paso-numero {
-    border-color: #435ebe;
-    background-color: #435ebe;
+    border-color: var(--sgtl-marca);
+    background-color: var(--sgtl-marca);
     color: #fff;
     box-shadow: 0 0 0 4px #e8ecf9;
 }
 
-/* Zona para elegir o soltar un archivo. */
+/* Zona para elegir o soltar un archivo: una franja con el ícono, qué archivo va y el botón. */
 .sgtl-zona-archivo {
-    border: 2px dashed #ccd3e0;
-    border-radius: .9rem;
-    padding: 1.75rem 1rem;
-    text-align: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem 1rem;
+    padding: 1rem 1.25rem;
+    border: 2px dashed var(--sgtl-borde-campo);
+    border-radius: var(--sgtl-radio);
     background-color: #fafbfe;
     transition: border-color .15s, background-color .15s;
 }
 
 .sgtl-zona-archivo:hover,
 .sgtl-zona-archivo.arrastrando {
-    border-color: #435ebe;
+    border-color: var(--sgtl-marca);
     background-color: #f3f5fc;
+}
+
+/* Lo que se agrega abajo (el archivo elegido, un campo que falta) ocupa su propia línea; vacío no deja hueco. */
+.sgtl-zona-archivo > :empty {
+    display: none;
+}
+
+.sgtl-zona-archivo > .sgtl-zona-texto {
+    flex: 1 1 16rem;
+    min-width: 0;
 }
 
 .sgtl-zona-icono {
     display: inline-flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 3.25rem;
-    height: 3.25rem;
+    width: 2.75rem;
+    height: 2.75rem;
     border-radius: 50%;
     background-color: #e8ecf9;
-    color: #435ebe;
-    font-size: 1.5rem;
+    color: var(--sgtl-marca);
+    font-size: 1.3rem;
 }
 
 /* §1.3 Cruz para borrar cada filtro */

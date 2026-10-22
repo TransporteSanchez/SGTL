@@ -261,6 +261,7 @@ No es un bug de las pruebas: es un **rediseño de negocio** detectado al contras
   - **Errores (caso 8 partido):** solo se rechaza lo que no es un Excel de Rukas. Un transporte repetido o un dato ilegible en una fila entran como línea "Repetido en el Excel" / "Dato mal en el Excel" para reclamar (`LectoresPlataforma.cs`). Si el N° ya está cargado, el aviso ofrece "Abrir el borrador".
   - **Reclamo por línea:** "Registrar reclamo" lista las diferencias con casillas y arma el motivo; las marcadas pasan a "Esperando a Rukas". Script nuevo `database/proformas-plataforma/02_reclamo_por_linea.sql` (columna `Reclamada`).
   - **Listado:** junto al estado del borrador, etiquetas "Corregir en SGTL · n" (roja), "Revisar · n" y "Reclamar a Rukas · n" (amarillas), "Esperando a Rukas · n desde el dd/mm" (azul) o "Lista para generar" (verde); reemplazan el ícono de admiración. Toca `ProformasController.Listar` (de Facu, con OK de Rocío): avisarle.
+  - **Ajuste al estilo visual nuevo (§12 del design system, 22/10):** la zona del Excel pasa a una franja (ícono, qué archivo va y "Elegir archivo"), así el paso 2 entra sin desplazar; el reclamo y los viajes fuera de la proforma se abren como avisos del sistema (`.alert`, amarillo y azul); tabla, totales, pasos y el formulario del reclamo con los bordes, radios y colores de §12. Títulos como el resto de las proformas: "Editar proforma de Rukas 990210" / "Ver proforma …". Elegir el cliente o el Excel ya no dispara "Tenés cambios sin guardar" (sí editar los datos del cliente o las condiciones). **Probar además:** (8) Registrar proforma → QUICKFOOD → Cancelar: cierra sin el aviso de cambios sin guardar; cambiar el teléfono del cliente y Cancelar: aparece el aviso. (9) Lápiz de un borrador de Rukas: título "Editar proforma de Rukas …"; ojo: "Ver proforma de Rukas …".
   - **Supuesto para la tesis:** Marfrig corrige la misma proforma y conserva el N° (premisa 3 y pregunta 8 del documento de negocio; anteproyecto, "Límites").
   - Probado en la Mac con una API simulada (datos inventados): pasos, importación al elegir, archivo que no es de Rukas, N° ya cargado, nombre sin N°, reclamo por línea, volver a controlar, reemplazar, confirmación de generar, Ver/Editar, vuelta a un cliente directo y ancho de celular.
   - **Probar en VM. Antes:** Rocío corre `02_reclamo_por_linea.sql` en SSMS (sin la columna, la API nueva falla al leer las líneas y el listado de proformas sale vacío). **Corrido el 22/10: OK** (columna `Reclamada` creada; las 4 líneas existentes en 0). Recompilar; Ctrl+F5. (1) Registrar proforma con un cliente directo: igual que antes. Cambiar a QUICKFOOD: pasos, cliente en una línea ("Editar datos del cliente" despliega los campos), zona del Excel, guía y condiciones plegadas, "Generar" gris con el motivo en el pie. Volver a un directo: todo como antes. (2) Elegir `proforma-rukas-formato-invalido…`: aviso "Este archivo no es el Excel de Rukas…" y no se crea nada. (3) Elegir `proforma-rukas-repetido…`: se crea el borrador solo; la segunda línea 990001 en "Para reclamar a Rukas". Elegir el mismo archivo otra vez desde Registrar proforma: "ya está cargada como borrador" con "Abrir el borrador", que lo abre. Registrar reclamo: la línea viene marcada y el motivo armado → Guardar → "Esperando a Rukas (1)"; en el listado, la situación junto a Borrador. Cerrar reclamo y eliminar el borrador. (4) Caso 3 de la demo (`docs/pruebas/datos/README.md`): 990002 en "Para corregir en SGTL"; el ícono abre Gestionar viajes en otra pestaña; corregir el N°, guardar y volver: se controla solo y queda todo OK. Eliminar el borrador. (5) Caso 2: 990002 en "Para revisar"; Registrar reclamo marcando el 990002; Editar reclamo; Reemplazar Excel con el corregido → todo OK y "Generar" verde. "Generar" → confirmación en el pie → Cancelar vuelve a los botones. (Generar de verdad consume un N° PF: pedir OK.) (6) Ver (ojo) de un borrador: sin acciones y "Ver datos del cliente". (7) En DevTools a 390 px: el modal se usa y la tabla se desplaza hacia el costado.
@@ -1504,6 +1505,24 @@ pudo compilar: es el riesgo principal.
   comprobante".
 
 **Si fallan el 1, el 3 o el 5, no se pasan las ramas:** se corrige primero en la Mac. Lo demás se anota y Rocío decide.
+
+**Resultado del 22/10** (Rocío y la sesión de la VM, sobre `64bb048`; reporte en
+`docs/pruebas/2026-10-22-prueba-minima-ramas.md`): la API compiló, el login anduvo y las 25 pantallas abren sin errores
+de JavaScript (se cumple la regla de corte). Pasos 6, 7, 9, 10 y 11 OK.
+- [x] **F1 (alta), paso 8: Registrar recibo no cargaba las facturas pendientes.** Error mío en el merge `aea9740`: al
+  pasar a minúscula los mensajes de Facu, el id `reciboFacturas` quedó `recibofacturas` y el error se tragaba en el
+  `catch`. **Corregido (22/10, commit "Cuenta corriente: Registrar recibo vuelve a cargar las facturas pendientes")**,
+  con una prueba nueva (`tests/ids-de-pantallas.test.js`) que controla que cada id que busca el JS de cuenta corriente y
+  presupuestos exista en su HTML. Visto en la Mac con la API falsa: cargan las facturas y Distribuir reparte desde la que
+  vence primero.
+  - [ ] Repetir el paso 8 en la VM (con OK de Rocío: consume un número de recibo). También abrir Editar recibo.
+- [ ] **F2 (media): el PDF del manual de usuario no carga** (la API tarda 29 s y devuelve 500). No es de este push
+  (`DocumentacionController` sin cambios desde el 18/10). Para ver si el PDF guardado es muy grande:
+  `SELECT DATALENGTH(Pdf) FROM dbo.MANUAL_USUARIO WHERE ManualUsuario_ID = 1;` (solo lee). Módulo de Facu.
+- [ ] **F3 (media): los informes de versión 2.5 y 2.00 no tienen PDF cargado** (404). Faltan los PDF de `Version_ID` 3
+  y 4 (Facu). El aviso dice "Probá de nuevo" y reintentar no sirve.
+- [ ] **Limpieza:** el presupuesto N° 7 (dato de prueba de la VM; el SQL corregido está al final del reporte) y los
+  choferes de prueba que se ven en las listas ("CLAUDE, PRUEBACLAUDE" y "Prueba, Fede").
 
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
 y mandarles este mensaje:
