@@ -6,7 +6,8 @@ using System.Text.RegularExpressions;
 
 namespace WebApi_TransporteSanchez.Plataformas
 {
-    // Línea del archivo de una plataforma, ya leída y validada.
+    // Línea del archivo de una plataforma, ya leída. Si la fila trae un dato que no se puede usar, la línea se
+    // guarda igual con Resultado/Detalle del archivo: es un error de la plataforma y se reclama desde el borrador.
     public class LineaArchivo
     {
         public int Orden { get; set; }
@@ -15,11 +16,26 @@ namespace WebApi_TransporteSanchez.Plataformas
         public string Ruta { get; set; }
         public decimal ImporteViaje { get; set; }
         public decimal Adicionales { get; set; }
+        public string Resultado { get; set; }
+        public string Detalle { get; set; }
+    }
+
+    // Resultados que salen del archivo (no del control contra los viajes): "Volver a controlar" no los cambia.
+    public static class ResultadosArchivo
+    {
+        public const string Repetido = "Repetido_en_archivo";
+        public const string DatoInvalido = "Dato_invalido";
+
+        public static bool Es(string resultado)
+        {
+            return resultado == Repetido || resultado == DatoInvalido;
+        }
     }
 
     public class LecturaArchivo
     {
         public List<LineaArchivo> Lineas { get; set; } = new List<LineaArchivo>();
+        // Solo cuando el archivo no es de la plataforma (otro archivo, formato distinto, vacío): no se importa nada.
         public List<string> Errores { get; set; } = new List<string>();
     }
 
@@ -39,7 +55,8 @@ namespace WebApi_TransporteSanchez.Plataformas
         // N° de la proforma en la plataforma a partir del nombre del archivo (null si no se puede).
         string NumeroDesdeNombreArchivo(string nombreArchivo);
 
-        // filas: celdas como texto, la primera es el encabezado.
+        // filas: celdas como texto, la primera es el encabezado. Rechaza (Errores) solo lo que no es un archivo de
+        // la plataforma; los datos mal de una fila quedan como línea con error (ResultadosArchivo).
         LecturaArchivo Leer(List<List<string>> filas);
     }
 
@@ -82,25 +99,35 @@ namespace WebApi_TransporteSanchez.Plataformas
             return m.Success ? m.Groups[1].Value : null;
         }
 
+        private const string DondeExportarlo = "Exportalo desde Rukas: Proceso → detalle de la proforma → ícono de Excel.";
+
         public LecturaArchivo Leer(List<List<string>> filas)
         {
             var r = new LecturaArchivo();
             if (filas == null || filas.Count == 0)
             {
-                r.Errores.Add("El archivo está vacío.");
+                r.Errores.Add("Este archivo no es el Excel de Rukas: está vacío. " + DondeExportarlo);
                 return r;
             }
 
+            // Sin los encabezados de Rukas no es su Excel (otro archivo, o Rukas cambió el formato): no se importa.
             var encabezado = filas[0] ?? new List<string>();
+            var distintas = new List<string>();
             for (int i = 0; i < Encabezados.Length; i++)
             {
                 var celda = i < encabezado.Count ? (encabezado[i] ?? "").Trim() : "";
                 if (!string.Equals(celda, Encabezados[i], StringComparison.OrdinalIgnoreCase))
-                    r.Errores.Add("El archivo no tiene el formato de Rukas: en la columna " + (i + 1) + " se esperaba \"" + Encabezados[i] + "\".");
+                    distintas.Add("\"" + Encabezados[i] + "\"");
             }
-            if (r.Errores.Count > 0) return r;
+            if (distintas.Count > 0)
+            {
+                r.Errores.Add("Este archivo no es el Excel de Rukas: " + (distintas.Count == 1 ? "falta la columna " : "faltan las columnas ")
+                    + string.Join(", ", distintas) + ". " + DondeExportarlo);
+                return r;
+            }
 
-            var vistos = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Los datos mal de una fila son un error de Rukas: la línea se guarda igual, marcada, para reclamarla.
+            var vistos = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
             for (int f = 1; f < filas.Count; f++)
             {
                 var fila = filas[f] ?? new List<string>();
@@ -109,16 +136,19 @@ namespace WebApi_TransporteSanchez.Plataformas
 
                 int filaExcel = f + 1;
                 var referencia = celda(0);
+                string resultado = null, detalle = null;
+                var problemas = new List<string>();
+
+                int filaAnterior;
                 if (!Regex.IsMatch(referencia, @"^\d+$"))
+                    problemas.Add(referencia == "" ? "falta el N° de transporte" : "el N° de transporte \"" + referencia + "\" no es válido");
+                else if (vistos.TryGetValue(referencia, out filaAnterior))
                 {
-                    r.Errores.Add("Fila " + filaExcel + ": el N° de transporte \"" + referencia + "\" no es válido.");
-                    continue;
+                    resultado = ResultadosArchivo.Repetido;
+                    detalle = "El transporte " + referencia + " está dos veces en el Excel (filas " + filaAnterior + " y " + filaExcel + ").";
                 }
-                if (!vistos.Add(referencia))
-                {
-                    r.Errores.Add("Fila " + filaExcel + ": el transporte " + referencia + " está repetido en el archivo.");
-                    continue;
-                }
+                else
+                    vistos[referencia] = filaExcel;
 
                 DateTime fecha;
                 DateTime? fechaLinea = null;
@@ -128,21 +158,30 @@ namespace WebApi_TransporteSanchez.Plataformas
                             CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha))
                         fechaLinea = fecha;
                     else
-                        r.Errores.Add("Fila " + filaExcel + ": la fecha \"" + celda(2) + "\" no es válida (se espera dd.mm.aaaa).");
+                        problemas.Add("la fecha \"" + celda(2) + "\" no es válida");
                 }
 
                 decimal importe, adicionales;
                 if (!LeerImporte(celda(4), out importe))
                 {
-                    r.Errores.Add("Fila " + filaExcel + ": el importe \"" + celda(4) + "\" no es válido.");
-                    continue;
+                    problemas.Add(celda(4) == "" ? "falta el importe" : "el importe \"" + celda(4) + "\" no es válido");
+                    importe = 0;
                 }
                 if (celda(5) == "") adicionales = 0;
                 else if (!LeerImporte(celda(5), out adicionales))
                 {
-                    r.Errores.Add("Fila " + filaExcel + ": los adicionales \"" + celda(5) + "\" no son válidos.");
-                    continue;
+                    problemas.Add("los adicionales \"" + celda(5) + "\" no son válidos");
+                    adicionales = 0;
                 }
+
+                if (resultado == null && problemas.Count > 0)
+                {
+                    resultado = ResultadosArchivo.DatoInvalido;
+                    detalle = "Fila " + filaExcel + " del Excel: " + string.Join(", ", problemas) + ".";
+                }
+                if (referencia == "") referencia = "Fila " + filaExcel;
+                if (referencia.Length > 30) referencia = referencia.Substring(0, 30);
+                if (detalle != null && detalle.Length > 300) detalle = detalle.Substring(0, 300);
 
                 r.Lineas.Add(new LineaArchivo
                 {
@@ -151,12 +190,14 @@ namespace WebApi_TransporteSanchez.Plataformas
                     Fecha = fechaLinea,
                     Ruta = celda(3),
                     ImporteViaje = importe,
-                    Adicionales = adicionales
+                    Adicionales = adicionales,
+                    Resultado = resultado,
+                    Detalle = detalle
                 });
             }
 
-            if (r.Errores.Count == 0 && r.Lineas.Count == 0)
-                r.Errores.Add("El archivo no tiene transportes.");
+            if (r.Lineas.Count == 0)
+                r.Errores.Add("El archivo no tiene transportes. Revisá que sea el detalle de la proforma. " + DondeExportarlo);
             return r;
         }
 

@@ -136,6 +136,9 @@ las proformas, los comprobantes y los cobros de la empresa en una sola plataform
   emitiendo en el sistema de ARCA. Es la que se carga en la plataforma del cliente.
 - **No se conecta con Rukas.** El intercambio es manual: se cargan en SGTL los números de Rukas y se
   importa el Excel que Rukas exporta.
+- **No se relevó cómo corrige Marfrig una proforma reclamada.** Se supone que corrige la misma
+  proforma, que conserva su número, y en SGTL se reemplaza el Excel; si emitiera otra, se elimina el
+  borrador y se importa la nueva. El supuesto sale de las acciones que se ven en la pantalla de Rukas.
 - No hace seguimiento en tiempo real del camión ni monitoreo de temperatura de la carga.
 - No gestiona el mantenimiento de las unidades, los gastos de viaje, los proveedores ni la
   liquidación de sueldos (estaban en los requerimientos de 2022 y quedan como evolutivos).

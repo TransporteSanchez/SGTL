@@ -78,6 +78,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha { get; set; }
             public string Motivo { get; set; }
             public string Usuario { get; set; }
+            // Orden de las líneas que se reclaman (solo diferencias). Vacío: reclamo general, sin líneas.
+            public List<int> Lineas { get; set; }
         }
 
         public class LineaControlDto
@@ -95,6 +97,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Resultado { get; set; }
             public string Detalle { get; set; }
             public bool Coincide { get; set; }
+            // De quién es la diferencia: "SGTL", "Plataforma" o "Revisar" (decide la persona); null si coincide.
+            public string Responsable { get; set; }
+            // Incluida en el reclamo pendiente en la plataforma.
+            public bool Reclamada { get; set; }
         }
 
         public class ControlDto
@@ -113,6 +119,11 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Cantidad { get; set; }
             public int Coinciden { get; set; }
             public int Diferencias { get; set; }
+            // Las diferencias según quién las resuelve (las reclamadas cuentan solo en Esperando).
+            public int PorCorregir { get; set; }
+            public int PorRevisar { get; set; }
+            public int PorReclamar { get; set; }
+            public int Esperando { get; set; }
             public decimal TotalViajes { get; set; }
             public decimal TotalAdicionales { get; set; }
             public decimal TotalPlataforma { get; set; }
@@ -162,6 +173,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Tarifa_Usada { get; set; }
             public string Resultado { get; set; }
             public string Detalle { get; set; }
+            public bool Reclamada { get; set; }
         }
 
         private class ViajeRow
@@ -262,13 +274,14 @@ WHERE pf.Proforma_ID = @id;", P("@id", id)).FirstOrDefault();
             string nombreArchivo, string contentType, string usuario)
         {
             db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMA_PLATAFORMA_LINEA WHERE Proforma_ID=@id", P("@id", id));
+            // Las líneas con un dato mal en el archivo entran con su resultado (ResultadosArchivo), que el control no cambia.
             foreach (var l in lectura.Lineas)
                 db.Database.ExecuteSqlCommand(@"
-INSERT dbo.PROFORMA_PLATAFORMA_LINEA (Proforma_ID,Orden,Referencia,Fecha,Ruta,Importe_Viaje,Adicionales)
-VALUES (@id,@orden,@ref,@fecha,@ruta,@imp,@adic);",
+INSERT dbo.PROFORMA_PLATAFORMA_LINEA (Proforma_ID,Orden,Referencia,Fecha,Ruta,Importe_Viaje,Adicionales,Resultado,Detalle)
+VALUES (@id,@orden,@ref,@fecha,@ruta,@imp,@adic,@res,@det);",
                     P("@id", id), P("@orden", l.Orden), P("@ref", l.Referencia), P("@fecha", l.Fecha),
                     P("@ruta", string.IsNullOrEmpty(l.Ruta) ? null : (l.Ruta.Length > 150 ? l.Ruta.Substring(0, 150) : l.Ruta)),
-                    P("@imp", l.ImporteViaje), P("@adic", l.Adicionales));
+                    P("@imp", l.ImporteViaje), P("@adic", l.Adicionales), P("@res", l.Resultado), P("@det", l.Detalle));
 
             var nombre = string.IsNullOrWhiteSpace(nombreArchivo) ? "proforma.xlsx" : nombreArchivo.Trim();
             nombre = nombre.Substring(nombre.LastIndexOfAny(new[] { '/', '\\' }) + 1);
@@ -282,6 +295,13 @@ VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
                 P("@archivo", archivo), P("@u", UsuarioCorto(usuario)));
         }
 
+        // Para la auditoría: cuántas líneas vinieron con un dato mal o repetido en el archivo.
+        private static string DescribirErroresArchivo(LecturaArchivo lectura)
+        {
+            int n = lectura.Lineas.Count(l => ResultadosArchivo.Es(l.Resultado));
+            return n == 0 ? "" : " (" + n + " con error en el archivo)";
+        }
+
         private static byte[] LeerBase64(string base64, out string error)
         {
             error = null;
@@ -293,6 +313,35 @@ VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
         }
 
         // ======================= Control =======================
+
+        // De quién es cada diferencia (docs/diseno/proforma-rukas-diseno.md §4): las de SGTL se corrigen en el viaje,
+        // las de la plataforma son de su archivo (se reclaman) y las de "Revisar" las decide la persona con la tarifa
+        // usada a la vista: corrige el viaje o las reclama.
+        private static readonly string[] ResultadosSgtl = { "Sin_viaje", "Repetido_en_SGTL", "Faltan_numeros", "Sin_tarifa" };
+        private static readonly string[] ResultadosPlataforma = { ResultadosArchivo.Repetido, ResultadosArchivo.DatoInvalido };
+
+        private static string Responsable(string resultado)
+        {
+            if (resultado == "Coincide") return null;
+            if (ResultadosSgtl.Contains(resultado)) return "SGTL";
+            if (ResultadosPlataforma.Contains(resultado)) return "Plataforma";
+            return "Revisar";
+        }
+
+        // Situación de los borradores de plataforma para el listado de proformas (ProformasController.Listar), con
+        // la misma clasificación que Responsable(). Es un OUTER APPLY sobre PROFORMAS; en las demás proformas da 0 / NULL.
+        internal static string SqlSituacionBorrador()
+        {
+            Func<string[], string> lista = rs => string.Join(",", rs.Select(x => "'" + x + "'"));
+            string noCuenta = "l.Resultado = 'Coincide' OR l.Reclamada = 1";
+            return "OUTER APPLY (SELECT COUNT(*) AS PlataformaLineas, " +
+                "SUM(CASE WHEN l.Resultado = 'Coincide' THEN 0 WHEN l.Reclamada = 1 THEN 1 ELSE 0 END) AS PlataformaEsperando, " +
+                "SUM(CASE WHEN " + noCuenta + " THEN 0 WHEN l.Resultado IN (" + lista(ResultadosSgtl) + ") THEN 1 ELSE 0 END) AS PlataformaPorCorregir, " +
+                "SUM(CASE WHEN " + noCuenta + " THEN 0 WHEN l.Resultado IN (" + lista(ResultadosPlataforma) + ") THEN 1 ELSE 0 END) AS PlataformaPorReclamar, " +
+                "SUM(CASE WHEN " + noCuenta + " OR l.Resultado IN (" + lista(ResultadosSgtl) + "," + lista(ResultadosPlataforma) + ") THEN 0 ELSE 1 END) AS PlataformaPorRevisar " +
+                "FROM dbo.PROFORMA_PLATAFORMA_LINEA l " +
+                "WHERE l.Proforma_ID = PROFORMAS.Proforma_ID AND PROFORMAS.Tipo_Proforma = 'Plataforma' AND PROFORMAS.Estado = 'Borrador') sit ";
+        }
 
         // Cruza cada línea del archivo con los viajes del cliente, guarda el resultado, actualiza las reservas
         // de viajes (PROFORMAS_VIAJES) y los totales de la proforma. Se usa al importar y en "Volver a controlar".
@@ -333,6 +382,9 @@ SELECT DISTINCT r.ViajeID FROM (
             var reservar = new List<int>();
             foreach (var l in lineas)
             {
+                // Dato mal o repetido en el archivo: es de la plataforma y se corrige con un Excel nuevo, no con el control.
+                if (ResultadosArchivo.Es(l.Resultado)) continue;
+
                 int? viajeId = null; decimal? importeSgtl = null; string tarifa = null, resultado, detalle;
                 var candidatos = viajes.Where(v => v.Referencia == l.Referencia).ToList();
 
@@ -505,10 +557,13 @@ WHERE Proforma_ID=@id;",
                 TarifaUsada = f.Tarifa_Usada,
                 Resultado = f.Resultado,
                 Detalle = f.Detalle,
-                Coincide = f.Resultado == "Coincide"
+                Coincide = f.Resultado == "Coincide",
+                Responsable = Responsable(f.Resultado),
+                Reclamada = f.Reclamada && f.Resultado != "Coincide"
             })
             // Las diferencias primero.
             .OrderBy(x => x.Coincide).ThenBy(x => x.Orden).ToList();
+            var pendientes = lineas.Where(x => !x.Coincide && !x.Reclamada).ToList();
 
             var dto = new ControlDto
             {
@@ -526,6 +581,10 @@ WHERE Proforma_ID=@id;",
                 Cantidad = lineas.Count,
                 Coinciden = lineas.Count(x => x.Coincide),
                 Diferencias = lineas.Count(x => !x.Coincide),
+                PorCorregir = pendientes.Count(x => x.Responsable == "SGTL"),
+                PorRevisar = pendientes.Count(x => x.Responsable == "Revisar"),
+                PorReclamar = pendientes.Count(x => x.Responsable == "Plataforma"),
+                Esperando = lineas.Count(x => x.Reclamada),
                 TotalViajes = lineas.Sum(x => x.ImporteViaje),
                 TotalAdicionales = lineas.Sum(x => x.Adicionales),
                 TotalSgtl = lineas.Sum(x => x.ImporteSgtl.HasValue ? decimal.Round(x.ImporteSgtl.Value, 0, MidpointRounding.AwayFromZero) : 0m),
@@ -602,11 +661,14 @@ SELECT TOP (1) Proforma_ID, Estado, Numero, Tipo_Proforma, ClienteID, CAST(NULL 
 FROM dbo.PROFORMAS
 WHERE Tipo_Proforma='Plataforma' AND ClienteID=@cli AND PlataformaID=@pl AND Plataforma_Numero=@num AND Estado<>'Anulada';",
                         P("@cli", d.ClienteID), P("@pl", cli.Plataforma_ID.Value), P("@num", numero)).FirstOrDefault();
+                    // Ya cargada: la pantalla ofrece abrirla (en borrador, para reemplazar el Excel desde ahí).
                     if (existente != null)
                         return Content(HttpStatusCode.Conflict, new
                         {
-                            error = "La proforma " + numero + " de " + cli.Nombre + " ya está cargada (" + existente.Estado + ")."
-                                + (existente.Estado == "Borrador" ? " Abrila y usá \"Reemplazar Excel\"." : "")
+                            error = "La proforma " + numero + " de " + cli.Nombre + " ya está cargada"
+                                + (existente.Estado == "Borrador" ? " como borrador. Abrila para controlarla o reemplazar el Excel."
+                                    : " (" + existente.Estado + (string.IsNullOrEmpty(existente.Numero) ? "" : ", " + existente.Numero) + ")."),
+                            existente = new { existente.Proforma_ID, existente.Estado, existente.Numero }
                         });
 
                     var condIva = cli.Cond_Fiscal == 1 ? "Responsable Inscripto" : cli.Cond_Fiscal == 2 ? "Monotributista" : cli.Cond_Fiscal == 3 ? "Exento" : null;
@@ -637,7 +699,8 @@ VALUES
                         var nombre = d.NombreArchivo;
                         Controlar(db, id, d.ClienteID, cli.Nombre, lector, usuario);
                         Auditar(db, usuario, "INSERT", id, null,
-                            "Alta de proforma de " + cli.Nombre + " " + numero + " (Borrador) importando " + nombre + ", " + lectura.Lineas.Count + " líneas");
+                            "Alta de proforma de " + cli.Nombre + " " + numero + " (Borrador) importando " + nombre + ", " + lectura.Lineas.Count + " líneas"
+                            + DescribirErroresArchivo(lectura));
                         tx.Commit();
                         return Ok(ArmarControl(db, id));
                     }
@@ -732,7 +795,8 @@ VALUES
                             "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL WHERE Proforma_ID=@id", P("@id", id));
                         Controlar(db, id, c.ClienteID.Value, c.Plataforma, lector, usuario);
                         Auditar(db, usuario, "UPDATE", id, "Archivo=" + c.Nombre_Archivo,
-                            "Archivo reemplazado por " + d.NombreArchivo + ", " + lectura.Lineas.Count + " líneas" + (teniaReclamo ? "; reclamo cerrado" : ""));
+                            "Archivo reemplazado por " + d.NombreArchivo + ", " + lectura.Lineas.Count + " líneas" + DescribirErroresArchivo(lectura)
+                            + (teniaReclamo ? "; reclamo cerrado" : ""));
                         tx.Commit();
                     }
                     return Ok(ArmarControl(db, id));
@@ -786,7 +850,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
             }
         }
 
-        // "Registrar reclamo": marca en el borrador que se espera una corrección de la plataforma (no es un estado).
+        // "Registrar reclamo": marca en el borrador que se espera una corrección de la plataforma (no es un estado)
+        // y qué líneas se reclaman: esas pasan a "Esperando a" la plataforma en el control y en el listado.
         [HttpPost]
         [Route("{id:int}/Reclamo")]
         public IHttpActionResult RegistrarReclamo(int id, [FromBody] ReclamoDto d)
@@ -796,6 +861,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
             if (motivo.Length > 500) return Content(HttpStatusCode.BadRequest, new { error = "El motivo puede tener hasta 500 caracteres." });
             var usuario = string.IsNullOrWhiteSpace(d.Usuario) ? "sistema" : d.Usuario.Trim();
             var fecha = (d.Fecha ?? DateTime.Today).Date;
+            var ordenes = (d.Lineas ?? new List<int>()).Where(o => o > 0).Distinct().ToList();
             try
             {
                 using (var db = new DbContext(Cn()))
@@ -804,10 +870,28 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
                     if (c == null) return NotFound();
                     if (c.Tipo_Proforma != "Plataforma" || c.Estado != "Borrador")
                         return Content(HttpStatusCode.BadRequest, new { error = "Solo se registra un reclamo en un borrador de plataforma." });
-                    db.Database.ExecuteSqlCommand(
-                        "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=@f, Plataforma_Reclamo_Motivo=@m, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
-                        P("@f", fecha), P("@m", motivo), P("@u", usuario), P("@id", id));
-                    Auditar(db, usuario, "RECLAMO", id, null, "Reclamo en " + c.Plataforma + " (" + fecha.ToString("dd/MM/yyyy") + "): " + motivo);
+                    using (var tx = db.Database.BeginTransaction())
+                    {
+                        db.Database.ExecuteSqlCommand(
+                            "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=@f, Plataforma_Reclamo_Motivo=@m, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
+                            P("@f", fecha), P("@m", motivo), P("@u", usuario), P("@id", id));
+                        db.Database.ExecuteSqlCommand("UPDATE dbo.PROFORMA_PLATAFORMA_LINEA SET Reclamada=0 WHERE Proforma_ID=@id", P("@id", id));
+                        var reclamadas = new List<string>();
+                        if (ordenes.Count > 0)
+                        {
+                            // Solo diferencias: una línea que coincide no se reclama. Los Orden son enteros (vienen del modelo).
+                            string enLista = string.Join(",", ordenes);
+                            db.Database.ExecuteSqlCommand(
+                                "UPDATE dbo.PROFORMA_PLATAFORMA_LINEA SET Reclamada=1 WHERE Proforma_ID=@id AND ISNULL(Resultado,'') <> 'Coincide' AND Orden IN (" + enLista + ")",
+                                P("@id", id));
+                            reclamadas = db.Database.SqlQuery<string>(
+                                "SELECT Referencia FROM dbo.PROFORMA_PLATAFORMA_LINEA WHERE Proforma_ID=@id AND Reclamada=1 ORDER BY Orden",
+                                P("@id", id)).ToList();
+                        }
+                        Auditar(db, usuario, "RECLAMO", id, null, "Reclamo en " + c.Plataforma + " (" + fecha.ToString("dd/MM/yyyy") + "): " + motivo
+                            + (reclamadas.Count > 0 ? " | Transportes: " + string.Join(", ", reclamadas) : ""));
+                        tx.Commit();
+                    }
                     return Ok(ArmarControl(db, id));
                 }
             }
@@ -831,7 +915,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
                     if (c == null) return NotFound();
                     if (!c.Plataforma_Reclamo_Fecha.HasValue) return Ok(ArmarControl(db, id));
                     db.Database.ExecuteSqlCommand(
-                        "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
+                        "UPDATE dbo.PROFORMAS SET Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id; " +
+                        "UPDATE dbo.PROFORMA_PLATAFORMA_LINEA SET Reclamada=0 WHERE Proforma_ID=@id;",
                         P("@u", usuario), P("@id", id));
                     Auditar(db, usuario, "RECLAMO", id, "Reclamo: " + c.Plataforma_Reclamo_Motivo, "Reclamo cerrado");
                     return Ok(ArmarControl(db, id));
@@ -897,7 +982,8 @@ VALUES (@id,@orden,@codigo,@concepto,@desc,1,'Viaje',@precio,0,@iva,@precio);",
 UPDATE dbo.PROFORMAS
 SET Numero=@num, Estado='Aceptada', FechaEmision=ISNULL(FechaEmision,GETDATE()),
     Plataforma_Reclamo_Fecha=NULL, Plataforma_Reclamo_Motivo=NULL, Usu_Modi=@u, Fecha_Modi=GETDATE()
-WHERE Proforma_ID=@id AND Estado='Borrador';", P("@num", numero), P("@u", usuario), P("@id", id));
+WHERE Proforma_ID=@id AND Estado='Borrador';
+UPDATE dbo.PROFORMA_PLATAFORMA_LINEA SET Reclamada=0 WHERE Proforma_ID=@id;", P("@num", numero), P("@u", usuario), P("@id", id));
 
                         var viajes = control.Lineas.Where(x => x.ViajeID.HasValue).Select(x => x.ViajeID.Value).Distinct().ToList();
                         var pasan = db.Database.SqlQuery<int>(

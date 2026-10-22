@@ -118,6 +118,34 @@ El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar u
 
 **Un solo modal, el de siempre ("Registrar proforma"), que se adapta según el cliente.** Para la persona, armar una proforma de plataforma es lo mismo de siempre (elegir cliente, completar, "Guardar borrador", "Generar proforma"), solo que en vez de traer viajes elige el archivo. Lo nuevo sigue el design system (`sgtl.css`, `sgtl-ui.js`) aunque el resto de la pantalla de Facu espere su pasada. En los textos, `{plataforma}` es el nombre que viene de `PLATAFORMAS` (hoy "Rukas").
 
+### Rediseño del 22/10 (manda sobre lo que se contradiga más abajo)
+
+Pedido de Rocío: el modal tenía mucho texto y los botones se perdían. Se acomodó sin sacar ninguna acción. Todo se hace desde `proformas-plataforma.js` (agrega y oculta piezas del modal de Facu y las devuelve al salir); las proformas propias no cambian.
+
+- **Pasos:** al elegir un cliente con plataforma, el modal muestra 1 Cliente → 2 Excel de {plataforma} → 3 Control y generar.
+- **Paso 1:** el cliente. Sus datos quedan en una línea ("Responsable Inscripto · dirección · teléfono") con **"Editar datos del cliente"**, que despliega los campos de siempre. El período no se muestra: sale del Excel.
+- **Paso 2:** una zona para elegir o soltar el Excel, con una línea de ayuda. **Al elegirlo se importa y se controla solo** (no hace falta "Guardar borrador"); si el nombre del archivo no trae el N°, lo pide con un botón "Controlar". La guía de viajes sin proforma va plegada en una línea.
+- **Paso 3:** barra del archivo (nombre, fecha, período, "Reemplazar Excel"); un aviso con cuántas diferencias hay y de quién son, con "Volver a controlar" y "Registrar / Editar / Cerrar reclamo" al lado; la tabla agrupada (ver abajo); los totales en una línea. "Abrir viaje" es un ícono por fila y la tarifa usada, un globito en el importe de SGTL.
+- **Condiciones comerciales:** plegadas, con el resumen de forma y plazo de pago.
+- **Pie:** el motivo por el que no se puede generar ("Para generar, resolvé las 3 diferencias") y la confirmación de "Generar" (en el lugar de los botones, donde se tocó).
+- **Se vuelve a controlar solo** al abrir un borrador con el lápiz y al volver a la pestaña después de "Abrir viaje".
+- **Listado:** junto al estado del borrador, su situación: "Corregir en SGTL (1) · Revisar (2) · Esperando a Rukas (1) desde el 21/10", o "Lista para generar". Reemplaza el ícono de admiración del reclamo.
+
+### Errores y de quién son (22/10)
+
+Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores**, para que siempre haya un lugar al que volver. Solo se rechaza lo que no es un Excel de la plataforma (otro archivo, encabezados distintos, vacío): "Este archivo no es el Excel de Rukas: falta la columna …", y no se crea nada. Si el N° ya está cargado, el aviso ofrece "Abrir el borrador".
+
+| Resultado | De quién es | En la tabla |
+|---|---|---|
+| Sin viaje en SGTL, faltan números, sin tarifa, N° repetido en SGTL | **SGTL** (se corrige el viaje) | "Para corregir en SGTL" |
+| Repetido en el Excel, dato mal en el Excel (importe, fecha o N° ilegible) | **La plataforma** (la línea entra igual, marcada; el control no la cambia) | "Para reclamar a {plataforma}" |
+| Importe distinto, ya facturado, en otra proforma | **Decide la persona** con la tarifa usada a la vista: corrige el viaje o lo reclama | "Para revisar" |
+| Cualquiera de las anteriores, incluida en el reclamo | Se espera la corrección de la plataforma | "Esperando a {plataforma}" |
+
+**Reclamo por línea:** "Registrar reclamo" lista las diferencias con casillas (vienen marcadas las del Excel) y arma el motivo con esos transportes; la persona lo puede editar. Las líneas marcadas pasan a "Esperando a {plataforma}" (`PROFORMA_PLATAFORMA_LINEA.Reclamada`, script `02_reclamo_por_linea.sql`). "Volver a controlar" no las toca; "Cerrar reclamo", "Reemplazar Excel" y "Generar" las liberan.
+
+**Supuesto (22/10):** la plataforma corrige la misma proforma, que conserva su N° (cambia el importe o saca el transporte), y se usa "Reemplazar Excel". Sale de las acciones que se ven en el código de la pantalla de Rukas (§12 del documento de negocio); no está verificado con Marfrig. Si alguna vez emitiera otra con otro N°, se elimina el borrador y se importa la nueva.
+
 ### El modal, bloque por bloque
 
 | Bloque | Cliente directo | Cliente con plataforma |

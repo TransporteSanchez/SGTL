@@ -538,11 +538,14 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "WHERE a.ComprobanteDeudaID=fac.FacturaID AND a.Vigente=1) THEN 1 ELSE 0 END AS bit) AS FacturaCancelable " +
                         ",ISNULL(PROFORMAS.Tipo_Proforma,'Propia') AS Tipo_Proforma," +
                         "(SELECT pl.Nombre FROM PLATAFORMAS pl WHERE pl.Plataforma_ID=PROFORMAS.PlataformaID) AS Plataforma," +
-                        "PROFORMAS.Plataforma_Numero, PROFORMAS.Plataforma_Reclamo_Fecha AS ReclamoFecha FROM PROFORMAS " +
+                        "PROFORMAS.Plataforma_Numero, PROFORMAS.Plataforma_Reclamo_Fecha AS ReclamoFecha, " +
+                        "sit.PlataformaLineas, sit.PlataformaPorCorregir, sit.PlataformaPorRevisar, sit.PlataformaPorReclamar, sit.PlataformaEsperando " +
+                        "FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
                         "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
                         "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
+                        ProformasPlataformaController.SqlSituacionBorrador() +
                         where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
@@ -634,6 +637,12 @@ ORDER BY d.Proforma_ID, d.Orden";
             public string Plataforma { get; set; }
             public string Plataforma_Numero { get; set; }
             public DateTime? ReclamoFecha { get; set; }
+            // Situación de un borrador de plataforma: diferencias según quién las resuelve (ProformasPlataformaController).
+            public int? PlataformaLineas { get; set; }
+            public int? PlataformaPorCorregir { get; set; }
+            public int? PlataformaPorRevisar { get; set; }
+            public int? PlataformaPorReclamar { get; set; }
+            public int? PlataformaEsperando { get; set; }
         }
 
         private class ReporteProformaItem

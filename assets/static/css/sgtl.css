@@ -45,6 +45,94 @@
     pointer-events: none;
 }
 
+/* Tabla con muchas columnas dentro de un modal: celdas más angostas para que entre sin desplazarse.
+   Más específica que la de Mazer para .table-sm (1rem): app.css se vuelve a cargar después de este archivo. */
+table.table.sgtl-tabla-compacta tr td,
+table.table.sgtl-tabla-compacta tr th {
+    padding: .45rem .5rem;
+}
+
+/* Columna de texto largo (ruta, concepto) que no tiene que quedar en una tira finita. */
+.sgtl-col-texto {
+    min-width: 12rem;
+}
+
+/* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve). */
+.table tr.sgtl-grupo > th {
+    background-color: #f2f4f7;
+    font-weight: 700;
+}
+
+/* §6.3 Formulario por pasos: hecho (verde), actual (azul) y pendiente (gris). */
+.sgtl-pasos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .25rem .75rem;
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1rem;
+    font-size: .875rem;
+    color: #6c757d;
+}
+
+.sgtl-pasos > li {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+}
+
+.sgtl-pasos > li + li::before {
+    content: "\203A";
+    margin-right: .35rem;
+    color: #adb5bd;
+}
+
+.sgtl-paso-numero {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.4rem;
+    height: 1.4rem;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-size: .75rem;
+}
+
+.sgtl-pasos > .actual {
+    color: #435ebe;
+    font-weight: 700;
+}
+
+.sgtl-pasos > .actual .sgtl-paso-numero {
+    background-color: #435ebe;
+    border-color: #435ebe;
+    color: #fff;
+}
+
+.sgtl-pasos > .hecho {
+    color: #198754;
+}
+
+/* Zona para elegir o soltar un archivo. */
+.sgtl-zona-archivo {
+    border: 2px dashed #ced4da;
+    border-radius: .5rem;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    background-color: #fafbfc;
+}
+
+.sgtl-zona-archivo.arrastrando {
+    border-color: #435ebe;
+    background-color: #e8ecf9;
+}
+
+.sgtl-zona-archivo > .bi {
+    font-size: 2rem;
+    color: #6c757d;
+}
+
 /* §1.3 Cruz para borrar cada filtro */
 .sgtl-filtro {
     position: relative;
