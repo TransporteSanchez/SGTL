@@ -139,29 +139,26 @@
                         <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="detalleUsuarioTitulo"><span>Ver detalle del usuario</span><span id="detalleEstado"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                        <div class="modal-body">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Datos del usuario</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre de usuario</span><div class="sgtl-dato-valor" id="detalleUsuario"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Rol</span><div class="sgtl-dato-valor" id="detalleRol"></div></div></div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre</span><div class="sgtl-dato-valor" id="detalleNombre"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
-                                        </div>
-                                    </section>
+                    <div class="modal-body">
+                        <!-- En filas: los dos bloques de cada fila empiezan a la misma altura (§6.2). -->
+                        <div class="sgtl-detalle-grilla">
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Datos del usuario</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre de usuario</span><div class="sgtl-dato-valor" id="detalleUsuario"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Rol</span><div class="sgtl-dato-valor" id="detalleRol"></div></div></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Grupos y pantallas que ve</div>
-                                        <div id="detalleGrupos"></div>
-                                    </section>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre</span><div class="sgtl-dato-valor" id="detalleNombre"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
                                 </div>
-                            </div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Grupos y pantallas que ve</div>
+                                <div id="detalleGrupos"></div>
+                            </section>
                         </div>
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>

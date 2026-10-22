@@ -43,7 +43,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
-| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`); la ronda de observaciones, commit **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1716,3 +1716,61 @@ detalle con los bloques del formulario" y `dd6034c` "Viajes: km con coma en las 
   todo el sistema; el §7.1 pide 24 h.
 - [ ] **Mensajes de la API de viajes sin voseo** ("Debe seleccionar un cliente.", `ViajesController.ValidarViaje`). La
   pantalla los frena antes, así que casi no se ven; corregirlos la próxima vez que se toque el controller.
+- [ ] **Las tablas de viajes no entran en una notebook** (Gestionar y Listar viajes; Rocío lo dejó para más adelante el
+  22/10). En 1366 px de ancho la tabla mide 1621 px y hay 956 disponibles: Destino, Número de remito, Km y Estado quedan
+  fuera y hay que desplazar hacia el costado (Acciones queda fija). Las demás tablas del sistema entran. Se debe a las
+  10 columnas en una sola línea (`.sgtl-tabla-ancha` no deja partir ningún texto); el lugar del ícono de información
+  suma unos 50 px. Propuesta medida con la API simulada, que entra en 1366 y holgada en 1440:
+  - 7 columnas: **Número** · Cliente · **Fecha** (una sola si empieza y termina el mismo día; si no, abajo en gris "al
+    19/10/2026") · **Recorrido** (origen arriba y "→ destino" abajo, como el bloque del formulario) · **Km** · Estado ·
+    Acciones.
+  - Cliente y Recorrido pueden ir en dos renglones (tres con nombres largos); fechas, números, estado y botones no se
+    parten (§2.1). En pantallas más chicas, Acciones sigue fija a la derecha.
+  - El número de remito sale de la tabla: se sigue buscando con el filtro y se ve en Ver detalle, como el N° transporte
+    SAP y el N° entrega Rukas.
+  - Descartado: dejar el remito como columna (igual no entra y las filas quedan de 3 o 4 renglones). Posible: el remito
+    en gris debajo del cliente (entra, pero suma un renglón).
+  - Para decidir con Rocío: si el remito sale o va debajo del cliente, y en qué resolución se muestra en la defensa (en
+    un proyector de 1280 entra al límite). Al hacerlo, actualizar "Tablas anchas" en el §2.1 del design system.
+
+
+### Ronda de observaciones de Rocío (22/10) — commit en `rocionuvoli`, SIN PUSH, FALTA PROBAR EN VM
+
+Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo ajustes. **Sin C#:** `pull` y Ctrl+F5.
+
+**Qué cambió:**
+- **Columna Estado** (Gestionar viajes y Gestionar proformas): lo que acompaña al estado va en un ícono que abre un
+  globito de una línea (`SGTL.botonInfo` / `SGTL.conInfo`, §4.3), no en más etiquetas. Viajes: gris ("En el borrador
+  de proforma #23.", "En la proforma PF-00000014, aceptada.", "Generado desde el presupuesto #12."). Proformas de
+  Rukas: borde rojo si falta resolver algo, naranja si se espera a Rukas, verde si está lista para generar. Las
+  etiquetas quedan centradas y a la misma altura en todas las filas, con el ícono después.
+- **Botones deshabilitados con el motivo de qué hacer** (como el tacho): viaje facturado → "para corregirlo, emití la
+  nota de crédito de su factura desde Cuenta corriente"; en una proforma emitida → "anulá la proforma"; en un borrador
+  → el tacho dice "sacalo del borrador para eliminarlo". Se sacó el clip de evidencia de la tabla (no se podía tocar).
+- **Registrar viaje:** la etiqueta "Rukas" va adentro del campo de cliente (y en la lista); origen y destino sin
+  cliente dicen "Elegí el cliente".
+- **Ver detalle** (viajes, choferes, camiones, clientes y usuarios): los bloques van en filas que empiezan a la misma
+  altura. Dashboard: en últimos viajes, el resultado de la entrega debajo del estado.
+- **Íconos:** alineados con el texto en todo el sistema (la plantilla los bajaba con `vertical-align: sub`); en los
+  avisos de varias líneas, el ícono a la altura de la primera; en los círculos (zona del Excel, pasos), centrados.
+- **Proforma de Rukas, segunda vuelta** (detalle en `docs/diseno/proforma-rukas-diseno.md`): Rukas adentro del campo
+  de cliente, de dónde se exporta el Excel en el ícono de información, un solo texto en la zona del archivo, sin
+  "Guardar borrador" ni "Borrador" en el título hasta que existe, "Generar proforma" deshabilitado con el motivo en su
+  globito (§6.2), en el paso 3 un recuadro gris con cliente, Excel ("Reemplazar" al lado) y período, ayudas de los
+  grupos más cortas y, en la guía de viajes sin proforma, el ícono rojo con lo que le falta al viaje.
+
+**Probar en la VM** (Ctrl+F5):
+- [ ] 1. Gestionar viajes: un viaje en un borrador de proforma, uno en una proforma emitida y uno de un presupuesto
+  muestran el ícono gris al lado del estado; el globito dice una sola línea; las etiquetas de estado quedan alineadas
+  en toda la columna.
+- [ ] 2. Pasar el mouse por el lápiz, la banderita y el tacho deshabilitados de un viaje facturado y de uno en una
+  proforma: dicen qué hacer.
+- [ ] 3. Registrar viaje con un cliente de Rukas: la etiqueta adentro del campo; sin cliente, origen y destino dicen
+  "Elegí el cliente".
+- [ ] 4. Ver detalle de un viaje, un chofer, un camión, un cliente y un usuario: bloques alineados en filas.
+- [ ] 5. Gestionar proformas: el borrador de Rukas con el ícono de color al lado del estado y su globito.
+- [ ] 6. Registrar proforma con un cliente de Rukas: Rukas adentro del campo, el globito del Excel, "Generar
+  proforma" deshabilitado con "Primero elegí el Excel de Rukas", el ícono del Excel centrado en su círculo. Abrir el
+  borrador: recuadro gris arriba de la tabla y "Generar proforma" con "Para generar, resolvé las N diferencias".
+- [ ] 7. En pantalla completa, los íconos de los títulos, del menú y de los avisos quedan a la altura del texto (sobre
+  todo el aviso de WhatsApp al elegir el chofer).

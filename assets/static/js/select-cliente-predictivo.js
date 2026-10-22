@@ -3,7 +3,8 @@
  * formularios, filtros ni llamadas existentes.
  * Sirve para cualquier lista (también choferes): opciones placeholder, textoVacio ("No hay choferes que
  * coincidan.") e idCampo (id del campo visible, para validarlo con SGTL.validador). Una <option> con
- * data-etiqueta="Rukas" muestra esa etiqueta en la lista. Flechas para moverse, Enter para elegir, Escape cierra.
+ * data-etiqueta="Rukas" muestra esa etiqueta en la lista y, elegida, adentro del campo. Flechas para moverse, Enter
+ * para elegir, Escape cierra.
  */
 (function (window, document) {
     'use strict';
@@ -33,6 +34,8 @@
             '.cliente-select-predictivo-menu button{display:block;width:100%;padding:.5rem .75rem;border:0;background:#fff;color:inherit;text-align:left}' +
             '.cliente-select-predictivo-menu button:hover,.cliente-select-predictivo-menu button:focus,.cliente-select-predictivo-menu button.activa{background:#f1f3f5;outline:0}' +
             '.cliente-select-predictivo-menu button.con-etiqueta{display:flex;align-items:center;justify-content:space-between;gap:.5rem}' +
+            '.cliente-select-predictivo-etiqueta{position:absolute;top:20px;right:2.5rem;transform:translateY(-50%);pointer-events:none}' +
+            '.cliente-select-predictivo input.con-etiqueta{padding-right:6.5rem}' +
             '.cliente-select-predictivo-menu .cliente-select-predictivo-vacio{padding:.5rem .75rem;color:#6c757d;font-size:.875rem}';
         document.head.appendChild(estilos);
     }
@@ -66,7 +69,12 @@
         lista.setAttribute('role', 'listbox');
         lista.id = select.id + '_opciones_' + contador;
         campo.setAttribute('aria-controls', lista.id);
+        // Etiqueta de la opción elegida ("Rukas"), adentro del campo, a la izquierda de la flechita.
+        var marca = document.createElement('span');
+        marca.className = 'badge rounded-pill bg-white text-dark border cliente-select-predictivo-etiqueta d-none';
+        marca.id = campo.id + '_etiqueta';
         contenedor.appendChild(campo);
+        contenedor.appendChild(marca);
         contenedor.appendChild(lista);
 
         select.insertAdjacentElement('afterend', contenedor);
@@ -108,9 +116,17 @@
             campo.setAttribute('aria-expanded', mostrar ? 'true' : 'false');
         }
 
+        function mostrarEtiqueta(texto) {
+            marca.textContent = texto || '';
+            marca.classList.toggle('d-none', !texto);
+            campo.classList.toggle('con-etiqueta', !!texto);
+            if (texto) campo.setAttribute('aria-describedby', marca.id); else campo.removeAttribute('aria-describedby');
+        }
+
         function sincronizar() {
             var seleccionada = select.options[select.selectedIndex];
             campo.value = seleccionada && seleccionada.value ? seleccionada.textContent : '';
+            mostrarEtiqueta(seleccionada && seleccionada.value ? seleccionada.getAttribute('data-etiqueta') : '');
             campo.placeholder = opciones.placeholder || 'Buscar cliente';
             campo.disabled = select.disabled;
         }
@@ -174,6 +190,7 @@
             renderizar('');
         });
         campo.addEventListener('input', function () {
+            mostrarEtiqueta('');
             if (select.value) {
                 select.value = '';
             }

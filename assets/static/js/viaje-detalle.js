@@ -84,7 +84,9 @@
     return '<div class="sgtl-dato"><span class="sgtl-dato-etiqueta">' + nombre + '</span><div class="sgtl-dato-valor">' + valor + '</div></div>';
   }
   function par(a, b) { return '<div class="row"><div class="col-6">' + a + '</div><div class="col-6">' + (b || '') + '</div></div>'; }
-  function bloque(titulo, html) { return '<section class="sgtl-bloque"><div class="sgtl-bloque-titulo">' + titulo + '</div>' + html + '</section>'; }
+  function bloque(titulo, html, ancho) {
+    return '<section class="sgtl-bloque' + (ancho ? ' sgtl-detalle-ancho' : '') + '"><div class="sgtl-bloque-titulo">' + titulo + '</div>' + html + '</section>';
+  }
 
   function asegurarModal() {
     if (document.getElementById('modalVerViaje')) return;
@@ -103,7 +105,7 @@
   function titulo(v) {
     var html = '<span>Ver detalle del viaje #' + esc(v.Viaje_ID) + '</span>' +
       SGTL.estado(v.Estado || 'Registrado', ESTADOS[v.Estado] || v.Estado || 'Registrado');
-    if (v.EnProforma_ID) html += etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador #' + v.EnProforma_ID)));
+    if (v.EnProforma_ID) html += etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador de proforma #' + v.EnProforma_ID)));
     if (v.Presupuesto_ID) html += etiquetaInformativa('Del presupuesto #' + v.Presupuesto_ID);
     return html;
   }
@@ -118,10 +120,9 @@
       return texto(nombre) + (dir ? '<div class="suave">' + esc(dir) + '</div>' : '');
     };
 
-    var recorrido = dato('Cliente', texto(v.Cliente) + (rukas ? ' ' + etiquetaInformativa('Rukas') : '')) +
-      dato('Origen', conDireccion(v.Origen, origen)) +
-      dato('Destino', conDireccion(v.Destino, destino)) +
-      dato('Distancia', isNaN(km) ? '—' : esc(SGTL.km(km)) + ' km');
+    var recorrido = par(dato('Cliente', texto(v.Cliente) + (rukas ? ' ' + etiquetaInformativa('Rukas') : '')),
+      dato('Distancia', isNaN(km) ? '—' : esc(SGTL.km(km)) + ' km')) +
+      par(dato('Origen', conDireccion(v.Origen, origen)), dato('Destino', conDireccion(v.Destino, destino)));
     var asignacion = par(dato('Inicio', texto(SGTL.fecha(v.Fecha_Inicio, { hora: true }))), dato('Fin', texto(SGTL.fecha(v.Fecha_Fin, { hora: true })))) +
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
@@ -146,8 +147,10 @@
       ? '<a class="d-inline-block mt-2" href="gestion-viajes.html?viaje=' + encodeURIComponent(v.Viaje_ID) + '"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Gestionar viajes</a>'
       : '';
 
-    return '<div class="row g-4"><div class="col-md-6">' + bloque('Recorrido', recorrido) + bloque('Fechas, camión y chofer', asignacion) +
-      '</div><div class="col-md-6">' + bloque('Tarifa', tarifa) + bloque('Entrega', entrega) + bloque('Números de referencia', numeros) + '</div></div>' +
+    // En filas (pedido de Rocío, 22/10): los dos bloques de cada fila empiezan a la misma altura.
+    return '<div class="sgtl-detalle-grilla">' + bloque('Recorrido', recorrido, true) +
+      bloque('Fechas, camión y chofer', asignacion) + bloque('Tarifa', tarifa) +
+      bloque('Entrega', entrega) + bloque('Números de referencia', numeros) + '</div>' +
       (registro ? '<div class="sgtl-detalle-pie mt-3">' + registro + '</div>' : '') + enlace;
   }
 

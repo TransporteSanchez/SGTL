@@ -151,57 +151,54 @@
                         <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="detalleCamionTitulo"><span>Ver detalle del camión</span><span id="detalleEstado"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                        <div class="modal-body">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Datos del camión</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Dominio</span><div class="sgtl-dato-valor" id="detalleDominio"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Marca</span><div class="sgtl-dato-valor" id="detalleMarca"></div></div></div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Modelo</span><div class="sgtl-dato-valor" id="detalleModelo"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Año del modelo</span><div class="sgtl-dato-valor" id="detalleAnio"></div></div></div>
-                                        </div>
-                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Tipo</span><div class="sgtl-dato-valor" id="detalleTipo"></div></div>
-                                    </section>
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Identificación</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de motor</span><div class="sgtl-dato-valor" id="detalleMotor"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de chasis</span><div class="sgtl-dato-valor" id="detalleChasis"></div></div></div>
-                                        </div>
-                                    </section>
+                    <div class="modal-body">
+                        <!-- En filas: los dos bloques de cada fila empiezan a la misma altura (§6.2). -->
+                        <div class="sgtl-detalle-grilla">
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Datos del camión</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Dominio</span><div class="sgtl-dato-valor" id="detalleDominio"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Marca</span><div class="sgtl-dato-valor" id="detalleMarca"></div></div></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Fechas y equipamiento</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de compra</span><div class="sgtl-dato-valor" id="detalleFechaCompra"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de ITV</span><div class="sgtl-dato-valor" id="detalleFechaITV"></div></div></div>
-                                        </div>
-                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Equipo de frío</span><div class="sgtl-dato-valor" id="detalleEquipoFrio"></div></div>
-                                    </section>
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Chofer asignado</div>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-striped mb-0" id="tablaChoferesAsignados">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Nombre</th>
-                                                        <th>Apellido</th>
-                                                        <th>DNI</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
-                                    </section>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Modelo</span><div class="sgtl-dato-valor" id="detalleModelo"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Año del modelo</span><div class="sgtl-dato-valor" id="detalleAnio"></div></div></div>
                                 </div>
-                            </div>
-                            <div class="sgtl-detalle-pie mt-3" id="registroCamion"></div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Tipo</span><div class="sgtl-dato-valor" id="detalleTipo"></div></div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Fechas y equipamiento</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de compra</span><div class="sgtl-dato-valor" id="detalleFechaCompra"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de ITV</span><div class="sgtl-dato-valor" id="detalleFechaITV"></div></div></div>
+                                </div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Equipo de frío</span><div class="sgtl-dato-valor" id="detalleEquipoFrio"></div></div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Identificación</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de motor</span><div class="sgtl-dato-valor" id="detalleMotor"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de chasis</span><div class="sgtl-dato-valor" id="detalleChasis"></div></div></div>
+                                </div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Chofer asignado</div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-striped mb-0" id="tablaChoferesAsignados">
+                                        <thead>
+                                            <tr>
+                                                <th>Nombre</th>
+                                                <th>Apellido</th>
+                                                <th>DNI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                            </section>
                         </div>
+                        <div class="sgtl-detalle-pie mt-3" id="registroCamion"></div>
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>

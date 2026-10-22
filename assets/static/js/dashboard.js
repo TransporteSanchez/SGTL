@@ -235,10 +235,12 @@
     return c ? String(c.Dominio || '').trim() : (id ? 'Camión ' + id : '');
   }
 
-  function etiquetaEstado(v) {
+  // apilada: en una tabla, la segunda etiqueta va debajo del estado, como en Gestionar viajes y presupuestos.
+  function etiquetaEstado(v, apilada) {
     var html = SGTL.estado(v.Estado || 'Registrado', ESTADOS_VIAJE[v.Estado] || v.Estado || 'Registrado');
     if (v.Resultado_Entrega === 'Parcial' || v.Resultado_Entrega === 'Rechazo') {
-      html += ' ' + SGTL.estado(v.Resultado_Entrega, v.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : 'Parcial');
+      var resultado = SGTL.estado(v.Resultado_Entrega, v.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : 'Parcial');
+      html += apilada ? '<div class="mt-1">' + resultado + '</div>' : ' ' + resultado;
     }
     return html;
   }
@@ -679,7 +681,7 @@
         '<td class="dash-celda-texto">' + esc(v.Origen) + ' → ' + esc(v.Destino) +
         '<small class="d-block text-muted text-truncate">' + esc(v.Cliente) + '</small></td>' +
         '<td class="text-end text-nowrap">' + (v._km ? esc(SGTL.km(v._km)) : '—') + '</td>' +
-        '<td class="text-center text-nowrap">' + etiquetaEstado(v) + '</td>' +
+        '<td class="text-center text-nowrap">' + etiquetaEstado(v, true) + '</td>' +
         '<td class="text-center">' + SGTL.accionesFila([SGTL.botonFila('ver', { id: v.Viaje_ID })]) + '</td>' +
         '</tr>';
     }).join(''));

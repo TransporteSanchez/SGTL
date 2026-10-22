@@ -236,16 +236,15 @@
                                         <div class="mb-3">
                                             <label for="clienteSelect" class="form-label">Cliente <span class="text-danger">*</span></label>
                                             <select class="form-select" id="clienteSelect"><option value="">Seleccioná un cliente</option></select>
-                                            <div id="clienteEtiqueta" class="mt-1 d-none"><span class="badge rounded-pill bg-white text-dark border">Rukas</span></div>
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-md-6">
                                                 <label for="origenSelect" class="form-label">Origen <span class="text-danger">*</span></label>
-                                                <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar origen" aria-label="Registrar origen" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
+                                                <div class="input-group"><select class="form-select" id="origenSelect" disabled><option value="">Elegí el cliente</option></select><button type="button" id="agregarOrigenViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar origen" aria-label="Registrar origen" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
                                             </div>
                                             <div class="col-md-6">
                                                 <label for="destinoSelect" class="form-label">Destino <span class="text-danger">*</span></label>
-                                                <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Primero seleccioná un cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar destino" aria-label="Registrar destino" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
+                                                <div class="input-group"><select class="form-select" id="destinoSelect" disabled><option value="">Elegí el cliente</option></select><button type="button" id="agregarDestinoViaje" class="btn btn-outline-secondary" data-bs-toggle="tooltip" title="Registrar destino" aria-label="Registrar destino" disabled><i class="bi bi-plus-lg" aria-hidden="true"></i></button></div>
                                             </div>
                                         </div>
                                     </div>
@@ -544,6 +543,22 @@
             };
         }
 
+        // Lo que acompaña al estado (en qué proforma está, de qué presupuesto viene) va en el ícono de información
+        // al lado del estado, que abre un globito (§4.3), no en más etiquetas. Solo dice qué pasa: qué hacer para
+        // editar o eliminar lo dice el globito del botón bloqueado (pedido de Rocío, 22/10).
+        function infoViaje(viaje) {
+            var partes = [];
+            if (viaje.EnProforma_ID) {
+                var estadoPf = String(viaje.EnProforma_Estado || '');
+                partes.push(estadoPf === 'Borrador'
+                    ? '<div>En el <strong>borrador de proforma #' + escHtml(viaje.EnProforma_ID) + '</strong>.</div>'
+                    : '<div>En la proforma <strong>' + escHtml(viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)) + '</strong>' +
+                        (estadoPf ? ', ' + escHtml(estadoPf.toLowerCase()) : '') + '.</div>');
+            }
+            if (viaje.Presupuesto_ID) partes.push('<div>Generado desde el <strong>presupuesto #' + escHtml(viaje.Presupuesto_ID) + '</strong>.</div>');
+            return partes.length ? SGTL.botonInfo('info', partes.join('<div class="mt-1"></div>'), 'Ver más información del viaje #' + viaje.Viaje_ID) : '';
+        }
+
         function accionesViaje(viaje) {
             // Facturado (estado del viaje) o con Factura vigente en Cuenta corriente.
             const facturado = viaje.Estado === 'Facturado' || viaje.Facturada === true;
@@ -553,10 +568,11 @@
             const proformaEmitida = viaje.EnProforma_Estado === 'Generada' || viaje.EnProforma_Estado === 'Aceptada';
             const motivoProforma = 'Está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)) + ': para modificarlo, anulá la proforma';
             const bloqueado = facturado || proformaEmitida;
-            const motivo = facturado ? 'Viaje facturado: no se puede modificar' : motivoProforma;
+            // Qué pasa y qué hacer, como dice la API (§1.4: el motivo va en el globito del botón deshabilitado).
+            const motivo = facturado ? 'Viaje facturado: para corregirlo, emití la nota de crédito de su factura desde Cuenta corriente' : motivoProforma;
             const tituloEditar = bloqueado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
             const desdePresupuesto = !!viaje.Presupuesto_ID;
-            const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en un borrador de proforma: quitalo de la proforma para eliminarlo'
+            const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en el borrador de proforma #' + viaje.EnProforma_ID + ': sacalo del borrador para eliminarlo'
                 : (desdePresupuesto ? 'Se generó desde el presupuesto #' + viaje.Presupuesto_ID + ': no se puede eliminar'
                 : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado')));
             const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
@@ -609,7 +625,7 @@
                                     <td>${escHtml(viaje.Destino)}</td>
                                     <td>${escHtml(textoRef(viaje.Num_Remito))}</td>
                                     <td class="text-end">${escHtml(kmTabla(viaje.Distancia_KM))}</td>
-                                    <td class="text-center text-nowrap">${badgeEstadoViaje(viaje.Estado)}${viaje.EnProforma_ID ? ' <span class="badge rounded-pill bg-white text-dark border" title="Proforma ' + escHtml(viaje.EnProforma_Estado || '') + '">En ' + escHtml(viaje.EnProforma_Numero || ('borrador #' + viaje.EnProforma_ID)) + '</span>' : ''}${viaje.Tiene_Evidencia ? ' <i class="bi bi-paperclip" title="Tiene evidencia de entrega"></i>' : ''}</td>
+                                    <td class="text-center text-nowrap">${SGTL.conInfo(badgeEstadoViaje(viaje.Estado), infoViaje(viaje))}</td>
                                     <td class="text-center">${accionesViaje(viaje)}</td>
                                 </tr>
                             `;
@@ -1002,7 +1018,8 @@
         }
 
         // ===================== COMBOS =====================
-        // Cliente con el buscador compartido (§1.3): los de plataforma llevan la etiqueta "Rukas" en la lista.
+        // Cliente con el buscador compartido (§1.3): los de plataforma llevan la etiqueta "Rukas" en la lista y, elegidos,
+        // adentro del campo (pedido de Rocío, 22/10).
         function cargarClientesViaje() {
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
@@ -1029,7 +1046,6 @@
         // recién para pasar a "Listo para facturar"; el chofer es opcional. Directo: solo remito, opcional.
         function aplicarReglasTipoCliente() {
             var conPlataforma = clienteConPlataforma();
-            $('#clienteEtiqueta').toggleClass('d-none', !conPlataforma);
             $('#grupoNumTransporte, #grupoNumeroCarga').toggleClass('d-none', !conPlataforma);
             $('#grupoNumRemito').toggleClass('col-md-4', conPlataforma).toggleClass('col-md-6', !conPlataforma);
             $('#remitoOpcional').toggleClass('d-none', conPlataforma);
@@ -1089,8 +1105,8 @@
         function filtrarOrigenDestino(clienteId, origenSel, destinoSel) {
             var so = $('#origenSelect'), sd = $('#destinoSelect');
             if (!clienteId) {
-                so.prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
-                sd.prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
+                so.prop('disabled', true).html('<option value="">Elegí el cliente</option>');
+                sd.prop('disabled', true).html('<option value="">Elegí el cliente</option>');
                 return;
             }
             so.prop('disabled', false).empty().append('<option value="">Seleccioná un origen</option>');
@@ -1231,7 +1247,7 @@
         // Estado y etiquetas informativas del título (§4.3): "En borrador #23", "Del presupuesto #12".
         function etiquetasDelViaje(v) {
             var html = badgeEstadoViaje(v.Estado || 'Registrado');
-            if (v.EnProforma_ID) html += ' ' + etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador #' + v.EnProforma_ID)));
+            if (v.EnProforma_ID) html += ' ' + etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador de proforma #' + v.EnProforma_ID)));
             if (v.Presupuesto_ID) html += ' ' + etiquetaInformativa('Del presupuesto #' + v.Presupuesto_ID);
             return html;
         }
@@ -1309,8 +1325,8 @@
             $('#viajeIdEdicion, #tarifaFijaId, #tarifaKmId, #distanciaKm').val('');
             $('#tarifaTipoKm').prop('checked', true);
             bloquearDatosDelViaje(null);
-            $('#origenSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
-            $('#destinoSelect').prop('disabled', true).html('<option value="">Primero seleccioná un cliente</option>');
+            $('#origenSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
+            $('#destinoSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
             $('#agregarOrigenViaje, #agregarDestinoViaje').prop('disabled', true);
             SelectClientePredictivo.sincronizar('clienteSelect');
             SelectClientePredictivo.sincronizar('choferSelect');

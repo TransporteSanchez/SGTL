@@ -154,46 +154,43 @@
                         <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="detalleClienteTitulo"><span>Ver detalle del cliente</span><span id="detalleEstado"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                        <div class="modal-body">
-                            <div class="row g-4">
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Datos fiscales</div>
-                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Razón social</span><div class="sgtl-dato-valor" id="detalleRazonSocial"></div></div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">CUIT</span><div class="sgtl-dato-valor" id="detalleCuit"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre comercial</span><div class="sgtl-dato-valor" id="detalleNombreComercial"></div></div></div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Condición de IVA</span><div class="sgtl-dato-valor" id="detalleCondFiscal"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Tipo de cliente</span><div class="sgtl-dato-valor" id="detalleTipo"></div></div></div>
-                                        </div>
-                                    </section>
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Contacto</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Teléfono</span><div class="sgtl-dato-valor" id="detalleTelefono"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div></div>
-                                        </div>
-                                    </section>
+                    <div class="modal-body">
+                        <!-- En filas: los dos bloques de cada fila empiezan a la misma altura (§6.2). -->
+                        <div class="sgtl-detalle-grilla">
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Datos fiscales</div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Razón social</span><div class="sgtl-dato-valor" id="detalleRazonSocial"></div></div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">CUIT</span><div class="sgtl-dato-valor" id="detalleCuit"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre comercial</span><div class="sgtl-dato-valor" id="detalleNombreComercial"></div></div></div>
                                 </div>
-                                <div class="col-md-6">
-                                    <section class="sgtl-bloque">
-                                        <div class="sgtl-bloque-titulo">Domicilio</div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Provincia</span><div class="sgtl-dato-valor" id="detalleProvincia"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Localidad</span><div class="sgtl-dato-valor" id="detalleLocalidad"></div></div></div>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Calle</span><div class="sgtl-dato-valor" id="detalleCalle"></div></div></div>
-                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Altura</span><div class="sgtl-dato-valor" id="detalleAltura"></div></div></div>
-                                        </div>
-                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Código postal</span><div class="sgtl-dato-valor" id="detalleCodigoPostal"></div></div>
-                                    </section>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Condición de IVA</span><div class="sgtl-dato-valor" id="detalleCondFiscal"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Tipo de cliente</span><div class="sgtl-dato-valor" id="detalleTipo"></div></div></div>
                                 </div>
-                            </div>
-                            <div class="sgtl-detalle-pie mt-3" id="registroCliente"></div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Domicilio</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Provincia</span><div class="sgtl-dato-valor" id="detalleProvincia"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Localidad</span><div class="sgtl-dato-valor" id="detalleLocalidad"></div></div></div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Calle</span><div class="sgtl-dato-valor" id="detalleCalle"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Altura</span><div class="sgtl-dato-valor" id="detalleAltura"></div></div></div>
+                                </div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Código postal</span><div class="sgtl-dato-valor" id="detalleCodigoPostal"></div></div>
+                            </section>
+                            <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Contacto</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Teléfono</span><div class="sgtl-dato-valor" id="detalleTelefono"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div></div>
+                                </div>
+                            </section>
                         </div>
+                        <div class="sgtl-detalle-pie mt-3" id="registroCliente"></div>
+                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
