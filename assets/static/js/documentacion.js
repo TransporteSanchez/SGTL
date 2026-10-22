@@ -10,20 +10,27 @@
   var secuencia = 0;
 
   function headers() { return { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') }; }
-  function informar(texto, clase) {
+  // "Cargando…" en gris mientras busca (§2.2); los errores, con el aviso del sistema (§5.1).
+  function informar(texto) {
     mensaje.textContent = texto;
-    mensaje.className = texto ? 'alert alert-' + clase : '';
+    mensaje.className = texto ? 'text-muted mb-3' : '';
   }
-  async function respuesta(r) {
+  function avisarError(e, porDefecto) {
+    informar('');
+    SGTL.toastError((e && e.mensajeUsuario) || porDefecto);
+  }
+  // Solo se muestra el texto de la API cuando rechaza un pedido (400, 404 o 409); el resto es técnico (§9).
+  async function respuesta(r, porDefecto) {
     if (r.ok) return r;
     var datos = {};
     try { datos = await r.json(); } catch (_) { }
-    throw new Error(datos.message || datos.Message || 'No se pudo cargar el documento.');
+    var error = new Error('HTTP ' + r.status);
+    var texto = datos.message || datos.Message;
+    error.mensajeUsuario = r.status === 401 ? SGTL.mensajeError({ status: 401 }, porDefecto)
+      : ([400, 404, 409].indexOf(r.status) !== -1 && texto) || porDefecto;
+    throw error;
   }
-  function fechaVisible(fecha) {
-    var partes = fecha.split('T')[0].split('-');
-    return partes.length === 3 ? partes[2] + '/' + partes[1] + '/' + partes[0] : fecha;
-  }
+  function fechaVisible(fecha) { return SGTL.fecha(fecha) || '—'; }
   function liberarPdf() {
     marco.removeAttribute('src');
     descarga.removeAttribute('href');
@@ -34,9 +41,9 @@
     var solicitud = ++secuencia;
     vista.hidden = true;
     liberarPdf();
-    informar('Cargando vista previa…', 'info');
+    informar('Cargando…');
     try {
-      var r = await respuesta(await fetch(api + ruta, { headers: headers(), cache: 'no-store' }));
+      var r = await respuesta(await fetch(api + ruta, { headers: headers(), cache: 'no-store' }), 'No se pudo cargar el PDF. Probá de nuevo.');
       var pdf = await r.blob();
       if (solicitud !== secuencia) return;
       urlPdf = URL.createObjectURL(pdf);
@@ -44,9 +51,9 @@
       descarga.href = urlPdf;
       if (tipo === 'versiones') document.getElementById('tituloVista').textContent = titulo;
       vista.hidden = false;
-      informar('', 'info');
+      informar('');
     } catch (e) {
-      if (solicitud === secuencia) informar(e.message, 'danger');
+      if (solicitud === secuencia) avisarError(e, 'No se pudo cargar el PDF. Probá de nuevo.');
     }
   }
   async function cargar() {
@@ -55,41 +62,34 @@
       if (tipo === 'manual') {
         var actual = document.getElementById('manualActual');
         if (r.status === 404) { actual.textContent = 'Todavía no se publicó un manual.'; return; }
-        var manual = await (await respuesta(r)).json();
+        var manual = await (await respuesta(r, 'No se pudo cargar el manual. Probá de nuevo.')).json();
         actual.textContent = 'Publicado el ' + fechaVisible(manual.fechaPublicacion) + '.';
         await mostrarPdf('/manual/pdf');
       } else {
-        var versiones = await (await respuesta(r)).json();
-        var lista = document.getElementById('listaVersiones');
-        lista.replaceChildren();
+        var versiones = await (await respuesta(r, 'No se pudieron cargar los informes de versión. Probá de nuevo.')).json();
         if (!versiones.length) {
-          var vacio = document.createElement('tr');
-          var celda = document.createElement('td');
-          celda.colSpan = 3; celda.textContent = 'Todavía no se publicaron informes de versión.';
-          vacio.appendChild(celda); lista.appendChild(vacio);
+          SGTL.tabla.vacia('#listaVersiones', 3, 'Todavía no hay informes de versión publicados.');
           return;
         }
-        versiones.forEach(function (v) {
-          var fila = document.createElement('tr');
-          var numero = document.createElement('td'); numero.textContent = v.version;
-          var fecha = document.createElement('td'); fecha.textContent = fechaVisible(v.fecha);
-          var acciones = document.createElement('td');
-          var boton = document.createElement('button');
-          boton.type = 'button'; boton.className = 'btn btn-outline-primary btn-sm';
-          boton.textContent = 'Ver informe'; boton.setAttribute('aria-label', 'Ver informe de la versión ' + v.version);
-          boton.addEventListener('click', function () {
-            mostrarPdf('/versiones/' + v.id + '/pdf', 'Vista previa: versión ' + v.version);
-          });
-          acciones.appendChild(boton);
-          fila.appendChild(numero); fila.appendChild(fecha); fila.appendChild(acciones); lista.appendChild(fila);
+        // Acción de cada fila con el botón del sistema (§1.4).
+        SGTL.tabla.llenar('#listaVersiones', versiones.map(function (v) {
+          return '<tr><td>' + SGTL.escapar(v.version) + '</td><td class="text-center">' + SGTL.escapar(fechaVisible(v.fecha)) + '</td>' +
+            '<td class="text-center">' + SGTL.accionesFila([SGTL.botonFila('ver', { id: v.id, texto: 'Ver informe' })]) + '</td></tr>';
+        }).join(''));
+        var porId = {};
+        versiones.forEach(function (v) { porId[v.id] = v; });
+        document.getElementById('listaVersiones').addEventListener('click', function (evento) {
+          var boton = evento.target.closest('[data-accion="ver"]');
+          var v = boton && porId[boton.getAttribute('data-id')];
+          if (v) mostrarPdf('/versiones/' + v.id + '/pdf', 'Versión ' + v.version);
         });
         var ultima = versiones[0];
-        await mostrarPdf('/versiones/' + ultima.id + '/pdf', 'Vista previa: versión ' + ultima.version);
+        await mostrarPdf('/versiones/' + ultima.id + '/pdf', 'Versión ' + ultima.version);
       }
     } catch (e) {
-      if (tipo === 'manual') document.getElementById('manualActual').textContent = '';
-      else document.getElementById('listaVersiones').replaceChildren();
-      informar(e.message, 'danger');
+      if (tipo === 'manual') document.getElementById('manualActual').textContent = 'No se pudo cargar el manual.';
+      else SGTL.tabla.vacia('#listaVersiones', 3, 'No se pudieron cargar los informes de versión.');
+      avisarError(e, tipo === 'manual' ? 'No se pudo cargar el manual. Probá de nuevo.' : 'No se pudieron cargar los informes de versión. Probá de nuevo.');
     }
   }
   window.addEventListener('pagehide', function (e) { if (!e.persisted) liberarPdf(); });
