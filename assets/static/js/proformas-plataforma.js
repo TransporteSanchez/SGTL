@@ -68,6 +68,12 @@
     el.classList.add('d-none');
     el.setAttribute('data-pp-oculto', '');
   }
+  // Devuelve lo que ocultar() escondió (lo de Facu que se vuelve a ver en otro paso).
+  function mostrarOculto(el) {
+    if (!el || !el.hasAttribute('data-pp-oculto')) return;
+    el.classList.remove('d-none');
+    el.removeAttribute('data-pp-oculto');
+  }
   function columna(id) { var el = $id(id); return el ? el.closest('[class*="col-"]') : null; }
   function filaDe(id) { var el = $id(id); return el ? el.closest('.row') : null; }
 
@@ -80,7 +86,9 @@
     $('#p_otros').prop('readonly', activo);
 
     if (!activo) {
-      ['pp_pasos', 'pp_ficha', 'pp_cond_titulo', 'pp_pie_motivo', 'pp_pie_confirmar'].forEach(function (id) { var el = $id(id); if (el) el.remove(); });
+      var envoltura = $id('pp_generar_envoltura');
+      if (envoltura && $id('btnGenerar')) envoltura.before($id('btnGenerar'));
+      ['pp_pasos', 'pp_ficha', 'pp_cond_titulo', 'pp_generar_envoltura', 'pp_pie_confirmar'].forEach(function (id) { var el = $id(id); if (el) el.remove(); });
       Array.prototype.forEach.call(document.querySelectorAll('#modalProforma [data-pp-oculto]'), function (el) {
         el.classList.remove('d-none');
         el.removeAttribute('data-pp-oculto');
@@ -117,7 +125,13 @@
       filaCond.addEventListener('input', resumirCondiciones);
     }
 
-    pie.insertBefore(crear('<span id="pp_pie_motivo" class="me-auto small"></span>'), pie.firstChild);
+    // "Generar proforma" va en un span para que, deshabilitado, muestre el motivo en su globito (§1.4).
+    var generar = $id('btnGenerar');
+    if (generar) {
+      var envolturaGenerar = crear('<span id="pp_generar_envoltura" class="d-inline-block"></span>');
+      generar.before(envolturaGenerar);
+      envolturaGenerar.appendChild(generar);
+    }
     pie.appendChild(crear(
       '<div id="pp_pie_confirmar" class="d-none w-100 d-flex flex-wrap align-items-center gap-2">' +
       '<span class="me-auto" id="pp_pie_pregunta"></span>' +
@@ -148,37 +162,24 @@
     var resumen = $id('pp_cond_resumen');
     if (!resumen) return;
     var partes = [$id('p_formapago').value, $id('p_plazopago').value].map(function (v) { return (v || '').trim(); }).filter(Boolean);
-    resumen.textContent = partes.length ? '· ' + partes.join(' · ') : '· forma y plazo de pago sin completar';
+    // Vacías no dicen nada: el resumen aparece cuando hay algo cargado.
+    resumen.textContent = partes.length ? '· ' + partes.join(' · ') : '';
   }
 
   function valorCampo(id) { return ($id(id) && $id(id).value || '').trim(); }
 
-  // Pasos: 1 Cliente, 2 Excel de la plataforma, 3 Control y generar. En el paso 3 los pasos hechos muestran
-  // su resultado (el cliente y el archivo), así no hace falta repetirlos más abajo.
+  // Pasos: 1 Cliente, 2 Excel de la plataforma, 3 Control y generar. Solo los nombres: en el paso 3 el cliente, el
+  // archivo y el período van en el recuadro gris de arriba de la tabla (§6.3, segunda vuelta del 22/10).
   function pasos(actual) {
     var ol = $id('pp_pasos');
     if (!ol) return;
     ol.classList.toggle('d-none', !actual);
-    var c = estado.control;
-    var hechos = [null, null];
-    if (actual === 3) {
-      hechos[0] = esc(valorCampo('p_cli_razon') || 'Cliente') +
-        ' <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
-        (estado.datosAbiertos ? 'ocultar datos' : 'ver datos') + '</button>';
-      if (c) {
-        var titulo = c.FechaArchivo ? ' title="Importado el ' + esc(fecha(c.FechaArchivo, { hora: true })) + '"' : '';
-        hechos[1] = '<span' + titulo + '>' + esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma()) + '</span>' +
-          (c.FechaDesde ? ' <span class="fw-normal text-muted">· ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') + '</span>' : '');
-      }
-    }
     var nombres = ['Cliente', 'Excel de ' + nombrePlataforma(), 'Control y generar'];
     ol.innerHTML = nombres.map(function (nombre, i) {
       var n = i + 1;
-      if (n < actual) return '<li class="hecho"><span class="sgtl-paso-numero"><i class="bi bi-check-lg" aria-hidden="true"></i></span><span>' + (hechos[i] || esc(nombre)) + '</span></li>';
+      if (n < actual) return '<li class="hecho"><span class="sgtl-paso-numero"><i class="bi bi-check-lg" aria-hidden="true"></i></span><span>' + esc(nombre) + '</span></li>';
       return '<li' + (n === actual ? ' class="actual" aria-current="step"' : '') + '><span class="sgtl-paso-numero">' + n + '</span>' + esc(nombre) + '</li>';
     }).join('');
-    var boton = $id('pp_datos_boton');
-    if (boton) boton.addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; mostrarDatosCliente(); pasos(3); });
   }
 
   // Los campos del cliente de siempre, desplegados o plegados.
@@ -192,14 +193,13 @@
   }
 
   // Paso 2: datos del cliente en una línea, debajo del cliente; "Editar datos del cliente" despliega los campos.
+  // La etiqueta de la plataforma va adentro del campo, como en Registrar viaje (data-etiqueta de la opción).
   function ficha() {
     var caja = $id('pp_ficha');
     if (!caja) return;
     var partes = [valorCampo('p_cli_condiva'), valorCampo('p_cli_dir'), valorCampo('p_cli_tel')].filter(Boolean);
-    caja.innerHTML =
-      '<span class="badge rounded-pill bg-white text-dark border me-1">' + esc(nombrePlataforma()) + '</span>' +
-      esc(partes.join(' · ')) +
-      ' <button type="button" class="btn btn-link btn-sm p-0 ms-1 align-baseline" id="pp_ficha_boton" aria-expanded="' + estado.datosAbiertos + '">' +
+    caja.innerHTML = esc(partes.join(' · ')) + (partes.length ? ' · ' : '') +
+      '<button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_ficha_boton" aria-expanded="' + estado.datosAbiertos + '">' +
       (estado.datosAbiertos ? 'Ocultar datos del cliente' : 'Editar datos del cliente') + '</button>';
     mostrarDatosCliente();
     $id('pp_ficha_boton').addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; ficha(); });
@@ -214,14 +214,6 @@
     });
   }
 
-  // Pie: qué falta para generar, al lado del botón (en uno deshabilitado no hay tooltip). Es una nota, no un error.
-  function motivoPie(texto, icono) {
-    var span = $id('pp_pie_motivo');
-    if (!span) return;
-    span.innerHTML = texto ? '<i class="bi ' + (icono || 'bi-info-circle') + ' me-1" aria-hidden="true"></i>' + esc(texto) : '';
-    span.className = 'me-auto small text-muted';
-  }
-
   function mostrarBotonesPie(mostrar) {
     var pie = document.querySelector('#modalProforma .modal-footer');
     var confirmar = $id('pp_pie_confirmar');
@@ -233,13 +225,29 @@
     if (confirmar) confirmar.classList.toggle('d-none', mostrar);
   }
 
-  function botonGenerar(habilitado) {
+  // Deshabilitado, el motivo va en el globito del span que lo envuelve, como en los botones de la fila (§1.4).
+  function botonGenerar(habilitado, motivo) {
     var gen = $id('btnGenerar');
     if (!gen) return;
     gen.disabled = !habilitado;
     // Deshabilitado no tiene que parecer habilitado (verde con opacidad).
     gen.classList.toggle('btn-success', habilitado);
     gen.classList.toggle('btn-secondary', !habilitado);
+    var vieja = $id('pp_generar_envoltura');
+    if (!vieja) return;
+    // Un span nuevo cada vez: el globito toma su texto la primera vez que se muestra.
+    var nueva = crear('<span id="pp_generar_envoltura" class="d-inline-block"></span>');
+    if (!habilitado && motivo) {
+      nueva.className = 'd-inline-block sgtl-envoltura-deshabilitado';
+      nueva.tabIndex = 0;
+      nueva.setAttribute('data-bs-toggle', 'tooltip');
+      nueva.title = motivo;
+      nueva.setAttribute('aria-label', 'Generar proforma: ' + motivo.charAt(0).toLowerCase() + motivo.slice(1));
+    }
+    if (vieja.hasAttribute('hidden')) nueva.setAttribute('hidden', '');
+    if (window.SGTL) SGTL.ocultarTooltips();
+    vieja.replaceWith(nueva);
+    nueva.appendChild(gen);
   }
 
   function botonPdf(visible) {
@@ -264,10 +272,13 @@
     plegarCondiciones(true);
     renderNuevo();
     if (estado.puedeLeer) cargarGuia(clienteId);
-    botonGenerar(false);
+    // Elegir el Excel ya guarda el borrador: en este paso sobra "Guardar borrador", y el estado del título aparece
+    // cuando el borrador existe (paso 3).
+    ocultar($id('btnGuardarBorrador'));
+    ocultar($id('badgeEstadoModal'));
+    botonGenerar(false, 'Primero elegí el Excel de ' + nombrePlataforma());
     botonPdf(false);
     window.proformaConCambios = false;
-    motivoPie('Al elegir el Excel se guarda como borrador y se controla contra los viajes.');
   }
 
   function desactivar() {
@@ -278,6 +289,7 @@
     var gen = $id('btnGenerar');
     if (gen) { gen.disabled = false; gen.removeAttribute('title'); gen.classList.add('btn-success'); gen.classList.remove('btn-secondary'); }
     botonPdf(true);
+    if (window.SGTL) SGTL.ocultarTooltips();
   }
 
   function renderNuevo() {
@@ -285,18 +297,23 @@
     var bloque = $id('bloquePlataforma');
     // Elegir el Excel lo guarda solo: no cuenta como cambio sin guardar (sí los datos del cliente y las condiciones).
     bloque.dataset.sinCambios = 'true';
+    // Un solo texto de ayuda en la zona; de dónde se exporta queda en el ícono de información (§4.3).
     bloque.innerHTML =
       (estado.puedeLeer ? '' : '<div class="alert alert-light-danger color-danger">Todavía no se pueden leer archivos de ' + p + '.</div>') +
-      '<div class="sgtl-zona-archivo mt-3" id="pp_zona">' +
+      '<div class="mt-4">' +
+      '<div class="form-label d-flex align-items-center gap-1">Excel de ' + p + ' <span class="text-danger">*</span>' +
+      SGTL.botonInfo('info', 'Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel.', 'Ver de dónde se exporta el Excel') + '</div>' +
+      '<div class="sgtl-zona-archivo" id="pp_zona">' +
       '<span class="sgtl-zona-icono"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i></span>' +
-      '<div class="sgtl-zona-texto"><div class="fw-bold">Excel de ' + p + '</div>' +
-      '<div class="small text-muted">Arrastralo acá o elegilo. Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel.</div></div>' +
+      '<div class="sgtl-zona-texto"><div class="fw-bold">Arrastralo acá o elegilo</div>' +
+      '<div class="small text-muted">Al elegirlo se guarda como borrador y se controla contra los viajes de SGTL.</div></div>' +
       '<button type="button" class="btn btn-primary" id="pp_elegir"' + (estado.puedeLeer ? '' : ' disabled') + '>' +
       '<i class="bi bi-upload me-1" aria-hidden="true"></i>Elegir archivo</button>' +
       '<input type="file" id="pp_archivo" class="d-none" accept=".xlsx" aria-label="Excel de ' + p + '">' +
       '<div id="pp_archivo_estado" class="w-100"></div>' +
       '</div>' +
-      '<div id="pp_guia" class="mt-3"></div>';
+      '<div id="pp_guia" class="mt-2"></div>' +
+      '</div>';
 
     var input = $id('pp_archivo');
     $id('pp_elegir').addEventListener('click', function () { input.click(); });
@@ -334,26 +351,33 @@
     var viajes = r.Viajes || [];
     var caja = $id('pp_guia');
     if (!viajes.length) {
-      caja.innerHTML = '<div class="small text-muted"><i class="bi bi-truck me-1" aria-hidden="true"></i>No hay viajes de este cliente con el ' + esc(r.Dato) + ' cargado fuera de una proforma.</div>';
+      caja.innerHTML = '<div class="small text-muted"><i class="bi bi-truck me-1" aria-hidden="true"></i>No hay viajes sin proforma con el ' + esc(r.Dato) + ' cargado.</div>';
       return;
     }
     var conFaltantes = viajes.filter(function (v) { return v.Faltan; }).length;
+    // Lo que le falta al viaje para pasar a Listo para facturar (los números obligatorios de la plataforma) va en el
+    // ícono de información junto a su estado (§4.3), como en Gestionar viajes.
+    var falta = function (v) {
+      if (!v.Faltan) return '';
+      var varios = v.Faltan.indexOf(',') !== -1;
+      return SGTL.botonInfo('urgente', 'Le falta: ' + esc(v.Faltan) + '. Sin ' + (varios ? 'esos números' : 'ese número') + ' no pasa a Listo para facturar.',
+        'Ver qué le falta al viaje #' + v.ViajeID);
+    };
     var filas = viajes.map(function (v) {
       return '<tr>' +
         '<td>' + esc(v.Referencia) + '</td>' +
         '<td class="text-center text-nowrap">' + fecha(v.Fecha) + '</td>' +
         '<td>' + esc(v.Origen) + ' → ' + esc(v.Destino) + '</td>' +
-        '<td class="text-center">' + (window.SGTL ? SGTL.estado(String(v.Estado || '').replace(/_/g, ' ')) : esc(v.Estado)) + '</td>' +
-        '<td>' + (v.Faltan ? '<span class="small text-danger">Le falta: ' + esc(v.Faltan) + '.</span>' : '') + '</td>' +
+        '<td class="text-center text-nowrap">' + SGTL.conInfo(SGTL.estado(String(v.Estado || '').replace(/_/g, ' ')), falta(v)) + '</td>' +
         '<td class="text-center">' + botonViaje(v.ViajeID) + '</td>' +
         '</tr>';
     }).join('');
     caja.innerHTML =
       '<details>' +
-      '<summary class="small"><i class="bi bi-truck me-1" aria-hidden="true"></i>' + plural(viajes.length, 'viaje', 'viajes') + ' sin proforma para tildar en ' + p +
+      '<summary class="small">' + plural(viajes.length, 'viaje', 'viajes') + ' sin proforma para tildar en ' + p +
       (conFaltantes ? ' <span class="badge rounded-pill estado-amarillo ms-1">' + plural(conFaltantes, 'con números faltantes', 'con números faltantes') + '</span>' : '') + '</summary>' +
       '<div class="table-responsive mt-2"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta mb-0"><thead><tr>' +
-      '<th>' + esc(r.Dato.charAt(0).toUpperCase() + r.Dato.slice(1)) + '</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-center">Estado</th><th>Falta</th><th class="text-center">Acciones</th>' +
+      '<th>' + esc(r.Dato.charAt(0).toUpperCase() + r.Dato.slice(1)) + '</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-center">Estado</th><th class="text-center">Acciones</th>' +
       '</tr></thead><tbody>' + filas + '</tbody></table></div>' +
       '</details>';
   }
@@ -538,8 +562,8 @@
     var p = esc(nombrePlataforma());
     return [
       { clave: 'SGTL', color: 'rojo', titulo: 'Para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar' },
-      { clave: 'Revisar', color: 'amarillo', titulo: 'Para revisar', ayuda: 'Mirá la tarifa usada: si el viaje está bien, reclamalo; si no, corregilo' },
-      { clave: 'Plataforma', color: 'amarillo', titulo: 'Para reclamar a ' + p, ayuda: 'Vienen mal en el Excel: registrá el reclamo' },
+      { clave: 'Revisar', color: 'amarillo', titulo: 'Para revisar', ayuda: 'Corregí el viaje o reclamalo' },
+      { clave: 'Plataforma', color: 'amarillo', titulo: 'Para reclamar a ' + p, ayuda: 'Registrá el reclamo' },
       { clave: 'Esperando', color: 'azul', titulo: 'Esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel' },
       { clave: 'Coincide', color: 'verde', titulo: 'Coinciden' }
     ];
@@ -625,7 +649,6 @@
   // Una sola línea arriba de la tabla: a la izquierda, cuántos hay de cada grupo (cada etiqueta lleva a su grupo),
   // el reclamo pendiente y los avisos; a la derecha, todas las acciones del control.
   function barraControl(c, editable) {
-    var p = esc(nombrePlataforma());
     var lineas = c.Lineas || [];
     var orden = grupos();
     orden.unshift(orden.pop());
@@ -646,11 +669,10 @@
       etiquetas += etiqueta('bg-white text-dark border', '<i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>' +
         (n ? plural(n, 'viaje fuera de esta proforma', 'viajes fuera de esta proforma') : 'Avisos'), ' data-panel="pp_panel_avisos" aria-expanded="false"');
     }
+    // "Reemplazar" va al lado del archivo, en el recuadro de arriba (datosControl).
     var acciones = !editable ? '' :
       '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
-      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '') +
-      '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reemplazar"><i class="bi bi-file-earmark-arrow-up me-1" aria-hidden="true"></i>Reemplazar Excel</button>' +
-      '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">';
+      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '');
     return '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">' +
       '<div class="d-flex flex-wrap align-items-center gap-2 me-auto">' + etiquetas + '</div>' +
       '<div class="d-flex flex-wrap gap-2 ms-auto">' + acciones + '</div></div>';
@@ -672,6 +694,31 @@
     return reclamo + avisos;
   }
 
+  // Lo que ya no se cambia, en el recuadro gris de §6.3: el cliente (con sus datos a un clic), el Excel (con
+  // "Reemplazar" al lado, en un borrador) y el período que sale del archivo.
+  function datosControl(c, editable) {
+    var p = esc(nombrePlataforma());
+    var archivo = esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma());
+    var importado = c.FechaArchivo ? ' title="Importado el ' + esc(fecha(c.FechaArchivo, { hora: true })) + '"' : '';
+    return '<div class="sgtl-dato-fijo mb-3"><div class="row g-2">' +
+      '<div class="col-md-5"><span class="sgtl-dato-etiqueta">Cliente</span>' + esc(valorCampo('p_cli_razon') || '—') +
+      ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
+      (estado.datosAbiertos ? 'Ocultar datos' : 'Ver datos') + '</button></div>' +
+      '<div class="col-md-4"><span class="sgtl-dato-etiqueta">Excel de ' + p + '</span><span' + importado + '>' + archivo + '</span>' +
+      (editable ? ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_reemplazar">Reemplazar</button>' +
+        '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">' : '') + '</div>' +
+      '<div class="col-md-3"><span class="sgtl-dato-etiqueta">Período</span>' +
+      (c.FechaDesde ? fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '—') + '</div>' +
+      '</div></div>';
+  }
+
+  // Por qué todavía no se puede generar (va en el globito de "Generar proforma").
+  function motivoGenerar(c) {
+    if (c.Diferencias) return 'Para generar, resolvé ' + (c.Diferencias === 1 ? 'la diferencia' : 'las ' + c.Diferencias + ' diferencias');
+    if (!c.Cantidad) return 'El Excel no tiene transportes para generar';
+    return '';
+  }
+
   function mostrarControl(c) {
     estado.activo = true;
     estado.control = c;
@@ -688,12 +735,17 @@
     // Los datos de la cabecera se guardan al importar; el borrador se maneja desde este bloque.
     if (typeof window.setModoLectura === 'function') window.setModoLectura(true);
     $id('btnCerrarProforma').textContent = 'Cerrar';
+    // Lo que el paso 2 escondió: el borrador ya existe.
+    mostrarOculto($id('btnGuardarBorrador'));
+    mostrarOculto($id('badgeEstadoModal'));
     if (editable) habilitarCondiciones();
     // Lo que se escribe en este bloque (reclamo, reemplazo) se guarda con sus botones: no cuenta como cambio sin guardar.
     $id('bloquePlataforma').dataset.sinCambios = 'true';
     mostrarBotonesPie(true);
     $id('btnGenerar').style.display = editable ? '' : 'none';
-    botonGenerar(!!c.PuedeGenerar);
+    botonGenerar(!!c.PuedeGenerar, editable ? motivoGenerar(c) : '');
+    // Sin "Generar" (solo lectura o ya generada) el span que lo envuelve tampoco ocupa lugar en el pie.
+    if ($id('pp_generar_envoltura')) $id('pp_generar_envoltura').classList.toggle('d-none', !editable);
     botonPdf(true);
     // setVal (gestion-facturacion.html) también actualiza la fecha que se ve en el calendario (DD/MM/AAAA).
     if (c.FechaDesde && $id('p_fdesde')) window.setVal('p_fdesde', String(c.FechaDesde).substring(0, 10));
@@ -702,15 +754,9 @@
     mostrarDatosCliente();
     pasos(esBorrador ? 3 : 0);
     resumirCondiciones();
-    motivoPie(editable && c.Diferencias
-      ? 'Para generar, resolvé ' + (c.Diferencias === 1 ? 'la diferencia' : 'las ' + c.Diferencias + ' diferencias') + '.'
-      : '', 'bi-lock');
 
     $id('bloquePlataforma').innerHTML =
-      // Sin pasos (proforma ya generada) el cliente, el archivo y el período no se ven en otro lado.
-      (esBorrador ? '' : '<div class="small text-muted mb-2"><span class="text-body">' + esc(valorCampo('p_cli_razon')) + '</span>' +
-        ' · <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i> ' + esc(c.NombreArchivo || '') +
-        (c.FechaDesde ? ' · ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '') + '</div>') +
+      datosControl(c, editable) +
       barraControl(c, editable) +
       panelesControl(c, editable) +
       '<div id="pp_form_reclamo" class="d-none sgtl-panel mb-3"></div>' +
@@ -751,6 +797,13 @@
       reemplazar.addEventListener('click', function () { archivo.click(); });
       archivo.addEventListener('change', function () { reemplazarArchivo(c, this.files && this.files[0]); this.value = ''; });
     }
+    var datos = $id('pp_datos_boton');
+    if (datos) datos.addEventListener('click', function () {
+      estado.datosAbiertos = !estado.datosAbiertos;
+      mostrarDatosCliente();
+      datos.textContent = estado.datosAbiertos ? 'Ocultar datos' : 'Ver datos';
+      datos.setAttribute('aria-expanded', String(estado.datosAbiertos));
+    });
     var reclamo = $id('pp_reclamo');
     if (reclamo) reclamo.addEventListener('click', function () { abrirFormReclamo(c); });
     var cerrarReclamo = $id('pp_cerrar_reclamo');
@@ -940,22 +993,41 @@
     return ' <span class="badge rounded-pill bg-white text-dark border">' + esc((x.Plataforma || 'Plataforma') + ' ' + (x.Plataforma_Numero || '')) + '</span>';
   }
 
-  // Junto al estado de un borrador de plataforma: qué falta y de quién depende, con las mismas etiquetas
-  // (y colores) que los grupos del control.
+  // Junto al estado de un borrador de plataforma: qué falta y de quién depende, en el ícono de información que abre
+  // un globito (§4.3, pedido de Rocío del 22/10): rojo si falta resolver algo, naranja si se espera a la plataforma y
+  // verde si está lista para generar. Adentro, las mismas líneas y colores que los grupos del control.
   function avisosListado(x) {
-    if (x.Tipo_Proforma !== 'Plataforma' || x.Estado !== 'Borrador') return '';
+    if (x.Tipo_Proforma !== 'Plataforma' || x.Estado !== 'Borrador' || !window.SGTL) return '';
     var p = x.Plataforma || 'la plataforma';
-    var etiquetas = [];
-    var poner = function (color, texto) { etiquetas.push('<span class="badge rounded-pill estado-' + color + '">' + esc(texto) + '</span>'); };
+    var lineas = [];
+    var poner = function (color, texto) {
+      lineas.push('<div class="sgtl-info-linea"><span class="sgtl-info-punto ' + color + '"></span><span>' + esc(texto) + '</span></div>');
+    };
     if (x.PlataformaPorCorregir) poner('rojo', 'Corregir en SGTL · ' + x.PlataformaPorCorregir);
     if (x.PlataformaPorRevisar) poner('amarillo', 'Revisar · ' + x.PlataformaPorRevisar);
     if (x.PlataformaPorReclamar) poner('amarillo', 'Reclamar a ' + p + ' · ' + x.PlataformaPorReclamar);
+    var porResolver = lineas.length;
     if (x.PlataformaEsperando || x.ReclamoFecha) {
       poner('azul', 'Esperando a ' + p + (x.PlataformaEsperando ? ' · ' + x.PlataformaEsperando : '') +
-        (x.ReclamoFecha ? ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : '') : ''));
+        (x.ReclamoFecha ? ' desde el ' + fecha(x.ReclamoFecha) : ''));
     }
-    if (!etiquetas.length && x.PlataformaLineas) poner('verde', 'Lista para generar');
-    return etiquetas.length ? '<div class="d-flex flex-wrap gap-1 mt-1">' + etiquetas.join('') + '</div>' : '';
+    if (porResolver) {
+      return SGTL.botonInfo('urgente', '<div class="fw-bold mb-2">Falta resolver antes de generar</div>' + lineas.join('') +
+        '<div class="suave mt-2">Abrí la proforma para ver cuáles.</div>', 'Ver qué falta resolver');
+    }
+    if (lineas.length) {
+      var reclamo = (x.PlataformaEsperando ? plural(x.PlataformaEsperando, 'transporte reclamado', 'transportes reclamados') : 'Reclamo enviado') +
+        (x.ReclamoFecha ? ' el ' + fecha(x.ReclamoFecha) : '') + '.';
+      return SGTL.botonInfo('espera', '<div class="fw-bold mb-1">Esperando a ' + esc(p) + '</div><div>' + esc(reclamo) + '</div>' +
+        '<div class="suave mt-2">Cuando ' + esc(p) + ' corrija el Excel, reemplazalo en la proforma.</div>', 'Ver qué se espera de ' + p);
+    }
+    if (x.PlataformaLineas) {
+      return SGTL.botonInfo('listo', '<div class="fw-bold mb-1">Lista para generar</div><div>' +
+        esc(x.PlataformaLineas === 1 ? 'El transporte del Excel coincide' : 'Los ' + x.PlataformaLineas + ' transportes del Excel coinciden') +
+        ' con los viajes de SGTL.</div>',
+        'Ver por qué está lista para generar');
+    }
+    return '';
   }
 
   window.ProformaPlataforma = {

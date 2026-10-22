@@ -340,8 +340,10 @@
                     var cuit = c.CUIT_Cliente || c.CUIT || '';
                     var etiqueta = nom + (cuit ? ' · ' + cuit : '');
                     clientesMap[id] = c;
-                    opts += '<option value="' + id + '">' + esc(etiqueta) + '</option>';
-                    optsFiltro += '<option value="' + id + '">' + esc(etiqueta) + '</option>';
+                    // Los de Rukas llevan la etiqueta en la lista y adentro del campo, como en Registrar viaje.
+                    var marca = c.Tipo_Cliente === 'Con_plataforma' ? ' data-etiqueta="Rukas"' : '';
+                    opts += '<option value="' + id + '"' + marca + '>' + esc(etiqueta) + '</option>';
+                    optsFiltro += '<option value="' + id + '"' + marca + '>' + esc(etiqueta) + '</option>';
                 });
                 document.getElementById('p_cliente').innerHTML = opts;
                 document.getElementById('fCliente').innerHTML = optsFiltro;
@@ -488,7 +490,7 @@
                     '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td class="text-center">' + badgeEstado(x.Estado) + (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '') + '</td>' +
+                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '') + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
                     '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
             }).join(''));

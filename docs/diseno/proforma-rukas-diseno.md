@@ -131,6 +131,30 @@ Pedido de Rocío: el modal tenía mucho texto y los botones se perdían. Se acom
 - **Se vuelve a controlar solo** al abrir un borrador con el lápiz y al volver a la pestaña después de "Abrir viaje".
 - **Listado:** junto al estado del borrador, su situación: "Corregir en SGTL (1) · Revisar (2) · Esperando a Rukas (1) desde el 21/10", o "Lista para generar". Reemplaza el ícono de admiración del reclamo.
 
+### Segunda vuelta del 22/10: menos texto (manda sobre lo de arriba)
+
+Pedido de Rocío: el modal seguía con "mucho texto dando vueltas". Se aplicaron los lineamientos de Registrar viaje;
+las acciones son las mismas.
+
+- **Paso 2:** la etiqueta "Rukas" va adentro del campo de cliente (y en la lista), como en Registrar viaje; debajo,
+  solo los datos del cliente con "Editar datos del cliente". "Excel de Rukas *" es la etiqueta del recuadro, con el
+  ícono de información que dice de dónde se exporta. En el recuadro, un solo texto: "Arrastralo acá o elegilo" / "Al
+  elegirlo se guarda como borrador y se controla contra los viajes de SGTL.". Sin viajes pendientes: "No hay viajes sin
+  proforma con el N° de transporte SAP cargado.". Las condiciones comerciales vacías no dicen nada.
+- **Guía de viajes sin proforma:** sin la columna "Falta". Al viaje al que le falta un número obligatorio (remito o
+  N° de entrega: sin ellos no pasa a Listo para facturar) se le pone el ícono rojo de información junto al estado
+  (§4.3): "Le falta: remito. Sin ese número no pasa a Listo para facturar.". Así no se lo tilda en Rukas antes de
+  completarlo; si se lo tilda igual, el control lo deja en "Para corregir en SGTL".
+- **Pie del paso 2:** Cancelar y "Generar proforma" deshabilitado con el globito "Primero elegí el Excel de Rukas".
+  "Guardar borrador" no se muestra (elegir el Excel ya lo guarda) y el título no lleva "Borrador" hasta que existe.
+- **Paso 3:** los pasos muestran solo sus nombres. Arriba de la tabla, un recuadro gris (§6.3, lo que ya no se cambia)
+  con Cliente (y "Ver datos"), Excel de Rukas (y **"Reemplazar"** al lado del archivo, solo en un borrador) y Período;
+  el mismo recuadro en "Ver" y en una proforma ya generada. Las acciones de arriba de la tabla quedan en Volver a
+  controlar y Registrar reclamo. La ayuda de cada grupo, más corta: "Corregí el viaje o reclamalo", "Registrá el
+  reclamo".
+- **"Generar proforma"** deshabilitado dice el motivo en su globito ("Para generar, resolvé las 3 diferencias"), como
+  los botones de la fila; ya no hay nota en el pie (§6.2 del design system).
+
 ### Errores y de quién son (22/10)
 
 Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores**, para que siempre haya un lugar al que volver. Solo se rechaza lo que no es un Excel de la plataforma (otro archivo, encabezados distintos, vacío): "Este archivo no es el Excel de Rukas: falta la columna …", y no se crea nada. Si el N° ya está cargado, el aviso ofrece "Abrir el borrador".
@@ -162,7 +186,7 @@ Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores*
 **Los botones del pie, con el mismo significado:**
 
 - **Guardar borrador:** la primera vez guarda el archivo elegido y crea el borrador (esa es la importación; no hay un botón "Importar"). Después guarda los cambios, como siempre: en un borrador de plataforma se editan solo las condiciones comerciales (el cliente y los conceptos salen del archivo). Antes de "Generar" se guardan, como en la propia.
-- **Generar proforma:** se habilita **solo con el control en OK**. Mientras no, debajo del resumen dice el motivo ("Para generar, corregí las 2 diferencias"), no como tooltip (en un botón deshabilitado no aparece). Pide confirmación porque consume un número PF: "¿Generar la proforma de {plataforma} 7594?" / "Se le asigna número y queda aceptada, lista para facturar." → Cancelar + Generar.
+- **Generar proforma:** se habilita **solo con el control en OK**. Mientras no, el motivo va en el globito del botón deshabilitado ("Para generar, resolvé las 2 diferencias"; segunda vuelta del 22/10). Pide confirmación porque consume un número PF: "¿Generar la proforma de {plataforma} 7594?" / "Se le asigna número y queda aceptada, lista para facturar." → Cancelar + Generar.
 - **Cancelar / Cerrar** y el aviso de cambios sin guardar: igual que en las propias.
 - **PDF:** igual, mostrando el tipo y el N° en la plataforma.
 
