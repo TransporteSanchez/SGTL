@@ -89,6 +89,13 @@ function initializeSidebar() {
 
 window.initializeSidebar = initializeSidebar;
 
+// A los 300 ms de cargar, la plantilla (app.js) lleva a la vista la opción activa del menú; si el menú
+// todavía no se armó no hay opción activa y fallaba en la consola. Este archivo va justo después de app.js.
+if (window.sidebar && typeof window.sidebar.forceElementVisibility === 'function') {
+  const mostrarOpcionActiva = window.sidebar.forceElementVisibility.bind(window.sidebar);
+  window.sidebar.forceElementVisibility = (opcion) => { if (opcion) mostrarOpcionActiva(opcion); };
+}
+
 if (!window.__sidebarResizeBound) {
   window.addEventListener('resize', () => {
     initializeSidebar();

@@ -77,11 +77,11 @@
             <footer><div id="footer-container"></div><script src="./assets/static/js/footer.js"></script></footer>
         </div>
     </div>
-    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script>if (window.loadSidebar) window.loadSidebar(); if (window.loadHeader) window.loadHeader(); if (window.loadFooter) window.loadFooter();</script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
+    <!-- El menú se arma después de app.js: si lo encuentra armado, la plantilla le suma su propio clic y los submenús no abren. -->
+    <script>if (window.loadSidebar) window.loadSidebar(); if (window.loadHeader) window.loadHeader(); if (window.loadFooter) window.loadFooter();</script>
     <script src="assets/static/gestionContenido.js"></script>
     <script>window.cargarEstilosContenido().catch(function (error) { console.error(error); });</script>
     <script src="assets/static/js/sgtl-ui.js"></script>

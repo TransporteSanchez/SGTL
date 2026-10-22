@@ -897,6 +897,18 @@ cambios en §5.1 y §11). Pedido: **que quede aplicado en todas las pantallas, s
 - [ ] Calendario de un filtro de fechas: tarjeta flotante, rango en azul.
 - [ ] Login: tipografía igual al resto del sistema.
 
+**Menú y modales (commit "Interfaz: Bootstrap disponible en todas las pantallas"):** la plantilla (`app.js`) se
+cortaba al iniciar PerfectScrollbar porque el menú todavía no estaba armado, y por eso no dejaba disponible
+`window.bootstrap`: en las pantallas sin jQuery (e-mail, WhatsApp, documentación) los modales y tooltips del
+sistema no abrían, y la consola mostraba "no element is specified to initialize PerfectScrollbar" en casi todas.
+Se deja de cargar PerfectScrollbar (nunca llegaba a aplicarse) y, en Cuenta corriente y Gestionar facturación, el
+menú se arma después de `app.js` como en el resto: antes la plantilla le sumaba su propio clic y los submenús del
+menú lateral no abrían.
+- [ ] Cuenta corriente y Gestionar facturación: tocar "Choferes" en el menú abre el submenú; tocarlo otra vez lo
+  cierra.
+- [ ] Cualquier pantalla (F12): sin el error de PerfectScrollbar. El menú se desplaza con la rueda si no entra.
+- [ ] Botón de las tres rayas: esconde y muestra el menú igual que antes.
+
 **Viajes (commit "Viajes: design system en gestionar y listar"):** filtros en una fila con su cruz (sin Limpiar),
 rango de fechas con flatpickr (sin `daterangepicker` ni `moment`), mismo buscador de clientes que proformas,
 tabla con texto a la izquierda, fechas centradas, km a la derecha y Acciones fija a la derecha, "Cargando…",
