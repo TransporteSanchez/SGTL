@@ -1125,6 +1125,8 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   alta y edición de usuarios y el cambio de contraseña; un script en `database/usuarios/` y un paso para pasar las
   contraseñas actuales a hash (o pedir a cada uno que la cambie). Es trabajo aparte, conviene hablarlo con el
   equipo antes de la entrega.
-- [ ] **El filtro de Presupuestos no tiene botón "Buscar"**: filtra mientras se escribe (sobre la lista ya cargada),
-  así que el botón sobraría. Es la única pantalla así; decidir si queda como excepción (anotarla en §3.3 del design
-  system) o si se le agrega el botón para que sea igual a las demás.
+- [x] **El filtro de Presupuestos no tenía botón "Buscar"** (filtraba mientras se escribía). **Hecho (22/10,
+  commit "Presupuestos: filtro con Buscar, como el resto"):** decisión de Rocío, igual que las demás pantallas:
+  filtra con Buscar o Enter y se borra con la cruz.
+  - [ ] Probar en la VM: escribir parte de un cliente no filtra hasta tocar Buscar o Enter; la cruz vuelve a
+    mostrar todos; un texto que no está → "No hay resultados para los filtros elegidos.".

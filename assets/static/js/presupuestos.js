@@ -4,6 +4,7 @@
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
+    var filtroAplicado = '';
     var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
     function el(id) { return document.getElementById(id); }
     // Avisos (§5.1): los resultados van en toasts; el error de un modal queda arriba, dentro del modal.
@@ -102,7 +103,7 @@
         });
     }
     function dibujar() {
-        var cuerpo = el('lista'), filtro = el('filtro').value.trim().toLocaleLowerCase();
+        var cuerpo = el('lista'), filtro = filtroAplicado;
         var items = registros.filter(function (p) { return [p.id, p.cliente, p.origen, p.destino].join(' ').toLocaleLowerCase().indexOf(filtro) >= 0; });
         if (!items.length) { SGTL.tabla.vacia(cuerpo, 10, registros.length ? '' : 'Todavía no hay presupuestos cargados.'); return; }
         SGTL.tabla.llenar(cuerpo, '');
@@ -223,8 +224,10 @@
         });
     };
     el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Registrar presupuesto'; modal.show(); };
-    el('filtro').oninput = dibujar;
-    SGTL.filtros(['#filtro'], dibujar);
+    // El filtro se aplica con Buscar, Enter o la cruz, como en el resto de las pantallas (§1.3).
+    function buscar() { filtroAplicado = el('filtro').value.trim().toLocaleLowerCase(); dibujar(); }
+    el('busquedaPresupuestoForm').addEventListener('submit', function (evento) { evento.preventDefault(); buscar(); });
+    SGTL.filtros(['#filtro'], buscar);
     prepararFechaHora('fechaInicio'); prepararFechaHora('fechaFin');
     // Validación del formulario (§6.3): cada campo en rojo con su mensaje.
     var formulario = SGTL.validador([
