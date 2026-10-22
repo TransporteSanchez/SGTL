@@ -157,14 +157,14 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     perfil = LeerPerfilFacturacion(connection);
                     if (perfil == null)
-                        return BadRequest("Facturación no tiene un perfil SMTP asignado. Configuralo en Configuración > E-mail.");
+                        return BadRequest("Facturación no tiene un perfil SMTP asignado. Asignalo en Configuración > Gestionar e-mail.");
 
                     ValidarPerfil(perfil);
                 }
 
                 string password = DesprotegerSecreto(perfil.PasswordProtegida);
                 if (string.IsNullOrWhiteSpace(password))
-                    return BadRequest("No se pudo leer la contraseña del perfil SMTP. Volvé a guardarla desde Configuración > E-mail.");
+                    return BadRequest("No se pudo leer la contraseña del perfil SMTP. Volvé a guardarla en Configuración > Gestionar e-mail.");
 
                 string asunto = LimpiarCabecera(AplicarPlantilla(
                     string.IsNullOrWhiteSpace(perfil.Asunto) ? "Comprobante {{NUMERO_COMPROBANTE}}" : perfil.Asunto,
@@ -202,7 +202,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         "No se pudo enviar " + comprobante.Numero + " mediante Service=" + perfil.Service + ".");
                     return Content(HttpStatusCode.BadGateway, new
                     {
-                        error = "No se pudo conectar, autenticar o enviar el comprobante. Verificá el perfil SMTP asignado a Facturación."
+                        error = "No se pudo conectar, autenticar o enviar el comprobante. Verificá el perfil SMTP asignado a facturación."
                     });
                 }
             }
@@ -238,7 +238,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var authorization = Request == null ? null : Request.Headers.Authorization;
             if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(authorization.Parameter))
-                throw new AccesoException(HttpStatusCode.Unauthorized, "Debe iniciar sesión.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Iniciá sesión para continuar.");
 
             try
             {
@@ -257,12 +257,12 @@ namespace WebApi_TransporteSanchez.Controllers
                     }, out validatedToken);
                 var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
                 if (claim == null || string.IsNullOrWhiteSpace(claim.Value))
-                    throw new SecurityTokenException("Token sin usuario.");
+                    throw new SecurityTokenException("La sesión no es válida. Volvé a iniciar sesión.");
                 return claim.Value;
             }
             catch
             {
-                throw new AccesoException(HttpStatusCode.Unauthorized, "La sesión no es válida o ha vencido.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión.");
             }
         }
 
@@ -287,7 +287,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
                     if (!reader.Read())
                         throw new AccesoException(HttpStatusCode.Unauthorized, "El usuario no existe o está inactivo.");
                     if (reader.GetInt32(1) != 1)
-                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para enviar este comprobante.");
+                        throw new AccesoException(HttpStatusCode.Forbidden, "No tenés permiso para enviar este comprobante.");
                     return new UsuarioSesion { UsuarioID = reader.GetInt32(0), NombreUsuario = nombreUsuario };
                 }
             }

@@ -155,7 +155,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var authorization = Request != null ? Request.Headers.Authorization : null;
             if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(authorization.Parameter))
-                throw new AccesoException(HttpStatusCode.Unauthorized, "Debe iniciar sesión.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Iniciá sesión para continuar.");
 
             try
             {
@@ -174,12 +174,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 }, out validatedToken);
                 var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
                 if (claim == null || string.IsNullOrWhiteSpace(claim.Value))
-                    throw new SecurityTokenException("Token sin usuario.");
+                    throw new SecurityTokenException("La sesión no es válida. Volvé a iniciar sesión.");
                 return claim.Value;
             }
             catch (Exception ex) when (!(ex is AccesoException))
             {
-                throw new AccesoException(HttpStatusCode.Unauthorized, "La sesión no es válida o ha vencido.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión.");
             }
         }
 
@@ -204,7 +204,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
                     if (!reader.Read())
                         throw new AccesoException(HttpStatusCode.Unauthorized, "El usuario no existe o está inactivo.");
                     if (reader.GetInt32(1) != 1)
-                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para realizar esta acción sobre Recibos.");
+                        throw new AccesoException(HttpStatusCode.Forbidden, "No tenés permiso para hacer esta acción sobre recibos.");
                     return new UsuarioSesion { UsuarioID = reader.GetInt32(0), NombreUsuario = nombreUsuario };
                 }
             }
@@ -348,26 +348,26 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
         [Route("recibos")]
         public IHttpActionResult Emitir([FromBody] EmitirReciboRequest request)
         {
-            if (request == null) return BadRequest("Faltan los datos del Recibo.");
-            if (request.ClaveOperacion == Guid.Empty) return BadRequest("ClaveOperacion es obligatoria.");
-            if (request.ClienteID <= 0) return BadRequest("ClienteID es obligatorio.");
-            if (!request.Fecha.HasValue) return BadRequest("La fecha del Recibo es obligatoria.");
+            if (request == null) return BadRequest("Faltan los datos del recibo.");
+            if (request.ClaveOperacion == Guid.Empty) return BadRequest("Falta la clave de la operación. Cerrá el formulario y volvé a abrirlo.");
+            if (request.ClienteID <= 0) return BadRequest("Seleccioná un cliente.");
+            if (!request.Fecha.HasValue) return BadRequest("Completá la fecha del recibo.");
             DateTime fecha = request.Fecha.Value.Date;
-            if (fecha > FechaArgentina()) return BadRequest("No se admite una fecha de Recibo futura.");
+            if (fecha > FechaArgentina()) return BadRequest("La fecha del recibo no puede ser futura.");
             if (request.Total <= 0 || request.Total != Redondear(request.Total))
                 return BadRequest("El total debe ser mayor que cero y tener hasta dos decimales.");
             if (request.ImporteFormaPago != request.Total)
-                return BadRequest("El importe de la forma de pago debe coincidir con el total del Recibo.");
+                return BadRequest("El importe de la forma de pago tiene que coincidir con el total del recibo.");
             if (request.Aplicaciones == null)
                 request.Aplicaciones = new List<AplicacionReciboRequest>();
             if (request.Aplicaciones.Count > 200)
-                return BadRequest("El Recibo supera la cantidad máxima de comprobantes aplicables.");
+                return BadRequest("El recibo supera la cantidad máxima de comprobantes que se le pueden aplicar.");
             if (request.Aplicaciones.Any(x => x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
                 return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
             if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
                 return BadRequest("No se puede aplicar dos veces el mismo comprobante.");
             if (request.Aplicaciones.Sum(x => x.Importe) > request.Total)
-                return BadRequest("La suma aplicada no puede superar el total del Recibo.");
+                return BadRequest("La suma aplicada no puede superar el total del recibo.");
             request.Letra = NormalizarCampoComprobante(request.Letra);
             request.Sucursal = NormalizarCampoComprobante(request.Sucursal);
             if ((request.Letra ?? string.Empty).Length > 1) return BadRequest("La letra no puede superar un carácter.");
@@ -409,7 +409,7 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "ClaveOperacion ya fue utilizada con datos diferentes." });
+                                        new { error = "Esta operación ya se registró con otros datos. Cerrá el formulario y volvé a abrirlo." });
                                 }
                                 transaction.Commit();
                                 return Ok(new
@@ -448,13 +448,13 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "Los Recibos solo se pueden aplicar a Facturas emitidas." });
+                                        new { error = "Los recibos solo se pueden aplicar a facturas emitidas." });
                                 }
                                 if (fecha < deuda.FechaEmision.Date)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La fecha del Recibo no puede ser anterior al comprobante aplicado." });
+                                        new { error = "La fecha del recibo no puede ser anterior al comprobante aplicado." });
                                 }
                                 if (aplicacion.Importe > deuda.Pendiente)
                                 {
@@ -476,7 +476,7 @@ WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connecti
                                 command.Parameters.Add(P("@numerador", configuracion.NumeradorID));
                                 object value = command.ExecuteScalar();
                                 if (value == null)
-                                    throw new InvalidOperationException("El numerador de Recibos no existe o está agotado.");
+                                    throw new InvalidOperationException("El numerador de recibos no existe o está agotado.");
                                 correlativo = Convert.ToInt32(value, CultureInfo.InvariantCulture);
                             }
 
@@ -588,7 +588,7 @@ VALUES
             catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
             {
                 return Content(HttpStatusCode.Conflict,
-                    new { error = "El Recibo ya fue creado o la operación se procesó en paralelo." });
+                    new { error = "El recibo ya fue creado o la operación se procesó en paralelo." });
             }
             catch (InvalidOperationException ex)
             {
@@ -597,7 +597,7 @@ VALUES
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo emitir el Recibo. Ningún cambio fue confirmado." });
+                    new { error = "No se pudo emitir el recibo. No se guardó ningún cambio." });
             }
         }
 
@@ -707,16 +707,16 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                 }
             }
             catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
-            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo obtener el Recibo." }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo obtener el recibo." }); }
         }
 
         [HttpPut]
         [Route("recibos/{id:int}")]
         public IHttpActionResult Editar(int id, [FromBody] EditarReciboRequest request)
         {
-            if (request == null || !request.Fecha.HasValue) return BadRequest("La fecha del Recibo es obligatoria.");
+            if (request == null || !request.Fecha.HasValue) return BadRequest("Completá la fecha del recibo.");
             DateTime fecha = request.Fecha.Value.Date;
-            if (fecha > FechaArgentina()) return BadRequest("No se admite una fecha de Recibo futura.");
+            if (fecha > FechaArgentina()) return BadRequest("La fecha del recibo no puede ser futura.");
             request.Letra = NormalizarCampoComprobante(request.Letra);
             request.Sucursal = NormalizarCampoComprobante(request.Sucursal);
             if ((request.Letra ?? string.Empty).Length > 1) return BadRequest("La letra no puede superar un carácter.");
@@ -761,7 +761,7 @@ WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
                                     estado = (string)reader["Estado"];
                                 }
                             }
-                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden editar Recibos emitidos." }); }
+                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden editar recibos emitidos." }); }
 
                             using (var command = new SqlCommand(@"
 SELECT MAX(d.FechaEmision)
@@ -774,7 +774,7 @@ WHERE a.ComprobanteCreditoID=@id AND a.Vigente=1;", connection, transaction))
                                 if (fechaMinima != null && fechaMinima != DBNull.Value && fecha < Convert.ToDateTime(fechaMinima).Date)
                                 {
                                     transaction.Rollback();
-                                    return Content(HttpStatusCode.BadRequest, new { error = "La fecha del Recibo no puede ser anterior a los comprobantes aplicados." });
+                                    return Content(HttpStatusCode.BadRequest, new { error = "La fecha del recibo no puede ser anterior a los comprobantes aplicados." });
                                 }
                             }
 
@@ -811,7 +811,7 @@ VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                 }
             }
             catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
-            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo editar el Recibo. Ningún cambio fue confirmado." }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo editar el recibo. No se guardó ningún cambio." }); }
         }
 
         [HttpPost]
@@ -849,7 +849,7 @@ WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
                                     estado = (string)reader["Estado"];
                                 }
                             }
-                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden anular Recibos emitidos." }); }
+                            if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden anular recibos emitidos." }); }
                             int movimientoOriginal;
                             using (var command = new SqlCommand(@"
 SELECT Movimiento_ID FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS WITH (UPDLOCK,HOLDLOCK)
@@ -857,7 +857,7 @@ WHERE ComprobanteID=@id AND Clase='EMISION';", connection, transaction))
                             {
                                 command.Parameters.Add(P("@id", id));
                                 object valor = command.ExecuteScalar();
-                                if (valor == null) throw new InvalidOperationException("El Recibo no tiene movimiento de Cuenta Corriente.");
+                                if (valor == null) throw new InvalidOperationException("El recibo no tiene movimiento en la cuenta corriente.");
                                 movimientoOriginal = Convert.ToInt32(valor, CultureInfo.InvariantCulture);
                             }
                             DateTime fechaAnulacion = FechaArgentina();
@@ -891,7 +891,7 @@ VALUES (GETDATE(),@nombre,'ANULAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
             }
             catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
             catch (InvalidOperationException ex) { return Content(HttpStatusCode.Conflict, new { error = ex.Message }); }
-            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo anular el Recibo. Ningún cambio fue confirmado." }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo anular el recibo. No se guardó ningún cambio." }); }
         }
 
         [HttpDelete]
@@ -924,8 +924,8 @@ WHERE Comprobante_ID=@id;", connection, transaction))
                                     estado = (string)reader["Estado"];
                                 }
                             }
-                            if (tipo != "REC") { transaction.Rollback(); return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden eliminar Recibos. Las Facturas, NC y ND no se eliminan." }); }
-                            if (estado != "ANULADO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden eliminar Recibos anulados previamente." }); }
+                            if (tipo != "REC") { transaction.Rollback(); return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden eliminar recibos. Las facturas y las notas de crédito y débito no se eliminan." }); }
+                            if (estado != "ANULADO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden eliminar recibos anulados." }); }
                             using (var command = new SqlCommand(@"
 DELETE FROM dbo.RECIBOS_FORMAS_PAGO WHERE ComprobanteID=@id;
 DELETE FROM dbo.CUENTA_CORRIENTE_APLICACIONES WHERE ComprobanteCreditoID=@id;
@@ -951,7 +951,7 @@ VALUES (GETDATE(),@nombre,'ELIMINAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta
                 }
             }
             catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
-            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo eliminar el Recibo. Ningún cambio fue confirmado." }); }
+            catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo eliminar el recibo. No se guardó ningún cambio." }); }
         }
     }
 }

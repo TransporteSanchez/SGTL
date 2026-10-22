@@ -59,7 +59,7 @@ WHERE c.Tipo=@tipo AND c.Activo=1;";
                 using (var reader = command.ExecuteReader())
                 {
                     if (!reader.Read())
-                        throw new InvalidOperationException("El tipo de comprobante no tiene una configuración de Facturación activa.");
+                        throw new InvalidOperationException("El tipo de comprobante no tiene una configuración de facturación activa.");
                     return new ConfiguracionEmisionComprobante
                     {
                         Tipo = (string)reader["Tipo"],
@@ -84,7 +84,7 @@ WHERE c.Tipo=@tipo AND c.Activo=1;";
             {
                 command.Parameters.Add(P("@codigo", sucursal));
                 if (Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture) != 1)
-                    throw new InvalidOperationException("La sucursal seleccionada no está activa en Configuración > Facturación.");
+                    throw new InvalidOperationException("La sucursal seleccionada no está activa en Configuración > Gestionar facturación.");
             }
         }
 
@@ -122,6 +122,16 @@ WHERE Numerador_ID=@id AND Activo=1 AND UltimoNumero<99999999;", connection, tra
         }
         private static SqlParameter P(string name, object value) { return new SqlParameter(name, value ?? DBNull.Value); }
 
+        // Texto para la pantalla (§9 del design system): las validaciones traen un mensaje para el usuario y un
+        // código repetido se explica; el resto (base de datos, red) es técnico y no se muestra.
+        private static string MensajeParaUsuario(Exception ex)
+        {
+            if (ex is ArgumentException || ex is InvalidOperationException) return ex.Message;
+            var sql = ex as SqlException;
+            if (sql != null && (sql.Number == 2627 || sql.Number == 2601)) return "Ya existe un registro con ese código.";
+            return "No se pudo completar la operación. Probá de nuevo.";
+        }
+
         private string NombreToken()
         {
             var authorization = Request == null ? null : Request.Headers.Authorization;
@@ -153,7 +163,7 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
                 {
                     if (!reader.Read()) throw new UnauthorizedAccessException();
                     var usuario = new UsuarioSesion { UsuarioID = (int)reader["Usuario_ID"], Nombre = (string)reader["Nombre_Usuario"], EsAdmin = (int)reader["EsAdmin"] == 1 };
-                    if (requiereAdmin && !usuario.EsAdmin) throw new InvalidOperationException("Solo un administrador puede modificar la configuración de Facturación.");
+                    if (requiereAdmin && !usuario.EsAdmin) throw new InvalidOperationException("Solo un administrador puede modificar la configuración de facturación.");
                     return usuario;
                 }
             }
@@ -162,7 +172,7 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
         private static string TipoSeguro(string tipo)
         {
             tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant();
-            if (tipo != "FAC" && tipo != "REC" && tipo != "NC" && tipo != "ND") throw new ArgumentException("Tipo de comprobante inválido.");
+            if (tipo != "FAC" && tipo != "REC" && tipo != "NC" && tipo != "ND") throw new ArgumentException("El tipo de comprobante no es válido.");
             return tipo;
         }
         private static string CodigoTipo(string tipo)
@@ -194,10 +204,10 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
             if (request == null || string.IsNullOrWhiteSpace(request.Descripcion) || request.Descripcion.Trim().Length > 50) throw new ArgumentException("La descripción es obligatoria y no puede superar los 50 caracteres.");
             string impacto = ImpactoSeguro(request.Impacto);
             string letra = FacturacionComprobantesConfiguracion.NormalizarLetra(request.LetraPredeterminada);
-            if (tipo == "REC" && letra != "X") throw new ArgumentException("Los Recibos deben utilizar la letra X.");
+            if (tipo == "REC" && letra != "X") throw new ArgumentException("Los recibos tienen que usar la letra X.");
             if (tipo != "REC" && letra != "A" && letra != "B") throw new ArgumentException("La letra predeterminada debe ser A o B.");
-            if ((tipo == "FAC" || tipo == "ND") && impacto != "D") throw new ArgumentException("Las Facturas y Notas de Débito deben generar Deuda.");
-            if ((tipo == "NC" || tipo == "REC") && impacto != "C") throw new ArgumentException("Las Notas de Crédito y Recibos deben generar Crédito.");
+            if ((tipo == "FAC" || tipo == "ND") && impacto != "D") throw new ArgumentException("Las facturas y las notas de débito tienen que generar deuda.");
+            if ((tipo == "NC" || tipo == "REC") && impacto != "C") throw new ArgumentException("Las notas de crédito y los recibos tienen que generar crédito.");
             if (request.SucursalID <= 0 || request.NumeradorID <= 0) throw new ArgumentException("Seleccioná una sucursal y un numerador.");
             request.Impacto = impacto;
         }
@@ -225,56 +235,56 @@ VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Co
         {
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false);
                 using (var cmd = new SqlCommand("SELECT Sucursal_ID AS SucursalID,Codigo,Nombre,Activa FROM dbo.FACTURACION_SUCURSALES WHERE (@todos=1 OR Activa=1) ORDER BY Codigo;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivas ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { SucursalID = (int)r["SucursalID"], Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"], Activa = (bool)r["Activa"] }); return Ok(datos); } } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPost, Route("sucursales")]
         public IHttpActionResult CrearSucursal([FromBody] SucursalRequest request)
         {
             try { request.Codigo = CodigoSucursal(request == null ? null : request.Codigo); if (request == null || string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 100) throw new ArgumentException("El nombre de la sucursal es obligatorio."); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("INSERT dbo.FACTURACION_SUCURSALES (Codigo,Nombre,Activa) OUTPUT INSERTED.Sucursal_ID VALUES (@codigo,@nombre,@activa);", c)) { cmd.Parameters.AddRange(new[] { P("@codigo", request.Codigo), P("@nombre", request.Nombre.Trim()), P("@activa", request.Activa) }); var id = Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture); Auditar(c, u, "ALTA", "Sucursal_ID=" + id, "Sucursal " + request.Codigo); return Content(HttpStatusCode.Created, new { SucursalID = id }); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPut, Route("sucursales/{id:int}")]
         public IHttpActionResult EditarSucursal(int id, [FromBody] SucursalRequest request)
         {
             try { request.Codigo = CodigoSucursal(request == null ? null : request.Codigo); if (request == null || string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 100) throw new ArgumentException("El nombre de la sucursal es obligatorio."); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Codigo=@codigo,Nombre=@nombre,Activa=@activa WHERE Sucursal_ID=@id;", c)) { cmd.Parameters.AddRange(new[] { P("@codigo", request.Codigo), P("@nombre", request.Nombre.Trim()), P("@activa", request.Activa), P("@id", id) }); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "MODIFICAR", "Sucursal_ID=" + id, "Sucursal " + request.Codigo); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpDelete, Route("sucursales/{id:int}")]
         public IHttpActionResult DesactivarSucursal(int id)
         {
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Activa=0 WHERE Sucursal_ID=@id;", c)) { cmd.Parameters.Add(P("@id", id)); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "BAJA", "Sucursal_ID=" + id, "Sucursal desactivada"); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("numeradores")]
         public IHttpActionResult Numeradores(bool incluirInactivos = false)
         {
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand("SELECT Numerador_ID AS NumeradorID,Nombre,UltimoNumero,Activo FROM dbo.FACTURACION_NUMERADORES WHERE (@todos=1 OR Activo=1) ORDER BY Nombre;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivos ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { NumeradorID = (int)r["NumeradorID"], Nombre = (string)r["Nombre"], UltimoNumero = (int)r["UltimoNumero"], Activo = (bool)r["Activo"] }); return Ok(datos); } } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPost, Route("numeradores")]
         public IHttpActionResult CrearNumerador([FromBody] NumeradorRequest request)
         {
             try { ValidarNumerador(request); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("INSERT dbo.FACTURACION_NUMERADORES (Nombre,UltimoNumero,Activo) OUTPUT INSERTED.Numerador_ID VALUES (@nombre,@ultimo,@activo);", c)) { cmd.Parameters.AddRange(new[] { P("@nombre", request.Nombre.Trim()), P("@ultimo", request.UltimoNumero), P("@activo", request.Activo) }); var id = Convert.ToInt32(cmd.ExecuteScalar(), CultureInfo.InvariantCulture); Auditar(c, u, "ALTA", "Numerador_ID=" + id, "Numerador " + request.Nombre.Trim()); return Content(HttpStatusCode.Created, new { NumeradorID = id }); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPut, Route("numeradores/{id:int}")]
         public IHttpActionResult EditarNumerador(int id, [FromBody] NumeradorRequest request)
         {
             try { ValidarNumerador(request); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Nombre=@nombre,UltimoNumero=@ultimo,Activo=@activo WHERE Numerador_ID=@id;", c)) { cmd.Parameters.AddRange(new[] { P("@nombre", request.Nombre.Trim()), P("@ultimo", request.UltimoNumero), P("@activo", request.Activo), P("@id", id) }); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "MODIFICAR", "Numerador_ID=" + id, "Numerador " + request.Nombre.Trim()); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpDelete, Route("numeradores/{id:int}")]
         public IHttpActionResult DesactivarNumerador(int id)
         {
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Activo=0 WHERE Numerador_ID=@id;", c)) { cmd.Parameters.Add(P("@id", id)); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "BAJA", "Numerador_ID=" + id, "Numerador desactivado"); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("tipos-comprobante")]
@@ -283,7 +293,7 @@ VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Co
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo
 FROM dbo.TIPOS_COMPROBANTE t LEFT JOIN dbo.FACTURACION_TIPOS_COMPROBANTE c ON c.Tipo=t.Tipo
 LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = r["Activo"] != DBNull.Value && (bool)r["Activo"] }); return Ok(datos); } } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPost, Route("tipos-comprobante")]
@@ -322,7 +332,7 @@ VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
                     }
                 }
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPut, Route("tipos-comprobante/{tipo}")]
@@ -366,7 +376,7 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                     }
                 }
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpDelete, Route("tipos-comprobante/{tipo}")]
@@ -386,14 +396,14 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                     Auditar(c, u, "BAJA", "Tipo=" + tipo, "Tipo de comprobante desactivado"); return Ok();
                 }
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("emision/{tipo}")]
         public IHttpActionResult Emision(string tipo)
         {
             try { tipo = TipoSeguro(tipo); using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); var cfg = FacturacionComprobantesConfiguracion.Obtener(c, null, tipo); using (var cmd = new SqlCommand("SELECT Codigo,Nombre FROM dbo.FACTURACION_SUCURSALES WHERE Activa=1 ORDER BY Codigo;", c)) using (var r = cmd.ExecuteReader()) { var sucursales = new List<object>(); while (r.Read()) sucursales.Add(new { Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"] }); return Ok(new { cfg.Tipo, cfg.Descripcion, LetraPredeterminada = cfg.Tipo == "REC" ? "X" : cfg.LetraPredeterminada, SucursalPredeterminada = cfg.SucursalPredeterminada, ProximoNumero = FacturacionComprobantesConfiguracion.NumeroVisible(cfg.UltimoNumero + 1), Letras = cfg.Tipo == "REC" ? new[] { "X" } : new[] { "A", "B" }, Sucursales = sucursales }); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = ex.Message }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
     }
 }

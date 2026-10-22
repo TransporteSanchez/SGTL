@@ -1094,13 +1094,23 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
 
 ### Quedó sin tocar en el repaso del 22/10 — NO HECHO
 
-- [ ] **Mensajes de la API de Facu con mayúscula en el medio** (§9 del design system), por ejemplo "Solo se pueden
-  anular Recibos emitidos." o "No se pudo emitir el Recibo. Ningún cambio fue confirmado.". Se ven tal cual en
-  cuenta corriente, proformas y presupuestos, porque la pantalla muestra el texto que manda la API. Son unas 55
-  líneas: 24 en `RecibosController.cs`, 15 en `ComprobantesController.cs` y el resto en `FacturasController.cs`,
-  `FacturacionConfiguracionController.cs`, `EnviosPresupuestosController.cs` y `EnviosComprobantesController.cs`.
-  Algunas son textos que se guardan en la base (concepto del movimiento, auditoría): revisarlas una por una y
-  cambiar solo lo que se muestra. Es C#: recompilar y probar en la VM. **Módulo de Facu: coordinarlo con él.**
+- [x] **Mensajes de la API de Facu con mayúscula en el medio** (§9 del design system), por ejemplo "Solo se pueden
+  anular Recibos emitidos.". **Hecho (22/10, commit "Facturación: mensajes de la API como el resto del sistema",
+  pedido por Rocío; módulo de Facu: avisarle):** 80 mensajes en `RecibosController.cs`, `ComprobantesController.cs`,
+  `FacturasController.cs`, `FacturacionConfiguracionController.cs`, `EnviosPresupuestosController.cs` y
+  `EnviosComprobantesController.cs`: mayúscula solo al principio ("recibo", "factura", "nota de crédito"), voseo
+  ("No tenés permiso…", "Volvé a abrirla…" en lugar de "No tiene…", "Vuelva…"), tildes ("crédito", "válido"), sin
+  nombres de campos técnicos ("ClaveOperacion es obligatoria." → "Falta la clave de la operación…",
+  "FechaEmision y FechaVencimiento…" → "Completá la fecha de emisión y la de vencimiento."), "No se guardó ningún
+  cambio." en lugar de "Ningún cambio fue confirmado." y las rutas del menú nuevas ("Configuración > Gestionar
+  e-mail"). Los textos que se guardan en la base (conceptos, auditoría) no se tocaron. Además, Gestionar
+  facturación devolvía el texto de cualquier excepción: ahora solo los de validación; un código repetido dice "Ya
+  existe un registro con ese código." y el resto, "No se pudo completar la operación. Probá de nuevo.".
+  **Hay que recompilar la API.**
+  - [ ] Probar en la VM (con datos de prueba): en cuenta corriente, editar un recibo anulado o anular uno ya anulado
+    (el mensaje sale en minúscula: "Solo se pueden anular recibos emitidos."); emitir un recibo con fecha futura
+    desde otra herramienta no hace falta. En Gestionar facturación, registrar una sucursal con un código que ya
+    existe → toast "Ya existe un registro con ese código." (o el mensaje de validación de la API).
 - [x] **SheetJS (`xlsx@0.18.5`) tenía vulnerabilidades conocidas** (contaminación de prototipo al leer un archivo y
   una expresión regular que se puede trabar). **Hecho (22/10, commit "Interfaz: SheetJS 0.20.3 en una copia
   local"):** se copió la 0.20.3 de `cdn.sheetjs.com` a `assets/extensions/sheetjs/xlsx.full.min.js` (decisión de

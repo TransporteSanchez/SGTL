@@ -212,7 +212,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var authorization = Request != null ? Request.Headers.Authorization : null;
             if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(authorization.Parameter))
-                throw new AccesoException(HttpStatusCode.Unauthorized, "Debe iniciar sesión.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Iniciá sesión para continuar.");
 
             try
             {
@@ -231,12 +231,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 }, out validatedToken);
                 var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
                 if (claim == null || string.IsNullOrWhiteSpace(claim.Value))
-                    throw new SecurityTokenException("Token sin usuario.");
+                    throw new SecurityTokenException("La sesión no es válida. Volvé a iniciar sesión.");
                 return claim.Value;
             }
             catch (Exception ex) when (!(ex is AccesoException))
             {
-                throw new AccesoException(HttpStatusCode.Unauthorized, "La sesión no es válida o ha vencido.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión.");
             }
         }
 
@@ -263,7 +263,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
                     int usuarioId = reader.GetInt32(0);
                     bool autorizado = reader.GetInt32(1) == 1;
                     if (!autorizado)
-                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para realizar esta operación.");
+                        throw new AccesoException(HttpStatusCode.Forbidden, "No tenés permiso para hacer esta operación.");
                     return new UsuarioSesion { UsuarioID = usuarioId, NombreUsuario = nombreUsuario };
                 }
             }
@@ -423,20 +423,20 @@ WHERE Proforma_ID=@id ORDER BY Orden,Detalle_ID;";
             totales = new TotalesFactura();
             if (proforma == null) return errores;
             if (!string.Equals(proforma.Estado, "Aceptada", StringComparison.OrdinalIgnoreCase))
-                errores.Add("La Proforma debe estar en estado Aceptada.");
+                errores.Add("La proforma tiene que estar aceptada.");
             if (!string.Equals(proforma.Moneda, "ARS", StringComparison.OrdinalIgnoreCase))
-                errores.Add("La Proforma debe estar expresada en ARS.");
-            if (proforma.ClienteID <= 0) errores.Add("La Proforma no tiene un cliente válido.");
-            if (!proforma.ClienteHabilitado) errores.Add("El cliente está inactivo para nuevas Facturas.");
+                errores.Add("La proforma tiene que estar en pesos (ARS).");
+            if (proforma.ClienteID <= 0) errores.Add("La proforma no tiene un cliente válido.");
+            if (!proforma.ClienteHabilitado) errores.Add("El cliente está inactivo: no se le pueden emitir facturas nuevas.");
             if (string.IsNullOrWhiteSpace(proforma.RazonSocial) || string.IsNullOrWhiteSpace(proforma.CUIT))
                 errores.Add("Faltan los datos fiscales del cliente.");
-            if (detalles.Count == 0) errores.Add("La Proforma no tiene conceptos para facturar.");
+            if (detalles.Count == 0) errores.Add("La proforma no tiene conceptos para facturar.");
             if (proforma.OtrosImpuestos < 0) errores.Add("Los otros impuestos no pueden ser negativos.");
             totales = CalcularTotales(proforma, detalles, errores);
             if (proforma.Subtotal != totales.Subtotal || proforma.Descuentos != totales.Descuentos
                 || proforma.Neto != totales.Neto || proforma.IVA != totales.IVA
                 || proforma.Total != totales.Total || proforma.ImporteTotal != totales.Total)
-                errores.Add("Los totales de la Proforma no coinciden con el recálculo de sus conceptos.");
+                errores.Add("Los totales de la proforma no coinciden con el recálculo de sus conceptos.");
             if (totales.Total <= 0) errores.Add("El total a facturar debe ser mayor que cero.");
             return errores.Distinct().ToList();
         }
@@ -664,7 +664,7 @@ ORDER BY ap.Aplicacion_ID;";
                     var detalles = LeerDetalles(connection, null, id);
                     TotalesFactura totales;
                     var errores = ValidarFacturacion(proforma, detalles, out totales);
-                    if (factura != null) errores.Insert(0, "La Proforma ya posee una Factura vigente.");
+                    if (factura != null) errores.Insert(0, "La proforma ya tiene una factura vigente.");
                     return Ok(new
                     {
                         ProformaID = id,
@@ -693,7 +693,7 @@ ORDER BY ap.Aplicacion_ID;";
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo validar la facturación de la Proforma." });
+                    new { error = "No se pudo validar la facturación de la proforma." });
             }
         }
 
@@ -702,13 +702,13 @@ ORDER BY ap.Aplicacion_ID;";
         public IHttpActionResult EmitirDesdeProforma(int id, [FromBody] EmitirFacturaRequest request)
         {
             if (request == null) return BadRequest("Faltan los datos de emisión.");
-            if (request.ClaveOperacion == Guid.Empty) return BadRequest("ClaveOperacion es obligatoria.");
+            if (request.ClaveOperacion == Guid.Empty) return BadRequest("Falta la clave de la operación. Cerrá el formulario y volvé a abrirlo.");
             if (!request.FechaEmision.HasValue || !request.FechaVencimiento.HasValue)
-                return BadRequest("FechaEmision y FechaVencimiento son obligatorias.");
+                return BadRequest("Completá la fecha de emisión y la de vencimiento.");
             DateTime fechaEmision = request.FechaEmision.Value.Date;
             DateTime fechaVencimiento = request.FechaVencimiento.Value.Date;
             if (fechaVencimiento < fechaEmision)
-                return BadRequest("FechaVencimiento no puede ser anterior a FechaEmision.");
+                return BadRequest("El vencimiento no puede ser anterior a la emisión.");
             if (fechaEmision > FechaArgentina())
                 return BadRequest("No se admite una fecha de emisión futura.");
             byte[] versionEsperada;
@@ -719,7 +719,7 @@ ORDER BY ap.Aplicacion_ID;";
             }
             catch (FormatException)
             {
-                return BadRequest("VersionProforma no es válida.");
+                return BadRequest("No se pudo identificar la versión de la proforma. Volvé a abrir el formulario.");
             }
 
             try
@@ -757,7 +757,7 @@ ORDER BY ap.Aplicacion_ID;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "ClaveOperacion ya fue utilizada con datos diferentes." });
+                                        new { error = "Esta operación ya se registró con otros datos. Cerrá el formulario y volvé a abrirlo." });
                                 }
                                 transaction.Commit();
                                 return Ok(new
@@ -775,7 +775,7 @@ ORDER BY ap.Aplicacion_ID;";
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict,
-                                    new { error = "La Proforma fue modificada. Vuelva a consultar antes de facturar." });
+                                    new { error = "La proforma fue modificada. Volvé a abrirla antes de facturar." });
                             }
                             var existente = BuscarFacturaPorProforma(connection, transaction, id);
                             if (existente != null)
@@ -783,7 +783,7 @@ ORDER BY ap.Aplicacion_ID;";
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict, new
                                 {
-                                    error = "La Proforma ya posee una Factura vigente.",
+                                    error = "La proforma ya tiene una factura vigente.",
                                     ComprobanteID = existente.ComprobanteID,
                                     Numero = NumeroFactura(existente.NumeroCorrelativo)
                                 });
@@ -806,7 +806,7 @@ WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connecti
                                 command.Parameters.Add(P("@numerador", configuracion.NumeradorID));
                                 object value = command.ExecuteScalar();
                                 if (value == null)
-                                    throw new InvalidOperationException("El numerador de Facturas no existe o está agotado.");
+                                    throw new InvalidOperationException("El numerador de facturas no existe o está agotado.");
                                 correlativo = Convert.ToInt32(value, CultureInfo.InvariantCulture);
                             }
 
@@ -934,7 +934,7 @@ VALUES
             catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
             {
                 return Content(HttpStatusCode.Conflict,
-                    new { error = "La Factura ya fue creada o la operación se procesó en paralelo." });
+                    new { error = "La factura ya fue creada o la operación se procesó en paralelo." });
             }
             catch (InvalidOperationException ex)
             {
@@ -943,7 +943,7 @@ VALUES
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo emitir la Factura. Ningún cambio fue confirmado." });
+                    new { error = "No se pudo emitir la factura. No se guardó ningún cambio." });
             }
         }
     }

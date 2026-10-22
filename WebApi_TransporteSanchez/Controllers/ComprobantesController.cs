@@ -196,7 +196,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var authorization = Request != null ? Request.Headers.Authorization : null;
             if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
                 || string.IsNullOrWhiteSpace(authorization.Parameter))
-                throw new AccesoException(HttpStatusCode.Unauthorized, "Debe iniciar sesión.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Iniciá sesión para continuar.");
             try
             {
                 var handler = new JwtSecurityTokenHandler();
@@ -214,12 +214,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 }, out validatedToken);
                 var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
                 if (claim == null || string.IsNullOrWhiteSpace(claim.Value))
-                    throw new SecurityTokenException("Token sin usuario.");
+                    throw new SecurityTokenException("La sesión no es válida. Volvé a iniciar sesión.");
                 return claim.Value;
             }
             catch (Exception ex) when (!(ex is AccesoException))
             {
-                throw new AccesoException(HttpStatusCode.Unauthorized, "La sesión no es válida o ha vencido.");
+                throw new AccesoException(HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión.");
             }
         }
 
@@ -244,7 +244,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
                     if (!reader.Read())
                         throw new AccesoException(HttpStatusCode.Unauthorized, "El usuario no existe o está inactivo.");
                     if (reader.GetInt32(1) != 1)
-                        throw new AccesoException(HttpStatusCode.Forbidden, "No tiene permiso para emitir este comprobante.");
+                        throw new AccesoException(HttpStatusCode.Forbidden, "No tenés permiso para emitir este comprobante.");
                     return new UsuarioSesion { UsuarioID = reader.GetInt32(0), NombreUsuario = nombreUsuario };
                 }
             }
@@ -427,7 +427,7 @@ ORDER BY c.FechaEmision DESC,c.Comprobante_ID DESC;";
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudieron consultar las Facturas de referencia." });
+                    new { error = "No se pudieron consultar las facturas de referencia." });
             }
         }
 
@@ -479,15 +479,15 @@ ORDER BY c.Comprobante_ID DESC;";
                     }
                     if (factura == null)
                         return Content(HttpStatusCode.BadRequest,
-                            new { error = "La Proforma no tiene una Factura vigente para anular." });
+                            new { error = "La proforma no tiene una factura vigente para anular." });
 
                     string motivo = null;
                     if (factura.EstadoFactura != "EMITIDO")
-                        motivo = "La Factura vinculada no se encuentra emitida.";
+                        motivo = "La factura vinculada no está emitida.";
                     else if (factura.Aplicado != 0)
-                        motivo = "La Factura tiene movimientos en cuenta corriente y no admite una Nota de Credito cancelatoria por el total.";
+                        motivo = "La factura tiene movimientos en la cuenta corriente y no admite una nota de crédito cancelatoria por el total.";
                     else if (factura.Total <= 0)
-                        motivo = "La Factura vinculada no tiene un importe valido para cancelar.";
+                        motivo = "La factura vinculada no tiene un importe válido para cancelar.";
 
                     return Ok(new
                     {
@@ -516,7 +516,7 @@ ORDER BY c.Comprobante_ID DESC;";
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo obtener la Factura vinculada a la Proforma." });
+                    new { error = "No se pudo obtener la factura vinculada a la proforma." });
             }
         }
 
@@ -528,10 +528,10 @@ ORDER BY c.Comprobante_ID DESC;";
             request.Tipo = (request.Tipo ?? string.Empty).Trim().ToUpperInvariant();
             request.Concepto = (request.Concepto ?? string.Empty).Trim();
             request.Observaciones = string.IsNullOrWhiteSpace(request.Observaciones) ? null : request.Observaciones.Trim();
-            if (request.ClaveOperacion == Guid.Empty) return BadRequest("ClaveOperacion es obligatoria.");
+            if (request.ClaveOperacion == Guid.Empty) return BadRequest("Falta la clave de la operación. Cerrá el formulario y volvé a abrirlo.");
             if (request.Tipo != "FAC" && request.Tipo != "NC" && request.Tipo != "ND")
                 return BadRequest("El tipo de comprobante no es válido.");
-            if (request.ClienteID <= 0) return BadRequest("ClienteID es obligatorio.");
+            if (request.ClienteID <= 0) return BadRequest("Seleccioná un cliente.");
             if (!request.FechaEmision.HasValue) return BadRequest("La fecha de emisión es obligatoria.");
             DateTime emision = request.FechaEmision.Value.Date;
             if (emision > FechaArgentina()) return BadRequest("No se admite una fecha de emisión futura.");
@@ -542,11 +542,11 @@ ORDER BY c.Comprobante_ID DESC;";
             if (vencimiento.HasValue && vencimiento.Value < emision)
                 return BadRequest("El vencimiento no puede ser anterior a la emisión.");
             if (request.Tipo == "NC" && !request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("La Nota de Crédito debe relacionarse con una Factura.");
+                return BadRequest("La nota de crédito tiene que estar relacionada con una factura.");
             if (request.Tipo != "NC" && request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("Solo la Nota de Crédito admite una Factura de referencia.");
+                return BadRequest("Solo la nota de crédito admite una factura de referencia.");
             if (request.ProformaID.HasValue && request.Tipo != "NC")
-                return BadRequest("La Proforma solo puede informarse al emitir una Nota de Credito cancelatoria.");
+                return BadRequest("La proforma solo se puede indicar al emitir una nota de crédito cancelatoria.");
             if (request.Concepto.Length == 0 || request.Concepto.Length > 200)
                 return BadRequest("El concepto es obligatorio y no puede superar los 200 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
@@ -557,7 +557,7 @@ ORDER BY c.Comprobante_ID DESC;";
                 return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
             if (request.Tipo == "NC" && (!request.IVA.HasValue || request.IVA.Value < 0
                 || request.IVA.Value != Redondear(request.IVA.Value)))
-                return BadRequest("El importe de IVA de la Nota de Crédito no es válido.");
+                return BadRequest("El importe de IVA de la nota de crédito no es válido.");
             if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
                 return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
 
@@ -589,7 +589,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "ClaveOperacion ya fue utilizada con datos diferentes." });
+                                        new { error = "Esta operación ya se registró con otros datos. Cerrá el formulario y volvé a abrirlo." });
                                 }
                                 transaction.Commit();
                                 return Ok(new
@@ -620,13 +620,13 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La Factura de referencia no es válida para este cliente." });
+                                        new { error = "La factura de referencia no es válida para este cliente." });
                                 }
                                 if (emision < referencia.FechaEmision.Date)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La fecha del comprobante no puede ser anterior a la Factura relacionada." });
+                                        new { error = "La fecha del comprobante no puede ser anterior a la factura relacionada." });
                                 }
                                 if (request.Tipo == "NC")
                                 {
@@ -639,8 +639,8 @@ ORDER BY c.Comprobante_ID DESC;";
                                         transaction.Rollback();
                                         return Content(HttpStatusCode.Conflict, new
                                         {
-                                            error = "La Factura " + Numero("FAC", referencia.NumeroCorrelativo)
-                                                + " ya se encuentra cancelada."
+                                            error = "La factura " + Numero("FAC", referencia.NumeroCorrelativo)
+                                                + " ya está cancelada."
                                         });
                                     }
                                     if (request.Neto != netoPendiente || iva != ivaPendiente
@@ -649,7 +649,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                         transaction.Rollback();
                                         return Content(HttpStatusCode.Conflict, new
                                         {
-                                            error = "Los importes de la Factura cambiaron. Volvé a seleccionarla para actualizar Neto, IVA e impuestos."
+                                            error = "Los importes de la factura cambiaron. Volvé a seleccionarla para actualizar el neto, el IVA y los impuestos."
                                         });
                                     }
                                     if (request.ProformaID.HasValue)
@@ -660,7 +660,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                             transaction.Rollback();
                                             return Content(HttpStatusCode.BadRequest, new
                                             {
-                                                error = "La Factura indicada no es la Factura vigente de la Proforma."
+                                                error = "La factura indicada no es la factura vigente de la proforma."
                                             });
                                         }
                                         if (referencia.Aplicado != 0)
@@ -668,7 +668,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                             transaction.Rollback();
                                             return Content(HttpStatusCode.Conflict, new
                                             {
-                                                error = "La Factura tiene movimientos en cuenta corriente y no puede cancelarse por el total."
+                                                error = "La factura tiene movimientos en la cuenta corriente y no se puede cancelar por el total."
                                             });
                                         }
                                     }
@@ -847,7 +847,7 @@ VALUES
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo emitir el comprobante. Ningún cambio fue confirmado." });
+                    new { error = "No se pudo emitir el comprobante. No se guardó ningún cambio." });
             }
         }
     }
