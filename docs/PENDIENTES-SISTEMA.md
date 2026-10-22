@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; faltan las pantallas que todavía se apartan del design system (ver §20) | **Sin pushear** | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas y cuenta corriente al día; faltan configuración, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -937,4 +937,36 @@ textos con mayúscula solo al principio y con tildes. PDF: errores con el aviso 
 - [ ] Proforma de Rukas (cliente con plataforma): el período se ve en DD/MM/AAAA después de importar el Excel.
 - [ ] Filtro Fecha: elegir un rango busca; la cruz lo borra. Exportar (ícono) abre el modal de Excel / PDF.
 - [ ] Listar proformas: ver, PDF y Emitir factura (solo en Aceptadas); el detalle se titula "Ver proforma …".
+
+**Cuenta corriente (commit "Cuenta corriente: design system en la pantalla y sus modales", pantalla de Facu, con
+el OK de Rocío del 22/10):** encabezado con Exportar solo ícono, "Emitir comprobante" gris (con "Emitir factura
+directa", "Emitir nota de crédito", etc.) y "Registrar recibo" en verde. Filtros con su cruz y sin Limpiar; un solo
+filtro "Fecha" (Desde y hasta, entra con los últimos 30 días; la cruz lo deja sin límite) en lugar de los dos
+`type="date"`; Buscar gris. Tabla rayada, fechas y estado centrados, estados con las etiquetas del sistema (§4),
+ojo gris de "Ver detalle" y Acciones fija a la derecha. Sin el modo oscuro suelto (§10). Los `prompt()`, `confirm()`
+y `alert()` de anular y eliminar recibo pasan a la confirmación del sistema (anular pide el motivo dentro del
+mismo modal); emitir, guardar y enviar por e-mail avisan con un toast y bloquean Cancelar mientras procesan. Los
+errores de los formularios van arriba, en rojo, y no muestran textos técnicos (§9). Fechas de los modales
+(emisión, vencimiento, fecha del recibo) en DD/MM/AAAA con calendario (siguen mandando AAAA-MM-DD a la API).
+Textos con mayúscula solo al principio ("recibo", "factura", "nota de crédito") y "Seleccioná un cliente".
+También: el paginador compartido no se ocultaba sin resultados en ninguna pantalla (`sgtl-ui.js`).
+- [ ] Entrar: Fecha muestra los últimos 30 días ("DD/MM/AAAA a DD/MM/AAAA"); la tabla carga. La cruz de Fecha
+  muestra todos los comprobantes ("sin límite"). Comprobante y Estado financiero buscan al elegir.
+- [ ] Un filtro sin resultados: "No hay resultados para los filtros elegidos." y sin paginador. Lo mismo en
+  Gestionar viajes y Gestionar proformas.
+- [ ] Una factura con recibo o NC aplicados: la flecha despliega las aplicaciones (celeste) y la columna Acciones
+  conserva el color de la fila.
+- [ ] Pestaña "Comprobantes sin relacionar": marca la casilla "Solo comprobantes sin relacionar" (y al revés).
+- [ ] Registrar recibo: título "Registrar recibo", fecha de hoy en DD/MM/AAAA, Emitir sin cliente → "Seleccioná
+  un cliente." arriba en rojo. **Emitir de verdad solo con datos de prueba: consume numeración.** Al emitir:
+  toast "Recibo emitido: REC-…".
+- [ ] Ojo de un recibo emitido → Editar recibo → cambiar la referencia → Guardar → toast "Recibo … guardado.".
+- [ ] Ojo de un recibo emitido → Anular recibo: confirmación encima del detalle con "Motivo de la anulación";
+  Anular sin motivo → "Completá el motivo."; con motivo → toast "Recibo anulado." (solo datos de prueba).
+- [ ] Un recibo anulado → Eliminar recibo: confirmación → toast "Recibo eliminado." (solo datos de prueba).
+- [ ] Emitir comprobante → Emitir nota de crédito: título y botón dicen "Emitir nota de crédito"; sin cliente, la
+  factura relacionada dice "Seleccioná un cliente primero".
+- [ ] Ojo de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
+  y avisa "Comprobante enviado a …" (con un correo de prueba).
+- [ ] Exportar (ícono): modal "Exportar" con Vista previa, Excel y PDF; los tres bajan lo filtrado.
 

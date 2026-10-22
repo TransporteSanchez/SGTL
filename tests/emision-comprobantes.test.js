@@ -62,7 +62,7 @@ function probarFlujosYDependencias() {
         'el aviso del Recibo debe informar el número generado');
     assert.match(comprobante, /cerrarModalYNotificar\('modalNuevoComprobante'/,
         'al emitir Factura, NC o ND debe cerrar su formulario y mostrar el aviso flotante');
-    assert.match(comprobante, /'Factura'[\s\S]*'Nota de Crédito'[\s\S]*'Nota de Débito'[\s\S]*comprobante\.Numero/,
+    assert.match(comprobante, /'Factura'[\s\S]*'Nota de crédito'[\s\S]*'Nota de débito'[\s\S]*comprobante\.Numero/,
         'el aviso debe identificar Factura, NC o ND e informar su número generado');
     assert.match(pagina, /assets\/static\/css\/sgtl\.css/,
         'Cuenta Corriente debe cargar los estilos de los avisos flotantes');

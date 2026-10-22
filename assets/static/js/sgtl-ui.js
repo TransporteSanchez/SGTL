@@ -421,7 +421,9 @@
       var el = elemento(contenedor);
       if (!el) return;
       var total = Number(opciones && opciones.total) || 0;
-      el.style.display = total ? '' : 'none';
+      // Con important: el estilo del paginador (sidebar-loader.js) fuerza display:flex !important.
+      if (total) el.style.removeProperty('display');
+      else el.style.setProperty('display', 'none', 'important');
       if (total && window.PaginacionSGTL) window.PaginacionSGTL.render(el, opciones);
     }
   };
