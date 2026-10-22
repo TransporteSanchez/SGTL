@@ -1293,8 +1293,8 @@
 
             $('#resultadoEntrega').val(v.Resultado_Entrega || '');
             var fe = v.Fecha_Entrega ? String(v.Fecha_Entrega).substring(0, 10) : '';
-            var inicio = v.Fecha_Inicio ? String(v.Fecha_Inicio).substring(0, 10) : null;
-            if (window.fpEntrega) { fpEntrega.set('minDate', inicio); fpEntrega.setDate(fe || null, false); } else $('#fechaEntrega').val(fe);
+            // redraw: vuelve a bloquear los días según el inicio de este viaje (diaEntrega).
+            if (window.fpEntrega) { fpEntrega.setDate(fe || null, false); fpEntrega.redraw(); } else $('#fechaEntrega').val(fe);
             $('#evidenciaArchivo').val('');
             $('#evidenciaActual').toggle(!!v.Tiene_Evidencia);
             $('#evidenciaVer').attr('href', API_VIAJES + '/Viajes/' + id + '/Evidencia');
@@ -1369,6 +1369,16 @@
             });
         }
 
+        function inicioViajeEstado() { return viajeEstado && viajeEstado.Fecha_Inicio ? String(viajeEstado.Fecha_Inicio).substring(0, 10) : ''; }
+
+        // Calendario de la fecha de entrega: los días anteriores al inicio del viaje se ven bloqueados y no se pueden
+        // elegir. No se usa minDate porque borra sin aviso una fecha anterior escrita a mano; así queda escrita y la
+        // validación dice por qué no va.
+        function diaEntrega(fechas, texto, fp, dia) {
+            var inicio = inicioViajeEstado();
+            if (inicio && fp.formatDate(dia.dateObj, 'Y-m-d') < inicio) dia.classList.add('flatpickr-disabled');
+        }
+
         // Datos de la entrega (§6.3): cada campo se marca en rojo con su mensaje. Si son obligatorios lo decide pedirEntrega.
         var reglasEntrega = {
             resultado: { id: 'resultadoEntrega' },
@@ -1384,7 +1394,7 @@
             fecha: {
                 id: 'fechaEntrega',
                 validar: function (fecha) {
-                    var inicio = viajeEstado && viajeEstado.Fecha_Inicio ? String(viajeEstado.Fecha_Inicio).substring(0, 10) : '';
+                    var inicio = inicioViajeEstado();
                     return inicio && fecha < inicio ? 'No puede ser anterior al inicio del viaje (' + SGTL.fecha(inicio) + ').' : '';
                 }
             }
@@ -1466,7 +1476,7 @@
                 var alCambiarFecha = function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); };
                 window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
                 window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
-                window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
+                window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', onDayCreate: diaEntrega });
             }
             $('#formEstadoViaje').on('submit', confirmarEstadoViaje);
             $('#estadoViajeOpciones').on('change', function () {

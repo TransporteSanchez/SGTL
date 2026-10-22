@@ -1214,8 +1214,9 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   Entregado; con plataforma: Registrado · Listo para facturar), cada uno con su explicación. Facturado no aparece
   (lo pone la factura).
 - **Entregado (directo):** resultado, fecha y evidencia van dentro de la tarjeta y se ven al elegirla. Resultado
-  y fecha obligatorios, marcados en rojo con su mensaje; la fecha no puede ser anterior al inicio del viaje (el
-  calendario no deja elegirla). La evidencia pasa a obligatoria en el commit siguiente (sección siguiente).
+  y fecha obligatorios, marcados en rojo con su mensaje; la fecha no puede ser anterior al inicio del viaje: en
+  el calendario esos días aparecen grises y no se eligen; escrita a mano, queda en rojo con "No puede ser anterior
+  al inicio del viaje (DD/MM/AAAA)." (antes se borraba sin aviso). La evidencia pasa a obligatoria en el commit siguiente (sección siguiente).
 - **Listo para facturar (con plataforma):** resultado y fecha **opcionales** dentro de la tarjeta (lo que diga
   Rukas; el dashboard los usa para "Parcial" y "Con rechazo"). **Evidencia opcional (nuevo):** antes no se
   ofrecía; la ayuda aclara que la constancia ya está en Rukas y se adjunta para tener el viaje completo en SGTL.
@@ -1242,6 +1243,8 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   "Datos de la entrega" arriba; vuelve a Registrado y el resultado queda vacío. Un viaje facturado tiene la
   banderita deshabilitada.
 - [ ] Listar viajes → Ver detalle de un viaje con evidencia: el enlace la abre.
+- [ ] Fecha de entrega: en el calendario, los días anteriores al inicio del viaje están grises y no se pueden
+  elegir; escribir a mano uno de esos días y salir del campo → queda escrito, en rojo, con el motivo.
 
 ### Viajes: evidencia obligatoria al entregar un viaje directo (22/10) — commit "Viajes: evidencia obligatoria al entregar un viaje directo" (`e40db60`), PUSHEADO, FALTA COMPILAR Y PROBAR EN VM
 
