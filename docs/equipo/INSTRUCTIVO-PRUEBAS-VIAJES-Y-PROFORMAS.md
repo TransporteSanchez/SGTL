@@ -39,7 +39,7 @@ Al final hay un **guion para la presentación** con el orden sugerido y qué con
 
 ## 1. Viajes
 
-Pantalla: **Gestionar viajes**. Botones de cada fila: Editar (lápiz), Eliminar (tacho) y **Estado y entrega**.
+Pantalla: **Gestionar viajes**. Botones de cada fila: Editar (lápiz), **Cambiar estado** (banderita) y Eliminar (tacho).
 
 ### 1.1 Registrar un viaje de cliente directo
 
@@ -52,9 +52,9 @@ Pantalla: **Gestionar viajes**. Botones de cada fila: Editar (lápiz), Eliminar 
 
 ### 1.2 Seguir un viaje directo hasta Entregado
 
-1. "Estado y entrega" → **En viaje** → Guardar.
-2. "Estado y entrega" → **Entregado**: pide **resultado** (Completa / Parcial / Rechazo) y **fecha de entrega**. Sin eso no deja.
-3. Adjuntá una **evidencia** (foto o PDF): aparece el clip en el listado.
+1. Banderita "Cambiar estado" → tarjeta **En viaje** → Guardar.
+2. Banderita → tarjeta **Entregado**: dentro de la tarjeta pide **resultado** (Completa / Parcial / Rechazo) y **fecha de entrega**. Sin eso no deja (quedan en rojo).
+3. Adjuntá una **evidencia** (foto o PDF): aparece el clip en el listado. Si el viaje ya está entregado, la banderita muestra arriba "Datos de la entrega" para corregirlos o adjuntar la evidencia después, sin cambiar el estado.
 4. Probá saltear un paso (de Registrado directo a Entregado): no deja, se avanza o se vuelve de a uno.
 5. Volvé a abrir "Editar": ahora solo se pueden cambiar los números (remito). El recorrido, el chofer y la tarifa quedan fijos porque el viaje ya salió.
 
@@ -62,7 +62,7 @@ Pantalla: **Gestionar viajes**. Botones de cada fila: Editar (lápiz), Eliminar 
 
 1. "Registrar viaje" → **QUICKFOOD**. Fijate que aparecen los campos **N° de transporte SAP** y **N° de entrega**, y que el chofer pasa a **opcional**.
 2. Guardalo **sin** los números (todavía no existen en la realidad): queda Registrado.
-3. "Estado y entrega" → **Listo para facturar**: no deja, pide el N° de transporte SAP, el remito y el N° de entrega.
+3. Banderita "Cambiar estado": la tarjeta **Listo para facturar** aparece gris y dice qué falta (N° de transporte SAP, remito, N° de entrega o tarifa).
 4. Editá el viaje, cargá los tres números (de prueba, por ejemplo 990901) y volvé a intentar: ahora pasa a Listo para facturar.
 5. Con el viaje en Listo para facturar, en "Editar" se pueden corregir la **tarifa y los km** (sirve para que coincida con Rukas); el resto queda fijo.
 6. Al terminar, eliminalo si sigue Registrado, o avisale a Rocío cuál quedó.
@@ -175,7 +175,7 @@ Unos 10 a 15 minutos. Antes de empezar: datos como en 3.8, sesión iniciada, Ges
 |---|---|---|
 | 1 | Diagrama general (§1 de `FLUJOS-VIAJES-Y-PROFORMAS.md`) | Dos tipos de cliente: directo (SGTL registra todo) y con plataforma (el cliente usa Rukas y SGTL concilia). La factura es interna porque no hay conexión con ARCA; al integrarla, el circuito no cambia |
 | 2 | Gestionar viajes: registrar un viaje directo (1.1) | Tarifa automática (fija o por km), distancia con el mapa, WhatsApp al chofer con la hoja de ruta |
-| 3 | Estado y entrega (1.2) | Se sigue de a un paso; para Entregado pide resultado, fecha y evidencia |
+| 3 | Cambiar estado (1.2) | Se sigue de a un paso; para Entregado pide resultado, fecha y evidencia |
 | 4 | Viaje de QUICKFOOD (1.3) | Los números de Rukas se cargan a medida que aparecen; sin ellos no pasa a facturar |
 | 5 | Registrar proforma → QUICKFOOD → la guía (3.1) | Es la lista para tildar en Rukas y evitar diferencias |
 | 6 | **Caso 3** (3.4): importar, "Sin viaje", corregir el viaje, Volver a controlar | Cuando el error es nuestro, se corrige en SGTL sin perder el borrador. Eliminar el borrador al terminar |

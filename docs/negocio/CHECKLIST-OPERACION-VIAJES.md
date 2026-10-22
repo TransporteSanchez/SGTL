@@ -26,7 +26,7 @@ Rukas es del cliente: ahí se hacen la novedad, el cierre de reparto, el sobre, 
 | 2 | SGTL · Gestión de viajes | Cuando el viaje está **planeado / con chofer asignado**: **Registrar viaje** (cliente, origen, destino, fechas, camión, chofer, tarifa). Los números se pueden dejar vacíos. |
 | 3 | SGTL · Gestión de viajes | Cuando el camión carga en planta (en Rukas pasa a Despachados): editar el viaje y cargar **N° transporte SAP** y **Número de remito** (el del papel). |
 | 4 | SGTL · Gestión de viajes | Cuando hay novedad de entrega en Rukas: cargar **N° entrega Rukas** (el # que pide el bot). |
-| 5 | SGTL · Estado y entrega | Pasar el viaje a **Listo para facturar**. Opcional: resultado (Completa / Parcial / Rechazo) y fecha de entrega. |
+| 5 | SGTL · Cambiar estado (banderita) | Pasar el viaje a **Listo para facturar**. Opcional: resultado (Completa / Parcial / Rechazo), fecha de entrega y evidencia (la constancia está en Rukas; se adjunta para tener el viaje completo en SGTL). |
 | 6 | SGTL · Facturación | **Traer viajes** del cliente y período → revisar las advertencias (sin remito o transporte, sin tarifa, todavía en Registrado). |
 | 7 | SGTL · Facturación | **Generar proforma** → los viajes quedan reservados por esa proforma (en Gestión de viajes se ven "En PF-xxxx" y ya no se modifican). Aceptarla y **emitir la factura** → los viajes pasan solos a **Facturado**. |
 
@@ -48,8 +48,8 @@ Acá SGTL es el **único registro** del viaje, así que se sigue el viaje de pun
 | Paso | Dónde | Qué hacer |
 |---|---|---|
 | 1 | SGTL · Gestión de viajes | **Registrar viaje** (mismos datos). El remito es opcional (si el cliente da uno, cargarlo). No se muestran N° transporte SAP ni N° entrega Rukas. |
-| 2 | SGTL · Estado y entrega | Al salir: pasar a **En viaje**. |
-| 3 | SGTL · Estado y entrega | Al entregar: pasar a **Entregado** con **resultado** y **fecha de entrega** (obligatorios) y adjuntar **evidencia** (foto o PDF del remito firmado / conforme; recomendado). |
+| 2 | SGTL · Cambiar estado (banderita) | Al salir: pasar a **En viaje**. |
+| 3 | SGTL · Cambiar estado (banderita) | Al entregar: pasar a **Entregado** con **resultado** y **fecha de entrega** (obligatorios) y adjuntar **evidencia** (foto o PDF del remito firmado / conforme; recomendado). |
 | 4 | SGTL · Facturación | **Traer viajes**: solo entran los viajes **Entregados** con tarifa. |
 | 5 | SGTL · Facturación | **Generar proforma** → los viajes quedan reservados ("En PF-xxxx"). Al **emitir la factura** pasan a **Facturado**; si se anula la proforma o se emite la nota de crédito, quedan libres (y vuelven a **Entregado** si estaban Facturados). |
 

@@ -942,24 +942,29 @@ body #loading-message .spinner-border {
     color: #435ebe;
 }
 
-/* Opciones de estado (ventana "Cambiar estado"): cada estado posible es una tarjeta con su explicación. */
+/* Opciones de estado (ventana "Cambiar estado", §1.4): cada estado posible es una tarjeta con su explicación;
+   una tarjeta puede llevar campos propios abajo (los datos de la entrega en viajes). */
 .sgtl-opcion-estado {
-    display: flex;
-    gap: .75rem;
-    align-items: flex-start;
-    margin: 0;
-    padding: .75rem 1rem;
     border: 1px solid var(--sgtl-borde);
     border-radius: var(--sgtl-radio-chico);
     background-color: #fff;
-    cursor: pointer;
 }
 
 .sgtl-opcion-estado + .sgtl-opcion-estado {
     margin-top: .5rem;
 }
 
-.sgtl-opcion-estado:hover {
+.sgtl-opcion-estado-cabecera {
+    display: flex;
+    gap: .75rem;
+    align-items: flex-start;
+    width: 100%;
+    margin: 0;
+    padding: .75rem 1rem;
+    cursor: pointer;
+}
+
+.sgtl-opcion-estado:not(.deshabilitada):not(.seleccionada):hover {
     border-color: var(--sgtl-borde-campo);
     background-color: #fafbfc;
 }
@@ -970,18 +975,55 @@ body #loading-message .spinner-border {
     box-shadow: inset 0 0 0 1px #435ebe;
 }
 
+.sgtl-opcion-estado.deshabilitada {
+    background-color: #f8f9fb;
+}
+
+.sgtl-opcion-estado.deshabilitada .sgtl-opcion-estado-cabecera {
+    cursor: not-allowed;
+}
+
 .sgtl-opcion-estado .form-check-input {
     flex: 0 0 auto;
     margin-top: .2rem;
 }
 
-.sgtl-opcion-estado-texto {
+.sgtl-opcion-estado-texto,
+.sgtl-opcion-estado-motivo {
     display: block;
     margin-top: .25rem;
     color: var(--sgtl-texto-suave);
     font-size: .85rem;
 }
 
+.sgtl-opcion-estado-motivo {
+    color: #b42318;
+}
+
+.sgtl-opcion-estado-detalle {
+    padding: 0 1rem 1rem 2.75rem;
+}
+
 .sgtl-opciones-estado.is-invalid .sgtl-opcion-estado {
     border-color: #dc3545;
+}
+
+/* Los campos de una tarjeta (p. ej. los datos de la entrega) se ven solo con la tarjeta elegida. */
+.sgtl-opcion-estado:not(.seleccionada) > .sgtl-opcion-estado-detalle {
+    display: none;
+}
+
+/* Los mismos campos fuera de las tarjetas, cuando se corrigen sin cambiar el estado (viaje ya entregado). */
+.sgtl-opcion-estado-bloque {
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio-chico);
+    background-color: #fff;
+}
+
+.sgtl-opcion-estado-bloque > .sgtl-opcion-estado-detalle {
+    padding: 1rem;
+}
+
+.sgtl-opcion-estado-bloque.deshabilitada {
+    background-color: #f8f9fb;
 }

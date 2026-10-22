@@ -923,7 +923,7 @@ funcionando (`sgtl-ui.js`).
   lo vacía y vuelve a buscar; Enter busca. El rango de fechas busca al elegir las dos fechas.
 - [ ] Cliente: escribir parte del nombre filtra la lista; elegir uno busca. Igual en Listar viajes.
 - [ ] Tabla con muchas columnas: al desplazarla hacia el costado, Acciones queda fija a la derecha.
-- [ ] Estado y entrega de un viaje directo → Entregado sin evidencia → aparece "¿Guardar la entrega sin evidencia?"
+- [ ] Cambiar estado (banderita) de un viaje directo → Entregado sin evidencia → aparece "¿Guardar la entrega sin evidencia?"
   encima; Cancelar vuelve al modal (que sigue andando); "Guardar sin evidencia" guarda y avisa "Estado del viaje
   guardado.".
 - [ ] Quitar evidencia de un viaje que tenga: confirmación "¿Quitar la evidencia…?", Quitar → toast.
@@ -1081,7 +1081,7 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   guardar si los hay).
 - [ ] Rukas → Registrar reclamo: la fecha se elige con el calendario y se ve DD/MM/AAAA.
 - [ ] Gestionar viajes → Registrar viaje: fechas de inicio y fin en DD/MM/AAAA HH:MM; editar un viaje existente
-  las muestra igual; con tarifa por km, cambiar una fecha recalcula. Estado y entrega: fecha de entrega DD/MM/AAAA.
+  las muestra igual; con tarifa por km, cambiar una fecha recalcula. Cambiar estado (banderita): fecha de entrega DD/MM/AAAA.
 - [ ] Cuenta corriente: elegir un rango en Fecha y cerrar el calendario → busca.
 - Títulos (commit "Interfaz: ícono de la sección en el título de cada pantalla"): §3.2 pedía el ícono de la
   sección del menú a la izquierda del título y solo lo tenían tres pantallas de configuración, con íconos
@@ -1203,5 +1203,42 @@ verde: pasa a gris con el botón compartido de presupuestos. Sigue abriendo el m
 viaje"; rehacerlo con la ventana de tarjetas de presupuestos queda para cuando se normalice viajes.
 - [ ] Gestionar viajes: la banderita de cada fila es gris (con tooltip "Estado y entrega") y abre el modal de
   siempre.
-- [ ] **Pendiente para después:** pasar el modal "Estado y entrega del viaje" a la ventana de estados en tarjetas
-  (como presupuestos), con resultado, fecha y evidencia dentro de la tarjeta "Entregado".
+- [x] Pasar el modal "Estado y entrega del viaje" a la ventana de tarjetas: hecho en la sección siguiente.
+
+### Viajes: "Cambiar estado" con la ventana de tarjetas (22/10) — commit "Viajes: cambiar estado con la ventana de tarjetas", SIN PUSH, FALTA PROBAR EN VM
+
+El modal "Estado y entrega del viaje" (desplegable de estado + campos sueltos) pasa a la misma ventana "Cambiar
+estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Viajes/{id}/Estado` y
+`Viajes/{id}/Evidencia`); no hay cambios en C# ni en la base.
+- **Tarjetas:** solo el estado anterior y el siguiente del circuito del viaje (directo: Registrado · En viaje ·
+  Entregado; con plataforma: Registrado · Listo para facturar), cada uno con su explicación. Facturado no aparece
+  (lo pone la factura).
+- **Entregado (directo):** resultado, fecha y evidencia van dentro de la tarjeta y se ven al elegirla. Resultado
+  y fecha obligatorios, marcados en rojo con su mensaje; la fecha no puede ser anterior al inicio del viaje (el
+  calendario no deja elegirla). Sin evidencia sigue preguntando "¿Guardar la entrega sin evidencia?".
+- **Listo para facturar (con plataforma):** resultado y fecha **opcionales** dentro de la tarjeta (lo que diga
+  Rukas; el dashboard los usa para "Parcial" y "Con rechazo"). **Evidencia opcional (nuevo):** antes no se
+  ofrecía; la ayuda aclara que la constancia ya está en Rukas y se adjunta para tener el viaje completo en SGTL.
+  No pregunta "¿Guardar sin evidencia?" ni el dashboard la reclama. Si al viaje le falta
+  N° transporte SAP, remito, N° entrega Rukas o tarifa, la tarjeta aparece gris con lo que falta (antes se veía
+  recién al guardar).
+- **Viaje ya entregado (o ya listo para facturar):** arriba aparece "Datos de la entrega" para completarlos o
+  corregirlos (o adjuntar la evidencia después) sin cambiar el estado; "Pasa a" es opcional. Si elige volver a
+  un estado anterior, los campos quedan grises y **se borran el resultado y la fecha** (antes quedaban guardados
+  en un viaje que volvía a En viaje o a Registrado). La evidencia no se borra.
+- **Banderita:** tooltip "Cambiar estado"; deshabilitada con el motivo si el viaje está facturado o en una
+  proforma emitida (antes abría el modal y la API lo rechazaba).
+- **Avisos:** "Viaje #N en viaje.", "Viaje #N entregado.", "Viaje #N listo para facturar.", "Viaje #N vuelve a
+  registrado.", "Datos de la entrega del viaje #N guardados.".
+- **Listar viajes:** el detalle suma "Evidencia de la entrega" con el enlace "Ver evidencia adjunta".
+- [ ] Probar en la VM con un viaje directo **de prueba**: Registrado → En viaje; En viaje → Entregado sin
+  completar nada (resultado y fecha en rojo, "Revisá los campos marcados."); completar y guardar sin evidencia
+  (pregunta) y con una foto o PDF; abrirlo de nuevo: "Datos de la entrega" arriba, cambiar la fecha y guardar sin
+  elegir estado; elegir En viaje y volver a tocarla (se desmarca); volver a En viaje y ver en Listar viajes que el
+  resultado y la fecha quedaron vacíos.
+- [ ] Viaje con plataforma de prueba: sin N° entrega Rukas la tarjeta "Listo para facturar" está gris con el
+  motivo; con los números, pasa con o sin resultado, fecha y evidencia (todo opcional; con evidencia aparece el
+  clip en la tabla y el enlace en Listar viajes); abrirlo de nuevo muestra
+  "Datos de la entrega" arriba; vuelve a Registrado y el resultado queda vacío. Un viaje facturado tiene la
+  banderita deshabilitada.
+- [ ] Listar viajes → Ver detalle de un viaje con evidencia: el enlace la abre.

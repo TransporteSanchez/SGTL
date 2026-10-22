@@ -71,7 +71,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Descargar PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
-| Cambiar estado (presupuestos; viajes: "Estado y entrega") | `bi-flag` | `btn-outline-secondary` |
+| Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
@@ -84,9 +84,15 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
   sistema.** Es gris porque es una acción de gestión: abre una ventana para elegir entre varios estados (para
   adelante, para atrás o rechazado). El **verde** queda solo para el paso puntual del circuito que se hace con un
   clic (Marcar aceptada, Emitir factura, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
-  En presupuestos abre la ventana "Cambiar estado" (estado actual y estados posibles como tarjetas, cada una con
-  su explicación; Cancelar + Guardar). En viajes abre, por ahora, "Estado y entrega del viaje"; cuando se
-  normalice, pasa a la misma ventana de tarjetas (los datos de la entrega, dentro de la tarjeta "Entregado").
+  Abre siempre la misma ventana "Cambiar estado del … #N" (`SGTL.opcionesEstado`): resumen, estado actual y
+  los estados a los que puede pasar como tarjetas, cada una con su explicación; Cancelar + Guardar; si no se
+  elige ninguno, "Elegí el estado nuevo.". Una tarjeta que no se puede elegir aparece gris con el motivo en rojo
+  ("Para marcarlo, editá el viaje y cargá: N° entrega Rukas."). **Los datos que pide un estado van dentro de su
+  tarjeta** y se ven solo al elegirla (en viajes, resultado, fecha y evidencia dentro de "Entregado"; con
+  plataforma, resultado, fecha y evidencia opcionales dentro de "Listo para facturar"). Si esos datos se pueden corregir
+  sin cambiar de estado (viaje ya entregado o listo para facturar), van arriba en "Datos de la entrega" y
+  elegir un estado es opcional: volver a tocar la tarjeta elegida la desmarca. Si la fila no admite cambios
+  (facturado, en una proforma emitida), la banderita queda deshabilitada con el motivo.
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
   aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.

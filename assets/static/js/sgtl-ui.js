@@ -397,6 +397,59 @@
     return '<div class="sgtl-acciones">' + botones.join('') + '</div>';
   }
 
+  // ---------------------------------------------------------------- Cambiar estado (§1.4)
+
+  // Ventana "Cambiar estado": dibuja los estados a los que se puede pasar como tarjetas. opciones: [{ valor,
+  // etiqueta (HTML de la etiqueta de estado), texto (qué significa), deshabilitado, motivo (por qué no se puede) }].
+  // Cada tarjeta puede llevar campos propios en .sgtl-opcion-estado-detalle (por ejemplo, los de la entrega), que
+  // se ven solo con la tarjeta elegida. Con { opcional: true } elegir es optativo: volver a tocar la tarjeta
+  // elegida la desmarca.
+  function opcionesEstado(objetivo, nombre, opciones, ajustes) {
+    var contenedor = elemento(objetivo);
+    if (!contenedor) return;
+    contenedor.classList.remove('is-invalid');
+    contenedor.dataset.sgtlOpcional = ajustes && ajustes.opcional ? 'true' : 'false';
+    contenedor.innerHTML = (opciones || []).map(function (o) {
+      return '<div class="sgtl-opcion-estado' + (o.deshabilitado ? ' deshabilitada' : '') + '" data-valor="' + escapar(o.valor) + '">' +
+        '<label class="sgtl-opcion-estado-cabecera">' +
+        '<input class="form-check-input" type="radio" name="' + escapar(nombre) + '" value="' + escapar(o.valor) + '"' + (o.deshabilitado ? ' disabled' : '') + '>' +
+        '<span>' + (o.etiqueta || '') + '<span class="sgtl-opcion-estado-texto">' + escapar(o.texto || '') + '</span>' +
+        (o.deshabilitado && o.motivo ? '<span class="sgtl-opcion-estado-motivo">' + escapar(o.motivo) + '</span>' : '') +
+        '</span></label></div>';
+    }).join('');
+    if (contenedor.dataset.sgtlOpciones) return;
+    contenedor.dataset.sgtlOpciones = 'true';
+    var estabaElegida = null;
+    contenedor.addEventListener('pointerdown', function (evento) {
+      var cabecera = evento.target.closest('.sgtl-opcion-estado-cabecera');
+      var radio = cabecera && cabecera.querySelector('input');
+      estabaElegida = radio && radio.checked ? radio : null;
+    });
+    contenedor.addEventListener('click', function (evento) {
+      var radio = evento.target;
+      // Tocar la cabecera dispara dos clics: el de la etiqueta y después el del radio. Cuenta solo el del radio.
+      if (!radio.matches || !radio.matches('.sgtl-opcion-estado-cabecera input')) return;
+      var desmarcar = contenedor.dataset.sgtlOpcional === 'true' && radio === estabaElegida;
+      estabaElegida = null;
+      if (!desmarcar) return;
+      radio.checked = false;
+      radio.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    contenedor.addEventListener('change', function () {
+      contenedor.classList.remove('is-invalid');
+      Array.prototype.forEach.call(contenedor.querySelectorAll('.sgtl-opcion-estado'), function (tarjeta) {
+        tarjeta.classList.toggle('seleccionada', !!tarjeta.querySelector('input:checked'));
+      });
+    });
+  }
+
+  // Valor del estado elegido en la ventana, o '' si no se eligió ninguno.
+  function estadoElegido(objetivo) {
+    var contenedor = elemento(objetivo);
+    var elegido = contenedor && contenedor.querySelector('input:checked');
+    return elegido ? elegido.value : '';
+  }
+
   // ---------------------------------------------------------------- Tablas (§2.2)
 
   var TEXTOS = {
@@ -804,6 +857,8 @@
     colorEstado: colorEstado,
     botonFila: botonFila,
     accionesFila: accionesFila,
+    opcionesEstado: opcionesEstado,
+    estadoElegido: estadoElegido,
     textos: TEXTOS,
     tabla: tabla,
     fecha: fecha,

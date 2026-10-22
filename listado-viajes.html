@@ -238,6 +238,10 @@
                                 <span class="form-label d-block mb-0">Fecha de entrega</span>
                                 <p class="form-control-plaintext" id="detalleFechaEntrega"></p>
                             </div>
+                            <div class="col-12">
+                                <span class="form-label d-block mb-0">Evidencia de la entrega</span>
+                                <p class="form-control-plaintext" id="detalleEvidencia"></p>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -400,6 +404,10 @@
                 $('#detalleEntregaRukas').text(texto(viaje.Num_de_Carga));
                 $('#detalleResultado').text(texto(viaje.Resultado_Entrega));
                 $('#detalleFechaEntrega').text(texto(SGTL.fecha(viaje.Fecha_Entrega)));
+                // La misma evidencia que se adjunta en Gestionar viajes al marcarlo entregado.
+                $('#detalleEvidencia').html(viaje.Tiene_Evidencia
+                    ? '<i class="bi bi-paperclip" aria-hidden="true"></i> <a href="' + API + '/Viajes/' + encodeURIComponent(viaje.Viaje_ID) + '/Evidencia" target="_blank" rel="noopener">Ver evidencia adjunta</a>'
+                    : '—');
                 SGTL.modal('#DetallesViajeModal', 'show');
             }
 

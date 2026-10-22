@@ -497,9 +497,8 @@
             // Orden del design system (§1.4): editar, siguiente paso del circuito, eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: motivo }),
-                // Banderita gris, igual que en presupuestos (§1.4): cambia el estado. El texto sigue siendo el del modal
-                // "Estado y entrega del viaje" hasta que ese modal pase a la ventana de estados en tarjetas.
-                SGTL.botonFila('estado', { id: viaje.Viaje_ID, texto: 'Estado y entrega' }),
+                // Banderita gris, igual que en presupuestos (§1.4): abre "Cambiar estado", con los datos de la entrega.
+                SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: motivo }),
                 SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: tituloEliminar })
             ]);
         }
@@ -650,55 +649,65 @@
 
 
     <!-- Modal de estado y entrega del viaje -->
-    <div class="modal fade text-left" id="ModalEstadoViaje" tabindex="-1" role="dialog"
-        aria-labelledby="ModalEstadoViajeLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
+    <!-- Cambiar estado (§1.4): la misma ventana de tarjetas que presupuestos. Los datos de la entrega aparecen dentro
+         de la tarjeta que registra la entrega ("Entregado" o "Listo para facturar") o, si el viaje ya está en ese
+         estado, arriba, para completarlos o corregirlos. -->
+    <div class="modal fade" id="ModalEstadoViaje" tabindex="-1" aria-labelledby="ModalEstadoViajeLabel" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <form id="formEstadoViaje" class="modal-content" novalidate>
                 <div class="modal-header">
-                    <h5 class="modal-title" id="ModalEstadoViajeLabel">Estado y entrega del viaje</h5>
+                    <h5 class="modal-title" id="ModalEstadoViajeLabel">Cambiar estado del viaje</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="alertaEstadoViaje" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                    <div id="alertaEstadoViaje" class="alert alert-light-danger color-danger d-none" role="alert"></div>
                     <input type="hidden" id="estadoViajeId" value="">
-                    <p class="mb-2" id="estadoViajeResumen"></p>
+                    <p class="mb-1" id="estadoViajeResumen"></p>
                     <p class="mb-3">Estado actual: <span id="estadoViajeActual"></span></p>
-                    <div class="mb-3">
-                        <label for="estadoViajeNuevo" class="form-label">Nuevo estado</label>
-                        <select class="form-select" id="estadoViajeNuevo"></select>
-                        <small class="text-muted d-block mt-1" id="estadoViajeAyuda"></small>
+                    <div id="estadoViajeEntregaActual" class="d-none">
+                        <div class="form-label">Datos de la entrega</div>
+                        <div id="estadoViajeEntregaActualLugar" class="sgtl-opcion-estado-bloque mb-3"></div>
                     </div>
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label for="resultadoEntrega" class="form-label">Resultado de entrega <span class="text-muted" id="resultadoEntregaMarca">(opcional)</span></label>
-                            <select class="form-select" id="resultadoEntrega">
-                                <option value="">Sin informar</option>
-                                <option value="Completa">Completa</option>
-                                <option value="Parcial">Parcial</option>
-                                <option value="Rechazo">Rechazo</option>
-                            </select>
+                    <div class="form-label" id="estadoViajePasaA">Pasa a <span class="text-danger" id="estadoViajePasaAMarca">*</span></div>
+                    <div class="sgtl-opciones-estado" id="estadoViajeOpciones" role="radiogroup" aria-labelledby="estadoViajePasaA"></div>
+                    <div class="form-text" id="estadoViajePasaAAyuda"></div>
+
+                    <!-- Datos de la entrega: se mueven a su tarjeta o a "Datos de la entrega". -->
+                    <div class="d-none" id="estadoViajeDeposito">
+                        <div class="sgtl-opcion-estado-detalle" id="estadoViajeEntrega">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="resultadoEntrega" class="form-label">Resultado de la entrega <span id="resultadoEntregaMarca" class="text-danger">*</span></label>
+                                    <select class="form-select" id="resultadoEntrega">
+                                        <option value="">Seleccioná un resultado</option>
+                                        <option value="Completa">Completa</option>
+                                        <option value="Parcial">Parcial</option>
+                                        <option value="Rechazo">Rechazo</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label for="fechaEntrega" class="form-label">Fecha de entrega <span id="fechaEntregaMarca" class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="fechaEntrega" placeholder="DD/MM/AAAA" autocomplete="off">
+                                </div>
+                                <div class="col-12">
+                                    <label for="evidenciaArchivo" class="form-label">Evidencia de la entrega <span class="text-muted" id="evidenciaMarca">(recomendada)</span></label>
+                                    <div id="evidenciaActual" class="mb-2" style="display: none;">
+                                        <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                        <a href="#" id="evidenciaVer" target="_blank" rel="noopener">Ver evidencia adjunta</a>
+                                        <button type="button" class="btn btn-sm btn-link text-danger" id="evidenciaQuitarBtn" onclick="quitarEvidenciaViaje()">Quitar</button>
+                                    </div>
+                                    <input type="file" class="form-control" id="evidenciaArchivo" accept="image/jpeg,image/png,image/webp,application/pdf">
+                                    <div class="form-text" id="evidenciaAyuda"></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="fechaEntrega" class="form-label">Fecha de entrega <span class="text-muted" id="fechaEntregaMarca">(opcional)</span></label>
-                            <input type="text" class="form-control" id="fechaEntrega" placeholder="DD/MM/AAAA" autocomplete="off">
-                        </div>
-                    </div>
-                    <div id="grupoEvidencia" class="mb-1" style="display: none;">
-                        <label for="evidenciaArchivo" class="form-label">Evidencia de entrega <span class="text-muted">(recomendado)</span></label>
-                        <div id="evidenciaActual" class="mb-2" style="display: none;">
-                            <i class="bi bi-paperclip"></i>
-                            <a href="#" id="evidenciaVer" target="_blank" rel="noopener">Ver evidencia adjunta</a>
-                            <button type="button" class="btn btn-sm btn-link text-danger" id="evidenciaQuitarBtn" onclick="quitarEvidenciaViaje()">Quitar</button>
-                        </div>
-                        <input type="file" class="form-control" id="evidenciaArchivo" accept="image/jpeg,image/png,image/webp,application/pdf">
-                        <small class="text-muted">Remito firmado, foto de la entrega o conforme del cliente. JPG, PNG, WEBP o PDF hasta 5 MB.</small>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary ms-1" id="guardarEstadoBtn" onclick="confirmarEstadoViaje()">Guardar</button>
+                    <button type="submit" class="btn btn-primary" id="guardarEstadoBtn">Guardar</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -1199,60 +1208,118 @@
             });
         }
 
+        // Cambiar estado (banderita, §1.4): la misma ventana de tarjetas que presupuestos. Cada viaje pasa solo al
+        // estado anterior o al siguiente de su circuito; Facturado lo pone la factura y lo saca la nota de crédito.
         // Rukas: el control fino (salida, novedad, sobre) queda en Rukas; acá solo se marca si ya se puede facturar.
         const FLUJO_CON_PLATAFORMA = ['Registrado', 'Listo_para_facturar', 'Facturado'];
         // Directo: SGTL es el único registro del viaje.
         const FLUJO_DIRECTO = ['Registrado', 'En_viaje', 'Entregado', 'Facturado'];
-        const AYUDA_ESTADO = {
-            Registrado: 'Viaje cargado en SGTL.',
-            En_viaje: 'El camión salió con la carga.',
-            Entregado: 'Se entregó: indicá resultado y fecha, y adjuntá la evidencia (remito firmado, foto o conforme).',
-            Listo_para_facturar: 'La entrega ya figura en Rukas y el viaje tiene N° transporte SAP, remito, N° entrega y tarifa.',
-            Facturado: 'Se marca solo al emitir la factura de su proforma; si se anula con nota de crédito, vuelve al estado anterior.'
+        const ESTADOS_VIAJE = {
+            Registrado: { texto: 'Vuelve a quedar cargado y se puede editar todo.', aviso: 'registrado' },
+            En_viaje: { texto: 'El camión salió con la carga.', aviso: 'en viaje' },
+            Entregado: { texto: 'Se entregó. Indicá el resultado y la fecha, y adjuntá la evidencia.', aviso: 'entregado' },
+            Listo_para_facturar: { texto: 'La entrega ya figura en Rukas y el viaje tiene los números y la tarifa para facturar.', aviso: 'listo para facturar' }
         };
 
         function esDirecto(v) { return (v.Tipo_Cliente || 'Directo') !== 'Con_plataforma'; }
         function flujoDeViaje(v) { return esDirecto(v) ? FLUJO_DIRECTO : FLUJO_CON_PLATAFORMA; }
+        // El estado que registra la entrega: Entregado en directo (resultado y fecha obligatorios, con evidencia);
+        // Listo para facturar con plataforma (resultado y fecha opcionales, lo que diga Rukas).
+        function estadoDeEntrega(v) { return esDirecto(v) ? 'Entregado' : 'Listo_para_facturar'; }
+        // Ya está en ese estado: los datos de la entrega se completan o corrigen sin cambiar el estado.
+        function corrigeEntrega(v) { return v.Estado === estadoDeEntrega(v); }
+        // Volver a un estado anterior a la entrega borra el resultado y la fecha.
+        function antesDeLaEntrega(v, e) { var flujo = flujoDeViaje(v); return !!e && flujo.indexOf(e) < flujo.indexOf(estadoDeEntrega(v)); }
 
-        // Facturado lo pone y lo saca la proforma (generar / anular); desde acá no se entra ni se sale.
-        function opcionesEstado(flujo, actual) {
-            if (actual === 'Facturado') return ['Facturado'];
-            var i = flujo.indexOf(actual);
-            return flujo.filter(function (e, j) { return e !== 'Facturado' && (i < 0 || Math.abs(j - i) <= 1); });
+        function estadosPosibles(v) {
+            var flujo = flujoDeViaje(v), i = flujo.indexOf(v.Estado);
+            return flujo.filter(function (e, j) { return e !== 'Facturado' && e !== v.Estado && (i < 0 || Math.abs(j - i) <= 1); });
         }
+
+        // Lo que le falta a un viaje con plataforma para pasar a Listo para facturar (lo mismo que pide la API).
+        function faltanParaFacturar(v) {
+            var faltan = [];
+            if (!(v.Num_Transporte || '').trim()) faltan.push('N° transporte SAP');
+            if (!(v.Num_Remito || '').trim()) faltan.push('número de remito');
+            if (!(v.Num_de_Carga || '').trim()) faltan.push('N° entrega Rukas');
+            if (!(v.TarifaFijaID > 0) && !(v.TarifaKmID > 0)) faltan.push('tarifa');
+            return faltan;
+        }
+
+        function textoOpcionEstado(v, e) {
+            var texto = ESTADOS_VIAJE[e].texto;
+            if (e === 'En_viaje' && v.Estado === 'Entregado') texto = 'Todavía no se entregó.';
+            if (e === 'Registrado' && v.Estado === 'Listo_para_facturar') texto = 'Deja de estar listo para facturar y se puede editar todo.';
+            if (e === 'Listo_para_facturar') texto += ' Si querés, completá los datos de la entrega.';
+            if (antesDeLaEntrega(v, e) && (v.Resultado_Entrega || v.Fecha_Entrega)) {
+                texto += ' Se borran el resultado y la fecha de la entrega.' + (v.Tiene_Evidencia ? ' La evidencia queda adjunta.' : '');
+            }
+            return texto;
+        }
+
+        var viajeEstado = null;
 
         function abrirModalEstadoViaje(id) {
             var v = viajesPagina[id];
             if (!v) return;
-            $('#alertaEstadoViaje').hide().empty();
+            viajeEstado = v;
             $('#estadoViajeId').val(id);
-            $('#estadoViajeResumen').text('Viaje #' + v.Viaje_ID + ' · ' + (v.Cliente || '') + ' · ' + (v.Origen || '') + ' → ' + (v.Destino || '') +
+            $('#ModalEstadoViajeLabel').text('Cambiar estado del viaje #' + v.Viaje_ID);
+            $('#estadoViajeResumen').text((v.Cliente || '') + ' · ' + (v.Origen || '') + ' → ' + (v.Destino || '') +
                 (esDirecto(v) ? '' : ' · Transporte ' + textoRef(v.Num_Transporte)) + ' · Remito ' + textoRef(v.Num_Remito));
             $('#estadoViajeActual').html(badgeEstadoViaje(v.Estado));
 
-            var flujo = flujoDeViaje(v);
-            var sel = $('#estadoViajeNuevo').empty();
-            opcionesEstado(flujo, v.Estado).forEach(function (e) {
-                sel.append('<option value="' + e + '">' + escHtml(etiquetaEstado(e)) + (e === v.Estado ? ' (actual)' : '') + '</option>');
-            });
-            sel.val(v.Estado);
-            var facturado = v.Estado === 'Facturado';
-            $('#estadoViajeNuevo, #resultadoEntrega, #fechaEntrega, #guardarEstadoBtn').prop('disabled', facturado);
-            sincronizarFechasBloqueadas();
-            actualizarAyudaEstado();
-            if (facturado) $('#estadoViajeAyuda').text('Viaje facturado: para corregirlo anulá la proforma que lo incluye.');
+            // Los datos de la entrega vuelven a su lugar antes de redibujar las tarjetas (si no, se borrarían con ellas).
+            $('#estadoViajeDeposito').append($('#estadoViajeEntrega'));
+            SGTL.reiniciarFormulario('#formEstadoViaje', '#alertaEstadoViaje');
+            formularioEntrega.reiniciar();
+            var faltan = faltanParaFacturar(v);
+            SGTL.opcionesEstado('#estadoViajeOpciones', 'estadoViajeNuevo', estadosPosibles(v).map(function (e) {
+                var bloqueada = e === 'Listo_para_facturar' && faltan.length > 0;
+                return {
+                    valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: bloqueada,
+                    motivo: bloqueada ? 'Para marcarlo, editá el viaje y cargá: ' + faltan.join(', ') + '.' : ''
+                };
+            }), { opcional: corrigeEntrega(v) });
+
+            // Los datos de la entrega van dentro de la tarjeta que la registra o, si ya está en ese estado, arriba.
+            var opcional = corrigeEntrega(v);
+            $('#estadoViajeEntregaActual').toggleClass('d-none', !opcional);
+            $('#estadoViajePasaAMarca').toggleClass('d-none', opcional);
+            $('#estadoViajePasaAAyuda').text(opcional ? 'Dejalo sin elegir para guardar solo los datos de la entrega.' : '');
+            if (opcional) $('#estadoViajeEntregaActualLugar').append($('#estadoViajeEntrega'));
+            else $('#estadoViajeOpciones .sgtl-opcion-estado[data-valor="' + estadoDeEntrega(v) + '"]').append($('#estadoViajeEntrega'));
+            pedirEntrega(esDirecto(v));
 
             $('#resultadoEntrega').val(v.Resultado_Entrega || '');
             var fe = v.Fecha_Entrega ? String(v.Fecha_Entrega).substring(0, 10) : '';
-            if (window.fpEntrega) fpEntrega.setDate(fe || null, false); else $('#fechaEntrega').val(fe);
-
+            var inicio = v.Fecha_Inicio ? String(v.Fecha_Inicio).substring(0, 10) : null;
+            if (window.fpEntrega) { fpEntrega.set('minDate', inicio); fpEntrega.setDate(fe || null, false); } else $('#fechaEntrega').val(fe);
             $('#evidenciaArchivo').val('');
-            $('#grupoEvidencia').toggle(esDirecto(v));
             $('#evidenciaActual').toggle(!!v.Tiene_Evidencia);
             $('#evidenciaVer').attr('href', API_VIAJES + '/Viajes/' + id + '/Evidencia');
-            $('#evidenciaQuitarBtn').toggle(v.Estado !== 'Facturado');
-            $('#evidenciaArchivo').prop('disabled', v.Estado === 'Facturado');
-            $('#ModalEstadoViaje').modal('show');
+            bloquearEntrega(false);
+            SGTL.modal('#ModalEstadoViaje', 'show');
+        }
+
+        // Directo: resultado y fecha obligatorios y evidencia recomendada (SGTL es la única constancia). Con plataforma,
+        // todo opcional: la constancia está en Rukas y acá se adjunta solo para tener el viaje completo.
+        function pedirEntrega(obligatoria) {
+            reglasEntrega.resultado.requerido = obligatoria ? 'Seleccioná el resultado de la entrega.' : '';
+            reglasEntrega.fecha.requerido = obligatoria ? 'Elegí la fecha de entrega.' : '';
+            $('#resultadoEntregaMarca, #fechaEntregaMarca').toggleClass('text-danger', obligatoria).toggleClass('text-muted', !obligatoria)
+                .text(obligatoria ? '*' : '(opcional)');
+            $('#evidenciaMarca').text(obligatoria ? '(recomendada)' : '(opcional)');
+            $('#evidenciaAyuda').text((obligatoria ? 'Remito firmado, foto de la entrega o conforme del cliente.'
+                : 'La constancia ya está en Rukas; adjuntala si querés tener el viaje completo en SGTL.') + ' JPG, PNG, WEBP o PDF hasta 5 MB.');
+        }
+
+        // Si elige volver a un estado anterior a la entrega, se borran el resultado y la fecha: los campos quedan grises.
+        function bloquearEntrega(bloquear) {
+            $('#resultadoEntrega, #fechaEntrega, #evidenciaArchivo, #evidenciaQuitarBtn').prop('disabled', bloquear);
+            $('#estadoViajeEntregaActualLugar').toggleClass('deshabilitada', bloquear);
+            if (bloquear) ['#resultadoEntrega', '#fechaEntrega', '#evidenciaArchivo'].forEach(function (c) { SGTL.limpiarError(c); });
+            sincronizarFechasBloqueadas();
         }
 
         function leerArchivoBase64(file) {
@@ -1296,57 +1363,73 @@
             });
         }
 
-        function actualizarAyudaEstado() {
-            var nuevo = $('#estadoViajeNuevo').val();
-            var v = viajesPagina[$('#estadoViajeId').val()] || {};
-            var obligatorio = esDirecto(v) && nuevo === 'Entregado';
-            $('#estadoViajeAyuda').text(AYUDA_ESTADO[nuevo] || '');
-            $('#resultadoEntregaMarca, #fechaEntregaMarca')
-                .toggleClass('text-muted', !obligatorio).toggleClass('text-danger', obligatorio)
-                .text(obligatorio ? '*' : '(opcional)');
-        }
+        // Datos de la entrega (§6.3): cada campo se marca en rojo con su mensaje. Si son obligatorios lo decide pedirEntrega.
+        var reglasEntrega = {
+            resultado: { id: 'resultadoEntrega' },
+            fecha: {
+                id: 'fechaEntrega',
+                validar: function (fecha) {
+                    var inicio = viajeEstado && viajeEstado.Fecha_Inicio ? String(viajeEstado.Fecha_Inicio).substring(0, 10) : '';
+                    return inicio && fecha < inicio ? 'No puede ser anterior al inicio del viaje (' + SGTL.fecha(inicio) + ').' : '';
+                }
+            }
+        };
+        var formularioEntrega = SGTL.validador([
+            reglasEntrega.resultado,
+            reglasEntrega.fecha,
+            {
+                id: 'evidenciaArchivo',
+                validar: function (valor, campo) {
+                    var file = (campo.files || [])[0];
+                    if (!file) return '';
+                    if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].indexOf(file.type) < 0) return 'Tiene que ser una imagen (JPG, PNG o WEBP) o un PDF.';
+                    return file.size > 5 * 1024 * 1024 ? 'No puede pesar más de 5 MB.' : '';
+                }
+            }
+        ]);
 
-        function confirmarEstadoViaje() {
+        function confirmarEstadoViaje(evento) {
+            if (evento) evento.preventDefault();
             var id = $('#estadoViajeId').val();
             var v = viajesPagina[id];
             if (!v) return;
+            var elegido = SGTL.estadoElegido('#estadoViajeOpciones');
+            var nuevo = elegido || (corrigeEntrega(v) ? v.Estado : '');
+            if (!nuevo) {
+                $('#estadoViajeOpciones').addClass('is-invalid');
+                SGTL.avisoFormulario('#alertaEstadoViaje', 'Elegí el estado nuevo.');
+                return;
+            }
+            // Los datos de la entrega se toman de los campos en el estado que la registra y se borran si vuelve a uno
+            // anterior; en los demás casos se mandan los que ya tenía (la API guarda lo que recibe).
+            var conEntrega = nuevo === estadoDeEntrega(v);
+            if (conEntrega) {
+                formularioEntrega.validarTodo();
+                if (!SGTL.revisarFormulario('#formEstadoViaje', '#alertaEstadoViaje')) return;
+            }
+            var borra = antesDeLaEntrega(v, nuevo);
             var dto = {
-                Estado: $('#estadoViajeNuevo').val(),
-                Resultado_Entrega: $('#resultadoEntrega').val() || null,
-                Fecha_Entrega: $('#fechaEntrega').val() || null,
+                Estado: nuevo,
+                Resultado_Entrega: conEntrega ? ($('#resultadoEntrega').val() || null) : (borra ? null : (v.Resultado_Entrega || null)),
+                Fecha_Entrega: conEntrega ? ($('#fechaEntrega').val() || null) : (borra ? null : (v.Fecha_Entrega ? String(v.Fecha_Entrega).substring(0, 10) : null)),
                 Usuario: usuarioActual()
             };
-            var falt = [];
-            if (!esDirecto(v) && dto.Estado === 'Listo_para_facturar') {
-                var sinNumeros = [];
-                if (!(v.Num_Transporte || '').trim()) sinNumeros.push('N° transporte SAP');
-                if (!(v.Num_Remito || '').trim()) sinNumeros.push('número de remito');
-                if (!(v.Num_de_Carga || '').trim()) sinNumeros.push('N° entrega Rukas');
-                if (sinNumeros.length) falt.push('al viaje le falta ' + sinNumeros.join(', ') + ' (editalo antes de marcarlo para facturar)');
-            }
-            if (esDirecto(v) && dto.Estado === 'Entregado') {
-                if (!dto.Resultado_Entrega) falt.push('indicá el resultado de la entrega');
-                if (!dto.Fecha_Entrega) falt.push('indicá la fecha de entrega');
-            }
-            var file = esDirecto(v) ? ($('#evidenciaArchivo')[0].files || [])[0] : null;
-            if (file) {
-                if (['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].indexOf(file.type) < 0) falt.push('la evidencia debe ser una imagen (JPG, PNG, WEBP) o un PDF');
-                else if (file.size > 5 * 1024 * 1024) falt.push('la evidencia no puede pesar más de 5 MB');
-            }
-            if (falt.length) { $('#alertaEstadoViaje').text('No se puede guardar: ' + falt.join('; ') + '.').show(); return; }
+            var file = conEntrega ? ($('#evidenciaArchivo')[0].files || [])[0] : null;
 
-            if (esDirecto(v) && dto.Estado === 'Entregado' && dto.Estado !== v.Estado && !file && !v.Tiene_Evidencia) {
+            // Directo: al marcarlo entregado sin evidencia, pregunta (corregir los datos después no vuelve a preguntar).
+            if (conEntrega && esDirecto(v) && nuevo !== v.Estado && !file && !v.Tiene_Evidencia) {
                 SGTL.confirmar({
                     titulo: '¿Guardar la entrega sin evidencia?',
                     mensaje: 'No adjuntaste evidencia de la entrega (remito firmado, foto o conforme). Es lo único que queda como constancia para este cliente.',
                     verbo: 'Guardar sin evidencia'
-                }).then(function (seguir) { if (seguir) guardarEstadoViaje(id, dto, file); });
+                }).then(function (seguir) { if (seguir) guardarEstadoViaje(v, dto, file); });
                 return;
             }
-            guardarEstadoViaje(id, dto, file);
+            guardarEstadoViaje(v, dto, file);
         }
 
-        function guardarEstadoViaje(id, dto, file) {
+        function guardarEstadoViaje(v, dto, file) {
+            var id = v.Viaje_ID;
             var listo = SGTL.procesando('#guardarEstadoBtn');
             var subida = file ? subirEvidenciaViaje(id, file) : $.Deferred().resolve().promise();
             $.when(subida)
@@ -1360,13 +1443,15 @@
                 })
                 .done(function () {
                     listo();
-                    $('#ModalEstadoViaje').modal('hide');
+                    SGTL.modal('#ModalEstadoViaje', 'hide');
                     buscarViajes(currentPage);
-                    SGTL.toastExito('Estado del viaje guardado.');
+                    var flujo = flujoDeViaje(v);
+                    if (dto.Estado === v.Estado) SGTL.toastExito('Datos de la entrega del viaje #' + id + ' guardados.');
+                    else SGTL.toastExito('Viaje #' + id + (flujo.indexOf(dto.Estado) < flujo.indexOf(v.Estado) ? ' vuelve a ' : ' ') + ESTADOS_VIAJE[dto.Estado].aviso + '.');
                 })
                 .fail(function (xhr) {
                     listo();
-                    $('#alertaEstadoViaje').text(xhr && xhr.status !== undefined ? parsearError(xhr) : 'No se pudo leer el archivo seleccionado.').show();
+                    SGTL.avisoFormulario('#alertaEstadoViaje', xhr && xhr.status !== undefined ? parsearError(xhr) : 'No se pudo leer el archivo seleccionado.');
                 });
         }
 
@@ -1386,7 +1471,12 @@
                 window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
                 window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
             }
-            $('#estadoViajeNuevo').on('change', actualizarAyudaEstado);
+            $('#formEstadoViaje').on('submit', confirmarEstadoViaje);
+            $('#estadoViajeOpciones').on('change', function () {
+                SGTL.avisoFormulario('#alertaEstadoViaje', '');
+                var v = viajesPagina[$('#estadoViajeId').val()];
+                if (v && corrigeEntrega(v)) bloquearEntrega(antesDeLaEntrega(v, SGTL.estadoElegido('#estadoViajeOpciones')));
+            });
             $('#ModalAltaViaje').on('shown.bs.modal', function () {
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
                 else { initMapaViaje().catch(function () { msgMapa('No se pudo cargar Google Maps. Podés ingresar la distancia a mano.', 'error'); usarDistanciaManual(true, 'No se pudo cargar Google Maps.'); }); }

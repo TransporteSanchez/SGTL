@@ -201,24 +201,19 @@
         el('tituloEstadoPresupuesto').textContent = 'Cambiar estado del presupuesto #' + p.id;
         el('estadoPresupuestoResumen').textContent = p.cliente + ' · ' + p.origen + ' → ' + p.destino + ' · ' + SGTL.monto(p.importe || 0);
         el('estadoPresupuestoActual').innerHTML = etiquetaEstado(p);
-        el('estadoPresupuestoOpciones').classList.remove('is-invalid');
-        el('estadoPresupuestoOpciones').innerHTML = Object.keys(ESTADOS).filter(function (e) { return e !== actual; }).map(function (e) {
-            return '<label class="sgtl-opcion-estado"><input class="form-check-input" type="radio" name="estadoPresupuestoNuevo" value="' + e + '">' +
-                '<span>' + SGTL.estado(e, e, ESTADOS[e].color) + '<span class="sgtl-opcion-estado-texto">' + SGTL.escapar(ESTADOS[e].texto) + '</span></span></label>';
-        }).join('');
+        SGTL.opcionesEstado('#estadoPresupuestoOpciones', 'estadoPresupuestoNuevo', Object.keys(ESTADOS).filter(function (e) { return e !== actual; }).map(function (e) {
+            return { valor: e, etiqueta: SGTL.estado(e, e, ESTADOS[e].color), texto: ESTADOS[e].texto };
+        }));
         SGTL.avisoFormulario('#avisoEstadoPresupuesto', '');
         SGTL.modal('#modalEstadoPresupuesto', 'show');
     }
-    el('estadoPresupuestoOpciones').addEventListener('change', function () {
-        this.classList.remove('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', '');
-        this.querySelectorAll('.sgtl-opcion-estado').forEach(function (opcion) { opcion.classList.toggle('seleccionada', opcion.querySelector('input').checked); });
-    });
+    el('estadoPresupuestoOpciones').addEventListener('change', function () { SGTL.avisoFormulario('#avisoEstadoPresupuesto', ''); });
     el('formEstadoPresupuesto').addEventListener('submit', function (evento) {
         evento.preventDefault();
-        var p = presupuestoEstado, elegido = el('estadoPresupuestoOpciones').querySelector('input:checked');
+        var p = presupuestoEstado, estado = SGTL.estadoElegido('#estadoPresupuestoOpciones');
         if (!p) return;
-        if (!elegido) { el('estadoPresupuestoOpciones').classList.add('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', 'Elegí el estado nuevo.'); return; }
-        var estado = elegido.value, listo = SGTL.procesando('#btnGuardarEstadoPresupuesto');
+        if (!estado) { el('estadoPresupuestoOpciones').classList.add('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', 'Elegí el estado nuevo.'); return; }
+        var listo = SGTL.procesando('#btnGuardarEstadoPresupuesto');
         pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) }).then(function () {
             listo(); SGTL.modal('#modalEstadoPresupuesto', 'hide');
             SGTL.toastExito('Presupuesto #' + p.id + ' ' + ESTADOS[estado].aviso + '.'); listar();
