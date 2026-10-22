@@ -3,6 +3,7 @@
 
     var API = 'http://localhost:50222/api/facturacion-config';
     var datos = { sucursales: [], numeradores: [], tipos: [] };
+    var formularios = {};
 
     function porId(id) { return document.getElementById(id); }
     function token() { try { return localStorage.getItem('token') || ''; } catch (e) { return ''; } }
@@ -13,20 +14,24 @@
         if (token()) resultado.Authorization = 'Bearer ' + token();
         return resultado;
     }
-    function solicitud(ruta, metodo, cuerpo) {
+    // El campo "error" de esta API ya viene redactado para el usuario; el "Message" de Web API solo se
+    // muestra cuando rechaza un dato (400 o 409), porque si no es técnico (§9).
+    function solicitud(ruta, metodo, cuerpo, porDefecto) {
+        porDefecto = porDefecto || 'No se pudo completar la operación. Probá de nuevo.';
         return fetch(API + ruta, { method: metodo || 'GET', headers: encabezados(cuerpo !== undefined), body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) })
             .then(function (respuesta) { return respuesta.text().then(function (texto) {
                 var json; try { json = texto ? JSON.parse(texto) : {}; } catch (e) { json = {}; }
-                if (!respuesta.ok) throw new Error(json.error || json.Message || 'No se pudo completar la operación.');
+                if (!respuesta.ok) {
+                    var mensaje = json.error || ((respuesta.status === 400 || respuesta.status === 409) && json.Message) || porDefecto;
+                    if (respuesta.status === 401) mensaje = SGTL.mensajeError({ status: 401 }, porDefecto);
+                    throw new Error(mensaje);
+                }
                 return json;
-            }); });
+            }); }, function () {
+                throw new Error('No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.');
+            });
     }
-    function feedback(tipo, texto) {
-        var aviso = porId('facturacionFeedback');
-        aviso.className = 'alert alert-' + tipo;
-        aviso.textContent = texto;
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    function avisarError(ex) { SGTL.toastError((ex && ex.message) || 'No se pudo completar la operación. Probá de nuevo.'); }
     function estado(activo) { return SGTL.estado(activo ? 'Activo' : 'Inactivo'); }
     function opciones(items, campoId, etiqueta, valorSeleccionado) {
         return items.filter(function (item) { return item.Activa !== false && item.Activo !== false; }).map(function (item) {
@@ -34,36 +39,43 @@
             return '<option value="' + Number(valor) + '"' + (Number(valor) === Number(valorSeleccionado) ? ' selected' : '') + '>' + escapar(etiqueta(item)) + '</option>';
         }).join('');
     }
+    // Acciones de cada fila (§1.4): editar y el interruptor activar / inactivar.
+    function acciones(tipo, id, activo) {
+        return SGTL.accionesFila([
+            SGTL.botonFila('editar', { id: id, datos: { tipo: tipo } }),
+            SGTL.botonFila(activo ? 'inactivar' : 'activar', { id: id, datos: { tipo: tipo } })
+        ]);
+    }
     function renderSucursales() {
-        porId('sucursalesBody').innerHTML = datos.sucursales.map(function (item) {
-            return '<tr><td>' + escapar(item.Codigo) + '</td><td>' + escapar(item.Nombre) + '</td><td>' + estado(item.Activa) + '</td><td class="text-end">' +
-                '<button class="btn btn-sm btn-outline-primary me-1" data-accion="editar-sucursal" data-id="' + item.SucursalID + '">Editar</button>' +
-                (item.Activa ? '<button class="btn btn-sm btn-outline-danger" data-accion="baja-sucursal" data-id="' + item.SucursalID + '">Desactivar</button>' : '') + '</td></tr>';
-        }).join('') || '<tr><td colspan="4" class="text-center text-muted py-3">No hay sucursales cargadas.</td></tr>';
+        if (!datos.sucursales.length) { SGTL.tabla.vacia('#sucursalesBody', 4, 'Todavía no hay sucursales cargadas.'); return; }
+        SGTL.tabla.llenar('#sucursalesBody', datos.sucursales.map(function (item) {
+            return '<tr><td>' + escapar(item.Codigo) + '</td><td>' + escapar(item.Nombre) + '</td><td class="text-center">' + estado(item.Activa) + '</td>' +
+                '<td class="text-center">' + acciones('sucursal', item.SucursalID, item.Activa) + '</td></tr>';
+        }).join(''));
     }
     function renderNumeradores() {
-        porId('numeradoresBody').innerHTML = datos.numeradores.map(function (item) {
-            return '<tr><td>' + escapar(item.Nombre) + '</td><td>' + Number(item.UltimoNumero).toString().padStart(8, '0') + '</td><td>' + estado(item.Activo) + '</td><td class="text-end">' +
-                '<button class="btn btn-sm btn-outline-primary me-1" data-accion="editar-numerador" data-id="' + item.NumeradorID + '">Editar</button>' +
-                (item.Activo ? '<button class="btn btn-sm btn-outline-danger" data-accion="baja-numerador" data-id="' + item.NumeradorID + '">Desactivar</button>' : '') + '</td></tr>';
-        }).join('') || '<tr><td colspan="4" class="text-center text-muted py-3">No hay numeradores cargados.</td></tr>';
+        if (!datos.numeradores.length) { SGTL.tabla.vacia('#numeradoresBody', 4, 'Todavía no hay numeradores cargados.'); return; }
+        SGTL.tabla.llenar('#numeradoresBody', datos.numeradores.map(function (item) {
+            return '<tr><td>' + escapar(item.Nombre) + '</td><td>' + Number(item.UltimoNumero).toString().padStart(8, '0') + '</td><td class="text-center">' + estado(item.Activo) + '</td>' +
+                '<td class="text-center">' + acciones('numerador', item.NumeradorID, item.Activo) + '</td></tr>';
+        }).join(''));
     }
     function renderSelectoresTipo() {
-        porId('tipoSucursal').innerHTML = '<option value="">Seleccionar</option>' + opciones(datos.sucursales, 'SucursalID', function (item) { return item.Codigo + ' · ' + item.Nombre; });
-        porId('tipoNumerador').innerHTML = '<option value="">Seleccionar</option>' + opciones(datos.numeradores, 'NumeradorID', function (item) { return item.Nombre; });
+        porId('tipoSucursal').innerHTML = '<option value="">Seleccioná una sucursal</option>' + opciones(datos.sucursales, 'SucursalID', function (item) { return item.Codigo + ' · ' + item.Nombre; });
+        porId('tipoNumerador').innerHTML = '<option value="">Seleccioná un numerador</option>' + opciones(datos.numeradores, 'NumeradorID', function (item) { return item.Nombre; });
     }
     function impacto(item) { return item.Impacto === 'C' ? 'Crédito' : 'Deuda'; }
     function renderTipos() {
-        porId('tiposBody').innerHTML = datos.tipos.map(function (item) {
+        if (!datos.tipos.length) { SGTL.tabla.vacia('#tiposBody', 8, 'Todavía no hay tipos de comprobante cargados.'); return; }
+        SGTL.tabla.llenar('#tiposBody', datos.tipos.map(function (item) {
             return '<tr><td><strong>' + escapar(item.Tipo) + '</strong></td><td>' + escapar(item.Descripcion) + '</td><td>' + impacto(item) + '</td><td>' + escapar(item.LetraPredeterminada || '—') + '</td>' +
-                '<td>' + escapar(item.Sucursal || '—') + '</td><td>' + escapar(item.Numerador || '—') + '</td><td>' + estado(item.Activo) + '</td><td class="text-end">' +
-                '<button class="btn btn-sm btn-outline-primary me-1" data-accion="editar-tipo" data-id="' + escapar(item.Tipo) + '">Editar</button>' +
-                (item.Activo ? '<button class="btn btn-sm btn-outline-danger" data-accion="baja-tipo" data-id="' + escapar(item.Tipo) + '">Desactivar</button>' : '') + '</td></tr>';
-        }).join('') || '<tr><td colspan="8" class="text-center text-muted py-3">No hay tipos de comprobante cargados.</td></tr>';
+                '<td>' + escapar(item.Sucursal || '—') + '</td><td>' + escapar(item.Numerador || '—') + '</td><td class="text-center">' + estado(item.Activo) + '</td>' +
+                '<td class="text-center">' + acciones('tipo', item.Tipo, item.Activo) + '</td></tr>';
+        }).join(''));
     }
     function render() { renderSucursales(); renderNumeradores(); renderSelectoresTipo(); renderTipos(); }
-    function resetSucursal() { porId('sucursalForm').reset(); porId('sucursalId').value = ''; porId('sucursalActiva').checked = true; }
-    function resetNumerador() { porId('numeradorForm').reset(); porId('numeradorId').value = ''; porId('numeradorUltimo').value = '0'; porId('numeradorActivo').checked = true; }
+    function resetSucursal() { SGTL.reiniciarFormulario('#sucursalForm'); porId('sucursalId').value = ''; porId('sucursalActiva').checked = true; }
+    function resetNumerador() { SGTL.reiniciarFormulario('#numeradorForm'); porId('numeradorId').value = ''; porId('numeradorUltimo').value = '0'; porId('numeradorActivo').checked = true; }
     function sincronizarLetraTipo() {
         var esRecibo = porId('tipoCodigo').value.trim().toUpperCase() === 'REC';
         porId('tipoLetra').disabled = esRecibo;
@@ -71,7 +83,7 @@
         else if (porId('tipoLetra').value === 'X') porId('tipoLetra').value = 'A';
     }
     function resetTipo() {
-        porId('tipoForm').reset();
+        SGTL.reiniciarFormulario('#tipoForm');
         porId('tipoId').value = '';
         porId('tipoCodigo').disabled = false;
         porId('tipoImpacto').disabled = false;
@@ -85,54 +97,71 @@
             solicitud('/sucursales?incluirInactivas=true'), solicitud('/numeradores?incluirInactivos=true'), solicitud('/tipos-comprobante')
         ]).then(function (resultado) {
             datos.sucursales = resultado[0] || []; datos.numeradores = resultado[1] || []; datos.tipos = resultado[2] || [];
-            render(); if (mensaje) feedback('success', mensaje);
-        }).catch(function (ex) { feedback('danger', ex.message || 'No se pudo cargar la configuración.'); });
+            render(); if (mensaje) SGTL.toastExito(mensaje);
+        }).catch(function (ex) {
+            ['#sucursalesBody', '#numeradoresBody'].forEach(function (cuerpo) { SGTL.tabla.vacia(cuerpo, 4, 'No se pudo cargar la configuración.'); });
+            SGTL.tabla.vacia('#tiposBody', 8, 'No se pudo cargar la configuración.');
+            SGTL.toastError(ex.message || 'No se pudo cargar la configuración. Probá de nuevo.');
+        });
+    }
+    // Guarda con la ruedita en el botón (§8) y avisa con un toast (§5.1).
+    function guardar(formulario, ruta, id, cuerpo, mensaje, reiniciar) {
+        formularios[formulario].validarTodo();
+        if (!SGTL.revisarFormulario('#' + formulario)) return;
+        var listo = SGTL.procesando(porId(formulario).querySelector('button[type="submit"]'));
+        solicitud(ruta + (id ? '/' + encodeURIComponent(id) : ''), id ? 'PUT' : 'POST', cuerpo)
+            .then(function () { listo(); reiniciar(); return recargar(mensaje); })
+            .catch(function (ex) { listo(); avisarError(ex); });
+    }
+    function cuerpoSucursal(item, activa) {
+        return { Codigo: item.Codigo, Nombre: item.Nombre, Activa: activa };
+    }
+    function cuerpoNumerador(item, activo) {
+        return { Nombre: item.Nombre, UltimoNumero: Number(item.UltimoNumero || 0), Activo: activo };
+    }
+    function cuerpoTipo(item, activo) {
+        return {
+            Tipo: item.Tipo, Descripcion: item.Descripcion, Impacto: item.Impacto, LetraPredeterminada: item.LetraPredeterminada,
+            SucursalID: Number(item.SucursalID || 0), NumeradorID: Number(item.NumeradorID || 0), Activo: activo
+        };
     }
     function guardarSucursal(evento) {
         evento.preventDefault();
-        var id = porId('sucursalId').value;
-        var cuerpo = { Codigo: porId('sucursalCodigo').value.trim(), Nombre: porId('sucursalNombre').value.trim(), Activa: porId('sucursalActiva').checked };
-        solicitud('/sucursales' + (id ? '/' + encodeURIComponent(id) : ''), id ? 'PUT' : 'POST', cuerpo)
-            .then(function () { resetSucursal(); return recargar('Sucursal guardada correctamente.'); })
-            .catch(function (ex) { feedback('danger', ex.message); });
+        var item = { Codigo: porId('sucursalCodigo').value.trim(), Nombre: porId('sucursalNombre').value.trim() };
+        guardar('sucursalForm', '/sucursales', porId('sucursalId').value, cuerpoSucursal(item, porId('sucursalActiva').checked),
+            'Sucursal guardada.', resetSucursal);
     }
     function guardarNumerador(evento) {
         evento.preventDefault();
-        var id = porId('numeradorId').value;
-        var cuerpo = { Nombre: porId('numeradorNombre').value.trim(), UltimoNumero: Number(porId('numeradorUltimo').value || 0), Activo: porId('numeradorActivo').checked };
-        solicitud('/numeradores' + (id ? '/' + encodeURIComponent(id) : ''), id ? 'PUT' : 'POST', cuerpo)
-            .then(function () { resetNumerador(); return recargar('Numerador guardado correctamente.'); })
-            .catch(function (ex) { feedback('danger', ex.message); });
+        var item = { Nombre: porId('numeradorNombre').value.trim(), UltimoNumero: porId('numeradorUltimo').value };
+        guardar('numeradorForm', '/numeradores', porId('numeradorId').value, cuerpoNumerador(item, porId('numeradorActivo').checked),
+            'Numerador guardado.', resetNumerador);
     }
     function guardarTipo(evento) {
         evento.preventDefault();
-        var id = porId('tipoId').value;
         var tipo = porId('tipoCodigo').value.trim().toUpperCase();
-        var cuerpo = {
-            Tipo: tipo,
-            Descripcion: porId('tipoDescripcion').value.trim(),
-            Impacto: porId('tipoImpacto').value,
-            LetraPredeterminada: porId('tipoLetra').value,
-            SucursalID: Number(porId('tipoSucursal').value || 0),
-            NumeradorID: Number(porId('tipoNumerador').value || 0),
-            Activo: porId('tipoActivo').checked
+        var item = {
+            Tipo: tipo, Descripcion: porId('tipoDescripcion').value.trim(), Impacto: porId('tipoImpacto').value,
+            LetraPredeterminada: porId('tipoLetra').value, SucursalID: porId('tipoSucursal').value, NumeradorID: porId('tipoNumerador').value
         };
-        solicitud('/tipos-comprobante' + (id ? '/' + encodeURIComponent(id) : ''), id ? 'PUT' : 'POST', cuerpo)
-            .then(function () { resetTipo(); return recargar('Tipo de comprobante ' + tipo + ' guardado correctamente.'); })
-            .catch(function (ex) { feedback('danger', ex.message); });
+        guardar('tipoForm', '/tipos-comprobante', porId('tipoId').value, cuerpoTipo(item, porId('tipoActivo').checked),
+            'Tipo de comprobante ' + tipo + ' guardado.', resetTipo);
     }
     function editarSucursal(id) {
         var item = datos.sucursales.filter(function (x) { return Number(x.SucursalID) === Number(id); })[0]; if (!item) return;
+        resetSucursal();
         porId('sucursalId').value = item.SucursalID; porId('sucursalCodigo').value = item.Codigo; porId('sucursalNombre').value = item.Nombre; porId('sucursalActiva').checked = item.Activa;
         porId('sucursalNombre').focus();
     }
     function editarNumerador(id) {
         var item = datos.numeradores.filter(function (x) { return Number(x.NumeradorID) === Number(id); })[0]; if (!item) return;
+        resetNumerador();
         porId('numeradorId').value = item.NumeradorID; porId('numeradorNombre').value = item.Nombre; porId('numeradorUltimo').value = item.UltimoNumero; porId('numeradorActivo').checked = item.Activo;
         porId('numeradorNombre').focus();
     }
     function editarTipo(id) {
         var item = datos.tipos.filter(function (x) { return x.Tipo === id; })[0]; if (!item) return;
+        resetTipo();
         porId('tipoId').value = item.Tipo;
         porId('tipoCodigo').value = item.Tipo;
         porId('tipoCodigo').disabled = true;
@@ -146,25 +175,75 @@
         sincronizarLetraTipo();
         porId('tipoDescripcion').focus();
     }
-    function acciones(evento) {
-        var boton = evento.target.closest('button[data-accion]'); if (!boton) return;
-        var accion = boton.getAttribute('data-accion'), id = boton.getAttribute('data-id');
-        if (accion === 'editar-sucursal') editarSucursal(id);
-        else if (accion === 'editar-numerador') editarNumerador(id);
-        else if (accion === 'editar-tipo') editarTipo(id);
-        else if (accion === 'baja-sucursal' && window.confirm('¿Desactivar esta sucursal?')) solicitud('/sucursales/' + encodeURIComponent(id), 'DELETE').then(function () { return recargar('Sucursal desactivada.'); }).catch(function (ex) { feedback('danger', ex.message); });
-        else if (accion === 'baja-numerador' && window.confirm('¿Desactivar este numerador?')) solicitud('/numeradores/' + encodeURIComponent(id), 'DELETE').then(function () { return recargar('Numerador desactivado.'); }).catch(function (ex) { feedback('danger', ex.message); });
-        else if (accion === 'baja-tipo' && window.confirm('¿Desactivar este tipo de comprobante?')) solicitud('/tipos-comprobante/' + encodeURIComponent(id), 'DELETE').then(function () { return recargar('Tipo de comprobante desactivado.'); }).catch(function (ex) { feedback('danger', ex.message); });
+    // Activar e inactivar no piden confirmación (§5.2): se hace y se avisa. Inactivar usa la baja lógica de
+    // la API (DELETE); activar vuelve a guardar el registro con Activo en true.
+    var CAMBIOS_ESTADO = {
+        sucursal: {
+            ruta: '/sucursales', nombre: 'Sucursal', femenino: true,
+            buscar: function (id) { return datos.sucursales.filter(function (x) { return Number(x.SucursalID) === Number(id); })[0]; },
+            cuerpo: cuerpoSucursal
+        },
+        numerador: {
+            ruta: '/numeradores', nombre: 'Numerador',
+            buscar: function (id) { return datos.numeradores.filter(function (x) { return Number(x.NumeradorID) === Number(id); })[0]; },
+            cuerpo: cuerpoNumerador
+        },
+        tipo: {
+            ruta: '/tipos-comprobante', nombre: 'Tipo de comprobante',
+            buscar: function (id) { return datos.tipos.filter(function (x) { return x.Tipo === id; })[0]; },
+            cuerpo: cuerpoTipo
+        }
+    };
+    function cambiarEstado(boton, tipo, id, activar) {
+        var config = CAMBIOS_ESTADO[tipo];
+        var item = config.buscar(id);
+        if (!item) return;
+        var listo = SGTL.procesando(boton);
+        var pedido = activar
+            ? solicitud(config.ruta + '/' + encodeURIComponent(id), 'PUT', config.cuerpo(item, true))
+            : solicitud(config.ruta + '/' + encodeURIComponent(id), 'DELETE');
+        var participio = (activar ? 'activad' : 'inactivad') + (config.femenino ? 'a' : 'o');
+        pedido.then(function () { listo(); return recargar(config.nombre + ' ' + participio + '.'); })
+            .catch(function (ex) { listo(); avisarError(ex); });
+    }
+    function alHacerClic(evento) {
+        var boton = evento.target.closest('#sucursalesBody [data-accion], #numeradoresBody [data-accion], #tiposBody [data-accion]');
+        if (!boton) return;
+        var accion = boton.getAttribute('data-accion'), tipo = boton.getAttribute('data-tipo'), id = boton.getAttribute('data-id');
+        if (accion === 'editar') {
+            if (tipo === 'sucursal') editarSucursal(id);
+            else if (tipo === 'numerador') editarNumerador(id);
+            else editarTipo(id);
+        } else if (accion === 'activar' || accion === 'inactivar') {
+            cambiarEstado(boton, tipo, id, accion === 'activar');
+        }
     }
     function inicializar() {
+        formularios.sucursalForm = SGTL.validador([
+            { id: 'sucursalCodigo', requerido: 'Completá el código.', soloNumeros: true, max: 4 },
+            { id: 'sucursalNombre', requerido: 'Completá el nombre.' }
+        ]);
+        formularios.numeradorForm = SGTL.validador([
+            { id: 'numeradorNombre', requerido: 'Completá el nombre.' },
+            { id: 'numeradorUltimo', requerido: 'Completá el último número.', soloNumeros: true, max: 8 }
+        ]);
+        formularios.tipoForm = SGTL.validador([
+            { id: 'tipoCodigo', requerido: 'Completá el código.', mayusculas: true, max: 3 },
+            { id: 'tipoDescripcion', requerido: 'Completá la descripción.' },
+            { id: 'tipoSucursal', requerido: 'Seleccioná una sucursal.' },
+            { id: 'tipoNumerador', requerido: 'Seleccioná un numerador.' }
+        ]);
         porId('sucursalForm').addEventListener('submit', guardarSucursal);
         porId('numeradorForm').addEventListener('submit', guardarNumerador);
         porId('tipoForm').addEventListener('submit', guardarTipo);
         porId('cancelarSucursal').addEventListener('click', resetSucursal);
         porId('cancelarNumerador').addEventListener('click', resetNumerador);
         porId('cancelarTipo').addEventListener('click', resetTipo);
-        porId('tipoCodigo').addEventListener('input', function () { this.value = this.value.toUpperCase(); sincronizarLetraTipo(); });
-        document.addEventListener('click', acciones);
+        porId('tipoCodigo').addEventListener('input', sincronizarLetraTipo);
+        document.addEventListener('click', alHacerClic);
+        SGTL.tabla.cargando('#sucursalesBody', 4);
+        SGTL.tabla.cargando('#numeradoresBody', 4);
+        SGTL.tabla.cargando('#tiposBody', 8);
         resetTipo(); recargar();
     }
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', inicializar); else inicializar();

@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas y cuenta corriente al día; faltan configuración, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente y Gestionar facturación al día; faltan e-mail, WhatsApp, contenido, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -969,4 +969,17 @@ También: el paginador compartido no se ocultaba sin resultados en ninguna panta
 - [ ] Ojo de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
   y avisa "Comprobante enviado a …" (con un correo de prueba).
 - [ ] Exportar (ícono): modal "Exportar" con Vista previa, Excel y PDF; los tres bajan lo filtrado.
+
+**Gestionar facturación (commit "Configuración: design system en Gestionar facturación", pantalla de Facu):**
+las filas de sucursales, numeradores y tipos de comprobante usan los botones del sistema (lápiz y el interruptor
+Activar / Inactivar, sin confirmación, §5.2) en lugar de "Editar" / "Desactivar" con texto y `confirm()`; el
+interruptor también reactiva (vuelve a guardar el registro con Activo). El aviso fijo de arriba pasa a toasts. Los
+formularios validan como el resto (campo en rojo con "Completá el código.") en lugar del globito del navegador,
+con asterisco rojo y "Seleccioná una sucursal". Tablas rayadas con Estado y Acciones centrados, "Todavía no hay …
+cargadas." y errores sin textos técnicos.
+- [ ] Guardar una sucursal sin datos: Código y Nombre en rojo con su mensaje; el cursor va a Código.
+- [ ] Interruptor de una sucursal activa → toast "Sucursal inactivada." y la etiqueta pasa a Inactivo; otra vez →
+  "Sucursal activada.". Igual con un numerador y un tipo de comprobante (con datos de prueba).
+- [ ] Lápiz de un tipo de comprobante: carga el formulario con el código bloqueado; la cruz gris lo limpia.
+- [ ] Guardar con un código repetido: toast rojo con el mensaje de la API.
 
