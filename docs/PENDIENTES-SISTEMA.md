@@ -1124,12 +1124,14 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   ventana para cambiar la contraseña"):** la API ya tenía `POST api/Usuarios/CambiarContrasena` (usuario,
   contraseña actual y nueva: de 8 a 20 caracteres, con letras y números, distinta de la actual) y faltaba la
   pantalla. Ahora la opción abre "Cambiar contraseña" (actual, nueva y repetir), con las mismas reglas, la
-  validación del sistema y un toast al terminar. La API pasa sus mensajes a voseo ("tiene que tener…"): **hay que
-  recompilar**. El código por WhatsApp (§15) sigue como mejora para después.
+  validación del sistema. Al terminar avisa "Contraseña cambiada. Volvé a iniciar sesión con la nueva." y a los
+  2,5 segundos cierra la sesión (decisión de Rocío, 22/10: así se confirma que se sabe la nueva; una sesión abierta
+  en otra computadora sigue hasta que vence el token). La API pasa sus mensajes a voseo ("tiene que tener…"):
+  **hay que recompilar**. El código por WhatsApp (§15) sigue como mejora para después.
   - [ ] Probar en la VM: menú del usuario → Cambiar contraseña → Guardar vacío (los tres campos en rojo); una
     nueva corta o sin números (mensaje debajo del campo); actual incorrecta ("La contraseña actual es
-    incorrecta." arriba del formulario); con datos correctos → toast "Contraseña cambiada." y volver a entrar con
-    la nueva. **Usar un usuario de prueba**, no el de Rocío ni los del equipo.
+    incorrecta." arriba del formulario); con datos correctos → toast, vuelve solo al login y se entra con la
+    nueva. **Usar un usuario de prueba**, no el de Rocío ni los del equipo.
 - [ ] **Las contraseñas se guardan sin cifrar** (hallazgo del 22/10, seguridad). `USUARIOS.Contraseña` tiene el
   texto tal cual: el login y el cambio de contraseña lo comparan directo en la consulta. Lo correcto es guardar un
   hash con sal (por ejemplo PBKDF2, que trae .NET Framework) y comparar el hash. Implica: cambiar el login, el

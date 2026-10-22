@@ -84,25 +84,30 @@ function setupUserInfo() {
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function(event) {
       event.preventDefault();
-
-      // La API de logout solo confirma la operación; la sesión se conserva en el navegador.
-      ['token', 'username', 'nombre', 'apellido', 'userRole'].forEach(function (key) {
-        localStorage.removeItem(key);
-      });
-      fetch('http://localhost:50222/api/logout', {
-        method: 'POST',
-        keepalive: true,
-        headers: {
-          'Authorization': 'Bearer ' + token
-        }
-      }).catch(error => {
-        console.error('Error al realizar la solicitud de logout:', error);
-      });
-      window.location.replace('Login.html');
+      cerrarSesion();
     });
   } else {
     console.warn('Botón de logout no encontrado.');
   }
+}
+
+// Cierra la sesión: borra los datos del navegador, avisa a la API y vuelve al login.
+// La API de logout solo confirma la operación; la sesión se conserva en el navegador.
+function cerrarSesion() {
+  const token = localStorage.getItem('token');
+  ['token', 'username', 'nombre', 'apellido', 'userRole'].forEach(function (key) {
+    localStorage.removeItem(key);
+  });
+  fetch('http://localhost:50222/api/logout', {
+    method: 'POST',
+    keepalive: true,
+    headers: {
+      'Authorization': 'Bearer ' + token
+    }
+  }).catch(error => {
+    console.error('Error al realizar la solicitud de logout:', error);
+  });
+  window.location.replace('Login.html');
 }
 
 // Función para cargar el color de fondo dinámico desde la API `GestionContenido`
@@ -212,7 +217,9 @@ function guardarContrasena(event) {
     if (respuesta.ok) {
       listo();
       SGTL.modal('#modalCambiarContrasena', 'hide');
-      SGTL.toastExito('Contraseña cambiada.');
+      // Cierra la sesión para que se vuelva a entrar con la contraseña nueva (así se confirma que se la sabe).
+      SGTL.toastExito('Contraseña cambiada. Volvé a iniciar sesión con la nueva.');
+      setTimeout(cerrarSesion, 2500);
       return;
     }
     // Los 400 y 404 traen un texto para el usuario ("La contraseña actual es incorrecta."); el resto, no (§9).
