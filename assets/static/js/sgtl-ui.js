@@ -112,6 +112,61 @@
 
   document.addEventListener('show.bs.modal', ocultarTooltips);
 
+  // ---------------------------------------------------------------- Información de una fila (§4.3)
+
+  // Lo que acompaña al estado de una fila (en qué proforma está un viaje, qué falta para generar una proforma) va
+  // en un ícono chico al lado del estado que abre un globito al hacer clic (pedido de Rocío, 22/10), no en más
+  // etiquetas. nivel: 'info' (gris), 'espera' (naranja: se espera a alguien), 'urgente' (rojo: falta resolver
+  // algo) o 'listo' (verde). contenido: HTML ya escapado. etiqueta: lo que dice el lector de pantalla.
+  var NIVELES_INFO = {
+    info: 'bi-info-circle',
+    espera: 'bi-clock',
+    urgente: 'bi-exclamation-circle',
+    listo: 'bi-check-circle'
+  };
+
+  function botonInfo(nivel, contenido, etiqueta) {
+    var icono = NIVELES_INFO[nivel] || NIVELES_INFO.info;
+    return '<button type="button" class="sgtl-info sgtl-info-' + escapar(nivel || 'info') + '" aria-label="' + escapar(etiqueta || 'Ver más información') +
+      '" aria-expanded="false" data-sgtl-info="' + escapar(contenido) + '"><i class="bi ' + icono + '" aria-hidden="true"></i></button>';
+  }
+
+  // El estado con su ícono a continuación. Va en todas las filas de la columna, tengan ícono o no: el estado queda
+  // en el centro con un lugar igual a cada lado, así las etiquetas de estado siempre quedan alineadas.
+  function conInfo(estadoHtml, botonHtml) {
+    return '<span class="sgtl-con-info"><span class="sgtl-con-info-lugar"></span>' + estadoHtml +
+      '<span class="sgtl-con-info-lugar">' + (botonHtml || '') + '</span></span>';
+  }
+
+  function cerrarInfo(boton) {
+    boton.setAttribute('aria-expanded', 'false');
+    componente('popover', boton, document.body.contains(boton) ? 'hide' : 'dispose');
+  }
+
+  // Un globito abierto a la vez; se cierra con otro clic (afuera o en el mismo ícono) o con Escape.
+  document.addEventListener('click', function (evento) {
+    var boton = evento.target && evento.target.closest ? evento.target.closest('.sgtl-info') : null;
+    Array.prototype.forEach.call(document.querySelectorAll('.sgtl-info[aria-expanded="true"]'), function (abierto) {
+      if (abierto !== boton) cerrarInfo(abierto);
+    });
+    if (!boton) return;
+    if (boton.getAttribute('aria-expanded') === 'true') { cerrarInfo(boton); return; }
+    if (!boton.dataset.sgtlInfoListo) {
+      boton.dataset.sgtlInfoListo = 'true';
+      componente('popover', boton, undefined, {
+        html: true, content: boton.getAttribute('data-sgtl-info'), trigger: 'manual', placement: 'left',
+        container: 'body', customClass: 'sgtl-globo'
+      });
+    }
+    boton.setAttribute('aria-expanded', 'true');
+    componente('popover', boton, 'show');
+  });
+
+  document.addEventListener('keydown', function (evento) {
+    if (evento.key !== 'Escape') return;
+    Array.prototype.forEach.call(document.querySelectorAll('.sgtl-info[aria-expanded="true"]'), cerrarInfo);
+  });
+
   // ---------------------------------------------------------------- Avisos (§5.1)
 
   function contenedorToasts() {
@@ -949,6 +1004,8 @@
     revisarFormulario: revisarFormulario,
     reiniciarFormulario: reiniciarFormulario,
     textoRegistro: textoRegistro,
+    botonInfo: botonInfo,
+    conInfo: conInfo,
     descargarCSV: descargarCSV
   };
 })();

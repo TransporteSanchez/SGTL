@@ -59,7 +59,9 @@ AGENTS.md"):
    "la factura", "el recibo", "la nota de crédito", "la proforma" dentro de un texto), títulos y botones sin
    punto, mensajes con punto, sin inglés a la vista. **Nunca un error técnico** en pantalla ni en los mensajes de
    la API. (§9)
-9. **Estados con `SGTL.estado`** (etiqueta de color según su significado); no inventes colores. (§4)
+9. **Estados con `SGTL.estado`** (etiqueta de color según su significado); no inventes colores. Lo que acompaña al
+   estado en una tabla (en qué proforma está, qué falta resolver) va en el ícono que abre un globito
+   (`SGTL.botonInfo`), no en más etiquetas. (§4)
 10. **Fechas con `SGTL.selectorFecha` / `SGTL.rangoFechas`:** se ven DD/MM/AAAA (con hora, DD/MM/AAAA HH:MM) y
     a la API va AAAA-MM-DD. Nunca `type="date"`. (§7.1, §7.2)
 11. **Montos:** se muestran con `SGTL.monto` ("$ 1.234,56"); los que se escriben son

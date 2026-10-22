@@ -26,7 +26,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Elegir de una lista larga (cliente, chofer, §6.3) | `SelectClientePredictivo.inicializar(select, { placeholder, textoVacio, idCampo })` (`assets/static/js/select-cliente-predictivo.js`) |
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
-| Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)` |
+| Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)`; lo que acompaña al estado: `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))` |
 | Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
 | Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
@@ -276,6 +276,17 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 
 - **Etiquetas informativas** que no son un estado ("En PF-00000006" en viajes): blancas con borde
   gris, sin color (`badge rounded-pill bg-white text-dark border`).
+- **Lo que acompaña al estado en una tabla** (en qué proforma está un viaje, de qué presupuesto viene, qué falta
+  para generar una proforma) va en un **ícono chico al lado del estado que abre un globito** al hacer clic, no en
+  más etiquetas (pedido de Rocío, 22/10): `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))`. El
+  ícono es liviano, sin fondo, y su color dice qué pasa: gris (`bi-info-circle`) si es solo información; naranja
+  (`bi-clock`) si se espera a alguien (Rukas); rojo (`bi-exclamation-circle`) si falta resolver algo; verde
+  (`bi-check-circle`) si está listo. Siempre con un texto adentro. Se cierra con otro clic o con Escape. Así están
+  Gestionar viajes y Gestionar proformas.
+- **Si lo que acompaña es otro estado** (el resultado de la entrega: "Parcial", "Con rechazo"), va como etiqueta
+  debajo del estado, en su propio renglón (`<div class="mt-1">`), no una al lado de la otra (dashboard). En un título
+  de modal van una al lado de la otra. Presupuestos todavía muestra "Viaje #N" debajo del estado: pendiente pasarlo
+  al ícono (módulo de Facu).
 
 ---
 
@@ -345,9 +356,15 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Pie:** "Cancelar" gris claro (`btn btn-light-secondary`) y, a su derecha, el botón principal
   con el verbo: "Guardar" (`btn-primary`) en alta y edición, "Eliminar" / "Anular" en rojo
   (`btn-danger`), "Generar", "Emitir recibo". **Nunca "Confirmar".**
+- **Un botón del pie que todavía no se puede usar** (22/10, primero en la proforma de Rukas) queda deshabilitado y
+  su globito dice por qué ("Primero elegí el Excel de Rukas", "Para generar, resolvé las 3 diferencias"), como los de
+  la fila (§1.4): va en un `span.sgtl-envoltura-deshabilitado`. Nada de notas grises en el pie explicándolo. Un botón
+  que en ese paso no hace nada distinto de otro no se muestra ("Guardar borrador" mientras elegir el Excel ya lo
+  guarda).
 - **Detalle:** solo "Cerrar" en el pie, además de la cruz.
 - **Cómo se arma un Ver detalle** (22/10, opción B de Rocío): con los mismos bloques que su formulario
-  (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en dos columnas de bloques en pantalla ancha y una en el celular. Cada dato
+  (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en filas de a dos bloques que empiezan a la misma altura
+  (`.sgtl-detalle-grilla`; uno ancho ocupa la fila con `.sgtl-detalle-ancho`) y en una columna en el celular. Cada dato
   lleva su nombre chico arriba y el valor en texto abajo (`.sgtl-dato`, `.sgtl-dato-etiqueta`, `.sgtl-dato-valor`); un
   dato vacío se ve "—". El estado va en el título, al lado del nombre ("Ver detalle del viaje #46" + la etiqueta), con
   las etiquetas informativas que correspondan. Abajo, en chico, quién lo registró y quién lo modificó
@@ -373,6 +390,7 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros.
   Al hacer clic muestra la lista completa, que se recorre con la rueda o las flechas (Enter elige); escribir
   filtra por cualquier parte del texto (nombre, apellido o DNI). No hace falta saberse el dato de memoria (22/10).
+  Una etiqueta de la opción ("Rukas") se ve en la lista y, elegida, adentro del mismo campo, no debajo.
 - **Ayudas:** el texto gris dentro del campo es un ejemplo ("30111222"); las instrucciones van
   debajo, en chico (`form-text`): "Sin puntos ni espacios".
 - **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",

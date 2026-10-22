@@ -50,12 +50,12 @@
     white-space: nowrap;
 }
 
-/* El tooltip de un botón deshabilitado va en un span que lo envuelve. */
-.sgtl-acciones .sgtl-envoltura-deshabilitado {
+/* El tooltip de un botón deshabilitado va en un span que lo envuelve (en la fila y en el pie de un modal). */
+.sgtl-envoltura-deshabilitado {
     display: inline-block;
 }
 
-.sgtl-acciones .sgtl-envoltura-deshabilitado .btn {
+.sgtl-envoltura-deshabilitado .btn {
     pointer-events: none;
 }
 
@@ -651,9 +651,11 @@ body .sgtl-acciones .btn-sm {
     height: 2rem;
 }
 
-/* Íconos centrados. Mazer baja el dibujo de los íconos (vertical-align: sub): en los botones vuelve a
-   la alineación de Bootstrap Icons y, en los de solo ícono (los que llevan aria-label, §1.5), queda en el
-   centro exacto de un botón cuadrado de la altura de los campos. */
+/* Íconos centrados. Mazer baja el dibujo de los íconos (vertical-align: sub) y, al lado de un texto (títulos,
+   enlaces, etiquetas, notas, tablas), quedan más abajo que las letras: vuelven a la alineación de Bootstrap
+   Icons en todo el sistema (22/10; antes solo en los botones). En los de solo ícono (los que llevan aria-label,
+   §1.5) queda en el centro exacto de un botón cuadrado de la altura de los campos. */
+body .bi::before,
 body .btn .bi::before {
     vertical-align: -.125em;
 }
@@ -692,13 +694,15 @@ body .alert {
     font-size: .9rem;
 }
 
+/* El ícono va en el margen izquierdo y a la altura de la primera línea del texto, con cualquier relleno (py-2) y
+   tamaño de letra (small): flota en el relleno y su alto de línea es el del aviso (1,5 veces su letra). */
 body .alert::before {
-    position: absolute;
-    top: .72rem;
-    left: 1rem;
+    float: left;
+    width: 1.6rem;
+    margin-left: -1.6rem;
     font-family: "bootstrap-icons";
-    font-size: 1rem;
-    line-height: 1.4;
+    font-size: 1.1em;
+    line-height: 1.3636em;
 }
 
 body .alert.alert-info { border-color: #d9e0f6; background-color: #eef1fb; color: #2f4593; }
@@ -1147,6 +1151,28 @@ body .cliente-select-predictivo-menu button.activa {
     font-size: .8125rem;
 }
 
+/* Los bloques van en filas de a dos (cada par empieza a la misma altura); uno ancho ocupa la fila entera. En el
+   celular, una columna. */
+.sgtl-detalle-grilla {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem 1.5rem;
+}
+
+.sgtl-detalle-grilla > .sgtl-bloque + .sgtl-bloque {
+    margin-top: 0;
+}
+
+.sgtl-detalle-grilla > .sgtl-detalle-ancho {
+    grid-column: 1 / -1;
+}
+
+@media (max-width: 767.98px) {
+    .sgtl-detalle-grilla {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 .sgtl-detalle-pie {
     color: var(--sgtl-texto-suave);
     font-size: .78rem;
@@ -1157,3 +1183,112 @@ body .cliente-select-predictivo-menu button.activa {
     content: "—";
     color: var(--sgtl-texto-suave);
 }
+
+/* §4.3 Información de una fila (22/10): ícono chico al lado del estado que abre un globito (SGTL.botonInfo).
+   Liviano: sin fondo ni borde; el color dice si es solo información (gris), si se espera a alguien (naranja), si
+   falta resolver algo (rojo) o si está listo (verde). */
+/* El estado en el centro y un lugar igual a cada lado: el ícono va en el de la derecha y el estado no se corre. */
+.sgtl-con-info {
+    display: inline-grid;
+    grid-template-columns: 1.5rem auto 1.5rem;
+    align-items: center;
+    column-gap: .25rem;
+    vertical-align: middle;
+}
+
+.sgtl-con-info-lugar {
+    display: inline-flex;
+    justify-content: center;
+}
+
+.sgtl-info {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background-color: transparent;
+    color: #98a2b3;
+    line-height: 1;
+}
+
+.sgtl-info .bi {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+body .sgtl-info .bi::before {
+    vertical-align: 0;
+}
+
+/* Íconos dentro de un círculo (zona del archivo, pasos): centrados en el círculo, sin el ajuste que los alinea con
+   el texto de al lado. La plantilla les da una caja fija de 1rem; con otro tamaño de ícono, el dibujo se salía de la
+   caja (el del Excel quedaba bajo y el tilde de los pasos, alto). La caja mide lo mismo que el ícono. */
+body .sgtl-zona-icono .bi,
+body .sgtl-paso-numero .bi {
+    width: 1em;
+    height: 1em;
+    line-height: 1;
+}
+
+body .sgtl-zona-icono .bi::before,
+body .sgtl-paso-numero .bi::before {
+    vertical-align: 0;
+}
+
+.sgtl-info:hover,
+.sgtl-info:focus-visible,
+.sgtl-info[aria-expanded="true"] {
+    background-color: #f2f4f7;
+    color: #667085;
+    outline: 0;
+}
+
+.sgtl-info.sgtl-info-espera { color: #d39b00; }
+.sgtl-info.sgtl-info-urgente { color: #dc3545; }
+.sgtl-info.sgtl-info-listo { color: #198754; }
+
+/* El globito: tarjeta blanca con borde fino y sombra suave (§12). */
+.popover.sgtl-globo {
+    max-width: 300px;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: 12px;
+    box-shadow: 0 16px 32px -12px rgba(16, 24, 40, .28);
+    font-family: inherit;
+}
+
+.popover.sgtl-globo .popover-body {
+    padding: .7rem .85rem;
+    color: var(--sgtl-texto);
+    font-size: .8125rem;
+}
+
+.sgtl-globo .suave {
+    color: var(--sgtl-texto-suave);
+}
+
+.sgtl-info-linea {
+    display: flex;
+    align-items: baseline;
+    gap: .5rem;
+}
+
+.sgtl-info-linea + .sgtl-info-linea {
+    margin-top: .35rem;
+}
+
+.sgtl-info-punto {
+    flex: none;
+    width: .5rem;
+    height: .5rem;
+    border-radius: 50%;
+    background-color: #98a2b3;
+}
+
+.sgtl-info-punto.rojo { background-color: #dc3545; }
+.sgtl-info-punto.amarillo { background-color: #d39b00; }
+.sgtl-info-punto.azul { background-color: #435ebe; }
+.sgtl-info-punto.verde { background-color: #198754; }
