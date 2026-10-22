@@ -43,6 +43,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | Commits `cea8407`, `72c1600` y `dd6034c` en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1558,8 +1559,8 @@ tiempo estimado, porcentajes y avisos"):**
   - [x] Probar en la VM: ver la FAC-00000001 → letra, sucursal y "21%"; una factura de proforma con líneas de distinto IVA
     → "—". El PDF de la factura sale igual que antes. **OK en la reprueba (22/10)**: letra "A", sucursal "0001" y "21%";
     el caso de IVA distinto no se probó.
-- [ ] **Viajes:** km con punto en las tablas ("67.5") y Gestionar viajes sin "Ver detalle": los ve Rocío en su trabajo
-  de viajes (otra sesión).
+- [x] **Viajes:** km con punto en las tablas ("67.5") y Gestionar viajes sin "Ver detalle". **Hecho (22/10) en el
+  trabajo de viajes (§24):** km con coma en las dos tablas y el ojo primero en cada fila de Gestionar viajes.
 - [ ] **F2, PDF del manual:** después de lo demás.
 
 **Cambio pedido por Rocío antes de repetir la prueba (22/10, commit "Facturación: Gestionar tipos de comprobante pasa
@@ -1633,3 +1634,85 @@ y mandarles este mensaje. **Hecho (22/10):** `facugodoy`, `fedemontenegro` y `ma
 >    - para charlar entre todos: fechas previstas y reales en presupuestos y viajes, y si en presupuestos se pueden
 >      cargar los km a mano cuando Google falla.
 
+---
+
+## 24. Viajes: registrar, editar y ver detalle — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (22/10)
+
+Pedido de Rocío: mejorar registrar un viaje, editarlo y su detalle. Se relevaron los tres modales con una API simulada
+(datos inventados) y Rocío aprobó la propuesta con capturas en tres vueltas. Commits en `rocionuvoli`: `cea8407`
+"Viajes: registrar y editar en bloques, con importe y errores por campo", `72c1600` "Viajes y datos maestros: Ver
+detalle con los bloques del formulario" y `dd6034c` "Viajes: km con coma en las tablas de Gestionar y Listar viajes".
+**Sin cambios en C# ni en la base:** en la VM alcanza con `git pull` y Ctrl+F5.
+
+**Decisiones de Rocío (22/10):**
+- Chofer y cliente se eligen de una lista que se recorre o se filtra escribiendo (el buscador de los filtros): no hace
+  falta saberse el DNI o el apellido.
+- Rukas se dice una vez: etiqueta "Rukas" en la lista y debajo del cliente, sin "(Rukas)" en el nombre. Los números
+  conservan su nombre ("N° transporte SAP", "N° entrega Rukas") porque dicen de dónde sale el dato.
+- El aviso de WhatsApp va a la vista, debajo del chofer y con su nombre.
+- Tarifa: "Por km" elegida por defecto; si la ruta tiene tarifa fija, una línea gris lo dice; sin tarifa, aviso
+  amarillo (no rojo con un enlace verde).
+- Lo que no se puede editar se ve como texto, nunca como campo deshabilitado: un bloque entero, en un recuadro gris;
+  un campo suelto, su etiqueta y el valor. Anotado en el §6.3 del design system junto con el subtítulo de bloque.
+- Ver detalle con los bloques del formulario (opción B) en viajes y también en choferes, camiones, clientes y
+  usuarios. Anotado en el §6.2.
+- Camión: solo los activos. Resultado de la entrega: Completa verde, Parcial amarillo, Rechazo rojo.
+- El aviso de cambios sin guardar queda para decidirlo en todos los flujos (abajo).
+
+**Qué cambió:**
+- **Registrar / Editar viaje** (`gestion-viajes.html`): cuatro bloques con subtítulo (Recorrido · Fechas, camión y
+  chofer · Tarifa · Números de referencia) y la ruta a la derecha (km grandes con coma, dirección corta, Recalcular como
+  ícono; si Google falla, distancia y motivo ahí mismo). Tarifa con el importe neto y su cálculo ("$ 576.665,00 neto ·
+  $ 1.450,00 por km × 397,7 km"); al editar, el importe guardado (o el del presupuesto). Errores en cada campo con
+  "Revisá los campos marcados." arriba; el modal no se cierra con un clic afuera. Al editar: título "Editar viaje #N"
+  con el estado y las etiquetas, lo fijo como recuadro gris y un aviso de una línea ("Ya salió: solo se completa el
+  número de remito."). Se corrigieron los "+" de origen y destino, que quedaban habilitados en un viaje de Rukas listo
+  para facturar. Lo que se manda a la API es igual que antes.
+- **Buscador compartido** (`select-cliente-predictivo.js`): flechas y Enter, texto de "sin resultados" y etiqueta por
+  opción. Las flechas y Enter llegan también a los filtros de cliente de las demás pantallas (proformas, cuenta
+  corriente, tarifas, orígenes y destinos, presupuestos): no cambia qué hacen.
+- **Ver detalle del viaje** (`viaje-detalle.js` nuevo): uno solo para Listar viajes, Gestionar viajes (el ojo, primero
+  en la fila) y el dashboard (con "Abrir en Gestionar viajes"). Recorrido con direcciones, fechas con hora, importe,
+  entrega con su etiqueta, números de Rukas solo en esos clientes y quién lo registró y lo modificó.
+- **Ver detalle de choferes, camiones, clientes y usuarios:** el mismo armado (estado en el título, bloques en dos
+  columnas, cada dato con su nombre arriba; los vacíos con "—"). Mismos datos; la fecha de alta pasa al pie con el
+  usuario y la última modificación.
+- **Tablas de viajes:** km con coma ("402,3").
+
+**Probar en la VM** (Ctrl+F5, sin recompilar):
+- [ ] 1. Registrar viaje: elegir el cliente de la lista (probar flechas y Enter, y escribir parte del nombre); los de
+  Rukas tienen la etiqueta y no "(Rukas)" en el nombre. Chofer: clic → lista de activos por apellido; escribir parte del
+  DNI filtra; al elegirlo aparece el aviso azul "Al guardar, … recibe la hoja de ruta por WhatsApp.". Camión: no
+  aparecen los inactivos.
+- [ ] 2. Tarifa: arranca en Por km con el importe; si la ruta tiene fija, la línea gris lo dice; elegir Fija en una
+  ruta sin tarifa fija → aviso amarillo con el enlace a Gestionar tarifas; Guardar → error en rojo en la tarifa.
+- [ ] 3. Guardar con todo vacío → cada campo con su error y "Revisá los campos marcados." arriba; un clic afuera no
+  cierra el modal.
+- [ ] 4. **Con OK de Rocío (crea un viaje real y le manda WhatsApp al chofer):** registrar un viaje de prueba → toast
+  "Viaje registrado." y el del WhatsApp.
+- [ ] 5. Editar uno En viaje: recorrido, fechas/camión/chofer y tarifa como recuadros grises, solo el remito editable,
+  aviso "Ya salió: …". Uno de Rukas en Listo para facturar: tarifa y km editables, sin "+". Uno generado desde un
+  presupuesto (el #28; el #31 si todavía no se borró): aviso azul con el número del presupuesto y su importe.
+- [ ] 6. `gestion-viajes.html?viaje=N` (desde el control de la proforma de Rukas) sigue abriendo el viaje.
+- [ ] 7. Ver detalle del viaje desde Listar viajes, desde Gestionar viajes (también en un facturado) y desde el
+  dashboard (clic en un viaje de la tabla o del calendario, con "Abrir en Gestionar viajes").
+- [ ] 8. Ver detalle en Listar choferes, camiones, clientes y usuarios: estado en el título, bloques, tablas de camión
+  y chofer asignados como antes, pie con alta y modificación.
+- [ ] 9. Las tablas de Gestionar y Listar viajes muestran los km con coma.
+- [ ] 10. Un filtro de cliente de otra pantalla (Gestionar proformas o cuenta corriente) sigue andando, ahora también
+  con flechas y Enter.
+- [ ] 11. En el celular (o la ventana angosta): el modal de viaje a pantalla completa y los detalles en una columna.
+
+**Pendientes que dejó este trabajo:**
+- [ ] **Cambios sin guardar en todos los flujos** (decisión de UX de Rocío): hoy solo proformas avisa, dentro del modal,
+  y no convence cómo se ve. Ver si va adentro o como un modal sobre otro, y aplicarlo igual en todos los formularios.
+- [ ] **Lo que no se edita, en otras pantallas:** Registrar proforma (número y condición de IVA como campos de solo
+  lectura) y el recibo de cuenta corriente (cliente deshabilitado). Pasarlos a texto (§6.3). Módulo de Facu: coordinar.
+- [ ] **Subtítulo de bloque compartido:** proformas (`.bloque-titulo`) y cuenta corriente (`.cc-block-title`) tienen su
+  propia copia; pasarlas a `.sgtl-bloque-titulo`. Módulo de Facu.
+- [ ] **Auditoría, "Ver detalle del movimiento":** quedó con su armado (es un visor técnico con los valores anteriores
+  y nuevos). Decidir si pasa a bloques.
+- [ ] **Fechas en el celular:** el selector usa el del teléfono y se ve "06:00 a. m." (flatpickr en modo móvil), en
+  todo el sistema; el §7.1 pide 24 h.
+- [ ] **Mensajes de la API de viajes sin voseo** ("Debe seleccionar un cliente.", `ViajesController.ValidarViaje`). La
+  pantalla los frena antes, así que casi no se ven; corregirlos la próxima vez que se toque el controller.
