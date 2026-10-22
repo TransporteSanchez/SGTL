@@ -1283,7 +1283,7 @@ evidencia es el remito: firmado con el resultado (completa o parcial) o, en un r
   una foto: guarda ("Viaje #N entregado.") y aparece el clip.
 - [ ] Abrirlo de nuevo: no está "Quitar", la ayuda dice "Para cambiarla, elegí otro archivo."; elegir otro archivo
   y guardar lo reemplaza (el enlace abre el nuevo).
-- [ ] Viaje #38 (directo entregado sin evidencia; parece de prueba, preguntarle a Facu): abrir la banderita,
-  cambiar la fecha sin adjuntar → evidencia en rojo; adjuntar una imagen o PDF → guarda y aparece el clip. Con eso
-  no queda ningún directo entregado sin evidencia.
+- [x] Viaje #38 (directo entregado sin evidencia): abrir la banderita, cambiar la fecha sin adjuntar → evidencia
+  en rojo; adjuntar una imagen o PDF → guarda y aparece el clip. **Probado por Rocío en la VM el 22/10: OK.** Ya no
+  queda ningún directo entregado sin evidencia.
 - [ ] Un viaje con plataforma: la evidencia sigue opcional y "Quitar" está.
