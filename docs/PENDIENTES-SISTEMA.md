@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); queda anotado que las contraseñas se guardan sin cifrar | **Pusheado** (`1015f66`, 22/10) | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); queda anotado que las contraseñas se guardan sin cifrar | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1144,11 +1144,10 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   - [ ] Probar en la VM: escribir parte de un cliente no filtra hasta tocar Buscar o Enter; la cruz vuelve a
     mostrar todos; un texto que no está → "No hay resultados para los filtros elegidos.".
 
-### Presupuestos: filtros, paginación y cambio de estado (22/10) — EN PRUEBA, SIN PUSH
+### Presupuestos: filtros, paginación y cambio de estado (22/10) — APROBADO POR ROCÍO Y PUSHEADO, FALTA PROBAR EN VM
 
 Commit "Presupuestos: filtros, paginación y cambiar estado con la banderita". Pedido de Rocío: que la pantalla
-siga la misma estructura que las demás. **Rocío lo tiene que aprobar antes de subirlo** (lo simula en la Mac con
-la API falsa).
+siga la misma estructura que las demás. Rocío lo simuló en la Mac con la API falsa y aprobó la banderita (22/10).
 - **Filtros:** Número (exacto), Cliente (buscador de clientes), Fecha (rango), Estado y Origen o destino, con
   Buscar y la cruz en cada uno (antes había un solo campo que buscaba en todo). **Paginación** de a 15.
 - **Estado como etiqueta de color:** Pendiente gris (espera la respuesta; no es deuda), Aceptado amarillo hasta
@@ -1165,7 +1164,7 @@ la API falsa).
   puede volver a Pendiente; uno con viaje tiene la banderita deshabilitada; Ver PDF → Enviar por e-mail abre el
   envío.
 
-### Filtros iguales en todas las pantallas (22/10) — SIN PUSH
+### Filtros iguales en todas las pantallas (22/10) — PUSHEADO, FALTA PROBAR EN VM
 
 Commit "Interfaz: filtros iguales en todas las pantallas". Revisión de las 18 pantallas con filtros y regla
 elegida por Rocío (opción A), escrita en §1.3 y §3.3 del design system:
@@ -1195,3 +1194,14 @@ elegida por Rocío (opción A), escrita en §1.3 y §3.3 del design system:
   Tarifas fijas: cliente, vigencia y origen o destino; tarifas por km: escribir 250 muestra solo las que cubren
   250 km.
 - [ ] A 1280 px (o con el navegador más angosto) el rango de fechas elegido se lee completo.
+
+### Banderita gris en viajes (22/10) — commit "Viajes: banderita de estado en gris, como en presupuestos"
+
+Decisión de Rocío: la banderita (cambiar estado) es gris en todo el sistema; el verde queda para el paso puntual
+del circuito (Marcar aceptada, Emitir factura, Generar viaje), uno por fila. En Gestionar viajes la banderita era
+verde: pasa a gris con el botón compartido de presupuestos. Sigue abriendo el mismo modal "Estado y entrega del
+viaje"; rehacerlo con la ventana de tarjetas de presupuestos queda para cuando se normalice viajes.
+- [ ] Gestionar viajes: la banderita de cada fila es gris (con tooltip "Estado y entrega") y abre el modal de
+  siempre.
+- [ ] **Pendiente para después:** pasar el modal "Estado y entrega del viaje" a la ventana de estados en tarjetas
+  (como presupuestos), con resultado, fecha y evidencia dentro de la tarjeta "Entregado".

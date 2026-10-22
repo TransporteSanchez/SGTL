@@ -497,7 +497,9 @@
             // Orden del design system (§1.4): editar, siguiente paso del circuito, eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: motivo }),
-                SGTL.botonFila('siguiente', { id: viaje.Viaje_ID, texto: 'Estado y entrega', icono: 'bi-flag' }),
+                // Banderita gris, igual que en presupuestos (§1.4): cambia el estado. El texto sigue siendo el del modal
+                // "Estado y entrega del viaje" hasta que ese modal pase a la ventana de estados en tarjetas.
+                SGTL.botonFila('estado', { id: viaje.Viaje_ID, texto: 'Estado y entrega' }),
                 SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: tituloEliminar })
             ]);
         }
@@ -506,7 +508,7 @@
         $(function () {
             $('#tablaViajes')
                 .on('click', '[data-accion="editar"]', function () { abrirModalEditarViaje(String($(this).data('id'))); })
-                .on('click', '[data-accion="siguiente"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
+                .on('click', '[data-accion="estado"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="eliminar"]', function () { abrirModalEliminarViaje(String($(this).data('id'))); });
         });
 

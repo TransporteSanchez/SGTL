@@ -71,8 +71,8 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Descargar PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
-| Cambiar estado (presupuestos; viajes, más adelante) | `bi-flag` | `btn-outline-secondary` |
-| Siguiente paso del circuito (Estado y entrega, Marcar aceptada, Emitir factura) | el de cada acción | `btn-outline-success` |
+| Cambiar estado (presupuestos; viajes: "Estado y entrega") | `bi-flag` | `btn-outline-secondary` |
+| Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
@@ -80,9 +80,13 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué** ("No es posible eliminar un chofer activo"). No se oculta: así todas las filas tienen los
   mismos botones en el mismo lugar.
-- **Cambiar estado** (banderita, en prueba desde el 22/10 en presupuestos): va antes del siguiente paso y abre la
-  ventana "Cambiar estado", que muestra el estado actual y los estados a los que puede pasar como tarjetas, cada
-  una con una línea que explica qué significa; Cancelar + Guardar. La idea es usar la misma ventana en viajes.
+- **Cambiar estado** (banderita, desde el 22/10): **mismo ícono, mismo color, mismo significado en todo el
+  sistema.** Es gris porque es una acción de gestión: abre una ventana para elegir entre varios estados (para
+  adelante, para atrás o rechazado). El **verde** queda solo para el paso puntual del circuito que se hace con un
+  clic (Marcar aceptada, Emitir factura, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
+  En presupuestos abre la ventana "Cambiar estado" (estado actual y estados posibles como tarjetas, cada una con
+  su explicación; Cancelar + Guardar). En viajes abre, por ahora, "Estado y entrega del viaje"; cuando se
+  normalice, pasa a la misma ventana de tarjetas (los datos de la entrega, dentro de la tarjeta "Entregado").
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
   aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.
