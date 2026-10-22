@@ -48,6 +48,10 @@ descartó funcionalidad tuya; lo que cambió es cómo se ve y cómo se llama.
 - **`FacturasController`, `comprobantes/{id}`** (la API del PDF, que también usa tu vista en solo lectura) ahora devuelve
   `Letra` y `Sucursal`: la vista mostraba "—" porque esa consulta no las traía. La vista muestra además el % de IVA
   cuando todas las líneas tienen el mismo. El PDF no cambia.
+- **Gestionar tipos de comprobante se mudó a Facturación** (última opción, pedido de Rocío). Sigue siendo solo de
+  administradores. En Grupos y permisos, tu permiso "Facturación" (grupo Configuración) pasa al grupo Facturación como
+  "Gestión de tipos de comprobante": la API lo renombra sola conservando las asignaciones (`GruposController`). Si el
+  manual de usuario nombra la ruta vieja, hay que actualizarlo.
 - **Registrar recibo:** en el merge se había roto el id `reciboFacturas` (al pasar tus mensajes a minúscula) y no cargaban
   las facturas pendientes. Ya está corregido, con una prueba nueva (`tests/ids-de-pantallas.test.js`).
 

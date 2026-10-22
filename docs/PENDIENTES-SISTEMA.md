@@ -1551,6 +1551,29 @@ tiempo estimado, porcentajes y avisos"):**
   de viajes (otra sesión).
 - [ ] **F2, PDF del manual:** después de lo demás.
 
+**Cambio pedido por Rocío antes de repetir la prueba (22/10, commit "Facturación: Gestionar tipos de comprobante pasa
+de Configuración a Facturación"):** la opción pasa a ser la última de Facturación y **sigue siendo solo de
+administradores** (quién es admin se define en Gestionar usuarios → Rol). En el menú va marcada `solo-admin`: un
+usuario que no es admin no la ve aunque su grupo tenga el permiso, y si entra por la dirección vuelve al dashboard. La
+API sigue exigiendo admin para modificar. En Grupos y permisos, el permiso "Facturación" (que estaba en el grupo
+Configuración y confundía) pasa al grupo Facturación como **"Gestión de tipos de comprobante"**: la API lo renombra sola
+al abrir los permisos, conservando el mismo permiso y sus asignaciones. Título con el ícono de Facturación y el mensaje
+de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, `FacturacionConfiguracionController`).
+- [ ] Probar en la VM: como admin, Facturación termina en "Gestionar tipos de comprobante" y Configuración ya no la
+  tiene; al entrar, el menú abre Facturación con la opción marcada. Gestionar grupos y permisos → Permisos: en
+  Facturación aparece "Gestión de tipos de comprobante" y ya no hay "Facturación" en Configuración (los grupos que lo
+  tenían lo siguen teniendo). Con un usuario que no es admin: no ve la opción.
+- [ ] **Pendiente (decisión de Rocío, 22/10): pasar todos los permisos a los nombres del menú** ("Gestionar choferes",
+  "Listar viajes", "Gestionar cuenta corriente"…), como pide §3.1 del design system. Hoy el catálogo de Grupos y
+  permisos usa "Gestión de…", "Listado de…". Implica: renombrar los 23 en `GruposController` conservando las
+  asignaciones (la API ya sabe hacerlo), que `sidebar-loader.js` (`MENU_TO_PAGE`) y la API de presupuestos
+  (`EnviosPresupuestosController`, que da acceso por nombre: "Gestion de viajes" o "Presupuestos") acepten los nombres
+  nuevos y los viejos, y hacerlo cuando las ramas de todos estén al día (una API vieja vuelve a crear los nombres viejos
+  como permisos vacíos al abrir Grupos y permisos).
+- [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
+  Integración WhatsApp y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no
+  le da acceso a nadie. Marcarlos como "solo administradores" o sacarlos del listado. Catálogo de Facu: verlo con él.
+
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
 y mandarles este mensaje:
 

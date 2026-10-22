@@ -191,8 +191,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Camiones | Listar camiones · Gestionar camiones |
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Clientes | Listar clientes · Gestionar clientes |
-| Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente |
-| Configuración | Gestionar tipos de comprobante · Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar contenido |
+| Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente · Gestionar tipos de comprobante (solo administradores; se mudó desde Configuración el 22/10) |
+| Configuración | Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar contenido (toda la sección, solo administradores) |
 | Usuarios | Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos |
 | Auditoría | (ítem principal) |
 | Documentación | Consultar manual de usuario · Consultar informe de versión |

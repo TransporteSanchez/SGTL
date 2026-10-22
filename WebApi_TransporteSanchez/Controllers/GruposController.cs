@@ -37,8 +37,8 @@ namespace WebApi_TransporteSanchez.Controllers
             "Listado de camiones", "Gestión de camiones",
             "Listado de viajes", "Gestión de viajes", "Gestión de orígenes y destinos", "Gestión de tarifas", "Presupuestos",
             "Listado de clientes", "Gestión de clientes",
-            "Listado de proformas", "Gestión de proformas", "Cuenta Corriente",
-            "Facturación", "E-mail", "Gestión de contenido", "Integración WhatsApp",
+            "Listado de proformas", "Gestión de proformas", "Cuenta Corriente", "Gestión de tipos de comprobante",
+            "E-mail", "Gestión de contenido", "Integración WhatsApp",
             "Listado de usuarios", "Gestión de usuarios", "Grupos y permisos",
             "Auditoría"
         };
@@ -61,7 +61,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 { "listado de proformas", "Facturación" },
                 { "gestion de proformas", "Facturación" },
                 { "cuenta corriente", "Facturación" },
-                { "facturacion", "Configuración" },
+                // Antes "Facturación", en Configuración: la pantalla se mudó a la sección Facturación (22/10).
+                // Sigue siendo solo de administradores: el permiso no da acceso por sí solo.
+                { "gestion de tipos de comprobante", "Facturación" },
                 { "e-mail", "Configuración" },
                 { "gestion de contenido", "Configuración" },
                 { "integracion whatsapp", "Configuración" },
@@ -103,7 +105,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 new { Nuevo = "Gestión de proformas", Anteriores = new[] { "Gestión de facturas", "Gestion de facturas" } },
                 new { Nuevo = "Listado de proformas", Anteriores = new[] { "Listado de facturas" } },
                 new { Nuevo = "E-mail", Anteriores = new[] { "Configuración", "Configuracion", "Email" } },
-                new { Nuevo = "Integración WhatsApp", Anteriores = new[] { "Integracion Whatsapp", "WhatsApp", "Whatsapp", "Configuración WhatsApp", "Configuracion WhatsApp" } }
+                new { Nuevo = "Integración WhatsApp", Anteriores = new[] { "Integracion Whatsapp", "WhatsApp", "Whatsapp", "Configuración WhatsApp", "Configuracion WhatsApp" } },
+                new { Nuevo = "Gestión de tipos de comprobante", Anteriores = new[] { "Facturación", "Facturacion", "Configuración facturación", "Configuracion facturacion", "Tipos de comprobantes" } }
             };
 
             foreach (var renombre in renombres)

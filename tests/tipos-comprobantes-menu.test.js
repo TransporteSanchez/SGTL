@@ -29,4 +29,14 @@ assert.doesNotMatch(
     'Configuración no debe presentar esta pantalla como Gestionar facturación'
 );
 
-console.log('OK: Configuración identifica la pantalla como Gestionar tipos de comprobante.');
+// Desde el 22/10 la opción es la última de Facturación (solo para administradores) y ya no está en Configuración.
+const seccionFacturacion = menu.slice(menu.indexOf('<span>Facturación</span>'), menu.indexOf('</ul>', menu.indexOf('<span>Facturación</span>')));
+const seccionConfiguracion = menu.slice(menu.indexOf('<span>Configuración</span>'), menu.indexOf('</ul>', menu.indexOf('<span>Configuración</span>')));
+const opciones = seccionFacturacion.match(/class="submenu-link">[^<]*/g).map(function (o) { return o.replace('class="submenu-link">', ''); });
+assert.strictEqual(opciones[opciones.length - 1], 'Gestionar tipos de comprobante',
+    'Gestionar tipos de comprobante es la última opción de Facturación');
+assert.match(seccionFacturacion, /<li class="submenu-item solo-admin"><a href="configuracion-facturacion\.html"/,
+    'la opción sigue siendo solo para administradores');
+assert.doesNotMatch(seccionConfiguracion, /configuracion-facturacion\.html/,
+    'la opción ya no está en Configuración');
+console.log('OK: Gestionar tipos de comprobante es la última opción de Facturación, solo para administradores.');
