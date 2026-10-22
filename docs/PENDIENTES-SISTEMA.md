@@ -38,7 +38,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 16 | Diagramas de los flujos para que Facu y Fede prueben y para la presentación con la profesora | **Primera versión hecha (19/10):** viajes y proformas (propia y Rukas) + instructivo de prueba y guion | Commit del 19/10 | Ver §16 |
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
-| 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Sin pushear** | Recompilar la API y probar (ver §19) |
+| 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar e ITV de camiones | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Sin pushear** | Recompilar la API y probar (ver §19) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -811,7 +811,20 @@ Pedido de Rocío (21/10): filtros, gráficos, últimos viajes, próximos viajes 
 - Design system: "Rechazo" (resultado de la entrega) pasa a rojo en `SGTL.estado` (§4.1 de `docs/design-system/03-decisiones.md`).
 - **API:** `GET api/Viajes/ResumenCosto` acepta `fechaDesde` y `fechaHasta` (opcionales, filtran por Fecha_Inicio igual que Buscar); sin fechas responde como antes. **Hasta recompilar la API, Costo por viaje muestra el total histórico en cualquier período.**
 
-Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 px: los cuatro períodos, un rango a mano, detalle desde las tres listas, calendario y Personalizar (ocultar, guardar, recargar). Falta con datos reales.
+**Segunda tanda (21/10, pedida por Rocío): Para revisar e ITV de camiones.** Dos tarjetas nuevas debajo de los indicadores. No dependen del período ("Hoy").
+- **Para revisar:** viajes con algo pendiente, de cualquier fecha. Arriba, un resumen por motivo ("2 atrasados · 13 sin salir · …"); un viaje puede tener más de un motivo. Orden: lo más urgente primero y, dentro de cada motivo, lo más viejo. El ojo abre el detalle.
+  - **Atrasado:** En viaje y ya pasó la fecha de fin.
+  - **Sin salir** (directos): Registrado con la fecha de inicio anterior a hoy.
+  - **Sin cerrar** (con plataforma): Registrado con la fecha de fin anterior a hoy; falta marcarlo Listo para facturar (el seguimiento está en Rukas).
+  - **Sin proforma:** Entregado o Listo para facturar hace más de 7 días (fecha de entrega o, si no hay, de fin) y en ninguna proforma, ni en borrador. Los 7 días están en `DIAS_SIN_PROFORMA` de `dashboard.js`.
+  - **Sin evidencia** (directos): Entregado sin el adjunto de la entrega. Facturado ya no cuenta, porque ahí no se puede adjuntar.
+  - Pide a la API solo los viajes En viaje, Registrado (hasta ayer), Entregado y Listo para facturar: los facturados no se traen.
+- **ITV de camiones:** camiones activos con la ITV vencida (rojo) o que vence en los próximos 30 días (amarillo), con cuándo vence, marca, modelo y fecha del último control. Si no hay ninguno, dice cuál es el próximo vencimiento. **`FechaITV` es la fecha del último control** (Gestionar camiones no deja cargar una fecha futura): el vencimiento se calcula **a los 12 meses**. Si algún camión tiene otro plazo, cambiar `MESES_VIGENCIA_ITV` en `dashboard.js` (o agregar el vencimiento al camión).
+- Etiquetas nuevas en `SGTL.estado` (§4.1 de `docs/design-system/03-decisiones.md`): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia y Por vencer en amarillo; Vencida en rojo.
+- De paso: los ejes abreviados dicen "5 mil" (antes "5 K" y "12,5 k" mezclados) y el número de la barra más larga de Km por camión ya no se corta en pantallas angostas.
+- Visto en la prueba: los enlaces del sistema salen verdes (`a` de `assets/compiled/css/app.css`), aunque el §11 del design system dice azul. Afecta a todas las pantallas; no se tocó.
+
+Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 px: los cuatro períodos, un rango a mano, detalle desde las tres listas, calendario, Personalizar (ocultar, guardar, recargar) y las dos tarjetas nuevas con casos de cada motivo. Falta con datos reales.
 
 **Cómo probar en la VM** (`git pull` → recompilar la API → Ctrl+F5 en el dashboard):
 - [ ] Al entrar: Trimestre marcado, debajo del título "Del 01/08/2026 al … · comparado con el 01/05/2026 al …", todas las tarjetas con datos y sin errores nuevos en la consola (los de F16 siguen).
@@ -824,10 +837,11 @@ Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 p
 - [ ] Calendario: colores por estado; clic en un viaje → detalle; al pasar de mes trae los viajes de ese mes.
 - [ ] Personalizar: ocultar una tarjeta, Guardar, F5 → sigue oculta; Restablecer vuelve al diseño por defecto.
 - [ ] F12 a 390 px: tarjetas en una columna, en orden, sin Personalizar.
+- [ ] Para revisar: cada viaje listado cumple su motivo (abrirlo en Gestionar viajes y mirar estado, fechas, proforma y evidencia). Al revés: pasar uno a En viaje, o meterlo en una proforma, y recargar → sale de la lista.
+- [ ] Para revisar con muchos viajes viejos: si aparecen viajes de prueba antiguos, sirve para decidir la limpieza (§4).
+- [ ] ITV de camiones: comparar con la fecha de ITV de cada camión activo en Gestionar camiones (vence a los 12 meses). Confirmar con Rocío si el plazo es de 12 meses para todos.
 
-**Ideas para sumar** (pedido de "ver qué más tiene valor"; no hechas, Rocío decide):
-- [ ] **Para revisar** (recomendada, solo frente): viajes que piden atención: En viaje con la fecha de fin ya pasada, Registrado con la fecha de inicio pasada, Entregado sin resultado o sin evidencia, Listo para facturar hace más de N días sin proforma. Los datos ya vienen en `Viajes/Buscar`.
-- [ ] **ITV de camiones** (recomendada, solo frente): vencida o que vence en los próximos 30 días. `FechaITV` ya viene en `api/Camiones`.
+**Ideas para sumar** (pedido de "ver qué más tiene valor"; Rocío decide). Hechas el 21/10: Para revisar e ITV de camiones (ver arriba). Quedan:
 - [ ] **Km y viajes por chofer**: el mismo gráfico que por camión, con un selector Camión / Chofer. Solo frente.
 - [ ] **Rechazos por cliente o por destino**: dónde se concentran. Solo frente.
 - [ ] **Facturación del período y deuda vencida**: fechas en `dashboard/top-clientes-facturacion` y un total de saldo vencido. Es cuenta corriente: coordinar con Facu.

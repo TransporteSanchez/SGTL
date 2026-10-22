@@ -305,9 +305,9 @@
   var COLORES_ESTADO = {
     gris: ['registrado', 'borrador', 'inactivo', 'deshabilitado', 'login', 'logout', 'inicio de sesion', 'cierre de sesion'],
     azul: ['en viaje', 'entregado', 'generada', 'generado', 'update', 'modificacion'],
-    amarillo: ['listo para facturar', 'aceptada', 'parcial', 'km manual'],
+    amarillo: ['listo para facturar', 'aceptada', 'parcial', 'km manual', 'atrasado', 'sin salir', 'sin cerrar', 'sin proforma', 'sin evidencia', 'por vencer'],
     verde: ['activo', 'habilitado', 'facturado', 'facturada', 'cancelado', 'cancelada', 'aplicado', 'aplicada', 'insert', 'alta'],
-    rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente', 'rechazo']
+    rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente', 'rechazo', 'vencida']
   };
 
   var TEXTOS_ESTADO = {

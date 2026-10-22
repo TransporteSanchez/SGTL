@@ -54,7 +54,14 @@
   var catalogos = null;  // promesa de choferes y camiones
 
   var formatoEntero = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 0 });
-  var formatoCompacto = new Intl.NumberFormat('es-AR', { notation: 'compact', maximumFractionDigits: 1 });
+  var formatoUnDecimal = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 });
+
+  // Ejes: "12,5 mil". (El formato compacto del navegador para es-AR mezcla "K" y "k".)
+  function compacto(v) {
+    if (Math.abs(v) >= 1e6) return formatoUnDecimal.format(v / 1e6) + ' M';
+    if (Math.abs(v) >= 1000) return formatoUnDecimal.format(v / 1000) + ' mil';
+    return formatoEntero.format(v);
+  }
 
   function esc(valor) { return SGTL.escapar(valor); }
   function el(id) { return document.getElementById(id); }
@@ -186,10 +193,11 @@
     }).promise();
   }
 
-  function buscarViajes(desde, hasta) {
+  function buscarViajes(desde, hasta, estado) {
     var datos = { page: 1, pageSize: 0 };
     if (desde) datos.fechaDesde = SGTL.fechaISO(desde);
     if (hasta) datos.fechaHasta = SGTL.fechaISO(hasta);
+    if (estado) datos.estado = estado;
     return pedir('/Viajes/Buscar', datos).then(function (data) {
       return (data && (data.Results || data.results)) || [];
     });
@@ -199,6 +207,14 @@
   function leerKm(valor) {
     var texto = String(valor == null ? '' : valor).trim();
     return /^\d+([.,]\d+)?$/.test(texto) ? parseFloat(texto.replace(',', '.')) : 0;
+  }
+
+  // Deja el viaje listo para las listas y para abrir su detalle.
+  function registrarViaje(v) {
+    v._fecha = leerFechaApi(v.Fecha_Inicio);
+    v._km = leerKm(v.Distancia_KM);
+    dash.viajes[v.Viaje_ID] = v;
+    return v;
   }
 
   function grupoDe(v) {
@@ -308,12 +324,9 @@
     var total = contador();
     var anterior = contador();
     todos.forEach(function (v) {
-      var f = leerFechaApi(v.Fecha_Inicio);
+      var f = registrarViaje(v)._fecha;
       if (!f) return;
-      v._fecha = f;
       v._grupo = grupoDe(v);
-      v._km = leerKm(v.Distancia_KM);
-      dash.viajes[v.Viaje_ID] = v;
       var clave = SGTL.fechaISO(p.porSemana ? lunes(f) : inicioMes(f));
       if (f >= p.desde && f < finPeriodo) {
         actual.push(v);
@@ -517,7 +530,7 @@
       colors: [AZUL],
       plotOptions: { bar: { borderRadius: 4, borderRadiusApplication: 'end' } },
       xaxis: { categories: grupos.map(function (g) { return g.corto; }), axisBorder: { color: EJE }, axisTicks: { show: false } },
-      yaxis: { min: 0, forceNiceScale: true, labels: { formatter: function (v) { return formatoCompacto.format(v); } } },
+      yaxis: { min: 0, forceNiceScale: true, labels: { formatter: compacto } },
       tooltip: {
         x: { formatter: function (v, o) { return grupos[o.dataPointIndex] ? grupos[o.dataPointIndex].largo : v; } },
         y: {
@@ -555,10 +568,16 @@
       c.nombre = c.otros ? 'Otros ' + c.otros : dominio(c.id);
       c.detalle = c.otros ? c.otros + ' camiones' : (cam ? [cam.Marca, cam.Modelo].filter(Boolean).join(' ') : '');
     });
-    var eje = escalaRedonda(filas[0].km * 1.2); // lugar a la derecha para el número de la barra más larga
     var textoKm = function (v) { return formatoEntero.format(v) + ' km'; };
+    var anchoNumeros = anchoTexto(filas.map(function (c) { return textoKm(Math.round(c.km)); }));
     // ApexCharts pone el número centrado sobre el final de la barra: se corre medio texto para que quede afuera.
-    var corrimiento = Math.ceil(anchoTexto(filas.map(function (c) { return textoKm(Math.round(c.km)); })) / 2) + 6;
+    var corrimiento = Math.ceil(anchoNumeros / 2) + 6;
+    // El eje se estira lo justo para que el número de la barra más larga entre a la derecha (depende del ancho).
+    var eje = function (ancho) {
+      var lugar = Math.max(80, ancho - 100);
+      var libre = Math.max(lugar - anchoNumeros - 12, lugar * 0.4);
+      return escalaRedonda(Math.max(filas[0].km * lugar / libre, filas[0].km * 1.1));
+    };
     var opciones = $.extend(true, base(), {
       chart: { type: 'bar' },
       series: [{ name: 'Km', data: filas.map(function (c) { return Math.round(c.km * 10) / 10; }) }],
@@ -570,9 +589,9 @@
         style: { colors: [TINTA], fontSize: '12px', fontWeight: 600 }
       },
       xaxis: {
-        categories: filas.map(function (c) { return c.nombre; }), min: 0, max: eje.max, tickAmount: eje.marcas,
+        categories: filas.map(function (c) { return c.nombre; }), min: 0,
         axisBorder: { show: false }, axisTicks: { show: false },
-        labels: { formatter: function (v) { return formatoCompacto.format(v); } }
+        labels: { formatter: compacto }
       },
       yaxis: { labels: { style: { colors: TINTA, fontSize: '12px' }, maxWidth: 110 } },
       grid: { xaxis: { lines: { show: true } }, yaxis: { lines: { show: false } } },
@@ -584,9 +603,14 @@
         }
       }
     });
-    dibujar('grafico-camiones', opciones, function (alto) {
+    dibujar('grafico-camiones', opciones, function (alto, ancho) {
       var lugar = (alto - 40) / filas.length;
-      return { chart: { height: alto }, plotOptions: { bar: { barHeight: Math.max(6, Math.min(24, Math.floor(lugar * 0.6))) + 'px' } } };
+      var escala = eje(ancho);
+      return {
+        chart: { height: alto },
+        plotOptions: { bar: { barHeight: Math.max(6, Math.min(24, Math.floor(lugar * 0.6))) + 'px' } },
+        xaxis: { max: escala.max, tickAmount: escala.marcas }
+      };
     });
   }
 
@@ -668,12 +692,8 @@
   function cargarProximos() {
     var hoy = inicioDia(new Date());
     $.when(buscarViajes(hoy, null), catalogos).done(function (todos) {
-      var proximos = todos.map(function (v) {
-        v._fecha = leerFechaApi(v.Fecha_Inicio);
-        v._km = leerKm(v.Distancia_KM);
-        dash.viajes[v.Viaje_ID] = v;
-        return v;
-      }).filter(function (v) { return v._fecha && v._fecha >= hoy && grupoDe(v) === 'pendiente'; })
+      var proximos = todos.map(registrarViaje)
+        .filter(function (v) { return v._fecha && v._fecha >= hoy && grupoDe(v) === 'pendiente'; })
         .sort(function (a, b) { return a._fecha - b._fecha || a.Viaje_ID - b.Viaje_ID; });
       var cont = el('proximos-viajes');
       el('proximos-cantidad').textContent = proximos.length ? cantidadViajes(proximos.length) : '';
@@ -709,6 +729,158 @@
     }).fail(function () {
       el('top-clientes-list').innerHTML = '<div class="text-muted text-center py-4">No se pudo cargar la facturación.</div>';
     });
+  }
+
+  // ---------------------------------------------------------------- Para revisar
+
+  var DIAS_SIN_PROFORMA = 7; // entregado hace más de esto y fuera de toda proforma: falta facturarlo
+
+  // Por qué un viaje pide atención. Todos los motivos son "falta algo para cerrar" (amarillo, §4 del design system).
+  function motivosRevisar(v, ahora, hoy) {
+    var motivos = [];
+    var directo = v.Tipo_Cliente !== 'Con_plataforma';
+    var inicio = leerFechaApi(v.Fecha_Inicio);
+    var fin = leerFechaApi(v.Fecha_Fin);
+    var entrega = leerFechaApi(v.Fecha_Entrega) || fin;
+    if (v.Estado === 'En_viaje' && fin && fin < ahora) {
+      motivos.push({ orden: 0, fecha: fin, estado: 'Atrasado', detalle: 'Llegada prevista ' + SGTL.fecha(fin, { hora: true }) + ' y sigue en viaje' });
+    }
+    // Directo: tenía que salir. Con plataforma el seguimiento está en Rukas: lo que falta es marcarlo listo para facturar.
+    if (v.Estado === 'Registrado' && directo && inicio && inicio < hoy) {
+      motivos.push({ orden: 1, fecha: inicio, estado: 'Sin salir', detalle: 'Salida prevista ' + SGTL.fecha(inicio, { hora: true }) + ' y sigue registrado' });
+    }
+    if (v.Estado === 'Registrado' && !directo && fin && fin < hoy) {
+      motivos.push({ orden: 1, fecha: fin, estado: 'Sin cerrar', detalle: 'Terminó el ' + SGTL.fecha(fin) + ': falta marcarlo listo para facturar' });
+    }
+    if ((v.Estado === 'Entregado' || v.Estado === 'Listo_para_facturar') && !v.EnProforma_ID) {
+      var dias = entrega ? diasEntre(entrega, hoy) : 0;
+      if (dias > DIAS_SIN_PROFORMA) {
+        motivos.push({ orden: 2, fecha: entrega, estado: 'Sin proforma', detalle: (v.Estado === 'Entregado' ? 'Entregado' : 'Listo para facturar') + ' hace ' + dias + ' días' });
+      }
+    }
+    // La evidencia es solo de clientes directos y ya no se puede adjuntar una vez facturado.
+    if (v.Estado === 'Entregado' && directo && !v.Tiene_Evidencia) {
+      motivos.push({ orden: 3, fecha: entrega, estado: 'Sin evidencia', detalle: 'Falta el remito firmado, la foto o el conforme' });
+    }
+    return motivos;
+  }
+
+  // "2 atrasados · 5 sin salir · 3 sin proforma" (un viaje con dos motivos cuenta en los dos).
+  function resumenMotivos(filas) {
+    var cuenta = {};
+    filas.forEach(function (f) { f.motivos.forEach(function (m) { cuenta[m.estado] = (cuenta[m.estado] || 0) + 1; }); });
+    return ['Atrasado', 'Sin salir', 'Sin cerrar', 'Sin proforma', 'Sin evidencia'].filter(function (e) { return cuenta[e]; })
+      .map(function (e) {
+        var texto = e.toLowerCase();
+        if (e === 'Atrasado' && cuenta[e] > 1) texto = 'atrasados';
+        return cuenta[e] + ' ' + texto;
+      }).join(' · ');
+  }
+
+  // Viajes que piden atención, sin importar el período: estado sin actualizar o falta algo para facturar.
+  // Se piden solo los estados que pueden tener algo pendiente (los facturados, que son la mayoría, no).
+  function cargarRevisar() {
+    var ahora = new Date();
+    var hoy = inicioDia(ahora);
+    var pedidos = [
+      buscarViajes(null, null, 'En_viaje'),
+      buscarViajes(null, sumarDias(hoy, -1), 'Registrado'),
+      buscarViajes(null, null, 'Entregado'),
+      buscarViajes(null, null, 'Listo_para_facturar')
+    ];
+    $.when.apply($, pedidos.concat([catalogos])).done(function (enViaje, registrados, entregados, listos) {
+      var filas = enViaje.concat(registrados, entregados, listos).map(function (v) {
+        registrarViaje(v);
+        return { viaje: v, motivos: motivosRevisar(v, ahora, hoy) };
+      }).filter(function (f) { return f.motivos.length; });
+      filas.forEach(function (f) {
+        f.motivos.sort(function (a, b) { return a.orden - b.orden; });
+        f.orden = f.motivos[0].orden;
+        f.fecha = f.motivos[0].fecha;
+      });
+      // Primero lo más urgente; dentro de cada motivo, lo más viejo.
+      filas.sort(function (a, b) { return a.orden - b.orden || a.fecha - b.fecha || a.viaje.Viaje_ID - b.viaje.Viaje_ID; });
+
+      el('revisar-cantidad').textContent = filas.length ? 'Hoy · ' + cantidadViajes(filas.length) : 'Hoy';
+      el('revisar-resumen').textContent = resumenMotivos(filas);
+      el('revisar-resumen').classList.toggle('d-none', !filas.length);
+      var cuerpo = el('revisar-viajes');
+      if (!filas.length) {
+        cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' +
+          '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>No hay viajes para revisar.</td></tr>';
+        return;
+      }
+      SGTL.tabla.llenar(cuerpo, filas.map(function (f) {
+        var v = f.viaje;
+        var recorrido = esc(v.Origen) + ' → ' + esc(v.Destino);
+        var referencia = 'N° ' + esc(v.Viaje_ID) + ' · ' + esc(v.Cliente);
+        return '<tr>' +
+          '<td>' + f.motivos.map(function (m) {
+            return '<div class="dash-motivo">' + SGTL.estado(m.estado) + ' <small class="text-muted">' + esc(m.detalle) + '</small></div>';
+          }).join('') +
+          // En pantallas chicas el viaje va debajo del motivo (la columna Viaje no entra).
+          '<small class="d-block d-md-none mt-1">' + recorrido + ' · ' + referencia + '</small></td>' +
+          '<td class="dash-celda-texto d-none d-md-table-cell">' + recorrido +
+          '<small class="d-block text-muted text-truncate">' + referencia + '</small></td>' +
+          '<td class="text-center">' + SGTL.accionesFila([SGTL.botonFila('ver', { id: v.Viaje_ID })]) + '</td>' +
+          '</tr>';
+      }).join(''));
+    }).fail(function () {
+      el('revisar-resumen').classList.add('d-none');
+      el('revisar-cantidad').textContent = 'Hoy';
+      el('revisar-viajes').innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No se pudieron cargar los viajes.</td></tr>';
+    });
+  }
+
+  // ---------------------------------------------------------------- ITV
+
+  // FechaITV es la del último control (Gestionar camiones no deja cargar una fecha futura).
+  // Se toma que vence al año; si para algún camión es otro plazo, cambiar acá.
+  var MESES_VIGENCIA_ITV = 12;
+  var DIAS_AVISO_ITV = 30;
+
+  function cuandoVence(dias, vence) {
+    if (dias < -1) return 'Venció el ' + SGTL.fecha(vence) + ' (hace ' + -dias + ' días)';
+    if (dias === -1) return 'Venció ayer (' + SGTL.fecha(vence) + ')';
+    if (dias === 0) return 'Vence hoy';
+    if (dias === 1) return 'Vence mañana (' + SGTL.fecha(vence) + ')';
+    return 'Vence el ' + SGTL.fecha(vence) + ' (en ' + dias + ' días)';
+  }
+
+  // Camiones activos con la ITV vencida o que vence en los próximos 30 días.
+  function mostrarItv(camiones) {
+    var hoy = inicioDia(new Date());
+    var lista = camiones.filter(function (c) { return String(c.EstadoCamion || '').toLowerCase() === 'activo'; })
+      .map(function (c) {
+        var hecha = leerFechaApi(c.FechaITV);
+        if (!hecha) return null;
+        var vence = sumarMeses(hecha, MESES_VIGENCIA_ITV);
+        return { camion: c, hecha: hecha, vence: vence, dias: diasEntre(hoy, vence) };
+      })
+      .filter(Boolean)
+      .sort(function (a, b) { return a.vence - b.vence; });
+    var avisos = lista.filter(function (x) { return x.dias <= DIAS_AVISO_ITV; });
+    var cont = el('itv-camiones');
+    el('itv-cantidad').textContent = avisos.length ? 'Hoy · ' + avisos.length + (avisos.length === 1 ? ' camión' : ' camiones') : 'Hoy';
+
+    if (!avisos.length) {
+      var proximo = lista[0];
+      cont.innerHTML = '<div class="text-muted text-center py-4 px-3">' +
+        '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Ninguna ITV vence en los próximos ' + DIAS_AVISO_ITV + ' días.' +
+        (proximo ? '<small class="d-block mt-1">Próximo vencimiento: ' + esc(String(proximo.camion.Dominio || '').trim()) + ' el ' + esc(SGTL.fecha(proximo.vence)) + '.</small>' : '') +
+        '</div>';
+      return;
+    }
+    cont.innerHTML = avisos.map(function (x) {
+      var c = x.camion;
+      var modelo = [c.Marca, c.Modelo].filter(Boolean).join(' ');
+      return '<div class="list-group-item">' +
+        '<div class="d-flex justify-content-between align-items-center gap-2">' +
+        '<strong>' + esc(String(c.Dominio || '').trim()) + '</strong>' + SGTL.estado(x.dias < 0 ? 'Vencida' : 'Por vencer') + '</div>' +
+        '<div>' + esc(cuandoVence(x.dias, x.vence)) + '</div>' +
+        '<small class="text-muted d-block text-truncate">' + esc([modelo, 'último control ' + SGTL.fecha(x.hecha)].filter(Boolean).join(' · ')) + '</small>' +
+        '</div>';
+    }).join('');
   }
 
   function mostrarFlota(choferes, camiones) {
@@ -779,9 +951,7 @@
         // Una semana antes para que se vean los viajes largos que empezaron el mes anterior.
         buscarViajes(sumarDias(inicio.toDate(), -7), sumarDias(fin.toDate(), -1)).done(function (viajes) {
           listo(viajes.map(function (v) {
-            v._fecha = leerFechaApi(v.Fecha_Inicio);
-            v._km = leerKm(v.Distancia_KM);
-            dash.viajes[v.Viaje_ID] = v;
+            registrarViaje(v);
             return {
               id: v.Viaje_ID,
               title: (v.Origen || '') + ' → ' + (v.Destino || ''),
@@ -810,8 +980,10 @@
       choferes.forEach(function (c) { dash.choferes[c.Chofer_ID] = c; });
       camiones.forEach(function (c) { dash.camiones[c.Camion_ID] = c; });
       mostrarFlota(choferes, camiones);
+      mostrarItv(camiones);
     }, function () {
       ['choferes', 'camiones'].forEach(function (id) { el(id + '-activos-texto').textContent = '—'; });
+      el('itv-camiones').innerHTML = '<div class="text-muted text-center py-4">No se pudieron cargar los camiones.</div>';
       return $.Deferred().resolve().promise(); // sin catálogos igual se muestran los viajes
     });
 
@@ -821,6 +993,7 @@
     });
 
     elegirPeriodo(leerPeriodoGuardado());
+    cargarRevisar();
     cargarProximos();
     cargarTopClientes();
     iniciarCalendario();

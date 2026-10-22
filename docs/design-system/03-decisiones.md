@@ -175,9 +175,9 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 |---|---|---|
 | Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión |
 | Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
-| Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual |
+| Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
 | Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta |
-| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10) |
+| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
 - El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
