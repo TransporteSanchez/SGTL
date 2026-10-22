@@ -1603,8 +1603,9 @@ misma altura" (`1a78bd8`, solo visual): lo mira Rocío a mano.
       campo y aviso arriba; cambiar a Efectivo → se van el asterisco y el error; cancelar sin emitir. Presupuestos:
       registrar uno sin guardar → "Distancia: 710,0 km, de …". Proformas: abrir una, "Ver PDF", cerrar con la cruz →
       el formulario sigue abierto con el foco en su "Ver PDF".
-  - [ ] PF-00000004 dice "Factura" en Listar proformas y "Facturada" en Gestionar: las dos pantallas usan la misma API
-    y la misma etiqueta, así que la diferencia viene del dato. Falta investigarlo (módulo de Facu).
+  - [x] PF-00000004 dice "Factura" en Listar proformas y "Facturada" en Gestionar. **Cerrado (22/10): no era una
+    falla.** Las dos pantallas usan la misma API, la misma regla de estado y la misma etiqueta, y nada guarda "Factura"
+    como estado. Rocío lo miró a mano y en las dos dice "Facturada": fue una lectura equivocada de la VM.
   - [ ] "Auditoria" y "Cuenta Corriente" en Grupos y permisos: van con el renombre de permisos de arriba.
   - [ ] Limpieza: el grupo "PRUEBA-CLAUDE 20/10" (eliminarlo desde Gestionar grupos y permisos, después de ver que no
     tenga usuarios reales).
