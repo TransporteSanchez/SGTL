@@ -42,7 +42,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); las contraseñas sin cifrar se resuelven con el merge de Facu (§21) | **Pusheado** (22/10, con presupuestos, filtros y banderita) | Ver §20 |
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
-| 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; falta pasar las ramas (ver §23) |
+| 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1474,7 +1474,7 @@ punto. Resumen para el equipo: `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
 
 ---
 
-## 23. Prueba mínima antes de pasar `rocionuvoli` a las ramas del equipo — OK EN VM (22/10), FALTA PASAR LAS RAMAS
+## 23. Prueba mínima antes de pasar `rocionuvoli` a las ramas del equipo — OK EN VM; RAMAS PASADAS (22/10)
 
 Para confirmar que lo pusheado el 21 y 22/10 (dashboard, estilo visual, merges de Facu y Fede, ajustes) anda en la VM
 **antes** de actualizar `facugodoy` y `fedemontenegro`. Son unos 20 minutos y no reemplazan las listas completas de
@@ -1597,7 +1597,8 @@ misma altura" (`1a78bd8`, solo visual): lo mira Rocío a mano.
   "PRUEBA-CLAUDE 20/10" a la vista (limpieza).
 
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
-y mandarles este mensaje:
+y mandarles este mensaje. **Hecho (22/10):** `facugodoy`, `fedemontenegro` y `main` quedaron en `36a92c8`, sin conflictos
+(ninguno había subido nada después de los merges).
 
 > Facu, Fede: ya están sus ramas actualizadas con todo lo nuevo: el estilo visual y el design system en todas las
 > pantallas, y los merges de los dos del 22/10. Antes de seguir:
@@ -1608,7 +1609,11 @@ y mandarles este mensaje:
 >    (`docs/design-system/03-decisiones.md`) en todos los módulos. Antes de commitear, pídanle: "Revisá los cambios
 >    con la lista de control de AGENTS.md".
 > 4. Cómo quedaron sus cambios y por qué: Facu en `docs/equipo/merge-facugodoy-2026-10-22.md` y Fede en
->    `docs/equipo/merge-fedemontenegro-2026-10-22.md`.
+>    `docs/equipo/merge-fedemontenegro-2026-10-22.md`. Facu: después del merge toqué tu módulo en tres cosas: la vista
+>    de la factura en cuenta corriente muestra letra, sucursal y % de IVA (cambió `FacturasController`); "Ver PDF" de
+>    proformas abre la vista previa, como presupuestos (sin "Enviar por e-mail" todavía, lo vemos juntos); y "Gestionar
+>    tipos de comprobante" pasó a ser la última opción de Facturación, con el permiso renombrado a "Gestión de tipos de
+>    comprobante" en Grupos y permisos.
 > 5. Prueben los flujos con el diseño nuevo y avísenme lo que vean. Queda para después (no son errores):
 >    - el formulario de alta de viaje y la proforma de Rukas: los estoy ajustando yo;
 >    - para charlar entre todos: fechas previstas y reales en presupuestos y viajes, y si en presupuestos se pueden
