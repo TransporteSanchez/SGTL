@@ -307,7 +307,8 @@ Esto define solo cómo se muestran y cómo se cargan.
   mandando AAAA-MM-DD (`altInput: true`, `altFormat: 'd/m/Y'`, `dateFormat: 'Y-m-d'`): la API
   no cambia.
 - **Rango en los filtros: un solo campo** "Desde y hasta" con `mode: 'range'` y `showMonths: 2`.
-  Se ve "01/10/2026 a 17/10/2026". Elegir el rango no busca solo: se busca con Buscar o Enter.
+  Se ve "01/10/2026 a 17/10/2026". Al cerrar el calendario con las dos fechas elegidas, busca (como los
+  desplegables, que buscan al elegir); también busca con Buscar o Enter. (Cambio del 22/10: antes no buscaba solo.)
   Se borra con la cruz (§1.3).
 - Los textos de ayuda y los errores dicen DD/MM/AAAA (corrige R3).
 

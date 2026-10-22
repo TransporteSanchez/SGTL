@@ -1268,7 +1268,11 @@
     function enlazarEventos() {
         ['cmpFechaEmision', 'cmpFechaVencimiento', 'reciboFecha'].forEach(prepararFecha);
         if (window.SGTL) {
-            window.SGTL.rangoFechas('#ccFecha', { maxDate: 'today', onChange: sincronizarRango });
+            window.SGTL.rangoFechas('#ccFecha', {
+                maxDate: 'today', onChange: sincronizarRango,
+                // Con el rango completo busca al cerrar el calendario, como en viajes y proformas (§7.1).
+                onClose: function (fechas) { if (fechas.length !== 1) { sincronizarRango(); cargarCuenta(1); } }
+            });
             // La cruz deja la fecha "sin límite" (§1.3) y vuelve a buscar.
             filtrosCuenta = window.SGTL.filtros(['#ccCliente', '#ccFecha', '#ccTipo', '#ccEstado'], function () {
                 window.SelectClientePredictivo.sincronizar('ccCliente');

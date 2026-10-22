@@ -1064,3 +1064,22 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
 - [ ] Dashboard: la opción "Dashboard" del menú aparece marcada.
 - [ ] El calendario de próximos viajes se ve y cambia de mes; Personalizar → bordes punteados azules.
 
+**Repaso final (22/10):**
+- Proformas (commit "Proformas: últimos detalles del design system"): modal "Exportar" sin ícono en el título y
+  Excel en gris (el verde es solo para crear, §11), igual que en cuenta corriente; "Agregar línea" gris con borde;
+  duplicar y quitar línea con el globito del sistema; "Descartar cambios" en rojo; "Seleccioná un cliente"; el
+  formulario de la proforma no se cierra con un clic afuera (§6.2); la fecha del reclamo de Rukas con calendario.
+- Viajes (commit "Viajes: fechas del modal en DD/MM/AAAA"): inicio, fin y entrega se veían y escribían
+  AAAA-MM-DD; ahora DD/MM/AAAA (HH:MM) con el calendario en español, y quedan bloqueadas junto con el resto del
+  formulario cuando el viaje no se puede editar.
+- Rango de fechas (commit "Interfaz: el rango de fechas busca al cerrarlo"): cuenta corriente era la única
+  pantalla donde elegir el rango no buscaba; ahora busca al cerrar el calendario como viajes, proformas y el
+  dashboard (§7.1 actualizado: **cambio de la decisión del 17/10, a confirmar por Rocío**).
+- [ ] Gestionar proformas → Exportar: título "Exportar", Excel gris y PDF azul. Igual en Listar proformas.
+- [ ] Registrar proforma: clic afuera del modal no lo cierra; Escape o la cruz sí (con el aviso de cambios sin
+  guardar si los hay).
+- [ ] Rukas → Registrar reclamo: la fecha se elige con el calendario y se ve DD/MM/AAAA.
+- [ ] Gestionar viajes → Registrar viaje: fechas de inicio y fin en DD/MM/AAAA HH:MM; editar un viaje existente
+  las muestra igual; con tarifa por km, cambiar una fecha recalcula. Estado y entrega: fecha de entrega DD/MM/AAAA.
+- [ ] Cuenta corriente: elegir un rango en Fecha y cerrar el calendario → busca.
+
