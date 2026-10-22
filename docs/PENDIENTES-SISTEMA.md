@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 20/10/2026.**
+**Última actualización de este documento: 21/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -38,6 +38,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 16 | Diagramas de los flujos para que Facu y Fede prueben y para la presentación con la profesora | **Primera versión hecha (19/10):** viajes y proformas (propia y Rukas) + instructivo de prueba y guion | Commit del 19/10 | Ver §16 |
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
+| 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Sin pushear** | Recompilar la API y probar (ver §19) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -791,3 +792,45 @@ Tres commits de Facu (`a9a9d4c`, `e64d127`, `e701a4f`) sobre nuestro `ec177a1`. 
 - [ ] Avisarle a Facu que Usuarios y grupos no es su módulo y que la pantalla ya tenía el design system: se pasó su lógica a nuestro diseño.
 - [ ] Carpeta `tests/` nueva (Node, leen el código fuente como texto): ver con `docs/README.md` si se documenta y cómo se corren.
 
+## 19. Dashboard dinámico — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (21/10)
+
+Pedido de Rocío (21/10): filtros, gráficos, últimos viajes, próximos viajes aparte del calendario, comparativa de meses, entregados / pendientes / entregados con rechazo, filtro desde y hasta (último mes, trimestral, semestral), km por mes y en qué camiones se distribuyó, y ver qué más se puede sumar.
+
+**Qué cambió** (`index.html`, `assets/static/js/dashboard.js` nuevo, `ViajesController.cs`, `sgtl-ui.js`):
+- **Período**, arriba a la derecha: Último mes / Trimestre / Semestre / Año, o un rango a mano en "Desde y hasta" (se aplica al elegir las dos fechas). Recuerda el último botón elegido (en el navegador). Todo se compara con el período anterior y debajo del título se ven las dos fechas.
+  - Último mes: los 30/31 días hasta hoy. Trimestre, semestre y año arrancan el 1° del mes (los meses del gráfico quedan completos, salvo el actual). El anterior es el mismo rango corrido esa cantidad de meses; en un rango a mano, la misma cantidad de días justo antes. Hasta 2 meses, los gráficos y la comparativa van por semana; más largo, por mes.
+- **Indicadores del período:** Viajes (% contra el anterior), Entregados (% de los viajes), Pendientes de entrega (en viaje / sin salir), Entregados con rechazo (% de los entregados y cantidad de parciales), Km recorridos (% contra el anterior), Costo por viaje (ahora del período, con el total y su %).
+  - **Cómo se cuenta cada viaje:** Registrado y En viaje = pendiente. Entregado, Listo para facturar y Facturado = entregado, separado por el resultado de la entrega: Rechazo, Parcial o completo. Con plataforma (Rukas) el resultado es opcional: sin resultado cuenta como entregado completo.
+- **Gráficos:** Viajes por mes (barras apiladas entregado / parcial / con rechazo / pendiente, con el total arriba), Km por mes y Km por camión (los 8 con más km; el resto en "Otros"). Colores del §4 del design system; se pasaron por el validador de daltonismo (separación OK; el amarillo y el gris tienen poco contraste, por eso van con leyenda, total y la tabla comparativa).
+- **Listas:** Últimos viajes del período (8), Próximos viajes (desde hoy y sin entregar, con fecha y hora, recorrido, cliente, camión y chofer; no depende del período) y Comparativa por mes (viajes, variación contra el mes anterior, entregados, parciales, con rechazo, pendientes y km, con el total del período).
+- **Detalle de un viaje:** el ojo de Últimos viajes o un clic en Próximos viajes o en el calendario abre "Ver detalle del viaje N° …", con el enlace "Abrir en Gestionar viajes" (no aparece si el viaje está facturado, porque no se puede editar).
+- **Calendario:** pide solo los viajes del mes que se ve (antes traía todos), cada viaje con el color de su estado y clic para el detalle. "Hoy" y "+2 más" en castellano (`locale/es.js` es de otra versión de FullCalendar). Resuelve la parte del calendario de ADM-08 (`docs/design-system/04-relevamiento-funcional.md`).
+- Las tarjetas que no siguen el período lo dicen: Choferes y Camiones activos "Hoy", Top clientes en facturación "Histórico" (es de cuenta corriente, de Facu: sin fechas).
+- **Correcciones:** Camiones activos mostraba siempre total / total; ahora cuenta los "Activo". El botón "Widgets" se veía aunque no se estuviera personalizando. En celular dos tarjetas de la misma fila quedaban una encima de la otra (gridstack): ahora van en orden; en celular no se muestra "Personalizar" y la fila del período no queda fija.
+- El diseño personalizado se guarda con otra clave (`sgtl-dashboard-v2-<usuario>`): quien haya guardado uno antes ve el diseño por defecto una vez.
+- Design system: "Rechazo" (resultado de la entrega) pasa a rojo en `SGTL.estado` (§4.1 de `docs/design-system/03-decisiones.md`).
+- **API:** `GET api/Viajes/ResumenCosto` acepta `fechaDesde` y `fechaHasta` (opcionales, filtran por Fecha_Inicio igual que Buscar); sin fechas responde como antes. **Hasta recompilar la API, Costo por viaje muestra el total histórico en cualquier período.**
+
+Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 px: los cuatro períodos, un rango a mano, detalle desde las tres listas, calendario y Personalizar (ocultar, guardar, recargar). Falta con datos reales.
+
+**Cómo probar en la VM** (`git pull` → recompilar la API → Ctrl+F5 en el dashboard):
+- [ ] Al entrar: Trimestre marcado, debajo del título "Del 01/08/2026 al … · comparado con el 01/05/2026 al …", todas las tarjetas con datos y sin errores nuevos en la consola (los de F16 siguen).
+- [ ] Último mes, Semestre y Año: cambian los números, los gráficos (por semana en Último mes) y la comparativa. Al recargar queda el último elegido.
+- [ ] "Desde y hasta" con un rango a mano: ningún botón marcado; Viajes coincide con Listar viajes filtrado por esa fecha de inicio.
+- [ ] Entregados = Entregado + Listo para facturar + Facturado del período; con rechazo = resultado Rechazo (comparar con Gestionar viajes).
+- [ ] Costo por viaje cambia con el período (si no cambia, la API no se recompiló).
+- [ ] Camiones activos coincide con los camiones Activo de Gestionar camiones.
+- [ ] Próximos viajes: de hoy en adelante y sin entregar; clic → detalle; "Abrir en Gestionar viajes" abre ese viaje para editar.
+- [ ] Calendario: colores por estado; clic en un viaje → detalle; al pasar de mes trae los viajes de ese mes.
+- [ ] Personalizar: ocultar una tarjeta, Guardar, F5 → sigue oculta; Restablecer vuelve al diseño por defecto.
+- [ ] F12 a 390 px: tarjetas en una columna, en orden, sin Personalizar.
+
+**Ideas para sumar** (pedido de "ver qué más tiene valor"; no hechas, Rocío decide):
+- [ ] **Para revisar** (recomendada, solo frente): viajes que piden atención: En viaje con la fecha de fin ya pasada, Registrado con la fecha de inicio pasada, Entregado sin resultado o sin evidencia, Listo para facturar hace más de N días sin proforma. Los datos ya vienen en `Viajes/Buscar`.
+- [ ] **ITV de camiones** (recomendada, solo frente): vencida o que vence en los próximos 30 días. `FechaITV` ya viene en `api/Camiones`.
+- [ ] **Km y viajes por chofer**: el mismo gráfico que por camión, con un selector Camión / Chofer. Solo frente.
+- [ ] **Rechazos por cliente o por destino**: dónde se concentran. Solo frente.
+- [ ] **Facturación del período y deuda vencida**: fechas en `dashboard/top-clientes-facturacion` y un total de saldo vencido. Es cuenta corriente: coordinar con Facu.
+- [ ] **Uso de la flota**: % de camiones con al menos un viaje en el período y días sin viajes de cada uno. Solo frente.
+- [ ] **Exportar la comparativa** a CSV con el botón de exportar del design system.
+- [ ] **Km cargados a mano** en el período (auditoría `KM_MANUAL`): control de calidad del dato. Necesita un endpoint.

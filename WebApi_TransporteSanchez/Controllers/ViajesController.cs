@@ -506,12 +506,17 @@ SELECT CAST(CASE WHEN EXISTS (
             public decimal CostoTotal { get; set; }
         }
 
-        // GET: api/Viajes/ResumenCosto
+        // GET: api/Viajes/ResumenCosto?fechaDesde=AAAA-MM-DD&fechaHasta=AAAA-MM-DD
         // Tarjeta "Costo por viaje" del dashboard (index.html). Importe = tarifa fija neta o valor km x distancia.
+        // Las fechas son opcionales y filtran por Fecha_Inicio, igual que Buscar; sin fechas, todos los viajes.
         [HttpGet]
         [Route("api/Viajes/ResumenCosto")]
-        public IHttpActionResult ResumenCosto()
+        public IHttpActionResult ResumenCosto(string fechaDesde = null, string fechaHasta = null)
         {
+            var where = new StringBuilder(" WHERE 1=1 ");
+            var ps = new List<SqlParameter>();
+            AgregarRangoFecha(where, ps, "v.Fecha_Inicio", fechaDesde, fechaHasta, "@fi");
+
             try
             {
                 using (var db = new SGTLAuditContext(Cn()))
@@ -523,7 +528,8 @@ SELECT CAST(CASE WHEN EXISTS (
                         "        END AS Importe" +
                         " FROM VIAJES v" +
                         " LEFT JOIN TARIFAS_FIJAS tf ON tf.TarifaFija_ID = v.TarifaFijaID" +
-                        " LEFT JOIN TARIFAS_KM tk ON tk.TarifaKm_ID = v.TarifaKmID) x").First();
+                        " LEFT JOIN TARIFAS_KM tk ON tk.TarifaKm_ID = v.TarifaKmID" +
+                        where + ") x", Clonar(ps)).First();
 
                     decimal promedio = r.ViajesConImporte > 0 ? decimal.Round(r.CostoTotal / r.ViajesConImporte, 2) : 0;
                     return Ok(new { cantidadViajes = r.CantidadViajes, costoTotal = r.CostoTotal, costoPromedio = promedio });

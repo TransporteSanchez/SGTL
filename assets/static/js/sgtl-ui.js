@@ -307,7 +307,7 @@
     azul: ['en viaje', 'entregado', 'generada', 'generado', 'update', 'modificacion'],
     amarillo: ['listo para facturar', 'aceptada', 'parcial', 'km manual'],
     verde: ['activo', 'habilitado', 'facturado', 'facturada', 'cancelado', 'cancelada', 'aplicado', 'aplicada', 'insert', 'alta'],
-    rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente']
+    rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente', 'rechazo']
   };
 
   var TEXTOS_ESTADO = {
