@@ -83,20 +83,6 @@
                 </div>
             </div>
 
-            <!-- Notificación de error -->
-            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                <div class="toast align-items-center text-white bg-danger border-0" role="alert" id="alert-error"
-                    aria-live="assertive" aria-atomic="true" style="display: none;">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            Ocurrió un error al iniciar sesión
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                            aria-label="Close"></button>
-                    </div>
-                </div>
-            </div>
-
             <!-- Sección derecha -->
             <div class="col-lg-6 right-section">
                 <div class="login-card card">
@@ -134,14 +120,14 @@
                         <small id="generalError" class="error-message text-center mb-3 d-block" style="display: none;"></small>
 
                         <div class="d-grid login-submit">
-                            <button type="submit" class="btn btn-primary">Entrar</button>
+                            <button type="submit" class="btn btn-primary" id="btnEntrar">Entrar</button>
                         </div>
                     </form>
 
                     <!-- Loading Spinner -->
                     <div class="loading-spinner" id="loadingSpinner">
                         <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
+                            <span class="visually-hidden">Cargando…</span>
                         </div>
                     </div>
 
@@ -153,8 +139,8 @@
         </div>
     </div>
 
-    <!-- Librería de Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Avisos del sistema (§5.1): no dependen de Bootstrap. -->
+    <script src="assets/static/js/sgtl-ui.js"></script>
 
     <script>
         // Función para alternar visibilidad de la contraseña
@@ -238,11 +224,9 @@
                             }
                         } catch (e) {
                             console.error("Error al parsear la respuesta JSON:", e);
-                            mostrarToastError();
                         }
                     } else {
                         console.error("Error al cargar el contenido. Estado HTTP:", xhr.status);
-                        mostrarToastError();
                     }
                     showLoadingSpinner(false);
                 }
@@ -250,19 +234,25 @@
 
             xhr.onerror = function () {
                 console.error("Error de red al intentar conectar con la API GestionContenido.");
-                mostrarToastError();
+                mostrarToastError(SIN_CONEXION);
                 showLoadingSpinner(false);
             };
 
             xhr.send();
         }
 
-        // Mostrar una notificación de error usando Bootstrap Toast
-        function mostrarToastError() {
-            const toastEl = document.getElementById('alert-error');
-            toastEl.style.display = 'block';
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
+        var SIN_CONEXION = 'No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.';
+
+        // Aviso de error del sistema (§5.1): arriba a la derecha, queda hasta cerrarlo.
+        function mostrarToastError(texto) {
+            SGTL.toastError(texto || 'No se pudo iniciar sesión. Probá de nuevo.');
+        }
+
+        // Error de un campo: borde rojo y el mensaje debajo (§6.3).
+        function marcarCampo(id, idMensaje, texto) {
+            document.getElementById(id).classList.toggle('is-invalid', !!texto);
+            document.getElementById(idMensaje).textContent = texto || '';
+            document.getElementById(idMensaje).style.display = texto ? 'block' : 'none';
         }
 
         // Llamada a la API al cargar la página
@@ -293,15 +283,13 @@
             const password = document.getElementById('password').value.trim();
 
             // Limpiar mensajes de error previos
-            document.getElementById('userError').style.display = 'none';
-            document.getElementById('userError').textContent = '';
-            document.getElementById('passError').style.display = 'none';
-            document.getElementById('passError').textContent = '';
+            marcarCampo('username', 'userError', '');
+            marcarCampo('password', 'passError', '');
             document.getElementById('generalError').style.display = 'none';
             document.getElementById('generalError').textContent = '';
 
             if (username && password) {
-                showLoadingSpinner(true);
+                const listo = SGTL.procesando('#btnEntrar', 'Entrando…');
 
                 const xhrLogin = new XMLHttpRequest();
                 xhrLogin.open("POST", "http://localhost:50222/api/login", true);
@@ -309,11 +297,10 @@
 
                 xhrLogin.onreadystatechange = function () {
                     if (xhrLogin.readyState === 4) {  // La solicitud ha terminado
-                        showLoadingSpinner(false);
+                        listo();
                         if (xhrLogin.status === 200) {  // Estado exitoso
                             try {
                                 const data = JSON.parse(xhrLogin.responseText);
-                                console.log("Respuesta de login exitoso:", data);
 
                                 // Guardar token, rol, usuario, nombre y apellido en localStorage
                                 localStorage.setItem('token', data.Token);
@@ -334,14 +321,8 @@
                                 console.log("Errores de autenticación:", errorData);
 
                                 // Mostrar errores específicos
-                                if (errorData.Nombre_Usuario) {
-                                    document.getElementById('userError').textContent = errorData.Nombre_Usuario;
-                                    document.getElementById('userError').style.display = 'block';
-                                }
-                                if (errorData.Contraseña) {
-                                    document.getElementById('passError').textContent = errorData.Contraseña;
-                                    document.getElementById('passError').style.display = 'block';
-                                }
+                                if (errorData.Nombre_Usuario) marcarCampo('username', 'userError', errorData.Nombre_Usuario);
+                                if (errorData.Contraseña) marcarCampo('password', 'passError', errorData.Contraseña);
                                 if (errorData.General) {
                                     document.getElementById('generalError').textContent = errorData.General;
                                     document.getElementById('generalError').style.display = 'block';
@@ -359,8 +340,7 @@
 
                 xhrLogin.onerror = function () {
                     console.error("Error de red al intentar conectar con la API de login.");
-                    mostrarToastError();
-                    showLoadingSpinner(false);
+                    mostrarToastError(SIN_CONEXION);
                 };
 
                 const requestBody = JSON.stringify({
@@ -368,18 +348,12 @@
                     Contraseña: password
                 });
 
-                console.log("Enviando solicitud a la API de login con:", requestBody);
                 xhrLogin.send(requestBody);
             } else {
                 // Mostrar mensajes de error si los campos están vacíos
-                if (!username) {
-                    document.getElementById('userError').textContent = 'El usuario es requerido.';
-                    document.getElementById('userError').style.display = 'block';
-                }
-                if (!password) {
-                    document.getElementById('passError').textContent = 'La contraseña es requerida.';
-                    document.getElementById('passError').style.display = 'block';
-                }
+                if (!username) marcarCampo('username', 'userError', 'Completá el usuario.');
+                if (!password) marcarCampo('password', 'passError', 'Completá la contraseña.');
+                document.getElementById(!username ? 'username' : 'password').focus();
             }
         });
     </script>

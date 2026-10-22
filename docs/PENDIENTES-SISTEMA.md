@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail y WhatsApp al día; faltan contenido, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp y login al día; faltan contenido, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1018,4 +1018,14 @@ guardar con la ruedita y un toast en lugar del aviso fijo; la última modificaci
 detalle técnico de la excepción en los errores; carga `sgtl-ui.js`; sin el ancho máximo ni los colores propios.
 - [ ] Entrar: carga la configuración actual; "Última modificación" en DD/MM/AAAA HH:MM · usuario.
 - [ ] Guardar → toast "Configuración de WhatsApp guardada.". Con la API apagada → toast rojo "No se pudo conectar…".
+
+**Login (commit "Login: avisos y errores como el resto del sistema"):** el aviso rojo propio (Bootstrap 5.1 por
+CDN, solo para eso) pasa al aviso del sistema; "Completá el usuario." / "Completá la contraseña." con el campo en
+rojo; "Entrar" muestra la ruedita mientras valida. Si no carga la apariencia (logo y colores) ya no avisa "Ocurrió
+un error al iniciar sesión": el login sigue con la marca SGTL y solo avisa si no hay conexión. Se sacan dos
+`console.log` que mostraban en la consola el usuario con la contraseña y la respuesta con el token.
+- [ ] Entrar vacío: los dos campos en rojo con su mensaje y el cursor en Usuario.
+- [ ] Usuario o contraseña incorrectos: el mensaje de la API debajo del campo (igual que antes).
+- [ ] Con la API apagada: aviso rojo arriba a la derecha "No se pudo conectar con el servidor…".
+- [ ] F12 al entrar: la consola ya no muestra la contraseña.
 
