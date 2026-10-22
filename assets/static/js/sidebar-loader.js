@@ -179,6 +179,13 @@ function esPaginaConfiguracion() {
   return PAGINAS_CONFIGURACION.indexOf(actual) !== -1;
 }
 
+// Qué pantallas puede abrir el usuario, para los accesos a otra pantalla (por ejemplo "Editar cliente" en la
+// proforma). Mientras no se sabe, o si el permiso no se pudo leer, todas: el mismo criterio que el menú.
+var paginasPermitidas = null;
+window.sgtlPuedeEntrar = function (pagina) {
+  return !paginasPermitidas || paginasPermitidas.indexOf(String(pagina || '').toLowerCase()) !== -1;
+};
+
 var permisosAplicados = false;
 function aplicarPermisos() {
   if (permisosAplicados) return;
@@ -204,6 +211,7 @@ function aplicarPermisos() {
       if (permitidas.indexOf('listado-facturas.html') !== -1 || permitidas.indexOf('gestion-facturacion.html') !== -1) {
         permitidas.push('cuenta-corriente-clientes.html');
       }
+      paginasPermitidas = permitidas.map(function (p) { return String(p).toLowerCase(); });
       filtrarSidebarPermisos(permitidas);
       guardaAccesoPagina(permitidas);
       // El botón "Gestionar contenido" lo gobierna el RBAC. Algunas páginas lo ocultan

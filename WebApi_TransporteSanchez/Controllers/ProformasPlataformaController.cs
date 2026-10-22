@@ -667,7 +667,8 @@ WHERE Tipo_Proforma='Plataforma' AND ClienteID=@cli AND PlataformaID=@pl AND Pla
                             existente = new { existente.Proforma_ID, existente.Estado, existente.Numero }
                         });
 
-                    var condIva = cli.Cond_Fiscal == 1 ? "Responsable Inscripto" : cli.Cond_Fiscal == 2 ? "Monotributista" : cli.Cond_Fiscal == 3 ? "Exento" : null;
+                    // Los datos del cliente salen de su ficha, no de lo que manda la pantalla (§25 de PENDIENTES, 22/10).
+                    var datosCliente = DatosClienteProforma.Leer(db, d.ClienteID) ?? new DatosClienteProforma.Datos();
                     using (var tx = db.Database.BeginTransaction())
                     {
                         int id = db.Database.SqlQuery<int>(@"
@@ -684,9 +685,10 @@ VALUES
   '0',CAST(GETDATE() AS date),CAST(GETDATE() AS date),'Borrador',GETDATE(),@u,GETDATE(),'Plataforma',@pl,@num);",
                             P("@cli", d.ClienteID), P("@moneda", string.IsNullOrWhiteSpace(d.Moneda) ? "ARS" : d.Moneda),
                             P("@femision", d.FechaEmision), P("@fvto", d.FechaVencimiento),
-                            P("@razon", d.Cli_RazonSocial), P("@nombre", d.Cli_NombreComercial), P("@cuit", d.Cli_CUIT),
-                            P("@condiva", condIva), P("@dir", d.Cli_Direccion), P("@ciudad", d.Cli_Ciudad), P("@prov", d.Cli_Provincia),
-                            P("@cp", d.Cli_CP), P("@tel", d.Cli_Telefono), P("@email", d.Cli_Email), P("@contacto", d.Cli_Contacto),
+                            P("@razon", datosCliente.RazonSocial), P("@nombre", datosCliente.NombreComercial), P("@cuit", datosCliente.CUIT),
+                            P("@condiva", datosCliente.CondIVA), P("@dir", datosCliente.Direccion), P("@ciudad", datosCliente.Ciudad),
+                            P("@prov", datosCliente.Provincia), P("@cp", datosCliente.CP), P("@tel", datosCliente.Telefono),
+                            P("@email", datosCliente.Email), P("@contacto", null),
                             P("@formapago", d.FormaPago), P("@plazopago", d.PlazoPago), P("@validez", d.Validez), P("@observaciones", d.Observaciones),
                             P("@u", usuario), P("@pl", cli.Plataforma_ID.Value), P("@num", numero)).First();
 
@@ -971,6 +973,8 @@ VALUES (@id,@orden,@codigo,@concepto,@desc,1,'Viaje',@precio,0,@iva,@precio);",
                                 P("@precio", precio), P("@iva", IvaPct));
                         }
 
+                        // Al generar, la copia de los datos del cliente queda fija con su ficha de este momento.
+                        DatosClienteProforma.ActualizarProforma(db, id);
                         int n = db.Database.SqlQuery<int>("SELECT NEXT VALUE FOR dbo.SEQ_PROFORMA").First();
                         string numero = "PF-" + n.ToString("D8");
                         db.Database.ExecuteSqlCommand(@"

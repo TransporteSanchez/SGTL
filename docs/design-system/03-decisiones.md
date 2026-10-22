@@ -23,6 +23,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
 | Ver detalle (§6.2) | `.sgtl-dato` / `.sgtl-dato-etiqueta` / `.sgtl-dato-valor`; pie: `SGTL.textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi)`; viaje: `SGTLDetalleViaje.abrir(viaje, { enlaceGestion })` (`viaje-detalle.js`) |
+| Editar el cliente desde otra pantalla (§6.3) | `SGTLEditarCliente.abrir(id, { tipoBloqueado, alCerrar })` (`assets/static/js/cliente-editar.js`, el mismo modal de Gestionar clientes) |
 | Elegir de una lista larga (cliente, chofer, §6.3) | `SelectClientePredictivo.inicializar(select, { placeholder, textoVacio, idCampo })` (`assets/static/js/select-cliente-predictivo.js`) |
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
@@ -404,8 +405,14 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   - Si es un campo suelto (el número de una proforma), su etiqueta y el valor en texto, como en Ver detalle.
   - Arriba, un aviso de una línea dice por qué: "Ya salió: solo se completa el número de remito." Lo editable
     sigue como campo, en su lugar de siempre.
-  - Las demás pantallas todavía usan campos deshabilitados (Registrar proforma, el recibo de cuenta corriente):
-    pendiente revisarlas.
+  - Las demás pantallas todavía usan campos deshabilitados (el recibo de cuenta corriente): pendiente revisarlo.
+- **Los datos de otra entidad dentro de un documento no se editan ahí** (22/10, primero el cliente en la proforma):
+  se ven como texto (`.sgtl-dato-fijo`) con un enlace "Editar cliente". El enlace oculta el modal del documento, sin
+  perder lo cargado, y abre la edición de esa entidad, la misma de su pantalla (`SGTLEditarCliente`). Guardar → toast
+  y vuelve al documento con los datos nuevos; Cancelar → vuelve sin cambios. Lo que desde ahí cambiaría el documento
+  abierto (el tipo de cliente) se ve como texto con el motivo. El aviso dice también qué más se actualizó: "Cliente
+  actualizado. También se actualizaron sus datos en el borrador de proforma #23." (o "en 3 borradores de proforma").
+  Sin permiso para editar esa entidad, el enlace queda deshabilitado con el motivo (§1.4).
 - `form-label` con `for` en todos los campos (tocar el nombre lleva al campo).
 
 ---

@@ -220,21 +220,30 @@ namespace WebApi_TransporteSanchez.Controllers
             p.TotalGeneral = Redondear(p.SubtotalNeto + p.IVA + p.OtrosImpuestos);
         }
 
-        // Cond_Fiscal es el código interno de la condición de IVA del cliente.
-        // La Proforma guarda la descripción legible como foto del dato al emitirla.
-        private static void ActualizarCondicionIvaDesdeCliente(DbContext db, ProformaDto p)
+        // Los datos del cliente de la proforma salen de su ficha, no de lo que manda la pantalla (§25 de PENDIENTES,
+        // 22/10): en la proforma no se editan. La condición de IVA ya salía del cliente (Cond_Fiscal, con la
+        // descripción legible).
+        private static void CopiarDatosDelCliente(DbContext db, ProformaDto p)
         {
             p.Cli_CondIVA = null;
             if (!p.ClienteID.HasValue || p.ClienteID.Value <= 0) return;
+            AplicarDatosDelCliente(p, DatosClienteProforma.Leer(db, p.ClienteID.Value));
+        }
 
-            p.Cli_CondIVA = db.Database.SqlQuery<string>(@"
-SELECT CASE Cond_Fiscal
-    WHEN 1 THEN N'Responsable Inscripto'
-    WHEN 2 THEN N'Monotributista'
-    WHEN 3 THEN N'Exento'
-END
-FROM dbo.CLIENTES
-WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
+        private static void AplicarDatosDelCliente(ProformaDto p, DatosClienteProforma.Datos d)
+        {
+            if (d == null) return;
+            p.Cli_RazonSocial = d.RazonSocial;
+            p.Cli_NombreComercial = d.NombreComercial;
+            p.Cli_CUIT = d.CUIT;
+            p.Cli_CondIVA = d.CondIVA;
+            p.Cli_Direccion = d.Direccion;
+            p.Cli_Ciudad = d.Ciudad;
+            p.Cli_Provincia = d.Provincia;
+            p.Cli_CP = d.CP;
+            p.Cli_Telefono = d.Telefono;
+            p.Cli_Email = d.Email;
+            p.Cli_Contacto = null;
         }
 
         // Parametros de negocio compartidos por INSERT y UPDATE de cabecera
@@ -682,6 +691,10 @@ ORDER BY d.Proforma_ID, d.Orden";
                     var dto = db.Database.SqlQuery<ProformaDto>(SELECT_HEADER + " WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (dto == null) return NotFound();
                     if (TieneFacturaVigente(db, id)) dto.Estado = "Facturada";
+                    // Un borrador muestra siempre los datos actuales del cliente (aunque se haya guardado antes de
+                    // que se corrigiera la ficha); una proforma generada muestra los que quedaron al generarla.
+                    if (dto.Estado == "Borrador" && dto.ClienteID.HasValue && dto.ClienteID.Value > 0)
+                        AplicarDatosDelCliente(dto, DatosClienteProforma.Leer(db, dto.ClienteID.Value));
                     dto.Detalle = LeerDetalle(db, id);
                     return Ok(dto);
                 }
@@ -724,7 +737,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                 using (var db = new DbContext(Cn()))
                 using (var transaction = db.Database.BeginTransaction())
                 {
-                    ActualizarCondicionIvaDesdeCliente(db, p);
+                    CopiarDatosDelCliente(db, p);
                     // Un cliente con plataforma factura solo por la proforma de plataforma (importando su archivo).
                     var tipoCliente = db.Database.SqlQuery<string>("SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@c",
                         P("@c", (object)p.ClienteID)).FirstOrDefault();
@@ -771,7 +784,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                 using (var db = new DbContext(Cn()))
                 using (var transaction = db.Database.BeginTransaction())
                 {
-                    ActualizarCondicionIvaDesdeCliente(db, p);
+                    CopiarDatosDelCliente(db, p);
                     var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
                     if (EsDePlataforma(db, id)) return Content(HttpStatusCode.BadRequest, new { error = ErrorEsDePlataforma });
@@ -837,6 +850,8 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     if (plataformaSinNumeros.Count > 0) errores.Add("Viaje(s) sin número de remito o de transporte SAP: " + ListaViajes(plataformaSinNumeros) + ".");
                     if (errores.Count > 0) return Content(HttpStatusCode.BadRequest, new { errores });
 
+                    // Al generar, la copia de los datos del cliente queda fija con su ficha de este momento.
+                    DatosClienteProforma.ActualizarProforma(db, id);
                     int n = db.Database.SqlQuery<int>("SELECT NEXT VALUE FOR dbo.SEQ_PROFORMA").First();
                     string numero = "PF-" + n.ToString("D8");
                     string usu = body != null ? body.Usuario : null;
@@ -984,6 +999,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                         });
                     foreach (var l in o.Detalle) l.Detalle_ID = null;
                     o.Usu_Alta = body != null ? body.Usuario : o.Usu_Alta;
+                    // El borrador nuevo toma la ficha actual del cliente, no la copia de la proforma original.
+                    CopiarDatosDelCliente(db, o);
                     ComputarTotales(o);
 
                     var ps = ParamsNegocio(o);
@@ -1123,6 +1140,158 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
             if (string.IsNullOrWhiteSpace(raw)) return 0;
             decimal v;
             return decimal.TryParse(raw.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out v) ? v : 0;
+        }
+    }
+
+    // Datos del cliente que la proforma guarda como copia (Cli_*). Decisión de Rocío del 22/10 (§25 de
+    // docs/PENDIENTES-SISTEMA.md): en la proforma no se editan, se corrigen en el cliente; mientras la proforma es
+    // borrador salen siempre de la ficha del cliente y al generarla la copia queda fija (la factura la toma de ahí).
+    // Lo usan ProformasController, ProformasPlataformaController y ClientesController (al editar un cliente se
+    // actualizan todos sus borradores, propios y de plataforma).
+    internal static class DatosClienteProforma
+    {
+        internal class Datos
+        {
+            public string RazonSocial { get; set; }
+            public string NombreComercial { get; set; }
+            public string CUIT { get; set; }
+            public string CondIVA { get; set; }
+            public string Direccion { get; set; }
+            public string Ciudad { get; set; }
+            public string Provincia { get; set; }
+            public string CP { get; set; }
+            public string Telefono { get; set; }
+            public string Email { get; set; }
+        }
+
+        private class Largo
+        {
+            public string Columna { get; set; }
+            public int Maximo { get; set; }
+        }
+
+        private class Cabecera
+        {
+            public int? ClienteID { get; set; }
+            public string Estado { get; set; }
+        }
+
+        // "Contacto" no tiene de dónde salir (el cliente no tiene ese dato): queda vacío.
+        private const string SETS =
+            "Cli_RazonSocial=@razon,Cli_NombreComercial=@nombre,Cli_CUIT=@cuit,Cli_CondIVA=@condiva,Cli_Direccion=@dir," +
+            "Cli_Ciudad=@ciudad,Cli_Provincia=@prov,Cli_CP=@cp,Cli_Telefono=@tel,Cli_Email=@email,Cli_Contacto=NULL";
+
+        private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
+
+        // Nombre comercial y código postal se agregaron a CLIENTES con scripts (no están en el EDMX).
+        private static bool ExisteColumnaCliente(DbContext db, string columna)
+        {
+            return db.Database.SqlQuery<int>(
+                "SELECT CASE WHEN COL_LENGTH('dbo.CLIENTES', @columna) IS NULL THEN 0 ELSE 1 END", P("@columna", columna)).First() == 1;
+        }
+
+        // Largo de las columnas Cli_* de PROFORMAS, para que un dato largo del cliente no haga fallar el guardado.
+        private static Dictionary<string, int> Largos(DbContext db)
+        {
+            return db.Database.SqlQuery<Largo>(
+                "SELECT COLUMN_NAME AS Columna, ISNULL(CHARACTER_MAXIMUM_LENGTH, -1) AS Maximo FROM INFORMATION_SCHEMA.COLUMNS " +
+                "WHERE TABLE_SCHEMA = 'dbo' AND TABLE_NAME = 'PROFORMAS' AND COLUMN_NAME LIKE 'Cli[_]%'")
+                .ToList().ToDictionary(x => x.Columna, x => x.Maximo, StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static string Cortar(string valor, Dictionary<string, int> largos, string columna)
+        {
+            if (string.IsNullOrWhiteSpace(valor)) return null;
+            valor = valor.Trim();
+            int maximo;
+            if (largos.TryGetValue(columna, out maximo) && maximo > 0 && valor.Length > maximo) return valor.Substring(0, maximo);
+            return valor;
+        }
+
+        // La ficha del cliente, ya con el largo de las columnas de PROFORMAS. Null si el cliente no existe.
+        internal static Datos Leer(DbContext db, int clienteId)
+        {
+            string nombre = ExisteColumnaCliente(db, "Nombre_Comercial") ? "c.Nombre_Comercial" : "CAST(NULL AS nvarchar(1))";
+            string cp = ExisteColumnaCliente(db, "CodigoPostal") ? "c.CodigoPostal" : "CAST(NULL AS nvarchar(1))";
+            var d = db.Database.SqlQuery<Datos>(
+                "SELECT LTRIM(RTRIM(ISNULL(c.Razon_Social, ''))) AS RazonSocial," +
+                " LTRIM(RTRIM(ISNULL(" + nombre + ", ''))) AS NombreComercial," +
+                " LTRIM(RTRIM(ISNULL(c.CUIT_Cliente, ''))) AS CUIT," +
+                " CASE c.Cond_Fiscal WHEN 1 THEN N'Responsable Inscripto' WHEN 2 THEN N'Monotributista' WHEN 3 THEN N'Exento' END AS CondIVA," +
+                " LTRIM(RTRIM(ISNULL(c.Calle, '') + ' ' + ISNULL(c.AlturaCalle, ''))) AS Direccion," +
+                " LTRIM(RTRIM(ISNULL(l.Nombre_Localidad, ''))) AS Ciudad," +
+                " LTRIM(RTRIM(ISNULL(pr.Nombre_Provincia, ''))) AS Provincia," +
+                " LTRIM(RTRIM(ISNULL(" + cp + ", ''))) AS CP," +
+                " LTRIM(RTRIM(ISNULL(c.Telefono, ''))) AS Telefono," +
+                " LTRIM(RTRIM(ISNULL(c.Email, ''))) AS Email" +
+                " FROM dbo.CLIENTES c" +
+                " LEFT JOIN dbo.LOCALIDADES l ON l.Loc_ID = c.LocID" +
+                " LEFT JOIN dbo.PROVINCIAS pr ON pr.Prov_ID = c.ProvID" +
+                " WHERE c.Cliente_ID = @cliente", P("@cliente", clienteId)).FirstOrDefault();
+            if (d == null) return null;
+            var largos = Largos(db);
+            return new Datos
+            {
+                RazonSocial = Cortar(d.RazonSocial, largos, "Cli_RazonSocial"),
+                NombreComercial = Cortar(d.NombreComercial, largos, "Cli_NombreComercial"),
+                CUIT = Cortar(d.CUIT, largos, "Cli_CUIT"),
+                CondIVA = Cortar(d.CondIVA, largos, "Cli_CondIVA"),
+                Direccion = Cortar(d.Direccion, largos, "Cli_Direccion"),
+                Ciudad = Cortar(d.Ciudad, largos, "Cli_Ciudad"),
+                Provincia = Cortar(d.Provincia, largos, "Cli_Provincia"),
+                CP = Cortar(d.CP, largos, "Cli_CP"),
+                Telefono = Cortar(d.Telefono, largos, "Cli_Telefono"),
+                Email = Cortar(d.Email, largos, "Cli_Email")
+            };
+        }
+
+        private static SqlParameter[] Parametros(Datos d, string nombreClave, object clave)
+        {
+            return new[]
+            {
+                P("@razon", d.RazonSocial), P("@nombre", d.NombreComercial), P("@cuit", d.CUIT), P("@condiva", d.CondIVA),
+                P("@dir", d.Direccion), P("@ciudad", d.Ciudad), P("@prov", d.Provincia), P("@cp", d.CP),
+                P("@tel", d.Telefono), P("@email", d.Email), P(nombreClave, clave)
+            };
+        }
+
+        // Antes de generar: la copia toma la ficha del cliente tal como está ahora (por si el borrador es de antes de
+        // esta regla o el cliente cambió por otro lado).
+        internal static void ActualizarProforma(DbContext db, int proformaId)
+        {
+            var c = db.Database.SqlQuery<Cabecera>(
+                "SELECT ClienteID, Estado FROM dbo.PROFORMAS WHERE Proforma_ID = @id", P("@id", proformaId)).FirstOrDefault();
+            if (c == null || c.Estado != "Borrador" || !c.ClienteID.HasValue || c.ClienteID.Value <= 0) return;
+            var d = Leer(db, c.ClienteID.Value);
+            if (d == null) return;
+            db.Database.ExecuteSqlCommand("UPDATE dbo.PROFORMAS SET " + SETS + " WHERE Proforma_ID = @id AND Estado = 'Borrador'",
+                Parametros(d, "@id", proformaId));
+        }
+
+        // Al editar el cliente: todos sus borradores toman los datos nuevos. Devuelve los Proforma_ID actualizados.
+        internal static List<int> ActualizarBorradores(DbContext db, int clienteId, string usuario)
+        {
+            var ids = db.Database.SqlQuery<int>(
+                "SELECT Proforma_ID FROM dbo.PROFORMAS WHERE ClienteID = @cliente AND Estado = 'Borrador' ORDER BY Proforma_ID",
+                P("@cliente", clienteId)).ToList();
+            if (ids.Count == 0) return ids;
+            var d = Leer(db, clienteId);
+            if (d == null) return new List<int>();
+            db.Database.ExecuteSqlCommand("UPDATE dbo.PROFORMAS SET " + SETS + " WHERE ClienteID = @cliente AND Estado = 'Borrador'",
+                Parametros(d, "@cliente", clienteId));
+            foreach (var id in ids)
+            {
+                try
+                {
+                    db.Database.ExecuteSqlCommand(
+                        "INSERT INTO AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen) " +
+                        "VALUES (GETDATE(),@u,'UPDATE','PROFORMAS',@k,NULL,@nue,NULL)",
+                        P("@u", string.IsNullOrWhiteSpace(usuario) ? "sistema" : usuario), P("@k", "Proforma_ID=" + id),
+                        P("@nue", "Datos del cliente actualizados desde su ficha (Cliente_ID=" + clienteId + ")"));
+                }
+                catch { }
+            }
+            return ids;
         }
     }
 }

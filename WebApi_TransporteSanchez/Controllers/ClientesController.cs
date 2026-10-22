@@ -599,7 +599,26 @@ namespace WebApi_TransporteSanchez.Controllers
                         }
                         GuardarCodigoPostal(db, id, codigoPostal);
                         GuardarNombreComercial(db, id, nombreComercial);
-                        return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
+                        // Sus proformas en borrador toman los datos nuevos (§25 de PENDIENTES, 22/10); las generadas no
+                        // cambian. Si esto falla, el cliente ya quedó guardado: la pantalla avisa aparte.
+                        List<int> borradores;
+                        bool borradoresError = false;
+                        try
+                        {
+                            borradores = DatosClienteProforma.ActualizarBorradores(db, id, value.Usu_Modi);
+                        }
+                        catch (Exception)
+                        {
+                            borradores = new List<int>();
+                            borradoresError = true;
+                        }
+                        return Ok(new
+                        {
+                            Message = "Cliente actualizado con éxito.",
+                            Borradores = borradores.Count,
+                            BorradorID = borradores.Count == 1 ? (int?)borradores[0] : null,
+                            BorradoresError = borradoresError
+                        });
                     }
                     catch (DbEntityValidationException ex)
                     {

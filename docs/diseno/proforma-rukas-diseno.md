@@ -137,7 +137,8 @@ Pedido de Rocío: el modal seguía con "mucho texto dando vueltas". Se aplicaron
 las acciones son las mismas.
 
 - **Paso 2:** la etiqueta "Rukas" va adentro del campo de cliente (y en la lista), como en Registrar viaje; debajo,
-  solo los datos del cliente con "Editar datos del cliente". "Excel de Rukas *" es la etiqueta del recuadro, con el
+  solo los datos del cliente con "Editar cliente" (abre la edición del cliente; los datos no se editan en la proforma,
+  §25 de PENDIENTES). "Excel de Rukas *" es la etiqueta del recuadro, con el
   ícono de información que dice de dónde se exporta. En el recuadro, un solo texto: "Arrastralo acá o elegilo" / "Al
   elegirlo se guarda como borrador y se controla contra los viajes de SGTL.". Sin viajes pendientes: "No hay viajes sin
   proforma con el N° de transporte SAP cargado.". Las condiciones comerciales vacías no dicen nada.
@@ -148,7 +149,8 @@ las acciones son las mismas.
 - **Pie del paso 2:** Cancelar y "Generar proforma" deshabilitado con el globito "Primero elegí el Excel de Rukas".
   "Guardar borrador" no se muestra (elegir el Excel ya lo guarda) y el título no lleva "Borrador" hasta que existe.
 - **Paso 3:** los pasos muestran solo sus nombres. Arriba de la tabla, un recuadro gris (§6.3, lo que ya no se cambia)
-  con Cliente (y "Ver datos"), Excel de Rukas (y **"Reemplazar"** al lado del archivo, solo en un borrador) y Período;
+  con Cliente (y "Editar cliente" en un borrador; "Ver datos" en solo lectura), Excel de Rukas (y **"Reemplazar"** al
+  lado del archivo, solo en un borrador) y Período;
   el mismo recuadro en "Ver" y en una proforma ya generada. Las acciones de arriba de la tabla quedan en Volver a
   controlar y Registrar reclamo. La ayuda de cada grupo, más corta: "Corregí el viaje o reclamalo", "Registrá el
   reclamo".

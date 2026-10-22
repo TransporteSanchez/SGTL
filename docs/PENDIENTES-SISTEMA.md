@@ -44,6 +44,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
 | 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`); la ronda de observaciones, commit **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §24) |
+| 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | Commit en `rocionuvoli`, **sin push** | **Compilar la API** y probar (ver §25) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1774,3 +1775,83 @@ Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo 
   borrador: recuadro gris arriba de la tabla y "Generar proforma" con "Para generar, resolvé las N diferencias".
 - [ ] 7. En pantalla completa, los íconos de los títulos, del menú y de los avisos quedan a la altura del texto (sobre
   todo el aviso de WhatsApp al elegir el chofer).
+
+---
+
+## 25. Proformas: datos del cliente desde el cliente, no desde la proforma — HECHO EN LA MAC, FALTA COMPILAR Y PROBAR EN VM (22/10)
+
+Rocío lo decidió el 22/10, mientras lo charlaba con Facu (la proforma y la factura son su módulo: **coordinarlo con
+él antes de hacerlo**). Hoy, en la proforma propia, la razón social, el nombre comercial, el CUIT, la dirección y el
+teléfono son campos libres desde el módulo original (`194da0e`, 28/07); solo la condición IVA es de solo lectura (Facu,
+15/10, la API la toma del cliente). En la de Rukas los despliega "Editar datos del cliente". Lo que se cambia ahí queda
+solo en esa proforma y **la factura toma esos datos de la proforma** (`FacturasController.LeerProforma`): un CUIT
+corregido a mano en la proforma sale en la factura aunque la ficha del cliente diga otro. No había ninguna definición
+escrita sobre esto.
+
+**Decisiones:**
+- **En la proforma no se edita ningún dato del cliente:** se ven como texto (§6.3), en la propia y en la de Rukas.
+- **"Editar cliente"** (botón en la proforma): oculta el modal de la proforma, sin perder lo cargado, y abre el de
+  editar cliente, el mismo de Gestionar clientes, con todos sus datos editables salvo el **tipo de cliente**
+  (directo / Rukas), que desde una proforma queda deshabilitado con el motivo: cambiaría el circuito de la proforma
+  abierta. Guardar → toast verde y vuelve a la proforma con los datos nuevos. Cancelar → vuelve sin cambios ni aviso.
+- **Los borradores muestran siempre los datos actuales del cliente;** la copia queda fija al generar la proforma. Al
+  editar el cliente (desde la proforma o desde Gestionar clientes) se actualizan todos sus borradores, propios y de
+  Rukas. Las proformas generadas, aceptadas o facturadas y las facturas no cambian.
+- **Avisos** (§5.1, toast verde):
+  - sin borradores: "Cliente actualizado.";
+  - con uno: "Cliente actualizado. También se actualizaron sus datos en el borrador de proforma #23.";
+  - con varios: "Cliente actualizado. También se actualizaron sus datos en 3 borradores de proforma.";
+  - desde la proforma, el borrador abierto cuenta como uno más; en una proforma nueva todavía sin guardar, solo
+    "Cliente actualizado.".
+- **Una proforma generada (o aceptada) con un dato del cliente mal:** se corrige el cliente, se anula la proforma y se
+  genera una nueva, que toma los datos corregidos. Una generada no vuelve a borrador (la única transición es Generada →
+  Aceptada). Así la factura puede seguir tomando los datos de la proforma.
+
+**Qué cambió** (probado en la Mac con una API simulada; el C# no se pudo compilar acá):
+- **API** (`ProformasController.cs`, al final: `DatosClienteProforma`): lee la ficha del cliente (razón social,
+  nombre comercial, CUIT, condición IVA, calle y altura, localidad, provincia, código postal, teléfono y e-mail) y la
+  corta al largo de las columnas `Cli_*` de `PROFORMAS`. La usan:
+  - guardar, editar y duplicar una proforma propia: los `Cli_*` salen del cliente, no de la pantalla (antes solo la
+    condición IVA);
+  - leer una proforma (`GET api/Proformas/{id}`): un borrador muestra siempre los datos actuales del cliente; una
+    generada, los que quedaron;
+  - generar (propia y de Rukas): la copia queda fija con la ficha de ese momento;
+  - importar el Excel de Rukas (`ProformasPlataformaController.Importar`);
+  - editar un cliente (`ClientesController`, PUT): copia la ficha a todos sus borradores, propios y de Rukas, deja un
+    registro en Auditoría por borrador y devuelve `{ Borradores, BorradorID }` para el aviso. Si eso falla, el cliente
+    queda guardado igual (los borradores toman los datos al abrirlos o al generarlos).
+  - "Contacto" queda vacío: el cliente no tiene ese dato.
+- **Editar cliente compartido** (`assets/static/js/cliente-editar.js`, `SGTLEditarCliente.abrir`): el mismo modal y
+  las mismas validaciones en Gestionar clientes (que ya no tiene su copia) y en la proforma. Arma el aviso: "Cliente
+  actualizado." / "… También se actualizaron sus datos en el borrador de proforma #23." / "… en 3 borradores de
+  proforma.". Desde la proforma, el tipo de cliente se ve como texto: "Desde una proforma no se cambia: hacelo en
+  Gestionar clientes."
+- **Proforma propia** (`gestion-facturacion.html`): los seis campos del cliente quedan ocultos y se ven en un recuadro
+  gris (razón social y nombre comercial, CUIT, condición de IVA, domicilio con localidad y código postal, teléfono y
+  e-mail) con "Editar cliente". El enlace oculta la proforma sin perder lo cargado ni el aviso de cambios sin guardar,
+  abre la edición y vuelve con los datos nuevos. En "Ver", sin el enlace. Sin permiso para Gestionar clientes, el
+  enlace queda deshabilitado con el motivo (`sidebar-loader.js`: `window.sgtlPuedeEntrar`).
+- **Proforma de Rukas** (`proformas-plataforma.js`): "Editar datos del cliente" (paso 2) y "Ver datos" (paso 3 de un
+  borrador) pasan a "Editar cliente"; en solo lectura queda "Ver datos", que muestra el recuadro.
+- **PDF de la proforma** (`proforma-pdf.js`): "Ciudad" con la provincia y el código postal; sin "Contacto".
+
+**Probar en la VM** (`pull`, **compilar la API** y Ctrl+F5):
+- [ ] 1. Registrar proforma con un cliente directo: los datos del cliente se ven como texto en el recuadro gris, sin
+  campos. Agregar una línea, tocar "Editar cliente", cambiar el teléfono y guardar → toast "Cliente actualizado." (o
+  con sus borradores), la proforma vuelve con el teléfono nuevo y la línea sigue ahí. Cancelar en el cliente vuelve
+  sin aviso.
+- [ ] 2. En la edición abierta desde la proforma, el tipo de cliente se ve como texto con el motivo.
+- [ ] 3. Gestionar clientes: registrar uno (el tipo se elige) y editar uno con dos borradores de proforma → "Cliente
+  actualizado. También se actualizaron sus datos en 2 borradores de proforma."; abrir esos borradores: tienen los datos
+  nuevos. Una proforma generada del mismo cliente no cambia.
+- [ ] 4. Proforma de Rukas: en el paso 2, "Editar cliente" en la línea del cliente; en el paso 3 de un borrador, en el
+  recuadro gris; con el ojo (solo lectura), "Ver datos".
+- [ ] 5. Guardar y generar un borrador y emitir su factura: la factura sale con los datos de la ficha del cliente.
+- [ ] 6. "Ver PDF" de un borrador: e-mail y "Ciudad" con el código postal; sin "Contacto".
+- [ ] 7. Con un usuario sin permiso para Gestionar clientes: "Editar cliente" deshabilitado con el motivo.
+- [ ] 8. Auditoría: al editar un cliente con borradores, un registro por borrador ("Datos del cliente actualizados
+  desde su ficha").
+
+**Para charlar con Facu (pendiente del 22/10):** el **tipo de cliente** tampoco se frena desde Gestionar clientes. Si
+un cliente con viajes sin facturar pasa de directo a Rukas, o al revés, esos viajes quedan en un circuito que ya no le
+corresponde. Se podría dejar deshabilitado, con el motivo, mientras tenga viajes sin facturar o proformas abiertas.

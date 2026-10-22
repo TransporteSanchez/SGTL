@@ -132,12 +132,15 @@
                         <!-- Emisión (se completa al generar) y vencimiento de la proforma: no son el período de los viajes. -->
                         <input id="p_femision" type="hidden"><input id="p_fvto" type="hidden">
                         <input id="p_moneda" type="hidden" value="ARS">
-                        <div class="col-md-4"><label class="form-label">Razón social</label><input id="p_cli_razon" class="form-control"></div>
-                        <div class="col-md-4"><label class="form-label">Nombre comercial</label><input id="p_cli_nombre" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">CUIT/CUIL/DNI</label><input id="p_cli_cuit" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Condición IVA</label><input id="p_cli_condiva" class="form-control" readonly></div>
-                        <div class="col-md-4"><label class="form-label">Dirección</label><input id="p_cli_dir" class="form-control"></div>
-                        <div class="col-md-2"><label class="form-label">Teléfono</label><input id="p_cli_tel" class="form-control"></div>
+                        <!-- Datos del cliente (§25 de PENDIENTES, 22/10): no se editan en la proforma. Los campos quedan ocultos
+                             (los completa el cliente elegido) y se ven como texto en el recuadro de abajo, con "Editar cliente". -->
+                        <div class="col-md-4 d-none"><label class="form-label">Razón social</label><input id="p_cli_razon" class="form-control" readonly></div>
+                        <div class="col-md-4 d-none"><label class="form-label">Nombre comercial</label><input id="p_cli_nombre" class="form-control" readonly></div>
+                        <div class="col-md-3 d-none"><label class="form-label">CUIT/CUIL/DNI</label><input id="p_cli_cuit" class="form-control" readonly></div>
+                        <div class="col-md-3 d-none"><label class="form-label">Condición IVA</label><input id="p_cli_condiva" class="form-control" readonly></div>
+                        <div class="col-md-4 d-none"><label class="form-label">Dirección</label><input id="p_cli_dir" class="form-control" readonly></div>
+                        <div class="col-md-2 d-none"><label class="form-label">Teléfono</label><input id="p_cli_tel" class="form-control" readonly></div>
+                        <div class="col-12" id="p_cli_resumenGrupo"><div id="p_cli_resumen" class="sgtl-dato-fijo" hidden></div></div>
                     </div>
                     <!-- Datos logísticos históricos: temporalmente fuera del formulario de Proformas. -->
                     <div class="d-none" aria-hidden="true">
@@ -244,6 +247,8 @@
     <script src="assets/static/js/facturacion-configuracion.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/clientes.js"></script>
+    <script src="assets/static/js/cliente-editar.js"></script>
     <script src="assets/static/js/proformas-plataforma.js"></script>
     <script src="assets/static/js/anulacion-factura-proforma.js"></script>
 
@@ -354,16 +359,112 @@
         function autocompletarCliente() {
             var id = val('p_cliente');
             var c = clientesMap[id];
-            if (!c) return;
-            setVal('p_cli_razon', c.Razon_Social || c.RazonSocial || '');
-            setVal('p_cli_nombre', c.Nombre_Comercial || c.NombreComercial || '');
-            setVal('p_cli_cuit', c.CUIT_Cliente || c.CUIT || '');
-            setVal('p_cli_condiva', descripcionCondicionIva(c.Cond_Fiscal));
-            var dir = [(c.Calle || ''), (c.AlturaCalle || '')].join(' ').trim();
-            setVal('p_cli_dir', dir);
-            setVal('p_cli_tel', c.Telefono || '');
+            if (!c) { pintarDatosCliente(); return; }
+            completarDatosCliente(c);
             if (window.ProformaPlataforma) ProformaPlataforma.alCambiarCliente(id, c);
         }
+
+        // ---------- Datos del cliente (§25 de PENDIENTES, 22/10) ----------
+        // No se editan en la proforma: salen de la ficha del cliente (la API los vuelve a tomar al guardar) y se ven
+        // como texto. "Editar cliente" oculta la proforma, abre la edición del cliente y vuelve con los datos nuevos.
+        var datosExtraCliente = { email: '', ciudad: '', provincia: '', cp: '' };
+        var proformaSoloLectura = false;
+
+        function completarDatosCliente(c) {
+            setVal('p_cli_razon', (c.Razon_Social || c.RazonSocial || '').trim());
+            setVal('p_cli_nombre', (c.Nombre_Comercial || c.NombreComercial || '').trim());
+            setVal('p_cli_cuit', (c.CUIT_Cliente || c.CUIT || '').trim());
+            setVal('p_cli_condiva', descripcionCondicionIva(c.Cond_Fiscal));
+            setVal('p_cli_dir', [(c.Calle || '').trim(), (c.AlturaCalle || '').trim()].join(' ').trim());
+            setVal('p_cli_tel', (c.Telefono || '').trim());
+            datosExtraCliente = { email: (c.Email || '').trim(), ciudad: '', provincia: '', cp: (c.CodigoPostal || '').trim() };
+            pintarDatosCliente();
+            // La localidad y la provincia llegan por nombre aparte (clientes.js las guarda para no pedirlas dos veces).
+            var id = String(c.Cliente_ID || '');
+            if (window.nombreLocalidadCliente && c.ProvID && c.LocID) {
+                Promise.all([nombreLocalidadCliente(c.ProvID, c.LocID), nombreProvinciaCliente(c.ProvID)]).then(function (nombres) {
+                    if (val('p_cliente') !== id) return;
+                    datosExtraCliente.ciudad = nombres[0] || '';
+                    datosExtraCliente.provincia = nombres[1] || '';
+                    pintarDatosCliente();
+                });
+            }
+        }
+
+        // Permiso para editar clientes (el mismo que muestra Gestionar clientes en el menú).
+        function puedeEditarClientes() {
+            return typeof window.sgtlPuedeEntrar !== 'function' || window.sgtlPuedeEntrar('gestion-clientes.html');
+        }
+
+        // El enlace "Editar cliente" (también lo usa la proforma de Rukas). Sin permiso, deshabilitado con el motivo (§1.4).
+        function htmlEditarCliente() {
+            var enlace = '<button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-editar-cliente' +
+                (puedeEditarClientes() ? '' : ' disabled') + '><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar cliente</button>';
+            if (puedeEditarClientes()) return enlace;
+            return '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="No tenés permiso para editar clientes"' +
+                ' aria-label="Editar cliente: no tenés permiso para editar clientes">' + enlace + '</span>';
+        }
+
+        function pintarDatosCliente() {
+            var caja = document.getElementById('p_cli_resumen');
+            if (!caja) return;
+            var razon = val('p_cli_razon').trim();
+            caja.hidden = !val('p_cliente') || !razon;
+            if (caja.hidden) { caja.innerHTML = ''; return; }
+            var nombre = val('p_cli_nombre').trim();
+            var lugar = [datosExtraCliente.ciudad, datosExtraCliente.provincia && datosExtraCliente.provincia.toLowerCase() !== (datosExtraCliente.ciudad || '').toLowerCase() ? datosExtraCliente.provincia : '']
+                .filter(Boolean).join(', ');
+            var lineaLugar = [lugar, datosExtraCliente.cp ? 'CP ' + datosExtraCliente.cp : ''].filter(Boolean).join(' · ');
+            var dato = function (etiqueta, valor, debajo) {
+                return '<div class="col-12 col-md-4"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">' + etiqueta + '</span>' +
+                    '<div class="sgtl-dato-valor">' + esc(valor || '') + (debajo ? '<div class="suave">' + esc(debajo) + '</div>' : '') + '</div></div></div>';
+            };
+            caja.innerHTML = '<div class="d-flex align-items-start gap-3"><div class="row g-2 flex-grow-1">' +
+                dato('Razón social', razon, nombre && nombre.toLowerCase() !== razon.toLowerCase() ? nombre : '') +
+                dato('CUIT', window.formatearCUIT && val('p_cli_cuit').replace(/\D/g, '').length === 11 ? formatearCUIT(val('p_cli_cuit')) : val('p_cli_cuit')) +
+                dato('Condición de IVA', val('p_cli_condiva')) +
+                dato('Domicilio', val('p_cli_dir'), lineaLugar) + dato('Teléfono', val('p_cli_tel')) + dato('E-mail', datosExtraCliente.email) +
+                '</div>' + (proformaSoloLectura ? '' : '<div class="flex-shrink-0">' + htmlEditarCliente() + '</div>') + '</div>';
+        }
+
+        // Ocultar la proforma para editar el cliente no es cerrarla: no pide descartar cambios y, al volver, sigue igual.
+        function editarClienteDesdeProforma() {
+            var id = val('p_cliente');
+            if (!id || !window.SGTLEditarCliente || !puedeEditarClientes()) return;
+            var conCambios = proformaConCambios;
+            proformaConCambios = false;
+            $('#modalProforma').one('hidden.bs.modal', function () {
+                SGTLEditarCliente.abrir(id, {
+                    tipoBloqueado: 'Desde una proforma no se cambia: hacelo en Gestionar clientes.',
+                    alCerrar: function (resultado) {
+                        var volver = function () {
+                            $('#modalProforma').one('shown.bs.modal', function () { proformaConCambios = conCambios; }).modal('show');
+                        };
+                        if (!resultado) { volver(); return; }
+                        $.ajax({ url: API_FAC + '/Clientes/' + id, type: 'GET' }).done(function (c) {
+                            clientesMap[id] = Object.assign(clientesMap[id] || {}, c);
+                            actualizarOpcionCliente(id, clientesMap[id]);
+                            completarDatosCliente(clientesMap[id]);
+                            if (window.ProformaPlataforma) ProformaPlataforma.refrescarCliente();
+                        }).always(volver);
+                    }
+                });
+            });
+            $('#modalProforma').modal('hide');
+        }
+
+        // La razón social o el CUIT pudieron cambiar: la opción del cliente (en el formulario y en el filtro) también.
+        function actualizarOpcionCliente(id, c) {
+            var cuit = c.CUIT_Cliente || c.CUIT || '';
+            var etiqueta = (c.Razon_Social || c.RazonSocial || ('Cliente ' + id)) + (cuit ? ' · ' + cuit : '');
+            ['p_cliente', 'fCliente'].forEach(function (selectId) {
+                var opcion = document.querySelector('#' + selectId + ' option[value="' + id + '"]');
+                if (opcion) opcion.textContent = etiqueta;
+                SelectClientePredictivo.sincronizar(selectId);
+            });
+        }
+
+        $(document).on('click', '#modalProforma [data-editar-cliente]', editarClienteDesdeProforma);
 
         function descripcionCondicionIva(condicion) {
             var descripciones = {
@@ -615,6 +716,8 @@
             $('#modalProforma .is-invalid').removeClass('is-invalid');
             $('#alertaCompletaCampos').hide();
             document.getElementById('cuerpoConceptos').innerHTML = '';
+            datosExtraCliente = { email: '', ciudad: '', provincia: '', cp: '' };
+            pintarDatosCliente();
             recalcularTotales();
         }
         function actualizarVisibilidadNumero(mostrar) {
@@ -654,6 +757,7 @@
                 setVal('p_cli_nombre', p.Cli_NombreComercial || (estadoActual === 'Borrador' && nombreActual) || '');
                 setVal('p_cli_cuit', p.Cli_CUIT);
                 setVal('p_cli_condiva', descripcionCondicionIva(p.Cli_CondIVA) || p.Cli_CondIVA || ''); setVal('p_cli_dir', p.Cli_Direccion); setVal('p_cli_tel', p.Cli_Telefono);
+                datosExtraCliente = { email: p.Cli_Email || '', ciudad: p.Cli_Ciudad || '', provincia: p.Cli_Provincia || '', cp: p.Cli_CP || '' };
                 setVal('p_tiposervicio', p.TipoServicio); setVal('p_origen', p.Origen); setVal('p_destino', p.Destino);
                 setVal('p_tipocarga', p.TipoCarga); setVal('p_fcarga', p.FechaCarga ? p.FechaCarga.substring(0, 10) : ''); setVal('p_fentrega', p.FechaEntrega ? p.FechaEntrega.substring(0, 10) : '');
                 setVal('p_peso', p.Peso); setVal('p_volumen', p.Volumen); setVal('p_bultos', p.Bultos); setVal('p_vehiculo', p.VehiculoRequerido); setVal('p_obslog', p.ObsLogisticas);
@@ -687,6 +791,9 @@
             document.getElementById('btnCerrarProforma').textContent = ro ? 'Cerrar' : 'Cancelar';
             // botones de línea
             cont.querySelectorAll('#tablaConceptos button, .bloque-titulo button').forEach(function (b) { b.style.display = ro ? 'none' : ''; });
+            // En modo ver, los datos del cliente sin "Editar cliente".
+            proformaSoloLectura = ro;
+            pintarDatosCliente();
         }
         function armarDto() {
             var lineas = [];

@@ -11,7 +11,8 @@
   var estado = nuevoEstado();
   // Condiciones comerciales de la cabecera: lo único que se edita en un borrador ya importado.
   var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', Observaciones: 'p_observaciones' };
-  // En modo plataforma los datos del cliente van plegados en una línea y el período sale del Excel.
+  // En modo plataforma los datos del cliente van en una línea (o en el recuadro de arriba de la tabla) y el período
+  // sale del Excel. Los datos no se editan acá: "Editar cliente" abre la edición del cliente (§25 de PENDIENTES).
   var CAMPOS_CLIENTE = ['p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel'];
   var CAMPOS_PERIODO = ['p_fdesde', 'p_fhasta'];
   var MOTIVO_MAXIMO = 500;
@@ -103,6 +104,8 @@
     if (tituloDatos && tituloDatos.classList.contains('bloque-titulo')) ocultar(tituloDatos);
     cuerpo.insertBefore(crear('<ol id="pp_pasos" class="sgtl-pasos" aria-label="Pasos"></ol>'), tituloDatos || filaCliente);
     CAMPOS_PERIODO.concat(CAMPOS_CLIENTE).forEach(function (id) { ocultar(columna(id)); });
+    // El recuadro con los datos del cliente de la proforma propia: acá se ve solo con "Ver datos" (solo lectura).
+    ocultar($id('p_cli_resumenGrupo'));
     if (filaCliente) filaCliente.after(crear('<div id="pp_ficha" class="small text-muted mt-1"></div>'));
 
     // Totales: van en una línea dentro del bloque de la plataforma. (El dl también tiene la clase row.)
@@ -182,27 +185,27 @@
     }).join('');
   }
 
-  // Los campos del cliente de siempre, desplegados o plegados.
+  // "Ver datos" (solo lectura): el recuadro con los datos del cliente, desplegado o plegado.
   function mostrarDatosCliente() {
-    CAMPOS_CLIENTE.forEach(function (id) {
-      var col = columna(id);
-      if (!col) return;
-      col.classList.toggle('d-none', !estado.datosAbiertos);
-      if (estado.datosAbiertos) col.removeAttribute('data-pp-oculto'); else col.setAttribute('data-pp-oculto', '');
-    });
+    var grupo = $id('p_cli_resumenGrupo');
+    if (!grupo) return;
+    grupo.classList.toggle('d-none', !estado.datosAbiertos);
+    if (estado.datosAbiertos) grupo.removeAttribute('data-pp-oculto'); else grupo.setAttribute('data-pp-oculto', '');
   }
 
-  // Paso 2: datos del cliente en una línea, debajo del cliente; "Editar datos del cliente" despliega los campos.
+  // "Editar cliente" lo arma la pantalla (gestion-facturacion.html): abre la edición del cliente y vuelve.
+  function enlaceEditarCliente() {
+    return typeof window.htmlEditarCliente === 'function' ? window.htmlEditarCliente() : '';
+  }
+
+  // Paso 2: datos del cliente en una línea, debajo del cliente, con "Editar cliente".
   // La etiqueta de la plataforma va adentro del campo, como en Registrar viaje (data-etiqueta de la opción).
   function ficha() {
     var caja = $id('pp_ficha');
     if (!caja) return;
     var partes = [valorCampo('p_cli_condiva'), valorCampo('p_cli_dir'), valorCampo('p_cli_tel')].filter(Boolean);
-    caja.innerHTML = esc(partes.join(' · ')) + (partes.length ? ' · ' : '') +
-      '<button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_ficha_boton" aria-expanded="' + estado.datosAbiertos + '">' +
-      (estado.datosAbiertos ? 'Ocultar datos del cliente' : 'Editar datos del cliente') + '</button>';
-    mostrarDatosCliente();
-    $id('pp_ficha_boton').addEventListener('click', function () { estado.datosAbiertos = !estado.datosAbiertos; ficha(); });
+    var enlace = enlaceEditarCliente();
+    caja.innerHTML = esc(partes.join(' · ')) + (partes.length && enlace ? ' · ' : '') + enlace;
   }
 
   // En el paso 3 el cliente ya no se cambia: el campo y la línea de datos se pliegan (quedan en los pasos).
@@ -258,13 +261,12 @@
   // ---------------------------------------------------------------- Paso 2: elegir el Excel
 
   function activar(clienteId, info) {
-    var reactivar = estado.activo;
     estado.activo = true;
     estado.clienteId = clienteId;
     estado.plataforma = info.Plataforma;
     estado.puedeLeer = !!info.PuedeLeer;
     estado.archivo = null; estado.filas = null; estado.base64 = null; estado.numero = null; estado.control = null;
-    if (!reactivar) estado.datosAbiertos = false;
+    estado.datosAbiertos = false;
     modoPlataforma(true);
     plegarCliente(false);
     pasos(2);
@@ -701,9 +703,11 @@
     var archivo = esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma());
     var importado = c.FechaArchivo ? ' title="Importado el ' + esc(fecha(c.FechaArchivo, { hora: true })) + '"' : '';
     return '<div class="sgtl-dato-fijo mb-3"><div class="row g-2">' +
-      '<div class="col-md-5"><span class="sgtl-dato-etiqueta">Cliente</span>' + esc(valorCampo('p_cli_razon') || '—') +
-      ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
-      (estado.datosAbiertos ? 'Ocultar datos' : 'Ver datos') + '</button></div>' +
+      '<div class="col-md-5"><span class="sgtl-dato-etiqueta">Cliente</span><span id="pp_cliente_nombre">' + esc(valorCampo('p_cli_razon') || '—') + '</span>' +
+      // En un borrador, "Editar cliente"; en solo lectura, "Ver datos" muestra el recuadro con los datos que quedaron.
+      (editable ? (enlaceEditarCliente() ? ' · ' + enlaceEditarCliente() : '')
+        : ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_datos_boton" aria-expanded="' + estado.datosAbiertos + '">' +
+          (estado.datosAbiertos ? 'Ocultar datos' : 'Ver datos') + '</button>') + '</div>' +
       '<div class="col-md-4"><span class="sgtl-dato-etiqueta">Excel de ' + p + '</span><span' + importado + '>' + archivo + '</span>' +
       (editable ? ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_reemplazar">Reemplazar</button>' +
         '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">' : '') + '</div>' +
@@ -1036,6 +1040,12 @@
     activo: function () { return estado.activo; },
     reiniciar: desactivar,
     // Al elegir el cliente: si trabaja con plataforma, el modal pasa a los pasos con el Excel.
+    // Después de editar el cliente desde la proforma: los datos nuevos en la línea del paso 2 o en el recuadro del 3.
+    refrescarCliente: function () {
+      if (!estado.activo) return;
+      if (estado.control) { var nombre = $id('pp_cliente_nombre'); if (nombre) nombre.textContent = valorCampo('p_cli_razon') || '—'; }
+      else ficha();
+    },
     alCambiarCliente: function (clienteId, cliente) {
       if (!clienteId || !cliente || cliente.Tipo_Cliente !== 'Con_plataforma') { if (estado.activo) desactivar(); return; }
       pedir(API + '/Cliente/' + clienteId).then(function (info) {

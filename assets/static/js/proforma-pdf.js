@@ -85,10 +85,12 @@
         doc.text('CUIT: ' + txt(p.Cli_CUIT), colB, ry);
         doc.text('Cond. IVA: ' + txt(p.Cli_CondIVA), colA, ry + 5);
         doc.text('Dirección: ' + txt(p.Cli_Direccion), colB, ry + 5);
-        doc.text('Ciudad: ' + txt(p.Cli_Ciudad), colA, ry + 10);
+        // Los datos salen de la ficha del cliente (§25 de PENDIENTES, 22/10). "Contacto" no tiene de dónde salir: no va.
+        var ciudad = [p.Cli_Ciudad, p.Cli_Provincia && String(p.Cli_Provincia).toLowerCase() !== String(p.Cli_Ciudad || '').toLowerCase() ? p.Cli_Provincia : '']
+            .filter(Boolean).join(', ') + (p.Cli_CP ? ' (CP ' + p.Cli_CP + ')' : '');
+        doc.text('Ciudad: ' + txt(ciudad), colA, ry + 10);
         doc.text('Tel: ' + txt(p.Cli_Telefono), colB, ry + 10);
         doc.text('Email: ' + txt(p.Cli_Email), colA, ry + 15);
-        doc.text('Contacto: ' + txt(p.Cli_Contacto), colB, ry + 15);
         y = chY + chH + 5;
 
         if (esPlataforma) {
