@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM (ver §20) | **Sin pushear** | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Quedan 4 temas sin tocar, anotados al final de §20 | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1091,3 +1091,22 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   Mazer ("Toggle navigation", en inglés) que nunca se mostraba; se saca de todas, como en el dashboard.
 - [ ] El botón de las tres rayas y el menú de usuario siguen funcionando en cualquier pantalla.
 
+### Quedó sin tocar en el repaso del 22/10 — NO HECHO
+
+- [ ] **Mensajes de la API de Facu con mayúscula en el medio** (§9 del design system), por ejemplo "Solo se pueden
+  anular Recibos emitidos." o "No se pudo emitir el Recibo. Ningún cambio fue confirmado.". Se ven tal cual en
+  cuenta corriente, proformas y presupuestos, porque la pantalla muestra el texto que manda la API. Son unas 55
+  líneas: 24 en `RecibosController.cs`, 15 en `ComprobantesController.cs` y el resto en `FacturasController.cs`,
+  `FacturacionConfiguracionController.cs`, `EnviosPresupuestosController.cs` y `EnviosComprobantesController.cs`.
+  Algunas son textos que se guardan en la base (concepto del movimiento, auditoría): revisarlas una por una y
+  cambiar solo lo que se muestra. Es C#: recompilar y probar en la VM. **Módulo de Facu: coordinarlo con él.**
+- [ ] **SheetJS (`xlsx@0.18.5`) tiene vulnerabilidades conocidas** (contaminación de prototipo al leer un archivo y
+  una expresión regular que se puede trabar). Se carga desde jsdelivr en `cuenta-corriente-clientes.html`,
+  `gestion-facturacion.html` y `listado-facturas.html` (exportar a Excel y, en proformas, leer el Excel de Rukas).
+  Las versiones corregidas (0.19.3 o posteriores) ya no se publican en npm sino en `cdn.sheetjs.com`: hay que
+  decidir de dónde cargarla (o copiarla a `assets/extensions/`) y volver a probar exportar e importar el Excel.
+- [ ] **"Cambiar contraseña" del menú de usuario no hace nada** (es un link a `#`). Ya anotado como R4 en §10 y,
+  con la propuesta del código por WhatsApp, en §15. Decidir si se implementa o se saca del menú.
+- [ ] **El filtro de Presupuestos no tiene botón "Buscar"**: filtra mientras se escribe (sobre la lista ya cargada),
+  así que el botón sobraría. Es la única pantalla así; decidir si queda como excepción (anotarla en §3.3 del design
+  system) o si se le agrega el botón para que sea igual a las demás.
