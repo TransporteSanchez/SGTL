@@ -253,7 +253,7 @@
     // ---------------------------------------------------------------- Ver PDF (§1.4)
     // Vista previa dentro del sistema, igual que en presupuestos y cuenta corriente: Cerrar · Imprimir · Descargar PDF.
     // Proformas no tiene envío por e-mail (queda para ver con Facu). Se puede abrir encima del formulario de la proforma.
-    var vista = null, urlVista = null, secuenciaVista = 0;
+    var vista = null, urlVista = null, secuenciaVista = 0, origenVista = null;
 
     function porId(id) { return document.getElementById(id); }
 
@@ -293,7 +293,13 @@
             marco.onload = null; marco.removeAttribute('src');
             if (urlVista) { URL.revokeObjectURL(urlVista); urlVista = null; }
             // Si quedó abierta otra ventana debajo, Bootstrap le sacó al body la clase que la deja desplazarse.
-            if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
+            var abierta = document.querySelector('.modal.show');
+            if (abierta) document.body.classList.add('modal-open');
+            // Bootstrap no devuelve el foco cuando la ventana se abre por código: vuelve a lo que la abrió (el "Ver PDF"
+            // del formulario o el botón de la fila) o, si ya no está, a la ventana de abajo.
+            var destino = origenVista && origenVista.isConnected && origenVista !== document.body ? origenVista : abierta;
+            origenVista = null;
+            if (destino) destino.focus();
         });
         return bootstrap.Modal.getOrCreateInstance(modal);
     }
@@ -316,6 +322,7 @@
         porId('tituloVistaProforma').textContent = 'Ver PDF de la proforma';
         var aviso = porId('vistaProformaFeedback');
         aviso.className = 'text-center text-muted py-4'; aviso.textContent = 'Preparando el PDF…';
+        if (!porId('modalVistaProforma').contains(document.activeElement)) origenVista = document.activeElement;
         vista.show();
         preparar(id).then(function (r) {
             if (version !== secuenciaVista) return;

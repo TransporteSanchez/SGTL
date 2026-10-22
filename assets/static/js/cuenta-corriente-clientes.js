@@ -766,6 +766,8 @@
         porId('reciboNumeroComprobante').value = recibo.Numero || recibo.NumeroComprobante || '';
         porId('reciboFormaPago').value = ({ TRANSFERENCIA: 'Transferencia', EFECTIVO: 'Efectivo', CHEQUE: 'Cheque', OTRO: 'Otro' })[String(recibo.FormaPago || '').toUpperCase()] || 'Otro';
         porId('reciboReferencia').value = recibo.Referencia || '';
+        window.SGTL.limpiarError(porId('reciboReferencia'));
+        actualizarReferenciaRecibo();
         porId('reciboFormaImporte').value = formatearCentavos(centavos(recibo.Total));
         porId('reciboObservaciones').value = recibo.Observaciones || '';
         renderAplicacionesReciboEdicion(recibo.Aplicaciones);
@@ -834,6 +836,8 @@
             }[String(recibo.FormaPago || '').toUpperCase()] || 'Transferencia';
             porId('reciboFormaPago').value = formaVisual;
             porId('reciboReferencia').value = recibo.Referencia || '';
+            window.SGTL.limpiarError(porId('reciboReferencia'));
+            actualizarReferenciaRecibo();
             porId('reciboFormaImporte').value = formatearCentavos(centavos(recibo.Total));
             porId('reciboObservaciones').value = recibo.Observaciones || '';
             window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
@@ -873,9 +877,7 @@
         error.textContent = '';
         if (!fechaRecibo) { error.textContent = 'Completá la fecha del recibo.'; return; }
         if (fechaRecibo > hoyIso()) { error.textContent = 'La fecha del recibo no puede ser futura.'; return; }
-        if ((forma === 'Transferencia' || forma === 'Cheque') && !referencia) {
-            error.textContent = 'Ingresá la referencia de la transferencia o del cheque.'; return;
-        }
+        if (!validarReferenciaRecibo()) return;
         var listo = window.SGTL.procesando('#btnEmitirRecibo');
         apiPut('/recibos/' + reciboEditandoId, {
             Fecha: fechaRecibo,
@@ -1025,6 +1027,8 @@
         porId('reciboNumeroComprobante').value = '';
         porId('reciboFormaPago').value = 'Transferencia';
         porId('reciboReferencia').value = '';
+        window.SGTL.limpiarError(porId('reciboReferencia'));
+        actualizarReferenciaRecibo();
         porId('reciboFormaImporte').value = '0,00';
         porId('reciboObservaciones').value = '';
         porId('reciboError').textContent = '';
@@ -1050,6 +1054,31 @@
         cargarFacturasRecibo();
         porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', false);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
+    }
+    // Con transferencia o cheque la referencia es obligatoria: el asterisco sigue a la forma de pago y el error va
+    // debajo del campo (§6.3).
+    function referenciaReciboObligatoria() {
+        var forma = porId('reciboFormaPago').value;
+        return forma === 'Transferencia' || forma === 'Cheque';
+    }
+    function limpiarErrorReferenciaRecibo() {
+        window.SGTL.limpiarError(porId('reciboReferencia'));
+        if (porId('reciboError').textContent === 'Revisá los campos marcados.') porId('reciboError').textContent = '';
+    }
+    function actualizarReferenciaRecibo() {
+        var obligatoria = referenciaReciboObligatoria();
+        porId('reciboReferenciaObligatoria').classList.toggle('d-none', !obligatoria);
+        if (!obligatoria || porId('reciboReferencia').value.trim()) limpiarErrorReferenciaRecibo();
+    }
+    function validarReferenciaRecibo() {
+        if (referenciaReciboObligatoria() && !porId('reciboReferencia').value.trim()) {
+            window.SGTL.marcarError(porId('reciboReferencia'), 'Ingresá la referencia de la transferencia o del cheque.');
+            porId('reciboError').textContent = 'Revisá los campos marcados.';
+            porId('reciboReferencia').focus();
+            return false;
+        }
+        window.SGTL.limpiarError(porId('reciboReferencia'));
+        return true;
     }
     function aplicacionesRecibo() {
         var aplicaciones = [];
@@ -1090,9 +1119,7 @@
         });
         if (excedePendiente) { error.textContent = 'Un importe aplicado supera el saldo pendiente del comprobante.'; return; }
         if (aplicado > total) { error.textContent = 'El total aplicado no puede superar el total del recibo.'; return; }
-        if ((forma === 'Transferencia' || forma === 'Cheque') && !referencia) {
-            error.textContent = 'Ingresá la referencia de la transferencia o del cheque.'; return;
-        }
+        if (!validarReferenciaRecibo()) return;
 
         var listo = window.SGTL.procesando('#btnEmitirRecibo');
         apiPost('/recibos', {
@@ -1848,6 +1875,10 @@
             actualizarResumenRecibo();
         });
         porId('reciboFormaImporte').addEventListener('input', function () { actualizarResumenRecibo(false); });
+        porId('reciboFormaPago').addEventListener('change', actualizarReferenciaRecibo);
+        porId('reciboReferencia').addEventListener('input', function () {
+            if (porId('reciboReferencia').value.trim()) limpiarErrorReferenciaRecibo();
+        });
         porId('cmpFacturasNC').addEventListener('input', actualizarResumenNotaCredito);
         porId('cmpFacturasNC').addEventListener('change', function (event) {
             if (event.target.classList.contains('cc-nc-check')) {

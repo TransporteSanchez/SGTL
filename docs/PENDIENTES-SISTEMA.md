@@ -1590,11 +1590,24 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
 **los 8 puntos OK** y sin errores de JavaScript. Se emitió el REC-00000014 (distribuidora-powerful S.A., $ 100.000,00,
 aplicado a FAC-00000004 y FAC-00000005). Después se subió "Cuenta corriente: las tres tarjetas del resumen tienen la
 misma altura" (`1a78bd8`, solo visual): lo mira Rocío a mano.
-- [ ] Mejoras que dejó el reporte, para que decida Rocío: asterisco y error debajo del campo en la referencia del recibo
-  (§6.3); "710.0 km" con punto en el texto del mapa de presupuestos; PF-00000004 dice "Factura" en Listar proformas y
-  "Facturada" en Gestionar; la cruz de "Ver proforma" sin `aria-label` y el foco que no vuelve al formulario;
-  "Auditoria" y "Cuenta Corriente" en Grupos y permisos (van con el renombre de permisos de arriba); el grupo
-  "PRUEBA-CLAUDE 20/10" a la vista (limpieza).
+- Mejoras que dejó el reporte (Rocío eligió hacer primero las tres más chicas, 22/10):
+  - [x] **Hecho (22/10, commit "Interfaz: mejoras de la reprueba: km del mapa, foco de Ver PDF y referencia del
+    recibo"), sin recompilar:**
+    - Cuenta corriente, Registrar y Editar recibo: la referencia lleva asterisco solo con Transferencia o Cheque, y si
+      falta, el error sale debajo del campo con "Revisá los campos marcados." arriba (§6.3). Al pasar a Efectivo u
+      Otro, o al escribirla, el rojo se va. Módulo de Facu: solo pantalla.
+    - Presupuestos: el texto del mapa y el aviso de "no hay tarifa" muestran los km con coma ("710,0 km").
+    - Proformas: la cruz del formulario tiene `aria-label`, y al cerrar la vista del PDF el foco vuelve a lo que la
+      abrió (el "Ver PDF" del formulario o el botón de la fila).
+    - [ ] Probar en la VM (Ctrl+F5): Registrar recibo con Transferencia y sin referencia → asterisco, error debajo del
+      campo y aviso arriba; cambiar a Efectivo → se van el asterisco y el error; cancelar sin emitir. Presupuestos:
+      registrar uno sin guardar → "Distancia: 710,0 km, de …". Proformas: abrir una, "Ver PDF", cerrar con la cruz →
+      el formulario sigue abierto con el foco en su "Ver PDF".
+  - [ ] PF-00000004 dice "Factura" en Listar proformas y "Facturada" en Gestionar: las dos pantallas usan la misma API
+    y la misma etiqueta, así que la diferencia viene del dato. Falta investigarlo (módulo de Facu).
+  - [ ] "Auditoria" y "Cuenta Corriente" en Grupos y permisos: van con el renombre de permisos de arriba.
+  - [ ] Limpieza: el grupo "PRUEBA-CLAUDE 20/10" (eliminarlo desde Gestionar grupos y permisos, después de ver que no
+    tenga usuarios reales).
 
 **Después de la prueba:** actualizar `facugodoy` y `fedemontenegro` con `rocionuvoli` (en la Mac, con el OK de Rocío)
 y mandarles este mensaje. **Hecho (22/10):** `facugodoy`, `fedemontenegro` y `main` quedaron en `36a92c8`, sin conflictos

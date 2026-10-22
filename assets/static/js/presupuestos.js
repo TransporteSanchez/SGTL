@@ -81,7 +81,7 @@
         if (!distancia || !ruta || !ruta.legs || !ruta.legs.length) return false;
         tramos = ruta.legs;
         el('distancia').value = distancia;
-        actualizarMensajeMapa('Distancia: ' + distancia + ' km, de ' + tramos[0].start_address + ' a ' + tramos[tramos.length - 1].end_address + '.', 'ok');
+        actualizarMensajeMapa('Distancia: ' + SGTL.km(distancia) + ' km, de ' + tramos[0].start_address + ' a ' + tramos[tramos.length - 1].end_address + '.', 'ok');
         solicitarCalculo();
         return true;
     }
@@ -188,7 +188,7 @@
             if (version !== secuencia) return;
             var info = el('tarifaInfo');
             if (tipo === 'km' && error.status === 404 && error.respuesta && error.respuesta.Mensaje) {
-                info.textContent = 'No hay una tarifa por km vigente para las fechas seleccionadas y ' + el('distancia').value + ' km. Registrá una tarifa que cubra ese período y distancia en ';
+                info.textContent = 'No hay una tarifa por km vigente para las fechas seleccionadas y ' + SGTL.km(el('distancia').value) + ' km. Registrá una tarifa que cubra ese período y distancia en ';
                 var enlace = document.createElement('a'); enlace.href = 'gestion-tarifas.html'; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Gestionar tarifas'; info.appendChild(enlace); info.appendChild(document.createTextNode('.'));
             } else if (tipo === 'fija' && error.status === 404) {
                 info.textContent = 'No hay una tarifa fija registrada para el cliente y la ruta seleccionados.';

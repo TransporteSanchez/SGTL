@@ -74,7 +74,8 @@ const sandboxRuta = {
     el: function (id) { return id === 'distancia' ? distancia : null; },
     kilometrosRuta: sandbox.kilometrosRuta,
     actualizarMensajeMapa: function (texto) { mensajeMapa = texto; },
-    solicitarCalculo: function () { tarifaSolicitada = true; }
+    solicitarCalculo: function () { tarifaSolicitada = true; },
+    SGTL: { km: function (valor) { return String(valor).replace('.', ','); } }
 };
 vm.runInNewContext(extraerFuncion('aplicarRutaPresupuesto'), sandboxRuta, { filename: 'presupuestos.js' });
 sandboxRuta.aplicarRutaPresupuesto({ routes: [{ legs: [
@@ -83,8 +84,8 @@ sandboxRuta.aplicarRutaPresupuesto({ routes: [{ legs: [
 ] }] });
 assert.strictEqual(distancia.value, '12.5',
     'la distancia que devuelve Google debe completar el campo del presupuesto');
-assert.match(mensajeMapa, /12\.5 km/,
-    'el mapa debe informar los kil\u00f3metros calculados');
+assert.match(mensajeMapa, /12,5 km/,
+    'el mapa debe informar los kil\u00f3metros calculados con coma decimal (SGTL.km)');
 assert.strictEqual(tarifaSolicitada, true,
     'el cambio de distancia debe actualizar la tarifa por kil\u00f3metro');
 
