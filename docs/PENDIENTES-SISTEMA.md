@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Quedan 4 temas sin tocar, anotados al final de §20 | **Pusheado** (`1015f66`, 22/10) | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login, presupuestos, documentación y dashboard al día y repaso final hecho (22/10); falta probar en la VM. Los 4 temas que habían quedado sin tocar, resueltos el 22/10 (final de §20); queda anotado que las contraseñas se guardan sin cifrar | **Pusheado** (`1015f66`, 22/10) | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1092,7 +1092,7 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   Mazer ("Toggle navigation", en inglés) que nunca se mostraba; se saca de todas, como en el dashboard.
 - [ ] El botón de las tres rayas y el menú de usuario siguen funcionando en cualquier pantalla.
 
-### Quedó sin tocar en el repaso del 22/10 — NO HECHO
+### Quedó sin tocar en el repaso del 22/10 — RESUELTO EL MISMO 22/10 (FALTA PROBAR EN VM), SALVO LAS CONTRASEÑAS SIN CIFRAR
 
 - [x] **Mensajes de la API de Facu con mayúscula en el medio** (§9 del design system), por ejemplo "Solo se pueden
   anular Recibos emitidos.". **Hecho (22/10, commit "Facturación: mensajes de la API como el resto del sistema",
@@ -1107,10 +1107,11 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   facturación devolvía el texto de cualquier excepción: ahora solo los de validación; un código repetido dice "Ya
   existe un registro con ese código." y el resto, "No se pudo completar la operación. Probá de nuevo.".
   **Hay que recompilar la API.**
-  - [ ] Probar en la VM (con datos de prueba): en cuenta corriente, editar un recibo anulado o anular uno ya anulado
-    (el mensaje sale en minúscula: "Solo se pueden anular recibos emitidos."); emitir un recibo con fecha futura
-    desde otra herramienta no hace falta. En Gestionar facturación, registrar una sucursal con un código que ya
-    existe → toast "Ya existe un registro con ese código." (o el mensaje de validación de la API).
+  - [ ] Probar en la VM: en cuenta corriente, Registrar recibo de un cliente de prueba, marcar una factura y poner
+    una fecha anterior a la de esa factura → Emitir: la API lo rechaza (no se emite nada) y arriba del formulario
+    sale "La fecha del recibo no puede ser anterior al comprobante aplicado." En Gestionar facturación, registrar
+    una sucursal con un código que ya existe → toast con el mensaje de la API (o "Ya existe un registro con ese
+    código."), nunca un texto técnico.
 - [x] **SheetJS (`xlsx@0.18.5`) tenía vulnerabilidades conocidas** (contaminación de prototipo al leer un archivo y
   una expresión regular que se puede trabar). **Hecho (22/10, commit "Interfaz: SheetJS 0.20.3 en una copia
   local"):** se copió la 0.20.3 de `cdn.sheetjs.com` a `assets/extensions/sheetjs/xlsx.full.min.js` (decisión de
