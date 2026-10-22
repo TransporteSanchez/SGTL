@@ -925,7 +925,8 @@ funcionando (`sgtl-ui.js`).
 - [ ] Tabla con muchas columnas: al desplazarla hacia el costado, Acciones queda fija a la derecha.
 - [x] ~~Entregado sin evidencia → "¿Guardar la entrega sin evidencia?"~~: desde el 22/10 la evidencia es obligatoria
   en los directos y ya no pregunta (ver "Viajes: evidencia obligatoria…" al final del §20).
-- [ ] Quitar evidencia de un viaje que tenga: confirmación "¿Quitar la evidencia…?", Quitar → toast.
+- [ ] Quitar evidencia de un viaje que tenga (con plataforma, o directo que no esté entregado; en un directo entregado
+  no aparece desde el 22/10): confirmación "¿Quitar la evidencia…?", Quitar → toast.
 - [ ] Exportar en Gestionar y en Listar viajes: baja el CSV con todo lo filtrado.
 - [ ] Listar viajes → ojo de una fila: "Ver detalle del viaje" con cliente, origen, destino, chofer y camión por
   nombre; pie Cerrar.
@@ -1194,17 +1195,17 @@ elegida por Rocío (opción A), escrita en §1.3 y §3.3 del design system:
   250 km.
 - [ ] A 1280 px (o con el navegador más angosto) el rango de fechas elegido se lee completo.
 
-### Banderita gris en viajes (22/10) — commit "Viajes: banderita de estado en gris, como en presupuestos"
+### Banderita gris en viajes (22/10) — commit "Viajes: banderita de estado en gris, como en presupuestos" (`006bdce`), PUSHEADO, FALTA PROBAR EN VM
 
 Decisión de Rocío: la banderita (cambiar estado) es gris en todo el sistema; el verde queda para el paso puntual
 del circuito (Marcar aceptada, Emitir factura, Generar viaje), uno por fila. En Gestionar viajes la banderita era
 verde: pasa a gris con el botón compartido de presupuestos. Sigue abriendo el mismo modal "Estado y entrega del
 viaje"; rehacerlo con la ventana de tarjetas de presupuestos queda para cuando se normalice viajes.
-- [ ] Gestionar viajes: la banderita de cada fila es gris (con tooltip "Estado y entrega") y abre el modal de
-  siempre.
+- [ ] Gestionar viajes: la banderita de cada fila es gris (tooltip "Cambiar estado") y abre la ventana de tarjetas
+  (sección siguiente).
 - [x] Pasar el modal "Estado y entrega del viaje" a la ventana de tarjetas: hecho en la sección siguiente.
 
-### Viajes: "Cambiar estado" con la ventana de tarjetas (22/10) — commit "Viajes: cambiar estado con la ventana de tarjetas", SIN PUSH, FALTA PROBAR EN VM
+### Viajes: "Cambiar estado" con la ventana de tarjetas (22/10) — commit "Viajes: cambiar estado con la ventana de tarjetas" (`7bd5ffe`), PUSHEADO, FALTA PROBAR EN VM
 
 El modal "Estado y entrega del viaje" (desplegable de estado + campos sueltos) pasa a la misma ventana "Cambiar
 estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Viajes/{id}/Estado` y
@@ -1242,7 +1243,7 @@ estado" de presupuestos (§1.4 del design system). Misma API de antes (`POST Via
   banderita deshabilitada.
 - [ ] Listar viajes → Ver detalle de un viaje con evidencia: el enlace la abre.
 
-### Viajes: evidencia obligatoria al entregar un viaje directo (22/10) — commit "Viajes: evidencia obligatoria al entregar un viaje directo", SIN PUSH, FALTA COMPILAR Y PROBAR EN VM
+### Viajes: evidencia obligatoria al entregar un viaje directo (22/10) — commit "Viajes: evidencia obligatoria al entregar un viaje directo" (`e40db60`), PUSHEADO, FALTA COMPILAR Y PROBAR EN VM
 
 Decisión de Rocío (cierra la pregunta 4 de `docs/design-system/04-relevamiento-funcional.md`): en un viaje directo
 SGTL es la única constancia de la entrega; sin el adjunto, "Entregado" depende solo de que alguien lo marque. La
