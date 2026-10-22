@@ -360,6 +360,7 @@
     <script src="assets/static/js/alta-rapida-ubicacion.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/viaje-detalle.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/select-cliente-predictivo.js"></script>
@@ -553,8 +554,9 @@
                 : (desdePresupuesto ? 'Se generó desde el presupuesto #' + viaje.Presupuesto_ID + ': no se puede eliminar'
                 : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado')));
             const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
-            // Orden del design system (§1.4): editar, siguiente paso del circuito, eliminar.
+            // Orden del design system (§1.4): ver detalle, editar, cambiar estado, eliminar.
             return SGTL.accionesFila([
+                SGTL.botonFila('ver', { id: viaje.Viaje_ID }),
                 SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: motivo }),
                 // Banderita gris, igual que en presupuestos (§1.4): abre "Cambiar estado", con los datos de la entrega.
                 SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: motivo }),
@@ -565,6 +567,8 @@
         // Botones de cada fila (SGTL.botonFila): se escuchan desde la tabla porque las filas se redibujan.
         $(function () {
             $('#tablaViajes')
+                // El mismo detalle que Listar viajes y el dashboard (viaje-detalle.js).
+                .on('click', '[data-accion="ver"]', function () { SGTLDetalleViaje.abrir(viajesPagina[String($(this).data('id'))]); })
                 .on('click', '[data-accion="editar"]', function () { abrirModalEditarViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="estado"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="eliminar"]', function () { abrirModalEliminarViaje(String($(this).data('id'))); });

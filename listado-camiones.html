@@ -148,81 +148,60 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="detalleCamionTitulo">Ver detalle del camión</h5>
+                        <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="detalleCamionTitulo"><span>Ver detalle del camión</span><span id="detalleEstado"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-4 mb-4">
-                            <div><span class="text-muted me-1">Estado:</span><span id="detalleEstado"></span></div>
-                            <div><span class="text-muted me-1">Fecha de alta:</span><span id="detalleFechaAlta"></span></div>
+                        <div class="modal-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Datos del camión</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Dominio</span><div class="sgtl-dato-valor" id="detalleDominio"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Marca</span><div class="sgtl-dato-valor" id="detalleMarca"></div></div></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Modelo</span><div class="sgtl-dato-valor" id="detalleModelo"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Año del modelo</span><div class="sgtl-dato-valor" id="detalleAnio"></div></div></div>
+                                        </div>
+                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Tipo</span><div class="sgtl-dato-valor" id="detalleTipo"></div></div>
+                                    </section>
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Identificación</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de motor</span><div class="sgtl-dato-valor" id="detalleMotor"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Número de chasis</span><div class="sgtl-dato-valor" id="detalleChasis"></div></div></div>
+                                        </div>
+                                    </section>
+                                </div>
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Fechas y equipamiento</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de compra</span><div class="sgtl-dato-valor" id="detalleFechaCompra"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha de ITV</span><div class="sgtl-dato-valor" id="detalleFechaITV"></div></div></div>
+                                        </div>
+                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Equipo de frío</span><div class="sgtl-dato-valor" id="detalleEquipoFrio"></div></div>
+                                    </section>
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Chofer asignado</div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped mb-0" id="tablaChoferesAsignados">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Nombre</th>
+                                                        <th>Apellido</th>
+                                                        <th>DNI</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                            <div class="sgtl-detalle-pie mt-3" id="registroCamion"></div>
                         </div>
-
-                        <h6 class="mb-2">Datos del camión</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Dominio</span>
-                                <p class="form-control-plaintext" id="detalleDominio"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Marca</span>
-                                <p class="form-control-plaintext" id="detalleMarca"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Modelo</span>
-                                <p class="form-control-plaintext" id="detalleModelo"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Año del modelo</span>
-                                <p class="form-control-plaintext" id="detalleAnio"></p>
-                            </div>
-                            <div class="col-12 col-md-8">
-                                <span class="form-label d-block mb-0">Tipo</span>
-                                <p class="form-control-plaintext" id="detalleTipo"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Identificación</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Número de motor</span>
-                                <p class="form-control-plaintext" id="detalleMotor"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Número de chasis</span>
-                                <p class="form-control-plaintext" id="detalleChasis"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Fechas y equipamiento</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Fecha de compra</span>
-                                <p class="form-control-plaintext" id="detalleFechaCompra"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Fecha de ITV</span>
-                                <p class="form-control-plaintext" id="detalleFechaITV"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Equipo de frío</span>
-                                <p class="form-control-plaintext" id="detalleEquipoFrio"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Chofer asignado</h6>
-                        <div class="table-responsive">
-                            <table class="table table-striped mb-0" id="tablaChoferesAsignados">
-                                <thead>
-                                    <tr>
-                                        <th>Nombre</th>
-                                        <th>Apellido</th>
-                                        <th>DNI</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
@@ -404,7 +383,7 @@
             SGTL.ajax({ url: `${API}/Camiones/${camionId}`, type: 'GET' },
                 'No se pudo abrir el detalle del camión. Probá de nuevo.').then(function (camion) {
                     $('#detalleEstado').html(SGTL.estado(camion.EstadoCamion));
-                    $('#detalleFechaAlta').text(fechaCamion(camion.Fecha_Alta));
+                    $('#registroCamion').text(SGTL.textoRegistro(camion.Usu_Alta, fechaCamion(camion.Fecha_Alta), camion.Usu_Modi, fechaCamion(camion.Fecha_Modi)));
                     $('#detalleDominio').text((camion.Dominio || '').trim());
                     $('#detalleMarca').text(camion.Marca || '');
                     $('#detalleModelo').text(camion.Modelo || '');

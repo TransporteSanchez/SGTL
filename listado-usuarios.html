@@ -136,34 +136,32 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="detalleUsuarioTitulo">Ver detalle del usuario</h5>
+                        <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="detalleUsuarioTitulo"><span>Ver detalle del usuario</span><span id="detalleEstado"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-4 mb-4">
-                            <div><span class="text-muted me-1">Estado:</span><span id="detalleEstado"></span></div>
-                            <div><span class="text-muted me-1">Rol:</span><span id="detalleRol"></span></div>
+                        <div class="modal-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Datos del usuario</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre de usuario</span><div class="sgtl-dato-valor" id="detalleUsuario"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Rol</span><div class="sgtl-dato-valor" id="detalleRol"></div></div></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre</span><div class="sgtl-dato-valor" id="detalleNombre"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
+                                        </div>
+                                    </section>
+                                </div>
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Grupos y pantallas que ve</div>
+                                        <div id="detalleGrupos"></div>
+                                    </section>
+                                </div>
+                            </div>
                         </div>
-
-                        <h6 class="mb-2">Datos del usuario</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Nombre de usuario</span>
-                                <p class="form-control-plaintext" id="detalleUsuario"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Nombre</span>
-                                <p class="form-control-plaintext" id="detalleNombre"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Apellido</span>
-                                <p class="form-control-plaintext" id="detalleApellido"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Grupos y pantallas que ve</h6>
-                        <div id="detalleGrupos"></div>
-                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>

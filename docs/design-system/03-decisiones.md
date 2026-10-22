@@ -22,6 +22,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
+| Ver detalle (§6.2) | `.sgtl-dato` / `.sgtl-dato-etiqueta` / `.sgtl-dato-valor`; pie: `SGTL.textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi)`; viaje: `SGTLDetalleViaje.abrir(viaje, { enlaceGestion })` (`viaje-detalle.js`) |
 | Elegir de una lista larga (cliente, chofer, §6.3) | `SelectClientePredictivo.inicializar(select, { placeholder, textoVacio, idCampo })` (`assets/static/js/select-cliente-predictivo.js`) |
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
@@ -242,7 +243,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión |
 | Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
 | Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
-| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta |
+| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10) |
 | Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
@@ -345,6 +346,13 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   con el verbo: "Guardar" (`btn-primary`) en alta y edición, "Eliminar" / "Anular" en rojo
   (`btn-danger`), "Generar", "Emitir recibo". **Nunca "Confirmar".**
 - **Detalle:** solo "Cerrar" en el pie, además de la cruz.
+- **Cómo se arma un Ver detalle** (22/10, opción B de Rocío): con los mismos bloques que su formulario
+  (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en dos columnas de bloques en pantalla ancha y una en el celular. Cada dato
+  lleva su nombre chico arriba y el valor en texto abajo (`.sgtl-dato`, `.sgtl-dato-etiqueta`, `.sgtl-dato-valor`); un
+  dato vacío se ve "—". El estado va en el título, al lado del nombre ("Ver detalle del viaje #46" + la etiqueta), con
+  las etiquetas informativas que correspondan. Abajo, en chico, quién lo registró y quién lo modificó
+  (`SGTL.textoRegistro`). Así están viajes (`viaje-detalle.js`, el mismo en Listar y Gestionar viajes y en el
+  dashboard), choferes, camiones, clientes y usuarios. Los documentos (proforma, comprobantes) siguen el §1.4.
 - **Los formularios no se cierran con un clic afuera** (`data-bs-backdrop="static"`); Escape y la
   cruz sí los cierran. Los de detalle se cierran también con un clic afuera.
 - **Tamaño según el contenido:** `modal-lg` para formularios comunes; `modal-xl` solo con mapa o

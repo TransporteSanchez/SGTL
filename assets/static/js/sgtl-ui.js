@@ -323,7 +323,7 @@
     gris: ['registrado', 'borrador', 'inactivo', 'deshabilitado', 'login', 'logout', 'inicio de sesion', 'cierre de sesion'],
     azul: ['en viaje', 'entregado', 'generada', 'generado', 'update', 'modificacion'],
     amarillo: ['listo para facturar', 'aceptada', 'parcial', 'km manual', 'atrasado', 'sin salir', 'sin cerrar', 'sin proforma', 'sin evidencia', 'por vencer'],
-    verde: ['activo', 'habilitado', 'facturado', 'facturada', 'cancelado', 'cancelada', 'aplicado', 'aplicada', 'insert', 'alta'],
+    verde: ['activo', 'habilitado', 'facturado', 'facturada', 'cancelado', 'cancelada', 'aplicado', 'aplicada', 'insert', 'alta', 'completa'],
     rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente', 'rechazo', 'vencida']
   };
 
@@ -881,6 +881,18 @@
     };
   }
 
+  // ---------------------------------------------------------------- Ver detalle (§6.2)
+
+  // Pie de un Ver detalle: "Registrado por jperez el 18/10/2026 10:12 · Modificado por … el …". Las fechas llegan ya
+  // en texto, porque cada pantalla corrige su zona horaria (§2 de docs/PENDIENTES-SISTEMA.md). Sin modificación, solo
+  // el alta. Devuelve texto plano (va con .text()).
+  function textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi) {
+    var partes = [];
+    if (fechaAlta || usuarioAlta) partes.push('Registrado' + (usuarioAlta ? ' por ' + usuarioAlta : '') + (fechaAlta ? ' el ' + fechaAlta : ''));
+    if (fechaModi && fechaModi !== fechaAlta) partes.push('Modificado' + (usuarioModi ? ' por ' + usuarioModi : '') + ' el ' + fechaModi);
+    return partes.join(' · ');
+  }
+
   // ---------------------------------------------------------------- Exportar (§1.2)
 
   // Baja un CSV separado por punto y coma, con BOM para que Excel lea bien los acentos.
@@ -936,6 +948,7 @@
     avisoFormulario: avisoFormulario,
     revisarFormulario: revisarFormulario,
     reiniciarFormulario: reiniciarFormulario,
+    textoRegistro: textoRegistro,
     descargarCSV: descargarCSV
   };
 })();

@@ -930,33 +930,10 @@
 
   // ---------------------------------------------------------------- Detalle del viaje
 
+  // El mismo detalle que Listar y Gestionar viajes (viaje-detalle.js), con el enlace para abrirlo en Gestionar viajes.
   function mostrarDetalle(id) {
     var v = dash.viajes[id];
-    if (!v) return;
-    var datos = [
-      ['Cliente', esc(v.Cliente)],
-      ['Recorrido', esc(v.Origen) + ' → ' + esc(v.Destino)],
-      ['Inicio', esc(SGTL.fecha(v.Fecha_Inicio, { hora: true }))],
-      ['Fin', esc(SGTL.fecha(v.Fecha_Fin, { hora: true }))],
-      ['Km', v._km ? esc(SGTL.km(v._km)) : '—'],
-      ['Estado', etiquetaEstado(v)],
-      ['Resultado de la entrega', esc(v.Resultado_Entrega || '—')],
-      ['Camión', esc(dominio(v.CamionID) || '—')],
-      ['Chofer', esc(nombreChofer(v.ChoferID) || '—')],
-      ['N° de remito', esc(String(v.Num_Remito || '').trim() || '—')]
-    ];
-    if (String(v.Num_Transporte || '').trim()) datos.push(['N° transporte SAP', esc(String(v.Num_Transporte).trim())]);
-    if (String(v.Num_de_Carga || '').trim()) datos.push(['N° entrega Rukas', esc(String(v.Num_de_Carga).trim())]);
-    if (v.EnProforma_Numero) datos.push(['Proforma', esc(v.EnProforma_Numero)]);
-
-    el('detalleViajeTitulo').textContent = 'Ver detalle del viaje N° ' + v.Viaje_ID;
-    el('detalleViajeCuerpo').innerHTML = datos.map(function (d) {
-      return '<dt class="col-sm-5 text-muted fw-normal">' + d[0] + '</dt><dd class="col-sm-7">' + d[1] + '</dd>';
-    }).join('');
-    var abrir = el('detalleViajeAbrir');
-    abrir.href = 'gestion-viajes.html?viaje=' + encodeURIComponent(v.Viaje_ID);
-    abrir.classList.toggle('d-none', v.Facturada === true);
-    SGTL.modal('#modalDetalleViaje', 'show');
+    if (v) SGTLDetalleViaje.abrir(v, { enlaceGestion: true });
   }
 
   // ---------------------------------------------------------------- Calendario

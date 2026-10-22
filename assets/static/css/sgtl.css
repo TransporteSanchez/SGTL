@@ -1122,3 +1122,38 @@ body .cliente-select-predictivo-menu button.activa {
     background-color: #f2f4f7 !important;
     color: var(--sgtl-texto);
 }
+
+/* Ver detalle (§6.2, opción B, 22/10): los bloques del formulario, cada dato con su nombre chico arriba y el valor en
+   texto; abajo, quién lo registró. */
+.sgtl-dato {
+    margin-bottom: .75rem;
+}
+
+.sgtl-dato-etiqueta {
+    display: block;
+    color: var(--sgtl-texto-suave);
+    font-size: .75rem;
+    font-weight: 700;
+}
+
+.sgtl-dato-valor {
+    color: var(--sgtl-texto);
+    font-size: .9rem;
+    overflow-wrap: anywhere;
+}
+
+.sgtl-dato-valor .suave {
+    color: var(--sgtl-texto-suave);
+    font-size: .8125rem;
+}
+
+.sgtl-detalle-pie {
+    color: var(--sgtl-texto-suave);
+    font-size: .78rem;
+}
+
+/* Un dato sin cargar se ve con una raya, no vacío. */
+.sgtl-dato-valor:empty::before {
+    content: "—";
+    color: var(--sgtl-texto-suave);
+}

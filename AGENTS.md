@@ -47,7 +47,8 @@ AGENTS.md"):
    recibo", "Emitir factura directa"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
    empiezan con verbo ("Gestionar…", "Listar…") y el título de la pantalla es igual a la opción. (§3.1, §6.1)
 4. **Pie de los modales:** Cancelar + el verbo ("Guardar", "Eliminar", "Emitir recibo"). **Nunca
-   "Confirmar".** Los formularios llevan `data-bs-backdrop="static"`; los de detalle, solo "Cerrar". (§6.2)
+   "Confirmar".** Los formularios llevan `data-bs-backdrop="static"`; los de detalle, solo "Cerrar", armados con los
+   bloques de su formulario (`.sgtl-dato`, estado en el título). (§6.2)
 5. **Avisos con `SGTL.toastExito` / `SGTL.toastError`**; el error de un modal abierto, dentro del modal con
    `SGTL.avisoFormulario`. **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)

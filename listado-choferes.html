@@ -146,84 +146,62 @@
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="DetallesChofer">Ver detalle del chofer</h5>
+                        <h5 class="modal-title d-flex align-items-center flex-wrap gap-2" id="DetallesChofer"><span>Ver detalle del chofer</span><span id="EstadoActualChofer"></span></h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
-                    <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-4 mb-4">
-                            <div><span class="text-muted me-1">Estado:</span><span id="EstadoActualChofer"></span></div>
-                            <div><span class="text-muted me-1">Fecha de alta:</span><span id="FechaAltaChofer"></span></div>
+                        <div class="modal-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Datos personales</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre</span><div class="sgtl-dato-valor" id="detalleNombre"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">DNI</span><div class="sgtl-dato-valor" id="detalleDNI"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">CUIL</span><div class="sgtl-dato-valor" id="detalleCUIL"></div></div></div>
+                                        </div>
+                                    </section>
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Contacto</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Teléfono celular</span><div class="sgtl-dato-valor" id="detalleCelular"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Teléfono particular</span><div class="sgtl-dato-valor" id="detalleTelefono"></div></div></div>
+                                        </div>
+                                        <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div>
+                                    </section>
+                                </div>
+                                <div class="col-md-6">
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Domicilio</div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Provincia</span><div class="sgtl-dato-valor" id="detalleProvincia"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Localidad</span><div class="sgtl-dato-valor" id="detalleLocalidad"></div></div></div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Calle</span><div class="sgtl-dato-valor" id="detalleCalle"></div></div></div>
+                                            <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Altura</span><div class="sgtl-dato-valor" id="detalleAltura"></div></div></div>
+                                        </div>
+                                    </section>
+                                    <section class="sgtl-bloque">
+                                        <div class="sgtl-bloque-titulo">Camión asignado</div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-striped mb-0" id="tablaCamionesAsignados">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Dominio</th>
+                                                        <th>Cédula</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                            <div class="sgtl-detalle-pie mt-3" id="registroChofer"></div>
                         </div>
-
-                        <h6 class="mb-2">Datos personales</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Nombre</span>
-                                <p class="form-control-plaintext" id="detalleNombre"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Apellido</span>
-                                <p class="form-control-plaintext" id="detalleApellido"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">DNI</span>
-                                <p class="form-control-plaintext" id="detalleDNI"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">CUIL</span>
-                                <p class="form-control-plaintext" id="detalleCUIL"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Contacto</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Teléfono celular</span>
-                                <p class="form-control-plaintext" id="detalleCelular"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Teléfono particular</span>
-                                <p class="form-control-plaintext" id="detalleTelefono"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">E-mail</span>
-                                <p class="form-control-plaintext text-break" id="detalleEmail"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Domicilio</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Provincia</span>
-                                <p class="form-control-plaintext" id="detalleProvincia"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Localidad</span>
-                                <p class="form-control-plaintext" id="detalleLocalidad"></p>
-                            </div>
-                            <div class="col-12 col-md-8">
-                                <span class="form-label d-block mb-0">Calle</span>
-                                <p class="form-control-plaintext" id="detalleCalle"></p>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <span class="form-label d-block mb-0">Altura</span>
-                                <p class="form-control-plaintext" id="detalleAltura"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Camión asignado</h6>
-                        <div class="table-responsive">
-                            <table class="table table-striped mb-0" id="tablaCamionesAsignados">
-                                <thead>
-                                    <tr>
-                                        <th>Dominio</th>
-                                        <th>Cédula</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
-                        </div>
-                    </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                     </div>
@@ -426,7 +404,7 @@
                 'No se pudo abrir el detalle del chofer. Probá de nuevo.').then(function (chofer) {
                     return Promise.all([nombreProvincia(chofer.ProvID), nombreLocalidad(chofer.ProvID, chofer.LocID)]).then(function (nombres) {
                         $('#EstadoActualChofer').html(SGTL.estado(chofer.EstadoChofer));
-                        $('#FechaAltaChofer').text(fechaChofer(chofer.Fecha_Alta));
+                        $('#registroChofer').text(SGTL.textoRegistro(chofer.Usu_Alta, fechaChofer(chofer.Fecha_Alta), chofer.Usu_Modi, fechaChofer(chofer.Fecha_Modi)));
                         $('#detalleNombre').text(chofer.Nombre || '');
                         $('#detalleApellido').text(chofer.Apellido || '');
                         $('#detalleDNI').text(chofer.DNI || '');

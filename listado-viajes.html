@@ -159,102 +159,13 @@
             </footer>
         </div>
 
-        <!-- Modal Ver detalle del viaje -->
-        <div class="modal fade" id="DetallesViajeModal" tabindex="-1" aria-labelledby="DetallesViaje" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="DetallesViaje">Ver detalle del viaje</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="d-flex flex-wrap gap-4 mb-4">
-                            <div><span class="text-muted me-1">Estado:</span><span id="detalleEstado"></span></div>
-                        </div>
-
-                        <h6 class="mb-2">Viaje</h6>
-                        <div class="row mb-3">
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Número de viaje</span>
-                                <p class="form-control-plaintext" id="detalleNumero"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Cliente</span>
-                                <p class="form-control-plaintext" id="detalleCliente"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Fecha de inicio</span>
-                                <p class="form-control-plaintext" id="detalleFechaInicio"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Fecha de fin</span>
-                                <p class="form-control-plaintext" id="detalleFechaFin"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Origen</span>
-                                <p class="form-control-plaintext" id="detalleOrigen"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Destino</span>
-                                <p class="form-control-plaintext" id="detalleDestino"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Cantidad de KM</span>
-                                <p class="form-control-plaintext" id="detalleKm"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Tarifa</span>
-                                <p class="form-control-plaintext" id="detalleTarifa"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Chofer</span>
-                                <p class="form-control-plaintext" id="detalleChofer"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Camión</span>
-                                <p class="form-control-plaintext" id="detalleCamion"></p>
-                            </div>
-                        </div>
-
-                        <h6 class="mb-2">Entrega y referencias</h6>
-                        <div class="row">
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">N° transporte SAP</span>
-                                <p class="form-control-plaintext" id="detalleTransporte"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Número de remito</span>
-                                <p class="form-control-plaintext" id="detalleRemito"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">N° entrega Rukas</span>
-                                <p class="form-control-plaintext" id="detalleEntregaRukas"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Resultado de la entrega</span>
-                                <p class="form-control-plaintext" id="detalleResultado"></p>
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <span class="form-label d-block mb-0">Fecha de entrega</span>
-                                <p class="form-control-plaintext" id="detalleFechaEntrega"></p>
-                            </div>
-                            <div class="col-12">
-                                <span class="form-label d-block mb-0">Evidencia de la entrega</span>
-                                <p class="form-control-plaintext" id="detalleEvidencia"></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <!-- Ver detalle del viaje: lo arma viaje-detalle.js (el mismo modal que Gestionar viajes y el dashboard). -->
 
         <!-- Scripts -->
         <script src="assets/extensions/jquery/jqueryajax.js"></script>
         <script src="assets/compiled/js/app.js"></script>
         <script src="assets/static/js/sgtl-ui.js"></script>
+        <script src="assets/static/js/viaje-detalle.js"></script>
         <script src="assets/static/js/components/sidebar.js"></script>
         <script src="assets/static/js/sidebar-loader.js"></script>
         <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
@@ -337,8 +248,6 @@
             let pageSize = 15;
             let currentPage = 1;
             let viajesPagina = {};
-            let choferes = {};
-            let camiones = {};
 
             // Etiquetas de estado; los colores salen de SGTL.estado (§4 del design system).
             const ESTADOS_VIAJE = {
@@ -378,37 +287,6 @@
                     });
                     SelectClientePredictivo.sincronizar('clienteFiltroViaje');
                 });
-                $.ajax({ url: API + '/Choferes', type: 'GET' }).done(function (data) {
-                    (data || []).forEach(function (c) { choferes[c.Chofer_ID] = ((c.Nombre || '') + ' ' + (c.Apellido || '')).trim(); });
-                });
-                $.ajax({ url: API + '/Camiones', type: 'GET' }).done(function (data) {
-                    (data || []).forEach(function (c) { camiones[c.Camion_ID] = String(c.Dominio || '').trim(); });
-                });
-            }
-
-            // Ver detalle (§1.4): datos en texto, con nombres en lugar de números de ID.
-            function mostrarDetallesViaje(viaje) {
-                $('#detalleEstado').html(SGTL.estado(viaje.Estado || '', ESTADOS_VIAJE[viaje.Estado] || viaje.Estado));
-                $('#detalleNumero').text(viaje.Viaje_ID);
-                $('#detalleCliente').text(texto(viaje.Cliente));
-                $('#detalleFechaInicio').text(texto(SGTL.fecha(viaje.Fecha_Inicio)));
-                $('#detalleFechaFin').text(texto(SGTL.fecha(viaje.Fecha_Fin)));
-                $('#detalleOrigen').text(texto(viaje.Origen));
-                $('#detalleDestino').text(texto(viaje.Destino));
-                $('#detalleKm').text(texto(viaje.Distancia_KM));
-                $('#detalleTarifa').text(viaje.TarifaKmID ? 'Por km' : (viaje.TarifaFijaID ? 'Fija' : '—'));
-                $('#detalleChofer').text(viaje.ChoferID ? texto(choferes[viaje.ChoferID] || ('Chofer #' + viaje.ChoferID)) : 'Sin chofer asignado');
-                $('#detalleCamion').text(viaje.CamionID ? texto(camiones[viaje.CamionID] || ('Camión #' + viaje.CamionID)) : '—');
-                $('#detalleTransporte').text(texto(viaje.Num_Transporte));
-                $('#detalleRemito').text(texto(viaje.Num_Remito));
-                $('#detalleEntregaRukas').text(texto(viaje.Num_de_Carga));
-                $('#detalleResultado').text(texto(viaje.Resultado_Entrega));
-                $('#detalleFechaEntrega').text(texto(SGTL.fecha(viaje.Fecha_Entrega)));
-                // La misma evidencia que se adjunta en Gestionar viajes al marcarlo entregado.
-                $('#detalleEvidencia').html(viaje.Tiene_Evidencia
-                    ? '<i class="bi bi-paperclip" aria-hidden="true"></i> <a href="' + API + '/Viajes/' + encodeURIComponent(viaje.Viaje_ID) + '/Evidencia" target="_blank" rel="noopener">Ver evidencia adjunta</a>'
-                    : '—');
-                SGTL.modal('#DetallesViajeModal', 'show');
             }
 
             // Exporta todo lo filtrado, no solo la página visible (§1.2).
@@ -501,7 +379,7 @@
                 $('#btnExportar').on('click', exportarViajes);
                 $('#tablaViajes').on('click', '[data-accion="ver"]', function () {
                     const viaje = viajesPagina[$(this).data('id')];
-                    if (viaje) mostrarDetallesViaje(viaje);
+                    if (viaje) SGTLDetalleViaje.abrir(viaje);
                 });
                 cargarListas();
                 buscarViajes(1);
