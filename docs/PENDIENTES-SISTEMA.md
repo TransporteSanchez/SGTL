@@ -1143,3 +1143,24 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   filtra con Buscar o Enter y se borra con la cruz.
   - [ ] Probar en la VM: escribir parte de un cliente no filtra hasta tocar Buscar o Enter; la cruz vuelve a
     mostrar todos; un texto que no está → "No hay resultados para los filtros elegidos.".
+
+### Presupuestos: filtros, paginación y cambio de estado (22/10) — EN PRUEBA, SIN PUSH
+
+Commit "Presupuestos: filtros, paginación y cambiar estado con la banderita". Pedido de Rocío: que la pantalla
+siga la misma estructura que las demás. **Rocío lo tiene que aprobar antes de subirlo** (lo simula en la Mac con
+la API falsa).
+- **Filtros:** Número (exacto), Cliente (buscador de clientes), Fecha (rango), Estado y Origen o destino, con
+  Buscar y la cruz en cada uno (antes había un solo campo que buscaba en todo). **Paginación** de a 15.
+- **Estado como etiqueta de color:** Pendiente gris (espera la respuesta; no es deuda), Aceptado amarillo hasta
+  generar el viaje y verde después, Rechazado rojo; el viaje generado va como etiqueta "Viaje #N" debajo del estado
+  (antes había un desplegable de estado dentro de la tabla y una columna Viaje).
+- **Botones de cada fila:** Editar · Ver PDF · Cambiar estado (banderita, nuevo) · Generar viaje · Eliminar.
+  "Enviar por e-mail" pasa al pie de "Ver PDF" (como en el detalle de cuenta corriente), así son cinco botones
+  como en proformas y la tabla entra a 1366 px. Origen y destino van en una columna "Ruta".
+- **Ventana "Cambiar estado":** resumen del presupuesto, estado actual y los estados posibles como tarjetas con
+  su explicación; Cancelar + Guardar; si no se elige ninguno, "Elegí el estado nuevo.". Usa el mismo
+  `PUT Presupuestos/{id}/estado` de antes. Propuesta para usar después en viajes.
+- [ ] Probar en la VM: filtrar por cada campo; cambiar un presupuesto Pendiente a Aceptado (toast "Presupuesto #N
+  aceptado.") y después Generar viaje (**con datos de prueba: crea un viaje real**); uno Aceptado sin viaje
+  puede volver a Pendiente; uno con viaje tiene la banderita deshabilitada; Ver PDF → Enviar por e-mail abre el
+  envío.

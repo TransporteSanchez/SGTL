@@ -4,7 +4,8 @@
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
-    var filtroAplicado = '';
+    // Filtros aplicados (§1.3: se aplican con Buscar, Enter o la cruz) y paginación del listado (§2.2).
+    var filtrosAplicados = {}, paginaActual = 1, tamanioPagina = 15, presupuestoEstado = null;
     var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
     function el(id) { return document.getElementById(id); }
     // Avisos (§5.1): los resultados van en toasts; el error de un modal queda arriba, dentro del modal.
@@ -98,41 +99,68 @@
     }
     function listar() {
         pedir(api + '/Presupuestos').then(function (items) { registros = items || []; dibujar(); }).catch(function () {
-            SGTL.tabla.vacia('#lista', 10, 'No se pudieron cargar los presupuestos.');
+            SGTL.tabla.vacia('#lista', 8, 'No se pudieron cargar los presupuestos.');
             aviso('mensaje', 'No se pudieron cargar los presupuestos. Probá de nuevo.', true);
         });
     }
+    function sinTildes(texto) { return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase(); }
+    function cumpleFiltros(p) {
+        var f = filtrosAplicados;
+        if (f.numero && String(p.id) !== String(Number(f.numero))) return false;
+        if (f.cliente && String(p.clienteId) !== f.cliente) return false;
+        if (f.estado && p.estado !== f.estado) return false;
+        var fecha = String(p.fecha || '').substring(0, 10);
+        if (f.fecha && (fecha < f.fecha.desde || fecha > f.fecha.hasta)) return false;
+        if (f.ruta && sinTildes(p.origen + ' ' + p.destino).indexOf(f.ruta) === -1) return false;
+        return true;
+    }
+    // Etiqueta de estado (§4.1): Pendiente es esperar la respuesta del cliente (gris, no es deuda); Aceptado
+    // es amarillo mientras falta generar el viaje y verde cuando ya se generó; Rechazado, rojo.
+    function etiquetaEstado(p) {
+        var estado = p.estado || 'Pendiente';
+        var color = estado === 'Rechazado' ? 'rojo' : estado === 'Aceptado' ? (p.viajeId ? 'verde' : 'amarillo') : 'gris';
+        return SGTL.estado(estado, estado, color);
+    }
     function dibujar() {
-        var cuerpo = el('lista'), filtro = filtroAplicado;
-        var items = registros.filter(function (p) { return [p.id, p.cliente, p.origen, p.destino].join(' ').toLocaleLowerCase().indexOf(filtro) >= 0; });
-        if (!items.length) { SGTL.tabla.vacia(cuerpo, 10, registros.length ? '' : 'Todavía no hay presupuestos cargados.'); return; }
+        var cuerpo = el('lista');
+        var items = registros.filter(cumpleFiltros);
+        var totalPaginas = tamanioPagina ? Math.max(1, Math.ceil(items.length / tamanioPagina)) : 1;
+        if (paginaActual > totalPaginas) paginaActual = totalPaginas;
+        SGTL.tabla.paginacion('#paginacion', {
+            pagina: paginaActual, tamanioPagina: tamanioPagina, total: items.length,
+            alCambiarPagina: function (pagina) { paginaActual = pagina; dibujar(); },
+            alCambiarTamanio: function (tamanio) { tamanioPagina = tamanio; paginaActual = 1; dibujar(); }
+        });
+        if (!items.length) { SGTL.tabla.vacia(cuerpo, 8, registros.length ? '' : 'Todavía no hay presupuestos cargados.'); return; }
+        if (tamanioPagina) items = items.slice((paginaActual - 1) * tamanioPagina, paginaActual * tamanioPagina);
         SGTL.tabla.llenar(cuerpo, '');
         items.forEach(function (p) {
             var tr = cuerpo.insertRow();
-            // Número, fecha (centrada), cliente, origen, destino, km e importe (a la derecha), §2.1.
-            [[p.id, ''], [SGTL.fecha(p.fecha), 'text-center'], [p.cliente, ''], [p.origen, ''], [p.destino, ''],
-             [p.distancia ? SGTL.km(p.distancia) : '—', 'text-end'], [SGTL.monto(p.importe || 0), 'text-end']].forEach(function (v) {
+            // Número, fecha (centrada), cliente, ruta, km e importe (a la derecha), §2.1. Origen y destino van en
+            // una sola columna para que la tabla entre en una notebook sin desplazarse hacia el costado.
+            [[p.id, ''], [SGTL.fecha(p.fecha), 'text-center text-nowrap'], [p.cliente, ''], [(p.origen || '—') + ' → ' + (p.destino || '—'), ''],
+             [p.distancia ? SGTL.km(p.distancia) : '—', 'text-end text-nowrap'], [SGTL.monto(p.importe || 0), 'text-end text-nowrap']].forEach(function (v) {
                 var celda = tr.insertCell(); celda.textContent = v[0] || ''; if (v[1]) celda.className = v[1];
             });
-            var estadoCelda = tr.insertCell(), selector = document.createElement('select');
+            var estadoCelda = tr.insertCell();
+            // El viaje generado va como etiqueta informativa junto al estado, igual que "En PF-…" en viajes (§4.3).
             estadoCelda.className = 'text-center';
-            selector.className = 'form-select form-select-sm d-inline-block w-auto'; selector.setAttribute('aria-label', 'Estado del presupuesto #' + p.id);
-            ['Pendiente', 'Aceptado', 'Rechazado'].forEach(function (estado) { opcion(selector, estado, estado); }); selector.value = p.estado || 'Pendiente'; selector.disabled = !!p.viajeId;
-            selector.onchange = function () { cambiarEstado(p, selector); }; estadoCelda.appendChild(selector);
-            tr.insertCell().textContent = p.viajeId ? '#' + p.viajeId : '—';
-            // Botones de la fila con el design system (§1.4): editar, PDF, e-mail, siguiente paso (generar viaje), eliminar.
-            var td = tr.insertCell(); td.className = 'text-center';
+            estadoCelda.innerHTML = etiquetaEstado(p) + (p.viajeId ? '<div class="mt-1"><span class="badge rounded-pill bg-white text-dark border">Viaje #' + Number(p.viajeId) + '</span></div>' : '');
+            // Botones de la fila (§1.4), en el orden del circuito: editar, PDF (con imprimir y e-mail adentro),
+            // cambiar estado (banderita), siguiente paso (generar viaje) y eliminar. Lo que no se puede hacer queda
+            // deshabilitado con el motivo.
+            var td = tr.insertCell(); td.className = 'text-center text-nowrap';
             var conViaje = !!p.viajeId;
-            var motivoGenerar = conViaje ? 'Ya se generó el viaje #' + p.viajeId : 'Solo se genera el viaje de un presupuesto aceptado';
+            var motivoGenerar = conViaje ? 'Ya se generó el viaje #' + p.viajeId : 'Primero marcalo como aceptado';
             td.innerHTML = SGTL.accionesFila([
-                SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: 'Solo se editan presupuestos pendientes sin viaje' }),
+                SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: 'Solo se editan presupuestos pendientes' }),
                 SGTL.botonFila('pdf', { id: p.id, texto: 'Ver PDF' }),
-                SGTL.botonFila('enviar', { id: p.id }),
+                SGTL.botonFila('estado', { id: p.id, deshabilitado: conViaje, motivo: 'Ya se generó el viaje #' + p.viajeId + ': el estado no cambia' }),
                 SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje, motivo: motivoGenerar }),
                 SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'Ya tiene un viaje generado: no se puede eliminar' })
             ]);
-            var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); }, enviar: function () { abrirEnvio(p); },
-                siguiente: function () { abrirGenerarViaje(p); }, eliminar: function () { eliminar(p); } };
+            var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); },
+                estado: function () { abrirCambioEstado(p); }, siguiente: function () { abrirGenerarViaje(p); }, eliminar: function () { eliminar(p); } };
             Array.prototype.forEach.call(td.querySelectorAll('[data-accion]'), function (boton) { boton.onclick = acciones[boton.getAttribute('data-accion')]; });
         });
     }
@@ -161,12 +189,43 @@
     }
     function clientePresupuesto(p) { return clientes.find(function (c) { return String(c.Cliente_ID) === String(p.clienteId); }) || null; }
     function encabezadosEnvio() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }; }
-    function cambiarEstado(p, selector) {
-        var estado = selector.value; selector.disabled = true;
-        pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) }).then(function () {
-            aviso('mensaje', 'Estado actualizado a ' + estado + '.', false); listar();
-        }).catch(function (error) { selector.value = p.estado; selector.disabled = false; aviso('mensaje', textoError(error, 'No se pudo actualizar el estado. Probá de nuevo.'), true); listar(); });
+    // Cambiar estado (banderita): una ventana con los estados a los que puede pasar, cada uno con lo que significa.
+    var ESTADOS = {
+        Pendiente: { texto: 'Vuelve a esperar la respuesta del cliente y se puede editar.', aviso: 'vuelve a pendiente', color: 'gris' },
+        Aceptado: { texto: 'El cliente lo aceptó. Queda listo para generar el viaje.', aviso: 'aceptado', color: 'amarillo' },
+        Rechazado: { texto: 'El cliente no lo aceptó. Queda guardado como rechazado.', aviso: 'rechazado', color: 'rojo' }
+    };
+    function abrirCambioEstado(p) {
+        presupuestoEstado = p;
+        var actual = p.estado || 'Pendiente';
+        el('tituloEstadoPresupuesto').textContent = 'Cambiar estado del presupuesto #' + p.id;
+        el('estadoPresupuestoResumen').textContent = p.cliente + ' · ' + p.origen + ' → ' + p.destino + ' · ' + SGTL.monto(p.importe || 0);
+        el('estadoPresupuestoActual').innerHTML = etiquetaEstado(p);
+        el('estadoPresupuestoOpciones').classList.remove('is-invalid');
+        el('estadoPresupuestoOpciones').innerHTML = Object.keys(ESTADOS).filter(function (e) { return e !== actual; }).map(function (e) {
+            return '<label class="sgtl-opcion-estado"><input class="form-check-input" type="radio" name="estadoPresupuestoNuevo" value="' + e + '">' +
+                '<span>' + SGTL.estado(e, e, ESTADOS[e].color) + '<span class="sgtl-opcion-estado-texto">' + SGTL.escapar(ESTADOS[e].texto) + '</span></span></label>';
+        }).join('');
+        SGTL.avisoFormulario('#avisoEstadoPresupuesto', '');
+        SGTL.modal('#modalEstadoPresupuesto', 'show');
     }
+    el('estadoPresupuestoOpciones').addEventListener('change', function () {
+        this.classList.remove('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', '');
+        this.querySelectorAll('.sgtl-opcion-estado').forEach(function (opcion) { opcion.classList.toggle('seleccionada', opcion.querySelector('input').checked); });
+    });
+    el('formEstadoPresupuesto').addEventListener('submit', function (evento) {
+        evento.preventDefault();
+        var p = presupuestoEstado, elegido = el('estadoPresupuestoOpciones').querySelector('input:checked');
+        if (!p) return;
+        if (!elegido) { el('estadoPresupuestoOpciones').classList.add('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', 'Elegí el estado nuevo.'); return; }
+        var estado = elegido.value, listo = SGTL.procesando('#btnGuardarEstadoPresupuesto');
+        pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) }).then(function () {
+            listo(); SGTL.modal('#modalEstadoPresupuesto', 'hide');
+            SGTL.toastExito('Presupuesto #' + p.id + ' ' + ESTADOS[estado].aviso + '.'); listar();
+        }).catch(function (error) {
+            listo(); SGTL.avisoFormulario('#avisoEstadoPresupuesto', textoError(error, 'No se pudo cambiar el estado. Probá de nuevo.'));
+        });
+    });
     function abrirGenerarViaje(p) {
         presupuestoViaje = p; el('tituloGenerarViaje').textContent = 'Generar viaje del presupuesto #' + p.id; aviso('generarViajeFeedback', '', false);
         SGTL.limpiarError(el('generarViajeChofer'));
@@ -225,9 +284,22 @@
     };
     el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Registrar presupuesto'; modal.show(); };
     // El filtro se aplica con Buscar, Enter o la cruz, como en el resto de las pantallas (§1.3).
-    function buscar() { filtroAplicado = el('filtro').value.trim().toLocaleLowerCase(); dibujar(); }
+    // Filtros como en el resto (§1.3 y §3.3): Buscar o Enter aplican; los desplegables buscan al elegir y el
+    // rango de fechas al cerrar el calendario; cada campo se borra con su cruz.
+    function buscar() {
+        var rango = SGTL.valorRango('#fFecha');
+        filtrosAplicados = {
+            numero: el('fNumero').value.trim(), cliente: el('fCliente').value, estado: el('fEstado').value,
+            fecha: rango, ruta: sinTildes(el('fRuta').value.trim())
+        };
+        paginaActual = 1; dibujar();
+    }
     el('busquedaPresupuestoForm').addEventListener('submit', function (evento) { evento.preventDefault(); buscar(); });
-    SGTL.filtros(['#filtro'], buscar);
+    SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) buscar(); } });
+    SGTL.filtros(['#fNumero', '#fCliente', '#fFecha', '#fEstado', '#fRuta'], function () { SelectClientePredictivo.sincronizar('fCliente'); buscar(); });
+    SelectClientePredictivo.inicializar('fCliente', { placeholder: 'Todos los clientes' });
+    ['fCliente', 'fEstado'].forEach(function (id) { el(id).addEventListener('change', buscar); });
+    el('fNumero').addEventListener('input', function () { this.value = this.value.replace(/[^0-9]/g, ''); });
     prepararFechaHora('fechaInicio'); prepararFechaHora('fechaFin');
     // Validación del formulario (§6.3): cada campo en rojo con su mensaje.
     var formulario = SGTL.validador([
@@ -274,8 +346,10 @@
         }).catch(function (error) { guardando = false; listo(); aviso('mensajeForm', textoError(error, 'No se pudo guardar el presupuesto. Probá de nuevo.'), true); });
     };
     function errorVista(texto) { var aviso = el('vistaPresupuestoFeedback'); aviso.className = 'alert alert-light-danger color-danger'; aviso.textContent = texto; }
+    var presupuestoVista = null;
     function imprimirPresupuesto(p) {
         if (!p) return;
+        presupuestoVista = p;
         var version = ++secuenciaVista, marco = el('vistaPresupuestoDocumento'), descarga = el('descargarVistaPresupuesto');
         if (urlVista) { URL.revokeObjectURL(urlVista); urlVista = null; }
         marco.removeAttribute('src'); marco.style.display = 'none';
@@ -297,6 +371,14 @@
     }
     modal = bootstrap.Modal.getOrCreateInstance(el('modalPresupuesto'));
     modalVista = bootstrap.Modal.getOrCreateInstance(el('modalVistaPresupuesto'));
+    // "Enviar por e-mail" va en el pie del PDF (como en el detalle de cuenta corriente): cierra la vista y abre el envío.
+    el('enviarVistaPresupuesto').onclick = function () {
+        var p = presupuestoVista; if (!p) return;
+        el('modalVistaPresupuesto').addEventListener('hidden.bs.modal', function abrirLuego() {
+            el('modalVistaPresupuesto').removeEventListener('hidden.bs.modal', abrirLuego); abrirEnvio(p);
+        });
+        modalVista.hide();
+    };
     el('imprimirVistaPresupuesto').onclick = function () {
         try { var vista = el('vistaPresupuestoDocumento').contentWindow; vista.focus(); vista.print(); }
         catch (error) { errorVista('No se pudo imprimir desde acá. Usá el botón de impresión del visor del PDF.'); }
@@ -319,7 +401,8 @@
     el('nuevo').disabled = true;
     Promise.all([pedir(api + '/Clientes'), pedir(api + '/Origen'), pedir(api + '/Destino'), pedir(api + '/Camiones'), pedir(api + '/Choferes').catch(function () { return []; })]).then(function (r) {
         clientes = r[0] || []; origenes = r[1] || []; destinos = r[2] || [];
-        clientes.forEach(function (c) { opcion(el('cliente'), c.Cliente_ID, c.Razon_Social); });
+        clientes.forEach(function (c) { opcion(el('cliente'), c.Cliente_ID, c.Razon_Social); opcion(el('fCliente'), c.Cliente_ID, c.Razon_Social); });
+        SelectClientePredictivo.sincronizar('fCliente');
         (r[3] || []).forEach(function (c) { opcion(el('camionId'), c.Camion_ID, c.Dominio); });
         choferes = r[4] || []; choferes.forEach(function (c) { opcion(el('choferId'), c.Chofer_ID, c.Apellido + ', ' + c.Nombre); });
         el('nuevo').disabled = false;

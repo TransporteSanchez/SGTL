@@ -65,6 +65,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Descargar PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
+| Cambiar estado (presupuestos; viajes, más adelante) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Estado y entrega, Marcar aceptada, Emitir factura) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
@@ -73,6 +74,9 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué** ("No es posible eliminar un chofer activo"). No se oculta: así todas las filas tienen los
   mismos botones en el mismo lugar.
+- **Cambiar estado** (banderita, en prueba desde el 22/10 en presupuestos): va antes del siguiente paso y abre la
+  ventana "Cambiar estado", que muestra el estado actual y los estados a los que puede pasar como tarjetas, cada
+  una con una línea que explica qué significa; Cancelar + Guardar. La idea es usar la misma ventana en viajes.
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
   aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.
@@ -180,6 +184,9 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
+- **Presupuestos (22/10, en prueba):** Pendiente es esperar la respuesta del cliente, no una deuda: va en gris.
+  Aceptado va en amarillo mientras falta generar el viaje y en verde cuando ya se generó (con la etiqueta
+  informativa "Viaje #N"); Rechazado, en rojo. Para estos casos `SGTL.estado(valor, texto, color)` recibe el color.
 - El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
   etiqueta); las pantallas no arman su propio mapa de colores.
 

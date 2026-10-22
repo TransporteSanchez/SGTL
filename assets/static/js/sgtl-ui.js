@@ -346,10 +346,12 @@
     return 'gris';
   }
 
-  // Etiqueta del estado: <span class="badge rounded-pill estado-verde">Activo</span>.
-  function estado(valor, texto) {
+  // Etiqueta del estado: <span class="badge rounded-pill estado-verde">Activo</span>. color (gris, azul,
+  // amarillo, verde o rojo) es para cuando el mismo nombre significa otra cosa en esa pantalla (§4.1):
+  // "Pendiente" es deuda (rojo) en cuenta corriente, pero en presupuestos es esperar la respuesta (gris).
+  function estado(valor, texto, color) {
     var mostrado = texto || TEXTOS_ESTADO[normalizar(valor)] || valor || '';
-    return '<span class="badge rounded-pill estado-' + colorEstado(valor) + '">' + escapar(mostrado) + '</span>';
+    return '<span class="badge rounded-pill estado-' + (color || colorEstado(valor)) + '">' + escapar(mostrado) + '</span>';
   }
 
   // ---------------------------------------------------------------- Acciones de cada fila (§1.4)
@@ -362,6 +364,8 @@
     siguiente: { icono: 'bi-arrow-right-circle', clase: 'btn-outline-success', texto: '' },
     inactivar: { icono: 'bi-toggle-on', clase: 'btn-outline-secondary', texto: 'Inactivar' },
     activar: { icono: 'bi-toggle-off', clase: 'btn-outline-secondary', texto: 'Activar' },
+    // Cambiar el estado a mano (presupuestos; después, viajes): abre la ventana con los estados posibles.
+    estado: { icono: 'bi-flag', clase: 'btn-outline-secondary', texto: 'Cambiar estado' },
     eliminar: { icono: 'bi-trash', clase: 'btn-outline-danger', texto: 'Eliminar' },
     anular: { icono: 'bi-x-circle', clase: 'btn-outline-danger', texto: 'Anular' }
   };
