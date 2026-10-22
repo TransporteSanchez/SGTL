@@ -46,10 +46,34 @@
 }
 
 /* Tabla con muchas columnas dentro de un modal: celdas más angostas para que entre sin desplazarse.
-   Más específica que la de Mazer para .table-sm (1rem): app.css se vuelve a cargar después de este archivo. */
+   Más específica que la de Mazer para .table-sm (1rem): app.css se vuelve a cargar después de este archivo.
+   Rayas y resaltado más suaves, con el azul de la marca. */
+table.table.sgtl-tabla-compacta {
+    --bs-table-striped-bg: rgba(67, 94, 190, .025);
+    --bs-table-hover-bg: rgba(67, 94, 190, .06);
+}
+
 table.table.sgtl-tabla-compacta tr td,
 table.table.sgtl-tabla-compacta tr th {
     padding: .45rem .5rem;
+}
+
+table.table.sgtl-tabla-compacta > thead th {
+    font-size: .8rem;
+    color: #6c757d;
+    background-color: #fafbfc;
+    border-bottom: 1px solid #e9ecef;
+}
+
+/* Tabla dentro de una tarjeta: borde fino y esquinas redondeadas, como las tarjetas de Mazer. */
+.sgtl-tabla-tarjeta {
+    border: 1px solid #e9ecef;
+    border-radius: .75rem;
+    overflow: hidden;
+}
+
+.sgtl-tabla-tarjeta .table {
+    margin-bottom: 0;
 }
 
 /* Columna de texto largo (ruta, concepto) que no tiene que quedar en una tira finita. */
@@ -57,18 +81,67 @@ table.table.sgtl-tabla-compacta tr th {
     min-width: 12rem;
 }
 
-/* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve). */
-.table tr.sgtl-grupo > th {
-    background-color: #f2f4f7;
-    font-weight: 700;
+/* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve): fondo
+   apenas gris, sin rayas ni resaltado; el título va en una etiqueta de estado (§4). */
+table.table tr.sgtl-grupo > th {
+    background-color: #fafbfc;
+    box-shadow: none;
+    font-weight: 400;
+    border-top: 1px solid #e9ecef;
 }
 
-/* §6.3 Formulario por pasos: hecho (verde), actual (azul) y pendiente (gris). */
+/* §4.3 Etiqueta que además es un botón (lleva a su grupo o abre un panel): un poco más grande. */
+button.badge.sgtl-badge-accion {
+    border: 1px solid transparent;
+    padding: .45em .9em;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button.badge.sgtl-badge-accion:hover,
+button.badge.sgtl-badge-accion:focus-visible,
+button.badge.sgtl-badge-accion[aria-expanded="true"] {
+    border-color: currentColor;
+}
+
+/* Panel con texto o un formulario dentro de un bloque (un reclamo, un aviso): tarjeta suave. */
+.sgtl-panel {
+    padding: .75rem 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: .75rem;
+    background-color: #fafbfc;
+}
+
+.sgtl-panel-amarillo {
+    border-color: #ffe7a1;
+    background-color: #fffaeb;
+}
+
+/* Totales en una línea: neto, IVA y total destacado. */
+.sgtl-totales {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: .25rem 1.5rem;
+    padding: .55rem 1rem;
+    border-radius: .75rem;
+    background-color: #f4f5f7;
+    font-size: .875rem;
+    color: #6c757d;
+}
+
+.sgtl-totales strong {
+    font-size: 1.1rem;
+    color: #25396f;
+}
+
+/* §6.3 Formulario por pasos: círculos unidos por una línea; hecho (verde), actual (azul) y pendiente (gris). */
 .sgtl-pasos {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: .25rem .75rem;
+    gap: .4rem .6rem;
     list-style: none;
     padding: 0;
     margin: 0 0 1rem;
@@ -79,24 +152,44 @@ table.table.sgtl-tabla-compacta tr th {
 .sgtl-pasos > li {
     display: inline-flex;
     align-items: center;
-    gap: .4rem;
+    gap: .45rem;
 }
 
 .sgtl-pasos > li + li::before {
-    content: "\203A";
-    margin-right: .35rem;
-    color: #adb5bd;
+    content: "";
+    width: 1.75rem;
+    height: 2px;
+    margin-right: .15rem;
+    border-radius: 2px;
+    background-color: #dee2e6;
+}
+
+.sgtl-pasos > li.hecho + li::before {
+    background-color: #198754;
 }
 
 .sgtl-paso-numero {
     display: inline-flex;
+    flex-shrink: 0;
     align-items: center;
     justify-content: center;
-    width: 1.4rem;
-    height: 1.4rem;
-    border: 1px solid currentColor;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: 2px solid #ced4da;
     border-radius: 50%;
+    background-color: #fff;
     font-size: .75rem;
+    font-weight: 700;
+}
+
+.sgtl-pasos > .hecho {
+    color: #495057;
+}
+
+.sgtl-pasos > .hecho .sgtl-paso-numero {
+    border-color: #198754;
+    background-color: #198754;
+    color: #fff;
 }
 
 .sgtl-pasos > .actual {
@@ -105,57 +198,38 @@ table.table.sgtl-tabla-compacta tr th {
 }
 
 .sgtl-pasos > .actual .sgtl-paso-numero {
-    background-color: #435ebe;
     border-color: #435ebe;
+    background-color: #435ebe;
     color: #fff;
-}
-
-.sgtl-pasos > .hecho {
-    color: #198754;
-}
-
-/* Etiqueta-botón de un resumen (cuántos hay de cada grupo, un aviso que se despliega): blanca con borde,
-   como las etiquetas informativas (§4.3); el color lo pone el ícono. */
-.sgtl-etiqueta {
-    display: inline-flex;
-    align-items: center;
-    gap: .35rem;
-    padding: .25rem .7rem;
-    border: 1px solid #dee2e6;
-    border-radius: 50rem;
-    background-color: #fff;
-    color: inherit;
-    font-size: .8125rem;
-    line-height: 1.4;
-}
-
-.sgtl-etiqueta:hover,
-.sgtl-etiqueta:focus-visible {
-    background-color: #f2f4f7;
-}
-
-.sgtl-etiqueta[aria-expanded="true"] {
-    background-color: #e8ecf9;
-    border-color: #b9c4ee;
+    box-shadow: 0 0 0 4px #e8ecf9;
 }
 
 /* Zona para elegir o soltar un archivo. */
 .sgtl-zona-archivo {
-    border: 2px dashed #ced4da;
-    border-radius: .5rem;
-    padding: 1.25rem 1rem;
+    border: 2px dashed #ccd3e0;
+    border-radius: .9rem;
+    padding: 1.75rem 1rem;
     text-align: center;
-    background-color: #fafbfc;
+    background-color: #fafbfe;
+    transition: border-color .15s, background-color .15s;
 }
 
+.sgtl-zona-archivo:hover,
 .sgtl-zona-archivo.arrastrando {
     border-color: #435ebe;
-    background-color: #e8ecf9;
+    background-color: #f3f5fc;
 }
 
-.sgtl-zona-archivo > .bi {
-    font-size: 2rem;
-    color: #6c757d;
+.sgtl-zona-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 50%;
+    background-color: #e8ecf9;
+    color: #435ebe;
+    font-size: 1.5rem;
 }
 
 /* §1.3 Cruz para borrar cada filtro */

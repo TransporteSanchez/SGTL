@@ -107,7 +107,7 @@
     if (tituloCond && tituloCond.classList.contains('bloque-titulo')) ocultar(tituloCond);
     if (filaCond) {
       filaCond.before(crear(
-        '<div id="pp_cond_titulo" class="d-flex align-items-center gap-2 border-bottom border-2 pb-1 mt-4 mb-3">' +
+        '<div id="pp_cond_titulo" class="d-flex align-items-center gap-2 border-top pt-3 mt-3 mb-2">' +
         '<button type="button" class="btn btn-link p-0 fw-bold text-body text-decoration-none" id="pp_cond_boton" aria-expanded="false" aria-controls="pp_cond_fila">' +
         '<i class="bi bi-chevron-right me-1" aria-hidden="true"></i>Condiciones comerciales</button>' +
         '<span id="pp_cond_resumen" class="small text-muted"></span></div>'));
@@ -174,7 +174,7 @@
     var nombres = ['Cliente', 'Excel de ' + nombrePlataforma(), 'Control y generar'];
     ol.innerHTML = nombres.map(function (nombre, i) {
       var n = i + 1;
-      if (n < actual) return '<li class="hecho"><i class="bi bi-check-circle-fill" aria-hidden="true"></i><span>' + (hechos[i] || esc(nombre)) + '</span></li>';
+      if (n < actual) return '<li class="hecho"><span class="sgtl-paso-numero"><i class="bi bi-check-lg" aria-hidden="true"></i></span><span>' + (hechos[i] || esc(nombre)) + '</span></li>';
       return '<li' + (n === actual ? ' class="actual" aria-current="step"' : '') + '><span class="sgtl-paso-numero">' + n + '</span>' + esc(nombre) + '</li>';
     }).join('');
     var boton = $id('pp_datos_boton');
@@ -286,9 +286,10 @@
     bloque.innerHTML =
       (estado.puedeLeer ? '' : '<div class="alert alert-light-danger color-danger">Todavía no se pueden leer archivos de ' + p + '.</div>') +
       '<div class="sgtl-zona-archivo mt-3" id="pp_zona">' +
-      '<i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>' +
+      '<span class="sgtl-zona-icono"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i></span>' +
+      '<div class="fw-bold mt-2">Excel de ' + p + '</div>' +
       '<div class="my-2"><button type="button" class="btn btn-primary" id="pp_elegir"' + (estado.puedeLeer ? '' : ' disabled') + '>' +
-      '<i class="bi bi-upload me-1"></i>Elegir Excel de ' + p + '</button></div>' +
+      '<i class="bi bi-upload me-1"></i>Elegir archivo</button></div>' +
       '<div class="form-text mt-0">o arrastralo acá · Se exporta en ' + p + ' desde Proceso → detalle de la proforma → ícono de Excel</div>' +
       '<input type="file" id="pp_archivo" class="d-none" accept=".xlsx" aria-label="Excel de ' + p + '">' +
       '<div id="pp_archivo_estado"></div>' +
@@ -530,15 +531,16 @@
   };
   var COLOR_RESULTADO = { Coincide: 'verde', Faltan_numeros: 'amarillo', Sin_tarifa: 'amarillo' };
 
-  // Grupos de la tabla, según quién resuelve cada diferencia. El resumen de arriba usa el mismo ícono y color.
+  // Grupos de la tabla, según quién resuelve cada diferencia, con el color de etiqueta del design system (§4.1):
+  // rojo lo que está mal en SGTL, amarillo lo que falta gestionar, azul lo que está en curso, verde lo resuelto.
   function grupos() {
     var p = esc(nombrePlataforma());
     return [
-      { clave: 'SGTL', icono: 'bi-tools text-danger', titulo: 'Para corregir en SGTL', resumen: 'para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar' },
-      { clave: 'Revisar', icono: 'bi-question-circle-fill text-warning', titulo: 'Para revisar', resumen: 'para revisar', ayuda: 'Mirá la tarifa usada: si el viaje está bien, reclamalo; si no, corregilo' },
-      { clave: 'Plataforma', icono: 'bi-megaphone-fill text-danger', titulo: 'Para reclamar a ' + p, resumen: 'para reclamar a ' + p, ayuda: 'Vienen mal en el Excel: registrá el reclamo' },
-      { clave: 'Esperando', icono: 'bi-hourglass-split text-primary', titulo: 'Esperando a ' + p, resumen: 'esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel' },
-      { clave: 'Coincide', icono: 'bi-check-circle-fill text-success', titulo: 'Coinciden', resumen: 'coinciden' }
+      { clave: 'SGTL', color: 'rojo', titulo: 'Para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar' },
+      { clave: 'Revisar', color: 'amarillo', titulo: 'Para revisar', ayuda: 'Mirá la tarifa usada: si el viaje está bien, reclamalo; si no, corregilo' },
+      { clave: 'Plataforma', color: 'amarillo', titulo: 'Para reclamar a ' + p, ayuda: 'Vienen mal en el Excel: registrá el reclamo' },
+      { clave: 'Esperando', color: 'azul', titulo: 'Esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel' },
+      { clave: 'Coincide', color: 'verde', titulo: 'Coinciden' }
     ];
   }
   function grupoDe(l) { return l.Coincide ? 'Coincide' : (l.Reclamada ? 'Esperando' : (l.Responsable || 'Revisar')); }
@@ -597,28 +599,29 @@
     var cuerpo = grupos().map(function (g) {
       var del = lineas.filter(function (l) { return grupoDe(l) === g.clave; });
       if (!del.length) return '';
-      var titulo = '<i class="bi ' + g.icono + ' me-1" aria-hidden="true"></i>' + g.titulo + ' (' + del.length + ')';
+      var titulo = '<span class="badge rounded-pill estado-' + g.color + '">' + g.titulo + ' · ' + del.length + '</span>';
       if (g.clave === 'Coincide') {
-        titulo = '<button type="button" class="btn btn-link p-0 fw-bold text-body text-decoration-none" id="pp_ver_coinciden" aria-expanded="' + !plegadas + '">' +
+        titulo = '<button type="button" class="btn btn-link p-0 text-body text-decoration-none" id="pp_ver_coinciden" aria-expanded="' + !plegadas + '">' +
           '<i class="bi ' + (plegadas ? 'bi-chevron-right' : 'bi-chevron-down') + ' me-1" aria-hidden="true"></i>' + titulo + '</button>';
       }
-      return '<tbody><tr class="sgtl-grupo" id="pp_grupo_' + g.clave + '"><th colspan="9"><div class="d-flex flex-wrap justify-content-between gap-1">' +
+      return '<tbody><tr class="sgtl-grupo" id="pp_grupo_' + g.clave + '"><th colspan="9"><div class="d-flex flex-wrap align-items-center justify-content-between gap-1">' +
         '<span>' + titulo + '</span>' +
         (g.ayuda && !estado.soloLectura && c.Estado === 'Borrador' ? '<span class="fw-normal small text-muted">' + g.ayuda + '</span>' : '') +
         '</div></th></tr>' +
         del.map(function (l) { return filaLinea(l, g.clave === 'Coincide' && plegadas); }).join('') + '</tbody>';
     }).join('');
-    return '<div class="table-responsive"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta align-middle mb-2"><thead><tr>' +
+    return '<div class="sgtl-tabla-tarjeta mb-3"><div class="table-responsive"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta align-middle"><thead><tr>' +
       '<th>Transporte</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-end">Importe ' + p + '</th><th class="text-end">Importe SGTL</th>' +
       '<th class="text-end">Diferencia</th><th class="text-end">Adicionales</th><th class="text-center">Resultado</th><th class="text-center">Acciones</th>' +
-      '</tr></thead>' + cuerpo + '</table></div>';
+      '</tr></thead>' + cuerpo + '</table></div></div>';
   }
 
-  function etiqueta(icono, texto, atributos) {
-    return '<button type="button" class="sgtl-etiqueta"' + (atributos || '') + '><i class="bi ' + icono + '" aria-hidden="true"></i>' + texto + '</button>';
+  // Etiqueta de estado (§4.3) que además es un botón.
+  function etiqueta(clase, texto, atributos) {
+    return '<button type="button" class="badge rounded-pill sgtl-badge-accion ' + clase + '"' + (atributos || '') + '>' + texto + '</button>';
   }
 
-  // Una sola línea arriba de la tabla: a la izquierda cuántos hay de cada grupo (cada etiqueta lleva a su grupo),
+  // Una sola línea arriba de la tabla: a la izquierda, cuántos hay de cada grupo (cada etiqueta lleva a su grupo),
   // el reclamo pendiente y los avisos; a la derecha, todas las acciones del control.
   function barraControl(c, editable) {
     var p = esc(nombrePlataforma());
@@ -628,26 +631,26 @@
     var etiquetas = orden.map(function (g) {
       var n = lineas.filter(function (l) { return grupoDe(l) === g.clave; }).length;
       if (!n) return '';
-      var texto = g.clave === 'Coincide' && n === c.Cantidad
-        ? (n === 1 ? 'El transporte coincide' : 'Los ' + n + ' coinciden') + (editable ? ' · lista para generar' : '')
-        : n + ' ' + g.resumen;
-      return etiqueta(g.icono, texto, ' data-grupo="' + g.clave + '"');
+      var texto = g.clave === 'Coincide'
+        ? (n === c.Cantidad ? (n === 1 ? 'El transporte coincide' : 'Los ' + n + ' coinciden') + (editable ? ' · lista para generar' : '') : n + ' coinciden')
+        : g.titulo + ' · ' + n;
+      return etiqueta('estado-' + g.color, texto, ' data-grupo="' + g.clave + '"');
     }).join('');
     if (c.ReclamoFecha) {
-      etiquetas += etiqueta('bi-chat-left-text text-warning', 'Reclamo del ' + fecha(c.ReclamoFecha), ' data-panel="pp_panel_reclamo" aria-expanded="false"');
+      etiquetas += etiqueta('estado-amarillo', '<i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>Reclamo del ' + fecha(c.ReclamoFecha), ' data-panel="pp_panel_reclamo" aria-expanded="false"');
     }
     if ((c.Avisos || []).length) {
       var m = /Hay (\d+) viaje/.exec(c.Avisos[0]);
       var n = m ? parseInt(m[1], 10) : 0;
-      etiquetas += etiqueta('bi-exclamation-triangle-fill text-warning',
-        n ? plural(n, 'viaje fuera de esta proforma', 'viajes fuera de esta proforma') : 'Avisos', ' data-panel="pp_panel_avisos" aria-expanded="false"');
+      etiquetas += etiqueta('bg-white text-dark border', '<i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>' +
+        (n ? plural(n, 'viaje fuera de esta proforma', 'viajes fuera de esta proforma') : 'Avisos'), ' data-panel="pp_panel_avisos" aria-expanded="false"');
     }
     var acciones = !editable ? '' :
-      '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
-      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '') +
-      '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reemplazar"><i class="bi bi-file-earmark-arrow-up me-1" aria-hidden="true"></i>Reemplazar Excel</button>' +
+      '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
+      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '') +
+      '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reemplazar"><i class="bi bi-file-earmark-arrow-up me-1" aria-hidden="true"></i>Reemplazar Excel</button>' +
       '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">';
-    return '<div class="d-flex flex-wrap align-items-center gap-2 mb-2">' +
+    return '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">' +
       '<div class="d-flex flex-wrap align-items-center gap-2 me-auto">' + etiquetas + '</div>' +
       '<div class="d-flex flex-wrap gap-2 ms-auto">' + acciones + '</div></div>';
   }
@@ -656,14 +659,14 @@
   function panelesControl(c, editable) {
     var p = esc(nombrePlataforma());
     var reclamo = !c.ReclamoFecha ? '' :
-      '<div id="pp_panel_reclamo" class="d-none border rounded p-2 mb-2 small">' +
+      '<div id="pp_panel_reclamo" class="d-none sgtl-panel sgtl-panel-amarillo mb-3 small">' +
       '<div class="d-flex flex-wrap align-items-start gap-2"><div class="me-auto" style="white-space: pre-line">' +
       '<span class="fw-bold">Reclamo en ' + p + ' del ' + fecha(c.ReclamoFecha) + '.</span> ' + esc(c.ReclamoMotivo || '') + '</div>' +
       (editable ? '<div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar reclamo</button>' +
         '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_cerrar_reclamo"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cerrar reclamo</button></div>' : '') +
       '</div></div>';
     var avisos = !(c.Avisos || []).length ? '' :
-      '<div id="pp_panel_avisos" class="d-none border rounded p-2 mb-2 small">' +
+      '<div id="pp_panel_avisos" class="d-none sgtl-panel mb-3 small">' +
       c.Avisos.map(function (a) { return '<div>' + esc(a) + '</div>'; }).join('') + '</div>';
     return reclamo + avisos;
   }
@@ -707,11 +710,11 @@
         (c.FechaDesde ? ' · ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '') + '</div>') +
       barraControl(c, editable) +
       panelesControl(c, editable) +
-      '<div id="pp_form_reclamo" class="d-none border rounded p-3 mb-2"></div>' +
+      '<div id="pp_form_reclamo" class="d-none sgtl-panel mb-3"></div>' +
       tablaControl(c) +
-      '<div class="d-flex justify-content-end flex-wrap align-items-baseline gap-3 small text-muted">' +
+      '<div class="d-flex justify-content-end"><div class="sgtl-totales">' +
       '<span>Neto ' + monto(c.TotalPlataforma) + '</span><span>IVA 21 % ' + monto(c.Iva) + '</span>' +
-      '<span class="fs-6 fw-bold text-body">Total ' + monto(c.Total) + '</span></div>';
+      '<span>Total <strong>' + monto(c.Total) + '</strong></span></div></div>';
 
     enlazarAcciones(c);
 
@@ -757,7 +760,7 @@
     var verCoinciden = $id('pp_ver_coinciden');
     if (verCoinciden) verCoinciden.addEventListener('click', function () { plegarCoinciden(this.getAttribute('aria-expanded') === 'true'); });
     // Etiquetas del resumen: llevan a su grupo de la tabla o abren su panel.
-    Array.prototype.forEach.call(bloque.querySelectorAll('.sgtl-etiqueta'), function (b) {
+    Array.prototype.forEach.call(bloque.querySelectorAll('.sgtl-badge-accion'), function (b) {
       b.addEventListener('click', function () {
         if (b.dataset.panel) {
           var panel = $id(b.dataset.panel);
@@ -932,20 +935,22 @@
     return ' <span class="badge rounded-pill bg-white text-dark border">' + esc((x.Plataforma || 'Plataforma') + ' ' + (x.Plataforma_Numero || '')) + '</span>';
   }
 
-  // Junto al estado de un borrador de plataforma: qué falta y de quién depende.
+  // Junto al estado de un borrador de plataforma: qué falta y de quién depende, con las mismas etiquetas
+  // (y colores) que los grupos del control.
   function avisosListado(x) {
     if (x.Tipo_Proforma !== 'Plataforma' || x.Estado !== 'Borrador') return '';
     var p = x.Plataforma || 'la plataforma';
-    var partes = [];
-    if (x.PlataformaPorCorregir) partes.push('Corregir en SGTL (' + x.PlataformaPorCorregir + ')');
-    if (x.PlataformaPorRevisar) partes.push('Revisar (' + x.PlataformaPorRevisar + ')');
-    if (x.PlataformaPorReclamar) partes.push('Reclamar a ' + p + ' (' + x.PlataformaPorReclamar + ')');
+    var etiquetas = [];
+    var poner = function (color, texto) { etiquetas.push('<span class="badge rounded-pill estado-' + color + '">' + esc(texto) + '</span>'); };
+    if (x.PlataformaPorCorregir) poner('rojo', 'Corregir en SGTL · ' + x.PlataformaPorCorregir);
+    if (x.PlataformaPorRevisar) poner('amarillo', 'Revisar · ' + x.PlataformaPorRevisar);
+    if (x.PlataformaPorReclamar) poner('amarillo', 'Reclamar a ' + p + ' · ' + x.PlataformaPorReclamar);
     if (x.PlataformaEsperando || x.ReclamoFecha) {
-      partes.push('Esperando a ' + p + (x.PlataformaEsperando ? ' (' + x.PlataformaEsperando + ')' : '') +
+      poner('azul', 'Esperando a ' + p + (x.PlataformaEsperando ? ' · ' + x.PlataformaEsperando : '') +
         (x.ReclamoFecha ? ' desde el ' + (window.SGTL ? SGTL.fecha(x.ReclamoFecha) : '') : ''));
     }
-    if (!partes.length) return x.PlataformaLineas ? '<div class="small text-success mt-1">Lista para generar</div>' : '';
-    return '<div class="small text-muted mt-1">' + esc(partes.join(' · ')) + '</div>';
+    if (!etiquetas.length && x.PlataformaLineas) poner('verde', 'Lista para generar');
+    return etiquetas.length ? '<div class="d-flex flex-wrap gap-1 mt-1">' + etiquetas.join('') + '</div>' : '';
   }
 
   window.ProformaPlataforma = {
