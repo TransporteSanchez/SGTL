@@ -70,6 +70,15 @@ function setupUserInfo() {
     console.error("Error al cargar el color de fondo dinámico:", error);
   });
 
+  // "Cambiar contraseña" del menú del usuario: abre la ventana (se arma la primera vez).
+  const cambiarContrasenaBtn = document.getElementById('cambiarContrasenaBtn');
+  if (cambiarContrasenaBtn) {
+    cambiarContrasenaBtn.addEventListener('click', function (event) {
+      event.preventDefault();
+      abrirCambioContrasena();
+    });
+  }
+
   // Configurar el botón de logout
   const logoutBtn = document.getElementById('logoutBtn');
   if (logoutBtn) {
@@ -124,5 +133,96 @@ function loadDynamicBackgroundColor() {
     };
 
     xhr.send();
+  });
+}
+
+// ===================== Cambiar contraseña =====================
+// Usa el endpoint que ya existía (api/Usuarios/CambiarContrasena): pide la contraseña actual y la nueva,
+// de 8 a 20 caracteres, con letras y números y distinta de la actual. Acá se validan las mismas reglas
+// antes de mandarla, con los avisos y la validación del sistema (§5 y §6.3 del design system).
+let formularioContrasena = null;
+
+function crearModalContrasena() {
+  const contenedor = document.createElement('div');
+  contenedor.innerHTML =
+    '<div class="modal fade" id="modalCambiarContrasena" tabindex="-1" aria-labelledby="tituloCambiarContrasena" aria-hidden="true" data-bs-backdrop="static">' +
+    '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">' +
+    '<form id="formCambiarContrasena" novalidate autocomplete="off">' +
+    '<div class="modal-header"><h5 class="modal-title" id="tituloCambiarContrasena">Cambiar contraseña</h5>' +
+    '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +
+    '<div class="modal-body">' +
+    '<div id="avisoCambiarContrasena" class="alert alert-light-danger color-danger d-none" role="alert"></div>' +
+    '<div class="mb-3"><label for="contrasenaActual" class="form-label">Contraseña actual <span class="text-danger">*</span></label>' +
+    '<input id="contrasenaActual" type="password" class="form-control" maxlength="50" autocomplete="current-password"></div>' +
+    '<div class="mb-3"><label for="contrasenaNueva" class="form-label">Contraseña nueva <span class="text-danger">*</span></label>' +
+    '<input id="contrasenaNueva" type="password" class="form-control" maxlength="20" autocomplete="new-password">' +
+    '<div class="form-text">De 8 a 20 caracteres, con letras y números.</div></div>' +
+    '<div><label for="contrasenaRepetida" class="form-label">Repetí la contraseña nueva <span class="text-danger">*</span></label>' +
+    '<input id="contrasenaRepetida" type="password" class="form-control" maxlength="20" autocomplete="new-password"></div>' +
+    '</div>' +
+    '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>' +
+    '<button type="submit" class="btn btn-primary" id="btnGuardarContrasena">Guardar</button></div>' +
+    '</form></div></div></div>';
+  document.body.appendChild(contenedor.firstChild);
+
+  const valor = id => document.getElementById(id).value;
+  formularioContrasena = SGTL.validador([
+    { id: 'contrasenaActual', requerido: 'Completá la contraseña actual.' },
+    {
+      id: 'contrasenaNueva', requerido: 'Completá la contraseña nueva.',
+      validar: function (nueva) {
+        if (nueva.length < 8 || nueva.length > 20) return 'Tiene que tener de 8 a 20 caracteres.';
+        if (!/[a-zA-Z]/.test(nueva) || !/[0-9]/.test(nueva)) return 'Tiene que tener letras y números.';
+        if (nueva === valor('contrasenaActual')) return 'Tiene que ser distinta de la actual.';
+        return '';
+      }
+    },
+    {
+      id: 'contrasenaRepetida', requerido: 'Repetí la contraseña nueva.',
+      validar: function (repetida) { return repetida === valor('contrasenaNueva') ? '' : 'No coincide con la contraseña nueva.'; }
+    }
+  ]);
+  document.getElementById('formCambiarContrasena').addEventListener('submit', guardarContrasena);
+}
+
+function abrirCambioContrasena() {
+  if (!window.SGTL) return;
+  if (!document.getElementById('modalCambiarContrasena')) crearModalContrasena();
+  SGTL.reiniciarFormulario('#formCambiarContrasena', '#avisoCambiarContrasena');
+  formularioContrasena.reiniciar();
+  SGTL.modal('#modalCambiarContrasena', 'show');
+}
+
+function guardarContrasena(event) {
+  event.preventDefault();
+  formularioContrasena.validarTodo();
+  if (!SGTL.revisarFormulario('#formCambiarContrasena', '#avisoCambiarContrasena')) return;
+
+  const porDefecto = 'No se pudo cambiar la contraseña. Probá de nuevo.';
+  const listo = SGTL.procesando('#btnGuardarContrasena');
+  fetch('http://localhost:50222/api/Usuarios/CambiarContrasena', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') },
+    body: JSON.stringify({
+      Nombre_Usuario: localStorage.getItem('username') || '',
+      ContrasenaActual: document.getElementById('contrasenaActual').value,
+      ContrasenaNueva: document.getElementById('contrasenaNueva').value
+    })
+  }).then(function (respuesta) {
+    if (respuesta.ok) {
+      listo();
+      SGTL.modal('#modalCambiarContrasena', 'hide');
+      SGTL.toastExito('Contraseña cambiada.');
+      return;
+    }
+    // Los 400 y 404 traen un texto para el usuario ("La contraseña actual es incorrecta."); el resto, no (§9).
+    return respuesta.json().catch(function () { return {}; }).then(function (datos) {
+      listo();
+      const texto = (respuesta.status === 400 || respuesta.status === 404) && (datos.message || datos.Message);
+      SGTL.avisoFormulario('#avisoCambiarContrasena', texto || porDefecto);
+    });
+  }, function () {
+    listo();
+    SGTL.avisoFormulario('#avisoCambiarContrasena', 'No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.');
   });
 }

@@ -29,7 +29,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 5 | Generales (Places, merge, Dependabot, tesis) | **No hecho** | — | — |
 | 8 | Hallazgos de la recorrida general del 17/10 (F1–F14) | **No hecho** | — | Ver §8 |
 | 6 | Proforma de plataforma (Rukas): importar el Excel y conciliar | Etapas 1–4, filtro Tipo, PDF, condiciones editables, importe unificado e IVA de la API hechos; etapa 6 **descartada** (factura interna). **Prueba mínima OK en VM (19/10)**, con una falla baja (F1) corregida. **22/10: modal en pasos, el Excel se guarda siempre, reclamo por línea y situación en el listado** | **Pusheado** (`b4729e0`); la corrección de F1, en el commit siguiente; lo del 22/10 **sin pushear** | Verificar F1; lo del 22/10: **correr antes `02_reclamo_por_linea.sql`** y probar (ver §6) |
-| 10 | Relevamiento visual y design system | Piloto en Choferes OK. **Aplicado en todas las pantallas:** las nuestras el 20/10; viajes y las de Facu y Fede el 22/10, junto con el estilo visual nuevo (§20). Siguen abiertos R4 y R7 (§10) | **Pusheado** (piloto `020e892`; el resto, con §20) | Tanda del 20/10 (tabla en §10) y §20: probar en VM |
+| 10 | Relevamiento visual y design system | Piloto en Choferes OK. **Aplicado en todas las pantallas:** las nuestras el 20/10; viajes y las de Facu y Fede el 22/10, junto con el estilo visual nuevo (§20). Sigue abierto R7 (§10) | **Pusheado** (piloto `020e892`; el resto, con §20) | Tanda del 20/10 (tabla en §10) y §20: probar en VM |
 | 11 | Documentación ordenada en `docs/` + `docs/README.md` y `AGENTS.md` | Hecho (18/10) | **Pusheado** (`ae6288d`) | **OK en la práctica:** la VM usó `docs/equipo/PRUEBAS-VM-CLAUDE.md` en todas las rondas del 18/10 |
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
 | 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | Primera tanda **OK en VM**; segunda tanda (C4 y mejoras del reporte) hecha | **Pusheado** (`bb418bc`) | Segunda tanda: en la ronda única (ver §13 y §14) |
@@ -534,14 +534,14 @@ Listar proformas y Gestionar proformas ya están en infinitivo. Dashboard no se 
 
 **No entra en esta pasada:** pasar el CSV de choferes/camiones/clientes/viajes al modal Excel/PDF (queda para después). R7 (viajes facturados en borrador #12) es de Facu, no es visual.
 
-Bugs vistos en el relevamiento (no visuales). **Corregidos:** R1, R2, R3 y R6 el 20/10 (con la tanda de esa fecha) y R5 el 22/10 (viajes). **Siguen abiertos R4 y R7.**
+Bugs vistos en el relevamiento (no visuales). **Corregidos:** R1, R2, R3 y R6 el 20/10 (con la tanda de esa fecha), y R4 y R5 el 22/10. **Sigue abierto R7.**
 
 | ID | Qué | Gravedad | Cuándo | Archivos |
 |---|---|---|---|---|
 | R1 | **Corregido (20/10).** El botón de reporte CSV no hace nada: llama a `generarReporteCSV()`, que no existe en esa página | Media | Ya (sigue igual después del merge) | `listado-viajes.html` (158), `gestion-clientes.html` (179) |
 | R2 | **Corregido (20/10).** Gestión de contenido: `showErrorToast()` no existe; si falla la red al cargar o guardar, tira error y no avisa | Baja | Ya | `gestion-contenido.html` (299, 361) |
 | R3 | **Corregido (20/10).** Camiones: el error de fecha pide "DD-MM-YYYY" pero el campo usa AAAA-MM-DD | Baja | Con la decisión de fechas (D11) | `gestion-camiones.html` (1082) |
-| R4 | "Cambiar Contraseña" (encabezado) es un link que no hace nada. ("Documentación" del menú ya funciona desde el merge de Facu del 19/10) | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |
+| R4 | **Corregido (22/10, ver final de §20).** "Cambiar Contraseña" (encabezado) es un link que no hace nada. ("Documentación" del menú ya funciona desde el merge de Facu del 19/10) | Baja | Decidir si se implementan o se sacan | `views/header.html` (34), `sidebar-loader.js` (90) |
 | R5 | **Corregido (22/10).** `</script>` suelto en el pie (inofensivo) | Baja | Con el piloto | `listado-viajes.html` (204) |
 | R6 | **Corregido (20/10).** Exportar en camiones baja solo la página visible (15 filas), no todo lo filtrado, y no avisa. En choferes ya pide `pageSize: 0` (piloto 17/10); falta camiones | Media | Con el botón de exportar (decisión 1.2) | `gestion-camiones.html` (1620), `listado-camiones.html` (684) |
 | R7 | Gestión de viajes: viajes **Facturado** (4, 6, 7, 8, 9, 11, 12, facturados con PF-00000002) aparecen "En borrador #12". La etiqueta muestra la proforma no anulada más nueva que incluye el viaje (`OUTER_APPLY_PROFORMA`), así que el borrador #12 los contiene, por `PROFORMAS_VIAJES` o por líneas `V{id}` en `PROFORMA_DETALLE`. Falta ver si se armó un borrador con viajes ya facturados (no debería poder) o si son líneas copiadas | Media | Revisar con la consulta de abajo; tocar proformas es de **Facu** | `ViajesController.cs` (194), proformas |
@@ -1109,8 +1109,22 @@ no se marcaba nunca como activa (el logo, que también apunta a `index.html`, se
   Rukas de `docs/pruebas/datos/` funcionan igual.
   - [ ] Probar en la VM: Exportar → Excel en cuenta corriente y en las dos pantallas de proformas; en un borrador
     de Rukas, importar uno de los Excel de `docs/pruebas/datos/` (con datos de prueba).
-- [ ] **"Cambiar contraseña" del menú de usuario no hace nada** (es un link a `#`). Ya anotado como R4 en §10 y,
-  con la propuesta del código por WhatsApp, en §15. Decidir si se implementa o se saca del menú.
+- [x] **"Cambiar contraseña" del menú de usuario no hacía nada** (R4 de §10). **Hecho (22/10, commit "Usuarios:
+  ventana para cambiar la contraseña"):** la API ya tenía `POST api/Usuarios/CambiarContrasena` (usuario,
+  contraseña actual y nueva: de 8 a 20 caracteres, con letras y números, distinta de la actual) y faltaba la
+  pantalla. Ahora la opción abre "Cambiar contraseña" (actual, nueva y repetir), con las mismas reglas, la
+  validación del sistema y un toast al terminar. La API pasa sus mensajes a voseo ("tiene que tener…"): **hay que
+  recompilar**. El código por WhatsApp (§15) sigue como mejora para después.
+  - [ ] Probar en la VM: menú del usuario → Cambiar contraseña → Guardar vacío (los tres campos en rojo); una
+    nueva corta o sin números (mensaje debajo del campo); actual incorrecta ("La contraseña actual es
+    incorrecta." arriba del formulario); con datos correctos → toast "Contraseña cambiada." y volver a entrar con
+    la nueva. **Usar un usuario de prueba**, no el de Rocío ni los del equipo.
+- [ ] **Las contraseñas se guardan sin cifrar** (hallazgo del 22/10, seguridad). `USUARIOS.Contraseña` tiene el
+  texto tal cual: el login y el cambio de contraseña lo comparan directo en la consulta. Lo correcto es guardar un
+  hash con sal (por ejemplo PBKDF2, que trae .NET Framework) y comparar el hash. Implica: cambiar el login, el
+  alta y edición de usuarios y el cambio de contraseña; un script en `database/usuarios/` y un paso para pasar las
+  contraseñas actuales a hash (o pedir a cada uno que la cambie). Es trabajo aparte, conviene hablarlo con el
+  equipo antes de la entrega.
 - [ ] **El filtro de Presupuestos no tiene botón "Buscar"**: filtra mientras se escribe (sobre la lista ya cargada),
   así que el botón sobraría. Es la única pantalla así; decidir si queda como excepción (anotarla en §3.3 del design
   system) o si se le agrega el botón para que sea igual a las demás.

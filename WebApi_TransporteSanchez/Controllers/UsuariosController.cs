@@ -1423,7 +1423,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return Content(HttpStatusCode.BadRequest, new { message = "Todos los campos son requeridos." });
+                return Content(HttpStatusCode.BadRequest, new { message = "Completá la contraseña actual y la nueva." });
 
             }
 
@@ -1435,7 +1435,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return Content(HttpStatusCode.BadRequest, new { message = "La nueva contraseña debe tener al menos 8 caracteres." });
+                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que tener al menos 8 caracteres." });
 
             }
 
@@ -1447,7 +1447,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return Content(HttpStatusCode.BadRequest, new { message = "La nueva contraseña no puede tener más de 20 caracteres." });
+                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva no puede tener más de 20 caracteres." });
 
             }
 
@@ -1465,7 +1465,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return Content(HttpStatusCode.BadRequest, new { message = "La nueva contraseña debe ser alfanumérica (contener letras y números)." });
+                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que tener letras y números." });
 
             }
 
@@ -1475,7 +1475,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return Content(HttpStatusCode.BadRequest, new { message = "La nueva contraseña debe ser diferente de la actual." });
+                return Content(HttpStatusCode.BadRequest, new { message = "La contraseña nueva tiene que ser distinta de la actual." });
 
             }
 
