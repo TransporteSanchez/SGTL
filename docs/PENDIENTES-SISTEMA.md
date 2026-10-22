@@ -1269,6 +1269,10 @@ evidencia es el remito: firmado con el resultado (completa o parcial) o, en un r
     AND NOT EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID)
   ORDER BY v.Viaje_ID;
   ```
+  **Corrida por Rocío el 22/10: uno solo**, el #38 (Servicios Ambientales S.A., 21/10/2026, Completa, sin remito,
+  chofer Godoy, Facundo, sin proforma): se completa desde la banderita. Ninguno quedó en una proforma emitida
+  (ahí la banderita está deshabilitada y no se podría adjuntar), así que no hace falta habilitar la evidencia
+  en esos casos. De ahora en adelante no puede pasar: un directo no llega a Entregado sin evidencia.
 - **Facturación (de Facu, sin tocar):** esos viajes viejos todavía entran en "Traer viajes". Si se quiere, Facu
   puede sumar un aviso "sin evidencia"; hablarlo con él.
 - [ ] **Preguntar a Claudia:** cuando una entrega se rechaza, ¿el remito vuelve igual (con la firma o una nota
@@ -1279,5 +1283,7 @@ evidencia es el remito: firmado con el resultado (completa o parcial) o, en un r
   una foto: guarda ("Viaje #N entregado.") y aparece el clip.
 - [ ] Abrirlo de nuevo: no está "Quitar", la ayuda dice "Para cambiarla, elegí otro archivo."; elegir otro archivo
   y guardar lo reemplaza (el enlace abre el nuevo).
-- [ ] Un directo ya entregado sin evidencia (del `SELECT`): cambiarle la fecha sin adjuntar → evidencia en rojo.
+- [ ] Viaje #38 (directo entregado sin evidencia; parece de prueba, preguntarle a Facu): abrir la banderita,
+  cambiar la fecha sin adjuntar → evidencia en rojo; adjuntar una imagen o PDF → guarda y aparece el clip. Con eso
+  no queda ningún directo entregado sin evidencia.
 - [ ] Un viaje con plataforma: la evidencia sigue opcional y "Quitar" está.
