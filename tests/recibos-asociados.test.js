@@ -69,7 +69,11 @@ function renderizarFacturaConCreditoAplicado(tipo) {
 
 ['REC', 'NC'].forEach(function (tipo) {
     const tabla = renderizarFacturaConCreditoAplicado(tipo);
-    assert.match(tabla, /<tr class="cc-application-row cc-credit-application-row d-none"/,
+    assert.match(tabla, /<tr class="cc-application-row cc-credit-application-row[^"]* d-none"/,
         'un comprobante de crédito ' + tipo + ' aplicado debe identificarse para recibir el sombreado visual');
 });
+// La última aplicación de la factura cierra el grupo (pedido de Rocío del 22/10).
+const tablaUltima = renderizarFacturaConCreditoAplicado('REC');
+assert.match(tablaUltima, /<tr class="cc-application-row cc-credit-application-row cc-application-last d-none"/,
+    'la última aplicación de una factura cierra su grupo');
 console.log('OK: los Recibos y las NC asociadas se distinguen en la tabla');

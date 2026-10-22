@@ -149,6 +149,9 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   - cantidades y montos (km, total, cancelado, saldo, tarifa): a la derecha (`text-end`);
   - fechas, estado y acciones: centrados (`text-center`);
   - el título de cada columna se alinea igual que su contenido.
+- **Filas que se despliegan** (lo aplicado a una factura en cuenta corriente): las filas de adentro mantienen las
+  mismas columnas; la fila abierta se resalta apenas, una barra azul a la izquierda une la fila con las suyas, el dato
+  que identifica a cada una va corrido con ↳ y el resto en gris, y una línea más marcada cierra el grupo (22/10).
 - **Tablas anchas** (gestión de viajes): la columna de acciones queda **fija a la derecha** y
   siempre visible; lo que se desplaza hacia el costado son los datos. Fechas, números y estados
   no se parten en dos renglones (`text-nowrap`).

@@ -35,7 +35,19 @@
         .cc-table.sgtl-tabla-ancha > tbody > .cc-application-row > :last-child { background-color: #f7f8fc; }
         .cc-table.sgtl-tabla-ancha > tbody > .cc-credit-application-row > :last-child { background-color: #e0f2fe; }
         .cc-credit-application-row .cc-application-document i { color: #3b82a8; }
-        .cc-application-document { padding-left: 1rem !important; }
+        /* Factura desplegada y lo que tiene aplicado, como un grupo (pedido de Rocío, 22/10): la factura se resalta, una
+           barra azul a la izquierda une las filas, el número aplicado va corrido con los datos en gris y una línea más
+           marcada cierra el grupo. Las columnas no cambian. La barra se suma al sombreado con que Bootstrap pinta la celda. */
+        .cc-table > tbody > tr.cc-parent-open > * { --bs-table-bg-type: #f3f6fd; }
+        .cc-table.sgtl-tabla-ancha > tbody > tr.cc-parent-open > :last-child { background-color: #f3f6fd; }
+        .cc-table > tbody > tr.cc-parent-open > :first-child,
+        .cc-table > tbody > tr.cc-application-row > :first-child {
+            box-shadow: inset 3px 0 0 #435ebe, inset 0 0 0 9999px var(--bs-table-bg-state, var(--bs-table-bg-type, var(--bs-table-accent-bg)));
+        }
+        .cc-table > tbody > tr.cc-parent-open > td { border-bottom-color: #dbeaf6; }
+        .cc-table > tbody > tr.cc-application-last > td { border-bottom: 2px solid #d0d5dd; }
+        .cc-application-row .cc-dato-aplicado { color: var(--sgtl-texto-suave); }
+        .cc-application-document { padding-left: 1.75rem !important; }
         .cc-application-document i { color: var(--sgtl-texto-suave); }
         .cc-document { color: #435ebe; font-weight: 600; white-space: nowrap; }
         .cc-debit { color: #dc3545; }

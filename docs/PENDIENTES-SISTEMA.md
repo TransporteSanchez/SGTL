@@ -1387,6 +1387,14 @@ pudo compilar en la Mac.**
 - [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada archivo de `tests/` (tienen que imprimir `OK`).
 - [ ] PowerShell: `tests/contrasenas-seguras.test.ps1` (hash y verificación de contraseñas).
 
+**Ajuste de Rocío después del merge (22/10, commit "Cuenta corriente: lo aplicado a una factura se ve como un grupo
+al desplegarla"):** al desplegar una factura, sus recibos y notas aplicados parecían una fila más (solo los
+distinguía el celeste). Ahora (opción A de las tres que vio Rocío) la factura abierta se resalta, una barra azul a la
+izquierda une la factura con lo aplicado, el número aplicado va corrido con la fecha, el cliente y el concepto en gris,
+y una línea más marcada cierra el grupo. Las columnas no cambian y el celeste se mantiene.
+- [ ] Probar en la VM (Ctrl+F5): desplegar una factura con un recibo y una NC aplicados → se ven agrupados con la
+  barra; plegarla → la factura vuelve a verse como las demás; con varias desplegadas, cada grupo se cierra con su línea.
+
 **Pendientes que salieron del merge (no son para ahora):**
 - [ ] **Fechas previstas y reales** (charla con Rocío del 22/10). Hoy la hora del viaje se carga al registrarlo y, si
   cambia, hay que editarla. Propuesta: en presupuestos, solo fechas (la hora no cambia el precio: la tarifa usa los km y

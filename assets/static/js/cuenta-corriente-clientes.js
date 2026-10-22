@@ -564,16 +564,18 @@
                 '</td><td class="text-center">' + badgeEstado(item.Estado) + '</td><td class="text-center">' +
                 accionesComprobante(item) + '</td></tr>';
             var saldoProgresivo = Number(item.Debe || 0);
-            var filasAplicaciones = aplicaciones.map(function (aplicacion) {
+            var filasAplicaciones = aplicaciones.map(function (aplicacion, posicion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
                 aplicacion.Saldo = saldoProgresivo;
                 var claseCreditoAplicado = aplicacion.Tipo === 'REC' || aplicacion.Tipo === 'NC'
                     ? ' cc-credit-application-row' : '';
-                return '<tr class="cc-application-row' + claseCreditoAplicado + ' d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
-                    '<td></td><td class="text-center">' + fecha(aplicacion.Fecha) + '</td>' +
-                    (mostrarCliente ? '<td>' + escapar(aplicacion.Cliente || item.Cliente || '—') + '</td>' : '') + '<td class="cc-document cc-application-document">' +
+                // La última aplicación cierra el grupo de la factura (línea más marcada debajo).
+                var claseUltima = posicion === aplicaciones.length - 1 ? ' cc-application-last' : '';
+                return '<tr class="cc-application-row' + claseCreditoAplicado + claseUltima + ' d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
+                    '<td></td><td class="text-center cc-dato-aplicado">' + fecha(aplicacion.Fecha) + '</td>' +
+                    (mostrarCliente ? '<td class="cc-dato-aplicado">' + escapar(aplicacion.Cliente || item.Cliente || '—') + '</td>' : '') + '<td class="cc-document cc-application-document">' +
                     '<i class="bi bi-arrow-return-right me-2" aria-hidden="true"></i>' + escapar(aplicacion.Comprobante) +
-                    '</td><td>' + escapar(aplicacion.Concepto || 'Aplicación a ' + item.Comprobante) + '</td>' +
+                    '</td><td class="cc-dato-aplicado">' + escapar(aplicacion.Concepto || 'Aplicación a ' + item.Comprobante) + '</td>' +
                     '<td class="cc-money">—</td><td class="cc-money cc-credit">' + dinero(aplicacion.Importe) +
                     '</td><td class="cc-money fw-bold">' + dinero(saldoProgresivo) + '</td><td class="text-center">' +
                     badgeEstado(aplicacion.Estado || 'Aplicado') + '</td><td class="text-center">' +
@@ -1788,6 +1790,7 @@
                     fila.classList.toggle('d-none', !expandir);
                 });
                 desplegar.setAttribute('aria-expanded', expandir ? 'true' : 'false');
+                desplegar.closest('tr').classList.toggle('cc-parent-open', expandir);
                 var icono = desplegar.querySelector('i');
                 icono.classList.toggle('bi-chevron-down', !expandir);
                 icono.classList.toggle('bi-chevron-up', expandir);
