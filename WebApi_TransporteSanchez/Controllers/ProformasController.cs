@@ -252,9 +252,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
                 P("@fcarga", (object)p.FechaCarga), P("@fentrega", (object)p.FechaEntrega), P("@tipocarga", p.TipoCarga),
                 P("@peso", p.Peso), P("@volumen", p.Volumen), P("@bultos", p.Bultos),
                 P("@vehiculo", p.VehiculoRequerido), P("@obslog", p.ObsLogisticas),
-                P("@formapago", p.FormaPago), P("@plazopago", p.PlazoPago), P("@validez", p.Validez),
-                P("@tiemposervicio", p.TiempoServicio), P("@obscom", p.ObsComerciales), P("@condpart", p.CondParticulares),
-                P("@observaciones", p.Observaciones),
+                P("@formapago", p.FormaPago), P("@plazopago", p.PlazoPago), P("@validez", p.Validez), P("@observaciones", p.Observaciones),
                 P("@subtotal", p.Subtotal), P("@descuentos", p.Descuentos), P("@neto", p.SubtotalNeto),
                 P("@iva", p.IVA), P("@otros", p.OtrosImpuestos), P("@total", p.TotalGeneral),
                 P("@cantviajes", (p.Detalle != null ? p.Detalle.Count : 0).ToString()),
@@ -268,7 +266,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "ClienteID,Moneda,Sucursal,FechaEmision,FechaVencimiento," +
             "Cli_RazonSocial,Cli_NombreComercial,Cli_CUIT,Cli_CondIVA,Cli_Direccion,Cli_Ciudad,Cli_Provincia,Cli_CP,Cli_Telefono,Cli_Email,Cli_Contacto," +
             "TipoServicio,Origen,Destino,FechaCarga,FechaEntrega,TipoCarga,Peso,Volumen,Bultos,VehiculoRequerido,ObsLogisticas," +
-            "FormaPago,PlazoPago,Validez,TiempoServicio,ObsComerciales,CondParticulares,Observaciones," +
+            "FormaPago,PlazoPago,Validez,Observaciones," +
             "Subtotal,Descuentos,SubtotalNeto,IVA,OtrosImpuestos,TotalGeneral,ImporteTotal," +
             "CantidadViajes,FechaDesde,FechaHasta";
 
@@ -276,7 +274,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "@cliente,@moneda,@sucursal,@femision,@fvto," +
             "@razon,@nombre,@cuit,@condiva,@dir,@ciudad,@prov,@cp,@tel,@email,@contacto," +
             "@tiposervicio,@origen,@destino,@fcarga,@fentrega,@tipocarga,@peso,@volumen,@bultos,@vehiculo,@obslog," +
-            "@formapago,@plazopago,@validez,@tiemposervicio,@obscom,@condpart,@observaciones," +
+            "@formapago,@plazopago,@validez,@observaciones," +
             "@subtotal,@descuentos,@neto,@iva,@otros,@total,@total," +
             "@cantviajes,@fdesde,@fhasta";
 
@@ -284,7 +282,7 @@ WHERE Cliente_ID=@cliente;", P("@cliente", p.ClienteID.Value)).FirstOrDefault();
             "ClienteID=@cliente,Moneda=@moneda,Sucursal=@sucursal,FechaEmision=@femision,FechaVencimiento=@fvto," +
             "Cli_RazonSocial=@razon,Cli_NombreComercial=@nombre,Cli_CUIT=@cuit,Cli_CondIVA=@condiva,Cli_Direccion=@dir,Cli_Ciudad=@ciudad,Cli_Provincia=@prov,Cli_CP=@cp,Cli_Telefono=@tel,Cli_Email=@email,Cli_Contacto=@contacto," +
             "TipoServicio=@tiposervicio,Origen=@origen,Destino=@destino,FechaCarga=@fcarga,FechaEntrega=@fentrega,TipoCarga=@tipocarga,Peso=@peso,Volumen=@volumen,Bultos=@bultos,VehiculoRequerido=@vehiculo,ObsLogisticas=@obslog," +
-            "FormaPago=@formapago,PlazoPago=@plazopago,Validez=@validez,TiempoServicio=@tiemposervicio,ObsComerciales=@obscom,CondParticulares=@condpart,Observaciones=@observaciones," +
+            "FormaPago=@formapago,PlazoPago=@plazopago,Validez=@validez,Observaciones=@observaciones," +
             "Subtotal=@subtotal,Descuentos=@descuentos,SubtotalNeto=@neto,IVA=@iva,OtrosImpuestos=@otros,TotalGeneral=@total,ImporteTotal=@total," +
             "CantidadViajes=@cantviajes,FechaDesde=@fdesde,FechaHasta=@fhasta";
 

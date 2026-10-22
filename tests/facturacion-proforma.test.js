@@ -52,6 +52,7 @@ async function ejecutarPrueba() {
 
     const solicitudes = [];
     let modalAgregado = false;
+    let modalMarkup = '';
     const documento = {
         getElementById: function (id) {
             if (id === 'modalFacturarProforma' && !modalAgregado) return null;
@@ -60,6 +61,10 @@ async function ejecutarPrueba() {
         body: { appendChild: function () { modalAgregado = true; } },
         createElement: function () {
             const contenedor = crearElemento();
+            Object.defineProperty(contenedor, 'innerHTML', {
+                get: function () { return modalMarkup; },
+                set: function (valor) { modalMarkup = valor; }
+            });
             contenedor.firstElementChild = elementos.modalFacturarProforma;
             return contenedor;
         }
@@ -102,6 +107,11 @@ async function ejecutarPrueba() {
 
     ventana.FacturacionProforma.abrir(7);
     await esperarMicrotareas();
+
+    assert.match(modalMarkup, /modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario/,
+        'la Factura desde proforma debe usar el mismo tamaño visible que el formulario de Recibo');
+    assert.match(modalMarkup, />Registrar Factura desde proforma<\/h5>/,
+        'la Factura desde proforma debe mostrar el título de registro');
 
     assert.strictEqual(elementos.facFechaVencimiento.value, '2026-10-30',
         'la factura desde proforma debe sugerir vencimiento a los 10 días de la emisión. Mensaje: ' + elementos.facMensaje.textContent);
@@ -164,8 +174,40 @@ function probarConceptoObligatorioEnProforma() {
         'debe permitir guardar cuando todos los conceptos están completos');
 }
 
+function probarObservacionesUnificadasEnProforma() {
+    const fuente = fs.readFileSync(path.join(__dirname, '..', 'gestion-facturacion.html'), 'utf8');
+    const valores = {
+        p_id: '0', p_moneda: 'ARS', p_otros: '0', p_observaciones: 'Entregar de lunes a viernes.'
+    };
+    const sandbox = {
+        document: {
+            querySelectorAll: function (selector) {
+                assert.strictEqual(selector, '#cuerpoConceptos tr');
+                return [];
+            }
+        },
+        parseInt: parseInt,
+        val: function (id) { return valores[id] || ''; },
+        toIso: function (valor) { return valor || null; },
+        usuario: function () { return 'usuario-prueba'; }
+    };
+
+    vm.runInNewContext(extraerFuncion(fuente, 'armarDto'), sandbox, { filename: 'gestion-facturacion.html' });
+    const dto = sandbox.armarDto();
+
+    assert.strictEqual(dto.Observaciones, 'Entregar de lunes a viernes.',
+        'debe enviar el único campo de observaciones');
+    assert.strictEqual(dto.TiempoServicio, undefined,
+        'no debe enviar el tiempo estimado del servicio retirado');
+    assert.strictEqual(dto.ObsComerciales, undefined,
+        'no debe enviar las observaciones comerciales retiradas');
+    assert.strictEqual(dto.CondParticulares, undefined,
+        'no debe enviar las condiciones particulares retiradas');
+}
+
 ejecutarPrueba().then(function () {
     probarConceptoObligatorioEnProforma();
+    probarObservacionesUnificadasEnProforma();
     console.log('OK: facturación desde proforma');
 }).catch(function (error) {
     console.error(error.stack || error);

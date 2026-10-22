@@ -52,9 +52,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string FormaPago { get; set; }
             public string PlazoPago { get; set; }
             public string Validez { get; set; }
-            public string TiempoServicio { get; set; }
-            public string ObsComerciales { get; set; }
-            public string CondParticulares { get; set; }
+            public string Observaciones { get; set; }
         }
 
         // Nombre propio: Swagger no admite dos clases con el mismo nombre (ProformasController.UsuarioDto).
@@ -67,9 +65,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string FormaPago { get; set; }
             public string PlazoPago { get; set; }
             public string Validez { get; set; }
-            public string TiempoServicio { get; set; }
-            public string ObsComerciales { get; set; }
-            public string CondParticulares { get; set; }
+            public string Observaciones { get; set; }
             public string Usuario { get; set; }
         }
 
@@ -615,22 +611,21 @@ WHERE Tipo_Proforma='Plataforma' AND ClienteID=@cli AND PlataformaID=@pl AND Pla
                         int id = db.Database.SqlQuery<int>(@"
 INSERT INTO dbo.PROFORMAS
  (ClienteID,Moneda,FechaEmision,FechaVencimiento,Cli_RazonSocial,Cli_NombreComercial,Cli_CUIT,Cli_CondIVA,Cli_Direccion,
-  Cli_Ciudad,Cli_Provincia,Cli_CP,Cli_Telefono,Cli_Email,Cli_Contacto,FormaPago,PlazoPago,Validez,TiempoServicio,
-  ObsComerciales,CondParticulares,Subtotal,Descuentos,SubtotalNeto,IVA,OtrosImpuestos,TotalGeneral,ImporteTotal,
+  Cli_Ciudad,Cli_Provincia,Cli_CP,Cli_Telefono,Cli_Email,Cli_Contacto,FormaPago,PlazoPago,Validez,Observaciones,
+  Subtotal,Descuentos,SubtotalNeto,IVA,OtrosImpuestos,TotalGeneral,ImporteTotal,
   CantidadViajes,FechaDesde,FechaHasta,Estado,FechaCreacion,Usu_Alta,Fecha_Alta,Tipo_Proforma,PlataformaID,Plataforma_Numero)
 OUTPUT INSERTED.Proforma_ID
 VALUES
  (@cli,@moneda,@femision,@fvto,@razon,@nombre,@cuit,@condiva,@dir,
-  @ciudad,@prov,@cp,@tel,@email,@contacto,@formapago,@plazopago,@validez,@tiemposervicio,
-  @obscom,@condpart,0,0,0,0,0,0,0,
+  @ciudad,@prov,@cp,@tel,@email,@contacto,@formapago,@plazopago,@validez,@observaciones,
+  0,0,0,0,0,0,0,
   '0',CAST(GETDATE() AS date),CAST(GETDATE() AS date),'Borrador',GETDATE(),@u,GETDATE(),'Plataforma',@pl,@num);",
                             P("@cli", d.ClienteID), P("@moneda", string.IsNullOrWhiteSpace(d.Moneda) ? "ARS" : d.Moneda),
                             P("@femision", d.FechaEmision), P("@fvto", d.FechaVencimiento),
                             P("@razon", d.Cli_RazonSocial), P("@nombre", d.Cli_NombreComercial), P("@cuit", d.Cli_CUIT),
                             P("@condiva", condIva), P("@dir", d.Cli_Direccion), P("@ciudad", d.Cli_Ciudad), P("@prov", d.Cli_Provincia),
                             P("@cp", d.Cli_CP), P("@tel", d.Cli_Telefono), P("@email", d.Cli_Email), P("@contacto", d.Cli_Contacto),
-                            P("@formapago", d.FormaPago), P("@plazopago", d.PlazoPago), P("@validez", d.Validez),
-                            P("@tiemposervicio", d.TiempoServicio), P("@obscom", d.ObsComerciales), P("@condpart", d.CondParticulares),
+                            P("@formapago", d.FormaPago), P("@plazopago", d.PlazoPago), P("@validez", d.Validez), P("@observaciones", d.Observaciones),
                             P("@u", usuario), P("@pl", cli.Plataforma_ID.Value), P("@num", numero)).First();
 
                         GuardarLineasYArchivo(db, id, lectura, archivo, d.NombreArchivo, d.ContentType, usuario);
@@ -748,8 +743,8 @@ VALUES
             }
         }
 
-        // "Guardar borrador" de un borrador ya importado: guarda las condiciones comerciales (forma y plazo de pago,
-        // validez, tiempo del servicio, observaciones y condiciones particulares). Mismo criterio que
+        // "Guardar borrador" de un borrador ya importado: guarda las condiciones comerciales y las observaciones.
+        // Mismo criterio que
         // ProformasController.Editar: solo en Borrador y con la misma auditoría.
         [HttpPut]
         [Route("{id:int}/Condiciones")]
@@ -770,11 +765,11 @@ VALUES
                         return Content(HttpStatusCode.BadRequest, new { error = "Solo se pueden editar proformas en estado Borrador." });
                     db.Database.ExecuteSqlCommand(@"
 UPDATE dbo.PROFORMAS
-SET FormaPago=@formapago, PlazoPago=@plazopago, Validez=@validez, TiempoServicio=@tiempo,
-    ObsComerciales=@obscom, CondParticulares=@condpart, Usu_Modi=@u, Fecha_Modi=GETDATE()
+SET FormaPago=@formapago, PlazoPago=@plazopago, Validez=@validez, Observaciones=@observaciones,
+    Usu_Modi=@u, Fecha_Modi=GETDATE()
 WHERE Proforma_ID=@id AND Estado='Borrador';",
                         P("@formapago", limpio(d.FormaPago)), P("@plazopago", limpio(d.PlazoPago)), P("@validez", limpio(d.Validez)),
-                        P("@tiempo", limpio(d.TiempoServicio)), P("@obscom", limpio(d.ObsComerciales)), P("@condpart", limpio(d.CondParticulares)),
+                        P("@observaciones", limpio(d.Observaciones)),
                         P("@u", usuario), P("@id", id));
                     Auditar(db, usuario, "UPDATE", id, null, "Edicion de proforma (Borrador): condiciones comerciales");
                     return Ok(new { Message = "Borrador guardado." });

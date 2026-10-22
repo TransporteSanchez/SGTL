@@ -148,8 +148,6 @@
         if (p.FormaPago) cond.push('Forma de pago: ' + p.FormaPago);
         if (p.PlazoPago) cond.push('Plazo de pago: ' + p.PlazoPago);
         if (p.Validez) cond.push('Validez: ' + p.Validez);
-        if (p.TiempoServicio) cond.push('Tiempo estimado: ' + p.TiempoServicio);
-        if (p.CondParticulares) cond.push('Condiciones particulares: ' + p.CondParticulares);
         if (cond.length) {
             saltoSiHaceFalta(8 + cond.length * 4);
             doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
@@ -159,8 +157,9 @@
             y += 2;
         }
         // Observaciones
-        if (p.Observaciones) {
-            var obs = doc.splitTextToSize(p.Observaciones, W - 2 * M);
+        var observaciones = p.Observaciones || [p.ObsComerciales, p.CondParticulares].filter(Boolean).join('\n');
+        if (observaciones) {
+            var obs = doc.splitTextToSize(observaciones, W - 2 * M);
             saltoSiHaceFalta(8 + obs.length * 4);
             doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
             doc.text('OBSERVACIONES', M, y); y += 5;

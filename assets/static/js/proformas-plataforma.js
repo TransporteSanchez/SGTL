@@ -9,7 +9,7 @@
   var API = 'http://localhost:50222/api/ProformasPlataforma';
   var estado = { activo: false, clienteId: null, plataforma: null, archivo: null, filas: null, base64: null, control: null, soloLectura: false };
   // Condiciones comerciales de la cabecera: lo único que se edita en un borrador ya importado.
-  var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', TiempoServicio: 'p_tiemposervicio', ObsComerciales: 'p_obscom', CondParticulares: 'p_condpart' };
+  var CONDICIONES = { FormaPago: 'p_formapago', PlazoPago: 'p_plazopago', Validez: 'p_validez', Observaciones: 'p_observaciones' };
 
   function $id(id) { return document.getElementById(id); }
   function esc(v) { return window.SGTL ? SGTL.escapar(v) : String(v == null ? '' : v); }
@@ -227,8 +227,7 @@
       Moneda: dto.Moneda, FechaEmision: dto.FechaEmision, FechaVencimiento: dto.FechaVencimiento,
       Cli_RazonSocial: dto.Cli_RazonSocial, Cli_NombreComercial: dto.Cli_NombreComercial, Cli_CUIT: dto.Cli_CUIT,
       Cli_Direccion: dto.Cli_Direccion, Cli_Telefono: dto.Cli_Telefono,
-      FormaPago: dto.FormaPago, PlazoPago: dto.PlazoPago, Validez: dto.Validez, TiempoServicio: dto.TiempoServicio,
-      ObsComerciales: dto.ObsComerciales, CondParticulares: dto.CondParticulares
+      FormaPago: dto.FormaPago, PlazoPago: dto.PlazoPago, Validez: dto.Validez, Observaciones: dto.Observaciones
     };
     var listo = SGTL.procesando('#btnGuardarBorrador', 'Importando…');
     pedir(API + '/Importar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) })
