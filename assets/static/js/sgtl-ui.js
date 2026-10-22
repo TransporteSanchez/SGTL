@@ -613,7 +613,27 @@
 
   // ---------------------------------------------------------------- Formularios (§6.3)
 
+  // El campo que ve el usuario: con flatpickr (altInput) es otro input y el original queda oculto.
+  function campoVisible(campo) {
+    return campo && campo._flatpickr && campo._flatpickr.altInput ? campo._flatpickr.altInput : campo;
+  }
+
+  // En un input-group (campo + botón) el mensaje va al final del grupo, en su propio renglón.
+  function grupoDe(campo) {
+    return campo.parentElement && campo.parentElement.classList.contains('input-group') ? campo.parentElement : null;
+  }
+
   function feedbackDe(campo) {
+    var grupo = grupoDe(campo);
+    if (grupo) {
+      grupo.classList.add('has-validation');
+      var ultimo = grupo.lastElementChild;
+      if (ultimo && ultimo.classList.contains('invalid-feedback')) return ultimo;
+      var enGrupo = document.createElement('div');
+      enGrupo.className = 'invalid-feedback';
+      grupo.appendChild(enGrupo);
+      return enGrupo;
+    }
     var siguiente = campo.nextElementSibling;
     while (siguiente && !siguiente.classList.contains('invalid-feedback') && !siguiente.classList.contains('form-text')) {
       siguiente = siguiente.nextElementSibling;
@@ -626,17 +646,18 @@
   }
 
   function marcarError(objetivo, mensaje) {
-    var campo = elemento(objetivo);
+    var campo = campoVisible(elemento(objetivo));
     if (!campo) return;
     campo.classList.add('is-invalid');
     feedbackDe(campo).textContent = mensaje || '';
   }
 
   function limpiarError(objetivo) {
-    var campo = elemento(objetivo);
+    var campo = campoVisible(elemento(objetivo));
     if (!campo) return;
     campo.classList.remove('is-invalid');
-    var siguiente = campo.nextElementSibling;
+    var grupo = grupoDe(campo);
+    var siguiente = grupo ? grupo.lastElementChild : campo.nextElementSibling;
     if (siguiente && siguiente.classList.contains('invalid-feedback')) siguiente.textContent = '';
   }
 

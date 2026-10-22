@@ -6,7 +6,30 @@
     var modalVista, urlVista = null, secuenciaVista = 0;
     var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
     function el(id) { return document.getElementById(id); }
-    function aviso(id, texto, error) { el(id).className = texto ? 'alert alert-' + (error ? 'danger' : 'success') : ''; el(id).textContent = texto; }
+    // Avisos (§5.1): los resultados van en toasts; el error de un modal queda arriba, dentro del modal.
+    function aviso(id, texto, error) {
+        if (id === 'mensaje') { if (texto) SGTL[error ? 'toastError' : 'toastExito'](texto); return; }
+        if (texto && !error) { SGTL.avisoFormulario('#' + id, ''); SGTL.toastExito(texto); return; }
+        SGTL.avisoFormulario('#' + id, texto);
+    }
+    // Texto del error para el usuario (§9): "error" ya viene redactado; el "Message" de Web API solo cuando
+    // rechaza un dato (400, 404 o 409).
+    function textoError(error, porDefecto) {
+        var r = error && error.respuesta;
+        if (r && r.error) return r.error;
+        if (r && r.Message && [400, 404, 409].indexOf(error.status) !== -1) return r.Message;
+        if (typeof r === 'string' && error.status === 400) return r;
+        return porDefecto;
+    }
+    // Fecha y hora con flatpickr (§7.1): se ve DD/MM/AAAA HH:MM y el campo guarda AAAA-MM-DDTHH:MM, como antes.
+    function prepararFechaHora(id) {
+        SGTL.selectorFecha(el(id), { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d\\TH:i', altInput: true, altFormat: 'd/m/Y H:i' });
+    }
+    function ponerFechaHora(id, valor) {
+        var fp = el(id)._flatpickr;
+        if (!fp) { el(id).value = valor || ''; return; }
+        if (valor) fp.setDate(valor, false); else fp.clear(false);
+    }
     function pedir(url, opciones) { return fetch(url, opciones).then(function (r) {
         return r.text().then(function (t) {
             var contenido = null;
@@ -21,15 +44,16 @@
         el('agregarOrigenPresupuesto').disabled = !el('cliente').value;
         el('agregarDestinoPresupuesto').disabled = !el('cliente').value;
         [['origenId', origenes, 'Origen_ID', origenId], ['destinoId', destinos, 'Destino_ID', destinoId]].forEach(function (cfg) {
-            var s = el(cfg[0]); s.textContent = ''; opcion(s, '', 'Seleccione...'); s.disabled = !el('cliente').value;
+            var s = el(cfg[0]); s.textContent = ''; opcion(s, '', cfg[0] === 'origenId' ? 'Seleccioná un origen' : 'Seleccioná un destino'); s.disabled = !el('cliente').value;
             cfg[1].filter(function (x) { return String(x.ClienteID) === el('cliente').value; }).forEach(function (x) { opcion(s, x[cfg[2]], x.Descripcion); });
             if (cfg[3]) s.value = String(cfg[3]);
         });
     }
     function invalidarDocumento() { revision++; actual = null; }
     function reiniciar() {
-        secuencia++; clearTimeout(timer); el('formulario').reset(); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
-        opcionesRuta(); aviso('mensajeForm', '', false); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
+        secuencia++; clearTimeout(timer); SGTL.reiniciarFormulario('#formulario', '#mensajeForm'); formulario.reiniciar();
+        ponerFechaHora('fechaInicio', ''); ponerFechaHora('fechaFin', ''); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
+        opcionesRuta(); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
     }
     function calcular() {
         var version = ++secuencia, tipo = el('tipoTarifa').value, url, params;
@@ -43,7 +67,7 @@
             if (el('fechaFin').value < el('fechaInicio').value) { el('tarifaInfo').textContent = 'La fecha de fin no puede ser anterior a la de inicio.'; return; }
             params = new URLSearchParams({fechaInicio: el('fechaInicio').value, fechaFin: el('fechaFin').value, km: el('distancia').value}); url = '/TarifasKm/Calcular?';
         }
-        el('tarifaInfo').textContent = 'Calculando tarifa...';
+        el('tarifaInfo').textContent = 'Calculando tarifa…';
         pedir(api + url + params.toString()).then(function (r) {
             if (version !== secuencia) return;
             var importe = Number(tipo === 'fija' ? r.ValorFijoNeto : r.MontoCalculado);
@@ -60,7 +84,7 @@
             } else if (tipo === 'fija' && error.status === 404) {
                 info.textContent = 'No hay una tarifa fija registrada para el cliente y la ruta seleccionados.';
             } else {
-                info.textContent = 'No se pudo calcular la tarifa. Revisá los datos y la conexión con la API.';
+                info.textContent = 'No se pudo calcular la tarifa. Revisá los datos y probá de nuevo.';
             }
         });
     }
@@ -71,15 +95,27 @@
         d.camion = nombre('camionId'); d.chofer = nombre('choferId'); d.importe = tarifa.importe; d.tarifaId = tarifa.id; d.valorKm = tarifa.valorKm;
         if (!d.fecha) d.fecha = new Date().toLocaleDateString('en-CA'); return d;
     }
-    function listar() { pedir(api + '/Presupuestos').then(function (items) { registros = items || []; dibujar(); }).catch(function () { aviso('mensaje', 'No se pudieron cargar los presupuestos. Verificá la API y la tabla PRESUPUESTOS.', true); }); }
+    function listar() {
+        pedir(api + '/Presupuestos').then(function (items) { registros = items || []; dibujar(); }).catch(function () {
+            SGTL.tabla.vacia('#lista', 10, 'No se pudieron cargar los presupuestos.');
+            aviso('mensaje', 'No se pudieron cargar los presupuestos. Probá de nuevo.', true);
+        });
+    }
     function dibujar() {
-        var cuerpo = el('lista'), filtro = el('filtro').value.toLocaleLowerCase(); cuerpo.textContent = '';
+        var cuerpo = el('lista'), filtro = el('filtro').value.trim().toLocaleLowerCase();
         var items = registros.filter(function (p) { return [p.id, p.cliente, p.origen, p.destino].join(' ').toLocaleLowerCase().indexOf(filtro) >= 0; });
-        if (!items.length) { var celda = cuerpo.insertRow().insertCell(); celda.colSpan = 10; celda.textContent = 'No hay presupuestos para mostrar.'; }
+        if (!items.length) { SGTL.tabla.vacia(cuerpo, 10, registros.length ? '' : 'Todavía no hay presupuestos cargados.'); return; }
+        SGTL.tabla.llenar(cuerpo, '');
         items.forEach(function (p) {
-            var tr = cuerpo.insertRow(); [p.id, p.fecha || '', p.cliente, p.origen, p.destino, p.distancia ? p.distancia + ' km' : '—', '$ ' + Number(p.importe || 0).toLocaleString('es-AR', {minimumFractionDigits: 2})].forEach(function (v) { tr.insertCell().textContent = v || ''; });
+            var tr = cuerpo.insertRow();
+            // Número, fecha (centrada), cliente, origen, destino, km e importe (a la derecha), §2.1.
+            [[p.id, ''], [SGTL.fecha(p.fecha), 'text-center'], [p.cliente, ''], [p.origen, ''], [p.destino, ''],
+             [p.distancia ? SGTL.km(p.distancia) : '—', 'text-end'], [SGTL.monto(p.importe || 0), 'text-end']].forEach(function (v) {
+                var celda = tr.insertCell(); celda.textContent = v[0] || ''; if (v[1]) celda.className = v[1];
+            });
             var estadoCelda = tr.insertCell(), selector = document.createElement('select');
-            selector.className = 'form-select form-select-sm'; selector.setAttribute('aria-label', 'Estado del presupuesto #' + p.id);
+            estadoCelda.className = 'text-center';
+            selector.className = 'form-select form-select-sm d-inline-block w-auto'; selector.setAttribute('aria-label', 'Estado del presupuesto #' + p.id);
             ['Pendiente', 'Aceptado', 'Rechazado'].forEach(function (estado) { opcion(selector, estado, estado); }); selector.value = p.estado || 'Pendiente'; selector.disabled = !!p.viajeId;
             selector.onchange = function () { cambiarEstado(p, selector); }; estadoCelda.appendChild(selector);
             tr.insertCell().textContent = p.viajeId ? '#' + p.viajeId : '—';
@@ -89,7 +125,7 @@
             var motivoGenerar = conViaje ? 'Ya se generó el viaje #' + p.viajeId : 'Solo se genera el viaje de un presupuesto aceptado';
             td.innerHTML = SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: 'Solo se editan presupuestos pendientes sin viaje' }),
-                SGTL.botonFila('pdf', { id: p.id, texto: 'Imprimir / PDF' }),
+                SGTL.botonFila('pdf', { id: p.id, texto: 'Ver PDF' }),
                 SGTL.botonFila('enviar', { id: p.id }),
                 SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje, motivo: motivoGenerar }),
                 SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'Ya tiene un viaje generado: no se puede eliminar' })
@@ -102,7 +138,8 @@
     function conservarOpcion(id, valor, texto) { if (!valor) return; var s = el(id); if (!Array.prototype.some.call(s.options, function (o) { return o.value === String(valor); })) opcion(s, valor, (texto || 'Registro ' + valor) + ' (histórico)'); s.value = String(valor); }
     function abrir(p) {
         reiniciar(); el('tituloModal').textContent = 'Editar presupuesto #' + p.id;
-        campos.forEach(function (k) { if (el(k)) el(k).value = p[k] || ''; }); conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
+        campos.forEach(function (k) { if (el(k)) el(k).value = p[k] || ''; }); ponerFechaHora('fechaInicio', p.fechaInicio); ponerFechaHora('fechaFin', p.fechaFin);
+        conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
         conservarOpcion('origenId', p.origenId, p.origen); conservarOpcion('destinoId', p.destinoId, p.destino); conservarOpcion('camionId', p.camionId, p.camion); conservarOpcion('choferId', p.choferId, p.chofer);
         base = Object.assign({}, p); actual = Object.assign({}, p); if (p.tarifaId && p.tipoTarifa && p.importe !== undefined) { tarifa = {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)}; el('importe').value = p.importe; el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.'; }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
@@ -115,11 +152,11 @@
             verbo: 'Eliminar',
             peligro: true,
             accion: function () {
-                return pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).catch(function () {
-                    var error = new Error('eliminar'); error.mensajeUsuario = 'No se pudo eliminar el presupuesto. Probá de nuevo.'; throw error;
+                return pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).catch(function (falla) {
+                    var error = new Error('eliminar'); error.mensajeUsuario = textoError(falla, 'No se pudo eliminar el presupuesto. Probá de nuevo.'); throw error;
                 });
             }
-        }).then(function (eliminado) { if (eliminado) { aviso('mensaje', 'Presupuesto eliminado.', false); listar(); } });
+        }).then(function (eliminado) { if (eliminado) { aviso('mensaje', 'Presupuesto #' + p.id + ' eliminado.', false); listar(); } });
     }
     function clientePresupuesto(p) { return clientes.find(function (c) { return String(c.Cliente_ID) === String(p.clienteId); }) || null; }
     function encabezadosEnvio() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }; }
@@ -127,53 +164,81 @@
         var estado = selector.value; selector.disabled = true;
         pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) }).then(function () {
             aviso('mensaje', 'Estado actualizado a ' + estado + '.', false); listar();
-        }).catch(function (error) { selector.value = p.estado; selector.disabled = false; aviso('mensaje', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || 'No se pudo actualizar el estado.', true); listar(); });
+        }).catch(function (error) { selector.value = p.estado; selector.disabled = false; aviso('mensaje', textoError(error, 'No se pudo actualizar el estado. Probá de nuevo.'), true); listar(); });
     }
     function abrirGenerarViaje(p) {
-        presupuestoViaje = p; el('tituloGenerarViaje').textContent = 'Generar viaje desde presupuesto #' + p.id; aviso('generarViajeFeedback', '', false);
+        presupuestoViaje = p; el('tituloGenerarViaje').textContent = 'Generar viaje del presupuesto #' + p.id; aviso('generarViajeFeedback', '', false);
+        SGTL.limpiarError(el('generarViajeChofer'));
         var selector = el('generarViajeChofer'); selector.textContent = ''; opcion(selector, '', 'Seleccioná un chofer');
         choferes.filter(function (c) { return (c.EstadoChofer || '').toLowerCase() === 'activo'; }).forEach(function (c) { opcion(selector, c.Chofer_ID, c.Apellido + ', ' + c.Nombre); });
         selector.value = p.choferId || ''; el('btnGenerarViaje').disabled = false; modalViaje.show();
     }
     el('formGenerarViaje').onsubmit = function (e) {
         e.preventDefault(); if (!presupuestoViaje || generandoViaje) return;
-        generandoViaje = true; el('btnGenerarViaje').disabled = true;
+        if (!el('generarViajeChofer').value) { SGTL.marcarError(el('generarViajeChofer'), 'Seleccioná un chofer.'); el('generarViajeChofer').focus(); return; }
+        SGTL.limpiarError(el('generarViajeChofer'));
+        generandoViaje = true; var listo = SGTL.procesando('#btnGenerarViaje');
         pedir(api + '/Presupuestos/' + encodeURIComponent(presupuestoViaje.id) + '/viaje', { method: 'POST', headers: encabezadosEnvio(), body: JSON.stringify({ ChoferID: Number(el('generarViajeChofer').value) }) }).then(function (r) {
-            generandoViaje = false;
+            generandoViaje = false; listo();
             modalViaje.hide(); aviso('mensaje', 'Viaje #' + r.ViajeID + ' generado.', false); listar();
         }).catch(function (error) {
-            generandoViaje = false; el('btnGenerarViaje').disabled = false; aviso('generarViajeFeedback', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || 'No se pudo generar el viaje.', true); listar();
+            generandoViaje = false; listo(); aviso('generarViajeFeedback', textoError(error, 'No se pudo generar el viaje. Probá de nuevo.'), true); listar();
         });
     };
     function abrirEnvio(p) {
         var version = ++secuenciaEnvio; envioActual = null;
-        el('tituloEnviarPresupuesto').textContent = 'Enviar presupuesto #' + p.id + ' por E-mail';
-        el('envioPresupuestoDestino').value = ''; el('envioPresupuestoPerfil').textContent = 'Verificando perfil SMTP…';
-        el('btnEnviarPresupuesto').disabled = true; el('btnEnviarPresupuesto').textContent = 'Enviar E-mail'; aviso('envioPresupuestoFeedback', '', false); modalEnvio.show();
+        el('tituloEnviarPresupuesto').textContent = 'Enviar por e-mail el presupuesto #' + p.id;
+        el('envioPresupuestoDestino').value = ''; SGTL.limpiarError(el('envioPresupuestoDestino')); el('envioPresupuestoPerfil').textContent = 'Verificando el perfil SMTP…';
+        el('btnEnviarPresupuesto').disabled = true; el('envioPresupuestoFeedback').className = 'alert alert-light-danger color-danger d-none'; aviso('envioPresupuestoFeedback', '', false); modalEnvio.show();
         pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/email', { headers: encabezadosEnvio() }).then(function (r) {
             if (version !== secuenciaEnvio) return;
-            if (!r.Configurado) { el('envioPresupuestoPerfil').textContent = 'No hay un perfil SMTP asignado a Presupuestos. Configuralo en Configuración > Gestionar e-mail.'; return; }
+            if (!r.Configurado) {
+                el('envioPresupuestoPerfil').textContent = '';
+                el('envioPresupuestoFeedback').className = 'alert alert-light-warning color-warning';
+                el('envioPresupuestoFeedback').textContent = 'No hay un perfil SMTP asignado a presupuestos. Un administrador lo asigna en Configuración > Gestionar e-mail.';
+                return;
+            }
             envioActual = r; el('envioPresupuestoDestino').value = r.Presupuesto.email || '';
             el('envioPresupuestoPerfil').textContent = '';
             el('btnEnviarPresupuesto').disabled = false;
-        }).catch(function (error) { if (version !== secuenciaEnvio) return; el('envioPresupuestoPerfil').textContent = ''; aviso('envioPresupuestoFeedback', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || 'No se pudo preparar el envío.', true); });
+        }).catch(function (error) { if (version !== secuenciaEnvio) return; el('envioPresupuestoPerfil').textContent = ''; aviso('envioPresupuestoFeedback', textoError(error, 'No se pudo preparar el envío. Probá de nuevo.'), true); });
     }
     el('formEnviarPresupuesto').onsubmit = function (e) {
         e.preventDefault(); if (!envioActual || enviando) return;
-        enviando = true; el('btnEnviarPresupuesto').disabled = true; el('btnEnviarPresupuesto').textContent = 'Enviando…'; aviso('envioPresupuestoFeedback', '', false);
+        var destino = el('envioPresupuestoDestino');
+        if (!destino.value.trim() || !destino.checkValidity()) { SGTL.marcarError(destino, destino.value.trim() ? 'Escribí un e-mail válido.' : 'Completá el destinatario.'); destino.focus(); return; }
+        SGTL.limpiarError(destino);
+        enviando = true; var listo = SGTL.procesando('#btnEnviarPresupuesto', 'Enviando…'); aviso('envioPresupuestoFeedback', '', false);
         window.PresupuestoPDF.preparar(envioActual.Presupuesto, clientePresupuesto(envioActual.Presupuesto)).then(function (doc) {
             var pdf = doc.output('datauristring').split(',')[1];
             return pedir(api + '/Presupuestos/' + encodeURIComponent(envioActual.Presupuesto.id) + '/email', { method: 'POST', headers: encabezadosEnvio(), body: JSON.stringify({ Destinatario: el('envioPresupuestoDestino').value.trim(), PdfBase64: pdf, Version: envioActual.Version }) });
         }).then(function (r) {
-            aviso('envioPresupuestoFeedback', r.mensaje || 'Presupuesto enviado.', false); el('btnEnviarPresupuesto').textContent = 'Enviado'; envioActual = null;
+            enviando = false; listo(); envioActual = null;
+            modalEnvio.hide(); SGTL.toastExito(r.mensaje || 'Presupuesto enviado.');
         }).catch(function (error) {
-            aviso('envioPresupuestoFeedback', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || error.message || 'No se pudo enviar el presupuesto.', true);
-            if (error.status === 409) { envioActual = null; el('btnEnviarPresupuesto').textContent = 'Volvé a abrir el envío'; }
-            else { el('btnEnviarPresupuesto').disabled = false; el('btnEnviarPresupuesto').textContent = 'Reintentar'; }
-        }).then(function () { enviando = false; });
+            enviando = false; listo();
+            aviso('envioPresupuestoFeedback', textoError(error, 'No se pudo enviar el presupuesto. Probá de nuevo.'), true);
+            // 409: el presupuesto cambió desde que se abrió el envío; hay que volver a abrirlo.
+            if (error.status === 409) { envioActual = null; el('btnEnviarPresupuesto').disabled = true; }
+        });
     };
     el('nuevo').onclick = function () { reiniciar(); el('tituloModal').textContent = 'Registrar presupuesto'; modal.show(); };
     el('filtro').oninput = dibujar;
+    SGTL.filtros(['#filtro'], dibujar);
+    prepararFechaHora('fechaInicio'); prepararFechaHora('fechaFin');
+    // Validación del formulario (§6.3): cada campo en rojo con su mensaje.
+    var formulario = SGTL.validador([
+        { id: 'cliente', requerido: 'Seleccioná un cliente.' },
+        { id: 'email', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, mensaje: 'Escribí un e-mail válido.' },
+        { id: 'origenId', requerido: 'Seleccioná un origen.' },
+        { id: 'destinoId', requerido: 'Seleccioná un destino.' },
+        { id: 'fechaInicio', requerido: 'Completá la fecha y hora de inicio.' },
+        { id: 'fechaFin', requerido: 'Completá la fecha y hora de fin.',
+            validar: function (valor) { return el('fechaInicio').value && valor < el('fechaInicio').value ? 'La fecha de fin no puede ser anterior a la de inicio.' : ''; } },
+        { id: 'camionId', requerido: 'Seleccioná un camión.' },
+        { id: 'distancia', requerido: 'Completá la distancia.', validar: function (valor) { return Number(valor) > 0 ? '' : 'La distancia tiene que ser mayor que cero.'; } },
+        { id: 'tipoTarifa', requerido: 'Seleccioná un tipo de tarifa.' }
+    ]);
     el('cliente').onchange = function () { var c = clientes.find(function (x) { return String(x.Cliente_ID) === el('cliente').value; }); el('email').value = c && c.Email || ''; opcionesRuta(); solicitarCalculo(); };
     ['agregarOrigenPresupuesto', 'agregarDestinoPresupuesto'].forEach(function (id) {
         el(id).addEventListener('click', function () {
@@ -192,20 +257,20 @@
     el('distancia').addEventListener('input', solicitarCalculo);
     el('formulario').addEventListener('input', invalidarDocumento); el('formulario').addEventListener('change', invalidarDocumento);
     el('formulario').onsubmit = function (e) {
-        e.preventDefault(); if (el('fechaFin').value < el('fechaInicio').value) { aviso('mensajeForm', 'La fecha de fin no puede ser anterior a la de inicio.', true); return; }
+        e.preventDefault(); if (guardando) return;
+        formulario.validarTodo();
+        if (!SGTL.revisarFormulario('#formulario', '#mensajeForm')) return;
         if (!tarifa) { aviso('mensajeForm', 'Esperá el cálculo de una tarifa válida antes de guardar.', true); return; }
-        if (guardando) return;
-        var d = datos(), id = el('id').value, revisionGuardada = revision; guardando = true; el('guardar').disabled = true;
+        var d = datos(), id = el('id').value, revisionGuardada = revision; guardando = true; var listo = SGTL.procesando('#guardar');
         pedir(api + '/Presupuestos' + (id ? '/' + id : ''), {method: id ? 'PUT' : 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(d)}).then(function (r) {
             d.id = r.id; el('id').value = r.id; base = d; actual = revision === revisionGuardada ? d : null;
-            if (actual) {
-                guardando = false;
-                modal.hide(); aviso('mensaje', 'Presupuesto #' + r.id + ' guardado correctamente.', false);
-            }
-            else { aviso('mensajeForm', 'Presupuesto guardado. Hay cambios posteriores pendientes de guardar.', false); }
+            guardando = false; listo();
+            if (actual) { modal.hide(); aviso('mensaje', 'Presupuesto #' + r.id + ' guardado.', false); }
+            else { aviso('mensajeForm', 'Presupuesto #' + r.id + ' guardado. Hay cambios posteriores sin guardar.', false); }
             listar();
-        }).catch(function (error) { aviso('mensajeForm', (error.respuesta && (error.respuesta.error || error.respuesta.Message)) || 'No se pudo guardar el presupuesto.', true); }).then(function () { guardando = false; el('guardar').disabled = false; });
+        }).catch(function (error) { guardando = false; listo(); aviso('mensajeForm', textoError(error, 'No se pudo guardar el presupuesto. Probá de nuevo.'), true); });
     };
+    function errorVista(texto) { var aviso = el('vistaPresupuestoFeedback'); aviso.className = 'alert alert-light-danger color-danger'; aviso.textContent = texto; }
     function imprimirPresupuesto(p) {
         if (!p) return;
         var version = ++secuenciaVista, marco = el('vistaPresupuestoDocumento'), descarga = el('descargarVistaPresupuesto');
@@ -213,8 +278,8 @@
         marco.removeAttribute('src'); marco.style.display = 'none';
         descarga.removeAttribute('href'); descarga.classList.add('disabled'); descarga.setAttribute('aria-disabled', 'true');
         el('imprimirVistaPresupuesto').disabled = true;
-        el('tituloVistaPresupuesto').textContent = 'Vista previa del presupuesto #' + p.id;
-        el('vistaPresupuestoFeedback').className = ''; el('vistaPresupuestoFeedback').textContent = 'Preparando vista previa…';
+        el('tituloVistaPresupuesto').textContent = 'Ver PDF del presupuesto #' + p.id;
+        el('vistaPresupuestoFeedback').className = 'text-center text-muted py-4'; el('vistaPresupuestoFeedback').textContent = 'Preparando el PDF…';
         modalVista.show();
         window.PresupuestoPDF.preparar(p, clientePresupuesto(p)).then(function (doc) {
             if (version !== secuenciaVista) return;
@@ -222,16 +287,16 @@
             descarga.href = urlVista; descarga.download = 'Presupuesto_' + p.id + '.pdf'; descarga.classList.remove('disabled'); descarga.setAttribute('aria-disabled', 'false');
             marco.onload = function () {
                 if (version !== secuenciaVista) return;
-                el('vistaPresupuestoFeedback').textContent = ''; el('imprimirVistaPresupuesto').disabled = false;
+                el('vistaPresupuestoFeedback').className = 'd-none'; el('vistaPresupuestoFeedback').textContent = ''; el('imprimirVistaPresupuesto').disabled = false;
             };
             marco.src = urlVista; marco.style.display = 'block';
-        }).catch(function (error) { if (version === secuenciaVista) aviso('vistaPresupuestoFeedback', error.message || 'No se pudo generar el presupuesto.', true); });
+        }).catch(function () { if (version === secuenciaVista) errorVista('No se pudo generar el PDF del presupuesto. Probá de nuevo.'); });
     }
     modal = bootstrap.Modal.getOrCreateInstance(el('modalPresupuesto'));
     modalVista = bootstrap.Modal.getOrCreateInstance(el('modalVistaPresupuesto'));
     el('imprimirVistaPresupuesto').onclick = function () {
         try { var vista = el('vistaPresupuestoDocumento').contentWindow; vista.focus(); vista.print(); }
-        catch (error) { aviso('vistaPresupuestoFeedback', 'Usá el botón de impresión del visor PDF.', true); }
+        catch (error) { errorVista('No se pudo imprimir desde acá. Usá el botón de impresión del visor del PDF.'); }
     };
     el('modalVistaPresupuesto').addEventListener('hidden.bs.modal', function () {
         secuenciaVista++; var marco = el('vistaPresupuestoDocumento'); marco.onload = null; marco.removeAttribute('src');
@@ -255,5 +320,5 @@
         (r[3] || []).forEach(function (c) { opcion(el('camionId'), c.Camion_ID, c.Dominio); });
         choferes = r[4] || []; choferes.forEach(function (c) { opcion(el('choferId'), c.Chofer_ID, c.Apellido + ', ' + c.Nombre); });
         el('nuevo').disabled = false;
-    }).catch(function () { aviso('mensaje', 'No se pudieron cargar los datos de clientes, rutas o camiones. Revisá la conexión con la API.', true); }).then(listar);
+    }).catch(function () { aviso('mensaje', 'No se pudieron cargar los clientes, las rutas o los camiones. Probá de nuevo.', true); }).then(listar);
 }());

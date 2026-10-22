@@ -39,7 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
-| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp y login al día; faltan contenido, presupuestos, documentación, login y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; viajes, proformas, cuenta corriente, Gestionar facturación, e-mail, WhatsApp, login y presupuestos al día; faltan documentación, dashboard y el repaso final (ver §20) | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1028,4 +1028,23 @@ un error al iniciar sesión": el login sigue con la marca SGTL y solo avisa si n
 - [ ] Usuario o contraseña incorrectos: el mensaje de la API debajo del campo (igual que antes).
 - [ ] Con la API apagada: aviso rojo arriba a la derecha "No se pudo conectar con el servidor…".
 - [ ] F12 al entrar: la consola ya no muestra la contraseña.
+
+**Presupuestos (commit "Presupuestos: design system en la pantalla y sus modales"):** avisos de la pantalla con
+toasts (antes un aviso fijo arriba de la tabla) y errores de cada modal arriba, dentro del modal; tabla rayada con
+fecha DD/MM/AAAA centrada, km e importe a la derecha, "Cargando…" y "Todavía no hay presupuestos cargados." / "No
+hay resultados…"; Acciones fija a la derecha. Filtro con su cruz. Fechas y horas de inicio y fin con el calendario
+del sistema (DD/MM/AAAA HH:MM; siguen guardando AAAA-MM-DDTHH:MM). El formulario valida como el resto, con asterisco
+rojo y "Seleccioná un cliente" (antes "Seleccione"). "Ver PDF" en lugar de "Imprimir / PDF", con Imprimir y Descargar
+PDF en el pie; "Enviar por e-mail" cierra el modal y avisa con un toast; Generar viaje pide el chofer en rojo.
+Botones "+" de alta rápida con el ícono del sistema. `sgtl-ui.js`: el error de un campo con calendario se ve en el
+campo visible, y el de un campo con botón (input-group) va debajo del grupo. API: "Completá cliente, origen y
+destino." e "Ingresá un importe válido." (antes "Complete" / "Ingrese"); **hay que recompilar la API**.
+- [ ] Registrar presupuesto → Guardar vacío: "Revisá los campos marcados." y cada campo obligatorio en rojo,
+  también las dos fechas.
+- [ ] Fechas: el calendario elige día y hora; se ven DD/MM/AAAA HH:MM. Con tarifa por km, cambiar una fecha recalcula.
+- [ ] Editar un presupuesto pendiente: las fechas aparecen cargadas en DD/MM/AAAA HH:MM; Guardar → toast.
+- [ ] Ojo de PDF: "Ver PDF del presupuesto #N" con Imprimir y Descargar PDF.
+- [ ] Sobre: "Enviar por e-mail el presupuesto #N"; Enviar con un correo de prueba → se cierra y avisa.
+- [ ] Cambiar el estado a Aceptado → toast; Generar viaje sin chofer → el desplegable en rojo; con chofer → toast
+  "Viaje #N generado." (**solo con datos de prueba: crea un viaje real**).
 

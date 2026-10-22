@@ -133,11 +133,11 @@ OUTPUT INSERTED.Viaje_ID VALUES (@origen,@destino,@km,'','',@inicio,@fin,@chofer
         {
             if (datos == null || String.IsNullOrWhiteSpace((string)datos["cliente"]) ||
                 String.IsNullOrWhiteSpace((string)datos["origen"]) || String.IsNullOrWhiteSpace((string)datos["destino"]))
-                return BadRequest("Complete cliente, origen y destino.");
+                return BadRequest("Completá cliente, origen y destino.");
             decimal importe;
             if (!Decimal.TryParse((string)datos["importe"], System.Globalization.NumberStyles.Number,
                 System.Globalization.CultureInfo.InvariantCulture, out importe) || importe < 0)
-                return BadRequest("Ingrese un importe válido.");
+                return BadRequest("Ingresá un importe válido.");
             datos.Remove("id");
             datos.Remove("estado");
             datos.Remove("viajeId");
