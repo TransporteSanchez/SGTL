@@ -1,15 +1,5 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
-
-    <link rel="stylesheet" href="./assets/compiled/css/app.css">
-    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-</head>
-<body>
-
+<!-- Encabezado de todas las pantallas: lo inserta header.js. Es un fragmento, sin <head>: cada pantalla
+     ya carga app.css y sgtl.css, y volver a cargarlos acá pisaba el estilo de sgtl.css. -->
 <header>
     <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <div class="dropdown">
@@ -31,7 +21,7 @@
                 <li>
                     <h6 class="dropdown-header">Opciones</h6>
                 </li>
-                <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-gear me-2"></i> Cambiar Contraseña</a></li>
+                <li><a class="dropdown-item" href="#"><i class="icon-mid bi bi-gear me-2"></i> Cambiar contraseña</a></li>
                 <hr class="dropdown-divider">
                 <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="icon-mid bi bi-box-arrow-left me-2"></i> Cerrar sesión</a></li>
             </ul>
@@ -54,6 +44,3 @@
     </div>
     <p style="margin-top: 10px;">Redirigiendo al login...</p>
 </div>
-
-</body>
-</html>

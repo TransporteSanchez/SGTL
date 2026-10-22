@@ -213,9 +213,9 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 
 ### 5.1 Avisos
 
-- **Éxito:** toast verde arriba a la derecha que **se va solo a los 4 segundos**. Texto corto,
+- **Éxito:** aviso arriba a la derecha (tarjeta blanca con tilde verde, §12) que **se va solo a los 4 segundos**. Texto corto,
   sin signos de exclamación: "Chofer guardado.", "Proforma generada: PF-00000010."
-- **Error:** toast rojo arriba a la derecha que **no se va solo**: queda hasta que se cierra.
+- **Error:** aviso arriba a la derecha (tarjeta blanca con ícono rojo, §12) que **no se va solo**: queda hasta que se cierra.
   Dice qué pasó y, si se sabe, qué hacer: "No se pudo guardar el chofer. Revisá la conexión y
   probá de nuevo."
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
@@ -382,15 +382,53 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Color de las acciones: el azul de Mazer** (`#435ebe`, `btn-primary`): Guardar, Editar,
   links, foco de los campos. El **verde** es para crear (`btn-success`, §1.1) y para el
   siguiente paso del circuito (§1.4).
-- **El marco** (fondo, menú, login, círculo de las iniciales) usa los dos colores de Gestionar
-  contenido (hoy verde azulado y verde oscuro). Los colores sueltos se alinean a esto: la
-  pestaña activa de cuenta corriente (`#008c9e`) y las iniciales sin color configurado
-  (`#007bff`) toman el color del menú.
-- **Tipografía: Nunito en todo**, también en el login (hoy Inter).
+- **El marco** usa los dos colores de Gestionar contenido (hoy verde azulado y verde oscuro):
+  - el **color de fondo** es el color de la marca: la pantalla toma un tono muy claro de él y el
+    color entero queda en una línea arriba de la barra (cambio del 22/10, §12); en el login pinta
+    el panel de la izquierda;
+  - el **color del menú** va en la opción elegida del menú, el círculo de las iniciales, el botón del
+    login y el subrayado de las pestañas (también las de cuenta corriente, que tenían `#008c9e`).
+- **Tipografía: Nunito en todo**, también en el login (cambiado el 22/10; antes Inter).
 - **Íconos: solo Bootstrap Icons.** Se sacan Font Awesome (CDN, en login e inicio), Feather y
   Boxicons.
 - **Gestionar contenido sigue igual:** logo, pie, color de fondo y color del menú. "Restablecer"
-  vuelve a la marca SGTL: logo `assets/static/images/logo/sgtl-logo.png`, fondo `#e4eef8`, menú `#435ebe` y
+  vuelve a la marca SGTL: logo `assets/static/images/logo/sgtl-logo.png`, fondo `#435ebe` (antes `#e4eef8`: con el
+  fondo claro de §12 conviene un color entero), menú `#435ebe` y
   pie `SGTL | un producto de Integra Analistas ®` (el logo se suma el 20/10). El ícono de la pestaña es siempre
   `sgtl-icono.png` (solo "SGTL"), aunque haya otro logo cargado.
   La barra de arriba (usuario y menú) queda en blanco, igual que el menú lateral.
+  Debajo de cada color, la pantalla aclara dónde se usa.
+
+---
+
+## 12. Estilo visual
+
+Decidido el 22/10 con el lienzo "Variantes visuales SGTL" (variante B). Todo está en
+`assets/static/css/sgtl.css` (sección §12), que cada pantalla carga **después** de `app.css`;
+`views/header.html` y `views/footer.html` son fragmentos y no vuelven a cargar la plantilla.
+No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el peso.
+
+- **Fondo:** tono muy claro del color de fondo de Gestionar contenido, con el color entero en una
+  línea de 4 px arriba de la barra blanca.
+- **Tarjetas:** esquinas de 14 px, borde casi invisible y sombra suave. El título de la pantalla
+  (primera tarjeta) va en 1,4 rem y negrita fuerte; la bajada, en gris.
+- **Tablas:** encabezado chico y gris sobre fondo gris claro, con mayúscula solo al principio (§9);
+  filas más bajas, rayado suave y la tabla dentro de un recuadro con esquinas redondeadas.
+- **Campos:** 40 px de alto, esquinas de 10 px, etiqueta chica en negrita y borde azul al escribir.
+- **Botones:** mismos colores que §1, con menos peso:
+  - los rellenos (crear, guardar, eliminar) quedan igual, con una sombra mínima;
+  - los grises (`btn-light`, `btn-light-secondary`: Buscar, Cancelar) son blancos con borde fino;
+  - los de borde (exportar, acciones de fila) tienen el borde suave y, al pasar el mouse, un fondo
+    apenas teñido en lugar de rellenarse;
+  - los de solo ícono (los que llevan `aria-label`, §1.5) son cuadrados de la altura de los campos
+    (las acciones de fila, de 32 px) y el ícono va en el centro exacto.
+- **Avisos dentro de la pantalla** (`.alert`): fondo apenas teñido, borde fino e ícono, con los
+  colores de §4.3 (información azul, éxito verde, advertencia amarillo, error rojo).
+- **Avisos arriba a la derecha y confirmación:** tarjeta blanca con ícono de color (§5); los modales
+  tienen esquinas de 16 px, sin líneas entre título, cuerpo y pie, y el fondo de atrás apenas desenfocado.
+- **Pestañas:** subrayadas con el color del menú, sin fondo y con mayúscula solo al principio.
+- **Paginador, menús desplegables, buscador de clientes, calendario, listas, barras de progreso y
+  globitos de ayuda:** el mismo lenguaje (blanco, borde fino, sombra suave, esquinas redondeadas;
+  días del calendario y rango en el azul de las acciones).
+- **Pantalla nueva:** no lleva estilos propios de botones, avisos, pestañas ni tablas; usa las clases
+  de Bootstrap/Mazer de siempre y `sgtl.css` les da este aspecto.

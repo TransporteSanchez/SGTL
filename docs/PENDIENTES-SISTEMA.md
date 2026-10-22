@@ -39,6 +39,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
 | 19 | Dashboard dinámico: período (último mes, trimestre, semestre, año o a mano), indicadores con comparación, gráficos de viajes y km, km por camión, últimos y próximos viajes, comparativa por mes, para revisar, ITV de camiones y km por chofer | Hecho en la Mac (21/10) con API falsa; `ResumenCosto` acepta fechas | **Pusheado** (`cc2dcac`, `b991c8f`, `200beaa`) | Recompilar la API y probar (ver §19) |
+| 20 | Estilo visual nuevo (§12 del design system) en todas las pantallas: fondo claro con línea de color, tarjetas, tablas, campos, botones livianos, avisos, modales, pestañas, paginador, calendario | En curso (22/10): base aplicada a las 26 pantallas; faltan las pantallas que todavía se apartan del design system (ver §20) | **Sin pushear** | Ver §20 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -861,3 +862,38 @@ Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 p
 - [ ] **Uso de la flota**: % de camiones con al menos un viaje en el período y días sin viajes de cada uno. Solo frente.
 - [ ] **Exportar la comparativa** a CSV con el botón de exportar del design system.
 - [ ] **Km cargados a mano** en el período (auditoría `KM_MANUAL`): control de calidad del dato. Necesita un endpoint.
+
+---
+
+## 20. Estilo visual nuevo en todas las pantallas — EN CURSO, SIN PUSH (22/10)
+
+Decidido por Rocío el 22/10 con el lienzo "Variantes visuales SGTL" (variante B, encabezados con mayúscula solo
+al principio, botones livianos, componentes iguales). Reglas en `docs/design-system/03-decisiones.md` §12 (y
+cambios en §5.1 y §11). Pedido: **que quede aplicado en todas las pantallas, sin nada distinto.**
+
+**Base (commit "Interfaz: estilo visual nuevo en todas las pantallas"):**
+- `assets/static/css/sgtl.css`: sección §12 con el estilo de todos los componentes y los avisos de arriba a la
+  derecha como tarjeta blanca con ícono.
+- `views/header.html` y `views/footer.html` pasan a ser fragmentos: antes traían `<head>` con `app.css` e
+  `iconly.css`, que se cargaban dos veces más en cada pantalla y pisaban `sgtl.css`.
+- `sgtl.css` se suma en Gestionar integración de WhatsApp, Manual de usuario e Informe de versión, y en
+  cuenta corriente pasa a cargarse después de `app.css` (estaba antes y la plantilla lo pisaba).
+- `gestionContenido.js`: el color de fondo pinta la pantalla en un tono muy claro y entero en la línea de
+  arriba; "Restablecer" vuelve a fondo `#435ebe`. Gestionar contenido aclara dónde se usa cada color.
+- Login en Nunito (§11).
+
+**Cómo probar en la VM** (`git pull` → Ctrl+F5 en cada pantalla; no hace falta recompilar la API):
+- [ ] Las 26 pantallas: fondo casi blanco con una línea de color arriba, tarjeta blanca con sombra suave, título
+  grande. Consola (F12) sin errores nuevos.
+- [ ] Encabezado: nombre, iniciales y menú de usuario (Cambiar contraseña / Cerrar sesión) funcionan igual.
+- [ ] Gestionar contenido: cambiar el color de fondo y Guardar → cambia el tono del fondo y la línea; cambiar el
+  color del menú → cambia la opción del menú, las iniciales y las pestañas (Tarifas, Orígenes y destinos,
+  Grupos, Cuenta corriente). Restablecer → azul de SGTL. Volver a dejar los colores de Transporte Sánchez.
+- [ ] Una tabla con muchas filas (Gestionar viajes): paginador con borde, flechas cuadradas, "1-15 de N".
+- [ ] Un alta y una edición (por ejemplo camiones): modal sin líneas, Cancelar blanco con borde, Guardar azul;
+  aviso de éxito arriba a la derecha como tarjeta blanca con tilde verde.
+- [ ] Un error (guardar con un dato mal): aviso blanco con ícono rojo, queda hasta cerrarlo.
+- [ ] Eliminar (Cancelar en la confirmación): modal con fondo desenfocado, Eliminar en rojo.
+- [ ] Calendario de un filtro de fechas: tarjeta flotante, rango en azul.
+- [ ] Login: tipografía igual al resto del sistema.
+

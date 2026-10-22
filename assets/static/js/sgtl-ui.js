@@ -121,7 +121,7 @@
     aviso.className = 'sgtl-toast sgtl-toast-' + tipo;
     aviso.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
     aviso.innerHTML = '<div class="sgtl-toast-texto"></div>' +
-      '<button type="button" class="btn-close btn-close-white" aria-label="Cerrar"></button>';
+      '<button type="button" class="btn-close" aria-label="Cerrar"></button>';
     aviso.querySelector('.sgtl-toast-texto').textContent = mensaje;
     aviso.querySelector('.btn-close').addEventListener('click', function () { cerrarToast(aviso); });
     contenedorToasts().appendChild(aviso);

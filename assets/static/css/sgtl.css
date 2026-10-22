@@ -1,6 +1,20 @@
 /* Estilos compartidos del design system de SGTL.
    Las reglas están en docs/design-system/03-decisiones.md; los números de sección (§) son de ese documento. */
 
+/* §12 Colores y medidas del estilo visual. --sgtl-marca, --sgtl-marca-oscuro y --sgtl-menu los pisa
+   gestionContenido.js con los colores de Gestionar contenido; estos son los de la marca SGTL. */
+:root {
+    --sgtl-texto: #1d2939;
+    --sgtl-texto-suave: #667085;
+    --sgtl-borde: #e7eaf0;
+    --sgtl-borde-campo: #d9dee7;
+    --sgtl-radio: 14px;
+    --sgtl-radio-chico: 10px;
+    --sgtl-marca: #435ebe;
+    --sgtl-marca-oscuro: #374d9c;
+    --sgtl-menu: #435ebe;
+}
+
 /* §8 Indicador de carga al entrar a una pantalla */
 #loading-message {
     position: fixed;
@@ -46,7 +60,7 @@
 }
 
 /* Tabla con muchas columnas dentro de un modal: celdas más angostas para que entre sin desplazarse.
-   Más específica que la de Mazer para .table-sm (1rem): app.css se vuelve a cargar después de este archivo.
+   Más específica que la de Mazer para .table-sm (1rem).
    Rayas y resaltado más suaves, con el azul de la marca. */
 table.table.sgtl-tabla-compacta {
     --bs-table-striped-bg: rgba(67, 94, 190, .025);
@@ -272,7 +286,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     color: #212529;
 }
 
-/* §5.1 Avisos */
+/* §5.1 Avisos: tarjeta blanca arriba a la derecha, con el ícono del color del aviso (§12). */
 .sgtl-toasts {
     position: fixed;
     top: 0;
@@ -288,14 +302,17 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 
 .sgtl-toast {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: .75rem;
     width: 360px;
     max-width: 100%;
-    padding: .75rem 1rem;
-    border-radius: .5rem;
-    color: #fff;
-    box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .15);
+    padding: .8rem .9rem .8rem 1rem;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: 12px;
+    background-color: #fff;
+    color: var(--sgtl-texto);
+    font-size: .9rem;
+    box-shadow: 0 16px 32px -12px rgba(16, 24, 40, .28);
     opacity: 0;
     transform: translateY(-.5rem);
     transition: opacity .2s ease, transform .2s ease;
@@ -307,8 +324,14 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     transform: none;
 }
 
-.sgtl-toast-exito { background-color: #198754; }
-.sgtl-toast-error { background-color: #dc3545; }
+.sgtl-toast::before {
+    font-family: "bootstrap-icons";
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+.sgtl-toast-exito::before { content: "\f26a"; color: #198754; }
+.sgtl-toast-error::before { content: "\f332"; color: #dc3545; }
 
 .sgtl-toast .sgtl-toast-texto {
     flex: 1;
@@ -316,6 +339,9 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 
 .sgtl-toast .btn-close {
     flex-shrink: 0;
+    filter: none;
+    opacity: .45;
+    font-size: .7rem;
 }
 
 /* §10 Celular: los avisos ocupan el ancho de la pantalla */
@@ -334,4 +360,551 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 .input-group-text > .bi::before,
 .d-flex > .bi::before {
     vertical-align: top;
+}
+
+/* ======================================================================================
+   §12 Estilo visual: fondo claro, tarjetas blancas con sombra suave, bordes finos y esquinas
+   redondeadas en todos los componentes. No cambia los colores de las acciones (§1, §11) ni de
+   los estados (§4.3). Algunas reglas llevan "body" adelante para ganarle a selectores dobles de
+   Mazer (.btn.btn-light-secondary) y a los estilos que inyectan el paginador y el buscador de clientes.
+   ====================================================================================== */
+
+body {
+    color: var(--sgtl-texto);
+}
+
+/* Fondo: un tono muy claro del color de Gestionar contenido (lo pone gestionContenido.js); el color
+   entero queda como una línea arriba de la barra, que sigue blanca (§11). */
+#main > header .navbar-top {
+    box-shadow: inset 0 4px 0 var(--sgtl-marca), 0 1px 0 var(--sgtl-borde);
+}
+
+#main > footer {
+    color: var(--sgtl-texto-suave);
+}
+
+/* Menú lateral: subopciones legibles y opción activa redondeada. */
+#sidebar .sidebar-wrapper {
+    box-shadow: 1px 0 0 var(--sgtl-borde);
+}
+
+.sidebar-wrapper .menu .submenu .submenu-item a {
+    font-size: .875rem;
+}
+
+.sidebar-item.active > .sidebar-link {
+    border-radius: var(--sgtl-radio-chico) !important;
+    box-shadow: 0 6px 14px -6px rgba(16, 24, 40, .45);
+}
+
+/* Tarjetas. */
+.card {
+    border: 1px solid rgba(16, 24, 40, .05);
+    border-radius: var(--sgtl-radio) !important;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 8px 24px -8px rgba(16, 24, 40, .12);
+}
+
+.card > .card-header {
+    background: transparent;
+    border-top-left-radius: var(--sgtl-radio) !important;
+    border-top-right-radius: var(--sgtl-radio) !important;
+}
+
+.card-title {
+    color: var(--sgtl-texto);
+    font-weight: 800;
+    letter-spacing: -.01em;
+}
+
+/* Título de la pantalla (la primera tarjeta); las tarjetas que siguen conservan su tamaño. */
+#main .section > div.card:first-of-type > .card-header h5 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--sgtl-texto);
+}
+
+.card-title > .bi {
+    color: var(--sgtl-marca-oscuro);
+}
+
+.card-header p.text-muted,
+.card-header small.text-muted {
+    color: var(--sgtl-texto-suave) !important;
+}
+
+/* Tablas: encabezado chico y gris (con mayúscula solo al principio, §9), filas más bajas, rayado suave. */
+#main .table {
+    --bs-table-striped-bg: rgba(16, 24, 40, .022);
+    --bs-table-hover-bg: rgba(67, 94, 190, .06);
+    font-size: .9rem;
+}
+
+.table > thead th {
+    padding: .75rem;
+    border-bottom: 1px solid var(--sgtl-borde);
+    background-color: #f8f9fb;
+    color: var(--sgtl-texto-suave);
+    font-size: .8rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table > tbody td {
+    padding: .65rem .75rem;
+    border-color: #f0f2f5;
+    color: #344054;
+}
+
+.card-body .table-responsive {
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio-chico);
+}
+
+.card-body .table-responsive > .table {
+    margin-bottom: 0;
+}
+
+/* Campos: más altos y redondeados; foco con el azul de las acciones. */
+.form-label,
+.card-body label:not(.form-check-label) {
+    color: #475467;
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+.form-control,
+.form-select {
+    min-height: 2.5rem;
+    border-color: var(--sgtl-borde-campo);
+    border-radius: var(--sgtl-radio-chico) !important;
+    font-size: .925rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #435ebe;
+    box-shadow: 0 0 0 .2rem rgba(67, 94, 190, .15);
+}
+
+body .form-check-input {
+    border-color: #c8cfda;
+}
+
+body .form-check-input:focus {
+    box-shadow: 0 0 0 .2rem rgba(67, 94, 190, .15);
+}
+
+body .input-group-text {
+    border-color: var(--sgtl-borde-campo);
+    border-radius: var(--sgtl-radio-chico);
+    background-color: #f8f9fb;
+    color: #475467;
+}
+
+body .input-group > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+}
+
+body .input-group > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu) {
+    border-top-right-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+}
+
+/* Botones: mismos colores que §1, menos peso. Los rellenos quedan con una sombra mínima; los grises
+   (Buscar, Cancelar) pasan a blanco con borde fino; los de borde (exportar, acciones de fila) tienen el
+   borde suave y, al pasar el mouse, un fondo apenas teñido en lugar de rellenarse. */
+body .btn {
+    border-radius: var(--sgtl-radio-chico);
+    font-size: .9rem;
+    font-weight: 600;
+    transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s;
+}
+
+body .btn:not(.btn-sm):not(.btn-lg) {
+    min-height: 2.5rem;
+    padding: .45rem 1rem;
+}
+
+body .btn-sm {
+    border-radius: 8px;
+}
+
+body .btn-primary,
+body .btn-success,
+body .btn-danger {
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .12);
+}
+
+body .btn.btn-light,
+body .btn.btn-light-secondary,
+body .btn.btn-secondary {
+    border: 1px solid var(--sgtl-borde-campo);
+    background-color: #fff;
+    color: #344054;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .05);
+}
+
+body .btn.btn-light:hover,
+body .btn.btn-light:focus-visible,
+body .btn.btn-light-secondary:hover,
+body .btn.btn-light-secondary:focus-visible,
+body .btn.btn-secondary:hover,
+body .btn.btn-secondary:focus-visible {
+    border-color: #c8cfda;
+    background-color: #f5f7fa;
+    color: var(--sgtl-texto);
+}
+
+body .btn-outline-secondary {
+    --bs-btn-color: #475467;
+    --bs-btn-border-color: var(--sgtl-borde-campo);
+    --bs-btn-hover-color: var(--sgtl-texto);
+    --bs-btn-hover-bg: #f2f4f7;
+    --bs-btn-hover-border-color: #c8cfda;
+    --bs-btn-active-color: var(--sgtl-texto);
+    --bs-btn-active-bg: #eaecf0;
+    --bs-btn-active-border-color: #c8cfda;
+}
+
+body .btn-outline-primary {
+    --bs-btn-border-color: rgba(67, 94, 190, .35);
+    --bs-btn-hover-color: #435ebe;
+    --bs-btn-hover-bg: rgba(67, 94, 190, .08);
+    --bs-btn-hover-border-color: rgba(67, 94, 190, .5);
+    --bs-btn-active-color: #435ebe;
+    --bs-btn-active-bg: rgba(67, 94, 190, .14);
+}
+
+body .btn-outline-success {
+    --bs-btn-border-color: rgba(25, 135, 84, .35);
+    --bs-btn-hover-color: #198754;
+    --bs-btn-hover-bg: rgba(25, 135, 84, .08);
+    --bs-btn-hover-border-color: rgba(25, 135, 84, .5);
+    --bs-btn-active-color: #198754;
+    --bs-btn-active-bg: rgba(25, 135, 84, .14);
+}
+
+body .btn-outline-danger {
+    --bs-btn-border-color: rgba(220, 53, 69, .3);
+    --bs-btn-hover-color: #dc3545;
+    --bs-btn-hover-bg: rgba(220, 53, 69, .08);
+    --bs-btn-hover-border-color: rgba(220, 53, 69, .5);
+    --bs-btn-active-color: #dc3545;
+    --bs-btn-active-bg: rgba(220, 53, 69, .14);
+}
+
+body .btn-outline-dark,
+body .btn-outline-warning,
+body .btn-outline-info {
+    --bs-btn-border-color: var(--sgtl-borde-campo);
+    --bs-btn-hover-bg: #f2f4f7;
+    --bs-btn-hover-border-color: #c8cfda;
+}
+
+body .btn-outline-dark {
+    --bs-btn-hover-color: var(--sgtl-texto);
+}
+
+body .btn:disabled,
+body .btn.disabled {
+    opacity: .4;
+}
+
+body .sgtl-acciones {
+    gap: .35rem;
+}
+
+body .sgtl-acciones .btn-sm {
+    width: 2rem;
+    height: 2rem;
+}
+
+/* Íconos centrados. Mazer baja el dibujo de los íconos (vertical-align: sub): en los botones vuelve a
+   la alineación de Bootstrap Icons y, en los de solo ícono (los que llevan aria-label, §1.5), queda en el
+   centro exacto de un botón cuadrado de la altura de los campos. */
+body .btn .bi::before {
+    vertical-align: -.125em;
+}
+
+body .btn[aria-label]:not(.btn-sm):not(.btn-close),
+body .sgtl-acciones .btn-sm {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+body .btn[aria-label]:not(.btn-sm):not(.btn-close) {
+    width: 2.5rem;
+    min-width: 2.5rem;
+}
+
+body .btn[aria-label] > .bi,
+body .sgtl-acciones .btn-sm > .bi {
+    display: inline-flex;
+    line-height: 1;
+}
+
+body .btn[aria-label] > .bi::before,
+body .sgtl-acciones .btn-sm > .bi::before {
+    vertical-align: 0;
+    line-height: 1;
+}
+
+/* Avisos dentro de la pantalla: fondo apenas teñido, borde fino e ícono, con los colores de §4.3. */
+body .alert {
+    position: relative;
+    padding: .75rem 1rem .75rem 2.6rem;
+    border: 1px solid transparent;
+    border-radius: var(--sgtl-radio-chico);
+    font-size: .9rem;
+}
+
+body .alert::before {
+    position: absolute;
+    top: .72rem;
+    left: 1rem;
+    font-family: "bootstrap-icons";
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+body .alert.alert-info { border-color: #d9e0f6; background-color: #eef1fb; color: #2f4593; }
+body .alert.alert-info::before { content: "\f430"; color: #435ebe; }
+body .alert.alert-success { border-color: #cdebd9; background-color: #ecf8f1; color: #146c43; }
+body .alert.alert-success::before { content: "\f26a"; color: #198754; }
+body .alert.alert-warning,
+body .alert.alert-light-warning { border-color: #fde9b0; background-color: #fffaeb; color: #7a5200; }
+body .alert.alert-warning::before,
+body .alert.alert-light-warning::before { content: "\f33a"; color: #d39b00; }
+body .alert.alert-danger,
+body .alert.alert-light-danger { border-color: #f7d4d8; background-color: #fdf1f2; color: #b42318 !important; }
+body .alert.alert-danger::before,
+body .alert.alert-light-danger::before { content: "\f332"; color: #dc3545; }
+body .alert.alert-light { padding-left: 1rem; border-color: var(--sgtl-borde); background-color: #f8f9fb; color: #344054; }
+
+/* Modales y confirmación: más redondeados, sin líneas entre título, cuerpo y pie. */
+body .modal-content {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 24px 48px -12px rgba(16, 24, 40, .3);
+}
+
+body .modal-header {
+    padding: 1.25rem 1.5rem .5rem;
+    border-bottom: 0;
+}
+
+body .modal-title {
+    color: var(--sgtl-texto);
+    font-weight: 700;
+}
+
+body .modal-body {
+    padding: .75rem 1.5rem;
+}
+
+body .modal-footer {
+    gap: .5rem;
+    padding: .75rem 1.5rem 1.25rem;
+    border-top: 0;
+}
+
+body .modal-footer > * {
+    margin: 0;
+}
+
+body .modal.show {
+    backdrop-filter: blur(2px);
+}
+
+body .modal-backdrop.show {
+    opacity: .35;
+}
+
+/* Pestañas: subrayadas con el color del menú (§11), sin fondo. Incluye las de cuenta corriente. */
+body .nav-tabs {
+    gap: .25rem;
+    border-bottom: 1px solid var(--sgtl-borde);
+}
+
+body .nav-tabs .nav-link {
+    margin-bottom: -1px;
+    padding: .6rem .9rem;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--sgtl-texto-suave);
+    font-weight: 600;
+}
+
+body .nav-tabs .nav-link:hover {
+    border-bottom-color: var(--sgtl-borde-campo);
+    color: var(--sgtl-texto);
+}
+
+body .nav-tabs .nav-link.active {
+    border-bottom-color: var(--sgtl-menu);
+    background: none;
+    color: var(--sgtl-menu);
+}
+
+/* Mazer dibuja el subrayado de la pestaña activa con ::after, en azul. */
+body .nav-tabs .nav-link.active::after {
+    background-color: var(--sgtl-menu) !important;
+}
+
+body .cc-tabs {
+    border-bottom-color: var(--sgtl-borde);
+}
+
+body .cc-tab {
+    color: var(--sgtl-texto-suave);
+    font-weight: 600;
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+body .cc-tab.active {
+    border-bottom-color: var(--sgtl-menu);
+    color: var(--sgtl-menu);
+}
+
+/* Paginador: selector de filas y flechas con el mismo borde que los campos. */
+body .sgtl-pagination {
+    color: var(--sgtl-texto-suave);
+    font-size: .85rem;
+}
+
+body .sgtl-pagination label {
+    color: var(--sgtl-texto-suave) !important;
+    font-size: .85rem !important;
+    font-weight: 400 !important;
+}
+
+body .sgtl-pagination .sgtl-page-size {
+    min-width: 64px;
+    padding: .25rem .5rem !important;
+    border: 1px solid var(--sgtl-borde-campo) !important;
+    border-radius: 8px !important;
+    background-color: #fff !important;
+}
+
+body .sgtl-pagination .sgtl-page-range {
+    color: var(--sgtl-texto) !important;
+    font-variant-numeric: tabular-nums;
+}
+
+body .sgtl-pagination .sgtl-page-action .page-link {
+    border: 1px solid var(--sgtl-borde-campo) !important;
+    border-radius: 8px !important;
+    background: #fff !important;
+    color: #475467 !important;
+}
+
+body .sgtl-pagination .sgtl-page-action:not(.disabled) .page-link:hover {
+    background: #f2f4f7 !important;
+}
+
+body .sgtl-pagination .sgtl-page-action.disabled .page-link {
+    opacity: .4;
+}
+
+/* Menús desplegables y buscador de clientes: tarjeta flotante con sombra. */
+body .dropdown-menu,
+body .cliente-select-predictivo-menu {
+    padding: .35rem !important;
+    border: 1px solid var(--sgtl-borde) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 16px 32px -12px rgba(16, 24, 40, .25) !important;
+}
+
+body .dropdown-item,
+body .cliente-select-predictivo-menu button {
+    padding: .5rem .75rem !important;
+    border-radius: 8px !important;
+    color: #344054;
+    font-size: .9rem;
+}
+
+body .dropdown-item:hover,
+body .dropdown-item:focus,
+body .cliente-select-predictivo-menu button:hover,
+body .cliente-select-predictivo-menu button:focus {
+    background-color: #f2f4f7 !important;
+    color: var(--sgtl-texto);
+}
+
+/* Listas y barras de progreso. */
+body .list-group {
+    border-radius: var(--sgtl-radio-chico);
+}
+
+body .list-group-item {
+    padding: .65rem 1rem;
+    border-color: #eef0f3;
+    font-size: .9rem;
+}
+
+body .progress {
+    border-radius: 999px;
+    background-color: #eef0f3;
+}
+
+body .progress-bar {
+    border-radius: 999px;
+}
+
+/* Calendario: tarjeta flotante, días redondeados y el rango en el azul de las acciones. */
+body .flatpickr-calendar {
+    padding: .35rem;
+    border: 1px solid var(--sgtl-borde);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px -12px rgba(16, 24, 40, .28);
+}
+
+body .flatpickr-calendar::before,
+body .flatpickr-calendar::after {
+    display: none;
+}
+
+body .flatpickr-day {
+    border-radius: 8px;
+}
+
+body .flatpickr-day.today {
+    border-color: #435ebe;
+}
+
+body .flatpickr-day.selected,
+body .flatpickr-day.startRange,
+body .flatpickr-day.endRange {
+    border-color: #435ebe;
+    background: #435ebe;
+}
+
+body .flatpickr-day.inRange {
+    border-color: #eef1fb;
+    background: #eef1fb;
+    box-shadow: -5px 0 0 #eef1fb, 5px 0 0 #eef1fb;
+}
+
+body .flatpickr-day.startRange { border-radius: 8px 0 0 8px !important; }
+body .flatpickr-day.endRange { border-radius: 0 8px 8px 0 !important; }
+body .flatpickr-day.startRange.endRange { border-radius: 8px !important; }
+
+/* Globitos de ayuda e indicador de carga. */
+body .tooltip {
+    --bs-tooltip-bg: var(--sgtl-texto);
+    --bs-tooltip-border-radius: 8px;
+    --bs-tooltip-font-size: .8rem;
+    --bs-tooltip-padding-x: .6rem;
+    --bs-tooltip-padding-y: .35rem;
+}
+
+body #loading-message .spinner-border {
+    border-width: .25rem;
+    color: #435ebe;
 }
