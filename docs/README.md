@@ -6,8 +6,9 @@ documento** y sirve de índice. Vale para el equipo y para cualquier IA que trab
 
 ## Reglas
 
-1. **En la raíz del repo no van documentos.** Ahí solo quedan `CLAUDE.md` y `AGENTS.md`
-   (instrucciones para las IA) y, si algún día se agrega, un `README.md`.
+1. **En la raíz del repo no van documentos.** Ahí solo quedan `AGENTS.md` (la puerta de entrada para
+   cualquier IA: Codex, Cursor, Copilot o Claude), `CLAUDE.md` (lo incluye y suma el circuito de Rocío) y, si
+   algún día se agrega, un `README.md`.
 2. Cada documento nuevo va en la carpeta que corresponda según la tabla de abajo.
    **Si no encaja en ninguna, preguntale a Rocío antes de crear una carpeta nueva.**
 3. Al crear, mover o borrar un documento, **actualizá el índice de este archivo** en el
@@ -71,7 +72,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/design-system/01-relevamiento-codigo.md` — relevamiento visual de las pantallas por código.
 - `docs/design-system/02-instructivo-capturas-vm.md` — cómo sacar las capturas en la VM.
-- `docs/design-system/03-decisiones.md` — las reglas que siguen las pantallas nuevas o tocadas.
+- `docs/design-system/03-decisiones.md` — las reglas vigentes de todas las pantallas y módulos, con la tabla de funciones compartidas (`window.SGTL`). La lista de control para revisar antes de commitear está en `AGENTS.md`.
 - `docs/design-system/04-relevamiento-funcional.md` — relevamiento de inconsistencias y mejoras de uso en las pantallas ya subidas (19/10/2026). No reemplaza los pendientes del §10.
 
 ### Tesis

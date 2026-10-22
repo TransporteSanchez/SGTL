@@ -48,9 +48,9 @@ descartó funcionalidad tuya; lo que cambió es cómo se ve y cómo se llama.
 - **Base compartida y contraseñas:** cada usuario que entra con la API nueva queda con hash y ya no entra con una
   API sin este merge. Fede tiene que traer el merge antes de seguir probando con esos usuarios.
 - **El design system vale para todos los módulos.** Está en `docs/design-system/03-decisiones.md`; las funciones
-  comunes, en `assets/static/js/sgtl-ui.js` (`window.SGTL`). En el próximo commit `AGENTS.md`, que es lo que lee
-  Codex, Cursor o Copilot al abrir el repo, va a pedir seguirlo, con una lista de control para revisar antes de
-  commitear.
+  comunes, en `assets/static/js/sgtl-ui.js` (`window.SGTL`). `AGENTS.md`, que es lo que lee Codex, Cursor o
+  Copilot al abrir el repo, pide seguirlo y trae una lista de control: antes de commitear, pedile a tu IA
+  "Revisá los cambios con la lista de control de AGENTS.md".
 - **Antes de empezar un tema, traé la rama actualizada**, así tu IA trabaja sobre las pantallas como están hoy.
 - **Quedó para hablar con el equipo:** fechas previstas y reales en presupuestos y viajes (la hora del presupuesto no
   cambia el precio), y si en presupuestos se permite cargar los km a mano cuando Google falla, como en viajes.

@@ -1,14 +1,36 @@
-# Design system de SGTL — decisiones
+# Design system de SGTL — reglas
 
-Reglas que valen para **todas** las pantallas, nuevas o tocadas. Salen de repasar con Rocío
-las propuestas de `01-relevamiento-codigo.md` (§6) con las capturas de la VM a la vista
-(`docs/pruebas/2026-10-17-capturas-ui.md`). Si una pantalla necesita apartarse de una regla,
-se anota acá como excepción.
+Reglas que valen para **todas las pantallas y todos los módulos**, también los de Facu (proformas, cuenta
+corriente, facturación, e-mail, presupuestos) y Fede (WhatsApp), y para los mensajes de la API que se ven en
+pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 
-Estado: **decidido** (17/10/2026), falta aplicarlo. Lo que no está acá no se decidió.
+**Cómo usar este documento (personas e IA):**
+- Lo que dice acá es lo vigente. Las fechas entre paréntesis dicen cuándo se decidió algo, no que esté a prueba.
+- Si una pantalla existente no cumple una regla, **la regla gana**: no copies lo que ves en otra pantalla.
+- Usá las funciones compartidas de la tabla de abajo; no escribas las tuyas.
+- Lo que no está acá no se decidió: preguntale a Rocío antes de inventar un patrón. Si una pantalla necesita
+  apartarse de una regla, se anota acá como excepción.
+- Antes de commitear, revisá la lista de control de `AGENTS.md`.
 
-Proformas, cuenta corriente y configuración de facturación y e-mail son de **Facu**, y
-WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ellos.
+**Funciones compartidas** (`assets/static/js/sgtl-ui.js`, `window.SGTL`; estilos en `assets/static/css/sgtl.css`):
+
+| Para | Función |
+|---|---|
+| Avisos (§5.1) | `SGTL.toastExito(texto)`, `SGTL.toastError(texto)`; error dentro de un modal: `SGTL.avisoFormulario(aviso, texto)` |
+| Texto de un error de la API (§9) | `SGTL.mensajeError(xhr, porDefecto)`; `$.ajax` como promesa: `SGTL.ajax(opciones, porDefecto)` |
+| Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, accion })` |
+| Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
+| Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
+| Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError` |
+| Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
+| Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
+| Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)` |
+| Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
+| Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
+| Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
+| Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
+| Exportar (§1.2) | `SGTL.descargarCSV` |
+| Escapar texto en HTML | `SGTL.escapar` |
 
 ---
 
@@ -43,8 +65,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 
 - **"Buscar" gris claro con lupa** (`btn btn-light`, `<i class="bi bi-search"></i> Buscar`), al
   final del bloque de filtros, alineado a la derecha. No es la acción principal de la pantalla.
-- **No hay botón "Limpiar" general.** Se saca de gestión de viajes, las dos de proformas,
-  auditoría y cuenta corriente.
+- **No hay botón "Limpiar" general** en ninguna pantalla.
 - **Cada filtro se borra con su propia cruz:** campos de texto, fechas, desplegables y el
   buscador de clientes muestran una cruz a la derecha **solo cuando tienen valor**. La cruz deja
   el campo vacío (o en "Todos") y **vuelve a buscar sola**. No vuelve a un valor por defecto: en
@@ -70,13 +91,22 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 |---|---|---|
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
-| Descargar PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
+| Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
-- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Inactivar", "Eliminar".
+- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Inactivar", "Eliminar".
+- **El ojo de un documento** (proforma, factura, recibo, nota de crédito o débito) abre el documento completo en
+  solo lectura: título "Ver proforma 0001-00000017", "Ver factura FAC-00000012"; solo "Cerrar" en el pie
+  (gestionar proformas, listar proformas y cuenta corriente, 22/10).
+- **"Ver PDF"** abre la vista previa del PDF dentro del sistema (no en una pestaña nueva): título "Ver PDF del
+  presupuesto" / "Ver PDF del comprobante FAC-00000012", y el pie **Cerrar · Enviar por e-mail · Imprimir ·
+  Descargar PDF** (este último, el principal). **"Enviar por e-mail" va en ese pie, no como botón de la fila**:
+  así se ve lo que se manda y la fila no se llena de botones (presupuestos y cuenta corriente, 22/10).
+  **Pendiente:** Gestionar proformas y Listar proformas todavía bajan el PDF directo ("Descargar PDF"); van a
+  pasar a esta vista previa (`docs/PENDIENTES-SISTEMA.md` §21). No las tomes de ejemplo.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué** ("No es posible eliminar un chofer activo"). No se oculta: así todas las filas tienen los
   mismos botones en el mismo lugar.
@@ -96,9 +126,8 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
   aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.
-- Esto reemplaza: la "i" azul de los listados y "Más detalles" (pasan a ojo), las flechas,
-  el muñequito amarillo, "Inactivar" con texto y la bandera (pasan a interruptor o a
-  siguiente paso, según corresponda).
+- No se usan: la "i" azul ni "Más detalles" (es el ojo), las flechas, el muñequito amarillo ni "Inactivar"
+  con texto (es el interruptor o el siguiente paso, según corresponda).
 
 ### 1.5 Tooltips
 
@@ -149,20 +178,21 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
   principales sin subopciones (Dashboard, Auditoría) y los nombres de sección (Choferes, Configuración…)
   son sustantivos (cambio del 20/10). El **título de la pantalla es igual al ítem del menú**, con
   mayúscula solo al principio.
-- Cambios de nombre (menú y título):
+- **Menú vigente** (el título de cada pantalla es igual a su opción; la historia de los cambios está en el
+  Apéndice A):
 
-| Hoy en el menú | Hoy en el título | Pasa a |
-|---|---|---|
-| Listar proformas | Listar proformas generadas | Listar proformas |
-| Cuenta corriente | Cuenta Corriente de Clientes | Gestionar cuenta corriente |
-| Configuración → Facturación | Configuración de Facturación | Gestionar tipos de comprobante (22/10, idea de Facu; antes "Gestionar facturación") |
-| Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
-| Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
-| Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
-| Auditoría | Auditoría del sistema | Auditoría (ítem principal, sin verbo; 20/10) |
-| Viajes → Presupuestos | Gestionar presupuestos | Gestionar presupuestos (20/10) |
-| Documentación → Manual de usuario | Manual de usuario | Consultar manual de usuario (20/10) |
-| Documentación → Informe de versión | Informe de versión | Consultar informe de versión (20/10) |
+| Sección | Opciones |
+|---|---|
+| Dashboard | (ítem principal) |
+| Choferes | Listar choferes · Gestionar choferes |
+| Camiones | Listar camiones · Gestionar camiones |
+| Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
+| Clientes | Listar clientes · Gestionar clientes |
+| Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente |
+| Configuración | Gestionar tipos de comprobante · Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar contenido |
+| Usuarios | Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos |
+| Auditoría | (ítem principal) |
+| Documentación | Consultar manual de usuario · Consultar informe de versión |
 
 - **Ítems principales:** "Dashboard" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
@@ -213,7 +243,7 @@ WhatsApp de **Fede**: aplicar estas reglas en esas pantallas se coordina con ell
 | Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
-- **Presupuestos (22/10, en prueba):** Pendiente es esperar la respuesta del cliente, no una deuda: va en gris.
+- **Presupuestos:** Pendiente es esperar la respuesta del cliente, no una deuda: va en gris.
   Aceptado va en amarillo mientras falta generar el viaje y en verde cuando ya se generó (con la etiqueta
   informativa "Viaje #N"); Rechazado, en rojo. Para estos casos `SGTL.estado(valor, texto, color)` recibe el color.
 - El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
@@ -288,13 +318,17 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 |---|---|
 | Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tarifa fija" / "Registrar tarifa por km", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
 | Editar (tooltip y título del modal) | "Editar camión" |
-| Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión" |
+| Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión"; en un documento, "Ver factura FAC-00000012" (§1.4) |
+| Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir factura directa", "Emitir factura desde proforma", "Emitir nota de crédito", "Emitir nota de débito"; el título de la ventana es la opción elegida; el pie, "Emitir factura" / "Emitir nota de crédito" |
 | Pie de los modales | "Cancelar", "Guardar", "Eliminar", "Generar", "Emitir recibo", "Cerrar" |
-| Acciones de la fila | "Inactivar", "Activar", "Descargar PDF", "Marcar como aceptada", "Emitir factura", "Exportar" |
+| Acciones de la fila | "Inactivar", "Activar", "Ver PDF", "Editar recibo", "Anular recibo", "Marcar como aceptada", "Emitir factura", "Exportar" |
 | Confirmación | "¿Eliminar el camión ABC123?" |
 
 - "Registrar proforma" crea el borrador; "Generar" le asigna el número. "Registrar recibo" abre el
-  formulario; el botón del pie es "Emitir recibo".
+  formulario; el botón del pie es "Emitir recibo". "Emitir factura" (siguiente paso de una proforma) abre la
+  ventana "Emitir factura".
+- **Nada de sustantivos solos en botones ni títulos** ("Recibo", "Factura directa", "Tipos de comprobantes") ni
+  de "Nuevo…" / "Nueva…".
 
 ### 6.2 Modales
 
@@ -307,7 +341,9 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Los formularios no se cierran con un clic afuera** (`data-bs-backdrop="static"`); Escape y la
   cruz sí los cierran. Los de detalle se cierran también con un clic afuera.
 - **Tamaño según el contenido:** `modal-lg` para formularios comunes; `modal-xl` solo con mapa o
-  tablas (viajes, proformas, recibo); el tamaño por defecto para confirmaciones.
+  tablas (viajes, presupuestos, proformas, Ver PDF); el tamaño por defecto para confirmaciones. Las ventanas de
+  emisión de cuenta corriente (comprobante, recibo y factura desde proforma) son `modal-xl` y además tienen el
+  mismo alto (`sgtl-modal-formulario`, 22/10).
 
 ### 6.3 Formularios
 
@@ -335,11 +371,12 @@ Esto define solo cómo se muestran y cómo se cargan.
 ### 7.1 Selector de fecha
 
 - **Uno solo: flatpickr** (local, `assets/extensions/flatpickr/`) **en español**
-  (`l10n/es.js`: semana desde el lunes). Se sacan daterangepicker y moment (CDN), y el
-  `type="date"` del navegador de cuenta corriente.
+  (`l10n/es.js`: semana desde el lunes), con `SGTL.selectorFecha` / `SGTL.rangoFechas`. No se usan
+  daterangepicker, moment ni el `type="date"` del navegador.
   **Excepción (22/10):** moment sigue cargado solo en el dashboard, porque lo necesita FullCalendar 3
   (calendario de próximos viajes); no se usa para fechas propias.
-- **Se ve y se escribe DD/MM/AAAA**; con hora, **DD/MM/AAAA HH:MM en 24 h**. A la API se le sigue
+- **Se ve y se escribe DD/MM/AAAA**; con hora, **DD/MM/AAAA HH:MM en 24 h, en un solo campo** (no fecha y
+  hora por separado; presupuestos y viajes, 22/10). A la API se le sigue
   mandando AAAA-MM-DD (`altInput: true`, `altFormat: 'd/m/Y'`, `dateFormat: 'Y-m-d'`): la API
   no cambia.
 - **Rango en los filtros: un solo campo** "Desde y hasta" con `mode: 'range'` y `showMonths: 2`.
@@ -362,6 +399,10 @@ Esto define solo cómo se muestran y cómo se cargan.
   tablas (§2.1).
 - **Excepción:** los indicadores del tablero se redondean a pesos ("$ 133.103").
 - **Km con coma decimal y un decimal:** "17,4".
+- **Montos que se escriben** (importes de recibos, notas, comprobantes): `type="text" inputmode="decimal"`, nunca
+  `type="number"`. Se escriben con coma o punto decimal y al salir del campo se acomodan a "1.234,56"
+  (`SGTL.enlazarMascaraMonto`); se leen en centavos enteros con `SGTL.montoCentavos` para no perder centavos
+  (idea de Facu, 22/10).
 - Una sola función de formato en el JS compartido.
 
 ---
@@ -384,14 +425,17 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Siempre voseo:** "Completá", "Seleccioná", "¿Querés eliminar…?", "Probá de nuevo". Nada de
   usted ("Seleccione", "Inténtelo", "¿Está seguro…?") ni tuteo ("deseas", "intenta").
 - **Mayúscula solo al principio** ("Cuenta corriente de clientes", "Cambiar contraseña") y con
-  tildes ("Razón social", "Sánchez", "Ocurrió").
+  tildes ("Razón social", "Sánchez", "Ocurrió"). **Los documentos van en minúscula dentro de un texto:** "la
+  factura", "el recibo", "la nota de crédito", "la proforma", "el presupuesto" (no "la Factura" ni "la Nota de
+  Crédito").
 - **Títulos, botones y etiquetas sin punto final; los mensajes, con punto.**
 - **Sin inglés a la vista:** "KM mínimo / KM máximo" (no "Min KM / Max KM"), "Alta" (no
   "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp: "Token de acceso" e "ID del
   número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la
   ayuda de abajo para poder encontrarlo. **Excepción:** "Dashboard" queda.
 - **Nunca mostrar un error técnico** (excepciones, códigos como "IDX10223…"). El mensaje dice qué
-  pasó y qué hacer. Si la sesión venció: "Tu sesión venció. Volvé a iniciar sesión." y se lleva
+  pasó y qué hacer. **Vale también para los mensajes de la API** que llegan a la pantalla: voseo, sin nombres
+  de campos ("Seleccioná un cliente.", no "ClienteID es obligatorio."). Si la sesión venció: "Tu sesión venció. Volvé a iniciar sesión." y se lleva
   al login.
 
 ---
@@ -471,3 +515,23 @@ No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el p
   días del calendario y rango en el azul de las acciones).
 - **Pantalla nueva:** no lleva estilos propios de botones, avisos, pestañas ni tablas; usa las clases
   de Bootstrap/Mazer de siempre y `sgtl.css` les da este aspecto.
+
+---
+
+## Apéndice A — Cambios de nombre del menú
+
+Historia: cómo se llamaba cada opción y cómo quedó. Lo vigente es la tabla de §3.1.
+
+| Antes en el menú | Antes en el título | Quedó |
+|---|---|---|
+| Listar proformas | Listar proformas generadas | Listar proformas |
+| Cuenta corriente | Cuenta Corriente de Clientes | Gestionar cuenta corriente |
+| Configuración → Facturación | Configuración de Facturación | Gestionar tipos de comprobante (22/10, idea de Facu; antes "Gestionar facturación") |
+| Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
+| Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
+| Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
+| Auditoría | Auditoría del sistema | Auditoría (ítem principal, sin verbo; 20/10) |
+| Viajes → Presupuestos | Gestionar presupuestos | Gestionar presupuestos (20/10) |
+| Documentación → Manual de usuario | Manual de usuario | Consultar manual de usuario (20/10) |
+| Documentación → Informe de versión | Informe de versión | Consultar informe de versión (20/10) |
+

@@ -41,6 +41,10 @@ git pull origin facugodoy
 
 > Regla de Facu: `pull` al empezar -> `add/commit/push` para guardar -> `pull` cuando Rocío avisa.
 >
+> **Si trabaja con una IA (Codex, Cursor, Claude…):** la IA lee sola `AGENTS.md` al abrir el repo, siempre que
+> la rama esté actualizada (por eso el `pull` antes de empezar). Antes de commitear, pedirle: "Revisá los
+> cambios con la lista de control de AGENTS.md".
+>
 > Nota: `git add .` está OK porque Facu NO toca `Web.config` (ahí está la
 > conexión a la base). Si por algún motivo tuviera que tocarlo, avisar antes.
 
@@ -133,6 +137,10 @@ No hace falta constantemente, pero sí en **momentos clave**:
 2. Cuando en `main` entra algo que toca **archivos compartidos** que Facu también
    usa (ej. el menú `sidebar.js`, estilos globales, un controlador común).
 3. **Antes** del merge final `facugodoy -> main`.
+4. **Después de un cambio grande que toca las pantallas de todos** (como el design system y el estilo visual
+   del 22/10): Rocío actualiza `facugodoy` y `fedemontenegro` y les avisa **antes** de que sigan trabajando.
+   Si no, la IA de cada uno copia las pantallas viejas y después hay que rehacerlo en el merge (pasó con el
+   merge de Facu del 22/10: `docs/equipo/merge-facugodoy-2026-10-22.md`).
 
 Para un módulo corto suele alcanzar con sincronizar **1 vez a mitad de camino** y
 otra **antes del merge final**.
@@ -199,6 +207,9 @@ git checkout -b feature/nombre-del-modulo
 > git push origin facugodoy
 > ```
 > (Cambiá el mensaje por lo que hiciste.)
+>
+> **Si usás una IA:** con la rama al día lee sola `AGENTS.md` (ahí está el design system y la lista de
+> control). Antes de commitear, pedile: "Revisá los cambios con la lista de control de AGENTS.md".
 >
 > **Cuando yo te avise que actualicé tu rama:**
 > ```

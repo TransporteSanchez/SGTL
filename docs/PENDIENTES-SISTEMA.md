@@ -1379,8 +1379,22 @@ pudo compilar en la Mac.**
   base y el WhatsApp de Fede, y conviene resolver antes la §2 (de dónde sale la hora). Decidirlo con el equipo.
 - [ ] **Presupuestos: km a mano si Google falla** (opción B), como en viajes, con motivo que pase al viaje generado.
   Hoy, sin la distancia de Google no se guarda.
-- [ ] **Documentación para cualquier IA:** `AGENTS.md` como puerta de entrada al design system (lo lee Codex, que usa
-  Facu, y también Cursor y Copilot), `CLAUDE.md` que lo incluya sin la excepción de los módulos de Facu y Fede,
-  `docs/design-system/03-decisiones.md` en presente y con las reglas que faltaban, y en `docs/equipo/FLUJO-GIT.md` pasar
-  los cambios grandes a las ramas del equipo antes de que sigan. **Aprobado por Rocío el 22/10: commit aparte, el
-  siguiente.**
+- [ ] **Proformas: "Ver PDF" con vista previa.** Gestionar y Listar proformas todavía bajan el PDF directo
+  ("Descargar PDF"); pasarlas a la vista previa con Enviar por e-mail en el pie, como presupuestos y cuenta corriente
+  (§1.4 del design system). Módulo de Facu.
+- [x] **Documentación para cualquier IA. Hecho (22/10, commit "Documentación: AGENTS.md como entrada al design
+  system para cualquier IA").** Pedido de Rocío: que cualquier IA del equipo (Facu usa Codex; puede pasar a Claude o
+  Cursor) siga el design system completo.
+  - `AGENTS.md` (lo leen solos Codex, Cursor, Copilot y Claude): el design system es obligatorio en todos los
+    módulos, sin excepciones, con una lista de control de 14 puntos para revisar antes de commitear.
+  - `CLAUDE.md` incluye `AGENTS.md` con `@AGENTS.md`; lo que es solo del circuito de Rocío queda marcado como tal y
+    se sacó la excepción "avisar a Rocío antes de aplicar estas reglas" en los módulos de Facu y Fede.
+  - `docs/design-system/03-decisiones.md`: en presente ("aplicado", no "falta aplicarlo"), tabla de funciones de
+    `window.SGTL`, menú vigente, y las reglas que faltaban (el ojo abre el documento, Ver PDF con Enviar en el pie,
+    documentos en minúscula, montos que se escriben, mensajes de la API, fecha y hora en un campo). La historia de
+    los nombres del menú pasó al Apéndice A.
+  - `docs/equipo/FLUJO-GIT.md`: después de un cambio grande, actualizar `facugodoy` y `fedemontenegro` antes de que
+    sigan; con IA, `pull` antes de empezar y la lista de control antes de commitear.
+  - [ ] Probarlo con Facu: con su rama actualizada, abrir Codex en el repo y preguntarle "¿Qué reglas tenés que
+    seguir para cambiar una pantalla?". Tiene que nombrar `docs/design-system/03-decisiones.md` y la lista de
+    control de `AGENTS.md`.
