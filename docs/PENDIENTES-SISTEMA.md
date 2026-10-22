@@ -860,6 +860,22 @@ Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 p
 - [ ] **Exportar la comparativa** a CSV con el botón de exportar del design system.
 - [ ] **Km cargados a mano** en el período (auditoría `KM_MANUAL`): control de calidad del dato. Necesita un endpoint.
 
+**Ajustes de Rocío (22/10, commit "Dashboard: período como selector segmentado, su texto debajo y lista de widgets
+que se desplaza"), falta probar en la VM:**
+- **Período:** los botones Último mes / Trimestre / Semestre / Año pasan a un selector segmentado (opción A de las
+  tres que vio Rocío): riel gris claro y el elegido como tarjeta blanca con el texto en azul. Queda como estilo
+  compartido `.sgtl-segmentado` (§12 del design system). Los botones de esa fila (Personalizar, Widgets, Restablecer,
+  Cancelar, Guardar) pasan al alto normal: todo mide 40 px, como el campo de fechas.
+- **Texto del período** ("Del … al … · comparado con …"): pasa de debajo de "¡Bienvenido!" a la derecha, debajo de
+  los botones del período, porque explica lo que se eligió ahí. El título queda a la altura de los botones. En
+  celular va todo a la izquierda, uno debajo del otro.
+- **Personalizar → Widgets:** la lista era más larga que la pantalla y la rueda movía las tarjetas de atrás. Ahora
+  ocupa como mucho el alto visible debajo del botón y se desplaza sola; al llegar al final, la pantalla no se mueve.
+- [ ] Probar en la VM (Ctrl+F5): el período se ve como selector y el elegido cambia al tocar otro; con un rango a mano
+  en "Desde y hasta", ninguno queda marcado. El texto del período queda debajo de los botones, a la derecha, y cambia
+  al elegir otro período. Personalizar → Widgets: con la rueda sobre la lista se llega hasta
+  "Calendario de viajes" y las tarjetas de atrás no se mueven; achicar la ventana con la lista abierta la acomoda.
+
 ---
 
 ## 20. Estilo visual nuevo en todas las pantallas — PUSHEADO (`1015f66`), FALTA PROBAR EN VM (22/10)

@@ -36,6 +36,9 @@
         .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(67,94,190,.55); outline-offset: -2px; }
         .grid-stack.editando .card-header { cursor: move; }
         #widgetsChecklist .form-check-input { cursor: pointer; }
+        /* La lista de widgets cuelga del encabezado fijo: si es más larga que lo que se ve, se desplaza ella
+           (no la pantalla de atrás). El alto máximo lo pone ajustarAltoWidgets() al abrirla. */
+        #widgetsPanel { overflow-y: auto; overscroll-behavior: contain; }
         /* Fila de "¡Bienvenido!" fija debajo de la barra de arriba: al bajar, las tarjetas pasan por detrás.
            El alto de la barra y el relleno de la página los completa fijarEncabezadoTablero(). */
         #encabezadoTablero {
@@ -46,7 +49,6 @@
             margin: 0 calc(-1 * var(--relleno-pagina, 2rem)) 1rem;
             padding: 1.5rem var(--relleno-pagina, 2rem);
         }
-        #periodoRapido .btn { white-space: nowrap; }
         /* En celular las tarjetas van en una sola columna: no hay nada que acomodar, y la fila de arriba
            (con el período) ocuparía un cuarto de la pantalla si quedara fija. */
         @media (max-width: 767.98px) {
@@ -54,6 +56,8 @@
             #encabezadoTablero { position: static; }
         }
         #periodoRango + .form-control, #periodoRango { width: 13.5rem; background-color: #fff; }
+        /* El título queda a la altura de la fila de botones (40 px), con el texto del período debajo de ellos. */
+        #encabezadoTablero > h3 { line-height: 40px; }
 
         /* Indicadores: título, número y una línea de detalle en dos filas de la grilla. */
         .grid-stack-item-content > .card.dash-kpi > .card-header { padding: .75rem 1rem .125rem; }
@@ -116,29 +120,30 @@
             </header>
 
             <div id="main-content">
-                <div class="page-heading d-flex justify-content-between align-items-center flex-wrap gap-2" id="encabezadoTablero">
-                    <div>
-                        <h3 class="mb-0">¡Bienvenido!</h3>
-                        <p class="text-muted small mb-0" id="periodoTexto">&nbsp;</p>
-                    </div>
-                    <div class="d-flex flex-wrap gap-2 align-items-center" id="dash-toolbar">
-                        <div class="btn-group btn-group-sm" role="group" aria-label="Período" id="periodoRapido">
-                            <button type="button" class="btn btn-outline-primary" data-periodo="mes" aria-pressed="false">Último mes</button>
-                            <button type="button" class="btn btn-outline-primary" data-periodo="trimestre" aria-pressed="false">Trimestre</button>
-                            <button type="button" class="btn btn-outline-primary" data-periodo="semestre" aria-pressed="false">Semestre</button>
-                            <button type="button" class="btn btn-outline-primary" data-periodo="anio" aria-pressed="false">Año</button>
+                <div class="page-heading d-flex justify-content-between align-items-start flex-wrap gap-2" id="encabezadoTablero">
+                    <h3 class="mb-0">¡Bienvenido!</h3>
+                    <!-- Período: los botones y, debajo, qué fechas abarca y con cuáles se compara (pedido de Rocío, 22/10). -->
+                    <div class="d-flex flex-column align-items-start align-items-md-end gap-1">
+                    <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end" id="dash-toolbar">
+                        <div class="sgtl-segmentado" role="group" aria-label="Período" id="periodoRapido">
+                            <button type="button" class="btn btn-sm" data-periodo="mes" aria-pressed="false">Último mes</button>
+                            <button type="button" class="btn btn-sm" data-periodo="trimestre" aria-pressed="false">Trimestre</button>
+                            <button type="button" class="btn btn-sm" data-periodo="semestre" aria-pressed="false">Semestre</button>
+                            <button type="button" class="btn btn-sm" data-periodo="anio" aria-pressed="false">Año</button>
                         </div>
                         <input type="text" class="form-control form-control-sm" id="periodoRango" placeholder="Desde y hasta" aria-label="Desde y hasta">
                         <div class="position-relative" id="widgetsMenu" style="display:none;">
-                            <button class="btn btn-light-secondary btn-sm" id="btnWidgets" type="button"><i class="bi bi-eye me-1"></i>Widgets</button>
+                            <button class="btn btn-light-secondary" id="btnWidgets" type="button"><i class="bi bi-eye me-1"></i>Widgets</button>
                             <div class="card shadow-sm position-absolute end-0 mt-1 p-2" id="widgetsPanel" style="display:none; z-index:1050; min-width:230px;">
                                 <div id="widgetsChecklist"></div>
                             </div>
                         </div>
-                        <button class="btn btn-outline-secondary btn-sm" id="btnResetLayout" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer</button>
-                        <button class="btn btn-light-secondary btn-sm" id="btnCancelarLayout" style="display:none;">Cancelar</button>
-                        <button class="btn btn-primary btn-sm" id="btnGuardarLayout" style="display:none;"><i class="bi bi-check-lg me-1"></i>Guardar</button>
-                        <button class="btn btn-primary btn-sm" id="btnPersonalizar"><i class="bi bi-sliders me-1"></i>Personalizar</button>
+                        <button class="btn btn-outline-secondary" id="btnResetLayout" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer</button>
+                        <button class="btn btn-light-secondary" id="btnCancelarLayout" style="display:none;">Cancelar</button>
+                        <button class="btn btn-primary" id="btnGuardarLayout" style="display:none;"><i class="bi bi-check-lg me-1"></i>Guardar</button>
+                        <button class="btn btn-primary" id="btnPersonalizar"><i class="bi bi-sliders me-1"></i>Personalizar</button>
+                    </div>
+                    <p class="text-muted small mb-0 text-md-end" id="periodoTexto">&nbsp;</p>
                     </div>
                 </div>
 
@@ -858,6 +863,14 @@
                     .then(aplicarDefault).catch(aplicarDefault);
             }
 
+            // La lista ocupa como mucho el alto que queda visible debajo del botón; lo que sobra se desplaza adentro.
+            function ajustarAltoWidgets() {
+                var p = el('widgetsPanel');
+                if (!p || p.style.display === 'none') return;
+                var abajo = el('btnWidgets').getBoundingClientRect().bottom;
+                p.style.maxHeight = Math.max(160, window.innerHeight - abajo - 16) + 'px';
+            }
+
             function wireToolbar() {
                 el('btnPersonalizar').addEventListener('click', entrarEdicion);
                 el('btnGuardarLayout').addEventListener('click', guardarLayout);
@@ -867,7 +880,9 @@
                     e.stopPropagation();
                     var p = el('widgetsPanel');
                     p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
+                    ajustarAltoWidgets();
                 });
+                window.addEventListener('resize', ajustarAltoWidgets);
                 document.addEventListener('click', function (e) {
                     if (!e.target.closest('#widgetsMenu')) { el('widgetsPanel').style.display = 'none'; }
                 });

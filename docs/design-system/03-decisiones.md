@@ -510,6 +510,9 @@ No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el p
 - **Avisos arriba a la derecha y confirmación:** tarjeta blanca con ícono de color (§5); los modales
   tienen esquinas de 16 px, sin líneas entre título, cuerpo y pie, y el fondo de atrás apenas desenfocado.
 - **Pestañas:** subrayadas con el color del menú, sin fondo y con mayúscula solo al principio.
+- **Selector segmentado** (opciones excluyentes, como el período del dashboard): riel gris claro y la opción elegida
+  como tarjeta blanca con el texto en el azul de las acciones; mide 40 px, como un campo. Clase `.sgtl-segmentado`
+  con botones `btn btn-sm` y `aria-pressed` (22/10). No se usa un grupo de botones con borde para esto.
 - **Paginador, menús desplegables, buscador de clientes, calendario, listas, barras de progreso y
   globitos de ayuda:** el mismo lenguaje (blanco, borde fino, sombra suave, esquinas redondeadas;
   días del calendario y rango en el azul de las acciones).

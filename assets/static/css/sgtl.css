@@ -805,6 +805,48 @@ body .cc-tab.active {
     color: var(--sgtl-menu);
 }
 
+/* Selector segmentado (§12): opciones excluyentes en un riel gris claro; la elegida, como una tarjeta
+   blanca con el texto en el azul de las acciones (§11). Lo usa el período del dashboard. Mide 40 px, como un campo:
+   los botones llevan `btn btn-sm` (así no les toca el alto mínimo de los botones comunes). */
+body .sgtl-segmentado {
+    display: inline-flex;
+    gap: 2px;
+    padding: 3px;
+    border-radius: var(--sgtl-radio-chico);
+    background-color: #e4e8ef;
+}
+
+body .sgtl-segmentado > .btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 .875rem;
+    border: 0;
+    border-radius: 7px;
+    background-color: transparent;
+    box-shadow: none;
+    color: var(--sgtl-texto-suave);
+    font-size: .8125rem;
+    line-height: 1.5;
+    white-space: nowrap;
+}
+
+body .sgtl-segmentado > .btn:hover {
+    background-color: rgba(255, 255, 255, .6);
+    color: var(--sgtl-texto);
+}
+
+body .sgtl-segmentado > .btn.active,
+body .sgtl-segmentado > .btn[aria-pressed="true"] {
+    background-color: #fff;
+    box-shadow: 0 1px 2px rgba(16, 24, 40, .14);
+    color: #435ebe;
+}
+
+body .sgtl-segmentado > .btn:focus-visible {
+    box-shadow: 0 0 0 .2rem rgba(67, 94, 190, .25);
+}
+
 /* Paginador: selector de filas y flechas con el mismo borde que los campos. */
 body .sgtl-pagination {
     color: var(--sgtl-texto-suave);
