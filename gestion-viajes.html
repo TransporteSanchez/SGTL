@@ -40,7 +40,7 @@
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
+            <span class="visually-hidden">Cargando…</span>
         </div>
     </div>
 
@@ -226,11 +226,11 @@
                                 <div class="row">
                                     <div class="col-md-6 mb-3">
                                         <label for="fechaInicio" class="form-label">Fecha y hora de inicio <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="fechaInicio" placeholder="AAAA-MM-DD HH:MM" autocomplete="off">
+                                        <input type="text" class="form-control" id="fechaInicio" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
                                     </div>
                                     <div class="col-md-6 mb-3">
                                         <label for="fechaFin" class="form-label">Fecha y hora de fin <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="fechaFin" placeholder="AAAA-MM-DD HH:MM" autocomplete="off">
+                                        <input type="text" class="form-control" id="fechaFin" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
                                     </div>
                                 </div>
                                 <div class="row">
@@ -687,7 +687,7 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="fechaEntrega" class="form-label">Fecha de entrega <span class="text-muted" id="fechaEntregaMarca">(opcional)</span></label>
-                            <input type="text" class="form-control" id="fechaEntrega" placeholder="AAAA-MM-DD" autocomplete="off">
+                            <input type="text" class="form-control" id="fechaEntrega" placeholder="DD/MM/AAAA" autocomplete="off">
                         </div>
                     </div>
                     <div id="grupoEvidencia" class="mb-1" style="display: none;">
@@ -1018,6 +1018,7 @@
                 && enProformaEstado !== 'Generada' && enProformaEstado !== 'Aceptada';
             $('#clienteSelect, #origenSelect, #destinoSelect, #camionSelect, #fechaInicio, #fechaFin, #choferBuscar, input[name="tipoTarifa"], #btnRecalcularRuta')
                 .prop('disabled', viajeBloqueado);
+            sincronizarFechasBloqueadas();
             if (viajeTarifaEditable) $('input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', false);
             if (presupuestoDelViaje) {
                 $('#clienteSelect, #origenSelect, #destinoSelect, input[name="tipoTarifa"], #btnRecalcularRuta').prop('disabled', true);
@@ -1244,6 +1245,7 @@
             sel.val(v.Estado);
             var facturado = v.Estado === 'Facturado';
             $('#estadoViajeNuevo, #resultadoEntrega, #fechaEntrega, #guardarEstadoBtn').prop('disabled', facturado);
+            sincronizarFechasBloqueadas();
             actualizarAyudaEstado();
             if (facturado) $('#estadoViajeAyuda').text('Viaje facturado: para corregirlo anulá la proforma que lo incluye.');
 
@@ -1375,12 +1377,21 @@
                 });
         }
 
+        // El campo visible de flatpickr (altInput) es otro input: copia el bloqueo del original.
+        function sincronizarFechasBloqueadas() {
+            [window.fpInicio, window.fpFin, window.fpEntrega].forEach(function (fp) {
+                if (fp && fp.altInput) fp.altInput.disabled = fp.input.disabled;
+            });
+        }
+
         // ===================== READY =====================
         $(document).ready(function () {
             if (window.flatpickr) {
-                window.fpInicio = flatpickr('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
-                window.fpFin = flatpickr('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
-                window.fpEntrega = flatpickr('#fechaEntrega', { dateFormat: 'Y-m-d', allowInput: true });
+                // Calendario del sistema (§7.1): se ve DD/MM/AAAA HH:MM y el campo sigue guardando AAAA-MM-DD HH:MM.
+                var alCambiarFecha = function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); };
+                window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
+                window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
+                window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
             }
             $('#estadoViajeNuevo').on('change', actualizarAyudaEstado);
             $('#ModalAltaViaje').on('shown.bs.modal', function () {
