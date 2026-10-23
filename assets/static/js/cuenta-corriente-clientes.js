@@ -789,6 +789,8 @@
         window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
         porId('btnDistribuirRecibo').classList.add('d-none');
         porId('btnEmitirRecibo').classList.add('d-none');
+        // Solo lectura: el pie es solo "Cerrar" (§6.2), como en Ver factura.
+        porId('btnCerrarRecibo').textContent = 'Cerrar';
         porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', true);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
     }
@@ -834,7 +836,7 @@
             reciboEditandoId = Number(id);
             reciboEditando = recibo;
             reciboOperacion = null;
-            porId('modalNuevoReciboTitulo').textContent = 'Editar recibo · ' + (recibo.Numero || '');
+            porId('modalNuevoReciboTitulo').textContent = 'Editar recibo ' + (recibo.Numero || '');
             porId('modalNuevoReciboSubtitulo').classList.add('d-none');
             limitarFecha('reciboFecha', 'maxDate', hoyIso());
             ponerFecha('reciboFecha', String(recibo.Fecha || '').substring(0, 10));
@@ -870,6 +872,7 @@
             boton.disabled = false;
             boton.classList.remove('d-none');
             boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Guardar';
+            porId('btnCerrarRecibo').textContent = 'Cancelar';
             porId('modalNuevoRecibo').classList.toggle('cc-solo-lectura', false);
             bootstrap.Modal.getOrCreateInstance(porId('modalNuevoRecibo')).show();
         }).catch(function (ex) {
@@ -1053,6 +1056,7 @@
         var boton = porId('btnEmitirRecibo');
         boton.classList.remove('d-none'); boton.disabled = true;
         boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Emitir recibo';
+        porId('btnCerrarRecibo').textContent = 'Cancelar';
         cargarConfiguracionEmision('REC', {
             tipo: 'reciboTipoComprobante', letra: 'reciboLetra', sucursal: 'reciboSucursal', numero: 'reciboNumeroComprobante'
         }).then(function () {

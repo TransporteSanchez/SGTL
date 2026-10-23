@@ -48,7 +48,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | **OK en VM (23/10)**; 5 casos sin datos para verlos (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
-| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10) | **OK en VM (23/10)**; dos mejoras nuevas para decidir (ver §29) |
+| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2080,7 +2080,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 
 ---
 
-## 29. Reprueba del 23/10: una falla nueva y mejoras — PUSHEADO (`cfe08c5` a `a1e2b8a`), OK EN VM (23/10)
+## 29. Reprueba del 23/10: una falla nueva y mejoras — PUSHEADO (`cfe08c5` a `a1e2b8a`), OK EN VM (23/10); DOS MEJORAS DE CUENTA CORRIENTE SIN PUSH NI PRUEBA
 
 Reporte: `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md`. Los 22 puntos pedidos (§28, §26 y §27) dan OK. No se
 pudieron ver, porque no hay datos así en la base: un viaje en viaje que no venga de un presupuesto, una proforma
@@ -2137,7 +2137,14 @@ cuenta corriente.
 
 **Resultado en la VM (23/10):** los 6 puntos OK (`docs/pruebas/2026-10-23-reprueba-29.md`). Salieron dos mejoras más,
 de cuenta corriente (módulo de Facu, solo texto), para decidir:
-- [ ] **Pie de "Ver recibo":** dice "Cancelar"; en un modal de solo lectura va "Cerrar" (§6.2), como en Ver factura.
-- [ ] **Título de "Editar recibo":** "Editar recibo · REC-00000004", con un punto que no lleva "Ver recibo REC-00000004"
-  ni los demás títulos ("Ver factura FAC-00000012", "Editar viaje #47"). Sacarle el " · ".
+- [x] **Pie de "Ver recibo":** dice "Cancelar"; en un modal de solo lectura va "Cerrar" (§6.2), como en Ver factura
+  (hecho 23/10).
+- [x] **Título de "Editar recibo":** "Editar recibo · REC-00000004", con un punto que no lleva "Ver recibo REC-00000004"
+  ni los demás títulos ("Ver factura FAC-00000012", "Editar viaje #47"). Sacarle el " · " (hecho 23/10).
+
+**Probar en la VM** (cuando Rocío lo pida; sin C#: `pull` y Ctrl+F5):
+- [ ] 1. Cuenta corriente: Ver recibo REC-00000004 → el pie dice solo "Cerrar".
+- [ ] 2. Editar recibo de uno emitido → título "Editar recibo REC-…" (sin " · ") y pie Cancelar · Guardar. Salir con
+  Cancelar.
+- [ ] 3. Registrar recibo → pie Cancelar · Emitir recibo, también después de haber abierto un Ver recibo.
 
