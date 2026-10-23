@@ -43,10 +43,11 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
-| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
-| 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | **Probado en VM (23/10)**: OK salvo fallas leves, arreglos en §28 |
+| 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilado y probado en VM (23/10)**: OK, mejoras en §28 |
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §27) |
+| 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | En curso (23/10), aprobados por Rocío | — | Ver §28 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1639,7 +1640,7 @@ y mandarles este mensaje. **Hecho (22/10):** `facugodoy`, `fedemontenegro` y `ma
 
 ---
 
-## 24. Viajes: registrar, editar y ver detalle — PUSHEADO, FALTA PROBAR EN VM (22/10)
+## 24. Viajes: registrar, editar y ver detalle — PUSHEADO, PROBADO EN VM (23/10): ARREGLOS EN §28
 
 Pedido de Rocío: mejorar registrar un viaje, editarlo y su detalle. Se relevaron los tres modales con una API simulada
 (datos inventados) y Rocío aprobó la propuesta con capturas en tres vueltas. Commits en `rocionuvoli`: `cea8407`
@@ -1737,7 +1738,7 @@ detalle con los bloques del formulario" y `dd6034c` "Viajes: km con coma en las 
     un proyector de 1280 entra al límite). Al hacerlo, actualizar "Tablas anchas" en el §2.1 del design system.
 
 
-### Ronda de observaciones de Rocío (22/10) — PUSHEADO (`910ca32`, `3917181`, `c2bf14b`), FALTA PROBAR EN VM
+### Ronda de observaciones de Rocío (22/10) — PUSHEADO (`910ca32`, `3917181`, `c2bf14b`), PROBADO EN VM (23/10)
 
 Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo ajustes. **Sin C#:** `pull` y Ctrl+F5.
 
@@ -1779,7 +1780,7 @@ Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo 
   todo el aviso de WhatsApp al elegir el chofer).
 
 
-### Control de la proforma de Rukas, tercera vuelta (22/10) — PUSHEADO (`3751c33`), FALTA PROBAR EN VM
+### Control de la proforma de Rukas, tercera vuelta (22/10) — PUSHEADO (`3751c33`), PROBADO EN VM (23/10): ARREGLOS EN §28
 
 Rocío revisó todos los casos del control con capturas y fue pidiendo ajustes (detalle en
 `docs/diseno/proforma-rukas-diseno.md`, "Tercera vuelta"). **Sin C#:** `pull` y Ctrl+F5.
@@ -1802,7 +1803,7 @@ nuevas están en el design system (§1.6, §2.1, §6.2, §12) y en la lista de c
 - [ ] 6. En la notebook (1366) y en una ventana más angosta (1100), la tabla entra sin desplazarse hacia el costado.
 - [ ] 7. Los botones de las filas de otras pantallas (viajes, proformas, clientes) siguen con el ícono centrado.
 
-### Presupuestos, avisos de dos renglones y "Sin viaje relacionado en SGTL" (22/10) — PUSHEADO (22/10), FALTA PROBAR EN VM
+### Presupuestos, avisos de dos renglones y "Sin viaje relacionado en SGTL" (22/10) — PUSHEADO (22/10), PROBADO EN VM (23/10): ARREGLOS EN §28
 
 Tres pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+F5.
 
@@ -1838,7 +1839,7 @@ Tres pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+
 
 ---
 
-## 25. Proformas: datos del cliente desde el cliente, no desde la proforma — PUSHEADO (`b7e183d`, `eb6d96b`), FALTA COMPILAR Y PROBAR EN VM (22/10)
+## 25. Proformas: datos del cliente desde el cliente, no desde la proforma — PUSHEADO (`b7e183d`, `eb6d96b`), COMPILADO Y PROBADO EN VM (23/10): MEJORAS EN §28
 
 Rocío lo decidió el 22/10, mientras lo charlaba con Facu (la proforma y la factura son su módulo: **coordinarlo con
 él antes de hacerlo**). Hoy, en la proforma propia, la razón social, el nombre comercial, el CUIT, la dirección y el
@@ -1992,3 +1993,82 @@ con su línea abajo y con aire arriba:
   ojo de una factura con conceptos y comprobantes aplicados, y el detalle con "Trazabilidad".
 - [ ] 4. Gestionar e-mail (Registrar configuración), Gestionar integración de WhatsApp y el detalle de un registro de
   auditoría (Valores anteriores / Valores nuevos).
+
+---
+
+## 28. Arreglos del reporte de la VM del 23/10 (§24 y §25) — EN CURSO (23/10)
+
+Reporte: `docs/pruebas/2026-10-23-viajes-y-proformas.md`. De 42 pruebas, 35 OK, 6 fallas leves y 1 sin probar; con el OK
+de Rocío se generó el borrador 990100 (PF-00000011) y tomó los datos de la ficha de QUICKFOOD. Rocío aprobó el 23/10
+los arreglos y las mejoras de abajo.
+
+**Ya resuelto antes del reporte** (commits del 23/10 a la mañana, posteriores a `6ba727a`, el probado; se prueban con
+§26 y §27): F6, el lector de pantalla que repetía el motivo de los botones deshabilitados (`f2bc239`), y los
+subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
+
+**Arreglos y mejoras:**
+- [ ] **F1. El paso actual de Registrar proforma casi no se ve.** En Gestión de contenido está guardado un color de
+  fondo casi blanco (`#e4eef8`), y el sistema usa ese color para la línea de arriba, los íconos de los títulos, las
+  pestañas y el paso actual. Si el color elegido no se lee sobre blanco, esos detalles toman el color del menú (o, si
+  tampoco se lee, el mismo color más oscuro). El fondo de la pantalla sigue con el color elegido.
+- [ ] **F2. "Sin viaje relacionado en SGTL" en dos renglones y la tabla del control 16 px más ancha a 1100 px.** El
+  resultado pasa a "Sin viaje relacionado" (el grupo ya dice "Para corregir en SGTL"), el texto completo va en el
+  globito del sistema (no en el del navegador) y, entre 992 y 1199 px, un poco menos de espacio entre columnas.
+- [ ] **F3. El chofer queda en rojo aunque ya diga "(opcional)".** Al pasar a opcional se vuelve a validar el campo.
+- [ ] **F4. Ver detalle del usuario sin pie.** Pie "Registrado el …" con la fecha de alta, que la API ya manda. Quién lo
+  registró y la última modificación necesitan cambiar el C# (`UsuariosController`, GET por id): queda para después.
+- [ ] **F5. Datos vacíos sin "—"** (la base guarda columnas de largo fijo con espacios, como el teléfono fijo del
+  chofer). Un dato con solo espacios se ve vacío, con su "—", en todos los Ver detalle.
+- [ ] **Buscador de cliente** (`select-cliente-predictivo.js`): la opción vacía ("Seleccioná un cliente", "Todos") no va
+  en la lista, y al hacer clic en un campo con un cliente elegido se selecciona el texto, para que lo que se escribe
+  lo reemplace.
+- [ ] **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N".
+- [ ] **Volver de "Editar cliente" a la proforma:** aparece enseguida, sin esperar a que se relean los datos del
+  cliente, y en el mismo lugar en el que estaba.
+- [ ] **"Responsable inscripto"** con mayúscula solo al principio (§9) en la proforma: el recuadro, la fila de Rukas y
+  el PDF. Lo que se guarda no cambia. La factura, los recibos y los comprobantes (módulo de Facu) siguen como están.
+- [ ] **CUIT con guiones** en la lista de clientes de la proforma y en el PDF.
+- [ ] **Registrar proforma propia:** el título sin la etiqueta "Borrador" hasta que se guarda, como en la de Rukas.
+- [ ] **El PDF de un borrador no tiene "Enviar por e-mail":** queda así (un borrador no se le manda al cliente);
+  anotarlo en el §1.4 del design system y en la lista de control de `AGENTS.md`.
+- [ ] **Instructivo de la VM** (`docs/equipo/PRUEBAS-VM-CLAUDE.md`): generar una proforma deja sus viajes en Listo para
+  facturar (pasan a Facturado con la factura), no en Facturado.
+
+**Quedan como están o para después:**
+- El punto azul de "Esperando a Rukas" en el globito del listado: es el color de ese grupo en el control; el naranja es
+  solo el ícono del listado.
+- Precio unitario de las líneas de la proforma con la máscara de montos (§7.3): **hablarlo con Facu**, porque cambia
+  cómo se leen los montos en sus cálculos (`facturacion-proforma.js`).
+- Los 404 de `api/TarifasFijas/PorRuta` y `api/DashboardLayout` en la consola: C# en dos controllers y no se ven en
+  pantalla (ver F16).
+- No se pudo probar que el camión inactivo no aparece (no hay ninguno inactivo). El usuario sin permiso (§25, paso 7)
+  se prueba con el paso 9 de §26.
+
+**Limpieza (la hace Rocío):**
+- **Ya:** anular PF-00000011 desde Gestionar proformas. Está aceptada, lista para facturar, y tiene los viajes 25 y 26,
+  que usan todos los Excel de prueba.
+- **Después de la reprueba:** el borrador #40 (tacho) y el cliente 6, "Logística Pampeana S.R.L." (SQL del reporte,
+  revisado). Sirven para probar los arreglos de la proforma.
+- **Antes de la defensa** (no son de esta prueba): los choferes "Fede Prueba" (consultarlo con Fede: puede tener su
+  celular para el WhatsApp) y "CLAUDE", y la "Calle Prueba" de Distribuidora del Sur, se ven en pantalla. Los viajes 14
+  y 15 están en Registrado dentro de PF-00000006, aceptada: ver si hace falta corregirlos. El viaje #28 tiene 520 km
+  porque así vino del presupuesto #1 (de Facu).
+- **Avisarle a Facu:** su borrador #39 (Rukas 990120) quedó sin los viajes 25 y 26.
+
+**Probar en la VM** (sin C#: `pull` y Ctrl+F5):
+- [ ] 1. Registrar proforma con un cliente de Rukas: el paso actual (número y nombre) se lee; los íconos de los títulos
+  de las pantallas se ven en color.
+- [ ] 2. Borrador de Rukas con el 990100: "Sin viaje relacionado" en un renglón, con el globito del sistema al pasar el
+  mouse; a 1100 px la tabla entra sin desplazarse hacia el costado.
+- [ ] 3. Registrar viaje → Guardar vacío → elegir un cliente de Rukas: el chofer deja de estar en rojo.
+- [ ] 4. Listar usuarios → Ver detalle: pie "Registrado el …".
+- [ ] 5. Ver detalle del chofer Facundo Godoy: el teléfono particular con "—".
+- [ ] 6. Registrar viaje: con la flecha, la primera opción de la lista es un cliente; clic en el campo con un cliente
+  elegido y escribir: lo escrito reemplaza el nombre. Lo mismo en un filtro de cliente (Gestionar proformas).
+- [ ] 7. Gestionar viajes: el botón "Completar números de remito y entrega" de un viaje en viaje abre el modal con ese
+  título.
+- [ ] 8. Borrador #40: desplazar un poco la proforma, "Editar cliente", cambiar un dato y guardar: la proforma vuelve
+  enseguida y en el mismo lugar, con el dato nuevo.
+- [ ] 9. El mismo borrador y su PDF: "Responsable inscripto" y el CUIT con guiones (también en la lista de clientes de
+  la proforma); en una de Rukas, la fila del cliente igual.
+- [ ] 10. Registrar proforma propia: el título sin la etiqueta "Borrador" hasta guardar.

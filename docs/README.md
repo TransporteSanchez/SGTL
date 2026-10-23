@@ -103,4 +103,5 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-20-merge-facu.md` — pruebas en la VM del merge de Facu del 20/10 (proformas, cuenta corriente, grupos y permisos).
 - `docs/pruebas/2026-10-22-prueba-minima-ramas.md` — prueba mínima en la VM antes de pasar `rocionuvoli` a las ramas del equipo (dashboard, estilo visual y merges de Facu y Fede del 22/10).
 - `docs/pruebas/2026-10-22-reprueba-ramas.md` — reprueba en la VM de la falla del recibo, las mejoras de la prueba mínima, la mudanza de "Gestionar tipos de comprobante" y "Ver PDF" de proformas.
+- `docs/pruebas/2026-10-23-viajes-y-proformas.md` — pruebas en la VM de viajes (registrar, editar, detalle), los Ver detalle de datos maestros, la proforma de Rukas (tercera vuelta) y los datos del cliente en la proforma (§24 y §25).
 - `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.
