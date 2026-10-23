@@ -24,6 +24,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
 | Ver detalle (§6.2) | `.sgtl-dato` / `.sgtl-dato-etiqueta` / `.sgtl-dato-valor`; pie: `SGTL.textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi)`; viaje: `SGTLDetalleViaje.abrir(viaje, { enlaceGestion })` (`viaje-detalle.js`) |
 | Editar el cliente desde otra pantalla (§6.3) | `SGTLEditarCliente.abrir(id, { tipoBloqueado, alCerrar })` (`assets/static/js/cliente-editar.js`, el mismo modal de Gestionar clientes) |
+| Tabla con grupos y su resumen (§2.1) | Resumen arriba: `.sgtl-resumen` + `.sgtl-resumen-item` (con `.sgtl-info-punto rojo / amarillo / azul / verde`); título de cada grupo: `tr.sgtl-grupo` con la etiqueta del grupo y `.sgtl-grupo-ayuda` |
 | Elegir de una lista larga (cliente, chofer, §6.3) | `SelectClientePredictivo.inicializar(select, { placeholder, textoVacio, idCampo })` (`assets/static/js/select-cliente-predictivo.js`) |
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
@@ -138,6 +139,15 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - Se inicializan una sola vez desde el JS compartido, también para las filas que se dibujan
   después; las pantallas no los inicializan por su cuenta.
 
+### 1.6 Fuera de las filas, con texto (22/10)
+
+- **Solo ícono, únicamente en las acciones de cada fila de una tabla** (§1.4), donde se repiten en todas las filas y
+  el espacio importa, y en herramientas que se entienden solas (exportar, recalcular la ruta). Llevan tooltip y
+  `aria-label` (§1.5).
+- **Cualquier otra acción lleva texto**, con ícono si ayuda: "Registrar viaje", "Traer viajes", "Volver a controlar",
+  "Reemplazar Excel", "Editar cliente". En un celular los tooltips no aparecen y un ícono solo no se entiende; además,
+  un lápiz solo se lee como "editar esto", aunque abra la edición de otra cosa (el cliente desde una proforma).
+
 ---
 
 ## 2. Tablas
@@ -154,6 +164,22 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Filas que se despliegan** (lo aplicado a una factura en cuenta corriente): las filas de adentro mantienen las
   mismas columnas; la fila abierta se resalta apenas, una barra azul a la izquierda une la fila con las suyas, el dato
   que identifica a cada una va corrido con ↳ y el resto en gris, y una línea más marcada cierra el grupo (22/10).
+- **Tablas con grupos** (el control de la proforma de Rukas, pedido de Rocío, 22/10): las filas se agrupan por lo que
+  hay que hacer con ellas.
+  - Cada grupo empieza con una **fila de título** (`tr.sgtl-grupo`): fondo gris claro, una línea más marcada arriba
+    (así se ve dónde empieza cada uno), la etiqueta del grupo con su color y la cantidad ("Para corregir en SGTL · 2")
+    y, al lado, qué hacer, con la letra del texto y punto final (`.sgtl-grupo-ayuda`: "Corregí el viaje y volvé a
+    controlar."). Lo que corresponde al grupo va ahí: "Reclamado el 21/10/2026: … Ver reclamo".
+  - **El color va una sola vez, en ese título.** Cada fila dice qué pasa en texto, en un renglón y concreto ("Falta el
+    remito", "Repetido en el Excel (filas 6 y 14)"), sin etiqueta de color; el texto completo, en el globito. Las
+    filas que están bien dicen "Coincide" en gris, y su grupo va plegado si hay algo para resolver.
+  - **Arriba de la tabla, un resumen en una línea de texto** (`.sgtl-resumen`): "**6 diferencias** ● 2 para corregir
+    en SGTL ● 2 para revisar…", con un punto del color de cada grupo (`.sgtl-info-punto`); cada parte es un botón que
+    lleva a su grupo (`.sgtl-resumen-item`). Lo que está bien no va en el mismo renglón que lo que falta resolver;
+    si no hay nada para resolver, "● **Lista para generar**: los 12 transportes coinciden". A la derecha, solo la
+    acción que sigue (por ejemplo, "Registrar reclamo").
+  - Un dato que solo sirve en un caso va solo en ese caso: la tarifa con que se calculó el importe de SGTL aparece en
+    gris debajo del importe únicamente cuando no coincide ("602,8 km × $ 850", "tarifa fija de la ruta").
 - **Tablas anchas** (gestión de viajes): la columna de acciones queda **fija a la derecha** y
   siempre visible; lo que se desplaza hacia el costado son los datos. Fechas, números y estados
   no se parten en dos renglones (`text-nowrap`).
@@ -376,7 +402,11 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Tamaño según el contenido:** `modal-lg` para formularios comunes; `modal-xl` solo con mapa o
   tablas (viajes, presupuestos, proformas, Ver PDF); el tamaño por defecto para confirmaciones. Las ventanas de
   emisión de cuenta corriente (comprobante, recibo y factura desde proforma) son `modal-xl` y además tienen el
-  mismo alto (`sgtl-modal-formulario`, 22/10).
+  mismo alto (`sgtl-modal-formulario`, 22/10). Si la tabla de adentro no entra con aire, el modal puede ser más ancho
+  que un `modal-xl`: `.sgtl-modal-ancho`, hasta 1440 px (la proforma de Rukas, 22/10).
+- **Un archivo ya cargado** (el Excel de una proforma de Rukas) se ve en la misma franja con la que se eligió, con
+  borde fino y fondo blanco (`.sgtl-zona-archivo.cargada`): ícono, nombre, qué trae y cuándo se cargó, y a la derecha lo
+  que se hace con él ("Volver a controlar", "Reemplazar Excel").
 
 ### 6.3 Formularios
 
@@ -563,7 +593,9 @@ No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el p
   - los de borde (exportar, acciones de fila) tienen el borde suave y, al pasar el mouse, un fondo
     apenas teñido en lugar de rellenarse;
   - los de solo ícono (los que llevan `aria-label`, §1.5) son cuadrados de la altura de los campos
-    (las acciones de fila, de 32 px) y el ícono va en el centro exacto.
+    (las acciones de fila, de 32 px) y el ícono va en el centro exacto. La caja del ícono mide lo mismo que el
+    ícono (`1em`): la plantilla le da 1rem fijo y, con otro tamaño de ícono, el dibujo quedaba corrido (22/10). Lo
+    mismo dentro de un círculo (la zona del archivo, los pasos).
 - **Avisos dentro de la pantalla** (`.alert`): fondo apenas teñido, borde fino e ícono, con los
   colores de §4.3 (información azul, éxito verde, advertencia amarillo, error rojo).
 - **Avisos arriba a la derecha y confirmación:** tarjeta blanca con ícono de color (§5); los modales

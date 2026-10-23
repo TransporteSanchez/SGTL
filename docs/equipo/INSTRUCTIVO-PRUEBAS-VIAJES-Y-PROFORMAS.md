@@ -112,7 +112,7 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 ### 3.2 Caso 1 — todo coincide
 
 1. Elegí `proforma-rukas-caso1-todo-ok (PROFORMA NRO 990110).xlsx`: vista previa "2 transportes · Total Rukas $44.580" y N° 990110.
-2. "Guardar borrador" → toast y el **control**: los 2 "Coincide", con el importe de Rukas, el de SGTL y la tarifa usada.
+2. Al elegirlo se guarda el borrador (toast) y aparece el **control**: arriba "● Lista para generar: los 2 transportes coinciden" y las 2 filas con "Coincide" en gris, con el importe de Rukas y el de SGTL.
 3. Totales: neto $44.580 (viajes $29.580 + adicional $15.000), IVA $9.361,80, total **$53.941,80**.
 4. "Generar proforma" está en verde. Si querés probar el circuito completo: Generar → confirmación dentro del modal → queda **Aceptada** con N° PF y la etiqueta "Rukas 990110" en el listado → "Emitir factura" por $53.941,80 → viajes 25 y 26 en Facturado. **Esto consume un N° PF y una factura**: después, nota de crédito para liberar los viajes.
 5. Si no generás: eliminá el borrador.
@@ -120,8 +120,8 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 ### 3.3 Caso 2 — Rukas está mal: reclamo
 
 1. Elegí `proforma-rukas-caso2-reclamo-a-rukas (PROFORMA NRO 990120).xlsx` → Guardar borrador.
-2. El 990002 da **"Importe distinto"**: Rukas $12.500, SGTL $14.790, con la tarifa usada (tarifa por km #5 · 17,4 km × $850). "Generar" queda en gris con "Para generar, corregí la diferencia."
-3. La tarifa del viaje está bien, así que el error es de Rukas: **"Registrar reclamo"** → fecha (hoy) y motivo → Guardar. Aparece el aviso "Reclamo en Rukas desde el…".
+2. El 990002 está en el grupo **"Para revisar"** con "Importe distinto": Rukas $12.500, SGTL $14.790 y, en gris debajo del importe de SGTL, la tarifa usada ("17,4 km × $ 850"). "Generar proforma" queda deshabilitado; su globito dice "Para generar, resolvé la diferencia".
+3. La tarifa del viaje está bien, así que el error es de Rukas: **"Registrar reclamo"** → fecha (hoy) y motivo → Guardar. La fila pasa al grupo **"Esperando a Rukas"**, que dice "Reclamado el …" con "Ver reclamo".
 4. Cerrá el modal. En el listado, junto al estado, aparece el **ícono de admiración** con el tooltip "Reclamo pendiente en Rukas desde el…". El filtro **Tipo → "Con reclamo pendiente"** la muestra.
 5. Marfrig corrige: abrí el borrador (lápiz) → **"Reemplazar Excel"** → `proforma-rukas-caso2-reclamo-a-rukas-corregido (PROFORMA NRO 990120).xlsx`. El reclamo **se cierra solo**, los 2 "Coincide" y "Generar" se pone verde.
 6. Generá (como en el caso 1) o eliminá el borrador.
@@ -130,8 +130,8 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 
 1. **Preparación:** en Gestionar viajes, editá el viaje **26** y cambiá el N° de transporte SAP de 990002 a **990020** (simula un error de carga).
 2. Elegí `proforma-rukas-caso3-corregir-viaje-en-sgtl (PROFORMA NRO 990130).xlsx` → Guardar borrador.
-3. El 990002 da **"Sin viaje"** ("No hay un viaje de este cliente con el N° 990002") y el **aviso amarillo** dice que el viaje #26 no está en ninguna proforma: es la pista de que está mal cargado.
-4. Corregí el viaje 26 (volvé a poner **990002**) y, en el borrador, **"Volver a controlar"**: los 2 "Coincide" y el aviso desaparece.
+3. El 990002 está en **"Para corregir en SGTL"** con "Sin viaje en SGTL" (el globito dice "No hay un viaje de este cliente con el N° 990002"). El aviso de viajes fuera de la proforma se sacó del control el 22/10: el viaje #26, con el N° mal cargado, se ve en Gestionar viajes o en la guía del paso 2 de una proforma nueva.
+4. Corregí el viaje 26 (volvé a poner **990002**) y, en el borrador, **"Volver a controlar"** (en la franja del Excel): "Lista para generar".
 5. Eliminá el borrador (o generá).
 6. Otra variante del mismo caso: en vez del N°, corregir la **tarifa** del viaje (en Listo para facturar se puede) y volver a controlar.
 

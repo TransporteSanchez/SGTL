@@ -211,7 +211,7 @@ flowchart TD
 | **Sin tarifa** | El viaje no tiene tarifa o da $0 | Asignarle tarifa y Volver a controlar | No |
 | **Ya facturado / En otra proforma** | Posible cobro doble | Revisar | No |
 | **Repetido en SGTL** | Dos viajes con el mismo N° de transporte | Corregir el que esté mal | No |
-| *Aviso* | Hay viajes del cliente con los números cargados que no están en ninguna proforma | Nada: van en la próxima. No frena | Sí |
+| *Viajes fuera de la tanda* | Hay viajes del cliente con los números cargados que no están en ninguna proforma | Nada: van en la próxima. Se ven en la guía antes de tildar en Rukas; el control no los avisa (22/10) | Sí |
 
 - Los **adicionales** de Rukas no se comparan: se toman como vienen y se suman a la proforma.
 - El **reclamo** no es un estado: es una marca en el borrador (fecha y motivo) con un ícono en el listado. Se cierra a mano o solo, al reemplazar el Excel o generar.

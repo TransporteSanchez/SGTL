@@ -83,6 +83,9 @@
     var pie = document.querySelector('#modalProforma .modal-footer');
     if (!cuerpo || !pie) return;
     $id('bloqueConceptos').classList.toggle('d-none', activo);
+    // El modal se ensancha para que la tabla del control tenga aire (pedido de Rocío, 22/10).
+    var dialogo = document.querySelector('#modalProforma .modal-dialog');
+    if (dialogo) dialogo.classList.toggle('sgtl-modal-ancho', activo);
     $id('bloquePlataforma').classList.toggle('d-none', !activo);
     $('#p_otros').prop('readonly', activo);
 
@@ -550,54 +553,90 @@
     Ya_facturado: 'Ya facturado', En_otra_proforma: 'En otra proforma', Faltan_numeros: 'Faltan números', Sin_tarifa: 'Sin tarifa',
     Repetido_en_archivo: 'Repetido en el Excel', Dato_invalido: 'Dato mal en el Excel'
   };
-  var COLOR_RESULTADO = { Coincide: 'verde', Faltan_numeros: 'amarillo', Sin_tarifa: 'amarillo' };
 
   // Grupos de la tabla, según quién resuelve cada diferencia, con el color de etiqueta del design system (§4.1):
   // rojo lo que está mal en SGTL, amarillo lo que falta gestionar, azul lo que está en curso, verde lo resuelto.
   function grupos() {
     var p = esc(nombrePlataforma());
     return [
-      { clave: 'SGTL', color: 'rojo', titulo: 'Para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar' },
-      { clave: 'Revisar', color: 'amarillo', titulo: 'Para revisar', ayuda: 'Corregí el viaje o reclamalo' },
-      { clave: 'Plataforma', color: 'amarillo', titulo: 'Para reclamar a ' + p, ayuda: 'Registrá el reclamo' },
-      { clave: 'Esperando', color: 'azul', titulo: 'Esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel' },
+      { clave: 'SGTL', color: 'rojo', titulo: 'Para corregir en SGTL', ayuda: 'Corregí el viaje y volvé a controlar.' },
+      { clave: 'Revisar', color: 'amarillo', titulo: 'Para revisar', ayuda: 'Corregí el viaje o reclamalo.' },
+      { clave: 'Plataforma', color: 'amarillo', titulo: 'Para reclamar a ' + p, ayuda: 'Registrá el reclamo.' },
+      { clave: 'Esperando', color: 'azul', titulo: 'Esperando a ' + p, ayuda: 'Cuando ' + p + ' lo corrija, reemplazá el Excel.' },
       { clave: 'Coincide', color: 'verde', titulo: 'Coinciden' }
     ];
   }
   function grupoDe(l) { return l.Coincide ? 'Coincide' : (l.Reclamada ? 'Esperando' : (l.Responsable || 'Revisar')); }
 
+  // Con el armado de los botones de la fila (§1.4, .sgtl-acciones): cuadrado de 32 px con el ícono centrado.
   function botonViaje(viajeId) {
     if (!viajeId) return '';
     var texto = 'Abrir viaje #' + viajeId;
-    return '<a class="btn btn-sm btn-outline-primary pp-abrir-viaje" href="gestion-viajes.html?viaje=' + encodeURIComponent(viajeId) + '" target="_blank" rel="noopener"' +
-      ' data-bs-toggle="tooltip" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>';
+    return '<span class="sgtl-acciones"><a class="btn btn-sm btn-outline-primary pp-abrir-viaje" href="gestion-viajes.html?viaje=' + encodeURIComponent(viajeId) + '" target="_blank" rel="noopener"' +
+      ' data-bs-toggle="tooltip" title="' + esc(texto) + '" aria-label="' + esc(texto) + '"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></span>';
   }
 
-  // Lo único del detalle que la etiqueta no dice (qué número falta, qué filas, qué viajes). Lo demás ya está
-  // en la etiqueta o en la ayuda del grupo.
-  function detalleCorto(l) {
+  // Qué pasa con la línea, en un solo renglón y concreto (pedido de Rocío, 22/10): el título del grupo ya dice de
+  // quién es; acá va lo que hay que mirar ("Falta el remito", "Repetido en el Excel (filas 6 y 14)"). El texto completo
+  // queda en el globito.
+  var PROBLEMAS_EXCEL = [
+    [/^falta el N° de transporte/, 'sin N° de transporte'], [/^el N° de transporte/, 'N° de transporte no válido'],
+    [/^la fecha/, 'fecha no válida'], [/^falta el importe/, 'sin importe'], [/^el importe/, 'importe no válido'],
+    [/^los adicionales/, 'adicionales no válidos']
+  ];
+  function mayuscula(texto) { return texto.charAt(0).toUpperCase() + texto.slice(1); }
+  function textoResultado(l) {
     var d = l.Detalle || '', m;
     switch (l.Resultado) {
-      case 'Faltan_numeros': m = /le falta: (.*?)\.?$/.exec(d); return m ? 'Falta ' + m[1] : d;
-      case 'Repetido_en_SGTL': m = /: (#[^.]*)/.exec(d); return m ? 'Viajes ' + m[1] : d;
-      case 'Repetido_en_archivo': m = /\(filas ([^)]*)\)/.exec(d); return m ? 'Filas ' + m[1] : d;
-      case 'Dato_invalido': m = /del Excel: (.*?)\.?$/.exec(d); return m ? m[1].charAt(0).toUpperCase() + m[1].slice(1) : d;
-      case 'Coincide': case 'Importe_distinto': case 'Sin_viaje': case 'Ya_facturado': case 'En_otra_proforma': case 'Sin_tarifa': return '';
-      default: return d;
+      case 'Faltan_numeros':
+        m = /le falta: (.*?)\.?$/.exec(d);
+        if (!m) return 'Faltan números';
+        var faltan = m[1].split(', ').map(function (numero) { return 'el ' + numero; });
+        return (faltan.length === 1 ? 'Falta ' : 'Faltan ') +
+          (faltan.length === 1 ? faltan[0] : faltan.slice(0, -1).join(', ') + ' y ' + faltan[faltan.length - 1]);
+      case 'Repetido_en_SGTL':
+        m = /: (#[^.]*)/.exec(d);
+        return 'N° repetido en SGTL' + (m ? ' (' + m[1] + ')' : '');
+      case 'Repetido_en_archivo':
+        m = /\(filas ([^)]*)\)/.exec(d);
+        return 'Repetido en el Excel' + (m ? ' (filas ' + m[1] + ')' : '');
+      case 'Dato_invalido':
+        m = /^Fila (\d+) del Excel: (.*?)\.?$/.exec(d);
+        if (!m) return RESULTADOS.Dato_invalido;
+        var problemas = m[2].split(', ').map(function (texto) {
+          var regla = PROBLEMAS_EXCEL.filter(function (r) { return r[0].test(texto); })[0];
+          return regla ? regla[1] : texto;
+        });
+        return mayuscula(problemas.join(', ')) + ' (fila ' + m[1] + ')';
+      default:
+        return RESULTADOS[l.Resultado] || l.Resultado || '';
     }
   }
 
+  // Lo que sirve del texto de la tarifa que arma la API (ProformasController.ImporteViaje).
+  function textoTarifa(texto) {
+    // La API escribe "$850"; el sistema muestra los montos con espacio ("$ 850", §7.3).
+    var t = String(texto || '').trim().replace(/\$\s?(?=\d)/g, '$ '), m;
+    if (/^Tarifa por km/i.test(t)) { var partes = t.split(' · '); return partes[partes.length - 1]; }
+    if (/^Tarifa fija/i.test(t)) return 'tarifa fija de la ruta';
+    m = /^Presupuesto (#\d+) · /.exec(t);
+    if (m) return 'importe del presupuesto ' + m[1];
+    return t.charAt(0).toLowerCase() + t.slice(1);
+  }
+
   function filaLinea(l, oculta) {
-    var corto = detalleCorto(l);
-    var resultado = '<span class="badge rounded-pill estado-' + (COLOR_RESULTADO[l.Resultado] || 'rojo') + '"' +
-      (l.Detalle ? ' title="' + esc(l.Detalle) + '"' : '') + '>' + esc(RESULTADOS[l.Resultado] || l.Resultado || '') + '</span>' +
-      (corto ? '<div class="small text-muted">' + esc(corto) + '</div>' : '');
-    var tarifa = l.TarifaUsada
-      ? ' <i class="bi bi-info-circle text-muted" tabindex="0" data-bs-toggle="tooltip" title="' + esc(l.TarifaUsada) + '" aria-label="Tarifa usada: ' + esc(l.TarifaUsada) + '"></i>'
+    // En texto y en un renglón, sin etiqueta de color: el color de cada problema está una sola vez, en el título de
+    // su grupo (pedido de Rocío, 22/10). Las que coinciden, en gris.
+    var resultado = l.Coincide ? '<span class="text-muted">Coincide</span>'
+      : '<span' + (l.Detalle ? ' title="' + esc(l.Detalle) + '"' : '') + '>' + esc(textoResultado(l)) + '</span>';
+    // De dónde sale el importe de SGTL, solo donde sirve para decidir (cuando no coincide), en gris debajo del importe
+    // y sin ícono (pedido de Rocío, 22/10): "602,8 km × $ 850", "tarifa fija de la ruta", "importe del presupuesto #12".
+    var tarifa = l.TarifaUsada && l.Resultado === 'Importe_distinto'
+      ? '<div class="small text-muted">' + esc(textoTarifa(l.TarifaUsada)) + '</div>'
       : '';
     var accion = l.ViajeID ? botonViaje(l.ViajeID)
       : (l.Resultado === 'Sin_viaje'
-        ? '<a class="btn btn-sm btn-outline-primary pp-abrir-viaje" href="gestion-viajes.html" target="_blank" rel="noopener" data-bs-toggle="tooltip" title="Ir a Gestionar viajes para registrarlo" aria-label="Ir a Gestionar viajes para registrarlo"><i class="bi bi-truck" aria-hidden="true"></i></a>'
+        ? '<span class="sgtl-acciones"><a class="btn btn-sm btn-outline-primary pp-abrir-viaje" href="gestion-viajes.html" target="_blank" rel="noopener" data-bs-toggle="tooltip" title="Ir a Gestionar viajes para registrarlo" aria-label="Ir a Gestionar viajes para registrarlo"><i class="bi bi-truck" aria-hidden="true"></i></a></span>'
         : '');
     return '<tr' + (oculta ? ' class="pp-coincide d-none"' : (l.Coincide ? ' class="pp-coincide"' : '')) + '>' +
       '<td class="text-nowrap">' + esc(l.Referencia) + '</td>' +
@@ -607,7 +646,7 @@
       '<td class="text-end text-nowrap">' + (l.ImporteSgtl != null ? pesos(l.ImporteSgtl) : '—') + tarifa + '</td>' +
       '<td class="text-end text-nowrap">' + (l.Diferencia ? pesos(l.Diferencia) : '') + '</td>' +
       '<td class="text-end text-nowrap">' + (l.Adicionales ? pesos(l.Adicionales) : '') + '</td>' +
-      '<td class="text-center">' + resultado + '</td>' +
+      '<td class="sgtl-col-resultado">' + resultado + '</td>' +
       '<td class="text-center">' + accion + '</td>' +
       '</tr>';
   }
@@ -625,53 +664,63 @@
         titulo = '<button type="button" class="btn btn-link p-0 text-body text-decoration-none" id="pp_ver_coinciden" aria-expanded="' + !plegadas + '">' +
           '<i class="bi ' + (plegadas ? 'bi-chevron-right' : 'bi-chevron-down') + ' me-1" aria-hidden="true"></i>' + titulo + '</button>';
       }
-      return '<tbody><tr class="sgtl-grupo" id="pp_grupo_' + g.clave + '"><th colspan="9"><div class="d-flex flex-wrap align-items-center justify-content-between gap-1">' +
+      var ayuda = g.ayuda && !estado.soloLectura && c.Estado === 'Borrador' ? g.ayuda : '';
+      // El reclamo, donde está lo reclamado (pedido de Rocío, 22/10): "Reclamado el …" y "Ver reclamo", que abre su panel.
+      if (g.clave === 'Esperando' && c.ReclamoFecha) {
+        ayuda = 'Reclamado el ' + fecha(c.ReclamoFecha) + (ayuda ? ': ' + ayuda.charAt(0).toLowerCase() + ayuda.slice(1) : '.') +
+          ' <button type="button" class="btn btn-link p-0 align-baseline sgtl-grupo-enlace" data-panel="pp_panel_reclamo" aria-expanded="false">Ver reclamo</button>';
+      }
+      // Qué hacer, al lado del título del grupo y con la letra del texto (pedido de Rocío, 22/10): a la derecha y en
+      // gris se perdía.
+      return '<tbody><tr class="sgtl-grupo" id="pp_grupo_' + g.clave + '"><th colspan="9"><div class="d-flex flex-wrap align-items-center gap-2">' +
         '<span>' + titulo + '</span>' +
-        (g.ayuda && !estado.soloLectura && c.Estado === 'Borrador' ? '<span class="fw-normal small text-muted">' + g.ayuda + '</span>' : '') +
+        (ayuda ? '<span class="sgtl-grupo-ayuda">' + ayuda + '</span>' : '') +
         '</div></th></tr>' +
         del.map(function (l) { return filaLinea(l, g.clave === 'Coincide' && plegadas); }).join('') + '</tbody>';
     }).join('');
-    return '<div class="sgtl-tabla-tarjeta mb-3"><div class="table-responsive"><table class="table table-sm table-striped table-hover sgtl-tabla-compacta align-middle"><thead><tr>' +
-      '<th>Transporte</th><th class="text-center">Fecha</th><th class="sgtl-col-texto">Ruta</th><th class="text-end">Importe ' + p + '</th><th class="text-end">Importe SGTL</th>' +
-      '<th class="text-end">Diferencia</th><th class="text-end">Adicionales</th><th class="text-center">Resultado</th><th class="text-center">Acciones</th>' +
+    return '<div class="sgtl-tabla-tarjeta mb-3"><div class="table-responsive"><table class="table table-striped table-hover align-middle sgtl-tabla-control"><thead><tr>' +
+      '<th>Transporte</th><th class="text-center">Fecha</th><th class="sgtl-col-ruta">Ruta</th><th class="text-end">Importe ' + p + '</th><th class="text-end">Importe SGTL</th>' +
+      '<th class="text-end">Diferencia</th><th class="text-end">Adicionales</th><th class="sgtl-col-resultado">Resultado</th><th class="text-center">Acciones</th>' +
       '</tr></thead>' + cuerpo + '</table></div></div>';
   }
 
-  // Etiqueta de estado (§4.3) que además es un botón.
-  function etiqueta(clase, texto, atributos) {
-    return '<button type="button" class="badge rounded-pill sgtl-badge-accion ' + clase + '"' + (atributos || '') + '>' + texto + '</button>';
+  // Una línea arriba de la tabla (pedido de Rocío, 22/10): cuántas diferencias hay de cada grupo, en texto con un punto
+  // de su color (el color fuerte queda en el título de cada grupo de la tabla); cada una lleva a su grupo. Lo que
+  // coincide no va en el mismo renglón; los viajes que no vinieron en esta tanda no se avisan acá (la guía del paso 2
+  // los muestra antes de tildar en Rukas). A la derecha, "Registrar reclamo" si hay diferencias sin reclamar.
+  function itemResumen(contenido, atributos, color) {
+    return '<button type="button" class="sgtl-resumen-item"' + (atributos || '') + '>' +
+      (color ? '<span class="sgtl-info-punto ' + color + '" aria-hidden="true"></span>' : '') + '<span>' + contenido + '</span></button>';
   }
 
-  // Una sola línea arriba de la tabla: a la izquierda, cuántos hay de cada grupo (cada etiqueta lleva a su grupo),
-  // el reclamo pendiente y los avisos; a la derecha, todas las acciones del control.
   function barraControl(c, editable) {
     var lineas = c.Lineas || [];
-    var orden = grupos();
-    orden.unshift(orden.pop());
-    var etiquetas = orden.map(function (g) {
-      var n = lineas.filter(function (l) { return grupoDe(l) === g.clave; }).length;
-      if (!n) return '';
-      var texto = g.clave === 'Coincide'
-        ? (n === c.Cantidad ? (n === 1 ? 'El transporte coincide' : 'Los ' + n + ' coinciden') + (editable ? ' · lista para generar' : '') : n + ' coinciden')
-        : g.titulo + ' · ' + n;
-      return etiqueta('estado-' + g.color, texto, ' data-grupo="' + g.clave + '"');
-    }).join('');
-    if (c.ReclamoFecha) {
-      etiquetas += etiqueta('estado-amarillo', '<i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>Reclamo del ' + fecha(c.ReclamoFecha), ' data-panel="pp_panel_reclamo" aria-expanded="false"');
+    var partes = [];
+    if (!c.Diferencias && c.Cantidad) {
+      var todas = c.Cantidad === 1 ? 'el transporte coincide' : 'los ' + c.Cantidad + ' transportes coinciden';
+      partes.push(itemResumen(editable ? '<strong>Lista para generar</strong>: ' + todas : '<strong>' + todas.charAt(0).toUpperCase() + todas.slice(1) + '</strong>',
+        ' data-grupo="Coincide"', 'verde'));
+    } else {
+      partes.push('<strong>' + plural(c.Diferencias, 'diferencia', 'diferencias') + '</strong>');
+      grupos().forEach(function (g) {
+        if (g.clave === 'Coincide') return;
+        var n = lineas.filter(function (l) { return grupoDe(l) === g.clave; }).length;
+        if (n) partes.push(itemResumen(esc(n + ' ' + g.titulo.charAt(0).toLowerCase() + g.titulo.slice(1)), ' data-grupo="' + g.clave + '"', g.color));
+      });
     }
-    if ((c.Avisos || []).length) {
-      var m = /Hay (\d+) viaje/.exec(c.Avisos[0]);
-      var n = m ? parseInt(m[1], 10) : 0;
-      etiquetas += etiqueta('bg-white text-dark border', '<i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>' +
-        (n ? plural(n, 'viaje fuera de esta proforma', 'viajes fuera de esta proforma') : 'Avisos'), ' data-panel="pp_panel_avisos" aria-expanded="false"');
+    var hayReclamadas = lineas.some(function (l) { return grupoDe(l) === 'Esperando'; });
+    if (c.ReclamoFecha && !hayReclamadas) {
+      partes.push(itemResumen('<i class="bi bi-chat-left-text me-1" aria-hidden="true"></i>Reclamo del ' + fecha(c.ReclamoFecha),
+        ' data-panel="pp_panel_reclamo" aria-expanded="false"'));
     }
-    // "Reemplazar" va al lado del archivo, en el recuadro de arriba (datosControl).
-    var acciones = !editable ? '' :
-      '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
-      (c.Diferencias > 0 && !c.ReclamoFecha ? '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>' : '');
-    return '<div class="d-flex flex-wrap align-items-center gap-2 mb-3">' +
-      '<div class="d-flex flex-wrap align-items-center gap-2 me-auto">' + etiquetas + '</div>' +
-      '<div class="d-flex flex-wrap gap-2 ms-auto">' + acciones + '</div></div>';
+    // "Volver a controlar" y "Reemplazar Excel" van en la franja del archivo, arriba (datosControl).
+    var acciones = editable && c.Diferencias > 0 && !c.ReclamoFecha
+      ? '<button type="button" class="btn btn-sm btn-outline-primary" id="pp_reclamo"><i class="bi bi-megaphone me-1" aria-hidden="true"></i>Registrar reclamo</button>'
+      : '';
+    // Las acciones quedan a la derecha del primer renglón; si el resumen es largo, se parte en su lugar.
+    return '<div class="d-flex flex-wrap flex-md-nowrap align-items-start gap-2 mb-3">' +
+      '<div class="sgtl-resumen flex-grow-1">' + partes.join('') + '</div>' +
+      (acciones ? '<div class="d-flex gap-2 flex-shrink-0">' + acciones + '</div>' : '') + '</div>';
   }
 
   // Paneles que abren las etiquetas del reclamo y de los avisos: el texto largo queda a un clic.
@@ -684,27 +733,28 @@
       (editable ? '<div class="d-flex gap-2"><button type="button" class="btn btn-sm btn-outline-secondary" id="pp_reclamo"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar reclamo</button>' +
         '<button type="button" class="btn btn-sm btn-outline-secondary" id="pp_cerrar_reclamo"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Cerrar reclamo</button></div>' : '') +
       '</div></div>';
-    var avisos = !(c.Avisos || []).length ? '' :
-      '<div id="pp_panel_avisos" class="d-none alert alert-info mb-3">' +
-      c.Avisos.map(function (a) { return '<div>' + esc(a) + '</div>'; }).join('') + '</div>';
-    return reclamo + avisos;
+    return reclamo;
   }
 
-  // Lo que ya no se cambia, en el recuadro gris de §6.3: arriba, los datos del cliente en la versión compacta (con
-  // "Editar cliente" en un borrador); abajo, el Excel (con "Reemplazar" al lado) y el período que sale del archivo.
+  // Arriba de la tabla (pedido de Rocío, 22/10), en el orden de los pasos: los datos del cliente en su fila compacta,
+  // en el recuadro gris de lo que no se cambia (§6.3); después el Excel, en la misma franja con la que se eligió
+  // (nombre, transportes, período y cuándo se importó, con "Reemplazar Excel" en un borrador).
   function datosControl(c, editable) {
     var p = esc(nombrePlataforma());
-    var archivo = esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma());
-    var importado = c.FechaArchivo ? ' title="Importado el ' + esc(fecha(c.FechaArchivo, { hora: true })) + '"' : '';
-    return '<div class="sgtl-dato-fijo mb-3">' +
-      '<div id="pp_cliente_datos">' + datosCliente(editable) + '</div>' +
-      '<div class="row g-2 mt-1 pt-2 border-top">' +
-      '<div class="col-12 col-md-5"><span class="sgtl-dato-etiqueta">Excel de ' + p + '</span><span' + importado + '>' + archivo + '</span>' +
-      (editable ? ' · <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="pp_reemplazar">Reemplazar</button>' +
-        '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '">' : '') + '</div>' +
-      '<div class="col-12 col-md-3"><span class="sgtl-dato-etiqueta">Período</span>' +
-      (c.FechaDesde ? fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '—') + '</div>' +
-      '</div></div>';
+    var detalle = [plural(c.Cantidad || 0, 'transporte', 'transportes'),
+      c.FechaDesde ? 'período ' + fecha(c.FechaDesde) + (c.FechaHasta ? ' al ' + fecha(c.FechaHasta) : '') : '',
+      c.FechaArchivo ? 'importado el ' + fecha(c.FechaArchivo, { hora: true }) : ''].filter(Boolean).join(' · ');
+    return '<div class="sgtl-dato-fijo mb-2" id="pp_cliente_datos">' + datosCliente(editable) + '</div>' +
+      '<div class="sgtl-zona-archivo cargada mb-3">' +
+      '<span class="sgtl-zona-icono"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i></span>' +
+      '<div class="sgtl-zona-texto"><div class="fw-bold">' + esc(c.NombreArchivo || 'Excel de ' + nombrePlataforma()) + '</div>' +
+      '<div class="small text-muted">' + esc(detalle) + '</div></div>' +
+      // Lo que se hace con el Excel: volver a compararlo con los viajes (después de corregir uno) o reemplazarlo.
+      (editable ? '<div class="d-flex flex-wrap gap-2">' +
+        '<button type="button" class="btn btn-outline-primary" id="pp_controlar"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Volver a controlar</button>' +
+        '<button type="button" class="btn btn-outline-primary" id="pp_reemplazar"><i class="bi bi-file-earmark-arrow-up me-1" aria-hidden="true"></i>Reemplazar Excel</button>' +
+        '<input type="file" id="pp_reemplazo" accept=".xlsx" class="d-none" aria-label="Excel corregido de ' + p + '"></div>' : '') +
+      '</div>';
   }
 
   // Por qué todavía no se puede generar (va en el globito de "Generar proforma").
@@ -803,13 +853,15 @@
     var verCoinciden = $id('pp_ver_coinciden');
     if (verCoinciden) verCoinciden.addEventListener('click', function () { plegarCoinciden(this.getAttribute('aria-expanded') === 'true'); });
     // Etiquetas del resumen: llevan a su grupo de la tabla o abren su panel.
-    Array.prototype.forEach.call(bloque.querySelectorAll('.sgtl-badge-accion'), function (b) {
+    Array.prototype.forEach.call(bloque.querySelectorAll('.sgtl-resumen-item, [data-panel]'), function (b) {
       b.addEventListener('click', function () {
         if (b.dataset.panel) {
           var panel = $id(b.dataset.panel);
+          if (!panel) return;
           var abrir = panel.classList.contains('d-none');
           panel.classList.toggle('d-none', !abrir);
           b.setAttribute('aria-expanded', String(abrir));
+          if (abrir) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
           return;
         }
         if (b.dataset.grupo === 'Coincide') plegarCoinciden(false);

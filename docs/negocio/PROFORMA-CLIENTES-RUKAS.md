@@ -273,7 +273,7 @@ El sistema muestra las dos cifras y la tarifa usada; no puede saber quién tiene
 | 4 | **En Rukas sí, y SGTL no encuentra el transporte** porque al viaje le falta el N° o está mal cargado, **o le falta el remito o el N° de entrega** | Corregir el viaje en SGTL y Volver a controlar | No |
 | 5 | **En Rukas sí, y el viaje no existe en SGTL** | Cargar el viaje en SGTL y Volver a controlar | No |
 | 6 | **El transporte ya está facturado o en otra proforma en SGTL** | Revisar: es un posible cobro doble | No |
-| 7 | **En SGTL hay viajes del cliente que no están en esta proforma** | Aviso, no error (ver abajo) | **Sí** |
+| 7 | **En SGTL hay viajes del cliente que no están en esta proforma** | Nada: es lo normal (ver abajo). No se avisa en el control desde el 22/10 | **Sí** |
 | 8 | **El archivo no es el Excel de Rukas** (otro archivo, formato distinto, vacío), cliente que no es `Con_plataforma`, o ese N° de proforma ya está en una proforma **no anulada** | Se rechaza al importar: no se crea el borrador. Si el N° ya está cargado, se ofrece abrirlo | No |
 | 8-B | **El Excel es de Rukas pero trae un dato mal:** transporte repetido, o importe, fecha o N° ilegible en una fila (cambio del 22/10: antes se rechazaba todo el archivo) | Se crea el borrador igual; esa línea queda como "Repetido en el Excel" o "Dato mal en el Excel" para reclamar a Marfrig. Con la corrección, Reemplazar Excel | No |
 
@@ -283,7 +283,7 @@ Los casos 2 y 3 son la misma situación vista desde los dos lados: la pantalla m
 
 **Viajes en "Registrado" (decidido el 19/10):** no hace falta pasarlos a mano a "Listo para facturar" antes de importar. Que el viaje esté en la tanda de Rukas ya confirma que está cerrado. Al **generar** la proforma (control OK), los viajes que seguían en Registrado pasan solos a **Listo para facturar**, y queda en la auditoría. Mientras la proforma está en borrador el viaje no cambia de estado. Para pasar, el viaje tiene que tener los tres números (transporte SAP, remito y entrega), igual que hoy al pasarlo a mano; si falta alguno, es el caso 4. Después sigue como cualquier viaje: Facturado al emitir la factura, y de vuelta a Listo para facturar si una nota de crédito anula la factura.
 
-**Guía (paso 0) y aviso del caso 7:** para clientes Rukas cuentan los viajes con los números cargados que no están en ninguna proforma, estén en Registrado o en Listo para facturar.
+**Guía (paso 0):** para clientes Rukas cuentan los viajes con los números cargados que no están en ninguna proforma, estén en Registrado o en Listo para facturar.
 
 **Caso 7.** Una proforma de Rukas es un lote: incluye solo los transportes que se tildaron al generarla. Que SGTL tenga más viajes es normal:
 
@@ -291,7 +291,7 @@ Los casos 2 y 3 son la misma situación vista desde los dos lados: la pantalla m
 - **Ya está en otra proforma de Rukas** importada antes: SGTL lo sabe y no lo cuenta.
 - **Se pasó tildarlo:** va en la próxima proforma, o se le pide a Marfrig que lo agregue.
 
-Por eso SGTL **avisa sin frenar**: "Hay N viajes de este cliente con los números cargados que no están en ninguna proforma de Rukas", con la fecha de cada uno. Un viaje de Marfrig que está en SGTL y no existe en Rukas casi no puede pasar (los transportes los crea Marfrig); si aparece, lo más probable es un error de carga en SGTL.
+Por eso SGTL **no lo frena ni lo avisa en el control** (decidido por Rocío el 22/10: el aviso "Hay N viajes de este cliente… que no están en ninguna proforma de Rukas" cargaba la pantalla y casi siempre es lo normal). Esos viajes se ven en la **guía del paso 0** ("N viajes sin proforma para tildar en Rukas"), antes de tildar en Rukas, que es cuando sirven para no olvidarse de ninguno. Un viaje de Marfrig que está en SGTL y no existe en Rukas casi no puede pasar (los transportes los crea Marfrig); si aparece, lo más probable es un error de carga en SGTL (por ejemplo, el N° de transporte mal cargado, que en el control se ve como "Sin viaje en SGTL").
 
 ### Base de datos (script nuevo en `database/`)
 

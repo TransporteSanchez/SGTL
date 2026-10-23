@@ -43,8 +43,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
-| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`); la ronda de observaciones, commit **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §24) |
-| 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | Commit en `rocionuvoli`, **sin push** | **Compilar la API** y probar (ver §25) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
+| 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1735,7 +1735,7 @@ detalle con los bloques del formulario" y `dd6034c` "Viajes: km con coma en las 
     un proyector de 1280 entra al límite). Al hacerlo, actualizar "Tablas anchas" en el §2.1 del design system.
 
 
-### Ronda de observaciones de Rocío (22/10) — commit en `rocionuvoli`, SIN PUSH, FALTA PROBAR EN VM
+### Ronda de observaciones de Rocío (22/10) — PUSHEADO (`910ca32`, `3917181`, `c2bf14b`), FALTA PROBAR EN VM
 
 Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo ajustes. **Sin C#:** `pull` y Ctrl+F5.
 
@@ -1776,9 +1776,33 @@ Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo 
 - [ ] 7. En pantalla completa, los íconos de los títulos, del menú y de los avisos quedan a la altura del texto (sobre
   todo el aviso de WhatsApp al elegir el chofer).
 
+
+### Control de la proforma de Rukas, tercera vuelta (22/10) — commit en `rocionuvoli`, SIN PUSH, FALTA PROBAR EN VM
+
+Rocío revisó todos los casos del control con capturas y fue pidiendo ajustes (detalle en
+`docs/diseno/proforma-rukas-diseno.md`, "Tercera vuelta"). **Sin C#:** `pull` y Ctrl+F5.
+
+**Qué cambió:** el cliente arriba y el Excel en su franja con "Volver a controlar" y "Reemplazar Excel"; el resumen en
+un renglón con puntos de color; el color solo en el título de cada grupo, con qué hacer al lado; cada resultado en un
+renglón y concreto; la tarifa en gris solo en "Importe distinto"; sin el aviso de viajes fuera de la proforma (caso 7
+del documento de negocio actualizado); el modal más ancho y más espacio entre columnas. Además, en todo el sistema, el
+ícono de los botones de solo ícono queda en el centro exacto (la caja del ícono mide lo mismo que el ícono) y las reglas
+nuevas están en el design system (§1.6, §2.1, §6.2, §12) y en la lista de control de AGENTS.md.
+
+**Probar en la VM** (Ctrl+F5):
+- [ ] 1. Abrir un borrador de Rukas con diferencias: arriba el cliente y la franja del Excel; el resumen en un renglón;
+  tocar cada parte del resumen lleva a su grupo.
+- [ ] 2. Cada grupo con su título en gris claro, la etiqueta de color y qué hacer al lado; las filas sin etiquetas de
+  color, con el resultado en un renglón ("Falta el remito", "Repetido en el Excel (filas …)").
+- [ ] 3. Un "Importe distinto": debajo del importe de SGTL, la tarifa en gris. Las demás filas, sin ícono de tarifa.
+- [ ] 4. Registrar un reclamo: la fila pasa a "Esperando a Rukas" y el título dice "Reclamado el …" con "Ver reclamo".
+- [ ] 5. Un borrador que coincide entero: "Lista para generar" y las filas con "Coincide" en gris.
+- [ ] 6. En la notebook (1366) y en una ventana más angosta (1100), la tabla entra sin desplazarse hacia el costado.
+- [ ] 7. Los botones de las filas de otras pantallas (viajes, proformas, clientes) siguen con el ícono centrado.
+
 ---
 
-## 25. Proformas: datos del cliente desde el cliente, no desde la proforma — HECHO EN LA MAC, FALTA COMPILAR Y PROBAR EN VM (22/10)
+## 25. Proformas: datos del cliente desde el cliente, no desde la proforma — PUSHEADO (`b7e183d`, `eb6d96b`), FALTA COMPILAR Y PROBAR EN VM (22/10)
 
 Rocío lo decidió el 22/10, mientras lo charlaba con Facu (la proforma y la factura son su módulo: **coordinarlo con
 él antes de hacerlo**). Hoy, en la proforma propia, la razón social, el nombre comercial, el CUIT, la dirección y el

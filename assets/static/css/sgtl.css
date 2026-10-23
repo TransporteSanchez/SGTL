@@ -82,6 +82,35 @@ table.table.sgtl-tabla-compacta tr th {
     min-width: 12rem;
 }
 
+/* El resultado del control de la proforma de Rukas es texto (22/10): a la izquierda (§2.1) y con lugar para que
+   "Falta el remito" o "Importe no válido (fila 10)" no se partan en pedazos. */
+.sgtl-col-resultado {
+    min-width: 11rem;
+    text-align: left;
+}
+
+/* Tabla del control de la proforma de Rukas: con aire entre columnas (pedido de Rocío, 22/10). Desde 1200 px, más
+   espacio y la ruta en un renglón; entre 992 y 1199 px, un poco menos para que entre sin desplazarse. */
+table.table.sgtl-tabla-control > :not(caption) > tr > * {
+    padding-left: .65rem;
+    padding-right: .65rem;
+}
+
+.sgtl-col-ruta {
+    min-width: 9rem;
+}
+
+@media (min-width: 1200px) {
+    table.table.sgtl-tabla-control > :not(caption) > tr > * {
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
+    }
+
+    .sgtl-col-ruta {
+        min-width: 13rem;
+    }
+}
+
 /* §2.1 Tabla ancha (viajes): cada fila en una línea y la columna Acciones fija a la derecha, siempre visible,
    mientras el resto se desplaza hacia el costado. Las celdas fijas son opacas; el rayado se dibuja encima. */
 .sgtl-tabla-ancha > :not(caption) > tr > * {
@@ -99,13 +128,25 @@ table.table.sgtl-tabla-compacta tr th {
     background-color: #fff;
 }
 
-/* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve): fondo
-   apenas gris, sin rayas ni resaltado; el título va en una etiqueta de estado (§4). */
+/* Fila que agrupa las filas que siguen (por ejemplo, las diferencias según quién las resuelve): fondo gris claro y
+   una línea más marcada arriba, para que se vea dónde empieza cada grupo (pedido de Rocío, 22/10); sin rayas ni
+   resaltado. El título va en una etiqueta de estado (§4) y, al lado, qué hacer, con la letra del texto. */
 table.table tr.sgtl-grupo > th {
-    background-color: #fff;
+    padding-top: .7rem;
+    padding-bottom: .7rem;
+    border-top: 2px solid var(--sgtl-borde-campo);
+    background-color: #f5f6f8;
     box-shadow: none;
     font-weight: 400;
-    border-top: 1px solid var(--sgtl-borde);
+}
+
+.sgtl-grupo-ayuda {
+    color: var(--sgtl-texto);
+    font-size: .875rem;
+}
+
+.sgtl-grupo-ayuda .sgtl-grupo-enlace {
+    font-size: inherit;
 }
 
 /* §4.3 Etiqueta que además es un botón (lleva a su grupo o abre un panel): un poco más grande. */
@@ -673,9 +714,13 @@ body .btn[aria-label]:not(.btn-sm):not(.btn-close) {
     min-width: 2.5rem;
 }
 
+/* La caja del ícono mide lo mismo que el ícono: la plantilla le da 1rem fijo y, con íconos más chicos (los de las
+   filas), el dibujo quedaba 1 px arriba y a la izquierda del centro (22/10). */
 body .btn[aria-label] > .bi,
 body .sgtl-acciones .btn-sm > .bi {
     display: inline-flex;
+    width: 1em;
+    height: 1em;
     line-height: 1;
 }
 
@@ -1292,3 +1337,59 @@ body .sgtl-paso-numero .bi::before {
 .sgtl-info-punto.amarillo { background-color: #d39b00; }
 .sgtl-info-punto.azul { background-color: #435ebe; }
 .sgtl-info-punto.verde { background-color: #198754; }
+
+/* Resumen de un control en una línea (proforma de Rukas, pedido de Rocío del 22/10): cuántos hay de cada grupo, en
+   texto con un punto de su color; el color fuerte queda una sola vez, en el título de cada grupo de la tabla. Cada
+   parte es un botón que lleva a su grupo o abre su panel. */
+.sgtl-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .35rem 1.1rem;
+    color: var(--sgtl-texto);
+    font-size: .875rem;
+}
+
+.sgtl-resumen-item {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+}
+
+.sgtl-resumen-item:hover,
+.sgtl-resumen-item:focus-visible,
+.sgtl-resumen-item[aria-expanded="true"] {
+    text-decoration: underline;
+    text-underline-offset: .2em;
+}
+
+.sgtl-resumen-item .sgtl-info-punto {
+    display: inline-block;
+}
+
+/* Un archivo ya cargado (el Excel de la proforma de Rukas en el paso 3): la misma franja con la que se eligió, con
+   borde fino y fondo blanco. */
+.sgtl-zona-archivo.cargada,
+.sgtl-zona-archivo.cargada:hover {
+    border: 1px solid var(--sgtl-borde-campo);
+    background-color: #fff;
+}
+
+.sgtl-resumen {
+    min-width: 0;
+    padding-top: .3rem;
+}
+
+/* Modal de la proforma de Rukas: más ancho que un .modal-xl (800 px hasta 1199 y 1140 desde 1200), hasta 1440 px,
+   para que la tabla del control tenga aire entre columnas (pedido de Rocío, 22/10). */
+@media (min-width: 992px) {
+    .modal-dialog.modal-xl.sgtl-modal-ancho {
+        max-width: min(1440px, calc(100vw - 3rem));
+    }
+}

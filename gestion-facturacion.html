@@ -420,13 +420,14 @@
                 .filter(Boolean).join(', ');
             var lineaLugar = [lugar, datosExtraCliente.cp ? 'CP ' + datosExtraCliente.cp : ''].filter(Boolean).join(' · ');
             var dato = function (etiqueta, valor, debajo, columna) {
-                return '<div class="' + (columna || 'col-12 col-md-4') + '"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">' + etiqueta + '</span>' +
+                return '<div class="' + (columna || 'col-12 col-sm-6 col-xl-4') + '"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">' + etiqueta + '</span>' +
                     '<div class="sgtl-dato-valor">' + esc(valor || '') + (debajo ? '<div class="suave">' + esc(debajo) + '</div>' : '') + '</div></div></div>';
             };
             var datos = opciones.compacto
-                ? dato('Cliente', razon, comercial, 'col-12 col-md-3') + dato('CUIT', cuit, val('p_cli_condiva'), 'col-12 col-md-2') +
-                  dato('Domicilio', val('p_cli_dir'), lineaLugar, 'col-12 col-md-3') +
-                  dato('Teléfono y e-mail', val('p_cli_tel'), datosExtraCliente.email, 'col-12 col-md-4')
+                // Con el modal angosto (pantallas de menos de 1200 px), dos columnas: así no se corta el CUIT ni el e-mail.
+                ? dato('Cliente', razon, comercial, 'col-12 col-sm-6 col-xl-3') + dato('CUIT', cuit, val('p_cli_condiva'), 'col-12 col-sm-6 col-xl-2') +
+                  dato('Domicilio', val('p_cli_dir'), lineaLugar, 'col-12 col-sm-6 col-xl-3') +
+                  dato('Teléfono y e-mail', val('p_cli_tel'), datosExtraCliente.email, 'col-12 col-sm-6 col-xl-4')
                 : dato('Razón social', razon, comercial) + dato('CUIT', cuit) + dato('Condición de IVA', val('p_cli_condiva')) +
                   dato('Domicilio', val('p_cli_dir'), lineaLugar) + dato('Teléfono', val('p_cli_tel')) + dato('E-mail', datosExtraCliente.email);
             return '<div class="d-flex align-items-start gap-3"><div class="row g-2 flex-grow-1">' + datos + '</div>' +

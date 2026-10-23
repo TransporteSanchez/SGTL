@@ -83,7 +83,7 @@ Rocío corre el script en la base compartida. La base es una sola, así que avis
 | `PUT {id}/Condiciones` | "Guardar borrador" de un borrador ya importado: guarda las condiciones comerciales (forma y plazo de pago, validez, tiempo del servicio, observaciones, condiciones particulares). Solo en borrador, con la auditoría de `ProformasController.Editar` (decidido el 19/10). |
 | `POST {id}/Reclamo` / `DELETE {id}/Reclamo` | "Registrar reclamo" (fecha y motivo obligatorio) y "Cerrar reclamo". Solo en borrador. Con auditoría. |
 | `POST {id}/Generar` | Vuelve a controlar y, solo si todo está OK, asigna el número PF, pasa a `Aceptada`, arma los conceptos, pasa a Listo para facturar los viajes que seguían en Registrado (con auditoría) y cierra el reclamo si quedaba alguno. Si aparece una diferencia (alguien cambió un viaje en el medio), no genera y devuelve el control. |
-| `GET ViajesSinProforma?clienteId=` | Viajes del cliente con los números cargados (Registrado o Listo para facturar) que no están en ninguna proforma. Guía antes de generar en la plataforma (paso 0) y aviso del caso 7. |
+| `GET ViajesSinProforma?clienteId=` | Viajes del cliente con los números cargados (Registrado o Listo para facturar) que no están en ninguna proforma. Guía antes de generar en la plataforma (paso 0). El aviso del caso 7 se sacó del control el 22/10 (la API lo sigue armando en `Avisos`; la pantalla no lo muestra). |
 | Eliminar un borrador de plataforma | Con el `Borrar` actual (libera los viajes), más sus líneas y su adjunto. |
 
 **Lectores, uno por plataforma** (por ejemplo `Plataformas/ILectorPlataforma.cs` y `Plataformas/LectorRukas.cs`). Es lo único propio de cada plataforma. El lector sabe:
@@ -158,6 +158,30 @@ las acciones son las mismas.
 - **"Generar proforma"** deshabilitado dice el motivo en su globito ("Para generar, resolvé las 3 diferencias"), como
   los botones de la fila; ya no hay nota en el pie (§6.2 del design system).
 
+### Tercera vuelta del 22/10: el control con menos color (manda sobre lo de arriba)
+
+Pedido de Rocío, mirando todos los casos (todo coincide, para revisar, error de SGTL, para reclamar, esperando a Rukas,
+Excel inválido y varios a la vez): con muchas etiquetas de color el Excel perdía presencia y la tabla se amontonaba.
+
+- **Arriba, en el orden de los pasos:** el cliente en su fila compacta y después el Excel en su franja
+  (`.sgtl-zona-archivo.cargada`): nombre, transportes, período y cuándo se importó, con **"Volver a controlar"** y
+  **"Reemplazar Excel"**.
+- **Resumen en un renglón** (§2.1 del design system): "**6 diferencias** ● 2 para corregir en SGTL ● 2 para revisar ●
+  1 para reclamar a Rukas ● 1 esperando a Rukas", con puntos de color; cada parte lleva a su grupo. Lo que coincide no
+  va ahí; sin diferencias: "● **Lista para generar**: los 12 transportes coinciden". A la derecha, "Registrar reclamo"
+  si hay diferencias sin reclamar.
+- **El color, una sola vez:** en el título de cada grupo, que tiene fondo gris claro, una línea más marcada arriba y,
+  al lado, qué hacer ("Corregí el viaje y volvé a controlar."). El reclamo va en el título de "Esperando a Rukas":
+  "Reclamado el 21/10/2026: cuando Rukas lo corrija, reemplazá el Excel. Ver reclamo".
+- **Cada fila dice qué pasa en un renglón y concreto**, sin etiqueta de color y alineado a la izquierda: "Falta el
+  remito", "N° repetido en SGTL (#144, #160)", "Repetido en el Excel (filas 6 y 14)", "Importe no válido (fila 10)";
+  el texto completo, en el globito. Las que coinciden dicen "Coincide" en gris.
+- **La tarifa usada**, solo en "Importe distinto", en gris debajo del importe de SGTL ("602,8 km × $ 850", "tarifa
+  fija de la ruta", "importe del presupuesto #12"); sin el ícono en todas las filas.
+- **Sin el aviso del caso 7** ("2 viajes fuera de esta proforma"): ver el documento de negocio.
+- **Más aire:** el modal llega a 1440 px de ancho (`.sgtl-modal-ancho`) y la tabla tiene más espacio entre columnas;
+  entre 992 y 1199 px, un poco menos, para que entre sin desplazarse. "Abrir viaje" es el botón cuadrado de las filas.
+
 ### Errores y de quién son (22/10)
 
 Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores**, para que siempre haya un lugar al que volver. Solo se rechaza lo que no es un Excel de la plataforma (otro archivo, encabezados distintos, vacío): "Este archivo no es el Excel de Rukas: falta la columna …", y no se crea nada. Si el N° ya está cargado, el aviso ofrece "Abrir el borrador".
@@ -205,7 +229,7 @@ Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores*
    - **Resultado** con los colores del design system: verde "Coincide", rojo "Importe distinto" / "Sin viaje" / "Ya facturado", amarillo para avisos;
    - en cada diferencia, qué hacer en una línea ("Corregí la tarifa del viaje o registrá un reclamo") y el enlace **"Abrir viaje"**, que abre el viaje **en otra pestaña** para corregirlo sin perder el borrador;
    - "Tarifa usada": "Tarifa fija #3 · CD Córdoba → Villa María · $528.747" o "Tarifa por km #5 · 17,4 km × $850".
-4. **Aviso del caso 7**, si corresponde.
+4. ~~**Aviso del caso 7**~~: se sacó el 22/10 (tercera vuelta, arriba).
 
 ### Bloque "Reclamo en {plataforma}"
 
