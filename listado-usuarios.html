@@ -158,6 +158,7 @@
                                 <div id="detalleGrupos"></div>
                             </section>
                         </div>
+                        <div class="sgtl-detalle-pie mt-3" id="registroUsuario"></div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
@@ -329,6 +330,10 @@
                 $('#detalleUsuario').text(usuario.Nombre_Usuario || '');
                 $('#detalleNombre').text(usuario.Nombre || '');
                 $('#detalleApellido').text(usuario.Apellido || '');
+                // El alta la guarda la API con su hora (UsuariosController); quién lo registró y la última modificación
+                // todavía no los manda (reporte de la VM del 23/10, F4).
+                const alta = usuario.Fecha_Alta && !/^0001/.test(usuario.Fecha_Alta) ? SGTL.fecha(usuario.Fecha_Alta, { hora: true }) : '';
+                $('#registroUsuario').text(SGTL.textoRegistro('', alta, '', ''));
                 $('#detalleGrupos').html(grupos.length
                     ? grupos.map(bloqueGrupo).join('')
                     : `<p class="text-muted mb-0">${esAdmin ? 'Es administrador: ve todas las pantallas.' : 'Todavía no tiene grupos asignados.'}</p>`);

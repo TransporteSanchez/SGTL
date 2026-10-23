@@ -2016,9 +2016,9 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
   resultado pasa a "Sin viaje relacionado" (el grupo ya dice "Para corregir en SGTL"), el texto completo va en el
   globito del sistema (no en el del navegador) y, entre 992 y 1199 px, un poco menos de espacio entre columnas.
 - [x] **F3. El chofer queda en rojo aunque ya diga "(opcional)"** (hecho 23/10). Al pasar a opcional se vuelve a validar el campo.
-- [ ] **F4. Ver detalle del usuario sin pie.** Pie "Registrado el …" con la fecha de alta, que la API ya manda. Quién lo
+- [x] **F4. Ver detalle del usuario sin pie** (hecho 23/10). Pie "Registrado el …" con la fecha de alta, que la API ya manda. Quién lo
   registró y la última modificación necesitan cambiar el C# (`UsuariosController`, GET por id): queda para después.
-- [ ] **F5. Datos vacíos sin "—"** (la base guarda columnas de largo fijo con espacios, como el teléfono fijo del
+- [x] **F5. Datos vacíos sin "—"** (hecho 23/10) (la base guarda columnas de largo fijo con espacios, como el teléfono fijo del
   chofer). Un dato con solo espacios se ve vacío, con su "—", en todos los Ver detalle.
 - [x] **Buscador de cliente** (`select-cliente-predictivo.js`, hecho 23/10): la opción vacía ("Seleccioná un cliente", "Todos") no va
   en la lista, y al hacer clic en un campo con un cliente elegido se selecciona el texto, para que lo que se escribe

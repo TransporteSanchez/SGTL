@@ -65,6 +65,14 @@
     if (document.querySelector('.modal.show')) document.body.classList.add('modal-open');
   });
 
+  // Un dato que llega solo con espacios (las columnas de largo fijo de la base, como el teléfono fijo del chofer) se ve
+  // vacío, con su "—" (§6.2; reporte de la VM del 23/10, F5).
+  document.addEventListener('show.bs.modal', function (evento) {
+    Array.prototype.forEach.call(evento.target.querySelectorAll('.sgtl-dato-valor'), function (dato) {
+      if (!dato.children.length && dato.textContent && !dato.textContent.trim()) dato.textContent = '';
+    });
+  });
+
   // Mientras un modal está procesando (§8) no se cierra: ni con la cruz, ni con Escape, ni con Cancelar.
   document.addEventListener('hide.bs.modal', function (evento) {
     if (evento.target && evento.target.dataset && evento.target.dataset.sgtlProcesando === 'true') {

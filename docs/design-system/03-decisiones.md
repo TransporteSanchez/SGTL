@@ -426,9 +426,9 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en filas de a dos bloques que empiezan a la misma altura
   (`.sgtl-detalle-grilla`; uno ancho ocupa la fila con `.sgtl-detalle-ancho`) y en una columna en el celular. Cada dato
   lleva su nombre chico arriba y el valor en texto abajo (`.sgtl-dato`, `.sgtl-dato-etiqueta`, `.sgtl-dato-valor`); un
-  dato vacío se ve "—". El estado va en el título, al lado del nombre ("Ver detalle del viaje #46" + la etiqueta), con
+  dato vacío (también uno que llega solo con espacios) se ve "—". El estado va en el título, al lado del nombre ("Ver detalle del viaje #46" + la etiqueta), con
   las etiquetas informativas que correspondan. Abajo, en chico, quién lo registró y quién lo modificó
-  (`SGTL.textoRegistro`). Así están viajes (`viaje-detalle.js`, el mismo en Listar y Gestionar viajes y en el
+  (`SGTL.textoRegistro`; en usuarios, por ahora solo la fecha de alta: la API no manda el resto). Así están viajes (`viaje-detalle.js`, el mismo en Listar y Gestionar viajes y en el
   dashboard), choferes, camiones, clientes y usuarios. Los documentos (proforma, comprobantes) siguen el §1.4.
 - **Los formularios no se cierran con un clic afuera** (`data-bs-backdrop="static"`); Escape y la
   cruz sí los cierran. Los de detalle se cierran también con un clic afuera.
