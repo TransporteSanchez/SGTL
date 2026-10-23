@@ -2556,3 +2556,18 @@ empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Saliero
 - Datos de prueba que se ven en pantalla: grupo "PRUEBA-CLAUDE 20/10", choferes "Prueba, Fede" y "CLAUDE, PRUEBACLAUDE",
   usuario "usuarioprueba" y conceptos de comprobantes ("asd asd", "pruebaaa", "preubaaaa888", "Factura de prueba Test",
   "NC prueba", "Pruebaa", "dfgdgh"). Varios ya estaban anotados para limpiar antes de la tesis.
+
+**Limpieza de datos de prueba antes de la reunión con la profe (23/10):**
+- [x] Corrido por Rocío (`BEGIN TRAN`, 3 filas, `Usu_Modi` "script limpieza"): chofer 9 "Fede Prueba" → **Federico
+  Montenegro** (lo demás de su perfil es real: celular, e-mail, Diamante 3322); chofer 10 (de las pruebas de Claude del
+  17/10) → **Lucas Ferreyra**, San Martín 1250; usuario 6 "usuarioprueba" → **Martina Gómez**, usuario **`mgomez`** (la
+  contraseña no cambió). Los dos choferes siguen inactivos.
+- [ ] **Después de la reunión (decisión de Rocío):** los textos de prueba de los comprobantes. El relevamiento
+  (`database/limpieza/01_relevar_datos_de_prueba.sql`, solo lectura) mostró conceptos "NC prueba", "preubaaaa888",
+  "Pruebaa", "pruebaaa", condiciones "asd asd" y "asdasd", y "Calle Prueba 100" en 7 domicilios, entre otros (falta
+  ver la lista completa). Se corrigen solo textos, sin tocar importes, con un `UPDATE` dentro de `BEGIN TRAN`.
+- [ ] Para Facu: Registrar presupuesto muestra choferes inactivos en el selector de chofer.
+- [ ] **Demo de Rukas:** eliminar el borrador #42 (Rukas 990100) desde Gestionar proformas; tiene los viajes 25 y 26
+  (990001 y 990002), que usan todos los Excel de `docs/pruebas/datos/`. Están en Listo para facturar con la tarifa #5
+  ($ 850 × 17,4 km = $ 14.790, lo que esperan los Excel) y no hay proformas con 990120 ni 990130. **No cambiar los
+  valores de las tarifas por km antes de la demo:** cambiaría el importe que comparan los Excel.
