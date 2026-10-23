@@ -595,7 +595,9 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **El marco** usa los dos colores de Gestionar contenido (hoy verde azulado y verde oscuro):
   - el **color de fondo** es el color de la marca: la pantalla toma un tono muy claro de él y el
     color entero queda en una línea arriba de la barra (cambio del 22/10, §12); en el login pinta
-    el panel de la izquierda;
+    el panel de la izquierda. Si es tan claro que no se lee sobre blanco (contraste menor a 4,5, como el `#e4eef8` de
+    antes), la línea, los íconos de los títulos, las pestañas y el paso actual toman el color del menú o, si tampoco se
+    lee, el de fondo oscurecido (`gestionContenido.js`, 23/10);
   - el **color del menú** va en la opción elegida del menú, el círculo de las iniciales, el botón del
     login y el subrayado de las pestañas (también las de cuenta corriente, que tenían `#008c9e`).
 - **Tipografía: Nunito en todo**, también en el login (cambiado el 22/10; antes Inter).

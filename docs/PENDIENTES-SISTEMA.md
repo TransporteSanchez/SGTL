@@ -2007,10 +2007,11 @@ los arreglos y las mejoras de abajo.
 subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 
 **Arreglos y mejoras:**
-- [ ] **F1. El paso actual de Registrar proforma casi no se ve.** En Gestión de contenido está guardado un color de
+- [x] **F1. El paso actual de Registrar proforma casi no se ve** (hecho 23/10). En Gestión de contenido está guardado un color de
   fondo casi blanco (`#e4eef8`), y el sistema usa ese color para la línea de arriba, los íconos de los títulos, las
   pestañas y el paso actual. Si el color elegido no se lee sobre blanco, esos detalles toman el color del menú (o, si
-  tampoco se lee, el mismo color más oscuro). El fondo de la pantalla sigue con el color elegido.
+  tampoco se lee, el mismo color más oscuro). El fondo de la pantalla sigue con el color elegido. Además, "Restablecer" en
+  Gestionar contenido deja la marca nueva (`#435ebe`): el `#e4eef8` guardado es el color de antes del 22/10.
 - [ ] **F2. "Sin viaje relacionado en SGTL" en dos renglones y la tabla del control 16 px más ancha a 1100 px.** El
   resultado pasa a "Sin viaje relacionado" (el grupo ya dice "Para corregir en SGTL"), el texto completo va en el
   globito del sistema (no en el del navegador) y, entre 992 y 1199 px, un poco menos de espacio entre columnas.

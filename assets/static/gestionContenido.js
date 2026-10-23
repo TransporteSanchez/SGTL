@@ -30,6 +30,34 @@ function oscurecerColor(hex) {
     }).join('');
 }
 
+// Contraste con el blanco (1 a 21). Para texto chico hace falta 4,5 o más.
+function contrasteConBlanco(hex) {
+    var limpio = String(hex || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return 21;
+    var luminancia = [0, 2, 4].reduce(function (suma, i, n) {
+        var v = parseInt(limpio.substr(i, 2), 16) / 255;
+        v = v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        return suma + v * [0.2126, 0.7152, 0.0722][n];
+    }, 0);
+    return 1.05 / (luminancia + 0.05);
+}
+
+// El color de lo que va sobre blanco (línea de arriba, íconos de los títulos, pestañas, paso actual): el de fondo si se
+// lee; si es muy claro (por ejemplo, #e4eef8), el del menú; si tampoco, el de fondo oscurecido hasta que se lea.
+// El fondo de la pantalla sigue con el color elegido (reporte de la VM del 23/10, F1).
+function colorDeAcento(fondo, menu) {
+    if (contrasteConBlanco(fondo) >= 4.5) return fondo;
+    if (contrasteConBlanco(menu) >= 4.5) return menu;
+    var limpio = String(fondo || '').replace('#', '');
+    if (!/^[0-9a-fA-F]{6}$/.test(limpio)) return window.SGTL_CONTENIDO_DEFAULT.fondo;
+    var canales = [0, 2, 4].map(function (i) { return parseInt(limpio.substr(i, 2), 16); });
+    var oscuro = fondo;
+    for (var factor = 0.95; factor > 0 && contrasteConBlanco(oscuro) < 4.5; factor -= 0.05) {
+        oscuro = '#' + canales.map(function (c) { return ('0' + Math.round(c * factor).toString(16)).slice(-2); }).join('');
+    }
+    return oscuro;
+}
+
 window.cargarEstilosContenido = function () {
     return fetch('http://localhost:50222/api/GestionContenido/1', { cache: 'no-store' })
         .then(function (respuesta) {
@@ -59,9 +87,10 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     document.body.style.backgroundColor = fondoClaro;
     // Para lo que tiene que tapar el contenido con el mismo color de fondo (por ejemplo, la fila fija del tablero).
     document.documentElement.style.setProperty('--sgtl-fondo', fondoClaro);
-    // Línea de arriba, íconos de los títulos y pestañas (sgtl.css, §12).
-    document.documentElement.style.setProperty('--sgtl-marca', fondo);
-    document.documentElement.style.setProperty('--sgtl-marca-oscuro', oscurecerColor(fondo));
+    // Línea de arriba, íconos de los títulos, pestañas y paso actual (sgtl.css, §12): siempre un color que se lea.
+    var acento = colorDeAcento(fondo, menu);
+    document.documentElement.style.setProperty('--sgtl-marca', acento);
+    document.documentElement.style.setProperty('--sgtl-marca-oscuro', oscurecerColor(acento));
     document.documentElement.style.setProperty('--sgtl-menu', menu);
 
     // El círculo de las iniciales lleva el color del menú; así cambia junto con él al guardar o restablecer.
