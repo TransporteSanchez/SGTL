@@ -814,8 +814,9 @@
         var tiposClienteViaje = {};
         // Viaje abierto para editar (null al registrar): el aviso de WhatsApp compara contra lo que tenía.
         var viajeEditado = null;
-        // Tarifa fija de la ruta elegida: undefined = falta la ruta, 'buscando', null = la ruta no tiene, o { id, valor }.
-        var tarifaFijaRuta, tarifaFijaSeq = 0, tarifaKmSeq = 0;
+        // Tarifa fija de la ruta elegida: undefined = falta la ruta, 'sinFecha' = falta el inicio, 'buscando', null = la ruta
+        // no tiene ese día, o { id, valor }. fechaTarifaFija: el inicio con el que se buscó.
+        var tarifaFijaRuta, tarifaFijaSeq = 0, tarifaKmSeq = 0, fechaTarifaFija = '';
         var formularioViaje = null;
         const ETIQUETA_RUKAS = '<span class="badge rounded-pill bg-white text-dark border">Rukas</span>';
         const ENLACE_TARIFAS = '<a href="gestion-tarifas.html" target="_blank" rel="noopener">Gestionar tarifas</a>';
@@ -1143,14 +1144,21 @@
             if (!tarifaEditable()) return;
             if (tipoTarifa() === 'fija') resolverTarifaFija(); else resolverTarifaKm();
         }
-        // Busca la tarifa fija de la ruta: con Fija elegida es la tarifa; con Por km, la línea gris que avisa que existe.
+        // Busca la tarifa fija de la ruta vigente en el inicio del viaje (como la de km; decisión de Rocío, 23/10): con
+        // Fija elegida es la tarifa; con Por km, la línea gris que avisa que existe.
+        function fechaInicioViaje() { return String($('#fechaInicio').val() || '').substring(0, 10); }
+        // Inicio y fin con los que ya se buscó la tarifa (ver alCerrarFecha).
+        var fechasVistas = '';
+        function fechasDelViaje() { return ($('#fechaInicio').val() || '') + '|' + ($('#fechaFin').val() || ''); }
         function consultarTarifaFijaRuta() {
-            var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val();
+            var c = $('#clienteSelect').val(), o = $('#origenSelect').val(), d = $('#destinoSelect').val(), f = fechaInicioViaje();
             var seq = ++tarifaFijaSeq;
+            fechaTarifaFija = f;
             var listo = $.Deferred();
             if (!c || !o || !d) { tarifaFijaRuta = undefined; return listo.resolve().promise(); }
+            if (!f) { tarifaFijaRuta = 'sinFecha'; return listo.resolve().promise(); }
             tarifaFijaRuta = 'buscando';
-            $.ajax({ url: API_VIAJES + '/TarifasFijas/PorRuta', type: 'GET', data: { clienteId: c, origenId: o, destinoId: d } })
+            $.ajax({ url: API_VIAJES + '/TarifasFijas/PorRuta', type: 'GET', data: { clienteId: c, origenId: o, destinoId: d, fecha: f } })
                 .done(function (r) { if (seq === tarifaFijaSeq) tarifaFijaRuta = { id: r.TarifaFija_ID, valor: r.ValorFijoNeto }; })
                 .fail(function () { if (seq === tarifaFijaSeq) tarifaFijaRuta = null; })
                 .always(function () { if (seq === tarifaFijaSeq) listo.resolve(); });
@@ -1164,10 +1172,11 @@
             $('#tarifaKmId').val('');
             mostrarSugerenciaFija();
             if (tarifaFijaRuta === undefined) { $('#tarifaFijaId').val(''); setTarifaInfo('Elegí origen y destino para ver la tarifa.'); return; }
+            if (tarifaFijaRuta === 'sinFecha') { $('#tarifaFijaId').val(''); setTarifaInfo('Completá el inicio para buscar la tarifa fija.'); return; }
             if (tarifaFijaRuta === 'buscando') { $('#tarifaFijaId').val(''); setTarifaInfo('Buscando la tarifa…'); return; }
             if (!tarifaFijaRuta) {
                 $('#tarifaFijaId').val('');
-                setTarifaInfo('No hay tarifa fija para esta ruta. Elegí Por km o cargala en ' + ENLACE_TARIFAS + '.', 'falta');
+                setTarifaInfo('No hay tarifa fija de esta ruta para el ' + SGTL.fecha(fechaInicioViaje()) + '. Elegí Por km o cargala en ' + ENLACE_TARIFAS + '.', 'falta');
                 return;
             }
             $('#tarifaFijaId').val(tarifaFijaRuta.id);
@@ -1395,6 +1404,7 @@
                         // Sin disparar onChange: al abrir no se recalcula la tarifa guardada.
                         if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, false); else $('#fechaInicio').val(String(v.Fecha_Inicio || '').substring(0, 16));
                         if (window.fpFin) fpFin.setDate(v.Fecha_Fin, false); else $('#fechaFin').val(String(v.Fecha_Fin || '').substring(0, 16));
+                        fechasVistas = fechasDelViaje();
                         if (v.TarifaFijaID > 0) { $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID); }
                         else if (v.TarifaKmID > 0) { $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID); }
                         viajeEditado = { ChoferID: v.ChoferID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
@@ -1805,12 +1815,22 @@
             if (window.flatpickr) {
                 // Calendario del sistema (§7.1): se ve DD/MM/AAAA HH:MM y el campo sigue guardando AAAA-MM-DD HH:MM.
                 var alCambiarFecha = function () {
+                    fechasVistas = fechasDelViaje();
                     if (tipoTarifa() === 'km' && tarifaEditable()) resolverTarifaKm();
+                    // La tarifa fija también depende del inicio: se vuelve a buscar la de ese día.
+                    if (tarifaEditable() && fechaInicioViaje() !== fechaTarifaFija) {
+                        if (tipoTarifa() === 'fija') setTarifaInfo('Buscando la tarifa…');
+                        consultarTarifaFijaRuta().always(function () {
+                            if (tipoTarifa() === 'fija') resolverTarifaFija(); else mostrarSugerenciaFija();
+                        });
+                    }
                     if ($('#fechaFin').val()) formularioViaje.validar('fechaFin');
                     actualizarAvisoWhatsApp();
                 };
-                window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
-                window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha });
+                // Escrita a mano y cerrada con un clic afuera, flatpickr guarda la fecha sin avisar el cambio: se revisa al cerrar.
+                var alCerrarFecha = function () { if (fechasDelViaje() !== fechasVistas) alCambiarFecha(); };
+                window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha, onClose: alCerrarFecha });
+                window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha, onClose: alCerrarFecha });
                 window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', onDayCreate: diaEntrega });
             }
             // Cliente y chofer: el mismo buscador que los filtros y Registrar proforma (lista que se recorre o se filtra

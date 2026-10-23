@@ -15,9 +15,9 @@ namespace WebApi_TransporteSanchez.Controllers
     public class TarifasKmController : ApiController
     {
         /// <summary>
-        /// Busca una tarifa vigente para el viaje: el periodo calendario del viaje (desde/hasta) debe quedar cubierto
-        /// por FechaDesde–FechaHasta de la fila, y los km del viaje deben estar entre MinKm y MaxKm.
-        /// Monto = ValorKm × km.
+        /// Busca la tarifa vigente en la fecha de inicio del viaje (como la tarifa fija; decisión de Rocío, 23/10) cuya
+        /// banda cubra los km: más de MinKm y hasta MaxKm inclusive, para que las bandas se encadenen (0–100, 100–500)
+        /// y el borde vaya a la de abajo. Monto = ValorKm × km.
         /// </summary>
         [HttpGet]
         [Route("api/TarifasKm/Calcular")]
@@ -43,7 +43,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 return BadRequest("Los kilómetros no pueden ser negativos.");
 
             var dIni = dtIni.Date;
-            var dFin = dtFin.Date;
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -51,9 +50,9 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Vigencia: la tarifa aplica al viaje si el rango del viaje (por fecha) está dentro del rango de la tarifa.
+                    // Vigencia: la de la fecha de inicio del viaje, aunque termine en la vigencia siguiente.
                     var candidatos = db.Set<TARIFAS_KM>()
-                        .Where(t => t.FechaDesde <= dIni && t.FechaHasta >= dFin)
+                        .Where(t => t.FechaDesde <= dIni && t.FechaHasta >= dIni)
                         .ToList();
 
                     TARIFAS_KM elegido = null;
@@ -67,7 +66,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         if (minKm > maxKm)
                             continue;
 
-                        if (km < minKm || km > maxKm)
+                        if (km <= minKm || km > maxKm)
                             continue;
 
                         var ancho = maxKm - minKm;

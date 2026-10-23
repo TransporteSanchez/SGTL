@@ -29,12 +29,21 @@
     }
     // Fecha y hora con flatpickr (§7.1): se ve DD/MM/AAAA HH:MM y el campo guarda AAAA-MM-DDTHH:MM, como antes.
     function prepararFechaHora(id) {
-        SGTL.selectorFecha(el(id), { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d\\TH:i', altInput: true, altFormat: 'd/m/Y H:i' });
+        // Escrita a mano y cerrada con un clic afuera, flatpickr guarda la fecha sin avisar el cambio: se avisa al cerrar,
+        // para que la tarifa (fija o por km) se vuelva a calcular con la fecha nueva.
+        SGTL.selectorFecha(el(id), { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d\\TH:i', altInput: true, altFormat: 'd/m/Y H:i',
+            onChange: function () { el(id).dataset.vista = el(id).value; },
+            onClose: function () {
+                if (el(id).value === (el(id).dataset.vista || '')) return;
+                el(id).dataset.vista = el(id).value;
+                el(id).dispatchEvent(new Event('change'));
+            } });
     }
     function ponerFechaHora(id, valor) {
         var fp = el(id)._flatpickr;
         if (!fp) { el(id).value = valor || ''; return; }
         if (valor) fp.setDate(valor, false); else fp.clear(false);
+        el(id).dataset.vista = el(id).value;
     }
     function pedir(url, opciones) { return fetch(url, opciones).then(function (r) {
         return r.text().then(function (t) {
@@ -172,7 +181,9 @@
         if (!tipo) { el('tarifaInfo').textContent = 'Seleccioná un tipo de tarifa.'; return; }
         if (tipo === 'fija') {
             if (!el('cliente').value || !el('origenId').value || !el('destinoId').value) { el('tarifaInfo').textContent = 'Seleccioná cliente, origen y destino para buscar la tarifa fija.'; return; }
-            params = new URLSearchParams({clienteId: el('cliente').value, origenId: el('origenId').value, destinoId: el('destinoId').value}); url = '/TarifasFijas/PorRuta?';
+            // La vigente en el inicio del viaje, como la de km (decisión de Rocío, 23/10).
+            if (!el('fechaInicio').value) { el('tarifaInfo').textContent = 'Completá la fecha de inicio para buscar la tarifa fija.'; return; }
+            params = new URLSearchParams({clienteId: el('cliente').value, origenId: el('origenId').value, destinoId: el('destinoId').value, fecha: el('fechaInicio').value.substring(0, 10)}); url = '/TarifasFijas/PorRuta?';
         } else {
             if (!el('fechaInicio').value || !el('fechaFin').value || !(Number(el('distancia').value) > 0)) { el('tarifaInfo').textContent = 'Completá las fechas y los kilómetros para calcular la tarifa.'; return; }
             if (el('fechaFin').value < el('fechaInicio').value) { el('tarifaInfo').textContent = 'La fecha de fin no puede ser anterior a la de inicio.'; return; }
@@ -185,7 +196,7 @@
             if (!Number.isFinite(importe) || importe < 0) throw new Error('Importe inválido');
             tarifa = {tipo: tipo, id: tipo === 'fija' ? r.TarifaFija_ID : r.TarifaKm_ID, valorKm: tipo === 'km' ? r.ValorKm : null, importe: importe.toFixed(2)};
             el('importe').value = SGTL.monto(tarifa.importe);
-            el('tarifaInfo').textContent = tipo === 'fija' ? 'Tarifa fija #' + tarifa.id + '. Se utiliza la tarifa vigente o la más reciente registrada para la ruta.' : 'Tarifa por km #' + tarifa.id + ': ' + SGTL.monto(r.ValorKm) + ' por km × ' + SGTL.km(el('distancia').value) + ' km.';
+            el('tarifaInfo').textContent = tipo === 'fija' ? 'Tarifa fija #' + tarifa.id + ', vigente el ' + SGTL.fecha(el('fechaInicio').value.substring(0, 10)) + '.' : 'Tarifa por km #' + tarifa.id + ': ' + SGTL.monto(r.ValorKm) + ' por km × ' + SGTL.km(el('distancia').value) + ' km.';
         }).catch(function (error) {
             if (version !== secuencia) return;
             var info = el('tarifaInfo');
@@ -193,7 +204,8 @@
                 info.textContent = 'No hay una tarifa por km vigente para las fechas seleccionadas y ' + SGTL.km(el('distancia').value) + ' km. Registrá una tarifa que cubra ese período y distancia en ';
                 var enlace = document.createElement('a'); enlace.href = 'gestion-tarifas.html'; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Gestionar tarifas'; info.appendChild(enlace); info.appendChild(document.createTextNode('.'));
             } else if (tipo === 'fija' && error.status === 404) {
-                info.textContent = 'No hay una tarifa fija registrada para el cliente y la ruta seleccionados.';
+                info.textContent = 'No hay una tarifa fija del cliente para esta ruta el ' + SGTL.fecha(el('fechaInicio').value.substring(0, 10)) + '. Registrala en ';
+                var enlaceFija = document.createElement('a'); enlaceFija.href = 'gestion-tarifas.html'; enlaceFija.target = '_blank'; enlaceFija.rel = 'noopener'; enlaceFija.textContent = 'Gestionar tarifas'; info.appendChild(enlaceFija); info.appendChild(document.createTextNode('.'));
             } else {
                 info.textContent = 'No se pudo calcular la tarifa. Revisá los datos y probá de nuevo.';
             }
