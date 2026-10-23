@@ -41,3 +41,7 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
 - Los reportes de prueba van en `docs/pruebas/AAAA-MM-DD-tema.md`.
 - Al terminar un ítem de `docs/PENDIENTES-SISTEMA.md`, moverlo a "subido, pendiente de probar en la VM" con
   cómo probarlo, en el mismo commit.
+- **Servidores de prueba** (los que se levantan con `preview_start` para ver una pantalla): al terminar un tema en el
+  que se levantó uno, preguntarle a Rocío si cerramos el tema y apagamos el servidor; si dice que sí, apagarlo
+  (`preview_stop`). Entran hasta 5 por carpeta y los de otros chats quedan prendidos: si no hay lugar, preguntarle
+  antes de apagar alguno que no sea de esta sesión.
