@@ -50,7 +50,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
-| 31 | Tarifas fijas: no deja cargar dos vigencias superpuestas para el mismo cliente y recorrido (lo encontró Facu) | Hecho en la Mac (23/10); quedan dos preguntas de Facu para decidir (qué valor usa el sistema y con qué fecha busca la tarifa el viaje) | Commit del 23/10, **sin push** | Recompilar la API y probar (ver §31) |
+| 31 | Tarifas fijas: no deja cargar dos vigencias superpuestas para el mismo cliente y recorrido (lo encontró Facu) | Hecho en la Mac (23/10). Decidido: el neto lo calcula el sistema (ruta + vuelta vacío), falta hacerlo. Para decidir: con qué fecha busca la tarifa el viaje y tarifas por km superpuestas | Commit del 23/10, **sin push** | Recompilar la API y probar (ver §31) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2397,8 +2397,16 @@ JOIN dbo.TARIFAS_FIJAS b
 **Para decidir (preguntas de Facu y lo que apareció al revisarlas):**
 - [ ] **Qué valor usa el sistema.** Solo el **valor fijo neto**: viajes, presupuestos, proformas (propias y el control
   de Rukas) y el costo del dashboard. **Valor de ruta** y **valor de vuelta vacío** se guardan pero nada los usa. La
-  #5 de Facu tiene ruta $150.000, vuelta vacío $35.000 y neto $0: un viaje con esa tarifa vale $0. Los ejemplos del
-  formulario (150.000 + 50.000 = 200.000) hacen pensar que el neto era la suma de los otros dos.
+  #5 de Facu tiene ruta $150.000, vuelta vacío $35.000 y neto $0: un viaje con esa tarifa vale $0.
+  **Decidido por Rocío (23/10):** el precio de una ruta es ida más vuelta vacío, así que **el neto lo calcula el
+  sistema** (ruta + vuelta vacío; en la pantalla y también en la API). A veces se negocia con un cliente no cobrarle la
+  vuelta: como la tarifa fija es por cliente, se carga la de ese cliente con vuelta vacío $0. Falta confirmar que eso
+  se negocia por cliente y no viaje por viaje (si fuera por viaje, el viaje tendría que elegir si cobra la vuelta).
+  **Antes de cambiarlo, revisar los datos:** una tarifa vieja con solo el neto cargado (ruta y vuelta en $0) pasaría a
+  valer $0; hace falta un script que pase ese neto a ruta, y ver a mano las que tienen los tres cargados y no suman.
+- [ ] **Origen y destino de otro cliente.** Los orígenes y destinos son de un cliente, y el viaje solo ofrece los del
+  cliente elegido, pero el formulario de la tarifa fija muestra todos: se puede cargar una tarifa que ningún viaje va a
+  encontrar (como la F9 del 17/10). Filtrarlos por el cliente elegido, como en Gestionar viajes.
 - [ ] **Con qué fecha busca el viaje la tarifa fija.** `TarifasFijas/PorRuta` usa la vigente **hoy**, no la de la
   fecha del viaje, y si hoy no hay ninguna toma la más reciente aunque esté vencida o empiece más adelante. La tarifa
   por km sí usa las fechas del viaje. Ejemplo: un viaje del 28/10 cargado el 02/11 toma la tarifa de noviembre. Lo usan
