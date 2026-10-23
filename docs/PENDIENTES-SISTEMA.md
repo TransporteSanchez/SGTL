@@ -2312,16 +2312,22 @@ cargar: quedó como lo dejó Facu (fondo `#6d8cab`, menú `#2f89c1`).
   la mayúscula solo al principio (§9); "SIN VALIDEZ FISCAL" en dos renglones, dentro del recuadro de la "I"; y el pie
   "Generado: DD/MM/AAAA HH:MM" en 24 h, sin "p. m." (§7.2).
 
-**Para que decida Rocío** (con la recomendación):
-- [ ] **F1, contraseña SMTP en la VM:** cada PC cifra con su propia clave (`MachineKey`) y la base es compartida, así que
-  una contraseña guardada desde una PC no se puede leer desde otra. Ya: volver a guardar la contraseña desde la VM
-  (Gestionar e-mail), sin código. Después, hablarlo con Facu (módulo de e-mail): una clave común fuera de git.
-- [ ] **Provincias sin CABA:** agregar la Ciudad Autónoma de Buenos Aires a `PROVINCIAS` y su localidad, con un script
-  idempotente. Sirve también para clientes, choferes y orígenes. Recomendación: hacerla.
-- [ ] **Auditoría de EMPRESA con ids** (`Cond_Fiscal "1"`, `ProvID "5"`): el resto de la auditoría también muestra ids.
-  Recomendación: dejarla igual que las demás y, si se quiere, anotar una mejora general de la auditoría.
-- [ ] **Redirigir a quien no es admin** pasa por el Dashboard (unas 12 consultas) antes de su inicio. Recomendación:
-  dejarla pendiente (baja, pasa igual con todas las pantallas de Configuración).
+**Decidido por Rocío (23/10):**
+- [ ] **F1, contraseña SMTP en la VM — pendiente para ver con Facu (módulo de e-mail).** No está roto: la API cifra la
+  contraseña con la clave de la PC donde corre (`MachineKey`, sin `<machineKey>` en `Web.config`) y la base es
+  compartida, así que solo puede mandar e-mails la PC que guardó la contraseña por última vez. Con un solo servidor (el
+  sistema en producción) no pasaría. Propuesta para Facu: una clave común para todo el equipo, guardada fuera de git
+  (por ejemplo, un archivo de configuración aparte que no se commitea). Mientras tanto, para mandar e-mails desde la VM
+  (por ejemplo, en la presentación), volver a guardar la contraseña desde la VM en Gestionar e-mail, sabiendo que
+  después la PC de Facu no va a poder mandar hasta que la vuelva a guardar él.
+- [ ] **CABA en Provincias — verificarlo en la base.** Rocío recuerda que está "Ciudad Autónoma de Buenos Aires" con sus
+  localidades; el reporte de la VM y `database/localidades/01_completar_localidades.sql` dicen que `PROVINCIAS` tiene 23
+  y no la incluye. Puede estar como localidad dentro de Buenos Aires. Consulta para salir de la duda (solo lectura, en
+  la respuesta del 23/10); si falta, se hace un script idempotente para agregarla.
+- [ ] **Auditoría de EMPRESA con códigos** (`Cond_Fiscal "1"`, `ProvID "5"`, `LocID`): pendiente. Toda la auditoría
+  muestra códigos; si se mejora, que sea para todas las tablas (nombres en lugar de ids).
+- [ ] **Quien no es admin, al entrar a una pantalla de Configuración**, pasa por el Dashboard (unas 12 consultas) antes de
+  llegar a su inicio: pendiente, baja. Mandarlo directo a su primera pantalla permitida (`sidebar-loader.js`).
 - Sin cambios: el destinatario del e-mail viene con el del cliente (está bien para el uso real) y el guardado de la
   empresa tarda unos 3 s (Azure y la auditoría; el botón muestra "Guardando…").
 
