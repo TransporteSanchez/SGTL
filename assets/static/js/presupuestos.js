@@ -19,6 +19,8 @@
     // Texto del error para el usuario (§9): "error" ya viene redactado; el "Message" de Web API solo cuando
     // rechaza un dato (400, 404 o 409).
     function textoError(error, porDefecto) {
+        // Sesión vencida (§9): el aviso de siempre y, enseguida, el login.
+        if (error && error.status === 401) return SGTL.mensajeError({ status: 401 }, porDefecto);
         var r = error && error.respuesta;
         if (r && r.error) return r.error;
         if (r && r.Message && [400, 404, 409].indexOf(error.status) !== -1) return r.Message;
