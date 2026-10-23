@@ -50,7 +50,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
-| 31 | Tarifas fijas: no deja cargar dos vigencias superpuestas para el mismo cliente y recorrido (lo encontró Facu) | Hecho en la Mac (23/10). Decidido: el neto lo calcula el sistema (ruta + vuelta vacío), falta hacerlo. Para decidir: con qué fecha busca la tarifa el viaje y tarifas por km superpuestas | Commit del 23/10, **sin push** | Recompilar la API y probar (ver §31) |
+| 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; falta revisar los datos con el script | Commits del 23/10, **sin push** | **Correr antes `database/tarifas/01_revisar_tarifas.sql`** (diagnóstico), recompilar la API y probar (ver §31) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2364,65 +2364,105 @@ así que ningún documento las usa; quedan como historial, igual que en Auditor�
 
 ---
 
-## 31. Tarifas fijas: vigencias superpuestas — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (23/10)
+## 31. Tarifas: vigencias, neto y fecha del viaje — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (23/10)
 
 Lo encontró Facu (23/10): Gestionar tarifas dejaba registrar, para QUICKFOOD Sede Quilmes → Sede Banfield, la tarifa
 #5 (01/10/2026 al 31/12/2026) aunque ya estaba la #4 (20/10/2026 al 31/10/2026). Con dos tarifas vigentes el mismo día,
-el viaje toma una sin avisar (hoy, la de "Desde" más reciente).
+el viaje toma una sin avisar. También preguntó para qué están "Valor de ruta" y "Valor de vuelta vacío" si el sistema
+usa el neto. Al revisarlo aparecieron tres cosas más, que Rocío decidió el mismo día.
 
-**Qué se hizo** (`TarifasController.cs`, solo API; la pantalla ya muestra dentro del modal los errores que devuelve):
-- Al registrar y al editar una tarifa fija, la API rechaza que comparta **al menos un día** con otra del mismo cliente,
-  origen y destino. Al editar no se compara consigo misma. Una que empieza el día siguiente al que termina la otra se
-  puede cargar. Mensaje: "Este cliente ya tiene la tarifa fija #4 para el mismo recorrido, del 20/10/2026 al
-  31/10/2026. Cambiá las fechas para que no se superpongan o editá esa tarifa." (si hay varias, nombra la que empieza
-  antes).
-- Los mensajes de la API para cliente, origen y destino vacíos pasan a voseo ("Seleccioná un cliente.", §9), iguales a
-  los de la pantalla.
+**Decisiones de Rocío (23/10):**
+- **Vigencias:** un cliente no puede tener dos tarifas fijas del mismo recorrido vigentes el mismo día.
+- **El neto lo calcula el sistema: ruta + vuelta vacío.** El precio de una ruta se arma así. Si con un cliente se negocia
+  no cobrarle la vuelta, es siempre igual para ese cliente en esa ruta: su tarifa lleva vuelta vacío en 0 (no hace
+  falta que el viaje elija). Hasta ahora el sistema usaba solo el neto, escrito a mano, y ruta y vuelta no se usaban:
+  la #5 de Facu (ruta $150.000, vuelta $35.000, neto $0) le daba $0 a un viaje.
+- **El viaje toma la tarifa vigente en su fecha de inicio**, la fija y la por km. Antes la fija buscaba la vigente
+  **hoy** (un viaje del 28/10 cargado el 02/11 tomaba la de noviembre) y, si no había, la más reciente aunque estuviera
+  vencida; la por km pedía que todo el viaje entrara en la vigencia (un viaje del 31/12 al 01/01 quedaba sin tarifa).
+- **Tarifas por km sin superponerse**, como las fijas. Cada banda va de **más del mínimo hasta el máximo inclusive**
+  ("hasta 100 km"), así se encadenan con el mismo número (0 a 100, 100 a 500): un viaje de 100 km va a la primera y
+  no queda hueco para los decimales (con 0 a 100 y 101 a 500, uno de 100,5 km no tenía tarifa).
+- Los datos que ya están en la base se revisan y se corrigen con estas reglas (script abajo).
 
-**Datos que ya se superponen:** la #4 y la #5 de Facu. Mientras sigan así, **editar cualquiera de las dos da el error**
-hasta cambiarle las fechas o eliminar una. Para ver si hay otras (solo lectura, la corre Rocío):
+**Qué se hizo:**
+- `TarifasController.cs`:
+  - Fija: rechaza la que comparte al menos un día con otra del mismo cliente, origen y destino (al editar no se compara
+    consigo misma; una que empieza el día siguiente se puede cargar). "Este cliente ya tiene la tarifa fija #4 para el
+    mismo recorrido, del 20/10/2026 al 31/10/2026. Cambiá las fechas para que no se superpongan o editá esa tarifa."
+  - Fija: guarda **neto = ruta + vuelta vacío** (no lee el neto que llega). La ruta tiene que ser mayor que cero y la
+    vuelta, cero o más. Los mensajes de cliente, origen y destino vacíos, en voseo (§9).
+  - Km: rechaza la que comparte al menos un día y su banda se pisa con otra (que se toquen en el borde está bien). "Ya
+    está la tarifa por km #7, del 01/01/2026 al 31/12/2026, para más de 100 y hasta 1.000 km. Cambiá las fechas o los
+    km…". El valor por km tiene que ser mayor que cero y el máximo, mayor que el mínimo.
+- `TarifasFijasController.cs` (`PorRuta`): recibe `fecha` (AAAA-MM-DD, el inicio del viaje; sin fecha, hoy) y devuelve
+  la vigente ese día; si no hay, 404.
+- `TarifasKmController.cs` (`Calcular`): la vigente en la fecha de inicio, con la banda de más del mínimo hasta el
+  máximo inclusive.
+- `gestion-tarifas.html`: ruta y vuelta vacío obligatorios, como montos (§7.3: "150.000,00", con máscara, ya no
+  `type="number"`); el neto se ve como texto y se actualiza al escribir ("Ruta + vuelta vacío, sin IVA"); ayuda "0 si a
+  este cliente no se le cobra la vuelta en esta ruta". Origen y destino muestran solo los del cliente elegido ("Elegí el
+  cliente" hasta elegirlo, como en Gestionar viajes): antes se podía cargar una tarifa con el origen de otro cliente,
+  que ningún viaje encuentra. Tarifa por km: valor como monto y obligatorio, ayuda de las bandas debajo de los km, y el
+  filtro "Km del viaje" con el mismo borde.
+- `gestion-viajes.html` y `presupuestos.js` (módulo de Facu, con el OK de Rocío): la tarifa fija se busca con la fecha
+  de inicio y se vuelve a buscar al cambiarla; sin inicio, "Completá el inicio para buscar la tarifa fija."; sin tarifa
+  ese día, "No hay tarifa fija de esta ruta para el 15/02/2027. Elegí Por km o cargala en Gestionar tarifas." (en
+  presupuestos, con el enlace). En presupuestos, "Tarifa fija #4, vigente el 28/10/2026." en lugar de "Se utiliza la
+  tarifa vigente o la más reciente…".
+- **Fecha escrita a mano** (de antes, se vio al probar): si se escribía la fecha y se hacía clic afuera, el calendario
+  la guardaba sin avisar el cambio y la tarifa no se recalculaba (pasaba también con la por km). En viajes y
+  presupuestos ahora se revisa al cerrar el calendario. Las demás pantallas no dependen de eso para calcular nada.
+- `database/tarifas/01_revisar_tarifas.sql` (nuevo): muestra lo que no cumple las reglas (fijas cuyo neto no es ruta
+  + vuelta, superpuestas, con origen o destino de otro cliente; por km todas juntas, superpuestas y con huecos entre
+  bandas) con la cantidad de viajes de cada una. Con `@Aplicar = 1` corrige solo lo que no cambia importes: las fijas
+  con solo el neto cargado pasan ese neto a la ruta (deja la transacción abierta para COMMIT o ROLLBACK).
+- Probado en la Mac con una API simulada con la misma lógica (datos inventados): superposición de fijas y por km,
+  borde de las bandas, neto en vivo, alta y edición, orígenes por cliente, y en viajes y presupuestos la tarifa del
+  28/10, del 02/11 y el aviso sin tarifa, también con la fecha escrita a mano.
 
-```sql
-SELECT a.TarifaFija_ID, b.TarifaFija_ID AS Se_superpone_con, a.ClienteID, a.OrigenID, a.DestinoID,
-       a.FechaDesde, a.FechaHasta, b.FechaDesde AS Desde_otra, b.FechaHasta AS Hasta_otra,
-       (SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifaFijaID = a.TarifaFija_ID) AS Viajes_con_a,
-       (SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifaFijaID = b.TarifaFija_ID) AS Viajes_con_b
-FROM dbo.TARIFAS_FIJAS a
-JOIN dbo.TARIFAS_FIJAS b
-  ON b.ClienteID = a.ClienteID AND b.OrigenID = a.OrigenID AND b.DestinoID = a.DestinoID
- AND b.TarifaFija_ID > a.TarifaFija_ID
- AND b.FechaDesde <= a.FechaHasta AND b.FechaHasta >= a.FechaDesde;
-```
+**Para tener en cuenta:**
+- **El viaje no guarda el importe, lo lee de la tarifa.** Cambiar el neto de una tarifa (o guardarla de nuevo con
+  ruta + vuelta distinto del neto viejo) cambia el importe de todos sus viajes, también en el detalle del viaje y en el
+  costo del dashboard; las proformas y facturas ya emitidas no. Por eso el script no toca las que no suman: se deciden
+  una por una.
+- **Antes de editar tarifas viejas, correr el script:** una tarifa con solo el neto cargado se abre con ruta $0,00 y
+  no se puede guardar hasta completar la ruta.
+- Los viajes ya cargados conservan su tarifa; lo nuevo vale al registrar o al cambiar fechas, ruta o tipo de tarifa.
+- La API de viajes no controla que la tarifa elegida sea la de la fecha (la elige la pantalla). Se puede sumar si hace
+  falta.
+- `tests/` no tiene pruebas de tarifas y en la Mac no hay Node: no se agregó una prueba.
+- **Contarle a Facu:** la respuesta a su mensaje, y que presupuestos ahora busca la tarifa fija con la fecha de inicio.
 
-**Para decidir (preguntas de Facu y lo que apareció al revisarlas):**
-- [ ] **Qué valor usa el sistema.** Solo el **valor fijo neto**: viajes, presupuestos, proformas (propias y el control
-  de Rukas) y el costo del dashboard. **Valor de ruta** y **valor de vuelta vacío** se guardan pero nada los usa. La
-  #5 de Facu tiene ruta $150.000, vuelta vacío $35.000 y neto $0: un viaje con esa tarifa vale $0.
-  **Decidido por Rocío (23/10):** el precio de una ruta es ida más vuelta vacío, así que **el neto lo calcula el
-  sistema** (ruta + vuelta vacío; en la pantalla y también en la API). A veces se negocia con un cliente no cobrarle la
-  vuelta: como la tarifa fija es por cliente, se carga la de ese cliente con vuelta vacío $0. Falta confirmar que eso
-  se negocia por cliente y no viaje por viaje (si fuera por viaje, el viaje tendría que elegir si cobra la vuelta).
-  **Antes de cambiarlo, revisar los datos:** una tarifa vieja con solo el neto cargado (ruta y vuelta en $0) pasaría a
-  valer $0; hace falta un script que pase ese neto a ruta, y ver a mano las que tienen los tres cargados y no suman.
-- [ ] **Origen y destino de otro cliente.** Los orígenes y destinos son de un cliente, y el viaje solo ofrece los del
-  cliente elegido, pero el formulario de la tarifa fija muestra todos: se puede cargar una tarifa que ningún viaje va a
-  encontrar (como la F9 del 17/10). Filtrarlos por el cliente elegido, como en Gestionar viajes.
-- [ ] **Con qué fecha busca el viaje la tarifa fija.** `TarifasFijas/PorRuta` usa la vigente **hoy**, no la de la
-  fecha del viaje, y si hoy no hay ninguna toma la más reciente aunque esté vencida o empiece más adelante. La tarifa
-  por km sí usa las fechas del viaje. Ejemplo: un viaje del 28/10 cargado el 02/11 toma la tarifa de noviembre. Lo usan
-  `gestion-viajes.html` y `presupuestos.js` (módulo de Facu).
-- [ ] **Tarifas por km:** tampoco controlan que dos se superpongan (mismo período y bandas de km que se pisan). Hoy el
-  viaje toma la de banda más angosta, así que puede que sea a propósito (una banda especial dentro de una general).
-- [ ] Los tres valores del formulario son `type="number"`: según §7.3 tienen que ser montos con máscara
-  (`SGTL.enlazarMascaraMonto`). Conviene hacerlo junto con lo que se decida sobre los valores.
+**Datos que ya se superponen:** la #4 y la #5 de Facu. Mientras sigan así, editar cualquiera de las dos da el error.
+Propuesta: que Facu le cambie las fechas a la #5 para que empiece el 01/11/2026 (al guardarla, el neto pasa a
+$185.000), o eliminarla si fue solo de prueba.
 
-**Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; no hay que correr nada en la base):
-- [ ] 1. Gestionar tarifas → Registrar tarifa fija: QUICKFOOD, Sede Quilmes → Sede Banfield, del 15/10/2026 al
-  25/10/2026, neto 1000 → Guardar: dentro del modal, "Este cliente ya tiene la tarifa fija #5 para el mismo recorrido,
-  del 01/10/2026 al 31/12/2026. Cambiá las fechas…". No se crea nada.
-- [ ] 2. Mismo recorrido, del 01/01/2027 al 31/01/2027 (empieza el día siguiente a que termina la #5) → se guarda.
-  Después, eliminarla.
-- [ ] 3. Editar la #4 y Guardar sin cambios: el error nombra la #5 (ya estaban superpuestas). Cancelar.
-- [ ] 4. Editar la #2 (otro recorrido) y Guardar sin cambios: "Tarifa guardada." (no se compara consigo misma).
-- [ ] 5. Otro cliente con el mismo origen y destino y las mismas fechas → se guarda (la regla es por cliente). Después,
+**Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5):
+- [ ] 0. Rocío corre `database/tarifas/01_revisar_tarifas.sql` en SSMS con `@Aplicar = 0` y mira las seis consultas.
+  Decidimos juntas qué hacer con cada fila de "Decidir a mano", las superpuestas y las bandas por km. Después, con
+  `@Aplicar = 1`, el número tiene que coincidir con las filas "Se corrige sola"; COMMIT.
+- [ ] 1. Gestionar tarifas → Registrar tarifa fija: Origen y Destino dicen "Elegí el cliente"; al elegir QUICKFOOD
+  aparecen solo sus orígenes y destinos. Ruta 150000 → al salir, "150.000,00"; vuelta 35000 → el neto dice
+  "$ 185.000,00" mientras se escribe.
+- [ ] 2. QUICKFOOD, Sede Quilmes → Sede Banfield, del 15/10/2026 al 25/10/2026 → Guardar: dentro del modal, "Este cliente
+  ya tiene la tarifa fija #… para el mismo recorrido, del … al …". No se crea nada.
+- [ ] 3. Mismo recorrido, del 01/01/2027 al 31/01/2027 → "Tarifa registrada." con $ 185.000,00 en la tabla. Después,
   eliminarla.
+- [ ] 4. Ruta vacía o 0 → "Completá el valor de ruta." / "Tiene que ser mayor que cero."; vuelta vacía → "Completá el
+  valor de vuelta vacío (0 si no se cobra)."; vuelta 0 → se puede.
+- [ ] 5. Editar una tarifa de otro recorrido y Guardar sin cambios: "Tarifa guardada." (no se compara consigo misma).
+- [ ] 6. Tarifas por km → Registrar con el mismo período que una existente y una banda que se pise → error con la
+  tarifa y su banda. Con la banda que empieza justo en el máximo de la otra (por ejemplo, si hay una "hasta 1.000",
+  de 1.000 a 2.000) → se guarda. Después, eliminarla. Km del viaje: escribir el máximo de una banda (100) muestra esa
+  banda y no la siguiente.
+- [ ] 7. Gestionar viajes → Registrar viaje, QUICKFOOD, Sede Quilmes → Sede Banfield, tarifa Fija: sin inicio, "Completá
+  el inicio para buscar la tarifa fija."; con un inicio dentro de la #4, el importe de la #4; con uno del 15/02/2027
+  (sin tarifa), el aviso amarillo con la fecha. Escribir la fecha a mano y hacer clic afuera también cambia la tarifa.
+  No guardar.
+- [ ] 8. Por km: un viaje del 31/12/2026 23:00 al 01/01/2027 06:00 toma la tarifa por km de 2026 (antes quedaba sin
+  tarifa si había una por año). No guardar.
+- [ ] 9. Gestionar presupuestos → Registrar presupuesto, tipo Fija, mismo recorrido: sin inicio, "Completá la fecha de
+  inicio para buscar la tarifa fija."; con inicio, "Tarifa fija #…, vigente el DD/MM/AAAA." No guardar.
+- [ ] 10. Editar un viaje ya cargado con tarifa fija: abre con su importe de siempre; cambiarle el inicio a otro mes
+  busca la tarifa de ese día. Cancelar.

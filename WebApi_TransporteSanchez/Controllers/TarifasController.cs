@@ -160,7 +160,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         FechaHasta = dto.FechaHasta,
                         ValorRuta = dto.ValorRuta,
                         ValorVueltaVacio = dto.ValorVueltaVacio,
-                        ValorFijoNeto = dto.ValorFijoNeto,
+                        ValorFijoNeto = NetoFija(dto),
                         ClienteID = dto.ClienteID,
                         OrigenID = dto.OrigenID,
                         DestinoID = dto.DestinoID,
@@ -211,7 +211,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     t.FechaHasta = dto.FechaHasta;
                     t.ValorRuta = dto.ValorRuta;
                     t.ValorVueltaVacio = dto.ValorVueltaVacio;
-                    t.ValorFijoNeto = dto.ValorFijoNeto;
+                    t.ValorFijoNeto = NetoFija(dto);
                     t.ClienteID = dto.ClienteID;
                     t.OrigenID = dto.OrigenID;
                     t.DestinoID = dto.DestinoID;
@@ -348,6 +348,9 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(Cn()))
                 {
+                    var superpuesta = SuperposicionKm(db, dto, 0);
+                    if (superpuesta != null) return Content(HttpStatusCode.BadRequest, new List<object> { superpuesta });
+
                     var t = new TARIFAS_KM
                     {
                         FechaDesde = dto.FechaDesde,
@@ -394,6 +397,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var t = db.Set<TARIFAS_KM>().Find(id);
                     if (t == null) return NotFound();
+
+                    var superpuesta = SuperposicionKm(db, dto, id);
+                    if (superpuesta != null) return Content(HttpStatusCode.BadRequest, new List<object> { superpuesta });
 
                     t.FechaDesde = dto.FechaDesde;
                     t.FechaHasta = dto.FechaHasta;
@@ -462,10 +468,16 @@ namespace WebApi_TransporteSanchez.Controllers
             if (d.OrigenID <= 0) e.Add(new { PropertyName = "OrigenID", ErrorMessage = "Seleccioná un origen." });
             if (d.DestinoID <= 0) e.Add(new { PropertyName = "DestinoID", ErrorMessage = "Seleccioná un destino." });
             if (d.FechaHasta < d.FechaDesde) e.Add(new { PropertyName = "FechaHasta", ErrorMessage = "La fecha hasta no puede ser anterior a la fecha desde." });
-            if (d.ValorRuta < 0) e.Add(new { PropertyName = "ValorRuta", ErrorMessage = "El valor de ruta no puede ser negativo." });
+            if (d.ValorRuta <= 0) e.Add(new { PropertyName = "ValorRuta", ErrorMessage = "El valor de ruta tiene que ser mayor que cero." });
             if (d.ValorVueltaVacio < 0) e.Add(new { PropertyName = "ValorVueltaVacio", ErrorMessage = "El valor de vuelta vacío no puede ser negativo." });
-            if (d.ValorFijoNeto < 0) e.Add(new { PropertyName = "ValorFijoNeto", ErrorMessage = "El valor fijo neto no puede ser negativo." });
             return e;
+        }
+
+        // El precio de una ruta es la ida más la vuelta vacío (decisión de Rocío, 23/10): el neto no se escribe, se
+        // calcula. Si con un cliente se negoció no cobrarle la vuelta, su tarifa lleva vuelta vacío en cero.
+        private static decimal NetoFija(TarifaFijaDto d)
+        {
+            return d.ValorRuta + d.ValorVueltaVacio;
         }
 
         // Un cliente no puede tener dos tarifas fijas del mismo recorrido vigentes el mismo día: el viaje no sabría
@@ -498,15 +510,50 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var e = new List<object>();
             if (d.FechaHasta < d.FechaDesde) e.Add(new { PropertyName = "FechaHasta", ErrorMessage = "La fecha hasta no puede ser anterior a la fecha desde." });
-            if (d.ValorKm < 0) e.Add(new { PropertyName = "ValorKm", ErrorMessage = "El valor por km no puede ser negativo." });
+            if (d.ValorKm <= 0) e.Add(new { PropertyName = "ValorKm", ErrorMessage = "El valor por km tiene que ser mayor que cero." });
 
             decimal min, max;
-            bool okMin = TryKm(d.MinKm, out min);
-            bool okMax = TryKm(d.MaxKm, out max);
-            if (!okMin) e.Add(new { PropertyName = "MinKm", ErrorMessage = "El km mínimo debe ser un número válido." });
-            if (!okMax) e.Add(new { PropertyName = "MaxKm", ErrorMessage = "El km máximo debe ser un número válido." });
-            if (okMin && okMax && min > max) e.Add(new { PropertyName = "MaxKm", ErrorMessage = "El km máximo no puede ser menor que el mínimo." });
+            bool okMin = TryKm(d.MinKm, out min) && min >= 0;
+            bool okMax = TryKm(d.MaxKm, out max) && max >= 0;
+            if (!okMin) e.Add(new { PropertyName = "MinKm", ErrorMessage = "Escribí el km mínimo como un número, sin negativos." });
+            if (!okMax) e.Add(new { PropertyName = "MaxKm", ErrorMessage = "Escribí el km máximo como un número, sin negativos." });
+            if (okMin && okMax && min >= max) e.Add(new { PropertyName = "MaxKm", ErrorMessage = "El km máximo tiene que ser mayor que el mínimo." });
             return e;
+        }
+
+        // Dos tarifas por km se superponen si comparten al menos un día y sus bandas se pisan: el viaje no sabría cuál
+        // tomar. Cada banda va de más del mínimo hasta el máximo inclusive, así que 0–100 y 100–500 no se pisan.
+        // Llega validada (ValidarKm). Al editar, la tarifa no se compara consigo misma.
+        private static object SuperposicionKm(SGTLAuditContext db, TarifaKmDto d, int idPropio)
+        {
+            decimal min, max;
+            TryKm(d.MinKm, out min);
+            TryKm(d.MaxKm, out max);
+            var desde = d.FechaDesde.Date;
+            var hasta = d.FechaHasta.Date;
+
+            var mismoPeriodo = db.Set<TARIFAS_KM>()
+                .Where(t => t.TarifaKm_ID != idPropio && t.FechaDesde <= hasta && t.FechaHasta >= desde)
+                .OrderBy(t => t.FechaDesde)
+                .ToList();
+
+            foreach (var t in mismoPeriodo)
+            {
+                decimal otroMin, otroMax;
+                if (!TryKm(t.MinKm, out otroMin) || !TryKm(t.MaxKm, out otroMax)) continue;
+                if (otroMin >= max || min >= otroMax) continue;
+
+                var ar = CultureInfo.GetCultureInfo("es-AR");
+                return new
+                {
+                    PropertyName = "MinKm",
+                    ErrorMessage = string.Format(ar,
+                        "Ya está la tarifa por km #{0}, del {1:dd/MM/yyyy} al {2:dd/MM/yyyy}, para más de {3:#,0.##} y hasta {4:#,0.##} km. " +
+                        "Cambiá las fechas o los km para que no se superpongan o editá esa tarifa.",
+                        t.TarifaKm_ID, t.FechaDesde, t.FechaHasta, otroMin, otroMax)
+                };
+            }
+            return null;
         }
 
         private static bool TryKm(string raw, out decimal value)

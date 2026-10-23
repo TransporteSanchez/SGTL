@@ -227,20 +227,22 @@
                             <div class="sgtl-bloque-titulo">Valores</div>
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
-                                    <label for="fjValorRuta" class="form-label">Valor de ruta</label>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="fjValorRuta" placeholder="150000">
+                                    <label for="fjValorRuta" class="form-label">Valor de ruta <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" class="form-control text-end" id="fjValorRuta" placeholder="150.000,00" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label for="fjValorVacio" class="form-label">Valor de vuelta vacío</label>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="fjValorVacio" placeholder="50000">
+                                    <label for="fjValorVacio" class="form-label">Valor de vuelta vacío <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" class="form-control text-end" id="fjValorVacio" placeholder="35.000,00" autocomplete="off">
                                     <div class="invalid-feedback"></div>
+                                    <div class="form-text">0 si a este cliente no se le cobra la vuelta en esta ruta</div>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label for="fjValorNeto" class="form-label">Valor fijo neto</label>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="fjValorNeto" placeholder="200000">
-                                    <div class="invalid-feedback"></div>
-                                    <div class="form-text">Sin IVA</div>
+                                    <div class="sgtl-dato mb-0">
+                                        <span class="sgtl-dato-etiqueta">Valor fijo neto</span>
+                                        <div class="sgtl-dato-valor" id="fjValorNeto"></div>
+                                    </div>
+                                    <div class="form-text">Ruta + vuelta vacío, sin IVA</div>
                                 </div>
                             </div>
                         </form>
@@ -280,9 +282,10 @@
                             <div class="sgtl-bloque-titulo">Valores</div>
                             <div class="row g-3">
                                 <div class="col-12 col-md-4">
-                                    <label for="kmValor" class="form-label">Valor por km</label>
-                                    <input type="number" step="0.01" min="0" class="form-control" id="kmValor" placeholder="1200">
+                                    <label for="kmValor" class="form-label">Valor por km <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" class="form-control text-end" id="kmValor" placeholder="1.200,00" autocomplete="off">
                                     <div class="invalid-feedback"></div>
+                                    <div class="form-text">Sin IVA</div>
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label for="kmMin" class="form-label">Km mínimo <span class="text-danger">*</span></label>
@@ -293,6 +296,9 @@
                                     <label for="kmMax" class="form-label">Km máximo <span class="text-danger">*</span></label>
                                     <input type="number" step="0.01" min="0" class="form-control" id="kmMax" placeholder="100">
                                     <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-8 offset-md-4 mt-1">
+                                    <div class="form-text mt-0">Vale para los viajes de más del mínimo y hasta el máximo inclusive: la banda siguiente empieza en este máximo (0 a 100, 100 a 500)</div>
                                 </div>
                             </div>
                         </form>
@@ -458,7 +464,8 @@
                 if (f.ruta && sinTildes(t.OrigenDescripcion + ' ' + t.DestinoDescripcion).indexOf(f.ruta) === -1) return false;
             } else if (f.km !== '' && f.km != null) {
                 const km = Number(f.km);
-                if (t.MinKm != null && String(t.MinKm).trim() !== '' && km < Number(t.MinKm)) return false;
+                // La banda va de más del mínimo hasta el máximo inclusive (como TarifasKm/Calcular).
+                if (t.MinKm != null && String(t.MinKm).trim() !== '' && km <= Number(t.MinKm)) return false;
                 if (t.MaxKm != null && String(t.MaxKm).trim() !== '' && km > Number(t.MaxKm)) return false;
             }
             return true;
@@ -525,6 +532,14 @@
             return Number(valor) < 0 ? 'El valor no puede ser negativo.' : '';
         }
 
+        function montoValido(valor) {
+            return SGTL.montoCentavos(valor) == null ? 'Escribí el importe como 1.234,56.' : '';
+        }
+
+        function montoMayorQueCero(valor) {
+            return montoValido(valor) || (SGTL.montoCentavos(valor) === 0 ? 'Tiene que ser mayor que cero.' : '');
+        }
+
         function ponerFecha(id, valor) {
             const fp = document.getElementById(id)._flatpickr;
             const fecha = valor ? new Date(String(valor).substring(0, 10) + 'T00:00:00') : null;
@@ -547,16 +562,46 @@
         }
 
         let combosFija = null;
+        let origenesFija = [];
+        let destinosFija = [];
         function cargarCombosFija() {
             if (!combosFija) {
                 combosFija = Promise.all([
                     cargarOpciones(API + '/Clientes', '#fjCliente', 'Seleccioná un cliente', 'Cliente_ID', 'Razon_Social'),
-                    cargarOpciones(API + '/Origen', '#fjOrigen', 'Seleccioná un origen', 'Origen_ID', 'Descripcion'),
-                    cargarOpciones(API + '/Destino', '#fjDestino', 'Seleccioná un destino', 'Destino_ID', 'Descripcion')
+                    SGTL.ajax({ url: API + '/Origen', type: 'GET' }).then(function (data) { origenesFija = data || []; }),
+                    SGTL.ajax({ url: API + '/Destino', type: 'GET' }).then(function (data) { destinosFija = data || []; })
                 ]);
                 combosFija.catch(function () { combosFija = null; });
             }
             return combosFija;
+        }
+
+        // Los orígenes y destinos son de un cliente y el viaje solo ofrece los del suyo: una tarifa con los de otro
+        // cliente no la encontraría ningún viaje. Sin cliente, los dos esperan (como en Gestionar viajes).
+        function filtrarRutaFija(origen, destino) {
+            const cliente = parseInt($('#fjCliente').val(), 10) || 0;
+            [['#fjOrigen', origenesFija, 'Origen_ID', 'Seleccioná un origen', origen],
+             ['#fjDestino', destinosFija, 'Destino_ID', 'Seleccioná un destino', destino]].forEach(function (c) {
+                const select = document.querySelector(c[0]);
+                select.innerHTML = '';
+                select.disabled = !cliente;
+                select.appendChild(new Option(cliente ? c[3] : 'Elegí el cliente', ''));
+                c[1].filter(function (item) { return item.ClienteID === cliente; })
+                    .forEach(function (item) { select.appendChild(new Option(item.Descripcion, item[c[2]])); });
+                select.value = c[4] && select.querySelector('option[value="' + c[4] + '"]') ? String(c[4]) : '';
+            });
+        }
+
+        // El neto no se escribe: es la ruta más la vuelta vacío (decisión de Rocío, 23/10).
+        function centavosCampo(id) { return SGTL.montoCentavos($('#' + id).val()); }
+        function ponerMonto(id, valor) {
+            const centavos = SGTL.montoCentavos(Number(valor));
+            $('#' + id).val(centavos == null ? '' : SGTL.formatearMontoCentavos(centavos));
+        }
+        function mostrarNetoFija() {
+            const ruta = centavosCampo('fjValorRuta');
+            const vacio = centavosCampo('fjValorVacio');
+            $('#fjValorNeto').text(ruta == null || vacio == null ? '' : SGTL.monto((ruta + vacio) / 100));
         }
 
         function abrirFija(id) {
@@ -570,17 +615,18 @@
             guardar.disabled = true;
             SGTL.modal('#modalFija', 'show');
 
+            filtrarRutaFija();
+            mostrarNetoFija();
             cargarCombosFija().then(function () {
-                if (!id) return;
+                if (!id) { filtrarRutaFija(); return; }
                 return SGTL.ajax({ url: `${API}/Tarifas/Fijas/${id}`, type: 'GET' }).then(function (t) {
                     $('#fjCliente').val(t.ClienteID);
-                    $('#fjOrigen').val(t.OrigenID);
-                    $('#fjDestino').val(t.DestinoID);
+                    filtrarRutaFija(t.OrigenID, t.DestinoID);
                     ponerFecha('fjDesde', t.FechaDesde);
                     ponerFecha('fjHasta', t.FechaHasta);
-                    $('#fjValorRuta').val(t.ValorRuta);
-                    $('#fjValorVacio').val(t.ValorVueltaVacio);
-                    $('#fjValorNeto').val(t.ValorFijoNeto);
+                    ponerMonto('fjValorRuta', t.ValorRuta);
+                    ponerMonto('fjValorVacio', t.ValorVueltaVacio);
+                    mostrarNetoFija();
                 });
             }).then(function () { guardar.disabled = false; }, function () {
                 SGTL.modal('#modalFija', 'hide');
@@ -603,7 +649,7 @@
             SGTL.ajax({ url: `${API}/Tarifas/Km/${id}`, type: 'GET' }).then(function (t) {
                 ponerFecha('kmDesde', t.FechaDesde);
                 ponerFecha('kmHasta', t.FechaHasta);
-                $('#kmValor').val(t.ValorKm);
+                ponerMonto('kmValor', t.ValorKm);
                 $('#kmMin').val(String(t.MinKm == null ? '' : t.MinKm).trim());
                 $('#kmMax').val(String(t.MaxKm == null ? '' : t.MaxKm).trim());
                 guardar.disabled = false;
@@ -627,13 +673,12 @@
                 DestinoID: parseInt($('#fjDestino').val(), 10) || 0,
                 FechaDesde: fechaISO('fjDesde'),
                 FechaHasta: fechaISO('fjHasta'),
-                ValorRuta: parseFloat($('#fjValorRuta').val()) || 0,
-                ValorVueltaVacio: parseFloat($('#fjValorVacio').val()) || 0,
-                ValorFijoNeto: parseFloat($('#fjValorNeto').val()) || 0
+                ValorRuta: centavosCampo('fjValorRuta') / 100,
+                ValorVueltaVacio: centavosCampo('fjValorVacio') / 100
             } : {
                 FechaDesde: fechaISO('kmDesde'),
                 FechaHasta: fechaISO('kmHasta'),
-                ValorKm: parseFloat($('#kmValor').val()) || 0,
+                ValorKm: centavosCampo('kmValor') / 100,
                 MinKm: $('#kmMin').val().trim(),
                 MaxKm: $('#kmMax').val().trim()
             };
@@ -691,24 +736,27 @@
                 { id: 'fjDestino', requerido: 'Seleccioná un destino.' },
                 { id: 'fjDesde', requerido: 'Completá la fecha desde.', validar: fechaValida },
                 { id: 'fjHasta', requerido: 'Completá la fecha hasta.', validar: hastaNoAnterior('fjDesde') },
-                { id: 'fjValorRuta', validar: noNegativo },
-                { id: 'fjValorVacio', validar: noNegativo },
-                { id: 'fjValorNeto', validar: noNegativo }
+                { id: 'fjValorRuta', requerido: 'Completá el valor de ruta.', validar: montoMayorQueCero },
+                { id: 'fjValorVacio', requerido: 'Completá el valor de vuelta vacío (0 si no se cobra).', validar: montoValido }
             ]);
             formularioKm = SGTL.validador([
                 { id: 'kmDesde', requerido: 'Completá la fecha desde.', validar: fechaValida },
                 { id: 'kmHasta', requerido: 'Completá la fecha hasta.', validar: hastaNoAnterior('kmDesde') },
-                { id: 'kmValor', validar: noNegativo },
+                { id: 'kmValor', requerido: 'Completá el valor por km.', validar: montoMayorQueCero },
                 { id: 'kmMin', requerido: 'Completá el km mínimo.', validar: noNegativo },
                 {
                     id: 'kmMax', requerido: 'Completá el km máximo.',
                     validar: function (valor) {
                         if (Number(valor) < 0) return 'El valor no puede ser negativo.';
                         const min = $('#kmMin').val().trim();
-                        return min !== '' && Number(valor) < Number(min) ? 'El km máximo no puede ser menor que el mínimo.' : '';
+                        return min !== '' && Number(valor) <= Number(min) ? 'El km máximo tiene que ser mayor que el mínimo.' : '';
                     }
                 }
             ]);
+
+            ['#fjValorRuta', '#fjValorVacio', '#kmValor'].forEach(function (campo) { SGTL.enlazarMascaraMonto(campo); });
+            $('#fjValorRuta, #fjValorVacio').on('input change', mostrarNetoFija);
+            $('#fjCliente').on('change', function () { filtrarRutaFija(); });
 
             $('#btnRegistrarFija').on('click', function () { abrirFija(null); });
             $('#btnRegistrarKm').on('click', function () { abrirKm(null); });
