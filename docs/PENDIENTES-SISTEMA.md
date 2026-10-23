@@ -47,7 +47,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilado y probado en VM (23/10)**: OK, mejoras en §28 |
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §27) |
-| 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | En curso (23/10), aprobados por Rocío | — | Ver §28 |
+| 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Sin push** | Sin C#: `pull` y Ctrl+F5 (ver §28) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1996,7 +1996,7 @@ con su línea abajo y con aire arriba:
 
 ---
 
-## 28. Arreglos del reporte de la VM del 23/10 (§24 y §25) — EN CURSO (23/10)
+## 28. Arreglos del reporte de la VM del 23/10 (§24 y §25) — HECHO EN LA MAC, SIN PUSH, FALTA PROBAR EN VM (23/10)
 
 Reporte: `docs/pruebas/2026-10-23-viajes-y-proformas.md`. De 42 pruebas, 35 OK, 6 fallas leves y 1 sin probar; con el OK
 de Rocío se generó el borrador 990100 (PF-00000011) y tomó los datos de la ficha de QUICKFOOD. Rocío aprobó el 23/10
@@ -2032,9 +2032,9 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 - [x] **CUIT con guiones** en la lista de clientes de la proforma y en el PDF (hecho 23/10). El buscador encuentra el
   CUIT con guiones o sin ellos.
 - [x] **Registrar proforma propia:** el título sin la etiqueta "Borrador" hasta que se guarda (hecho 23/10), como en la de Rukas.
-- [ ] **El PDF de un borrador no tiene "Enviar por e-mail":** queda así (un borrador no se le manda al cliente);
-  anotarlo en el §1.4 del design system y en la lista de control de `AGENTS.md`.
-- [ ] **Instructivo de la VM** (`docs/equipo/PRUEBAS-VM-CLAUDE.md`): generar una proforma deja sus viajes en Listo para
+- [x] **El PDF de un borrador no tiene "Enviar por e-mail":** queda así. Ya estaba en el §1.4 del design system: las
+  proformas todavía no se envían por e-mail, así que su pie es Cerrar · Imprimir · Descargar PDF.
+- [x] **Instructivo de la VM** (`docs/equipo/PRUEBAS-VM-CLAUDE.md`, hecho 23/10): generar una proforma deja sus viajes en Listo para
   facturar (pasan a Facturado con la factura), no en Facturado.
 
 **Quedan como están o para después:**
@@ -2073,5 +2073,6 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 - [ ] 8. Borrador #40: desplazar un poco la proforma, "Editar cliente", cambiar un dato y guardar: la proforma vuelve
   enseguida y en el mismo lugar, con el dato nuevo.
 - [ ] 9. El mismo borrador y su PDF: "Responsable inscripto" y el CUIT con guiones (también en la lista de clientes de
-  la proforma); en una de Rukas, la fila del cliente igual.
+  la proforma, que lo encuentra escribiendo el CUIT con guiones o sin ellos); en una de Rukas, la fila del cliente
+  igual.
 - [ ] 10. Registrar proforma propia: el título sin la etiqueta "Borrador" hasta guardar.

@@ -65,7 +65,7 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
   - Asignar chofer a un viaje o cambiarle el estado: puede **mandar un WhatsApp real** al
     celular del chofer.
   - **Generar** una proforma: consume un número de la secuencia `PF-` (no se recupera) y
-    pasa sus viajes a Facturado.
+    sus viajes quedan en esa proforma, en Listo para facturar (pasan a Facturado con la factura).
   - Emitir facturas, recibos o comprobantes, o enviarlos por mail.
   - Eliminar o dar de baja cualquier cosa.
 - No limpies los datos al final: proponé en el reporte el SQL de limpieza
