@@ -2220,9 +2220,9 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
   derecha)" (antes "el círculo de las iniciales", que no se entendía).
 
 **Qué se hizo:**
-- `database/empresa/01_crear_empresa.sql`: tabla `EMPRESA` (columnas como en `CLIENTES`, más `Logo`) con la primera
-  versión ("Transporte Sánchez", vale desde el 01/01/2000). Mientras esa versión no tenga CUIT, el primer Guardar la
-  completa en lugar de agregar otra: así los documentos de antes también salen con los datos completos. Idempotente.
+- `database/empresa/01_crear_empresa.sql`: tabla `EMPRESA` (columnas como en `CLIENTES`, más `Logo`). Idempotente. La
+  primera versión del script creaba una fila con solo "Transporte Sánchez" (vigente desde el 01/01/2000), que Rocío
+  completó con la primera carga; desde el reporte de la VM la tabla arranca vacía (ver abajo).
 - `GruposController.cs`: el permiso "Gestión de empresa" en el catálogo, en Configuración.
 - `EmpresaController.cs` (nuevo, sumado al `.csproj`): `GET api/empresa` (los actuales) y `GET api/empresa?fecha=AAAA-MM-DD`
   (los que valían ese día), sin sesión como `GestionContenido`; `PUT api/empresa` solo administradores, valida igual que
@@ -2291,3 +2291,49 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
 - [ ] 8. Auditoría: filas de `EMPRESA` con el antes y el después de lo que cambió (el logo, resumido).
 - [ ] 9. Proforma de Rukas con un transporte que no es nuestro: el reclamo dice "no corresponde a ninguno de nuestros
   viajes".
+
+**Resultado en la VM (23/10):** `docs/pruebas/2026-10-23-gestionar-empresa.md`. 27 de 29 OK, 2 sin probar (el `PUT` con un
+usuario que no es admin, que la sesión de la VM no pudo mandar, y el envío por e-mail, por F1). Ninguna falla de la §30:
+cada PDF pide la versión de su fecha, ninguno sale con el logo de SGTL y Gestionar contenido no toca los documentos.
+Rocío hizo la primera carga con los datos reales (versión 1); la VM creó las versiones 2 a 5 y dejó la 5 igual a la 1.
+En Gestionar contenido, la VM pisó sin querer un cambio que Facu guardó en medio de la prueba y después lo volvió a
+cargar: quedó como lo dejó Facu (fondo `#6d8cab`, menú `#2f89c1`).
+
+**Hecho después del reporte (23/10), con el OK de Rocío o porque lo pide el design system:**
+- [x] **Sin el aviso "Faltan el CUIT y el domicilio…"** (no se entendía: CUIT y domicilio son obligatorios). Solo aparecía
+  entre el script y la primera carga. El script ya no crea una empresa con solo el nombre: la tabla arranca vacía,
+  Gestionar empresa muestra el formulario vacío ("Todavía no se cargaron.") y los PDF no se arman y dicen "Todavía no
+  están cargados los datos de la empresa. Completalos en Configuración → Gestionar empresa.". La primera carga vale
+  también para los documentos de antes (la API usa la versión más vieja). En la base del equipo no cambia nada.
+- [x] **Proforma con logo:** el nombre comercial va en grande al lado del logo y la razón social debajo, como en la
+  factura (antes iba chico, como un renglón más).
+- [x] **F2 (presupuestos, sesión vencida):** con un 401, además del aviso, lleva al login (§9).
+- [x] **PDF de la factura y el recibo** (de antes de la §30): "Condición fiscal: Responsable inscripto" con el espacio y
+  la mayúscula solo al principio (§9); "SIN VALIDEZ FISCAL" en dos renglones, dentro del recuadro de la "I"; y el pie
+  "Generado: DD/MM/AAAA HH:MM" en 24 h, sin "p. m." (§7.2).
+
+**Para que decida Rocío** (con la recomendación):
+- [ ] **F1, contraseña SMTP en la VM:** cada PC cifra con su propia clave (`MachineKey`) y la base es compartida, así que
+  una contraseña guardada desde una PC no se puede leer desde otra. Ya: volver a guardar la contraseña desde la VM
+  (Gestionar e-mail), sin código. Después, hablarlo con Facu (módulo de e-mail): una clave común fuera de git.
+- [ ] **Provincias sin CABA:** agregar la Ciudad Autónoma de Buenos Aires a `PROVINCIAS` y su localidad, con un script
+  idempotente. Sirve también para clientes, choferes y orígenes. Recomendación: hacerla.
+- [ ] **Auditoría de EMPRESA con ids** (`Cond_Fiscal "1"`, `ProvID "5"`): el resto de la auditoría también muestra ids.
+  Recomendación: dejarla igual que las demás y, si se quiere, anotar una mejora general de la auditoría.
+- [ ] **Redirigir a quien no es admin** pasa por el Dashboard (unas 12 consultas) antes de su inicio. Recomendación:
+  dejarla pendiente (baja, pasa igual con todas las pantallas de Configuración).
+- Sin cambios: el destinatario del e-mail viene con el del cliente (está bien para el uso real) y el guardado de la
+  empresa tarda unos 3 s (Azure y la auditoría; el botón muestra "Guardando…").
+
+**Limpieza:** no hace falta. Las versiones 2 a 4 son del mismo día que la 5 y la API siempre toma la última del día,
+así que ningún documento las usa; quedan como historial, igual que en Auditoría.
+
+**Reprueba en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; no hace falta correr nada en la base):
+- [ ] 1. Gestionar empresa: sin el aviso amarillo; los datos de Rocío y "Última modificación: …".
+- [ ] 2. Ver PDF de una proforma generada: el logo y, a su derecha, "Transporte Sánchez" en grande con la razón social
+  debajo; abajo, CUIT y condición de IVA y domicilio.
+- [ ] 3. Ver PDF de una factura y de un recibo: "Condición fiscal: Responsable inscripto" (con espacio, "inscripto" en
+  minúscula), "SIN VALIDEZ" y "FISCAL" en dos renglones dentro del recuadro de la "I", y el pie "Generado: DD/MM/AAAA
+  HH:MM" en 24 h.
+- [ ] 4. Presupuestos con la sesión vencida (más de 30 minutos): Enviar por e-mail → "Tu sesión venció. Volvé a iniciar
+  sesión." y, enseguida, el login.
