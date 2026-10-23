@@ -50,7 +50,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
-| 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; falta revisar los datos con el script | Commits del 23/10, **sin push** | **Correr antes `database/tarifas/01_revisar_tarifas.sql`** (diagnóstico), recompilar la API y probar (ver §31) |
+| 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | Commits del 23/10, **sin push** | Recompilar la API y probar (ver §31) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2426,42 +2426,50 @@ usa el neto. Al revisarlo aparecieron tres cosas más, que Rocío decidió el mi
   ruta + vuelta distinto del neto viejo) cambia el importe de todos sus viajes, también en el detalle del viaje y en el
   costo del dashboard; las proformas y facturas ya emitidas no. Por eso el script no toca las que no suman: se deciden
   una por una.
-- **Antes de editar tarifas viejas, correr el script:** una tarifa con solo el neto cargado se abre con ruta $0,00 y
-  no se puede guardar hasta completar la ruta.
+- Una tarifa con solo el neto cargado se abre con ruta $0,00 y no se puede guardar hasta completar la ruta. En la base
+  del equipo no quedó ninguna (ver abajo).
 - Los viajes ya cargados conservan su tarifa; lo nuevo vale al registrar o al cambiar fechas, ruta o tipo de tarifa.
 - La API de viajes no controla que la tarifa elegida sea la de la fecha (la elige la pantalla). Se puede sumar si hace
   falta.
 - `tests/` no tiene pruebas de tarifas y en la Mac no hay Node: no se agregó una prueba.
 - **Contarle a Facu:** la respuesta a su mensaje, y que presupuestos ahora busca la tarifa fija con la fecha de inicio.
 
-**Datos que ya se superponen:** la #4 y la #5 de Facu. Mientras sigan así, editar cualquiera de las dos da el error.
-Propuesta: que Facu le cambie las fechas a la #5 para que empiece el 01/11/2026 (al guardarla, el neto pasa a
-$185.000), o eliminarla si fue solo de prueba.
+**Datos revisados y corregidos (23/10):** Rocío corrió el script (`@Aplicar = 0`): ninguna fija "se corrige sola",
+ninguna con origen o destino de otro cliente y ninguna por km superpuesta. Con su OK corrió este cambio (`BEGIN TRAN`,
+8 filas, `Usu_Modi` "script tarifas 01"), que no cambia el importe de ningún viaje:
+- Fijas (las tres de prueba y sin viajes): **#1** ruta 120.000 y vuelta 130.000 (sumaban 250.001,09 con neto 250.000);
+  **#4** vuelta 50.000 (sumaba 150.500 con neto 200.000); **#5** desde el 01/11/2026 y neto 185.000 (tenía neto 0 y se
+  pisaba con la #4). Quedan la #4 en octubre ($ 200.000) y la #5 en noviembre y diciembre ($ 185.000), que sirven para
+  probar el cambio de tarifa por fecha. **Contarle a Facu** (eran sus pruebas).
+- Por km: los mínimos pasan al máximo de la banda anterior (#5 1→0, #4 21→20, #3 101→100, #2 501→500, #1 901→900).
+  Con la regla nueva, un viaje de 21 km exactos quedaba sin tarifa; los km enteros caen en la misma banda que antes y
+  ya no hay huecos para los decimales (un viaje de 20,5 km no tenía tarifa). El viaje guarda su tarifa y su importe es
+  valor por km × km, así que cambiar la banda no cambia importes.
+- **Para más adelante:** las bandas de 0 a 100 km (#5 y #4) valen solo en 2026; desde el 01/01/2027 un viaje de menos
+  de 100 km no tiene tarifa por km hasta que se carguen las de 2027 (las de más de 100 km valen hasta fin de 2027).
 
 **Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5):
-- [ ] 0. Rocío corre `database/tarifas/01_revisar_tarifas.sql` en SSMS con `@Aplicar = 0` y mira las seis consultas.
-  Decidimos juntas qué hacer con cada fila de "Decidir a mano", las superpuestas y las bandas por km. Después, con
-  `@Aplicar = 1`, el número tiene que coincidir con las filas "Se corrige sola"; COMMIT.
+- [x] 0. Revisar y corregir los datos con `database/tarifas/01_revisar_tarifas.sql`: hecho por Rocío el 23/10 (arriba).
 - [ ] 1. Gestionar tarifas → Registrar tarifa fija: Origen y Destino dicen "Elegí el cliente"; al elegir QUICKFOOD
   aparecen solo sus orígenes y destinos. Ruta 150000 → al salir, "150.000,00"; vuelta 35000 → el neto dice
   "$ 185.000,00" mientras se escribe.
 - [ ] 2. QUICKFOOD, Sede Quilmes → Sede Banfield, del 15/10/2026 al 25/10/2026 → Guardar: dentro del modal, "Este cliente
-  ya tiene la tarifa fija #… para el mismo recorrido, del … al …". No se crea nada.
-- [ ] 3. Mismo recorrido, del 01/01/2027 al 31/01/2027 → "Tarifa registrada." con $ 185.000,00 en la tabla. Después,
-  eliminarla.
+  ya tiene la tarifa fija #4 para el mismo recorrido, del 20/10/2026 al 31/10/2026. Cambiá las fechas…". No se crea nada.
+- [ ] 3. Mismo recorrido, del 01/01/2027 al 31/01/2027 (empieza el día siguiente a que termina la #5) → "Tarifa
+  registrada." con $ 185.000,00 en la tabla. Después, eliminarla.
 - [ ] 4. Ruta vacía o 0 → "Completá el valor de ruta." / "Tiene que ser mayor que cero."; vuelta vacía → "Completá el
   valor de vuelta vacío (0 si no se cobra)."; vuelta 0 → se puede.
 - [ ] 5. Editar una tarifa de otro recorrido y Guardar sin cambios: "Tarifa guardada." (no se compara consigo misma).
-- [ ] 6. Tarifas por km → Registrar con el mismo período que una existente y una banda que se pise → error con la
-  tarifa y su banda. Con la banda que empieza justo en el máximo de la otra (por ejemplo, si hay una "hasta 1.000",
-  de 1.000 a 2.000) → se guarda. Después, eliminarla. Km del viaje: escribir el máximo de una banda (100) muestra esa
-  banda y no la siguiente.
+- [ ] 6. Tarifas por km → Registrar del 01/01/2026 al 31/12/2026, $ 1.500 por km, de 50 a 200 km → error que nombra la
+  #3 (más de 100 y hasta 500 km) o la #4 (más de 20 y hasta 100). De 3694 a 5000 km (empieza en el máximo de la #1) →
+  se guarda; después, eliminarla. Km del viaje: escribir 100 muestra la #4 y no la #3; escribir 100,5 muestra la #3.
 - [ ] 7. Gestionar viajes → Registrar viaje, QUICKFOOD, Sede Quilmes → Sede Banfield, tarifa Fija: sin inicio, "Completá
-  el inicio para buscar la tarifa fija."; con un inicio dentro de la #4, el importe de la #4; con uno del 15/02/2027
-  (sin tarifa), el aviso amarillo con la fecha. Escribir la fecha a mano y hacer clic afuera también cambia la tarifa.
-  No guardar.
-- [ ] 8. Por km: un viaje del 31/12/2026 23:00 al 01/01/2027 06:00 toma la tarifa por km de 2026 (antes quedaba sin
-  tarifa si había una por año). No guardar.
+  el inicio para buscar la tarifa fija."; inicio 28/10/2026 → $ 200.000,00 (#4); 02/11/2026 → $ 185.000,00 (#5);
+  15/02/2027 → el aviso amarillo "No hay tarifa fija de esta ruta para el 15/02/2027…". Escribir la fecha a mano y
+  hacer clic afuera también cambia la tarifa. No guardar.
+- [ ] 8. Por km, con la distancia a mano en 50 km: del 31/12/2026 23:00 al 01/01/2027 06:00 → "$ 50.000,00 neto ·
+  $ 1.000,00 por km × 50,0 km" (#4; antes quedaba sin tarifa porque la #4 termina el 31/12). Con 21 km → la #4 (antes
+  de corregir las bandas no tenía). No guardar.
 - [ ] 9. Gestionar presupuestos → Registrar presupuesto, tipo Fija, mismo recorrido: sin inicio, "Completá la fecha de
   inicio para buscar la tarifa fija."; con inicio, "Tarifa fija #…, vigente el DD/MM/AAAA." No guardar.
 - [ ] 10. Editar un viaje ya cargado con tarifa fija: abre con su importe de siempre; cambiarle el inicio a otro mes
