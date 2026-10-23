@@ -528,6 +528,8 @@
         }
 
         var viajesPagina = {};
+        // En un viaje que ya salió solo se completan los números: el botón de la fila y el título del modal dicen esto (§3.1).
+        var TITULO_COMPLETAR_NUMEROS = 'Completar números de remito y entrega';
 
         function filtrosViajes() {
             const idViaje = $('#idviajeinput').val().trim();
@@ -570,7 +572,7 @@
             // Motivo del botón deshabilitado (§1.4): "No se puede {acción}: {qué le pasa al viaje}", sin decir qué hacer.
             const situacion = facturado ? 'está facturado'
                 : 'está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID));
-            const tituloEditar = registrado ? 'Editar' : 'Completar números de remito y entrega';
+            const tituloEditar = registrado ? 'Editar' : TITULO_COMPLETAR_NUMEROS;
             const desdePresupuesto = !!viaje.Presupuesto_ID;
             const motivoEliminar = 'No se puede eliminar el viaje: ' + (bloqueado ? situacion
                 : (enProforma ? 'está en el borrador de proforma #' + viaje.EnProforma_ID
@@ -1055,6 +1057,9 @@
             // Directo: el chofer recibe la hoja de ruta por WhatsApp al registrar el viaje.
             $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted fw-normal', conPlataforma).toggleClass('text-danger', !conPlataforma);
             reglasViaje.chofer.requerido = conPlataforma ? '' : 'Seleccioná un chofer.';
+            // Si ya estaba marcado (por ejemplo, después de Guardar), se vuelve a mirar con la regla nueva: un chofer
+            // opcional no queda en rojo (reporte de la VM del 23/10, F3).
+            if (formularioViaje && $('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
             actualizarAvisoWhatsApp();
         }
         // Camiones activos (VIA-07); al editar, el del viaje se agrega aunque ya no lo esté.
@@ -1243,6 +1248,10 @@
 
         // ===================== ABRIR MODAL =====================
         function viajeRegistrado(estado) { return !estado || estado === 'Registrado'; }
+        // El título del modal dice lo mismo que el botón de la fila (§3.1).
+        function tituloEdicionViaje(estado, id) {
+            return (viajeRegistrado(estado) ? 'Editar viaje #' : TITULO_COMPLETAR_NUMEROS + ' del viaje #') + id;
+        }
 
         function etiquetaInformativa(texto) { return '<span class="badge rounded-pill bg-white text-dark border">' + SGTL.escapar(texto) + '</span>'; }
         // Estado y etiquetas informativas del título (§4.3): "En borrador #23", "Del presupuesto #12".
@@ -1353,7 +1362,8 @@
         function abrirModalEditarViaje(id) {
             resetFormViaje();
             $('#viajeIdEdicion').val(id);
-            $('#tituloViaje').text('Editar viaje #' + id);
+            var deLaTabla = viajesPagina[String(id)];
+            $('#tituloViaje').text(tituloEdicionViaje(deLaTabla && deLaTabla.Estado, id));
             $.when(cargarClientesViaje(), cargarCamionesViaje(), cargarChoferesViaje(), cargarOrigenesDestinos()).always(function () {
                 $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'GET' })
                     .done(function (v) {
@@ -1361,6 +1371,7 @@
                             SGTL.toastError('El viaje #' + id + ' está facturado: no se puede modificar.');
                             return;
                         }
+                        $('#tituloViaje').text(tituloEdicionViaje(v.Estado, id));
                         $('#etiquetasViaje').html(etiquetasDelViaje(v));
                         $('#clienteSelect').val(v.ClienteID);
                         SelectClientePredictivo.sincronizar('clienteSelect');

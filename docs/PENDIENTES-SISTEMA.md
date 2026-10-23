@@ -2015,7 +2015,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 - [x] **F2. "Sin viaje relacionado en SGTL" en dos renglones y la tabla del control 16 px más ancha a 1100 px** (hecho 23/10). El
   resultado pasa a "Sin viaje relacionado" (el grupo ya dice "Para corregir en SGTL"), el texto completo va en el
   globito del sistema (no en el del navegador) y, entre 992 y 1199 px, un poco menos de espacio entre columnas.
-- [ ] **F3. El chofer queda en rojo aunque ya diga "(opcional)".** Al pasar a opcional se vuelve a validar el campo.
+- [x] **F3. El chofer queda en rojo aunque ya diga "(opcional)"** (hecho 23/10). Al pasar a opcional se vuelve a validar el campo.
 - [ ] **F4. Ver detalle del usuario sin pie.** Pie "Registrado el …" con la fecha de alta, que la API ya manda. Quién lo
   registró y la última modificación necesitan cambiar el C# (`UsuariosController`, GET por id): queda para después.
 - [ ] **F5. Datos vacíos sin "—"** (la base guarda columnas de largo fijo con espacios, como el teléfono fijo del
@@ -2023,7 +2023,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 - [ ] **Buscador de cliente** (`select-cliente-predictivo.js`): la opción vacía ("Seleccioná un cliente", "Todos") no va
   en la lista, y al hacer clic en un campo con un cliente elegido se selecciona el texto, para que lo que se escribe
   lo reemplace.
-- [ ] **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N".
+- [x] (hecho 23/10) **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N".
 - [ ] **Volver de "Editar cliente" a la proforma:** aparece enseguida, sin esperar a que se relean los datos del
   cliente, y en el mismo lugar en el que estaba.
 - [ ] **"Responsable inscripto"** con mayúscula solo al principio (§9) en la proforma: el recuadro, la fila de Rukas y
