@@ -550,7 +550,7 @@
   }
 
   var RESULTADOS = {
-    Coincide: 'Coincide', Importe_distinto: 'Importe distinto', Sin_viaje: 'Sin viaje relacionado en SGTL', Repetido_en_SGTL: 'N° repetido en SGTL',
+    Coincide: 'Coincide', Importe_distinto: 'Importe distinto', Sin_viaje: 'Sin viaje relacionado', Repetido_en_SGTL: 'N° repetido en SGTL',
     Ya_facturado: 'Ya facturado', En_otra_proforma: 'En otra proforma', Faltan_numeros: 'Faltan números', Sin_tarifa: 'Sin tarifa',
     Repetido_en_archivo: 'Repetido en el Excel', Dato_invalido: 'Dato mal en el Excel'
   };
@@ -629,7 +629,7 @@
     // En texto y en un renglón, sin etiqueta de color: el color de cada problema está una sola vez, en el título de
     // su grupo (pedido de Rocío, 22/10). Las que coinciden, en gris.
     var resultado = l.Coincide ? '<span class="text-muted">Coincide</span>'
-      : '<span' + (l.Detalle ? ' title="' + esc(l.Detalle) + '"' : '') + '>' + esc(textoResultado(l)) + '</span>';
+      : '<span' + (l.Detalle ? ' tabindex="0" data-bs-toggle="tooltip" title="' + esc(l.Detalle) + '"' : '') + '>' + esc(textoResultado(l)) + '</span>';
     // De dónde sale el importe de SGTL, solo donde sirve para decidir (cuando no coincide), en gris debajo del importe
     // y sin ícono (pedido de Rocío, 22/10): "602,8 km × $ 850", "tarifa fija de la ruta", "importe del presupuesto #12".
     var tarifa = l.TarifaUsada && l.Resultado === 'Importe_distinto'

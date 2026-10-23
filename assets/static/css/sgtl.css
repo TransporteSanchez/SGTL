@@ -90,10 +90,11 @@ table.table.sgtl-tabla-compacta tr th {
 }
 
 /* Tabla del control de la proforma de Rukas: con aire entre columnas (pedido de Rocío, 22/10). Desde 1200 px, más
-   espacio y la ruta en un renglón; entre 992 y 1199 px, un poco menos para que entre sin desplazarse. */
+   espacio y la ruta en un renglón; entre 992 y 1199 px, menos, para que entre sin desplazarse (a 1100 px sobraban
+   16 px con .65rem; reporte de la VM del 23/10). */
 table.table.sgtl-tabla-control > :not(caption) > tr > * {
-    padding-left: .65rem;
-    padding-right: .65rem;
+    padding-left: .5rem;
+    padding-right: .5rem;
 }
 
 .sgtl-col-ruta {

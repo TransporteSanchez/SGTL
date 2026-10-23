@@ -1828,7 +1828,7 @@ Tres pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+
   ícono rojo; uno que solo espera, el reloj naranja de borde.
 
 **Para más adelante** (Rocío, 22/10: "no me cierran las opciones"):
-- [ ] **Ayudar a encontrar el viaje de un "Sin viaje relacionado en SGTL".** La causa más común es un viaje del cliente
+- [ ] **Ayudar a encontrar el viaje de un "Sin viaje relacionado".** La causa más común es un viaje del cliente
   cargado sin el N° de transporte SAP (o con otro). La lista de viajes sin proforma que arma la API (`Avisos`,
   `ViajesSinProforma`) trae solo los que tienen el N° cargado, así que justo esos no aparecen. Se probaron y se
   descartaron: los viajes sin proforma al lado del título del grupo (se mezclaba con "Falta el remito"), solo el del
@@ -2012,7 +2012,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
   pestañas y el paso actual. Si el color elegido no se lee sobre blanco, esos detalles toman el color del menú (o, si
   tampoco se lee, el mismo color más oscuro). El fondo de la pantalla sigue con el color elegido. Además, "Restablecer" en
   Gestionar contenido deja la marca nueva (`#435ebe`): el `#e4eef8` guardado es el color de antes del 22/10.
-- [ ] **F2. "Sin viaje relacionado en SGTL" en dos renglones y la tabla del control 16 px más ancha a 1100 px.** El
+- [x] **F2. "Sin viaje relacionado en SGTL" en dos renglones y la tabla del control 16 px más ancha a 1100 px** (hecho 23/10). El
   resultado pasa a "Sin viaje relacionado" (el grupo ya dice "Para corregir en SGTL"), el texto completo va en el
   globito del sistema (no en el del navegador) y, entre 992 y 1199 px, un poco menos de espacio entre columnas.
 - [ ] **F3. El chofer queda en rojo aunque ya diga "(opcional)".** Al pasar a opcional se vuelve a validar el campo.

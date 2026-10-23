@@ -130,7 +130,7 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 
 1. **Preparación:** en Gestionar viajes, editá el viaje **26** y cambiá el N° de transporte SAP de 990002 a **990020** (simula un error de carga).
 2. Elegí `proforma-rukas-caso3-corregir-viaje-en-sgtl (PROFORMA NRO 990130).xlsx` → Guardar borrador.
-3. El 990002 está en **"Para corregir en SGTL"** con "Sin viaje relacionado en SGTL" (el globito dice "No hay un viaje de este cliente con el N° 990002"). El aviso de viajes fuera de la proforma se sacó del control el 22/10: el viaje #26, con el N° mal cargado, se ve en Gestionar viajes o en la guía del paso 2 de una proforma nueva.
+3. El 990002 está en **"Para corregir en SGTL"** con "Sin viaje relacionado" (el globito dice "No hay un viaje de este cliente con el N° 990002"). El aviso de viajes fuera de la proforma se sacó del control el 22/10: el viaje #26, con el N° mal cargado, se ve en Gestionar viajes o en la guía del paso 2 de una proforma nueva.
 4. Corregí el viaje 26 (volvé a poner **990002**) y, en el borrador, **"Volver a controlar"** (en la franja del Excel): "Lista para generar".
 5. Eliminá el borrador (o generá).
 6. Otra variante del mismo caso: en vez del N°, corregir la **tarifa** del viaje (en Listo para facturar se puede) y volver a controlar.
