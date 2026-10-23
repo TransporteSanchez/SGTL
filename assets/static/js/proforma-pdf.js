@@ -16,6 +16,16 @@
     function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
     function txt(v) { return (v == null || v === '') ? '—' : String(v); }
+    // "30715893424" → "30-71589342-4", como en pantalla; si no tiene 11 dígitos, como viene.
+    function cuitConGuiones(v) {
+        var d = String(v == null ? '' : v).replace(/\D/g, '');
+        return d.length === 11 ? d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10) : txt(v);
+    }
+    // La proforma guarda "Responsable Inscripto": mayúscula solo al principio (§9), como en pantalla.
+    function condicionIva(v) {
+        var t = String(v == null ? '' : v).trim();
+        return t ? t.charAt(0).toUpperCase() + t.slice(1).toLowerCase() : txt(v);
+    }
 
     function getJsPDF() { return (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null); }
 
@@ -82,8 +92,8 @@
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
         var colA = M + 3, colB = W / 2 + 5, ry = chY + 11;
         doc.text('Razón social: ' + txt(p.Cli_RazonSocial), colA, ry);
-        doc.text('CUIT: ' + txt(p.Cli_CUIT), colB, ry);
-        doc.text('Cond. IVA: ' + txt(p.Cli_CondIVA), colA, ry + 5);
+        doc.text('CUIT: ' + cuitConGuiones(p.Cli_CUIT), colB, ry);
+        doc.text('Cond. IVA: ' + condicionIva(p.Cli_CondIVA), colA, ry + 5);
         doc.text('Dirección: ' + txt(p.Cli_Direccion), colB, ry + 5);
         // Los datos salen de la ficha del cliente (§25 de PENDIENTES, 22/10). "Contacto" no tiene de dónde salir: no va.
         var ciudad = [p.Cli_Ciudad, p.Cli_Provincia && String(p.Cli_Provincia).toLowerCase() !== String(p.Cli_Ciudad || '').toLowerCase() ? p.Cli_Provincia : '']

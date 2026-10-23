@@ -341,7 +341,7 @@
                 arr.forEach(function (c) {
                     var id = c.Cliente_ID || c.ClienteID || c.Id;
                     var nom = c.Razon_Social || c.RazonSocial || ('Cliente ' + id);
-                    var cuit = c.CUIT_Cliente || c.CUIT || '';
+                    var cuit = cuitConGuiones(c.CUIT_Cliente || c.CUIT || '');
                     var etiqueta = nom + (cuit ? ' · ' + cuit : '');
                     clientesMap[id] = c;
                     // Los de Rukas llevan la etiqueta en la lista y adentro del campo, como en Registrar viaje.
@@ -408,13 +408,17 @@
         // Los datos del cliente como texto (§6.3), en dos tamaños de la misma pieza (pedido de Rocío, 22/10): completo
         // en la proforma propia, cada dato con su nombre; compacto en la de Rukas, donde lo principal es el Excel: una
         // fila de cuatro columnas con el segundo dato en gris debajo. enlace: con "Editar cliente" a la derecha.
+        // "30715893424" → "30-71589342-4", como en Gestionar clientes; si no tiene 11 dígitos, como viene.
+        function cuitConGuiones(valor) {
+            var cuit = String(valor || '').trim();
+            return window.formatearCUIT && cuit.replace(/\D/g, '').length === 11 ? formatearCUIT(cuit) : cuit;
+        }
         function htmlDatosCliente(opciones) {
             opciones = opciones || {};
             var razon = val('p_cli_razon').trim();
             var nombre = val('p_cli_nombre').trim();
             var comercial = nombre && nombre.toLowerCase() !== razon.toLowerCase() ? nombre : '';
-            var cuit = val('p_cli_cuit').trim();
-            if (window.formatearCUIT && cuit.replace(/\D/g, '').length === 11) cuit = formatearCUIT(cuit);
+            var cuit = cuitConGuiones(val('p_cli_cuit'));
             var lugar = [datosExtraCliente.ciudad, datosExtraCliente.provincia && datosExtraCliente.provincia.toLowerCase() !== (datosExtraCliente.ciudad || '').toLowerCase() ? datosExtraCliente.provincia : '']
                 .filter(Boolean).join(', ');
             var lineaLugar = [lugar, datosExtraCliente.cp ? 'CP ' + datosExtraCliente.cp : ''].filter(Boolean).join(' · ');
@@ -445,30 +449,44 @@
             var id = val('p_cliente');
             if (!id || !window.SGTLEditarCliente || !puedeEditarClientes()) return;
             var conCambios = proformaConCambios;
+            var modal = document.getElementById('modalProforma');
+            var cuerpo = modal.querySelector('.modal-body');
+            var desplazamiento = cuerpo ? cuerpo.scrollTop : 0;
             proformaConCambios = false;
             $('#modalProforma').one('hidden.bs.modal', function () {
                 SGTLEditarCliente.abrir(id, {
                     tipoBloqueado: 'Desde una proforma no se cambia: hacelo en Gestionar clientes.',
                     alCerrar: function (resultado) {
-                        var volver = function () {
-                            $('#modalProforma').one('shown.bs.modal', function () { proformaConCambios = conCambios; }).modal('show');
-                        };
-                        if (!resultado) { volver(); return; }
+                        // La proforma vuelve enseguida y en el mismo lugar (reporte de la VM del 23/10: tardaba unos 2 s
+                        // y volvía arriba de todo); con un cambio guardado, los datos se completan cuando llega el cliente.
+                        $('#modalProforma').one('shown.bs.modal', function () { proformaConCambios = conCambios; }).modal('show');
+                        volverAlMismoLugar(modal, cuerpo, desplazamiento);
+                        if (!resultado) return;
                         $.ajax({ url: API_FAC + '/Clientes/' + id, type: 'GET' }).done(function (c) {
                             clientesMap[id] = Object.assign(clientesMap[id] || {}, c);
                             actualizarOpcionCliente(id, clientesMap[id]);
                             completarDatosCliente(clientesMap[id]);
                             if (window.ProformaPlataforma) ProformaPlataforma.refrescarCliente();
-                        }).always(volver);
+                        });
                     }
                 });
             });
             $('#modalProforma').modal('hide');
         }
 
+        // Bootstrap lleva el cuerpo del modal arriba de todo al mostrarlo: apenas lo muestra, vuelve a donde estaba.
+        function volverAlMismoLugar(modal, cuerpo, desplazamiento) {
+            if (!cuerpo || !desplazamiento) return;
+            var intentos = 0;
+            (function esperar() {
+                if (modal.classList.contains('show')) { cuerpo.scrollTop = desplazamiento; return; }
+                if (++intentos < 120) requestAnimationFrame(esperar);
+            })();
+        }
+
         // La razón social o el CUIT pudieron cambiar: la opción del cliente (en el formulario y en el filtro) también.
         function actualizarOpcionCliente(id, c) {
-            var cuit = c.CUIT_Cliente || c.CUIT || '';
+            var cuit = cuitConGuiones(c.CUIT_Cliente || c.CUIT || '');
             var etiqueta = (c.Razon_Social || c.RazonSocial || ('Cliente ' + id)) + (cuit ? ' · ' + cuit : '');
             ['p_cliente', 'fCliente'].forEach(function (selectId) {
                 var opcion = document.querySelector('#' + selectId + ' option[value="' + id + '"]');
@@ -479,14 +497,19 @@
 
         $(document).on('click', '#modalProforma [data-editar-cliente]', editarClienteDesdeProforma);
 
+        // Con mayúscula solo al principio (§9), como en Ver detalle del cliente. La proforma guarda el texto que arma la
+        // API ("Responsable Inscripto"): también se traduce.
         function descripcionCondicionIva(condicion) {
             var descripciones = {
-                '1': 'Responsable Inscripto',
+                '1': 'Responsable inscripto',
                 '2': 'Monotributista',
                 '3': 'Exento',
-                'RI': 'Responsable Inscripto',
+                'RI': 'Responsable inscripto',
                 'MT': 'Monotributista',
-                'EX': 'Exento'
+                'EX': 'Exento',
+                'RESPONSABLE INSCRIPTO': 'Responsable inscripto',
+                'MONOTRIBUTISTA': 'Monotributista',
+                'EXENTO': 'Exento'
             };
             var codigo = String(condicion == null ? '' : condicion).trim().toUpperCase();
             return descripciones[codigo] || '';
@@ -745,7 +768,9 @@
             limpiarForm();
             estadoActual = 'Borrador';
             document.getElementById('tituloModal').textContent = 'Registrar proforma';
-            ponerBadgeEstado('badgeEstadoModal', 'Borrador');
+            // Todavía no es un borrador: la etiqueta aparece al guardarlo, como en la de Rukas.
+            var etiquetaTitulo = document.getElementById('badgeEstadoModal');
+            if (etiquetaTitulo) etiquetaTitulo.outerHTML = '<span id="badgeEstadoModal" class="ms-2"></span>';
             setModoLectura(false);
             proformaConCambios = false;
             $('#modalProforma').modal('show');
@@ -874,6 +899,8 @@
                     if (!res.ok) { mostrarMensajeProforma('No se pudo guardar: ' + (res.j.error || 'revisá los datos y probá de nuevo.'), 'danger'); return; }
                     var nuevoId = res.j.Proforma_ID || id;
                     setVal('p_id', nuevoId);
+                    // Si el modal sigue abierto (ver el PDF, generar), ya es un borrador.
+                    if (!id) ponerBadgeEstado('badgeEstadoModal', 'Borrador');
                     proformaConCambios = false;
                     if (cb) { cb(nuevoId); } else { cerrarProformaYMostrarMensaje('Borrador guardado.', 'success'); buscarProformas(profState.page); }
                 })

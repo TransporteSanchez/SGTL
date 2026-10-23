@@ -2025,12 +2025,13 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
   lo reemplace.
 - [x] **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N"
   (hecho 23/10).
-- [ ] **Volver de "Editar cliente" a la proforma:** aparece enseguida, sin esperar a que se relean los datos del
+- [x] **Volver de "Editar cliente" a la proforma** (hecho 23/10): aparece enseguida, sin esperar a que se relean los datos del
   cliente, y en el mismo lugar en el que estaba.
-- [ ] **"Responsable inscripto"** con mayúscula solo al principio (§9) en la proforma: el recuadro, la fila de Rukas y
+- [x] **"Responsable inscripto"** con mayúscula solo al principio (§9, hecho 23/10) en la proforma: el recuadro, la fila de Rukas y
   el PDF. Lo que se guarda no cambia. La factura, los recibos y los comprobantes (módulo de Facu) siguen como están.
-- [ ] **CUIT con guiones** en la lista de clientes de la proforma y en el PDF.
-- [ ] **Registrar proforma propia:** el título sin la etiqueta "Borrador" hasta que se guarda, como en la de Rukas.
+- [x] **CUIT con guiones** en la lista de clientes de la proforma y en el PDF (hecho 23/10). El buscador encuentra el
+  CUIT con guiones o sin ellos.
+- [x] **Registrar proforma propia:** el título sin la etiqueta "Borrador" hasta que se guarda (hecho 23/10), como en la de Rukas.
 - [ ] **El PDF de un borrador no tiene "Enviar por e-mail":** queda así (un borrador no se le manda al cliente);
   anotarlo en el §1.4 del design system y en la lista de control de `AGENTS.md`.
 - [ ] **Instructivo de la VM** (`docs/equipo/PRUEBAS-VM-CLAUDE.md`): generar una proforma deja sus viajes en Listo para

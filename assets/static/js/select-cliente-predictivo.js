@@ -13,10 +13,12 @@
     var instancias = new WeakMap();
     var contador = 0;
 
+    // Sin acentos, en minúscula y sin guiones: el CUIT se encuentra con o sin ellos ("30715893424" o "30-71589342-4").
     function normalizar(texto) {
         return String(texto || '')
             .normalize('NFD')
             .replace(/[\u0300-\u036f]/g, '')
+            .replace(/-/g, '')
             .toLocaleLowerCase();
     }
 
