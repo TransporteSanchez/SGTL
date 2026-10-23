@@ -1604,6 +1604,26 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
     empresa · Gestionar contenido; Usuarios: Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos.
     Tildar o destildar uno, Guardar permisos y volver a elegir el grupo: queda como se guardó, y un usuario de ese
     grupo ve en el menú lo mismo que antes (los permisos son los mismos).
+- [ ] **Pendiente a futuro (decisión de Rocío, 23/10): normalizar en la base los nombres de los permisos con los del
+  menú**, en infinitivo, para que todo quede igual y la pantalla no tenga que traducirlos. Es más trabajo, pero hay que
+  hacerlo en algún momento. Hoy la tabla `MENU` sigue con "Listado de…", "Gestión de…", "Presupuestos", "Cuenta
+  Corriente", "E-mail", "Integración WhatsApp", "Grupos y permisos" y "Auditoria" (sin tilde); "Dashboard" y "Auditoría"
+  quedan sin verbo, como en el menú. Qué implica (relevado el 23/10):
+  - **Renombrar los 24 conservando `Menu_ID` y las asignaciones:** en `GruposController`, los nombres nuevos en
+    `CatalogoMenuPermisos` y `MenuPrincipalPorPermiso`, y los viejos en `renombres` (`AsegurarCatalogoMenuPermisos` ya
+    sabe renombrar y unificar si coexisten). O un script idempotente en `database/menu/03_…`, que se ve antes de
+    correrlo. Recompilar la API.
+  - **Lo que da acceso por nombre**, que tiene que aceptar los dos nombres mientras dure el cambio: `MENU_TO_PAGE` en
+    `sidebar-loader.js` (ya tiene algunas claves nuevas: "gestionar viajes", "gestionar presupuestos", "gestionar
+    empresa", "consultar auditoria") y `EnviosPresupuestosController` (el SQL de la línea 42 pide 'Gestion de viajes' o
+    'Presupuestos'; sumar 'Gestionar viajes' y 'Gestionar presupuestos').
+  - **Dónde se ven los nombres:** Gestionar grupos y permisos (hoy los traduce `OPCIONES_DEL_MENU`, que después sobra o
+    queda solo para el orden) y **Listar usuarios → Ver detalle**, que muestra las pantallas de cada grupo con el nombre
+    de la base (`bloqueGrupo` en `listado-usuarios.html`, con `api/Usuarios/{id}/Detalles`): hoy ahí se ve "Gestión de
+    choferes". `api/Usuarios/MenusPermitidos` devuelve el nombre para el menú y no cambia.
+  - **Pruebas que nombran permisos:** `permisos-agrupados`, `permisos-presupuestos` y `empresa-documentos`.
+  - **Cuándo:** con las ramas de todos al día y avisando a Facu y Fede (la base es compartida). Una API vieja, al abrir
+    Grupos y permisos, vuelve a crear los nombres viejos como permisos vacíos, y en Grupos y permisos aparecerían repetidos.
 - [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
   Integración WhatsApp, Gestión de empresa (sumado el 23/10, decisión de Rocío, para que el catálogo quede unificado; ver
   §30) y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no le da acceso a
