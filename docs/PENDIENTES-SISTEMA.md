@@ -2447,6 +2447,36 @@ ninguna con origen o destino de otro cliente y ninguna por km superpuesta. Con s
   valor por km × km, así que cambiar la banda no cambia importes.
 - **Para más adelante:** las bandas de 0 a 100 km (#5 y #4) valen solo en 2026; desde el 01/01/2027 un viaje de menos
   de 100 km no tiene tarifa por km hasta que se carguen las de 2027 (las de más de 100 km valen hasta fin de 2027).
+- Con el código que hoy está en la VM (sin estos commits), los datos corregidos dan lo mismo que antes: cada km entero
+  cae en la misma banda (la de banda más angosta, como antes) y un viaje cargado en octubre sigue tomando la fija #4.
+
+**Pendiente después de la presentación: valores más reales (decidido por Rocío el 23/10, no tocar antes de presentar).**
+Los valores cargados son de prueba (850 $/km para viajes cortos, y el precio por km sube con la distancia, cuando en
+la realidad baja). Se le pidieron a Claudia los reales; si no llegan, propuesta estimada con la referencia de granos de
+FADEEAC de marzo de 2026 (por tonelada: ~$25.389 a 100 km, ~$77.700 a 500 km, ~$148.417 a 1.500 km; para un semi de
+28 t, ~7.100, 4.350 y 2.770 $/km) y la suba de costos del año. Sin IVA:
+
+| Tarifa | Banda | Hoy | Propuesta | Ejemplo |
+|---|---|---|---|---|
+| km #5 | 0 a 20 km | $ 850 | $ 8.000 (y hasta el 31/12/2027) | 15 km → $ 120.000 |
+| km #4 | 20 a 100 km | $ 1.000 | $ 6.500 (y hasta el 31/12/2027) | 60 km → $ 390.000 |
+| km #3 | 100 a 500 km | $ 1.800 | $ 5.200 | 300 km → $ 1.560.000 |
+| km #2 | 500 a 900 km | $ 2.500 | $ 4.200 | 700 km → $ 2.940.000 |
+| km #1 | 900 a 3694 km | $ 4.000 | $ 3.400 | 1.200 km → $ 4.080.000 |
+| fija #5 | Quilmes → Banfield, nov. y dic. | $ 185.000 | $ 210.000 (157.500 + 52.500) | más cara que octubre ($ 200.000), no más barata |
+
+- Fijas #1 y #2 (QUICKFOOD Sede 1 → VAFOOD): ajustar según la distancia entre las sedes (sacarla de las localidades o
+  del promedio de km de los viajes de esa ruta).
+- **Cómo aplicarlo:** primero ver cuántos viajes de cada tarifa están facturados o en una proforma no anulada
+  (`PROFORMAS_VIAJES` + `PROFORMAS.Estado`), porque el viaje lee el importe de la tarifa. Si se pisan los valores, sus
+  26 viajes muestran el importe nuevo en el detalle y el dashboard (las facturas y proformas emitidas no cambian; los
+  borradores de Rukas muestran diferencias). Si no se quiere eso, cerrar las tarifas actuales el día anterior y cargar
+  las nuevas desde el día siguiente. `UPDATE` con `BEGIN TRAN`, guardas por ID y valor actual, `Usu_Modi` "script
+  tarifas 02" (varchar 20) y `-- COMMIT; o ROLLBACK;`.
+- Con cualquier tabla por bandas, un viaje apenas más largo que un borde puede salir más barato (100 km a $ 6.500 =
+  $ 650.000; 101 km a $ 5.200 = $ 525.200): los valores propuestos dejan esa baja pareja, ~20 % en cada borde.
+- Después, actualizar en los pasos de la VM de abajo los importes (paso 7: la #5 pasa a $ 210.000; paso 8: 50 km ×
+  $ 6.500 = $ 325.000).
 
 **Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5):
 - [x] 0. Revisar y corregir los datos con `database/tarifas/01_revisar_tarifas.sql`: hecho por Rocío el 23/10 (arriba).
