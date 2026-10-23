@@ -5,6 +5,11 @@
 
     function texto(valor) { return valor == null || valor === '' ? '—' : String(valor); }
     function numero(valor) { return Number(valor || 0); }
+    // "Responsable Inscripto" → "Responsable inscripto": mayúscula solo al principio (§9), como en la proforma.
+    function mayusculaInicial(valor) {
+        var limpio = String(valor == null ? '' : valor).trim();
+        return limpio ? limpio.charAt(0).toUpperCase() + limpio.slice(1).toLowerCase() : valor;
+    }
     function dinero(valor) {
         return '$ ' + numero(valor).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -89,7 +94,9 @@
         function etiquetaValor(etiqueta, valor, x, posicionY) {
             doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
             doc.text(etiqueta, x, posicionY);
-            doc.setFont('helvetica', 'normal'); doc.text(texto(valor), x + doc.getTextWidth(etiqueta) + 1, posicionY);
+            // El ancho se mide en negrita, como se dibujó: medido en normal, el valor se pegaba a la etiqueta.
+            var anchoEtiqueta = doc.getTextWidth(etiqueta);
+            doc.setFont('helvetica', 'normal'); doc.text(texto(valor), x + anchoEtiqueta + 1, posicionY);
         }
         function nuevaPaginaSiHaceFalta(espacio) {
             if (y + espacio > alto - 31) { doc.addPage(); y = margen; }
@@ -105,7 +112,9 @@
         doc.setFont('helvetica', 'bold'); doc.setFontSize(24); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
         doc.text('I', ancho / 2, y + 11, { align: 'center' });
         doc.setFontSize(6.5); doc.text('INTERNO', ancho / 2, y + 16, { align: 'center' });
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.text('SIN VALIDEZ FISCAL', ancho / 2, y + 20, { align: 'center' });
+        // En dos renglones: en uno solo no entraba en el recuadro de 16 mm.
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(5.2);
+        doc.text('SIN VALIDEZ', ancho / 2, y + 18.6, { align: 'center' }); doc.text('FISCAL', ancho / 2, y + 20.8, { align: 'center' });
 
         var nombreEmpresaX = margen + 4;
         if (empresa.logo) {
@@ -164,7 +173,7 @@
         var domicilio = doc.splitTextToSize(texto(factura.Domicilio), 78).slice(0, 2);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.5); doc.text('Domicilio: ', clienteX, y + 18);
         doc.setFont('helvetica', 'normal'); doc.text(domicilio, clienteX + 16, y + 18);
-        etiquetaValor('Condición fiscal: ', factura.CondicionFiscal, clienteDerechaX, y + 20);
+        etiquetaValor('Condición fiscal: ', mayusculaInicial(factura.CondicionFiscal), clienteDerechaX, y + 20);
         etiquetaValor('Condición de venta: ', factura.CondicionComercial, clienteDerechaX, y + 26);
         y += 37;
 
@@ -274,7 +283,10 @@
         var usuario = '—';
         try { usuario = localStorage.getItem('username') || localStorage.getItem('usuario') || '—'; } catch (e) { }
         var ahora = new Date();
-        var generado = ahora.toLocaleDateString('es-AR') + ' ' + ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+        // DD/MM/AAAA HH:MM, en 24 h y sin "p. m." (§7.2), como en la proforma.
+        var dosCifras = function (n) { return ('0' + n).slice(-2); };
+        var generado = dosCifras(ahora.getDate()) + '/' + dosCifras(ahora.getMonth() + 1) + '/' + ahora.getFullYear() + ' ' +
+            dosCifras(ahora.getHours()) + ':' + dosCifras(ahora.getMinutes());
         var paginas = doc.getNumberOfPages();
         for (var pagina = 1; pagina <= paginas; pagina++) {
             doc.setPage(pagina);

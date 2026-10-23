@@ -40,15 +40,23 @@
         var y = M;
 
         // ---------- Encabezado ----------
-        var conLogo = false;
+        // El logo (dentro de 45 x 18 mm, sin deformarlo) y, a su derecha, el nombre en grande, como en la factura; con
+        // nombre comercial, la razón social va debajo del nombre. Todo a la izquierda del recuadro PROFORMA.
+        var nombreX = M, limiteNombre = W - M - 60 - 6;
         if (empresa.logo) {
-            // Dentro de 45 x 18 mm, sin deformarlo.
             var medida = window.SGTLEmpresa.medidaLogo(empresa.logo, 45, 18);
-            try { doc.addImage(empresa.logo.datos, 'PNG', M, y, medida.ancho, medida.alto); conLogo = true; } catch (e) { }
+            try { doc.addImage(empresa.logo.datos, 'PNG', M, y, medida.ancho, medida.alto); nombreX = M + medida.ancho + 5; } catch (e) { }
         }
-        if (!conLogo) {
-            doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(20);
-            doc.text(doc.splitTextToSize(empresa.nombre, W - 2 * M - 66)[0], M, y + 8);
+        var datosAbajo = empresa.lineas.slice();
+        var tamanioNombre = 16;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(tamanioNombre); doc.setTextColor(20);
+        while (tamanioNombre > 10 && doc.getTextWidth(empresa.nombre) > limiteNombre - nombreX) {
+            tamanioNombre -= 0.5; doc.setFontSize(tamanioNombre);
+        }
+        doc.text(doc.splitTextToSize(empresa.nombre, limiteNombre - nombreX)[0], nombreX, y + 8);
+        if (empresa.nombreComercial && datosAbajo[0] === empresa.razonSocial) {
+            doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor(90);
+            doc.text(doc.splitTextToSize(datosAbajo.shift(), limiteNombre - nombreX)[0], nombreX, y + 13.5);
         }
         // Recuadro derecho: PROFORMA
         var bx = W - M - 60, by = y, bw = 60, bh = 26;
@@ -63,10 +71,9 @@
         doc.text('Estado: ' + txt(p.Estado), bx + 3, by + 25);
 
         y += 30;
-        // Datos de la empresa: con logo, el nombre va primero en esta lista (arriba ya está el logo).
+        // Datos de la empresa: CUIT y condición de IVA, domicilio y contacto (el nombre y la razón social ya están arriba).
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80);
-        var emp = (conLogo ? [empresa.nombre] : []).concat(empresa.lineas);
-        emp.forEach(function (linea) { doc.text(doc.splitTextToSize(linea, W - 2 * M)[0], M, y); y += 4; });
+        datosAbajo.forEach(function (linea) { doc.text(doc.splitTextToSize(linea, W - 2 * M)[0], M, y); y += 4; });
         y += 2;
 
         // ---------- Recuadro Cliente ----------
