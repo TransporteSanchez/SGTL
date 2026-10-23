@@ -45,8 +45,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
 | 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
-| 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | Commit en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §26) |
-| 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | Commit en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §27) |
+| 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §26) |
+| 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §27) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1921,7 +1921,7 @@ corresponde. Se podría dejar deshabilitado, con el motivo, mientras tenga viaje
 
 ---
 
-## 26. Motivos de los botones deshabilitados — COMMIT SIN PUSH, FALTA PROBAR EN VM (23/10)
+## 26. Motivos de los botones deshabilitados — PUSHEADO (`f2bc239`), FALTA PROBAR EN VM (23/10)
 
 Rocío notó que cada pantalla explicaba distinto por qué un botón estaba deshabilitado, y que algunos globitos no decían
 qué acción estaba bloqueada ("Primero generá la proforma" en el botón de emitir factura). Se relevaron los 28 textos
@@ -1966,7 +1966,7 @@ una sola forma, que quedó en el §1.4 del design system y en la lista de contro
 
 ---
 
-## 27. Subtítulos de las secciones con un solo estilo — COMMIT SIN PUSH, FALTA PROBAR EN VM (23/10)
+## 27. Subtítulos de las secciones con un solo estilo — PUSHEADO (`3a3fa65`, `c831e1c`), FALTA PROBAR EN VM (23/10)
 
 Rocío vio que algunos modales tenían los subtítulos de sus secciones en azul y otros en negro. Los títulos de los
 modales ya eran todos iguales; los subtítulos tenían cuatro estilos: `h6` (la plantilla Mazer los pinta de azul oscuro,
