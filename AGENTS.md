@@ -90,7 +90,9 @@ AGENTS.md"):
   - **Menú:** `buildFallbackSidebarHtml` en `assets/static/js/sidebar-loader.js` y la tabla del §3.1 del design system.
   - **Solo administradores:** dentro de Configuración (la sección entera es de admins) o con `.solo-admin` en otra
     sección; el archivo va en las dos listas de páginas de configuración de `sidebar-loader.js` (mandan al inicio a
-    quien no es admin) y la API rechaza a quien no es admin al guardar.
+    quien no es admin) y la API rechaza a quien no es admin al guardar. Igual va al catálogo de Grupos y permisos, en su
+    sección, para que estén todas las pantallas (decisión de Rocío, 23/10; tildarlo no da acceso, y qué hacer con esos
+    permisos está pendiente de ver con Facu).
   - **Con permiso de grupo** (Gestionar grupos y permisos): el nombre en `CatalogoMenuPermisos` y
     `MenuPrincipalPorPermiso` (`GruposController.cs`), la clave en `MENU_TO_PAGE` (`sidebar-loader.js`) y, si guarda
     datos, que la API controle el permiso.

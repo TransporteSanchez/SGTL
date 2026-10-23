@@ -1590,8 +1590,9 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
   nuevos y los viejos, y hacerlo cuando las ramas de todos estén al día (una API vieja vuelve a crear los nombres viejos
   como permisos vacíos al abrir Grupos y permisos).
 - [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
-  Integración WhatsApp y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no
-  le da acceso a nadie. Marcarlos como "solo administradores" o sacarlos del listado. Catálogo de Facu: verlo con él.
+  Integración WhatsApp, Gestión de empresa (sumado el 23/10, decisión de Rocío, para que el catálogo quede unificado; ver
+  §30) y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no le da acceso a
+  nadie. Marcarlos como "solo administradores" o sacarlos del listado. Catálogo de Facu: **verlo con él, todos juntos**.
 
 **Reprueba del 22/10** (la sesión de la VM sobre `c778c0a`; reporte en `docs/pruebas/2026-10-22-reprueba-ramas.md`):
 **los 8 puntos OK** y sin errores de JavaScript. Se emitió el REC-00000014 (distribuidora-powerful S.A., $ 100.000,00,
@@ -2186,6 +2187,7 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
 - `database/empresa/01_crear_empresa.sql`: tabla `EMPRESA` (columnas como en `CLIENTES`, más `Logo`) con la primera
   versión ("Transporte Sánchez", vale desde el 01/01/2000). Mientras esa versión no tenga CUIT, el primer Guardar la
   completa en lugar de agregar otra: así los documentos de antes también salen con los datos completos. Idempotente.
+- `GruposController.cs`: el permiso "Gestión de empresa" en el catálogo, en Configuración.
 - `EmpresaController.cs` (nuevo, sumado al `.csproj`): `GET api/empresa` (los actuales) y `GET api/empresa?fecha=AAAA-MM-DD`
   (los que valían ese día), sin sesión como `GestionContenido`; `PUT api/empresa` solo administradores, valida igual que
   la pantalla (también formato y tamaño del logo), no agrega versión si no cambió nada y deja la auditoría (entidad
@@ -2216,9 +2218,12 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
   Gestionar empresa funciona igual que Gestionar e-mail. Solo la ven y la abren los administradores: el menú esconde
   Configuración entera, la página manda al inicio a quien no es admin (está en las dos listas de `sidebar-loader.js`,
   que mira el rol guardado y el que devuelve la API) y `PUT api/empresa` también rechaza a quien no es admin. Leer los
-  datos no pide permiso, como `GestionContenido`: todos los usuarios arman PDF. No tiene permiso en Grupos y permisos, a
-  propósito: los de E-mail, Gestión de contenido e Integración WhatsApp que aparecen ahí no dan acceso a nadie (ver el
-  pendiente "permisos que no dan acceso"). El de Gestionar contenido sigue llamándose "Gestión de contenido". Un PDF con logo pesa unos 400 KB (la imagen va sin comprimir, como
+  datos no pide permiso, como `GestionContenido`: todos los usuarios arman PDF. En Grupos y permisos aparece "Gestión de
+  empresa" en Configuración, junto a E-mail, Gestión de contenido e Integración WhatsApp (decisión de Rocío, para que
+  quede unificado): como esos, tildarlo **no da acceso**, porque la sección es solo de administradores. Queda en el
+  pendiente "permisos que no dan acceso" para verlo con Facu, todos juntos. La API lo crea sola en la base la primera vez
+  que se abre Grupos y permisos (`GruposController`, sin script). El de Gestionar contenido sigue llamándose "Gestión de
+  contenido". Un PDF con logo pesa unos 400 KB (la imagen va sin comprimir, como
   antes con el de la apariencia).
 - `views/sidebar-active.html` (del primer commit, no lo carga ninguna pantalla) todavía dice "Transporte Sanchez" en el
   título: se puede borrar cuando se limpie el repo.
@@ -2226,7 +2231,9 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
 **Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5):
 - [ ] 0. Rocío corre `database/empresa/01_crear_empresa.sql` en SSMS: al final muestra la fila 1 "Transporte Sánchez".
 - [ ] 1. Configuración: Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa · Gestionar contenido.
-  Con un usuario que no es admin, Configuración no aparece (sin cambios).
+  Con un usuario que no es admin, Configuración no aparece y escribir `gestion-empresa.html` en la dirección lo manda al
+  inicio (igual que `configuracion-email.html`). Gestionar grupos y permisos → Permisos: en Configuración aparecen
+  E-mail, Gestión de contenido, Gestión de empresa e Integración WhatsApp.
 - [ ] 2. Gestionar empresa: el aviso amarillo "Faltan el CUIT y el domicilio…", la razón social cargada, el recuadro
   "Sin logo: sale el nombre en texto" con "Elegir logo" y "Todavía no se completaron.". Guardar con los campos vacíos:
   "Revisá los campos marcados.", cada error debajo de su campo y el cursor en el primero.

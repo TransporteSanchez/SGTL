@@ -38,7 +38,9 @@ namespace WebApi_TransporteSanchez.Controllers
             "Listado de viajes", "Gestión de viajes", "Gestión de orígenes y destinos", "Gestión de tarifas", "Presupuestos",
             "Listado de clientes", "Gestión de clientes",
             "Listado de proformas", "Gestión de proformas", "Cuenta Corriente", "Gestión de tipos de comprobante",
-            "E-mail", "Gestión de contenido", "Integración WhatsApp",
+            // "Gestión de empresa" (23/10): como las demás de Configuración, no da acceso (es solo de administradores);
+            // está para que el catálogo tenga todas las pantallas. Ver "permisos que no dan acceso" en los pendientes.
+            "E-mail", "Gestión de contenido", "Integración WhatsApp", "Gestión de empresa",
             "Listado de usuarios", "Gestión de usuarios", "Grupos y permisos",
             "Auditoría"
         };
@@ -67,6 +69,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 { "e-mail", "Configuración" },
                 { "gestion de contenido", "Configuración" },
                 { "integracion whatsapp", "Configuración" },
+                { "gestion de empresa", "Configuración" },
                 { "listado de usuarios", "Usuarios" },
                 { "gestion de usuarios", "Usuarios" },
                 { "grupos y permisos", "Usuarios" },

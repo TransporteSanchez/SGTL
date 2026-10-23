@@ -110,8 +110,12 @@ function probarPantallas() {
     const opciones = (configuracion.match(/class="submenu-link"[^>]*>([^<]+)</g) || []).map(function (o) { return o.replace(/.*>/, '').replace('<', ''); });
     assert.deepStrictEqual(opciones, ['Gestionar e-mail', 'Gestionar integración de WhatsApp', 'Gestionar empresa', 'Gestionar contenido'],
         'el orden de Configuración es el que eligió Rocío');
-    assert.strictEqual((menu.match(/'gestion-empresa\.html'/g) || []).length, 3,
-        'Gestionar empresa es solo de administradores, como el resto de Configuración (las dos listas y el permiso)');
+    assert.strictEqual((menu.match(/'configuracion-whatsapp\.html', 'gestion-contenido\.html', 'gestion-empresa\.html'/g) || []).length, 2,
+        'Gestionar empresa es solo de administradores, como el resto de Configuración (está en las dos listas)');
+    assert.ok(/'gestion de empresa': 'gestion-empresa\.html'/.test(menu), 'el permiso "Gestión de empresa" apunta a la pantalla');
+    const grupos = leer('WebApi_TransporteSanchez/Controllers/GruposController.cs');
+    assert.ok(/"Integración WhatsApp", "Gestión de empresa"/.test(grupos) && /\{ "gestion de empresa", "Configuración" \}/.test(grupos),
+        'Gestión de empresa está en el catálogo de Grupos y permisos, en Configuración, como E-mail y WhatsApp');
 }
 
 async function ejecutar() {

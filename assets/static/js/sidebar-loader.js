@@ -150,7 +150,8 @@ var MENU_TO_PAGE = {
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
   'gestion de contenido': 'gestion-contenido.html',
-  // Gestionar empresa (23/10) no tiene permiso en la base: Configuración entera es solo de administradores.
+  // Gestionar empresa (23/10). Como los demás de Configuración, el permiso no da acceso: la sección es solo de admins.
+  'gestion de empresa': 'gestion-empresa.html',
   'gestionar empresa': 'gestion-empresa.html',
   'auditoria': 'gestion-auditoria.html',
   'consultar auditoria': 'gestion-auditoria.html'
