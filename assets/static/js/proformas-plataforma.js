@@ -104,7 +104,7 @@
 
     var filaCliente = filaDe('p_cliente');
     var tituloDatos = filaCliente ? filaCliente.previousElementSibling : null;
-    if (tituloDatos && tituloDatos.classList.contains('bloque-titulo')) ocultar(tituloDatos);
+    if (tituloDatos && tituloDatos.classList.contains('sgtl-bloque-titulo')) ocultar(tituloDatos);
     cuerpo.insertBefore(crear('<ol id="pp_pasos" class="sgtl-pasos" aria-label="Pasos"></ol>'), tituloDatos || filaCliente);
     CAMPOS_PERIODO.concat(CAMPOS_CLIENTE).forEach(function (id) { ocultar(columna(id)); });
     // El recuadro completo de la proforma propia no va: acá los datos del cliente van en su versión compacta.
@@ -118,7 +118,7 @@
     // Condiciones comerciales: plegadas, con un resumen.
     var filaCond = filaDe('p_formapago');
     var tituloCond = filaCond ? filaCond.previousElementSibling : null;
-    if (tituloCond && tituloCond.classList.contains('bloque-titulo')) ocultar(tituloCond);
+    if (tituloCond && tituloCond.classList.contains('sgtl-bloque-titulo')) ocultar(tituloCond);
     if (filaCond) {
       filaCond.before(crear(
         '<div id="pp_cond_titulo" class="d-flex align-items-center gap-2 border-top pt-3 mt-3 mb-2">' +

@@ -46,7 +46,7 @@
     '<div><span class="text-muted me-1">Estado:</span><span id="estadoActualCliente"></span></div>' +
     '<div><span class="text-muted me-1">Fecha de alta:</span><span id="fechaAltaCliente"></span></div></div>' +
     '<form class="form" id="formCliente" novalidate>' +
-    '<h6 class="mb-3">Datos fiscales</h6><div class="row g-3 mb-4">' +
+    '<div class="sgtl-bloque-titulo">Datos fiscales</div><div class="row g-3 mb-4">' +
     '<div class="col-12 col-md-8"><label for="clienteRazonSocial" class="form-label">Razón social <span class="text-danger">*</span></label>' +
     '<input type="text" id="clienteRazonSocial" class="form-control" placeholder="Distribuidora Norte S.A." autocomplete="off"><div class="invalid-feedback"></div></div>' +
     '<div class="col-12 col-md-4"><label for="clienteCuit" class="form-label">CUIT <span class="text-danger">*</span></label>' +
@@ -65,13 +65,13 @@
     '<div id="clienteTipoFijo" class="d-none"><div class="sgtl-dato-valor" id="clienteTipoTexto"></div>' +
     '<div class="form-text" id="clienteTipoMotivo"></div></div>' +
     '<div class="invalid-feedback"></div></div></div>' +
-    '<h6 class="mb-3">Contacto</h6><div class="row g-3 mb-4">' +
+    '<div class="sgtl-bloque-titulo">Contacto</div><div class="row g-3 mb-4">' +
     '<div class="col-12 col-md-6"><label for="clienteTelefono" class="form-label">Teléfono <span class="text-danger">*</span></label>' +
     '<input type="text" inputmode="numeric" id="clienteTelefono" class="form-control" placeholder="3514123456" autocomplete="off">' +
     '<div class="invalid-feedback"></div><div class="form-text">Código de área sin 0 y número sin 15</div></div>' +
     '<div class="col-12 col-md-6"><label for="clienteEmail" class="form-label">E-mail</label>' +
     '<input type="email" id="clienteEmail" class="form-control" placeholder="nombre@correo.com" autocomplete="off"><div class="invalid-feedback"></div></div></div>' +
-    '<h6 class="mb-3">Domicilio</h6><div class="row g-3">' +
+    '<div class="sgtl-bloque-titulo">Domicilio</div><div class="row g-3">' +
     '<div class="col-12 col-md-6"><label for="clienteProvincia" class="form-label">Provincia <span class="text-danger">*</span></label>' +
     '<select id="clienteProvincia" class="form-select"></select><div class="invalid-feedback"></div></div>' +
     '<div class="col-12 col-md-6"><label for="clienteLocalidad" class="form-label">Localidad <span class="text-danger">*</span></label>' +

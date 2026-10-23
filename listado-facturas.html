@@ -10,7 +10,6 @@
         #loading-message { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 9999; }
         .pagination { justify-content: center; }
         .tbl-prof th, .tbl-prof td { vertical-align: middle; }
-        .bloque-titulo { font-weight: 600; border-bottom: 2px solid #e5e7eb; padding-bottom: 6px; margin: 16px 0 10px; }
         .totales dt { font-weight: 500; }
         .dato dt { font-weight: 500; color: #6b7280; }
     </style>
@@ -112,7 +111,7 @@
                 </div>
                 <div class="modal-body">
                     <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Documento comercial sin validez fiscal.</p>
-                    <div class="bloque-titulo">Datos generales y cliente</div>
+                    <div class="sgtl-bloque-titulo">Datos generales y cliente</div>
                     <dl class="row dato">
                         <dt class="col-sm-2">Número</dt><dd class="col-sm-4" id="d_numero"></dd>
                         <dt class="col-sm-2">Emisión</dt><dd class="col-sm-4" id="d_femision"></dd>
@@ -122,14 +121,14 @@
                         <dt class="col-sm-2">Teléfono</dt><dd class="col-sm-4" id="d_tel"></dd>
                         <dt class="col-sm-2">Email</dt><dd class="col-sm-4" id="d_email"></dd>
                     </dl>
-                    <div class="bloque-titulo">Transporte</div>
+                    <div class="sgtl-bloque-titulo mt-4">Transporte</div>
                     <dl class="row dato">
                         <dt class="col-sm-2">Origen</dt><dd class="col-sm-4" id="d_origen"></dd>
                         <dt class="col-sm-2">Destino</dt><dd class="col-sm-4" id="d_destino"></dd>
                         <dt class="col-sm-2">Tipo de carga</dt><dd class="col-sm-4" id="d_tipocarga"></dd>
                         <dt class="col-sm-2">Peso / Volumen</dt><dd class="col-sm-4" id="d_pesovol"></dd>
                     </dl>
-                    <div class="bloque-titulo">Conceptos</div>
+                    <div class="sgtl-bloque-titulo mt-4">Conceptos</div>
                     <div class="table-responsive">
                         <table class="table table-sm table-bordered">
                             <thead class="table-light"><tr>
@@ -140,14 +139,14 @@
                         </table>
                     </div>
                     <div class="row">
-                        <div class="col-md-6"><div class="bloque-titulo">Condiciones y observaciones</div>
+                        <div class="col-md-6"><div class="sgtl-bloque-titulo mt-3">Condiciones y observaciones</div>
                             <dl class="row dato">
                                 <dt class="col-sm-4">Forma de pago</dt><dd class="col-sm-8" id="d_formapago"></dd>
                                 <dt class="col-sm-4">Validez</dt><dd class="col-sm-8" id="d_validez"></dd>
                                 <dt class="col-sm-4">Observaciones</dt><dd class="col-sm-8" id="d_obs"></dd>
                             </dl>
                         </div>
-                        <div class="col-md-5 ms-auto"><div class="bloque-titulo">Totales</div>
+                        <div class="col-md-5 ms-auto"><div class="sgtl-bloque-titulo mt-3">Totales</div>
                             <dl class="row totales mb-0">
                                 <dt class="col-7">Subtotal</dt><dd class="col-5 text-end" id="d_subtotal"></dd>
                                 <dt class="col-7">Descuentos</dt><dd class="col-5 text-end" id="d_desc"></dd>

@@ -55,7 +55,6 @@
         .cc-debit { color: #dc3545; }
         .cc-credit { color: #198754; }
         .cc-empty { padding: 1.5rem 1rem !important; text-align: center; color: var(--sgtl-texto-suave); }
-        .cc-block-title { font-weight: 600; border-bottom: 1px solid var(--sgtl-borde); padding-bottom: 6px; margin: 18px 0 12px; }
         .cc-allocation-input { min-width: 125px; }
         .cc-total-row { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 1rem 2rem; }
         .cc-total-row strong { font-size: 1.05rem; }
@@ -266,11 +265,11 @@
                         </div>
                         <div class="col-12 d-none" id="cmpSoloLecturaRelacion"></div>
                         <div class="col-12 d-none" id="cmpDetalleLectura">
-                            <div class="cc-block-title">Detalle del comprobante</div>
+                            <div class="sgtl-bloque-titulo mt-2">Detalle del comprobante</div>
                             <div class="table-responsive"><table class="table table-sm table-striped table-hover mb-0"><thead><tr><th>Concepto</th><th class="text-end">Cantidad</th><th>Unidad</th><th class="text-end">Total</th></tr></thead><tbody id="cmpDetalleLecturaCuerpo"></tbody></table></div>
                         </div>
                         <div class="col-12 d-none" id="cmpAplicacionesLectura">
-                            <div class="cc-block-title">Comprobantes aplicados</div>
+                            <div class="sgtl-bloque-titulo mt-2">Comprobantes aplicados</div>
                             <div class="table-responsive"><table class="table table-sm table-striped table-hover mb-0"><thead><tr><th>Comprobante</th><th class="text-center">Fecha</th><th>Concepto</th><th class="text-end">Importe aplicado</th></tr></thead><tbody id="cmpAplicacionesLecturaCuerpo"></tbody></table></div>
                         </div>
                         <div class="col-12"><label class="form-label" for="cmpConcepto">Concepto <span class="text-danger">*</span></label><input id="cmpConcepto" class="form-control" maxlength="200" placeholder="Descripción del concepto"></div>
@@ -304,13 +303,13 @@
                     <div class="alert alert-light-danger color-danger py-2 cc-error-modal" id="reciboError" role="alert"></div>
                     <div class="alert alert-info py-2" id="reciboMensaje">El recibo se registra y se aplica a los comprobantes elegidos.</div>
 
-                    <div class="cc-block-title">1 · Datos generales</div>
+                    <div class="sgtl-bloque-titulo">1 · Datos generales</div>
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente <span class="text-danger">*</span></label><select id="reciboCliente" class="form-select" required><option value="">Seleccioná un cliente</option></select></div>
                         <div class="col-md-6"><label class="form-label" for="reciboFecha">Fecha <span class="text-danger">*</span></label><input id="reciboFecha" class="form-control" placeholder="DD/MM/AAAA"></div>
                     </div>
 
-                    <div class="cc-block-title">2 · Forma de pago</div>
+                    <div class="sgtl-bloque-titulo mt-4">2 · Forma de pago</div>
                     <div class="row g-2">
                         <div class="col-md-3"><label class="form-label" for="reciboTipoComprobante">Tipo de comprobante</label><input id="reciboTipoComprobante" class="form-control" value="Recibo" disabled></div>
                         <div class="col-md-3"><label class="form-label" for="reciboLetra">Letra</label><select id="reciboLetra" class="form-select"></select></div>
@@ -321,7 +320,7 @@
                         <div class="col-md-4"><label class="form-label" for="reciboFormaImporte">Importe <span class="text-danger">*</span></label><input id="reciboFormaImporte" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
                     </div>
 
-                    <div class="d-flex align-items-center justify-content-between cc-block-title"><span>3 · Imputación a comprobantes</span><button type="button" class="btn btn-sm btn-outline-secondary" id="btnDistribuirRecibo"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
+                    <div class="sgtl-bloque-titulo mt-4 d-flex align-items-center justify-content-between"><span>3 · Imputación a comprobantes</span><button type="button" class="btn btn-sm btn-outline-secondary" id="btnDistribuirRecibo"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped table-hover">
                             <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante</th><th class="text-center">Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>

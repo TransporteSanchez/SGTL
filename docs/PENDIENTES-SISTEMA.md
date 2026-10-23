@@ -46,6 +46,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | Commit en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §26) |
+| 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | Commit en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §27) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1962,3 +1963,32 @@ una sola forma, que quedó en el §1.4 del design system y en la lista de contro
   → "No se puede editar el recibo: está anulado".
 - [ ] 9. Con un usuario sin permiso para Gestionar clientes, "Editar cliente" en una proforma → "No se puede editar el
   cliente: no tenés permiso".
+
+---
+
+## 27. Subtítulos de las secciones con un solo estilo — COMMIT SIN PUSH, FALTA PROBAR EN VM (23/10)
+
+Rocío vio que algunos modales tenían los subtítulos de sus secciones en azul y otros en negro. Los títulos de los
+modales ya eran todos iguales; los subtítulos tenían cuatro estilos: `h6` (la plantilla Mazer los pinta de azul oscuro,
+`#25396f`) en choferes, camiones, clientes, usuarios, tarifas, orígenes y destinos, e-mail y auditoría; `.bloque-titulo`
+en proformas; `.cc-block-title` en cuenta corriente, y `.sgtl-bloque-titulo` (el del design system) en viajes y los
+Ver detalle. Ahora los 48 subtítulos de esas 13 pantallas usan `.sgtl-bloque-titulo` (negro, chico, negrita, con
+una línea fina abajo), y las copias de CSS de proformas y cuenta corriente se borraron. También las secciones de la
+pantalla de WhatsApp. Regla en el §6.3 del design system y en el punto 7 de la lista de control de `AGENTS.md`.
+
+- Quedan `h6` solo en títulos de tarjetas (dashboard, configuración) y en el encabezado: no son secciones.
+- Proformas: `proformas-plataforma.js` buscaba la clase vieja para ocultar los títulos en la proforma de Rukas; se
+  cambió a la nueva.
+- **Tamaño, a decidir por Rocío:** hoy el subtítulo mide 13 px y la etiqueta de un campo 12,8 px (las dos en
+  negrita), así que casi no se distinguen. Se le mostró Registrar viaje con 13 y con 15 px.
+
+**Probar en la VM** (sin C#: `pull` y Ctrl+F5). Abrir cada formulario y ver que los subtítulos sean negros, chicos,
+con su línea abajo y con aire arriba:
+- [ ] 1. Registrar chofer, camión, cliente (también "Editar cliente" desde una proforma), usuario (con rol user: "Grupos
+  *"), tarifa fija y por km, origen o destino.
+- [ ] 2. Registrar proforma (Detalle de conceptos con sus dos botones, Totales, Condiciones comerciales), una de Rukas
+  (los títulos que se ocultan siguen ocultos) y el ojo de Listar proformas.
+- [ ] 3. Cuenta corriente: Registrar recibo (1 · Datos generales, 2 · Forma de pago, 3 · Imputación con su botón), el
+  ojo de una factura con conceptos y comprobantes aplicados, y el detalle con "Trazabilidad".
+- [ ] 4. Gestionar e-mail (Registrar configuración), Gestionar integración de WhatsApp y el detalle de un registro de
+  auditoría (Valores anteriores / Valores nuevos).

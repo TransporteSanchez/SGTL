@@ -459,8 +459,12 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   debajo, en chico (`form-text`): "Sin puntos ni espacios".
 - **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",
   "Forma de pago"). El subtítulo es uno solo para todo el sistema: `<section class="sgtl-bloque">` con
-  `<div class="sgtl-bloque-titulo">` (chico, en negrita, con una línea fina debajo; viajes, 22/10). Cuenta corriente
-  (`.cc-block-title`) y proformas (`.bloque-titulo`) todavía tienen su propia copia: pendiente pasarlas.
+  `<div class="sgtl-bloque-titulo">` (chico, en negrita, con una línea fina debajo; viajes, 22/10). Desde el 23/10 lo
+  usan todos los formularios y detalles, también las secciones de una pantalla (e-mail, WhatsApp). **Nunca un `h6`**
+  (la plantilla lo pinta de azul oscuro: así había quedado en choferes, camiones, clientes, usuarios, tarifas, orígenes
+  y destinos, e-mail y auditoría) **ni un título de sección con estilo propio** (proformas y cuenta corriente tenían su
+  copia). Si el subtítulo no va dentro de un `.sgtl-bloque`, el espacio de arriba lo da `mt-4` (o `mt-3` dentro de
+  una columna, después de una tabla).
 - **Lo que no se puede editar** (22/10, primero en viajes): **nunca un campo deshabilitado**; se ve como texto.
   Una caja blanca con borde se edita; un texto, no.
   - Si es un bloque entero (el recorrido de un viaje que ya salió), un recuadro gris con el resumen en texto en el

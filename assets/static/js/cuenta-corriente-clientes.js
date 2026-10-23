@@ -686,7 +686,7 @@
             '<div class="col-md-4"><small class="text-muted d-block">Importe</small><strong>' + dinero(importe) + '</strong></div>' +
             '<div class="col-md-4"><small class="text-muted d-block">Estado financiero</small>' + badgeEstado(item.Estado) + '</div>' +
             '<div class="col-md-4"><small class="text-muted d-block">Saldo</small><strong>' + dinero(saldo) + '</strong></div></div>' +
-            '<div class="cc-block-title">Trazabilidad</div><div class="cc-trace-item"><div class="cc-trace-title">Origen</div>' +
+            '<div class="sgtl-bloque-titulo">Trazabilidad</div><div class="cc-trace-item"><div class="cc-trace-title">Origen</div>' +
             '<div class="cc-trace-text">' + escapar(item.Origen || 'Comprobante directo') + '</div></div>';
         bootstrap.Modal.getOrCreateInstance(porId('modalDetalleComprobante')).show();
     }

@@ -91,7 +91,7 @@
                         <div id="emailFormFeedback" class="alert alert-light-danger color-danger d-none" role="alert"></div>
                         <div class="alert alert-info">Guardar no prueba la conexión SMTP. Después podés probar la configuración guardada.</div>
                         <div class="row g-3">
-                            <div class="col-12"><h6 class="mb-0">Servidor y credenciales</h6></div>
+                            <div class="col-12"><div class="sgtl-bloque-titulo mb-0">Servidor y credenciales</div></div>
                             <div class="col-md-6"><label class="form-label" for="emailNombre">Nombre del perfil <span class="text-danger">*</span></label><input id="emailNombre" class="form-control" maxlength="100" placeholder="Comprobantes"></div>
                             <div class="col-md-6"><label class="form-label" for="emailServidor">Servidor SMTP <span class="text-danger">*</span></label><input id="emailServidor" class="form-control" maxlength="100" placeholder="smtp.empresa.com"></div>
                             <div class="col-md-4"><label class="form-label" for="emailPuerto">Puerto <span class="text-danger">*</span></label><input id="emailPuerto" class="form-control" inputmode="numeric" maxlength="5" placeholder="587"></div>
@@ -99,7 +99,7 @@
                             <div class="col-12"><label class="form-label" for="emailClave">Contraseña del remitente<span id="emailClaveObligatoria"> <span class="text-danger">*</span></span></label><input id="emailClave" type="password" class="form-control" maxlength="180" placeholder="Contraseña de la casilla"><div id="emailPasswordInfo" class="form-text">La contraseña se manda solo al guardar y nunca vuelve a mostrarse.</div></div>
                             <div class="col-md-6"><div class="form-check mt-2"><input id="emailSsl" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailSsl">Conexión segura (SSL)</label></div></div>
                             <div class="col-md-6"><div class="form-check mt-2"><input id="emailTls12" class="form-check-input" type="checkbox" checked><label class="form-check-label" for="emailTls12">Usa TLS 1.2</label></div></div>
-                            <div class="col-12 mt-2"><h6 class="mb-0">Plantilla predeterminada</h6></div>
+                            <div class="col-12 mt-2"><div class="sgtl-bloque-titulo mb-0">Plantilla predeterminada</div></div>
                             <div class="col-12"><label class="form-label" for="emailAsunto">Asunto</label><input id="emailAsunto" class="form-control" maxlength="250" placeholder="Comprobante adjunto"></div>
                             <div class="col-12"><label class="form-label" for="emailCuerpoHtml">Cuerpo HTML</label><textarea id="emailCuerpoHtml" class="form-control" rows="6" placeholder="&lt;p&gt;Hola,&lt;/p&gt;&lt;p&gt;Adjuntamos el comprobante solicitado.&lt;/p&gt;"></textarea><div class="form-text">Para presupuestos podés usar {{CLIENTE}} y {{NUMERO_PRESUPUESTO}} en el asunto y el cuerpo.</div></div>
                         </div>
