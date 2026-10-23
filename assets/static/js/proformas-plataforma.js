@@ -549,7 +549,7 @@
   }
 
   var RESULTADOS = {
-    Coincide: 'Coincide', Importe_distinto: 'Importe distinto', Sin_viaje: 'Sin viaje en SGTL', Repetido_en_SGTL: 'N° repetido en SGTL',
+    Coincide: 'Coincide', Importe_distinto: 'Importe distinto', Sin_viaje: 'Sin viaje relacionado en SGTL', Repetido_en_SGTL: 'N° repetido en SGTL',
     Ya_facturado: 'Ya facturado', En_otra_proforma: 'En otra proforma', Faltan_numeros: 'Faltan números', Sin_tarifa: 'Sin tarifa',
     Repetido_en_archivo: 'Repetido en el Excel', Dato_invalido: 'Dato mal en el Excel'
   };

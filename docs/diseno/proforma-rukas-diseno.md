@@ -179,6 +179,9 @@ Excel inválido y varios a la vez): con muchas etiquetas de color el Excel perd�
 - **La tarifa usada**, solo en "Importe distinto", en gris debajo del importe de SGTL ("602,8 km × $ 850", "tarifa
   fija de la ruta", "importe del presupuesto #12"); sin el ícono en todas las filas.
 - **Sin el aviso del caso 7** ("2 viajes fuera de esta proforma"): ver el documento de negocio.
+- **"Sin viaje relacionado en SGTL"** en lugar de "Sin viaje en SGTL" (Rocío, 22/10): el viaje puede estar cargado,
+  pero sin el N° de transporte o con otro, y por eso no se une con la línea. Una ayuda con los viajes que pueden ser
+  quedó para más adelante (`docs/PENDIENTES-SISTEMA.md`, §24).
 - **Más aire:** el modal llega a 1440 px de ancho (`.sgtl-modal-ancho`) y la tabla tiene más espacio entre columnas;
   entre 992 y 1199 px, un poco menos, para que entre sin desplazarse. "Abrir viaje" es el botón cuadrado de las filas.
 
@@ -188,7 +191,7 @@ Todo Excel de la plataforma **se guarda como borrador, aunque venga con errores*
 
 | Resultado | De quién es | En la tabla |
 |---|---|---|
-| Sin viaje en SGTL, faltan números, sin tarifa, N° repetido en SGTL | **SGTL** (se corrige el viaje) | "Para corregir en SGTL" |
+| Sin viaje relacionado en SGTL, faltan números, sin tarifa, N° repetido en SGTL | **SGTL** (se corrige el viaje) | "Para corregir en SGTL" |
 | Repetido en el Excel, dato mal en el Excel (importe, fecha o N° ilegible) | **La plataforma** (la línea entra igual, marcada; el control no la cambia) | "Para reclamar a {plataforma}" |
 | Importe distinto, ya facturado, en otra proforma | **Decide la persona** con la tarifa usada a la vista: corrige el viaje o lo reclama | "Para revisar" |
 | Cualquiera de las anteriores, incluida en el reclamo | Se espera la corrección de la plataforma | "Esperando a {plataforma}" |

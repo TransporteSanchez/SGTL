@@ -130,7 +130,7 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 
 1. **Preparación:** en Gestionar viajes, editá el viaje **26** y cambiá el N° de transporte SAP de 990002 a **990020** (simula un error de carga).
 2. Elegí `proforma-rukas-caso3-corregir-viaje-en-sgtl (PROFORMA NRO 990130).xlsx` → Guardar borrador.
-3. El 990002 está en **"Para corregir en SGTL"** con "Sin viaje en SGTL" (el globito dice "No hay un viaje de este cliente con el N° 990002"). El aviso de viajes fuera de la proforma se sacó del control el 22/10: el viaje #26, con el N° mal cargado, se ve en Gestionar viajes o en la guía del paso 2 de una proforma nueva.
+3. El 990002 está en **"Para corregir en SGTL"** con "Sin viaje relacionado en SGTL" (el globito dice "No hay un viaje de este cliente con el N° 990002"). El aviso de viajes fuera de la proforma se sacó del control el 22/10: el viaje #26, con el N° mal cargado, se ve en Gestionar viajes o en la guía del paso 2 de una proforma nueva.
 4. Corregí el viaje 26 (volvé a poner **990002**) y, en el borrador, **"Volver a controlar"** (en la franja del Excel): "Lista para generar".
 5. Eliminá el borrador (o generá).
 6. Otra variante del mismo caso: en vez del N°, corregir la **tarifa** del viaje (en Listo para facturar se puede) y volver a controlar.
@@ -178,7 +178,7 @@ Unos 10 a 15 minutos. Antes de empezar: datos como en 3.8, sesión iniciada, Ges
 | 3 | Cambiar estado (1.2) | Se sigue de a un paso; para Entregado pide resultado, fecha y evidencia |
 | 4 | Viaje de QUICKFOOD (1.3) | Los números de Rukas se cargan a medida que aparecen; sin ellos no pasa a facturar |
 | 5 | Registrar proforma → QUICKFOOD → la guía (3.1) | Es la lista para tildar en Rukas y evitar diferencias |
-| 6 | **Caso 3** (3.4): importar, "Sin viaje", corregir el viaje, Volver a controlar | Cuando el error es nuestro, se corrige en SGTL sin perder el borrador. Eliminar el borrador al terminar |
+| 6 | **Caso 3** (3.4): importar, "Sin viaje relacionado", corregir el viaje, Volver a controlar | Cuando el error es nuestro, se corrige en SGTL sin perder el borrador. Eliminar el borrador al terminar |
 | 7 | **Caso 2** (3.3): importar, "Importe distinto" con la tarifa usada, Registrar reclamo, ícono en el listado, Reemplazar Excel | Cuando el error es de Rukas, se reclama y queda marcado; con la corrección se reemplaza y vuelve a controlar solo |
 | 8 | Generar → Aceptada → Emitir factura ($53.941,80) | Solo se genera con todo OK; nace Aceptada porque Marfrig ya la aceptó en Rukas; la factura es la de siempre |
 | 9 | PDF de la proforma y listado con el filtro Tipo | La proforma de Rukas se distingue en el listado, en el PDF y al exportar |

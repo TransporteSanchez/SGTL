@@ -1800,9 +1800,9 @@ nuevas están en el design system (§1.6, §2.1, §6.2, §12) y en la lista de c
 - [ ] 6. En la notebook (1366) y en una ventana más angosta (1100), la tabla entra sin desplazarse hacia el costado.
 - [ ] 7. Los botones de las filas de otras pantallas (viajes, proformas, clientes) siguen con el ícono centrado.
 
-### Presupuestos y avisos de dos renglones (22/10) — PUSHEADO (22/10), FALTA PROBAR EN VM
+### Presupuestos, avisos de dos renglones y "Sin viaje relacionado en SGTL" (22/10) — PUSHEADO (22/10), FALTA PROBAR EN VM
 
-Dos pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+F5.
+Tres pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+F5.
 
 - **Gestionar presupuestos** (pantalla de Facu, **avisarle**): el viaje que generó el presupuesto pasa de la etiqueta
   "Viaje #N" debajo del estado al ícono gris de información al lado ("Generó el viaje #N."), como en Gestionar
@@ -1811,14 +1811,28 @@ Dos pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+F
   primero, no en el medio (§12).
 - Design system: en §4.3, si hay varias cosas a la vez manda el ícono más urgente (en proformas, el rojo aunque
   también se espere a Rukas; el reloj, solo si esperar es lo único).
+- **Control de Rukas:** el resultado "Sin viaje en SGTL" pasa a **"Sin viaje relacionado en SGTL"**: el viaje puede
+  estar cargado, pero sin el N° de transporte o con otro, y por eso no se une con la línea. Solo cambia el texto.
 
 **Probar en la VM** (Ctrl+F5):
-- [ ] 1. Gestionar presupuestos: un presupuesto aceptado con viaje muestra "Aceptado" y el ícono gris; el globito dice
+- [ ] 1. Caso 3 del instructivo (3.4): el 990002 dice "Sin viaje relacionado en SGTL", en un renglón y sin cortar la
+  tabla.
+- [ ] 2. Gestionar presupuestos: un presupuesto aceptado con viaje muestra "Aceptado" y el ícono gris; el globito dice
   "Generó el viaje #N."; los estados quedan alineados en toda la columna, con ícono o sin él.
-- [ ] 2. Un aviso largo (por ejemplo, editar un cliente con un borrador de proforma): el ícono verde y la cruz a la
+- [ ] 3. Un aviso largo (por ejemplo, editar un cliente con un borrador de proforma): el ícono verde y la cruz a la
   altura del primer renglón.
-- [ ] 3. Gestionar proformas: un borrador de Rukas que espera a Rukas y además tiene algo para corregir muestra el
+- [ ] 4. Gestionar proformas: un borrador de Rukas que espera a Rukas y además tiene algo para corregir muestra el
   ícono rojo; uno que solo espera, el reloj naranja de borde.
+
+**Para más adelante** (Rocío, 22/10: "no me cierran las opciones"):
+- [ ] **Ayudar a encontrar el viaje de un "Sin viaje relacionado en SGTL".** La causa más común es un viaje del cliente
+  cargado sin el N° de transporte SAP (o con otro). La lista de viajes sin proforma que arma la API (`Avisos`,
+  `ViajesSinProforma`) trae solo los que tienen el N° cargado, así que justo esos no aparecen. Se probaron y se
+  descartaron: los viajes sin proforma al lado del título del grupo (se mezclaba con "Falta el remito"), solo el del
+  mismo día (depende de que la fecha coincida justo) y todos debajo del resultado (pueden ser muchos). Quedó propuesto,
+  sin decidir: un ícono de información al lado del resultado con hasta 5 viajes del cliente sin proforma, con fecha
+  igual o anterior a la del transporte, los más cercanos primero, sin N° o con un N° que no está en el Excel ("#26 ·
+  15/10/2026 · sin N° de transporte SAP"). Necesita cambiar la API (`ProformasPlataformaController`) y compilar.
 
 ---
 

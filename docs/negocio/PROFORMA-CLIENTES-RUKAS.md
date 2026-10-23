@@ -291,7 +291,7 @@ Los casos 2 y 3 son la misma situación vista desde los dos lados: la pantalla m
 - **Ya está en otra proforma de Rukas** importada antes: SGTL lo sabe y no lo cuenta.
 - **Se pasó tildarlo:** va en la próxima proforma, o se le pide a Marfrig que lo agregue.
 
-Por eso SGTL **no lo frena ni lo avisa en el control** (decidido por Rocío el 22/10: el aviso "Hay N viajes de este cliente… que no están en ninguna proforma de Rukas" cargaba la pantalla y casi siempre es lo normal). Esos viajes se ven en la **guía del paso 0** ("N viajes sin proforma para tildar en Rukas"), antes de tildar en Rukas, que es cuando sirven para no olvidarse de ninguno. Un viaje de Marfrig que está en SGTL y no existe en Rukas casi no puede pasar (los transportes los crea Marfrig); si aparece, lo más probable es un error de carga en SGTL (por ejemplo, el N° de transporte mal cargado, que en el control se ve como "Sin viaje en SGTL").
+Por eso SGTL **no lo frena ni lo avisa en el control** (decidido por Rocío el 22/10: el aviso "Hay N viajes de este cliente… que no están en ninguna proforma de Rukas" cargaba la pantalla y casi siempre es lo normal). Esos viajes se ven en la **guía del paso 0** ("N viajes sin proforma para tildar en Rukas"), antes de tildar en Rukas, que es cuando sirven para no olvidarse de ninguno. Un viaje de Marfrig que está en SGTL y no existe en Rukas casi no puede pasar (los transportes los crea Marfrig); si aparece, lo más probable es un error de carga en SGTL (por ejemplo, el N° de transporte mal cargado, que en el control se ve como "Sin viaje relacionado en SGTL": el viaje puede existir, pero nada lo une con ese transporte).
 
 ### Base de datos (script nuevo en `database/`)
 
