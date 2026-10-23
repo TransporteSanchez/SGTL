@@ -29,7 +29,9 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
                 {
+                    // En orden alfabético: la Ciudad Autónoma de Buenos Aires (02_agregar_caba.sql, 23/10) se cargó al final.
                     var provincias = db.Set<PROVINCIAS>()
+                        .OrderBy(p => p.Nombre_Provincia)
                         .Select(p => new {
                             Prov_ID = p.Prov_ID,
                             Nombre_Provincia = p.Nombre_Provincia

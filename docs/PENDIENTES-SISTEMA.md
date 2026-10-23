@@ -2320,10 +2320,13 @@ cargar: quedó como lo dejó Facu (fondo `#6d8cab`, menú `#2f89c1`).
   (por ejemplo, un archivo de configuración aparte que no se commitea). Mientras tanto, para mandar e-mails desde la VM
   (por ejemplo, en la presentación), volver a guardar la contraseña desde la VM en Gestionar e-mail, sabiendo que
   después la PC de Facu no va a poder mandar hasta que la vuelva a guardar él.
-- [ ] **CABA en Provincias — verificarlo en la base.** Rocío recuerda que está "Ciudad Autónoma de Buenos Aires" con sus
-  localidades; el reporte de la VM y `database/localidades/01_completar_localidades.sql` dicen que `PROVINCIAS` tiene 23
-  y no la incluye. Puede estar como localidad dentro de Buenos Aires. Consulta para salir de la duda (solo lectura, en
-  la respuesta del 23/10); si falta, se hace un script idempotente para agregarla.
+- [x] **CABA en Provincias** (hecho 23/10). Verificado en la base con dos consultas de solo lectura: `PROVINCIAS` tiene
+  23 y no está CABA, ni como provincia ni como localidad, y ningún barrio porteño quedó cargado por error en otra
+  provincia (los que coinciden son localidades reales: Saavedra y San Nicolás de los Arroyos en Buenos Aires, Nueva
+  Pompeya en Chaco…). `database/localidades/02_agregar_caba.sql` agrega la provincia "Ciudad Autónoma de Buenos Aires"
+  con la Ciudad y sus 48 barrios como localidades (idempotente, con diagnóstico primero). La lista de provincias de la
+  API pasa a orden alfabético (`ProvinciasController`), para que CABA no quede al final. Sirve para clientes, choferes,
+  orígenes, destinos y la empresa.
 - [ ] **Auditoría de EMPRESA con códigos** (`Cond_Fiscal "1"`, `ProvID "5"`, `LocID`): pendiente. Toda la auditoría
   muestra códigos; si se mejora, que sea para todas las tablas (nombres en lugar de ids).
 - [ ] **Quien no es admin, al entrar a una pantalla de Configuración**, pasa por el Dashboard (unas 12 consultas) antes de
@@ -2334,7 +2337,7 @@ cargar: quedó como lo dejó Facu (fondo `#6d8cab`, menú `#2f89c1`).
 **Limpieza:** no hace falta. Las versiones 2 a 4 son del mismo día que la 5 y la API siempre toma la última del día,
 así que ningún documento las usa; quedan como historial, igual que en Auditoría.
 
-**Reprueba en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; no hace falta correr nada en la base):
+**Reprueba en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; en la base, solo el script de CABA del paso 5):
 - [ ] 1. Gestionar empresa: sin el aviso amarillo; los datos de Rocío y "Última modificación: …".
 - [ ] 2. Ver PDF de una proforma generada: el logo y, a su derecha, "Transporte Sánchez" en grande con la razón social
   debajo; abajo, CUIT y condición de IVA y domicilio.
@@ -2343,3 +2346,7 @@ así que ningún documento las usa; quedan como historial, igual que en Auditor�
   HH:MM" en 24 h.
 - [ ] 4. Presupuestos con la sesión vencida (más de 30 minutos): Enviar por e-mail → "Tu sesión venció. Volvé a iniciar
   sesión." y, enseguida, el login.
+- [ ] 5. CABA: Rocío corre `database/localidades/02_agregar_caba.sql` (primero con `@Aplicar = 0`: "se agrega" la
+  provincia y las 49 localidades; después con `@Aplicar = 1`: la verificación dice OK y OK). En Gestionar empresa, Registrar
+  cliente y Registrar origen, la lista de provincias va en orden alfabético con "Ciudad Autónoma de Buenos Aires" entre
+  Chubut y Córdoba, y al elegirla aparecen la Ciudad y los barrios (Palermo, Recoleta…). No guardar nada.
