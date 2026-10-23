@@ -193,12 +193,14 @@
             renderizar('');
         });
         // Con el mouse, el navegador saca la selección al soltar el botón: lo que se escribía se sumaba al nombre
-        // ("QUICKFOOD S.A.sur"). Si el clic es el que entra al campo, el texto queda seleccionado y se reemplaza.
+        // ("QUICKFOOD S.A.sur"). Si el clic es el que entra al campo, o si ya hay uno elegido (por ejemplo, con Enter, sin
+        // salir del campo), el texto queda seleccionado y lo escrito lo reemplaza.
         var entrandoConClic = false;
         campo.addEventListener('mousedown', function () { entrandoConClic = document.activeElement !== campo; });
         campo.addEventListener('mouseup', function (evento) {
-            if (!entrandoConClic) return;
+            var seleccionar = entrandoConClic || !!select.value;
             entrandoConClic = false;
+            if (!seleccionar) return;
             evento.preventDefault();
             campo.select();
         });
@@ -211,7 +213,13 @@
         });
         campo.addEventListener('keydown', function (evento) {
             var abierta = !lista.classList.contains('d-none');
-            if (evento.key === 'Escape') mostrarLista(false);
+            // Con la lista abierta, Escape cierra solo la lista: si sigue de largo, Bootstrap cierra el modal entero y
+            // se pierde lo cargado (reprueba de la VM del 23/10, F1). Con la lista cerrada, cierra el modal como siempre.
+            if (evento.key === 'Escape' && abierta) {
+                evento.preventDefault();
+                evento.stopPropagation();
+                mostrarLista(false);
+            }
             if (evento.key === 'ArrowDown' || evento.key === 'ArrowUp') {
                 evento.preventDefault();
                 if (!abierta) renderizar(campo.value);

@@ -2080,7 +2080,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 
 ---
 
-## 29. Reprueba del 23/10: una falla nueva y mejoras — PARA DECIDIR (23/10)
+## 29. Reprueba del 23/10: una falla nueva y mejoras — EN CURSO (23/10)
 
 Reporte: `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md`. Los 22 puntos pedidos (§28, §26 y §27) dan OK. No se
 pudieron ver, porque no hay datos así en la base: un viaje en viaje que no venga de un presupuesto, una proforma
@@ -2088,12 +2088,12 @@ Generada en Listar proformas, un presupuesto aceptado sin viaje, un recibo anula
 cuenta corriente.
 
 **Falla:**
-- [ ] **F1. Escape con la lista de un buscador abierta cierra el modal entero** (Registrar viaje: cliente, chofer). El
+- [x] **F1. Escape con la lista de un buscador abierta cierra el modal entero** (hecho 23/10) (Registrar viaje: cliente, chofer). El
   buscador (`select-cliente-predictivo.js`) no frena el Escape y Bootstrap lo toma como "cerrar". Propuesta: con la
   lista abierta, Escape cierra solo la lista; con la lista cerrada, sigue cerrando el modal como siempre.
 
 **Mejoras** (con la recomendación):
-- [ ] **Buscador:** si se elige con Enter y después se hace clic en el mismo campo, el texto no se selecciona y lo
+- [x] **Buscador** (hecho 23/10): si se elige con Enter y después se hace clic en el mismo campo, el texto no se selecciona y lo
   escrito se mete en el medio ("QUICKFOOD SPamp.A."). Seleccionar el texto en cada clic mientras haya uno elegido.
   Hacerla ya.
 - [ ] **"Solo se…" en cuenta corriente** ("No se puede editar la factura: solo se editan los recibos"): el §1.4 del
@@ -2119,4 +2119,15 @@ cuenta corriente.
 - **El usuario de prueba mledesma (15):** inactivarlo desde Gestionar usuarios; sirve para la próxima prueba de
   permisos. Borrar el archivo con su clave en la VM (`C:\pruebas-sgtl\reportes\2026-10-24-usuario-prueba.txt`).
 - **Antes de la defensa:** el concepto "preubaaaa888" de FAC-00000005, además de lo anotado en §28.
+
+**Probar en la VM** (sin C#: `pull` y Ctrl+F5). Rocío aprobó el 23/10 la falla y las mejoras marcadas "hacerla ya":
+- [ ] 1. Registrar viaje: abrir la lista de clientes y apretar Escape: se cierra la lista y el modal sigue abierto,
+  con lo cargado. Otra vez Escape (con la lista cerrada): ahora sí se cierra el modal. Lo mismo con el chofer.
+- [ ] 2. Elegir un cliente con Enter y, sin salir del campo, hacer clic en él y escribir: lo escrito reemplaza el
+  nombre. En Registrar viaje y en el filtro de cliente de Gestionar proformas.
+- [ ] 3. Gestionar proformas: el lápiz de una anulada dice "No se puede editar la proforma: está anulada".
+- [ ] 4. Registrar configuración de e-mail ("Plantilla predeterminada") y Registrar proforma ("Totales"): el mismo
+  espacio arriba del subtítulo que en las demás secciones.
+- [ ] 5. Cuenta corriente: Ver recibo y Editar recibo sin el subtítulo "Registrar cobranza e imputar facturas
+  pendientes."; Registrar recibo lo sigue mostrando.
 
