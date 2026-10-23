@@ -566,23 +566,24 @@
             // En una proforma Generada o Aceptada el viaje no se modifica; en un borrador sí (pero no se elimina).
             const enProforma = !!viaje.EnProforma_ID;
             const proformaEmitida = viaje.EnProforma_Estado === 'Generada' || viaje.EnProforma_Estado === 'Aceptada';
-            const motivoProforma = 'Está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)) + ': para modificarlo, anulá la proforma';
             const bloqueado = facturado || proformaEmitida;
-            // Qué pasa y qué hacer, como dice la API (§1.4: el motivo va en el globito del botón deshabilitado).
-            const motivo = facturado ? 'Viaje facturado: para corregirlo, emití la nota de crédito de su factura desde Cuenta corriente' : motivoProforma;
-            const tituloEditar = bloqueado ? motivo : (registrado ? 'Editar' : 'Completar números de remito y entrega');
+            // Motivo del botón deshabilitado (§1.4): "No se puede {acción}: {qué le pasa al viaje}", sin decir qué hacer.
+            const situacion = facturado ? 'está facturado'
+                : 'está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID));
+            const tituloEditar = registrado ? 'Editar' : 'Completar números de remito y entrega';
             const desdePresupuesto = !!viaje.Presupuesto_ID;
-            const tituloEliminar = bloqueado ? motivo : (enProforma ? 'Está en el borrador de proforma #' + viaje.EnProforma_ID + ': sacalo del borrador para eliminarlo'
-                : (desdePresupuesto ? 'Se generó desde el presupuesto #' + viaje.Presupuesto_ID + ': no se puede eliminar'
-                : (registrado ? 'Eliminar' : 'Solo se eliminan viajes en estado Registrado')));
+            const motivoEliminar = 'No se puede eliminar el viaje: ' + (bloqueado ? situacion
+                : (enProforma ? 'está en el borrador de proforma #' + viaje.EnProforma_ID
+                : (desdePresupuesto ? 'viene del presupuesto #' + viaje.Presupuesto_ID
+                : 'está ' + etiquetaEstado(viaje.Estado).toLowerCase())));
             const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
             // Orden del design system (§1.4): ver detalle, editar, cambiar estado, eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('ver', { id: viaje.Viaje_ID }),
-                SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: motivo }),
+                SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: 'No se puede editar el viaje: ' + situacion }),
                 // Banderita gris, igual que en presupuestos (§1.4): abre "Cambiar estado", con los datos de la entrega.
-                SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: motivo }),
-                SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: tituloEliminar })
+                SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: 'No se puede cambiar el estado: el viaje ' + situacion }),
+                SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: motivoEliminar })
             ]);
         }
 
@@ -1597,7 +1598,7 @@
                 var bloqueada = e === 'Listo_para_facturar' && faltan.length > 0;
                 return {
                     valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: bloqueada,
-                    motivo: bloqueada ? 'Para marcarlo, editá el viaje y cargá: ' + faltan.join(', ') + '.' : ''
+                    motivo: bloqueada ? 'No se puede marcar: falta cargar ' + faltan.slice(0, -1).join(', ') + (faltan.length > 1 ? ' y ' : '') + faltan[faltan.length - 1] + '.' : ''
                 };
             }), { opcional: corrigeEntrega(v) });
 

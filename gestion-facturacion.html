@@ -402,8 +402,8 @@
             var enlace = '<button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-editar-cliente' +
                 (puedeEditarClientes() ? '' : ' disabled') + '><i class="bi bi-pencil me-1" aria-hidden="true"></i>Editar cliente</button>';
             if (puedeEditarClientes()) return enlace;
-            return '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="No tenés permiso para editar clientes"' +
-                ' aria-label="Editar cliente: no tenés permiso para editar clientes">' + enlace + '</span>';
+            return '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="No se puede editar el cliente: no tenés permiso"' +
+                ' aria-label="No se puede editar el cliente: no tenés permiso">' + enlace + '</span>';
         }
 
         // Los datos del cliente como texto (§6.3), en dos tamaños de la misma pieza (pedido de Rocío, 22/10): completo
@@ -614,22 +614,24 @@
         var proformasPagina = {};
         function nombreProforma(x) { return x.Numero ? 'la proforma ' + x.Numero : 'el borrador #' + x.Proforma_ID; }
         // Orden de §1.4: ver, editar, PDF, siguiente paso (marcar aceptada → emitir factura), anular o eliminar.
+        // Deshabilitados con "No se puede {acción}: {qué le pasa a la proforma}" (§1.4).
         function accionesProforma(x) {
             var estado = x.Estado || '';
             var id = x.Proforma_ID;
             var botones = [
                 SGTL.botonFila('ver', { id: id }),
-                SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador', motivo: 'Solo se editan los borradores' }),
+                SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador', motivo: 'No se puede editar la proforma: ya se generó' }),
                 SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' })
             ];
-            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'Facturada: ' + (x.FacturaNumero || '') }));
+            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') }));
             else if (estado === 'Generada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Marcar aceptada', icono: 'bi-check2-circle', datos: { paso: 'aceptar' } }));
             else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
-            else botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check2-circle', deshabilitado: true, motivo: estado === 'Borrador' ? 'Primero generá la proforma' : 'Sin pasos pendientes' }));
+            else botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check2-circle', deshabilitado: true,
+                motivo: 'No se puede marcar como aceptada: la proforma ' + (estado === 'Borrador' ? 'todavía es un borrador' : 'está ' + estado.toLowerCase()) }));
             if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular factura', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));
             else if (estado === 'Generada' || estado === 'Aceptada') botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular proforma', datos: { tipo: 'proforma' } }));
             else if (estado === 'Borrador') botones.push(SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar borrador' }));
-            else botones.push(SGTL.botonFila('anular', { deshabilitado: true, motivo: 'Proforma ' + estado.toLowerCase() }));
+            else botones.push(SGTL.botonFila('anular', { deshabilitado: true, motivo: 'No se puede anular la proforma: ya está ' + estado.toLowerCase() }));
             return SGTL.accionesFila(botones);
         }
         function renderPag() {

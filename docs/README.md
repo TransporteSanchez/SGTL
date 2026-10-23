@@ -75,6 +75,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/design-system/02-instructivo-capturas-vm.md` — cómo sacar las capturas en la VM.
 - `docs/design-system/03-decisiones.md` — las reglas vigentes de todas las pantallas y módulos, con la tabla de funciones compartidas (`window.SGTL`). La lista de control para revisar antes de commitear está en `AGENTS.md`.
 - `docs/design-system/04-relevamiento-funcional.md` — relevamiento de inconsistencias y mejoras de uso en las pantallas ya subidas (19/10/2026). No reemplaza los pendientes del §10.
+- `docs/design-system/05-relevamiento-motivos-deshabilitados.md` — cómo estaban escritos los motivos de los botones deshabilitados, las opciones que se miraron y el antes y el después de cada texto (23/10/2026). La regla está en el §1.4 de las decisiones.
 
 ### Tesis
 

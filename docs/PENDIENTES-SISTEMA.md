@@ -45,6 +45,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
 | 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
+| 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | Commit en `rocionuvoli`, **sin push** | Sin C#: `pull` y Ctrl+F5 (ver §26) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1916,3 +1917,48 @@ escrita sobre esto.
 **Para charlar con Facu (pendiente del 22/10):** el **tipo de cliente** tampoco se frena desde Gestionar clientes. Si
 un cliente con viajes sin facturar pasa de directo a Rukas, o al revés, esos viajes quedan en un circuito que ya no le
 corresponde. Se podría dejar deshabilitado, con el motivo, mientras tenga viajes sin facturar o proformas abiertas.
+
+---
+
+## 26. Motivos de los botones deshabilitados — COMMIT SIN PUSH, FALTA PROBAR EN VM (23/10)
+
+Rocío notó que cada pantalla explicaba distinto por qué un botón estaba deshabilitado, y que algunos globitos no decían
+qué acción estaba bloqueada ("Primero generá la proforma" en el botón de emitir factura). Se relevaron los 28 textos
+(`docs/design-system/05-relevamiento-motivos-deshabilitados.md`, con el antes y el después de cada uno) y Rocío eligió
+una sola forma, que quedó en el §1.4 del design system y en la lista de control de `AGENTS.md`:
+**"No se puede {acción} {sobre qué}: {qué le pasa a esta fila}"** ("No se puede eliminar el chofer: está activo"). Sin
+órdenes ("anulá la proforma"): la persona decide sabiendo qué implica.
+
+- **Pantallas:** Gestionar choferes y camiones, Gestionar viajes (botones de la fila y la tarjeta "Listo para
+  facturar"), Gestionar y Listar proformas (también "Editar cliente" sin permiso), proforma de Rukas ("Generar
+  proforma" del pie), Gestionar presupuestos y Gestionar cuenta corriente. Solo cambian textos: nada de lógica ni de la
+  API. Presupuestos y cuenta corriente son de Facu, pero es design system (no cambia cómo funcionan).
+- **Eliminar un viaje que no está registrado** dice su estado ("está en viaje", "está entregado", "está listo para
+  facturar") en lugar de "ya salió" (pedido de Rocío).
+- **Lector de pantalla** (`SGTL.botonFila` y "Generar proforma" de Rukas): lee el mismo texto del globito, porque ya
+  nombra la acción.
+
+**Probar en la VM** (sin C#: `pull` y Ctrl+F5). Pasar el mouse por cada botón gris y leer el globito:
+- [ ] 1. Gestionar choferes y camiones: el tacho de uno activo → "No se puede eliminar el chofer: está activo" / "…el
+  camión: está activo".
+- [ ] 2. Gestionar viajes: en un viaje facturado, lápiz, banderita y tacho → "No se puede editar el viaje: está
+  facturado", "No se puede cambiar el estado: el viaje está facturado", "No se puede eliminar el viaje: está
+  facturado". En uno de una proforma generada, lo mismo con "está en la proforma PF-…". El tacho de uno en un borrador
+  ("está en el borrador de proforma #N"), de uno que vino de un presupuesto ("viene del presupuesto #N") y de uno en
+  viaje o entregado ("está en viaje" / "está entregado").
+- [ ] 3. Gestionar viajes → Cambiar estado de un viaje entregado de Rukas sin N° de entrega: la tarjeta "Listo para
+  facturar" dice "No se puede marcar: falta cargar N° entrega Rukas.".
+- [ ] 4. Gestionar proformas: un borrador (siguiente paso: "No se puede marcar como aceptada: la proforma todavía es un
+  borrador"), una generada (lápiz: "No se puede editar la proforma: ya se generó"), una facturada (siguiente paso: "No
+  se puede emitir la factura: ya se emitió FAC-…") y una anulada (siguiente paso y anular).
+- [ ] 5. Listar proformas: una generada → "No se puede emitir la factura: la proforma todavía no está aceptada".
+- [ ] 6. Proforma de Rukas: al registrarla, "Generar proforma" → "No se puede generar la proforma: falta elegir el
+  Excel de Rukas"; en un borrador con diferencias → "…: hay N diferencias sin resolver".
+- [ ] 7. Gestionar presupuestos: uno aceptado (lápiz: "No se puede editar el presupuesto: está aceptado"), uno
+  pendiente (camión: "No se puede generar el viaje: el presupuesto todavía no está aceptado") y uno con viaje (lápiz,
+  banderita, camión y tacho con "ya se generó el viaje #N" / "ya existe el viaje #N").
+- [ ] 8. Gestionar cuenta corriente: en una factura, lápiz → "No se puede editar la factura: solo se editan los
+  recibos" y anular → "No se puede anular la factura: se corrige con una nota de crédito"; en un recibo anulado, lápiz
+  → "No se puede editar el recibo: está anulado".
+- [ ] 9. Con un usuario sin permiso para Gestionar clientes, "Editar cliente" en una proforma → "No se puede editar el
+  cliente: no tenés permiso".

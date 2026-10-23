@@ -111,8 +111,39 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   así se ve lo que se manda y la fila no se llena de botones (presupuestos, cuenta corriente y proformas, 22/10).
   Si el módulo no envía por e-mail (proformas, por ahora), el pie es Cerrar · Imprimir · Descargar PDF.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
-  qué** ("No es posible eliminar un chofer activo"). No se oculta: así todas las filas tienen los
-  mismos botones en el mismo lugar.
+  qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
+- **Cómo se escribe ese motivo** (23/10, Rocío, después de relevar los 28 textos que había, escritos de seis maneras:
+  `docs/design-system/05-relevamiento-motivos-deshabilitados.md`). Una sola frase con la misma forma en todo el
+  sistema, también en un botón del pie de un modal (§6.2) y en un enlace deshabilitado ("Editar cliente"):
+
+  **"No se puede {acción} {sobre qué}: {qué le pasa a esta fila}"**, por ejemplo "No se puede eliminar el chofer: está activo".
+
+  - **"No se puede" va primero:** se entiende de entrada que la acción no se va a poder hacer.
+  - **La acción, con el verbo del botón y su objeto** ("eliminar el chofer", "emitir la factura", "cambiar el
+    estado"): muchos botones son solo un ícono y la frase tiene que decir qué hacen. En el lugar del siguiente paso,
+    aunque el circuito ya terminó, se nombra la acción de su ícono ("No se puede emitir la factura: ya se emitió
+    FAC-00000012"); nunca un motivo suelto como "Primero generá la proforma" o "Sin pasos pendientes".
+  - **El porqué dice qué le pasa a esa fila** (su estado, el documento en el que está, lo que le falta), no la regla
+    general: "está activo", no "solo se eliminan los inactivos". Solo cuando el motivo es el tipo de la fila se dice
+    la regla ("No se puede editar la factura: solo se editan los recibos").
+  - **No da órdenes** ("anulá la proforma", "emití una nota de crédito", "inactivalo"): destrabar algo puede tener
+    consecuencias, y la persona lo decide sabiendo qué implica, desde la acción que corresponde. Lo que falta se dice
+    como un hecho ("falta cargar N° entrega Rukas").
+  - **El número del otro documento, sí; el de la fila, no:** la proforma donde está el viaje, el presupuesto del que
+    vino, la factura emitida, el viaje generado. El número de la fila ya se ve en la fila.
+  - Minúscula después de los dos puntos, voseo y sin punto final (es un globito, como un título, §9). Lo que se ve
+    como texto dentro de una ventana (la tarjeta de Cambiar estado) lleva punto.
+  - El lector de pantalla lee lo mismo que el globito: `SGTL.botonFila` pone el motivo en el `aria-label`.
+
+| Pantalla | Ejemplos |
+|---|---|
+| Choferes, camiones | No se puede eliminar el chofer: está activo |
+| Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado |
+| Proformas | No se puede editar la proforma: ya se generó · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
+| Proforma de Rukas (pie) | No se puede generar la proforma: hay 3 diferencias sin resolver |
+| Presupuestos | No se puede generar el viaje: el presupuesto todavía no está aceptado |
+| Cuenta corriente | No se puede editar el recibo: está anulado · No se puede anular la factura: se corrige con una nota de crédito |
+| Sin permiso | No se puede editar el cliente: no tenés permiso |
 - **Cambiar estado** (banderita, desde el 22/10): **mismo ícono, mismo color, mismo significado en todo el
   sistema.** Es gris porque es una acción de gestión: abre una ventana para elegir entre varios estados (para
   adelante, para atrás o rechazado). El **verde** queda solo para el paso puntual del circuito que se hace con un
@@ -120,7 +151,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   Abre siempre la misma ventana "Cambiar estado del … #N" (`SGTL.opcionesEstado`): resumen, estado actual y
   los estados a los que puede pasar como tarjetas, cada una con su explicación; Cancelar + Guardar; si no se
   elige ninguno, "Elegí el estado nuevo.". Una tarjeta que no se puede elegir aparece gris con el motivo en rojo
-  ("Para marcarlo, editá el viaje y cargá: N° entrega Rukas."). **Los datos que pide un estado van dentro de su
+  ("No se puede marcar: falta cargar N° entrega Rukas."). **Los datos que pide un estado van dentro de su
   tarjeta** y se ven solo al elegirla (en viajes, resultado, fecha y evidencia dentro de "Entregado"; con
   plataforma, resultado, fecha y evidencia opcionales dentro de "Listo para facturar"). Si esos datos se pueden corregir
   sin cambiar de estado (viaje ya entregado o listo para facturar), van arriba en "Datos de la entrega" y
@@ -385,8 +416,9 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   con el verbo: "Guardar" (`btn-primary`) en alta y edición, "Eliminar" / "Anular" en rojo
   (`btn-danger`), "Generar", "Emitir recibo". **Nunca "Confirmar".**
 - **Un botón del pie que todavía no se puede usar** (22/10, primero en la proforma de Rukas) queda deshabilitado y
-  su globito dice por qué ("Primero elegí el Excel de Rukas", "Para generar, resolvé las 3 diferencias"), como los de
-  la fila (§1.4): va en un `span.sgtl-envoltura-deshabilitado`. Nada de notas grises en el pie explicándolo. Un botón
+  su globito dice por qué con la misma frase que los de la fila (§1.4: "No se puede generar la proforma: falta elegir el
+  Excel de Rukas", "No se puede generar la proforma: hay 3 diferencias sin resolver"): va en un
+  `span.sgtl-envoltura-deshabilitado`. Nada de notas grises en el pie explicándolo. Un botón
   que en ese paso no hace nada distinto de otro no se muestra ("Guardar borrador" mientras elegir el Excel ya lo
   guarda).
 - **Detalle:** solo "Cerrar" en el pie, además de la cruz.

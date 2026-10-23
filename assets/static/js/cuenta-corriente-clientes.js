@@ -444,22 +444,27 @@
         return String(item.EstadoComprobante || item.EstadoDocumental || item.Estado || 'EMITIDO').toUpperCase();
     }
     // Botones de cada fila (§1.4): los mismos cuatro en todas, en este orden; lo que no se puede hacer queda
-    // deshabilitado con el motivo. Enviar por e-mail va en el pie de Ver PDF, como en presupuestos.
+    // deshabilitado con "No se puede {acción}: {por qué}". Enviar por e-mail va en el pie de Ver PDF, como en presupuestos.
     function accionesComprobante(item) {
         var tipo = tipoComprobante(item);
         var id = Number(item.ComprobanteID);
         var esRecibo = tipo === 'REC';
         var anulado = esRecibo && estadoRecibo(item) === 'ANULADO';
+        // El comprobante de la fila dentro del motivo, en minúscula (§9): "la factura", "la nota de crédito".
+        var nombre = { FAC: 'la factura', REC: 'el recibo', NC: 'la nota de crédito', ND: 'la nota de débito' }[tipo] || 'el comprobante';
         return window.SGTL.accionesFila([
             window.SGTL.botonFila('ver', { id: id, datos: { tipo: tipo } }),
             window.SGTL.botonFila('editar', {
                 id: id, texto: 'Editar recibo', deshabilitado: !esRecibo || anulado,
-                motivo: anulado ? 'El recibo está anulado: no se puede editar' : 'Solo se editan los recibos'
+                motivo: anulado ? 'No se puede editar el recibo: está anulado' : 'No se puede editar ' + nombre + ': solo se editan los recibos'
             }),
-            window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'Este comprobante no tiene PDF' }),
+            window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'No se puede ver el PDF: este tipo de comprobante no tiene' }),
             anulado
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
-                : window.SGTL.botonFila('anular', { id: id, texto: 'Anular recibo', deshabilitado: !esRecibo, motivo: 'Solo se anulan los recibos' })
+                : window.SGTL.botonFila('anular', {
+                    id: id, texto: 'Anular recibo', deshabilitado: !esRecibo,
+                    motivo: 'No se puede anular ' + nombre + ': ' + (tipo === 'FAC' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
+                })
         ]);
     }
     function mostrarCarga() {

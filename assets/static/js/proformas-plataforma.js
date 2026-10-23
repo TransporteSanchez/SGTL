@@ -243,7 +243,8 @@
       nueva.tabIndex = 0;
       nueva.setAttribute('data-bs-toggle', 'tooltip');
       nueva.title = motivo;
-      nueva.setAttribute('aria-label', 'Generar proforma: ' + motivo.charAt(0).toLowerCase() + motivo.slice(1));
+      // El motivo ya nombra la acción (§1.4): el lector de pantalla dice lo mismo que el globito.
+      nueva.setAttribute('aria-label', motivo);
     }
     if (vieja.hasAttribute('hidden')) nueva.setAttribute('hidden', '');
     if (window.SGTL) SGTL.ocultarTooltips();
@@ -275,7 +276,7 @@
     // cuando el borrador existe (paso 3).
     ocultar($id('btnGuardarBorrador'));
     ocultar($id('badgeEstadoModal'));
-    botonGenerar(false, 'Primero elegí el Excel de ' + nombrePlataforma());
+    botonGenerar(false, 'No se puede generar la proforma: falta elegir el Excel de ' + nombrePlataforma());
     botonPdf(false);
     window.proformaConCambios = false;
   }
@@ -759,8 +760,8 @@
 
   // Por qué todavía no se puede generar (va en el globito de "Generar proforma").
   function motivoGenerar(c) {
-    if (c.Diferencias) return 'Para generar, resolvé ' + (c.Diferencias === 1 ? 'la diferencia' : 'las ' + c.Diferencias + ' diferencias');
-    if (!c.Cantidad) return 'El Excel no tiene transportes para generar';
+    if (c.Diferencias) return 'No se puede generar la proforma: ' + (c.Diferencias === 1 ? 'hay una diferencia sin resolver' : 'hay ' + c.Diferencias + ' diferencias sin resolver');
+    if (!c.Cantidad) return 'No se puede generar la proforma: el Excel no tiene transportes';
     return '';
   }
 

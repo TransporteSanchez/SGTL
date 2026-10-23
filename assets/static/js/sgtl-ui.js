@@ -426,7 +426,8 @@
   };
 
   // Botón de solo ícono para una fila. opciones: id (va en data-id), datos ({ clave: valor } en data-*),
-  // texto e icono (para cambiar los de la acción), deshabilitado y motivo (tooltip del deshabilitado).
+  // texto e icono (para cambiar los de la acción), deshabilitado y motivo (tooltip del deshabilitado, escrito como
+  // dice §1.4: "No se puede eliminar el chofer: está activo").
   // Las pantallas escuchan los clics con $(tabla).on('click', '[data-accion="editar"]', ...).
   function botonFila(accion, opciones) {
     opciones = opciones || {};
@@ -441,10 +442,9 @@
 
     if (opciones.deshabilitado) {
       var motivo = opciones.motivo || texto;
-      // El globito muestra el motivo; el lector de pantalla dice la acción y el motivo ("Editar recibo: solo se editan…").
-      var etiqueta = texto && opciones.motivo ? texto + ': ' + motivo.charAt(0).toLowerCase() + motivo.slice(1) : motivo;
+      // El globito y el lector de pantalla dicen lo mismo: el motivo ya nombra la acción ("No se puede editar el recibo: …").
       return '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="' + escapar(motivo) + '">' +
-        '<button type="button" class="btn btn-sm ' + base.clase + '" disabled aria-label="' + escapar(etiqueta) + '">' + icono + '</button></span>';
+        '<button type="button" class="btn btn-sm ' + base.clase + '" disabled aria-label="' + escapar(motivo) + '">' + icono + '</button></span>';
     }
     return '<button type="button" class="btn btn-sm ' + base.clase + '" data-accion="' + escapar(accion) + '"' + atributos +
       ' data-bs-toggle="tooltip" title="' + escapar(texto) + '" aria-label="' + escapar(texto) + '">' + icono + '</button>';

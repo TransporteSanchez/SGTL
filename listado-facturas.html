@@ -372,9 +372,12 @@
         function accionesProforma(x) {
             var id = x.Proforma_ID;
             var siguiente;
-            if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'Facturada: ' + (x.FacturaNumero || '') });
-            else if ((x.Estado || '') === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt' });
-            else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true, motivo: (x.Estado || '') === 'Generada' ? 'Primero marcala como aceptada en Gestionar proformas' : 'Sin pasos pendientes' });
+            // Deshabilitado con "No se puede {acción}: {qué le pasa a la proforma}" (§1.4).
+            var estado = x.Estado || '';
+            if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') });
+            else if (estado === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt' });
+            else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true,
+                motivo: 'No se puede emitir la factura: la proforma ' + (estado === 'Generada' ? 'todavía no está aceptada' : 'está ' + estado.toLowerCase()) });
             return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }), siguiente]);
         }
         function renderPag() {

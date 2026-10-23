@@ -258,16 +258,20 @@
                 : '');
             // Botones de la fila (§1.4), en el orden del circuito: editar, PDF (con imprimir y e-mail adentro),
             // cambiar estado (banderita), siguiente paso (generar viaje) y eliminar. Lo que no se puede hacer queda
-            // deshabilitado con el motivo.
+            // deshabilitado con "No se puede {acción}: {qué le pasa al presupuesto}".
             var td = tr.insertCell(); td.className = 'text-center text-nowrap';
             var conViaje = !!p.viajeId;
-            var motivoGenerar = conViaje ? 'Ya se generó el viaje #' + p.viajeId : 'Primero marcalo como aceptado';
+            var generado = 'ya se generó el viaje #' + p.viajeId;
+            var estadoTexto = String(p.estado || '').toLowerCase();
+            var motivoEditar = 'No se puede editar el presupuesto: ' + (conViaje ? generado : 'está ' + estadoTexto);
+            var motivoGenerar = 'No se puede generar el viaje: ' + (conViaje ? 'ya existe el viaje #' + p.viajeId
+                : 'el presupuesto ' + (p.estado === 'Pendiente' ? 'todavía no está aceptado' : 'está ' + estadoTexto));
             td.innerHTML = SGTL.accionesFila([
-                SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: 'Solo se editan presupuestos pendientes' }),
+                SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: motivoEditar }),
                 SGTL.botonFila('pdf', { id: p.id, texto: 'Ver PDF' }),
-                SGTL.botonFila('estado', { id: p.id, deshabilitado: conViaje, motivo: 'Ya se generó el viaje #' + p.viajeId + ': el estado no cambia' }),
+                SGTL.botonFila('estado', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede cambiar el estado: ' + generado }),
                 SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje, motivo: motivoGenerar }),
-                SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'Ya tiene un viaje generado: no se puede eliminar' })
+                SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede eliminar el presupuesto: ' + generado })
             ]);
             var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); },
                 estado: function () { abrirCambioEstado(p); }, siguiente: function () { abrirGenerarViaje(p); }, eliminar: function () { eliminar(p); } };
