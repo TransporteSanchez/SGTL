@@ -48,9 +48,10 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | **OK en VM (23/10)**; 5 casos sin datos para verlos (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
-| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
+| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **pusheadas** (`054cc38`) | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | Recompilar la API y probar (ver §31) |
+| 32 | Pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (no tenían nada propio): 59 commits, de `36a92c8` a `739e567`. `main` sigue en `36a92c8` | **Pusheado** | Sin la prueba mínima previa: falta compilar (ver §32) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2504,3 +2505,34 @@ FADEEAC de marzo de 2026 (por tonelada: ~$25.389 a 100 km, ~$77.700 a 500 km, ~$
   inicio para buscar la tarifa fija."; con inicio, "Tarifa fija #…, vigente el DD/MM/AAAA." No guardar.
 - [ ] 10. Editar un viaje ya cargado con tarifa fija: abre con su importe de siempre; cambiarle el inicio a otro mes
   busca la tarifa de ese día. Cancelar.
+
+---
+
+## 32. Ramas del equipo al día con `rocionuvoli` — PUSHEADO (23/10), FALTA COMPILAR Y PROBAR EN VM
+
+A pedido de Rocío, antes de la reunión con la profe: `facugodoy` y `fedemontenegro` pasan de `36a92c8` (22/10, 15:00) a
+`739e567`, avance directo (59 commits, ninguno de ellos tenía commits nuevos). `main` no se tocó: pasa cuando esté
+probado. Les llega lo de §24 a §31: viajes y Ver detalle con el mismo armado, motivos de los botones deshabilitados,
+datos del cliente que se editan en el cliente (proformas), estética de la proforma de Rukas, Gestionar empresa aparte de
+Gestionar contenido, textos del menú en Grupos y permisos y en Ver detalle del usuario, CABA con sus barrios y tarifas.
+En la base no tienen que correr nada (scripts de empresa, CABA y tarifas ya aplicados); sí recompilar la API.
+
+**A diferencia de la §23, se pasó sin la prueba mínima en la VM.** C# que todavía no se compiló: el ajuste de
+`EmpresaController` después del reporte (`57834a6`), el orden de `ProvinciasController` (`3ced596`) y las tres partes
+de tarifas. Si no compila, arreglarlo en `rocionuvoli` y volver a pasarlo.
+
+**Probar en la VM, por prioridad** (`pull`, recompilar, Ctrl+F5; detalle en §29, §30, §31 y en Grupos y permisos de §21):
+- [ ] 1. La API compila sin errores.
+- [ ] 2. Tarifas: Registrar tarifa fija con QUICKFOOD → solo sus orígenes; ruta + vuelta muestra el neto. Quilmes →
+  Banfield del 15/10 al 25/10 → error que nombra la #4. Registrar viaje con tarifa Fija en esa ruta: inicio 28/10 →
+  $ 200.000; 02/11 → $ 185.000.
+- [ ] 3. Presupuestos: Registrar, tipo Fija, Quilmes → Banfield, inicio 28/10 → "Tarifa fija #4, vigente el 28/10/2026.".
+- [ ] 4. Gestionar empresa: sin el aviso amarillo, con los datos de Rocío.
+- [ ] 5. PDF: proforma generada con el logo y "Transporte Sánchez" grande a su derecha, razón social debajo. Factura y
+  recibo: "Condición fiscal: Responsable inscripto" y el pie "Generado: DD/MM/AAAA HH:MM" en 24 h.
+- [ ] 6. CABA: Registrar cliente → provincia entre Chubut y Córdoba, con los barrios. No guardar.
+- [ ] 7. Grupos y permisos → Permisos y Listar usuarios → Ver detalle: los mismos textos que el menú y en su orden.
+- [ ] 8. Cuenta corriente: Ver recibo con solo "Cerrar"; Editar recibo con el título "Editar recibo REC-…" (sin " · ").
+
+**Si algo falla en la VM y no hay tiempo:** volver a `git checkout 36a92c8` (lo que tenían antes) y recompilar; los
+datos de la base corregidos hoy funcionan con esa versión.
