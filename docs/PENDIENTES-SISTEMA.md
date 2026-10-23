@@ -2102,7 +2102,7 @@ cuenta corriente.
 - [x] **Lápiz de una proforma anulada:** dice "ya se generó"; que diga "está anulada" (hecho 23/10).
 - [x] **Aire arriba de dos subtítulos** (hecho 23/10): "Plantilla predeterminada" (Registrar configuración de e-mail, 8 px) y
   "Totales" (proforma propia, 16 px), con 24 px como el resto. Hacerla ya.
-- [ ] **Ver recibo** muestra el subtítulo del alta ("Registrar cobranza e imputar facturas pendientes."): sacarlo al ver
+- [x] **Ver recibo** (hecho 23/10) muestra el subtítulo del alta ("Registrar cobranza e imputar facturas pendientes."): sacarlo al ver
   y al editar. Solo texto (módulo de Facu). Hacerla ya.
 - [ ] **Ver factura sin "Comprobantes aplicados":** ese bloque muestra lo que cancela el comprobante (sirve en notas de
   crédito y débito); los recibos aplicados a una factura no están en esa lista. Mostrarlos sería algo nuevo en el

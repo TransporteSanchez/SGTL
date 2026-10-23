@@ -763,6 +763,8 @@
 
     function presentarReciboSoloLectura(recibo) {
         porId('modalNuevoReciboTitulo').textContent = 'Ver recibo ' + (recibo.Numero || '');
+        // El subtítulo es del alta: al ver o editar un recibo no va (reprueba de la VM del 23/10).
+        porId('modalNuevoReciboSubtitulo').classList.add('d-none');
         ponerFecha('reciboFecha', String(recibo.Fecha || '').substring(0, 10));
         seleccionarClienteFormulario('reciboCliente', recibo.ClienteID);
         porId('reciboTipoComprobante').value = 'Recibo';
@@ -833,6 +835,7 @@
             reciboEditando = recibo;
             reciboOperacion = null;
             porId('modalNuevoReciboTitulo').textContent = 'Editar recibo · ' + (recibo.Numero || '');
+            porId('modalNuevoReciboSubtitulo').classList.add('d-none');
             limitarFecha('reciboFecha', 'maxDate', hoyIso());
             ponerFecha('reciboFecha', String(recibo.Fecha || '').substring(0, 10));
             seleccionarClienteFormulario('reciboCliente', recibo.ClienteID);
@@ -1025,6 +1028,7 @@
         reciboEditando = null;
         reciboOperacion = nuevaClave();
         porId('modalNuevoReciboTitulo').textContent = 'Registrar recibo';
+        porId('modalNuevoReciboSubtitulo').classList.remove('d-none');
         seleccionarClienteFormulario('reciboCliente', cliente && cliente.ClienteID);
         limitarFecha('reciboFecha', 'maxDate', hoyIso());
         ponerFecha('reciboFecha', hoyIso());
