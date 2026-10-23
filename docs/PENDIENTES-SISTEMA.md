@@ -45,9 +45,10 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
 | 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | **Probado en VM (23/10)**: OK salvo fallas leves, arreglos en §28 |
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilado y probado en VM (23/10)**: OK, mejoras en §28 |
-| 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §26) |
-| 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §27) |
-| 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | Sin C#: `pull` y Ctrl+F5 (ver §28) |
+| 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | **OK en VM (23/10)**; 5 casos sin datos para verlos (ver §26) |
+| 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
+| 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
+| 29 | Falla y mejoras de la reprueba del 23/10 | Para decidir con Rocío (23/10) | — | Ver §29 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1922,7 +1923,7 @@ corresponde. Se podría dejar deshabilitado, con el motivo, mientras tenga viaje
 
 ---
 
-## 26. Motivos de los botones deshabilitados — PUSHEADO (`f2bc239`), FALTA PROBAR EN VM (23/10)
+## 26. Motivos de los botones deshabilitados — PUSHEADO (`f2bc239`), OK EN VM (23/10)
 
 Rocío notó que cada pantalla explicaba distinto por qué un botón estaba deshabilitado, y que algunos globitos no decían
 qué acción estaba bloqueada ("Primero generá la proforma" en el botón de emitir factura). Se relevaron los 28 textos
@@ -1967,7 +1968,7 @@ una sola forma, que quedó en el §1.4 del design system y en la lista de contro
 
 ---
 
-## 27. Subtítulos de las secciones con un solo estilo — PUSHEADO (`3a3fa65`, `c831e1c`), FALTA PROBAR EN VM (23/10)
+## 27. Subtítulos de las secciones con un solo estilo — PUSHEADO (`3a3fa65`, `c831e1c`), OK EN VM (23/10)
 
 Rocío vio que algunos modales tenían los subtítulos de sus secciones en azul y otros en negro. Los títulos de los
 modales ya eran todos iguales; los subtítulos tenían cuatro estilos: `h6` (la plantilla Mazer los pinta de azul oscuro,
@@ -1996,7 +1997,7 @@ con su línea abajo y con aire arriba:
 
 ---
 
-## 28. Arreglos del reporte de la VM del 23/10 (§24 y §25) — PUSHEADO (`e7649d0` a `aef6e4a`), FALTA PROBAR EN VM (23/10)
+## 28. Arreglos del reporte de la VM del 23/10 (§24 y §25) — PUSHEADO (`e7649d0` a `aef6e4a`), OK EN VM (23/10)
 
 Reporte: `docs/pruebas/2026-10-23-viajes-y-proformas.md`. De 42 pruebas, 35 OK, 6 fallas leves y 1 sin probar; con el OK
 de Rocío se generó el borrador 990100 (PF-00000011) y tomó los datos de la ficha de QUICKFOOD. Rocío aprobó el 23/10
@@ -2076,3 +2077,46 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
   la proforma, que lo encuentra escribiendo el CUIT con guiones o sin ellos); en una de Rukas, la fila del cliente
   igual.
 - [ ] 10. Registrar proforma propia: el título sin la etiqueta "Borrador" hasta guardar.
+
+---
+
+## 29. Reprueba del 23/10: una falla nueva y mejoras — PARA DECIDIR (23/10)
+
+Reporte: `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md`. Los 22 puntos pedidos (§28, §26 y §27) dan OK. No se
+pudieron ver, porque no hay datos así en la base: un viaje en viaje que no venga de un presupuesto, una proforma
+Generada en Listar proformas, un presupuesto aceptado sin viaje, un recibo anulado y el detalle con "Trazabilidad" de
+cuenta corriente.
+
+**Falla:**
+- [ ] **F1. Escape con la lista de un buscador abierta cierra el modal entero** (Registrar viaje: cliente, chofer). El
+  buscador (`select-cliente-predictivo.js`) no frena el Escape y Bootstrap lo toma como "cerrar". Propuesta: con la
+  lista abierta, Escape cierra solo la lista; con la lista cerrada, sigue cerrando el modal como siempre.
+
+**Mejoras** (con la recomendación):
+- [ ] **Buscador:** si se elige con Enter y después se hace clic en el mismo campo, el texto no se selecciona y lo
+  escrito se mete en el medio ("QUICKFOOD SPamp.A."). Seleccionar el texto en cada clic mientras haya uno elegido.
+  Hacerla ya.
+- [ ] **"Solo se…" en cuenta corriente** ("No se puede editar la factura: solo se editan los recibos"): el §1.4 del
+  design system ya lo permite cuando el motivo es el tipo de la fila, pero la lista de control de `AGENTS.md` dice "sin
+  'Solo se…'" sin la excepción. Sumar la excepción a `AGENTS.md`; los textos quedan. Hacerla ya.
+- [ ] **Lápiz de una proforma anulada:** dice "ya se generó"; que diga "está anulada". Hacerla ya.
+- [ ] **Aire arriba de dos subtítulos:** "Plantilla predeterminada" (Registrar configuración de e-mail, 8 px) y
+  "Totales" (proforma propia, 16 px), con 24 px como el resto. Hacerla ya.
+- [ ] **Ver recibo** muestra el subtítulo del alta ("Registrar cobranza e imputar facturas pendientes."): sacarlo al ver
+  y al editar. Solo texto (módulo de Facu). Hacerla ya.
+- [ ] **Ver factura sin "Comprobantes aplicados":** ese bloque muestra lo que cancela el comprobante (sirve en notas de
+  crédito y débito); los recibos aplicados a una factura no están en esa lista. Mostrarlos sería algo nuevo en el
+  módulo de Facu: hablarlo con él.
+- [ ] **Registrar usuario tarda 4 a 5 s "sin señal":** el botón ya pone "Guardando…" mientras guarda
+  (`gestion-usuarios.html`, probado en la simulación con una respuesta lenta). Ver en la próxima prueba, con la red
+  abierta, en qué tramo están esos segundos antes de tocar algo.
+- [ ] **Guardar un cliente tarda 2 a 3 s** (el PUT actualiza los borradores, uno por uno, con su registro en
+  Auditoría). Se puede acelerar en el C# (`DatosClienteProforma.ActualizarBorradores`): dejarlo para después.
+
+**Limpieza (la hace Rocío):**
+- **Ya:** los borradores #42 (Rukas 990100, con los viajes 25 y 26) y #40 con el tacho; después, el cliente 6 con el
+  SQL del reporte (revisado).
+- **El usuario de prueba mledesma (15):** inactivarlo desde Gestionar usuarios; sirve para la próxima prueba de
+  permisos. Borrar el archivo con su clave en la VM (`C:\pruebas-sgtl\reportes\2026-10-24-usuario-prueba.txt`).
+- **Antes de la defensa:** el concepto "preubaaaa888" de FAC-00000005, además de lo anotado en §28.
+
