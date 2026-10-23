@@ -465,6 +465,36 @@
             });
         }
 
+        // Cada permiso se ve con el texto de su opción del menú (§3.1) y en el mismo orden. En la base sigue con su nombre
+        // ("Gestión de…", "Listado de…"), que es la clave de los permisos en sidebar-loader.js y en la API: no se renombra.
+        const OPCIONES_DEL_MENU = [
+            ['dashboard', 'Dashboard'],
+            ['listado de choferes', 'Listar choferes'], ['gestion de choferes', 'Gestionar choferes'],
+            ['listado de camiones', 'Listar camiones'], ['gestion de camiones', 'Gestionar camiones'],
+            ['listado de viajes', 'Listar viajes'], ['gestion de viajes', 'Gestionar viajes'],
+            ['gestion de origenes y destinos', 'Gestionar orígenes y destinos'], ['gestion de tarifas', 'Gestionar tarifas'],
+            ['presupuestos', 'Gestionar presupuestos'],
+            ['listado de clientes', 'Listar clientes'], ['gestion de clientes', 'Gestionar clientes'],
+            ['listado de proformas', 'Listar proformas'], ['gestion de proformas', 'Gestionar proformas'],
+            ['cuenta corriente', 'Gestionar cuenta corriente'], ['gestion de tipos de comprobante', 'Gestionar tipos de comprobante'],
+            ['e-mail', 'Gestionar e-mail'], ['integracion whatsapp', 'Gestionar integración de WhatsApp'],
+            ['gestion de empresa', 'Gestionar empresa'], ['gestion de contenido', 'Gestionar contenido'],
+            ['listado de usuarios', 'Listar usuarios'], ['gestion de usuarios', 'Gestionar usuarios'],
+            ['grupos y permisos', 'Gestionar grupos y permisos'],
+            ['auditoria', 'Auditoría']
+        ];
+
+        function posicionEnElMenu(permiso) {
+            const clave = String(permiso.Menu_Nombre || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+            return OPCIONES_DEL_MENU.findIndex(function (opcion) { return opcion[0] === clave; });
+        }
+
+        // Un permiso que no está en la lista se ve con su nombre, al final de su tarjeta.
+        function textoDelPermiso(permiso) {
+            const posicion = posicionEnElMenu(permiso);
+            return posicion === -1 ? String(permiso.Menu_Nombre || '') : OPCIONES_DEL_MENU[posicion][1];
+        }
+
         // Una tarjeta por menú principal (el mismo orden que el menú lateral), con una casilla que marca todas sus pantallas.
         function crearHtmlPermisos(gruposMenu) {
             return '<div class="row g-3">' + gruposMenu.map(function (grupo, indice) {
@@ -480,7 +510,7 @@
                         <div class="card-body py-2">${grupo.Permisos.map(function (item) {
                             return `<div class="form-check ms-3 mb-2">
                                 <input class="form-check-input chk-menu" type="checkbox" value="${SGTL.escapar(item.Menu_ID)}" id="menu_${SGTL.escapar(item.Menu_ID)}" ${item.Asignado ? 'checked' : ''}>
-                                <label class="form-check-label" for="menu_${SGTL.escapar(item.Menu_ID)}">${SGTL.escapar(item.Menu_Nombre)}</label>
+                                <label class="form-check-label" for="menu_${SGTL.escapar(item.Menu_ID)}">${SGTL.escapar(textoDelPermiso(item))}</label>
                             </div>`;
                         }).join('')}</div>
                     </div>
@@ -499,6 +529,15 @@
                     grupos.push(grupo);
                 }
                 grupo.Permisos.push(menu);
+            });
+            grupos.forEach(function (grupo) {
+                grupo.Permisos.sort(function (a, b) {
+                    const indiceA = posicionEnElMenu(a);
+                    const indiceB = posicionEnElMenu(b);
+                    const posicionA = indiceA === -1 ? OPCIONES_DEL_MENU.length : indiceA;
+                    const posicionB = indiceB === -1 ? OPCIONES_DEL_MENU.length : indiceB;
+                    return posicionA === posicionB ? textoDelPermiso(a).localeCompare(textoDelPermiso(b)) : posicionA - posicionB;
+                });
             });
             return grupos.sort(function (a, b) {
                 const indiceA = orden.indexOf(a.Nombre);

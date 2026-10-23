@@ -260,6 +260,11 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Ítems principales:** "Dashboard" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
+- **En Gestionar grupos y permisos, cada permiso se ve con el texto de su opción del menú** y en el mismo orden
+  (23/10): "Listar choferes", "Gestionar cuenta corriente", "Auditoría". En la base siguen con su nombre de siempre
+  ("Listado de choferes", "Cuenta Corriente"), que no se ve y no se renombra. Al agregar o renombrar una opción del
+  menú, actualizar también `OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html` (`tests/permisos-agrupados.test.js`
+  avisa si falta alguna o si no coincide con el menú).
 
 ### 3.2 Encabezado
 

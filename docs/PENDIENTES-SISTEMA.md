@@ -1582,13 +1582,28 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
   Facturación aparece "Gestión de tipos de comprobante" y ya no hay "Facturación" en Configuración (los grupos que lo
   tenían lo siguen teniendo). Con un usuario que no es admin: no ve la opción. **OK en la reprueba (22/10)** como admin;
   lo del usuario que no es admin lo mira Rocío a mano (hay que escribir la contraseña).
-- [ ] **Pendiente (decisión de Rocío, 22/10): pasar todos los permisos a los nombres del menú** ("Gestionar choferes",
+- [x] **Pendiente (decisión de Rocío, 22/10): pasar todos los permisos a los nombres del menú** ("Gestionar choferes",
   "Listar viajes", "Gestionar cuenta corriente"…), como pide §3.1 del design system. Hoy el catálogo de Grupos y
   permisos usa "Gestión de…", "Listado de…". Implica: renombrar los 23 en `GruposController` conservando las
   asignaciones (la API ya sabe hacerlo), que `sidebar-loader.js` (`MENU_TO_PAGE`) y la API de presupuestos
   (`EnviosPresupuestosController`, que da acceso por nombre: "Gestion de viajes" o "Presupuestos") acepten los nombres
   nuevos y los viejos, y hacerlo cuando las ramas de todos estén al día (una API vieja vuelve a crear los nombres viejos
   como permisos vacíos al abrir Grupos y permisos).
+  **Hecho (23/10, pedido de Rocío, commit "Permisos: Grupos y permisos con los textos del menú"), sin push, solo
+  pantalla:** en lugar de renombrar en la base, Gestionar grupos y permisos muestra cada permiso con el texto de su
+  opción del menú y en el mismo orden (`OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html`, §3.1 del design system).
+  Los nombres de la base no cambian, así que no hace falta recompilar, ni coordinar las ramas, ni tocar
+  `MENU_TO_PAGE`, `EnviosPresupuestosController` ni los controllers de Facu que dan acceso por nombre. Un permiso que
+  no está en la lista se ve con su nombre, al final de su tarjeta. `tests/permisos-agrupados.test.js` controla que
+  cada permiso del catálogo de la API tenga su texto y que coincida con el menú lateral, en el mismo orden.
+  - [ ] Probar en la VM (`pull` y Ctrl+F5, sin recompilar): Gestionar grupos y permisos → Permisos, elegir un grupo.
+    Cada tarjeta dice lo mismo que el menú y en su orden: General: Dashboard · Auditoría; Choferes: Listar choferes ·
+    Gestionar choferes; Viajes: Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas ·
+    Gestionar presupuestos; Facturación: Listar proformas · Gestionar proformas · Gestionar cuenta corriente ·
+    Gestionar tipos de comprobante; Configuración: Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar
+    empresa · Gestionar contenido; Usuarios: Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos.
+    Tildar o destildar uno, Guardar permisos y volver a elegir el grupo: queda como se guardó, y un usuario de ese
+    grupo ve en el menú lo mismo que antes (los permisos son los mismos).
 - [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
   Integración WhatsApp, Gestión de empresa (sumado el 23/10, decisión de Rocío, para que el catálogo quede unificado; ver
   §30) y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no le da acceso a
@@ -1614,7 +1629,8 @@ misma altura" (`1a78bd8`, solo visual): lo mira Rocío a mano.
   - [x] PF-00000004 dice "Factura" en Listar proformas y "Facturada" en Gestionar. **Cerrado (22/10): no era una
     falla.** Las dos pantallas usan la misma API, la misma regla de estado y la misma etiqueta, y nada guarda "Factura"
     como estado. Rocío lo miró a mano y en las dos dice "Facturada": fue una lectura equivocada de la VM.
-  - [ ] "Auditoria" y "Cuenta Corriente" en Grupos y permisos: van con el renombre de permisos de arriba.
+  - [x] "Auditoria" y "Cuenta Corriente" en Grupos y permisos: van con el renombre de permisos de arriba. **Hecho
+    (23/10):** se ven "Auditoría" y "Gestionar cuenta corriente" (se prueba con el punto de arriba).
   - [ ] Limpieza: el grupo "PRUEBA-CLAUDE 20/10" (eliminarlo desde Gestionar grupos y permisos, después de ver que no
     tenga usuarios reales).
 
@@ -2233,7 +2249,8 @@ la empresa se cargan en Configuración → **Gestionar empresa** y los documento
 - [ ] 1. Configuración: Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa · Gestionar contenido.
   Con un usuario que no es admin, Configuración no aparece y escribir `gestion-empresa.html` en la dirección lo manda al
   inicio (igual que `configuracion-email.html`). Gestionar grupos y permisos → Permisos: en Configuración aparecen
-  E-mail, Gestión de contenido, Gestión de empresa e Integración WhatsApp.
+  Gestionar e-mail, Gestionar integración de WhatsApp, Gestionar empresa y Gestionar contenido (con los textos del
+  menú desde el 23/10; en la base siguen E-mail, Integración WhatsApp, Gestión de empresa y Gestión de contenido).
 - [ ] 2. Gestionar empresa: el aviso amarillo "Faltan el CUIT y el domicilio…", la razón social cargada, el recuadro
   "Sin logo: sale el nombre en texto" con "Elegir logo" y "Todavía no se completaron.". Guardar con los campos vacíos:
   "Revisá los campos marcados.", cada error debajo de su campo y el cursor en el primero.
