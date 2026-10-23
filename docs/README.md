@@ -105,4 +105,5 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/pruebas/2026-10-22-reprueba-ramas.md` — reprueba en la VM de la falla del recibo, las mejoras de la prueba mínima, la mudanza de "Gestionar tipos de comprobante" y "Ver PDF" de proformas.
 - `docs/pruebas/2026-10-23-viajes-y-proformas.md` — pruebas en la VM de viajes (registrar, editar, detalle), los Ver detalle de datos maestros, la proforma de Rukas (tercera vuelta) y los datos del cliente en la proforma (§24 y §25).
 - `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md` — reprueba en la VM de los arreglos del reporte anterior (§28), los motivos de los botones deshabilitados (§26) y los subtítulos (§27): todo OK, con una falla nueva (Escape en el buscador).
+- `docs/pruebas/2026-10-23-reprueba-29.md` — reprueba en la VM de lo que salió de la reprueba anterior (§29): todo OK; la demora de Registrar usuario es el hash de la contraseña.
 - `docs/pruebas/datos/README.md` — archivos de prueba con datos inventados (Excel con el formato de Rukas) y qué prueba cada uno.

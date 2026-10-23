@@ -48,7 +48,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | **OK en VM (23/10)**; 5 casos sin datos para verlos (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
-| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Sin push** | Sin C#: `pull` y Ctrl+F5 (ver §29) |
+| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10) | **OK en VM (23/10)**; dos mejoras nuevas para decidir (ver §29) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2080,7 +2080,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 
 ---
 
-## 29. Reprueba del 23/10: una falla nueva y mejoras — HECHO EN LA MAC, SIN PUSH, FALTA PROBAR EN VM (23/10)
+## 29. Reprueba del 23/10: una falla nueva y mejoras — PUSHEADO (`cfe08c5` a `a1e2b8a`), OK EN VM (23/10)
 
 Reporte: `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md`. Los 22 puntos pedidos (§28, §26 y §27) dan OK. No se
 pudieron ver, porque no hay datos así en la base: un viaje en viaje que no venga de un presupuesto, una proforma
@@ -2107,9 +2107,11 @@ cuenta corriente.
 - [ ] **Ver factura sin "Comprobantes aplicados":** ese bloque muestra lo que cancela el comprobante (sirve en notas de
   crédito y débito); los recibos aplicados a una factura no están en esa lista. Mostrarlos sería algo nuevo en el
   módulo de Facu: hablarlo con él.
-- [ ] **Registrar usuario tarda 4 a 5 s "sin señal":** el botón ya pone "Guardando…" mientras guarda
-  (`gestion-usuarios.html`, probado en la simulación con una respuesta lenta). Ver en la próxima prueba, con la red
-  abierta, en qué tramo están esos segundos antes de tocar algo.
+- [x] **Registrar usuario tarda 4 a 5 s "sin señal":** medido en la VM (23/10, `docs/pruebas/2026-10-23-reprueba-29.md`):
+  el botón muestra "Guardando…" todo el tiempo y la demora es el POST (3,9 s). La causa es el hash de la contraseña:
+  PBKDF2-SHA256 con 600.000 iteraciones (`Security/ContrasenasSeguras.cs`, lo que recomienda OWASP), que en .NET
+  Framework 4.8 lleva unos segundos; pasa también al iniciar sesión. Bajar las iteraciones es una decisión de
+  seguridad del merge de Facu (§21): **hablarlo con él** si molesta.
 - [ ] **Guardar un cliente tarda 2 a 3 s** (el PUT actualiza los borradores, uno por uno, con su registro en
   Auditoría). Se puede acelerar en el C# (`DatosClienteProforma.ActualizarBorradores`): dejarlo para después.
 
@@ -2119,15 +2121,23 @@ cuenta corriente.
 - **El usuario de prueba mledesma (15):** inactivarlo desde Gestionar usuarios; sirve para la próxima prueba de
   permisos. Borrar el archivo con su clave en la VM (`C:\pruebas-sgtl\reportes\2026-10-24-usuario-prueba.txt`).
 - **Antes de la defensa:** el concepto "preubaaaa888" de FAC-00000005, además de lo anotado en §28.
+- **El usuario de prueba lfernandez (16, admin), de la reprueba de la §29:** inactivarlo ya (es administrador) y borrar
+  el archivo con su clave en la VM (`C:\pruebas-sgtl\reportes\2026-10-23-usuario-prueba-29.txt`).
 
 **Probar en la VM** (sin C#: `pull` y Ctrl+F5). Rocío aprobó el 23/10 la falla y las mejoras marcadas "hacerla ya":
-- [ ] 1. Registrar viaje: abrir la lista de clientes y apretar Escape: se cierra la lista y el modal sigue abierto,
+- [x] 1. Registrar viaje: abrir la lista de clientes y apretar Escape: se cierra la lista y el modal sigue abierto,
   con lo cargado. Otra vez Escape (con la lista cerrada): ahora sí se cierra el modal. Lo mismo con el chofer.
-- [ ] 2. Elegir un cliente con Enter y, sin salir del campo, hacer clic en él y escribir: lo escrito reemplaza el
+- [x] 2. Elegir un cliente con Enter y, sin salir del campo, hacer clic en él y escribir: lo escrito reemplaza el
   nombre. En Registrar viaje y en el filtro de cliente de Gestionar proformas.
-- [ ] 3. Gestionar proformas: el lápiz de una anulada dice "No se puede editar la proforma: está anulada".
-- [ ] 4. Registrar configuración de e-mail ("Plantilla predeterminada") y Registrar proforma ("Totales"): el mismo
+- [x] 3. Gestionar proformas: el lápiz de una anulada dice "No se puede editar la proforma: está anulada".
+- [x] 4. Registrar configuración de e-mail ("Plantilla predeterminada") y Registrar proforma ("Totales"): el mismo
   espacio arriba del subtítulo que en las demás secciones.
-- [ ] 5. Cuenta corriente: Ver recibo y Editar recibo sin el subtítulo "Registrar cobranza e imputar facturas
+- [x] 5. Cuenta corriente: Ver recibo y Editar recibo sin el subtítulo "Registrar cobranza e imputar facturas
   pendientes."; Registrar recibo lo sigue mostrando.
+
+**Resultado en la VM (23/10):** los 6 puntos OK (`docs/pruebas/2026-10-23-reprueba-29.md`). Salieron dos mejoras más,
+de cuenta corriente (módulo de Facu, solo texto), para decidir:
+- [ ] **Pie de "Ver recibo":** dice "Cancelar"; en un modal de solo lectura va "Cerrar" (§6.2), como en Ver factura.
+- [ ] **Título de "Editar recibo":** "Editar recibo · REC-00000004", con un punto que no lleva "Ver recibo REC-00000004"
+  ni los demás títulos ("Ver factura FAC-00000012", "Editar viaje #47"). Sacarle el " · ".
 
