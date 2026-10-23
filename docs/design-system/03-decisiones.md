@@ -459,7 +459,8 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   debajo, en chico (`form-text`): "Sin puntos ni espacios".
 - **Formularios largos** divididos en bloques con subtítulo, como el recibo ("Datos generales",
   "Forma de pago"). El subtítulo es uno solo para todo el sistema: `<section class="sgtl-bloque">` con
-  `<div class="sgtl-bloque-titulo">` (chico, en negrita, con una línea fina debajo; viajes, 22/10). Desde el 23/10 lo
+  `<div class="sgtl-bloque-titulo">` (en negrita, con una línea fina debajo; viajes, 22/10). Mide 15 px, entre el título
+  del modal (17,6 px) y la etiqueta de un campo (12,8 px): a 13 px se confundía con las etiquetas (Rocío, 23/10). Desde el 23/10 lo
   usan todos los formularios y detalles, también las secciones de una pantalla (e-mail, WhatsApp). **Nunca un `h6`**
   (la plantilla lo pinta de azul oscuro: así había quedado en choferes, camiones, clientes, usuarios, tarifas, orígenes
   y destinos, e-mail y auditoría) **ni un título de sección con estilo propio** (proformas y cuenta corriente tenían su

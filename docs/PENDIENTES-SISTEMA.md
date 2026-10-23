@@ -1979,8 +1979,8 @@ pantalla de WhatsApp. Regla en el §6.3 del design system y en el punto 7 de la 
 - Quedan `h6` solo en títulos de tarjetas (dashboard, configuración) y en el encabezado: no son secciones.
 - Proformas: `proformas-plataforma.js` buscaba la clase vieja para ocultar los títulos en la proforma de Rukas; se
   cambió a la nueva.
-- **Tamaño, a decidir por Rocío:** hoy el subtítulo mide 13 px y la etiqueta de un campo 12,8 px (las dos en
-  negrita), así que casi no se distinguen. Se le mostró Registrar viaje con 13 y con 15 px.
+- **Tamaño:** pasa de 13 a 15 px (Rocío, 23/10, después de ver Registrar viaje con los dos). A 13 px casi no se
+  distinguía de la etiqueta de un campo (12,8 px, también en negrita).
 
 **Probar en la VM** (sin C#: `pull` y Ctrl+F5). Abrir cada formulario y ver que los subtítulos sean negros, chicos,
 con su línea abajo y con aire arriba:

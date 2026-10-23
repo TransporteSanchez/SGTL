@@ -1134,7 +1134,8 @@ body #loading-message .spinner-border {
    §6.3 Formularios largos (22/10, primero en viajes): subtítulo de bloque y lo que no se edita.
    ====================================================================================== */
 
-/* Subtítulo de cada bloque de un formulario largo ("Recorrido", "Tarifa"): chico, en negrita y con una línea fina. */
+/* Subtítulo de cada bloque de un formulario largo ("Recorrido", "Tarifa"): en negrita y con una línea fina. Mide 15 px:
+   entre el título del modal (17,6 px) y la etiqueta de un campo (12,8 px), para que no se confunda con ella (23/10). */
 .sgtl-bloque + .sgtl-bloque {
     margin-top: 1.5rem;
 }
@@ -1144,7 +1145,7 @@ body #loading-message .spinner-border {
     padding-bottom: .375rem;
     border-bottom: 1px solid var(--sgtl-borde);
     color: var(--sgtl-texto);
-    font-size: .8125rem;
+    font-size: .9375rem;
     font-weight: 700;
 }
 
