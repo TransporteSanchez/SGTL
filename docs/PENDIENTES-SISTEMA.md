@@ -1589,9 +1589,9 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
   (`EnviosPresupuestosController`, que da acceso por nombre: "Gestion de viajes" o "Presupuestos") acepten los nombres
   nuevos y los viejos, y hacerlo cuando las ramas de todos estén al día (una API vieja vuelve a crear los nombres viejos
   como permisos vacíos al abrir Grupos y permisos).
-  **Hecho (23/10, pedido de Rocío, commit "Permisos: Grupos y permisos con los textos del menú"), sin push, solo
-  pantalla:** en lugar de renombrar en la base, Gestionar grupos y permisos muestra cada permiso con el texto de su
-  opción del menú y en el mismo orden (`OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html`, §3.1 del design system).
+  **Hecho (23/10, pedido de Rocío), pusheado (`9f4e018`), solo pantalla:** en lugar de renombrar en la base,
+  Gestionar grupos y permisos muestra cada permiso con el texto de su opción del menú y en el mismo orden
+  (`OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html`, §3.1 del design system).
   Los nombres de la base no cambian, así que no hace falta recompilar, ni coordinar las ramas, ni tocar
   `MENU_TO_PAGE`, `EnviosPresupuestosController` ni los controllers de Facu que dan acceso por nombre. Un permiso que
   no está en la lista se ve con su nombre, al final de su tarjeta. `tests/permisos-agrupados.test.js` controla que
