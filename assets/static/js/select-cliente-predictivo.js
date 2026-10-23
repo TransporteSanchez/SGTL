@@ -4,7 +4,8 @@
  * Sirve para cualquier lista (también choferes): opciones placeholder, textoVacio ("No hay choferes que
  * coincidan.") e idCampo (id del campo visible, para validarlo con SGTL.validador). Una <option> con
  * data-etiqueta="Rukas" muestra esa etiqueta en la lista y, elegida, adentro del campo. Flechas para moverse, Enter
- * para elegir, Escape cierra.
+ * para elegir, Escape cierra. La opción vacía ("Seleccioná un cliente", "Todos") no va en la lista: el campo se vacía
+ * borrando el texto o con la cruz del filtro.
  */
 (function (window, document) {
     'use strict';
@@ -144,7 +145,7 @@
         function renderizar(texto) {
             var consulta = normalizar(texto);
             var coincidencias = obtenerOpciones().filter(function (opcion) {
-                return !opcion.deshabilitada && normalizar(opcion.texto).indexOf(consulta) !== -1;
+                return opcion.valor !== '' && !opcion.deshabilitada && normalizar(opcion.texto).indexOf(consulta) !== -1;
             });
             lista.innerHTML = '';
             activa = -1;
@@ -188,6 +189,16 @@
         campo.addEventListener('focus', function () {
             campo.select();
             renderizar('');
+        });
+        // Con el mouse, el navegador saca la selección al soltar el botón: lo que se escribía se sumaba al nombre
+        // ("QUICKFOOD S.A.sur"). Si el clic es el que entra al campo, el texto queda seleccionado y se reemplaza.
+        var entrandoConClic = false;
+        campo.addEventListener('mousedown', function () { entrandoConClic = document.activeElement !== campo; });
+        campo.addEventListener('mouseup', function (evento) {
+            if (!entrandoConClic) return;
+            entrandoConClic = false;
+            evento.preventDefault();
+            campo.select();
         });
         campo.addEventListener('input', function () {
             mostrarEtiqueta('');

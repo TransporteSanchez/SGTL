@@ -2020,10 +2020,11 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
   registró y la última modificación necesitan cambiar el C# (`UsuariosController`, GET por id): queda para después.
 - [ ] **F5. Datos vacíos sin "—"** (la base guarda columnas de largo fijo con espacios, como el teléfono fijo del
   chofer). Un dato con solo espacios se ve vacío, con su "—", en todos los Ver detalle.
-- [ ] **Buscador de cliente** (`select-cliente-predictivo.js`): la opción vacía ("Seleccioná un cliente", "Todos") no va
+- [x] **Buscador de cliente** (`select-cliente-predictivo.js`, hecho 23/10): la opción vacía ("Seleccioná un cliente", "Todos") no va
   en la lista, y al hacer clic en un campo con un cliente elegido se selecciona el texto, para que lo que se escribe
   lo reemplace.
-- [x] (hecho 23/10) **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N".
+- [x] **"Completar números de remito y entrega"** abre el modal con ese mismo título (§3.1), no "Editar viaje #N"
+  (hecho 23/10).
 - [ ] **Volver de "Editar cliente" a la proforma:** aparece enseguida, sin esperar a que se relean los datos del
   cliente, y en el mismo lugar en el que estaba.
 - [ ] **"Responsable inscripto"** con mayúscula solo al principio (§9) en la proforma: el recuadro, la fila de Rukas y
