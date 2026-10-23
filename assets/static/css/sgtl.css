@@ -374,7 +374,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 
 .sgtl-toast {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: .75rem;
     width: 360px;
     max-width: 100%;
@@ -396,10 +396,16 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
     transform: none;
 }
 
+/* El ícono y la cruz van a la altura del primer renglón (con dos renglones, centrados quedaban en el medio; Rocío,
+   22/10): la caja del ícono mide lo mismo que un renglón del texto (.9rem × 1.5). */
 .sgtl-toast::before {
     font-family: "bootstrap-icons";
     font-size: 1.25rem;
-    line-height: 1;
+    line-height: 1.35rem;
+}
+
+.sgtl-toast .sgtl-toast-texto {
+    line-height: 1.35rem;
 }
 
 .sgtl-toast-exito::before { content: "\f26a"; color: #198754; }
@@ -411,6 +417,7 @@ button.badge.sgtl-badge-accion[aria-expanded="true"] {
 
 .sgtl-toast .btn-close {
     flex-shrink: 0;
+    margin-top: .2rem;
     filter: none;
     opacity: .45;
     font-size: .7rem;

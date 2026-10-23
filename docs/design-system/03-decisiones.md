@@ -308,12 +308,13 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   más etiquetas (pedido de Rocío, 22/10): `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))`. El
   ícono es liviano, sin fondo, y su color dice qué pasa: gris (`bi-info-circle`) si es solo información; naranja
   (`bi-clock`) si se espera a alguien (Rukas); rojo (`bi-exclamation-circle`) si falta resolver algo; verde
-  (`bi-check-circle`) si está listo. Siempre con un texto adentro. Se cierra con otro clic o con Escape. Así están
-  Gestionar viajes y Gestionar proformas.
+  (`bi-check-circle`) si está listo; si hay varias cosas a la vez, manda la más urgente (en proformas: el rojo si
+  falta resolver algo, aunque también se espere a Rukas; el reloj, solo si esperar es lo único). Siempre con un texto
+  adentro. Se cierra con otro clic o con Escape. Así están Gestionar viajes, Gestionar proformas y Gestionar
+  presupuestos (el viaje que generó, 22/10).
 - **Si lo que acompaña es otro estado** (el resultado de la entrega: "Parcial", "Con rechazo"), va como etiqueta
   debajo del estado, en su propio renglón (`<div class="mt-1">`), no una al lado de la otra (dashboard). En un título
-  de modal van una al lado de la otra. Presupuestos todavía muestra "Viaje #N" debajo del estado: pendiente pasarlo
-  al ícono (módulo de Facu).
+  de modal van una al lado de la otra.
 
 ---
 
@@ -598,7 +599,8 @@ No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el p
     mismo dentro de un círculo (la zona del archivo, los pasos).
 - **Avisos dentro de la pantalla** (`.alert`): fondo apenas teñido, borde fino e ícono, con los
   colores de §4.3 (información azul, éxito verde, advertencia amarillo, error rojo).
-- **Avisos arriba a la derecha y confirmación:** tarjeta blanca con ícono de color (§5); los modales
+- **Avisos arriba a la derecha y confirmación:** tarjeta blanca con ícono de color (§5); con dos renglones o más, el
+  ícono y la cruz quedan a la altura del primero (22/10), igual que en los avisos dentro de la pantalla; los modales
   tienen esquinas de 16 px, sin líneas entre título, cuerpo y pie, y el fondo de atrás apenas desenfocado.
 - **Pestañas:** subrayadas con el color del menú, sin fondo y con mayúscula solo al principio.
 - **Selector segmentado** (opciones excluyentes, como el período del dashboard): riel gris claro y la opción elegida

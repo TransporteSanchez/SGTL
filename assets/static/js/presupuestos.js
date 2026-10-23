@@ -250,9 +250,12 @@
                 var celda = tr.insertCell(); celda.textContent = v[0] || ''; if (v[1]) celda.className = v[1];
             });
             var estadoCelda = tr.insertCell();
-            // El viaje generado va como etiqueta informativa junto al estado, igual que "En PF-…" en viajes (§4.3).
-            estadoCelda.className = 'text-center';
-            estadoCelda.innerHTML = etiquetaEstado(p) + (p.viajeId ? '<div class="mt-1"><span class="badge rounded-pill bg-white text-dark border">Viaje #' + Number(p.viajeId) + '</span></div>' : '');
+            // El viaje generado va en el ícono de información al lado del estado, como en Gestionar viajes (§4.3,
+            // pedido de Rocío del 22/10); el estado queda alineado en todas las filas, tengan ícono o no.
+            estadoCelda.className = 'text-center text-nowrap';
+            estadoCelda.innerHTML = SGTL.conInfo(etiquetaEstado(p), p.viajeId
+                ? SGTL.botonInfo('info', '<div>Generó el <strong>viaje #' + Number(p.viajeId) + '</strong>.</div>', 'Ver qué viaje generó el presupuesto #' + p.id)
+                : '');
             // Botones de la fila (§1.4), en el orden del circuito: editar, PDF (con imprimir y e-mail adentro),
             // cambiar estado (banderita), siguiente paso (generar viaje) y eliminar. Lo que no se puede hacer queda
             // deshabilitado con el motivo.

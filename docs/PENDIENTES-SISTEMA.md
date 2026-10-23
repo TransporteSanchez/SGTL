@@ -43,7 +43,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 21 | Merge de Facu del 22/10 (`e0779bf`): contraseñas con hash, cuenta corriente (Distribuir, NC sobre varias facturas, montos 1.234,56), mapa en presupuestos, observaciones unificadas en proformas | Hecho (22/10), conflictos resueltos uno por uno con Rocío: lógica de Facu, diseño nuestro. Scripts de la base ya corridos | Commit de merge en `rocionuvoli`, **sin push** | Ver §21 |
 | 22 | Merge de Fede del 22/10 (`1bd31d3`): código de área de 4 dígitos para el WhatsApp del chofer y nombre comercial del cliente | Hecho (22/10), sin conflictos; tres ajustes aprobados por Rocío. Script ya corrido | Commit de merge en `rocionuvoli`, **sin push** | Ver §22 |
 | 23 | Prueba mínima en la VM antes de pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` | Hecha (22/10): primera vuelta con F1 (corregida) y reprueba con los 8 puntos OK | **Pusheado** (`c778c0a`; las tarjetas de cuenta corriente, `1a78bd8`) | **OK en VM (22/10)**; ramas pasadas: `facugodoy`, `fedemontenegro` y `main` en `36a92c8` (ver §23) |
-| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
+| 24 | Viajes: registrar, editar y ver detalle; Ver detalle de choferes, camiones, clientes y usuarios con el mismo armado; ronda de observaciones (ícono de información, íconos alineados, proforma de Rukas) | Hecho en la Mac (22/10) con API simulada, con la propuesta aprobada por Rocío | **Pusheado** (`cea8407`, `72c1600`, `dd6034c`; la ronda de observaciones, `910ca32`, `3917181`, `c2bf14b`; la tercera vuelta de Rukas y lo que siguió, `3751c33` y los dos siguientes; 22/10) | Sin C#: `pull` y Ctrl+F5 (ver §24) |
 | 25 | Proformas: los datos del cliente no se editan en la proforma; "Editar cliente" abre la edición del cliente y actualiza los borradores | Hecho en la Mac (22/10) con API simulada; decidido por Rocío charlándolo con Facu | **Pusheado** (`b7e183d`, `eb6d96b`; 22/10) | **Compilar la API** y probar (ver §25) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -1777,7 +1777,7 @@ Rocío recorrió viajes y la proforma de Rukas en la simulación y fue pidiendo 
   todo el aviso de WhatsApp al elegir el chofer).
 
 
-### Control de la proforma de Rukas, tercera vuelta (22/10) — commit en `rocionuvoli`, SIN PUSH, FALTA PROBAR EN VM
+### Control de la proforma de Rukas, tercera vuelta (22/10) — PUSHEADO (`3751c33`), FALTA PROBAR EN VM
 
 Rocío revisó todos los casos del control con capturas y fue pidiendo ajustes (detalle en
 `docs/diseno/proforma-rukas-diseno.md`, "Tercera vuelta"). **Sin C#:** `pull` y Ctrl+F5.
@@ -1799,6 +1799,26 @@ nuevas están en el design system (§1.6, §2.1, §6.2, §12) y en la lista de c
 - [ ] 5. Un borrador que coincide entero: "Lista para generar" y las filas con "Coincide" en gris.
 - [ ] 6. En la notebook (1366) y en una ventana más angosta (1100), la tabla entra sin desplazarse hacia el costado.
 - [ ] 7. Los botones de las filas de otras pantallas (viajes, proformas, clientes) siguen con el ícono centrado.
+
+### Presupuestos y avisos de dos renglones (22/10) — PUSHEADO (22/10), FALTA PROBAR EN VM
+
+Dos pedidos de Rocío después de la tercera vuelta. **Sin C#:** `pull` y Ctrl+F5.
+
+- **Gestionar presupuestos** (pantalla de Facu, **avisarle**): el viaje que generó el presupuesto pasa de la etiqueta
+  "Viaje #N" debajo del estado al ícono gris de información al lado ("Generó el viaje #N."), como en Gestionar
+  viajes (§4.3). Solo cambia cómo se ve.
+- **Avisos arriba a la derecha** (todo el sistema): con dos renglones, el ícono y la cruz quedan a la altura del
+  primero, no en el medio (§12).
+- Design system: en §4.3, si hay varias cosas a la vez manda el ícono más urgente (en proformas, el rojo aunque
+  también se espere a Rukas; el reloj, solo si esperar es lo único).
+
+**Probar en la VM** (Ctrl+F5):
+- [ ] 1. Gestionar presupuestos: un presupuesto aceptado con viaje muestra "Aceptado" y el ícono gris; el globito dice
+  "Generó el viaje #N."; los estados quedan alineados en toda la columna, con ícono o sin él.
+- [ ] 2. Un aviso largo (por ejemplo, editar un cliente con un borrador de proforma): el ícono verde y la cruz a la
+  altura del primer renglón.
+- [ ] 3. Gestionar proformas: un borrador de Rukas que espera a Rukas y además tiene algo para corregir muestra el
+  ícono rojo; uno que solo espera, el reloj naranja de borde.
 
 ---
 
