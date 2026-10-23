@@ -1591,11 +1591,11 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
   como permisos vacíos al abrir Grupos y permisos).
   **Hecho (23/10, pedido de Rocío), pusheado (`9f4e018`), solo pantalla:** en lugar de renombrar en la base,
   Gestionar grupos y permisos muestra cada permiso con el texto de su opción del menú y en el mismo orden
-  (`OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html`, §3.1 del design system).
+  (`OPCIONES_DEL_MENU`, hoy en `assets/static/js/permisos-menu.js`; §3.1 del design system).
   Los nombres de la base no cambian, así que no hace falta recompilar, ni coordinar las ramas, ni tocar
   `MENU_TO_PAGE`, `EnviosPresupuestosController` ni los controllers de Facu que dan acceso por nombre. Un permiso que
-  no está en la lista se ve con su nombre, al final de su tarjeta. `tests/permisos-agrupados.test.js` controla que
-  cada permiso del catálogo de la API tenga su texto y que coincida con el menú lateral, en el mismo orden.
+  no está en la lista se ve con su nombre, al final de su tarjeta. `tests/permisos-menu.test.js` controla que cada
+  permiso del catálogo de la API tenga su texto y que coincida con el menú lateral, en el mismo orden.
   - [ ] Probar en la VM (`pull` y Ctrl+F5, sin recompilar): Gestionar grupos y permisos → Permisos, elegir un grupo.
     Cada tarjeta dice lo mismo que el menú y en su orden: General: Dashboard · Auditoría; Choferes: Listar choferes ·
     Gestionar choferes; Viajes: Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas ·
@@ -1604,6 +1604,15 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
     empresa · Gestionar contenido; Usuarios: Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos.
     Tildar o destildar uno, Guardar permisos y volver a elegir el grupo: queda como se guardó, y un usuario de ese
     grupo ve en el menú lo mismo que antes (los permisos son los mismos).
+  **Listar usuarios → Ver detalle, igual. Hecho (23/10, pedido de Rocío), sin push, solo pantalla:** "Grupos y
+  pantallas que ve" mostraba los nombres de la base ("Gestión de viajes", "Listado de clientes", "Presupuestos"), por
+  orden alfabético. Ahora muestra los textos del menú y en su orden. La lista de textos pasó a un archivo compartido
+  por las dos pantallas, `assets/static/js/permisos-menu.js` (`SGTLPermisos`), con su prueba
+  (`tests/permisos-menu.test.js`).
+  - [ ] Probar en la VM (`pull` y Ctrl+F5, sin recompilar): Listar usuarios → el ojo de un usuario que esté en un
+    grupo con varias pantallas. En "Grupos y pantallas que ve", cada pantalla dice lo mismo que el menú y va en su
+    orden (por ejemplo: Dashboard, Listar viajes, Gestionar viajes, Gestionar presupuestos, Listar clientes). Y
+    Gestionar grupos y permisos → Permisos sigue igual que en el punto de arriba.
 - [ ] **Pendiente a futuro (decisión de Rocío, 23/10): normalizar en la base los nombres de los permisos con los del
   menú**, en infinitivo, para que todo quede igual y la pantalla no tenga que traducirlos. Es más trabajo, pero hay que
   hacerlo en algún momento. Hoy la tabla `MENU` sigue con "Listado de…", "Gestión de…", "Presupuestos", "Cuenta
@@ -1617,13 +1626,14 @@ de la API con la ruta nueva. **Hay que recompilar la API** (`GruposController`, 
     `sidebar-loader.js` (ya tiene algunas claves nuevas: "gestionar viajes", "gestionar presupuestos", "gestionar
     empresa", "consultar auditoria") y `EnviosPresupuestosController` (el SQL de la línea 42 pide 'Gestion de viajes' o
     'Presupuestos'; sumar 'Gestionar viajes' y 'Gestionar presupuestos').
-  - **Dónde se ven los nombres:** Gestionar grupos y permisos (hoy los traduce `OPCIONES_DEL_MENU`, que después sobra o
-    queda solo para el orden) y **Listar usuarios → Ver detalle**, que muestra las pantallas de cada grupo con el nombre
-    de la base (`bloqueGrupo` en `listado-usuarios.html`, con `api/Usuarios/{id}/Detalles`): hoy ahí se ve "Gestión de
-    choferes". `api/Usuarios/MenusPermitidos` devuelve el nombre para el menú y no cambia.
-  - **Pruebas que nombran permisos:** `permisos-agrupados`, `permisos-presupuestos` y `empresa-documentos`.
+  - **Dónde se ven los nombres:** Gestionar grupos y permisos y Listar usuarios → Ver detalle (`bloqueGrupo` en
+    `listado-usuarios.html`, con `api/Usuarios/{id}/Detalles`). Hoy las dos los traducen con `SGTLPermisos`
+    (`permisos-menu.js`), que después sobra o queda solo para el orden. `api/Usuarios/MenusPermitidos` devuelve el
+    nombre para el menú y no cambia.
+  - **Pruebas que nombran permisos:** `permisos-menu`, `permisos-agrupados`, `permisos-presupuestos` y
+    `empresa-documentos`.
   - **Cuándo:** con las ramas de todos al día y avisando a Facu y Fede (la base es compartida). Una API vieja, al abrir
-    Grupos y permisos, vuelve a crear los nombres viejos como permisos vacíos, y en Grupos y permisos aparecerían repetidos.
+    Grupos y permisos, vuelve a crear los nombres viejos como permisos vacíos, y ahí aparecerían repetidos.
 - [ ] **Pendiente: permisos que no dan acceso.** En Grupos y permisos se pueden tildar E-mail, Gestión de contenido,
   Integración WhatsApp, Gestión de empresa (sumado el 23/10, decisión de Rocío, para que el catálogo quede unificado; ver
   §30) y Gestión de tipos de comprobante, pero esas pantallas son solo de administradores: tildarlos no le da acceso a

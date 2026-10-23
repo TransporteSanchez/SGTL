@@ -178,6 +178,7 @@
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/permisos-menu.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -305,12 +306,13 @@
             });
         }
 
+        // Las pantallas del grupo, con el texto de su opción del menú y en el mismo orden (permisos-menu.js).
         function bloqueGrupo(grupo) {
-            const menus = grupo.Menus || [];
+            const menus = (grupo.Menus || []).slice().sort(SGTLPermisos.comparar);
             return `<div class="mb-3">
                 <p class="fw-bold mb-1">${SGTL.escapar(grupo.Grupo_Nombre)}</p>
                 ${menus.length
-                    ? `<ul class="mb-0">${menus.map(function (m) { return `<li>${SGTL.escapar(m)}</li>`; }).join('')}</ul>`
+                    ? `<ul class="mb-0">${menus.map(function (m) { return `<li>${SGTL.escapar(SGTLPermisos.texto(m))}</li>`; }).join('')}</ul>`
                     : '<p class="text-muted mb-0">Todavía no tiene pantallas asignadas.</p>'}
             </div>`;
         }

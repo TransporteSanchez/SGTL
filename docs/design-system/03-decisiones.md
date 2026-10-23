@@ -35,6 +35,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
 | Exportar (§1.2) | `SGTL.descargarCSV` |
 | Datos de la empresa en un documento (§11) | `SGTLEmpresa.obtener(fechaDeEmision)` (`assets/static/js/empresa-datos.js`): `nombre` (el nombre comercial o la razón social), `lineas` (razón social, CUIT, domicilio, contacto) y `logo` (el de la empresa, listo para jsPDF, o `null`: va el nombre en texto); `SGTLEmpresa.medidaLogo` lo encaja sin deformarlo. Un documento ya emitido pasa su fecha de emisión; un borrador, `null` |
+| Mostrar un permiso (§3.1) | `SGTLPermisos.texto(nombre)` (`assets/static/js/permisos-menu.js`): el texto de su opción del menú; `lista.sort(SGTLPermisos.comparar)` los ordena como el menú |
 | Escapar texto en HTML | `SGTL.escapar` |
 
 ---
@@ -260,11 +261,12 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Ítems principales:** "Dashboard" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
-- **En Gestionar grupos y permisos, cada permiso se ve con el texto de su opción del menú** y en el mismo orden
-  (23/10): "Listar choferes", "Gestionar cuenta corriente", "Auditoría". En la base siguen con su nombre de siempre
-  ("Listado de choferes", "Cuenta Corriente"), que no se ve y no se renombra. Al agregar o renombrar una opción del
-  menú, actualizar también `OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html` (`tests/permisos-agrupados.test.js`
-  avisa si falta alguna o si no coincide con el menú).
+- **Los permisos se ven con el texto de su opción del menú** y en el mismo orden (23/10), en Gestionar grupos y
+  permisos y en Listar usuarios → Ver detalle: "Listar choferes", "Gestionar cuenta corriente", "Auditoría". En la base
+  siguen con su nombre de siempre ("Listado de choferes", "Cuenta Corriente"), que no se ve y no se renombra (pendiente
+  a futuro). Los textos salen de `SGTLPermisos` (`assets/static/js/permisos-menu.js`): al agregar o renombrar una opción
+  del menú, actualizar también `OPCIONES_DEL_MENU` ahí (`tests/permisos-menu.test.js` avisa si falta alguna o si no
+  coincide con el menú).
 
 ### 3.2 Encabezado
 

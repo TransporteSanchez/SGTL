@@ -88,7 +88,8 @@ AGENTS.md"):
   quién la puede abrir; si no está claro, preguntá. Al terminar, entrá como admin y como un usuario que no lo es, y
   comparalo con las pantallas hermanas. Cómo se hace:
   - **Menú:** `buildFallbackSidebarHtml` en `assets/static/js/sidebar-loader.js`, la tabla del §3.1 del design system y
-    `OPCIONES_DEL_MENU` en `gestion-gruposypermisos.html` (el texto con el que se ve el permiso en Grupos y permisos).
+    `OPCIONES_DEL_MENU` en `assets/static/js/permisos-menu.js` (el texto con el que se ve el permiso en Grupos y
+    permisos y en Ver detalle del usuario).
   - **Solo administradores:** dentro de Configuración (la sección entera es de admins) o con `.solo-admin` en otra
     sección; el archivo va en las dos listas de páginas de configuración de `sidebar-loader.js` (mandan al inicio a
     quien no es admin) y la API rechaza a quien no es admin al guardar. Igual va al catálogo de Grupos y permisos, en su

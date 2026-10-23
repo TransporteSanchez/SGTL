@@ -57,7 +57,11 @@ const sandbox = {
     Object: Object,
     Set: Set
 };
+sandbox.window = sandbox;
 
+// Los textos de los permisos salen del archivo compartido (lo controla tests/permisos-menu.test.js).
+vm.runInNewContext(fs.readFileSync(path.join(__dirname, '..', 'assets', 'static', 'js', 'permisos-menu.js'), 'utf8'),
+    sandbox, { filename: 'permisos-menu.js' });
 vm.runInNewContext(fuente.slice(inicio, fin), sandbox, { filename: 'gestion-gruposypermisos.html' });
 sandbox.cargarMenusDeGrupo(1);
 
@@ -91,34 +95,6 @@ assert.deepStrictEqual(Array.from(ordenados[0].Permisos, function (permiso) { re
     'dentro de cada tarjeta, los permisos van en el orden del menú y los que no están en el menú, al final');
 assert.deepStrictEqual(Array.from(ordenados[1].Permisos, function (permiso) { return permiso.Menu_ID; }), [11, 12],
     'Listar va antes que Gestionar, como en el menú');
-assert.strictEqual(sandbox.textoDelPermiso({ Menu_Nombre: 'Auditoria' }), 'Auditoría');
-assert.strictEqual(sandbox.textoDelPermiso({ Menu_Nombre: 'Cuenta Corriente' }), 'Gestionar cuenta corriente');
-assert.strictEqual(sandbox.textoDelPermiso({ Menu_Nombre: 'Integración WhatsApp' }), 'Gestionar integración de WhatsApp');
-assert.strictEqual(sandbox.textoDelPermiso({ Menu_Nombre: 'Permiso viejo' }), 'Permiso viejo',
-    'un permiso que no está en el menú se ve con su nombre');
-
-// Cada permiso del catálogo de la API tiene su texto, y los textos son los del menú lateral, en el mismo orden.
-const controlador = fs.readFileSync(
-    path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers', 'GruposController.cs'), 'utf8');
-const bloqueCatalogo = controlador.slice(controlador.indexOf('CatalogoMenuPermisos ='),
-    controlador.indexOf('};', controlador.indexOf('CatalogoMenuPermisos =')));
-const catalogo = (bloqueCatalogo.replace(/\/\/.*$/gm, '').match(/"[^"]+"/g) || []).map(function (nombre) { return nombre.slice(1, -1); });
-assert.ok(catalogo.length >= 20, 'debe poder leerse el catálogo de permisos de la API');
-catalogo.forEach(function (nombre) {
-    assert.notStrictEqual(sandbox.posicionEnElMenu({ Menu_Nombre: nombre }), -1,
-        `el permiso "${nombre}" del catálogo debe tener su texto del menú en Grupos y permisos`);
-});
-const menuLateral = fs.readFileSync(path.join(__dirname, '..', 'assets', 'static', 'js', 'sidebar-loader.js'), 'utf8');
-let posicionAnterior = -1;
-catalogo.slice()
-    .sort(function (a, b) { return sandbox.posicionEnElMenu({ Menu_Nombre: a }) - sandbox.posicionEnElMenu({ Menu_Nombre: b }); })
-    .forEach(function (nombre) {
-        const texto = sandbox.textoDelPermiso({ Menu_Nombre: nombre });
-        const posicion = menuLateral.indexOf('>' + texto + '<');
-        assert.notStrictEqual(posicion, -1, `"${texto}" debe ser una opción del menú lateral`);
-        assert.ok(posicion > posicionAnterior, `"${texto}" debe ir en el mismo orden que en el menú lateral`);
-        posicionAnterior = posicion;
-    });
 
 assert.strictEqual(typeof sandbox.obtenerEstadoMenuPrincipal, 'function',
     'la pantalla debe calcular el estado visual de cada menú principal');
