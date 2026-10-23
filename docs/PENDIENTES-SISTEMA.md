@@ -51,7 +51,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **pusheadas** (`054cc38`) | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | Recompilar la API y probar (ver §31) |
-| 32 | Pasar `rocionuvoli` a `facugodoy` y `fedemontenegro` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (no tenían nada propio): 59 commits, de `36a92c8` a `739e567`. `main` sigue en `36a92c8` | **Pusheado** | Sin la prueba mínima previa: falta compilar (ver §32) |
+| 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | Sin la prueba mínima previa: falta compilar (ver §32) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2508,11 +2508,12 @@ FADEEAC de marzo de 2026 (por tonelada: ~$25.389 a 100 km, ~$77.700 a 500 km, ~$
 
 ---
 
-## 32. Ramas del equipo al día con `rocionuvoli` — PUSHEADO (23/10), FALTA COMPILAR Y PROBAR EN VM
+## 32. Ramas del equipo y `main` al día con `rocionuvoli` — PUSHEADO (23/10), FALTA COMPILAR Y PROBAR EN VM
 
 A pedido de Rocío, antes de la reunión con la profe: `facugodoy` y `fedemontenegro` pasan de `36a92c8` (22/10, 15:00) a
-`739e567`, avance directo (59 commits, ninguno de ellos tenía commits nuevos). `main` no se tocó: pasa cuando esté
-probado. Les llega lo de §24 a §31: viajes y Ver detalle con el mismo armado, motivos de los botones deshabilitados,
+`739e567`, avance directo (59 commits, ninguna tenía commits nuevos). Enseguida Rocío pidió pasar también `main`, para
+que queden todas iguales: las cuatro ramas quedan en el commit de esta nota. **`main` pasó sin probar**, por decisión de
+Rocío (la regla era pasar a `main` solo lo probado). Les llega lo de §24 a §31: viajes y Ver detalle con el mismo armado, motivos de los botones deshabilitados,
 datos del cliente que se editan en el cliente (proformas), estética de la proforma de Rukas, Gestionar empresa aparte de
 Gestionar contenido, textos del menú en Grupos y permisos y en Ver detalle del usuario, CABA con sus barrios y tarifas.
 En la base no tienen que correr nada (scripts de empresa, CABA y tarifas ya aplicados); sí recompilar la API.
