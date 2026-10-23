@@ -66,76 +66,70 @@
             </header>
 
             <div class="page-heading">
-
-                <!--Comienzo sección de la tabla-->
+                <!-- La apariencia del sistema: logo del menú y del login, colores y pie. Los datos y el logo de los documentos
+                     están aparte, en Gestionar empresa (23/10). -->
                 <section class="section">
-                    <div class="card rounded me-4 ms-4 mt-4">
+                    <div class="card rounded me-4 ms-4 mt-4 mb-4">
                         <div class="card-header">
                             <h5 class="card-title mb-1">
                                 <i class="bi bi-gear me-2" aria-hidden="true"></i>Gestionar contenido
                             </h5>
-                            <p class="text-muted mb-0">Elegí el logo, los colores y el pie de página que ve todo el sistema.</p>
+                            <p class="text-muted mb-0">El logo, los colores y el pie de página del sistema. No cambian los documentos: sus datos y su logo están en Gestionar empresa.</p>
                         </div>
                         <div class="card-body">
-                            <form id="settings" class="form form-horizontal">
-                                <div class="row">
-                                    <div class="col-md-3">
-                                        <label for="logoInput" class="form-label">Logo</label>
-                                    </div>
-                                    <div class="col-md-9 form-group">
-                                        <div class="d-flex align-items-center gap-3 mb-2">
-                                            <img id="logoPreview" src="./assets/static/images/logo/sgtl-logo.png"
-                                                alt="Vista previa del logo"
-                                                style="height:48px; max-width:200px; object-fit:contain; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:4px;">
-                                            <div class="d-flex align-items-center">
-                                                <button type="button" class="btn btn-light-secondary btn-sm" id="btnExaminarLogo">
-                                                    <i class="bi bi-upload me-1"></i>Examinar…
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-link text-danger d-none" id="btnQuitarLogo">Quitar archivo</button>
-                                                <input type="file" id="logoFile" class="d-none"
-                                                    accept=".png,.svg,.jpg,.jpeg,.webp,.ico,image/*">
-                                            </div>
+                            <form id="settings" class="form" novalidate>
+                                <section class="sgtl-bloque">
+                                    <div class="sgtl-bloque-titulo">Logo del sistema</div>
+                                    <div class="sgtl-zona-archivo cargada">
+                                        <!-- La imagen va dentro de un span: la zona esconde los hijos vacíos (:empty) y un <img> lo es. -->
+                                        <span class="d-inline-flex">
+                                            <img id="logoPreview" src="./assets/static/images/logo/sgtl-logo.png" alt="Logo actual"
+                                                style="height:44px; max-width:160px; object-fit:contain; background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:4px;">
+                                        </span>
+                                        <div class="sgtl-zona-texto">
+                                            <div class="fw-bold" id="logoNombre">Logo de SGTL</div>
+                                            <div class="small text-muted" id="logoDetalle">El de fábrica · se usa en el menú y el login</div>
                                         </div>
-                                        <input type="text" id="logoInput" class="form-control" name="logoInput"
-                                            placeholder="Pegá una URL o ruta de imagen (o usá Examinar)">
-                                        <small class="text-muted d-block mt-1" id="logoHelp">
-                                            Pegá una URL/ruta (ej. <code>./assets/static/images/logo/sgtl-logo.png</code>) o subí un archivo
-                                            (.png, .svg, .jpg, .webp, .ico). Máximo 1&nbsp;MB.
-                                        </small>
+                                        <button type="button" class="btn btn-outline-primary" id="btnReemplazarLogo">
+                                            <i class="bi bi-image me-1" aria-hidden="true"></i>Reemplazar logo
+                                        </button>
+                                        <input type="file" id="logoFile" class="d-none" accept=".png,.svg,.jpg,.jpeg,.webp,.ico,image/*" aria-label="Logo nuevo">
                                     </div>
-                                    <div class="col-md-3">
-                                        <label for="backgroundColorInput" class="form-label">Color de fondo</label>
-                                    </div>
-                                    <div class="col-md-9 form-group">
-                                        <input type="color" id="backgroundColorInput" class="form-control"
-                                            name="backgroundColorInput" aria-describedby="backgroundColorHelp">
-                                        <small class="text-muted d-block mt-1" id="backgroundColorHelp">
-                                            Se usa en un tono muy claro de fondo y entero en la línea de arriba de la pantalla.
-                                        </small>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="menuColorInput" class="form-label">Color del menú</label>
-                                    </div>
-                                    <div class="col-md-9 form-group">
-                                        <input type="color" id="menuColorInput" class="form-control"
-                                            name="menuColorInput" aria-describedby="menuColorHelp">
-                                        <small class="text-muted d-block mt-1" id="menuColorHelp">
-                                            Se usa en la opción elegida del menú, en el círculo de las iniciales y en las pestañas.
-                                        </small>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <label for="footerContentInput" class="form-label">Contenido del pie de página</label>
-                                    </div>
-                                    <div class="col-md-9 form-group">
-                                        <textarea id="footerContentInput" class="form-control" name="footerContentInput"
-                                            placeholder="SGTL | un producto de Integra Analistas ®" rows="3"></textarea>
-                                    </div>
-                                    <div class="col-sm-12 d-flex justify-content-end">
-                                        <button type="button" class="btn btn-light-secondary me-1 mb-1"
-                                            id="btnRestablecer"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer valores por defecto</button>
-                                        <button type="submit" class="btn btn-primary mb-1"
-                                            id="saveSettingsBtn">Guardar</button>
+                                    <div class="form-text">PNG, SVG, JPG, WebP o ICO, hasta 1 MB.</div>
+                                </section>
 
+                                <section class="sgtl-bloque">
+                                    <div class="sgtl-bloque-titulo">Colores</div>
+                                    <div class="row g-3">
+                                        <div class="col-12 col-md-6">
+                                            <label for="backgroundColorInput" class="form-label">Color de fondo</label>
+                                            <input type="color" id="backgroundColorInput" class="form-control form-control-color w-100"
+                                                aria-describedby="backgroundColorHelp">
+                                            <div class="form-text" id="backgroundColorHelp">Se usa en un tono muy claro de fondo y entero en la línea de arriba de la pantalla.</div>
+                                        </div>
+                                        <div class="col-12 col-md-6">
+                                            <label for="menuColorInput" class="form-label">Color del menú</label>
+                                            <input type="color" id="menuColorInput" class="form-control form-control-color w-100"
+                                                aria-describedby="menuColorHelp">
+                                            <div class="form-text" id="menuColorHelp">Se usa en la opción elegida del menú, en el círculo con las iniciales del usuario (arriba a la derecha) y en las pestañas.</div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section class="sgtl-bloque">
+                                    <div class="sgtl-bloque-titulo">Pie de página</div>
+                                    <label for="footerContentInput" class="form-label">Texto del pie</label>
+                                    <textarea id="footerContentInput" class="form-control" rows="2"
+                                        placeholder="SGTL | un producto de Integra Analistas ®"></textarea>
+                                </section>
+
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                                    <small class="text-muted" id="registroApariencia"></small>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-light-secondary" id="btnRestablecer">
+                                            <i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer valores por defecto
+                                        </button>
+                                        <button type="submit" class="btn btn-primary" id="saveSettingsBtn">Guardar</button>
                                     </div>
                                 </div>
                             </form>
@@ -143,9 +137,6 @@
                     </div>
                 </section>
             </div>
-
-
-            <!--Fin sección de la tabla-->
 
             <!-- Footer -->
             <footer>
@@ -166,6 +157,8 @@
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <!-- fechaCliente: la misma corrección de hora que la ficha del cliente. -->
+    <script src="assets/static/js/clientes.js"></script>
 
     <script>
         window.onload = async function () {
@@ -200,150 +193,9 @@
                 (userRole && userRole.toLowerCase() === 'admin') ? 'block' : 'none';
         }
 
-        async function loadSettings() {
-            console.log('Llamando a la API de Gestión de Contenido...');
-
-            const xhr = new XMLHttpRequest();
-            xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-            return new Promise((resolve, reject) => {
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        console.log('Respuesta de la API:', data);
-
-                        if (data) {
-                            const logoUrl = data.Logo;
-                            const colorFondo = data.ColorFondo;
-                            const colorBotonesMenu = data.ColorBotonesMenu;
-                            const contenidoPiePagina = data.ContenidoPiePagina;
-
-                            if (esDataUri(logoUrl)) {
-                                uploadedLogoDataUrl = logoUrl;
-                                marcarArchivoCargado(true);
-                            } else {
-                                document.getElementById('logoInput').value = logoUrl || './assets/static/images/logo/sgtl-logo.png';
-                            }
-                            setLogoPreview(logoUrl || './assets/static/images/logo/sgtl-logo.png');
-                            document.getElementById('backgroundColorInput').value = colorFondo || window.SGTL_CONTENIDO_DEFAULT.fondo;
-                            document.getElementById('menuColorInput').value = colorBotonesMenu || window.SGTL_CONTENIDO_DEFAULT.menu;
-                            document.getElementById('footerContentInput').value = contenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
-
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            console.error('La respuesta de la API no contiene los datos esperados.');
-                            notifyError('No se pudo cargar el contenido guardado.');
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        console.error('Error en la petición:', xhr.statusText);
-                        notifyError("Ocurrió un error al cargar el contenido de la página.");
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    console.error('Error al cargar la configuración de la API.');
-                    notifyError('No se pudo cargar el contenido guardado.');
-                    reject(new Error('Error de red'));
-                };
-
-                xhr.send();
-            });
-        }
-
-
-        // Guardar cambios de gestión de contenido
-        document.getElementById('saveSettingsBtn').addEventListener('click', function (event) {
-            event.preventDefault();
-            const listo = SGTL.procesando('#saveSettingsBtn', 'Guardando…');
-
-            const logo = valorLogoEfectivo();
-            const backgroundColor = document.getElementById('backgroundColorInput').value;
-            const menuColor = document.getElementById('menuColorInput').value;
-            const footerContent = document.getElementById('footerContentInput').value;
-
-            const settingsData = {
-                Logo: logo,
-                ColorFondo: backgroundColor,
-                ColorBotonesMenu: menuColor,
-                ContenidoPiePagina: footerContent,
-                Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: localStorage.getItem('username') || 'UsuarioDesconocido'
-            };
-
-            SGTL.ajax({
-                url: 'http://localhost:50222/api/GestionContenido/1',
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(settingsData)
-            }, 'No se pudo guardar el contenido. Revisá la conexión y probá de nuevo.').then(function () {
-                // Aplica los cambios en vivo (sin recargar la página).
-                try { applyStyles(logo, backgroundColor, menuColor, footerContent); } catch (e) { }
-                mostrarToastExito();
-            }, function (error) {
-                notifyError(error.mensajeUsuario);
-            }).finally(listo);
-        });
-
-        function loadDefaultValues() {
-            var marca = window.SGTL_CONTENIDO_DEFAULT;
-            console.log('Cargando valores por defecto...');
-            document.getElementById('logoInput').value = marca.logo;
-            document.getElementById('backgroundColorInput').value = marca.fondo;
-            document.getElementById('menuColorInput').value = marca.menu;
-            document.getElementById('footerContentInput').value = marca.pie;
-
-            applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
-        }
-
-        // Obtener el nombre de usuario desde localStorage
-        const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
-
-        // Vuelve a la marca SGTL: logo, fondo, menú y pie.
-        function restablecerContenido() {
-            var marca = window.SGTL_CONTENIDO_DEFAULT;
-            const settingsData = {
-                Logo: marca.logo,
-                ColorFondo: marca.fondo,
-                ColorBotonesMenu: marca.menu,
-                ContenidoPiePagina: marca.pie,
-                Fecha_Modi: new Date().toISOString(),
-                Usu_Modi: usuarioModificador
-            };
-            return SGTL.ajax({
-                url: 'http://localhost:50222/api/GestionContenido/1',
-                type: 'PUT',
-                contentType: 'application/json',
-                data: JSON.stringify(settingsData)
-            }, 'No se pudo restablecer el contenido. Probá de nuevo.').then(function () {
-                document.getElementById('backgroundColorInput').value = marca.fondo;
-                document.getElementById('menuColorInput').value = marca.menu;
-                document.getElementById('footerContentInput').value = marca.pie;
-                // Si había un archivo subido, se descarta y el campo vuelve a mostrar la ruta del logo de SGTL.
-                uploadedLogoDataUrl = null;
-                document.getElementById('logoFile').value = '';
-                marcarArchivoCargado(false);
-                document.getElementById('logoInput').value = marca.logo;
-                setLogoPreview(marca.logo);
-                applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
-            });
-        }
-
-        document.getElementById('btnRestablecer').addEventListener('click', function () {
-            SGTL.confirmar({
-                titulo: '¿Restablecer los valores por defecto?',
-                mensaje: 'El logo, el fondo, el menú y el pie vuelven a los de SGTL.',
-                verbo: 'Restablecer',
-                accion: restablecerContenido
-            }).then(function (hecho) {
-                if (hecho) SGTL.toastExito('Valores por defecto restablecidos.');
-            });
-        });
-
-        var MAX_LOGO_BYTES = 1024 * 1024; // 1 MB
-        var uploadedLogoDataUrl = null;   // si hay archivo subido, tiene prioridad al guardar
+        var logoGuardado = null;          // el que está en la base
+        var uploadedLogoDataUrl = null;   // el archivo elegido y todavía sin guardar: tiene prioridad al guardar
+        var nombreLogoElegido = '';
 
         function esDataUri(v) { return typeof v === 'string' && v.indexOf('data:') === 0; }
 
@@ -351,78 +203,132 @@
             SGTL.toastError(msg);
         }
 
-        // Muestra el toast de éxito de forma segura (sin romper el flujo si algo falla).
-        function mostrarToastExito() {
-            SGTL.toastExito('Cambios guardados.');
-        }
-
-        function setLogoPreview(src) {
-            var img = document.getElementById('logoPreview');
-            if (img) img.src = src || './assets/static/images/logo/sgtl-logo.png';
-        }
-
-        function marcarArchivoCargado(cargado) {
-            var quitar = document.getElementById('btnQuitarLogo');
-            var input = document.getElementById('logoInput');
-            if (quitar) quitar.classList.toggle('d-none', !cargado);
-            if (!input) return;
-            if (cargado) {
-                input.value = '';
-                input.setAttribute('disabled', 'disabled');
-                input.setAttribute('placeholder', 'Archivo cargado \u2714  (usá "Quitar archivo" para volver a URL)');
+        // La franja del logo dice cuál es: el de fábrica, uno subido o uno elegido que todavía no se guardó.
+        function mostrarLogo() {
+            var dondeSeUsa = 'se usa en el menú y el login';
+            var valor = uploadedLogoDataUrl || logoGuardado || window.SGTL_CONTENIDO_DEFAULT.logo;
+            var nombre, detalle;
+            if (uploadedLogoDataUrl) {
+                nombre = nombreLogoElegido || 'Logo nuevo';
+                detalle = 'Sin guardar · ' + tamanioLogo(uploadedLogoDataUrl);
+            } else if (!logoGuardado || logoGuardado === window.SGTL_CONTENIDO_DEFAULT.logo) {
+                nombre = 'Logo de SGTL';
+                detalle = 'El de fábrica · ' + dondeSeUsa;
+            } else if (esDataUri(logoGuardado)) {
+                nombre = 'Logo cargado';
+                detalle = tamanioLogo(logoGuardado) + ' · ' + dondeSeUsa;
             } else {
-                input.removeAttribute('disabled');
-                input.setAttribute('placeholder', 'Pegá una URL o ruta de imagen (o usá Examinar)');
+                nombre = 'Logo cargado';
+                detalle = logoGuardado + ' · ' + dondeSeUsa;
+            }
+            document.getElementById('logoPreview').src = valor;
+            document.getElementById('logoNombre').textContent = nombre;
+            document.getElementById('logoDetalle').textContent = detalle;
+        }
+
+        // fechaTexto ya formateada: la que viene de la API se corrige al cargar (fechaCliente) y la de recién guardado es la
+        // hora de este navegador.
+        function mostrarRegistroApariencia(usuario, fechaTexto) {
+            document.getElementById('registroApariencia').textContent = usuario && fechaTexto
+                ? 'Última modificación: ' + usuario + ' · ' + fechaTexto : '';
+        }
+
+        async function loadSettings() {
+            try {
+                var data = await SGTL.ajax({ url: 'http://localhost:50222/api/GestionContenido/1', type: 'GET', cache: false },
+                    'No se pudo cargar la apariencia guardada. Probá de nuevo.');
+                logoGuardado = data.Logo || null;
+                uploadedLogoDataUrl = null;
+                mostrarLogo();
+                document.getElementById('backgroundColorInput').value = data.ColorFondo || window.SGTL_CONTENIDO_DEFAULT.fondo;
+                document.getElementById('menuColorInput').value = data.ColorBotonesMenu || window.SGTL_CONTENIDO_DEFAULT.menu;
+                document.getElementById('footerContentInput').value = data.ContenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
+                // Fecha_Modi se guarda con la hora UTC del navegador: se muestra con la corrección de los clientes.
+                mostrarRegistroApariencia(data.Usu_Modi, data.Fecha_Modi ? fechaCliente(data.Fecha_Modi) : '');
+                applyStyles(data.Logo, data.ColorFondo, data.ColorBotonesMenu, data.ContenidoPiePagina);
+            } catch (error) {
+                notifyError(error.mensajeUsuario || 'No se pudo cargar la apariencia guardada. Probá de nuevo.');
+                throw error;
             }
         }
 
-        // Valor que se guardará: el archivo subido tiene prioridad; si no, la URL escrita.
-        function valorLogoEfectivo() {
-            return uploadedLogoDataUrl || document.getElementById('logoInput').value;
+        // Obtener el nombre de usuario desde localStorage
+        const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
+
+        function guardarApariencia(valores) {
+            return SGTL.ajax({
+                url: 'http://localhost:50222/api/GestionContenido/1',
+                type: 'PUT',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    Logo: valores.logo,
+                    ColorFondo: valores.fondo,
+                    ColorBotonesMenu: valores.menu,
+                    ContenidoPiePagina: valores.pie,
+                    Fecha_Modi: new Date().toISOString(),
+                    Usu_Modi: usuarioModificador
+                })
+            }, valores.error).then(function () {
+                logoGuardado = valores.logo;
+                uploadedLogoDataUrl = null;
+                document.getElementById('logoFile').value = '';
+                mostrarLogo();
+                mostrarRegistroApariencia(usuarioModificador, SGTL.fecha(new Date(), { hora: true }));
+                // Aplica los cambios en vivo (sin recargar la página).
+                try { applyStyles(valores.logo, valores.fondo, valores.menu, valores.pie); } catch (e) { }
+            });
         }
 
+        // Guardar cambios de la apariencia
+        document.getElementById('settings').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const listo = SGTL.procesando('#saveSettingsBtn', 'Guardando…');
+            guardarApariencia({
+                logo: uploadedLogoDataUrl || logoGuardado || window.SGTL_CONTENIDO_DEFAULT.logo,
+                fondo: document.getElementById('backgroundColorInput').value,
+                menu: document.getElementById('menuColorInput').value,
+                pie: document.getElementById('footerContentInput').value,
+                error: 'No se pudo guardar la apariencia. Revisá la conexión y probá de nuevo.'
+            }).then(function () {
+                SGTL.toastExito('Apariencia guardada.');
+            }, function (error) {
+                notifyError(error.mensajeUsuario);
+            }).finally(listo);
+        });
+
+        // Vuelve a la marca SGTL: logo, fondo, menú y pie.
+        function restablecerContenido() {
+            var marca = window.SGTL_CONTENIDO_DEFAULT;
+            return guardarApariencia({
+                logo: marca.logo, fondo: marca.fondo, menu: marca.menu, pie: marca.pie,
+                error: 'No se pudo restablecer la apariencia. Probá de nuevo.'
+            }).then(function () {
+                document.getElementById('backgroundColorInput').value = marca.fondo;
+                document.getElementById('menuColorInput').value = marca.menu;
+                document.getElementById('footerContentInput').value = marca.pie;
+            });
+        }
+
+        document.getElementById('btnRestablecer').addEventListener('click', function () {
+            SGTL.confirmar({
+                titulo: '¿Restablecer los valores por defecto?',
+                mensaje: 'El logo, el fondo, el menú y el pie vuelven a los de SGTL. Los datos y el logo de la empresa (Gestionar empresa) no cambian.',
+                verbo: 'Restablecer',
+                accion: restablecerContenido
+            }).then(function (hecho) {
+                if (hecho) SGTL.toastExito('Valores por defecto restablecidos.');
+            });
+        });
+
         (function initLogoControls() {
-            var btnExaminar = document.getElementById('btnExaminarLogo');
-            var btnQuitar = document.getElementById('btnQuitarLogo');
             var fileInput = document.getElementById('logoFile');
-            var urlInput = document.getElementById('logoInput');
-            if (!btnExaminar || !fileInput || !urlInput) return;
-
-            btnExaminar.addEventListener('click', function () { fileInput.click(); });
-
-            btnQuitar.addEventListener('click', function () {
-                uploadedLogoDataUrl = null;
-                fileInput.value = '';
-                marcarArchivoCargado(false);
-                setLogoPreview(urlInput.value);
-            });
-
-            fileInput.addEventListener('change', function (e) {
-                var file = e.target.files && e.target.files[0];
-                if (!file) return;
-                var extOk = /\.(png|svg|jpe?g|webp|ico)$/i.test(file.name);
-                var tiposOk = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
-                if (!extOk && tiposOk.indexOf(file.type) === -1) {
-                    notifyError('Formato no permitido. Usá .png, .svg, .jpg, .webp o .ico.');
-                    fileInput.value = ''; return;
-                }
-                if (file.size > MAX_LOGO_BYTES) {
-                    notifyError('El archivo supera 1 MB. Elegí una imagen más liviana.');
-                    fileInput.value = ''; return;
-                }
-                var reader = new FileReader();
-                reader.onload = function (ev) {
-                    uploadedLogoDataUrl = ev.target.result; // data URI base64
-                    setLogoPreview(uploadedLogoDataUrl);
-                    marcarArchivoCargado(true);
-                };
-                reader.onerror = function () { notifyError('No se pudo leer el archivo.'); };
-                reader.readAsDataURL(file);
-            });
-
-            // Vista previa en vivo al escribir/pegar una URL
-            urlInput.addEventListener('input', function () {
-                if (!uploadedLogoDataUrl) setLogoPreview(this.value);
+            document.getElementById('btnReemplazarLogo').addEventListener('click', function () { fileInput.click(); });
+            fileInput.addEventListener('change', function () {
+                leerArchivoLogo(fileInput, function (datos, nombre) {
+                    uploadedLogoDataUrl = datos;
+                    nombreLogoElegido = nombre;
+                    mostrarLogo();
+                });
             });
         })();
     </script>

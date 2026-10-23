@@ -883,7 +883,8 @@
     var p = nombrePlataforma();
     switch (l.Resultado) {
       case 'Importe_distinto': return 'Transporte ' + l.Referencia + ': importe ' + p + ' ' + pesos(l.ImporteViaje) + ', SGTL ' + pesos(l.ImporteSgtl) + '.';
-      case 'Sin_viaje': return 'Transporte ' + l.Referencia + ': no corresponde a un viaje de Transporte Sánchez.';
+      // El reclamo lo manda la empresa: "nuestros viajes", sin escribir su nombre (sale de Gestionar empresa, 23/10).
+      case 'Sin_viaje': return 'Transporte ' + l.Referencia + ': no corresponde a ninguno de nuestros viajes.';
       case 'Ya_facturado': return 'Transporte ' + l.Referencia + ': ya se facturó en otra proforma.';
       case 'En_otra_proforma': return 'Transporte ' + l.Referencia + ': ya está en otra proforma.';
       case 'Repetido_en_archivo': return 'Transporte ' + l.Referencia + ': está dos veces en el Excel.';

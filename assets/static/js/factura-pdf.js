@@ -2,7 +2,6 @@
     'use strict';
 
     var API = 'http://localhost:50222/api';
-    var EMPRESA = { razon: 'Transporte Sánchez' };
 
     function texto(valor) { return valor == null || valor === '' ? '—' : String(valor); }
     function numero(valor) { return Number(valor || 0); }
@@ -20,50 +19,11 @@
     function jsPDF() {
         return window.jspdf && window.jspdf.jsPDF ? window.jspdf.jsPDF : window.jsPDF;
     }
-    // jsPDF trabaja de forma consistente con PNG. Gestión de Contenido, en cambio,
-    // admite archivos subidos, data URI y rutas/URL de PNG, SVG, JPG, WebP e ICO.
-    // Se rasteriza la imagen configurada para que cualquiera de esas opciones llegue
-    // al comprobante impreso.
-    function convertirLogoAPng(origen) {
-        if (typeof origen !== 'string' || !origen.trim()) return Promise.resolve(null);
-
-        return new Promise(function (resolver) {
-            var imagen = new Image();
-            imagen.onload = function () {
-                var anchoOriginal = imagen.naturalWidth || imagen.width;
-                var altoOriginal = imagen.naturalHeight || imagen.height;
-                if (!anchoOriginal || !altoOriginal) { resolver(null); return; }
-
-                // Limitar el raster evita generar PDFs innecesariamente pesados.
-                var escala = Math.min(1, 900 / anchoOriginal, 400 / altoOriginal);
-                var lienzo = document.createElement('canvas');
-                lienzo.width = Math.max(1, Math.round(anchoOriginal * escala));
-                lienzo.height = Math.max(1, Math.round(altoOriginal * escala));
-
-                try {
-                    lienzo.getContext('2d').drawImage(imagen, 0, 0, lienzo.width, lienzo.height);
-                    resolver(lienzo.toDataURL('image/png'));
-                } catch (e) {
-                    // Una URL externa sin CORS no se puede incluir en un PDF del navegador.
-                    resolver(null);
-                }
-            };
-            imagen.onerror = function () { resolver(null); };
-
-            // Permite rasterizar URL externas cuando el servidor de la imagen habilita CORS.
-            try {
-                var url = new URL(origen, window.location.href);
-                if (/^https?:$/i.test(url.protocol) && url.origin !== window.location.origin) imagen.crossOrigin = 'anonymous';
-            } catch (e) { }
-            imagen.src = origen;
-        });
-    }
-    function obtenerLogo() {
-        return fetch(API + '/GestionContenido/1').then(function (respuesta) {
-            return respuesta.ok ? respuesta.json() : null;
-        }).then(function (datos) {
-            return convertirLogoAPng(datos && datos.Logo);
-        }).catch(function () { return null; });
+    // Los datos de la empresa que valían al emitir el comprobante, con su logo (Gestionar empresa, empresa-datos.js). El
+    // logo del sistema (Apariencia) no sale en los documentos.
+    function datosEmpresa(fechaEmision) {
+        if (!window.SGTLEmpresa) return Promise.reject(new Error('No se pudieron leer los datos de la empresa para el PDF. Probá de nuevo.'));
+        return window.SGTLEmpresa.obtener(fechaEmision);
     }
     function obtenerComprobante(id) {
         var jwt = token();
@@ -107,7 +67,7 @@
         return { tipo: 'detalle' };
     }
 
-    function construir(factura, logo) {
+    function construir(factura, empresa) {
         var Constructor = jsPDF();
         if (!Constructor) throw new Error('No se pudo cargar el generador de PDF.');
         var doc = new Constructor({ unit: 'mm', format: 'a4' });
@@ -148,13 +108,34 @@
         doc.setFont('helvetica', 'normal'); doc.setFontSize(5.8); doc.text('SIN VALIDEZ FISCAL', ancho / 2, y + 20, { align: 'center' });
 
         var nombreEmpresaX = margen + 4;
-        if (logo) {
-            try { doc.addImage(logo, 'PNG', nombreEmpresaX, y + 5, 31, 14); nombreEmpresaX += 35; } catch (e) { logo = null; }
+        if (empresa.logo) {
+            // Dentro de 31 x 14 mm, sin deformarlo; el nombre va a su derecha.
+            var medida = window.SGTLEmpresa.medidaLogo(empresa.logo, 31, 14);
+            try {
+                doc.addImage(empresa.logo.datos, 'PNG', nombreEmpresaX, y + 5 + (14 - medida.alto) / 2, medida.ancho, medida.alto);
+                nombreEmpresaX += medida.ancho + 4;
+            } catch (e) { }
         }
-        doc.setFont('helvetica', 'bold'); doc.setFontSize(13); doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
-        doc.text(EMPRESA.razon, nombreEmpresaX, y + 13);
-        doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
-        doc.text('Documento interno de gestión comercial', nombreEmpresaX, y + 19);
+        // Datos de la empresa (Gestionar empresa): el nombre al lado del logo y, debajo, CUIT, domicilio y contacto. Todo
+        // queda a la izquierda del recuadro de la letra; lo que no entra en un renglón se corta.
+        var limiteEmpresa = (ancho / 2) - 10;
+        function renglon(valor, anchoMaximo) { return doc.splitTextToSize(String(valor), anchoMaximo)[0] || ''; }
+        var datosAbajo = empresa.lineas.slice();
+        var tamanioNombre = 13;
+        doc.setFont('helvetica', 'bold'); doc.setFontSize(tamanioNombre);
+        while (tamanioNombre > 9 && doc.getTextWidth(empresa.nombre) > limiteEmpresa - nombreEmpresaX) {
+            tamanioNombre -= 0.5; doc.setFontSize(tamanioNombre);
+        }
+        doc.setTextColor(colorTexto[0], colorTexto[1], colorTexto[2]);
+        doc.text(renglon(empresa.nombre, limiteEmpresa - nombreEmpresaX), nombreEmpresaX, y + 12);
+        doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
+        // Con nombre comercial, la razón social va debajo del nombre.
+        if (empresa.nombreComercial && datosAbajo[0] === empresa.razonSocial) {
+            doc.text(renglon(datosAbajo.shift(), limiteEmpresa - nombreEmpresaX), nombreEmpresaX, y + 17);
+        }
+        datosAbajo.slice(0, 3).forEach(function (linea, indice) {
+            doc.text(renglon(linea, limiteEmpresa - (margen + 4)), margen + 4, y + 23.5 + (indice * 3.6));
+        });
         doc.setFont('helvetica', 'bold'); doc.setFontSize(7.2); doc.setTextColor(155, 0, 0);
         doc.text('NO VÁLIDO COMO COMPROBANTE FISCAL', margen + 4, y + 35);
         doc.setFont('helvetica', 'normal'); doc.setFontSize(6.8); doc.setTextColor(colorSecundario[0], colorSecundario[1], colorSecundario[2]);
@@ -310,14 +291,15 @@
     }
 
     function generarDocumento(id) {
-        return Promise.all([obtenerComprobante(id), obtenerLogo()]).then(function (resultado) {
-            var factura = resultado[0];
+        return obtenerComprobante(id).then(function (factura) {
             if (!tituloComprobante(factura.Tipo)) throw new Error('El comprobante seleccionado no se puede imprimir.');
-            return {
-                documento: construir(factura, resultado[1]),
-                comprobante: factura,
-                nombreArchivo: nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
-            };
+            return datosEmpresa(factura.FechaEmision).then(function (empresa) {
+                return {
+                    documento: construir(factura, empresa),
+                    comprobante: factura,
+                    nombreArchivo: nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
+                };
+            });
         });
     }
 

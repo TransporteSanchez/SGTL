@@ -84,6 +84,19 @@ AGENTS.md"):
   `database/<módulo>/NN_descripcion.sql`; los datos se proponen dentro de `BEGIN TRAN … ROLLBACK` para que los
   corra Rocío.
 - **No regenerar el EDMX** ("Update Model from Database"): las columnas nuevas se usan con SQL directo.
+- **Pantalla nueva: menú y permiso.** Antes de hacerla, definí con Rocío en qué sección del menú va, en qué lugar y
+  quién la puede abrir; si no está claro, preguntá. Al terminar, entrá como admin y como un usuario que no lo es, y
+  comparalo con las pantallas hermanas. Cómo se hace:
+  - **Menú:** `buildFallbackSidebarHtml` en `assets/static/js/sidebar-loader.js` y la tabla del §3.1 del design system.
+  - **Solo administradores:** dentro de Configuración (la sección entera es de admins) o con `.solo-admin` en otra
+    sección; el archivo va en las dos listas de páginas de configuración de `sidebar-loader.js` (mandan al inicio a
+    quien no es admin) y la API rechaza a quien no es admin al guardar.
+  - **Con permiso de grupo** (Gestionar grupos y permisos): el nombre en `CatalogoMenuPermisos` y
+    `MenuPrincipalPorPermiso` (`GruposController.cs`), la clave en `MENU_TO_PAGE` (`sidebar-loader.js`) y, si guarda
+    datos, que la API controle el permiso.
+- **Los datos de la empresa no se escriben en el código** (nombre, CUIT, domicilio, teléfono, e-mail, logo): salen de
+  Configuración → Gestionar empresa (`api/empresa`; en un PDF, `SGTLEmpresa.obtener` de `empresa-datos.js` con la fecha
+  de emisión del documento). En un documento va el logo de la empresa, nunca el del sistema (`GestionContenido`).
 - **`Web.config` tiene la cadena de conexión con contraseña:** no la copies, no la muestres y no agregues otros
   secretos al repo.
 - **Fechas y horas:** la hora sale de tres lugares distintos (base en UTC, API en hora local, navegador en UTC).

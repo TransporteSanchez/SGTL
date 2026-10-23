@@ -1,18 +1,6 @@
 (function () {
     var API = 'http://localhost:50222/api';
 
-
-    var EMPRESA = {
-        razon: 'Transporte Sánchez',
-        cuit: '',
-        direccion: '',
-        ciudad: '',
-        provincia: '',
-        telefono: '',
-        email: '',
-        web: ''
-    };
-
     function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
     function fdate(iso) { if (!iso) return ''; var d = new Date(iso); if (isNaN(d)) return ''; return ('0' + d.getDate()).slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + d.getFullYear(); }
     function txt(v) { return (v == null || v === '') ? '—' : String(v); }
@@ -29,25 +17,20 @@
 
     function getJsPDF() { return (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null); }
 
-    // Trae el logo (si es un data URI raster utilizable) desde Gestión de contenido.
-    function obtenerLogo() {
-        return fetch(API + '/GestionContenido/1')
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) {
-                var logo = d && d.Logo;
-                if (typeof logo === 'string' && /^data:image\/(png|jpe?g)/i.test(logo)) return logo;
-                return null; // SVG / ruta: no lo embebemos, usamos texto
-            })
-            .catch(function () { return null; });
-    }
-
     // Error con el aviso del sistema (§5.1); si la pantalla no carga sgtl-ui.js, el del navegador.
     function avisarError(texto) {
         if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
         else window.alert(texto);
     }
 
-    function construir(p, logoDataUri) {
+    // Los datos de la empresa de la proforma, con su logo (Gestionar empresa, empresa-datos.js): una ya generada usa los
+    // que valían al generarla; un borrador, los actuales. El logo del sistema (Apariencia) no sale en los documentos.
+    function datosEmpresa(p) {
+        if (!window.SGTLEmpresa) return Promise.reject(new Error('No se pudieron leer los datos de la empresa para el PDF. Probá de nuevo.'));
+        return window.SGTLEmpresa.obtener(p.Numero ? p.FechaEmision : null);
+    }
+
+    function construir(p, empresa) {
         var JsPDF = getJsPDF();
         if (!JsPDF) { avisarError('No se pudo cargar el generador de PDF. Recargá la pantalla.'); return null; }
         var doc = new JsPDF({ unit: 'mm', format: 'a4' });
@@ -57,11 +40,15 @@
         var y = M;
 
         // ---------- Encabezado ----------
-        if (logoDataUri) {
-            try { doc.addImage(logoDataUri, 'PNG', M, y, 45, 18); } catch (e) { }
-        } else {
+        var conLogo = false;
+        if (empresa.logo) {
+            // Dentro de 45 x 18 mm, sin deformarlo.
+            var medida = window.SGTLEmpresa.medidaLogo(empresa.logo, 45, 18);
+            try { doc.addImage(empresa.logo.datos, 'PNG', M, y, medida.ancho, medida.alto); conLogo = true; } catch (e) { }
+        }
+        if (!conLogo) {
             doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(20);
-            doc.text(EMPRESA.razon || 'Transporte Sánchez', M, y + 8);
+            doc.text(doc.splitTextToSize(empresa.nombre, W - 2 * M - 66)[0], M, y + 8);
         }
         // Recuadro derecho: PROFORMA
         var bx = W - M - 60, by = y, bw = 60, bh = 26;
@@ -76,11 +63,10 @@
         doc.text('Estado: ' + txt(p.Estado), bx + 3, by + 25);
 
         y += 30;
-        // Datos de la empresa
+        // Datos de la empresa: con logo, el nombre va primero en esta lista (arriba ya está el logo).
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80);
-        var emp = [EMPRESA.razon, EMPRESA.cuit ? ('CUIT: ' + EMPRESA.cuit) : '', EMPRESA.direccion, [EMPRESA.ciudad, EMPRESA.provincia].filter(Boolean).join(', '),
-            [EMPRESA.telefono ? ('Tel: ' + EMPRESA.telefono) : '', EMPRESA.email, EMPRESA.web].filter(Boolean).join('  ·  ')].filter(Boolean);
-        emp.forEach(function (linea) { doc.text(linea, M, y); y += 4; });
+        var emp = (conLogo ? [empresa.nombre] : []).concat(empresa.lineas);
+        emp.forEach(function (linea) { doc.text(doc.splitTextToSize(linea, W - 2 * M)[0], M, y); y += 4; });
         y += 2;
 
         // ---------- Recuadro Cliente ----------
@@ -231,17 +217,14 @@
 
     // Arma el PDF de la proforma: devuelve { doc, nombre } o rechaza con un mensaje para el usuario.
     function preparar(id) {
-        var logo = null;
-        return Promise.all([
-            fetch(API + '/Proformas/' + id).then(function (r) { return r.ok ? r.json() : null; }),
-            obtenerLogo()
-        ]).then(function (res) {
-            var p = res[0];
-            logo = res[1];
+        return fetch(API + '/Proformas/' + id).then(function (r) { return r.ok ? r.json() : null; }).then(function (p) {
             if (!p) throw new Error('No se pudo obtener la proforma. Probá de nuevo.');
             return conLineasDePlataforma(p);
         }).then(function (p) {
-            var doc = construir(p, logo);
+            return datosEmpresa(p).then(function (empresa) { return { p: p, empresa: empresa }; });
+        }).then(function (r) {
+            var p = r.p;
+            var doc = construir(p, r.empresa);
             if (!doc) throw new Error('No se pudo generar el PDF. Probá de nuevo.');
             var idProforma = p.Proforma_ID || id;
             var numero = p.Numero || (p.Tipo_Proforma === 'Plataforma'

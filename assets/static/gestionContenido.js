@@ -164,3 +164,34 @@ window.applyStyles = function applyStyles(logoUrl, colorFondo, colorBotonesMenu,
     console.log("Color del menú aplicado a .sidebar-item.active .sidebar-link y .submenu-item.active .submenu-link:", colorBotonesMenu);
 }
 
+
+// ---------------------------------------------------------------- Logos (Gestionar empresa y Gestionar contenido)
+
+var MAX_LOGO_BYTES = 1024 * 1024; // 1 MB
+
+// Lee el archivo elegido para un logo (el de los documentos o el del sistema): revisa formato y tamaño y le pasa a
+// alLeer el data URI y el nombre del archivo. Si no sirve, avisa y vacía el campo.
+window.leerArchivoLogo = function (input, alLeer) {
+    var archivo = input.files && input.files[0];
+    if (!archivo) return;
+    var extensionOk = /\.(png|svg|jpe?g|webp|ico)$/i.test(archivo.name);
+    var tiposOk = ['image/png', 'image/svg+xml', 'image/jpeg', 'image/webp', 'image/x-icon', 'image/vnd.microsoft.icon'];
+    if (!extensionOk && tiposOk.indexOf(archivo.type) === -1) {
+        SGTL.toastError('Ese formato no sirve para el logo. Elegí un .png, .svg, .jpg, .webp o .ico.');
+        input.value = ''; return;
+    }
+    if (archivo.size > MAX_LOGO_BYTES) {
+        SGTL.toastError('El archivo supera 1 MB. Elegí una imagen más liviana.');
+        input.value = ''; return;
+    }
+    var lector = new FileReader();
+    lector.onload = function (evento) { alLeer(evento.target.result, archivo.name); };
+    lector.onerror = function () { SGTL.toastError('No se pudo leer el archivo. Probá con otro.'); };
+    lector.readAsDataURL(archivo);
+};
+
+// "48 KB" a partir del data URI de un logo.
+window.tamanioLogo = function (dataUri) {
+    var base64 = String(dataUri).split(',')[1] || '';
+    return Math.max(1, Math.round(base64.length * 3 / 4 / 1024)) + ' KB';
+};

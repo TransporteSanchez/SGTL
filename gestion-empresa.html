@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar empresa · SGTL</title>
+    <style>
+        /* Estilo para ocultar el contenido por defecto */
+        #app {
+            display: none;
+        }
+
+        /* Estilo para centrar el spinner de carga */
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
+</head>
+
+<body>
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando…</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <!-- Los datos de la empresa que salen en los documentos (23/10). La apariencia del sistema (logo del menú,
+                     colores y pie) está aparte, en Gestionar contenido. -->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4 mb-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-1">
+                                <i class="bi bi-gear me-2" aria-hidden="true"></i>Gestionar empresa
+                            </h5>
+                            <p class="text-muted mb-0">Los datos de la empresa que salen en las facturas, notas de crédito y de débito, recibos, proformas y presupuestos.</p>
+                        </div>
+                        <div class="card-body">
+                            <div id="avisoEmpresa" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                            <div id="avisoEmpresaIncompleta" class="alert alert-warning d-none" role="status">
+                                Faltan el CUIT y el domicilio: hasta que los guardes, los documentos salen solo con el nombre.
+                            </div>
+                            <form id="formEmpresa" class="form" novalidate>
+                                <!-- Arriba: los datos fiscales en 2 x 2 y, al lado, el logo de los documentos. -->
+                                <div class="row g-4">
+                                    <section class="col-12 col-lg-8">
+                                        <div class="sgtl-bloque-titulo">Datos fiscales</div>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaRazonSocial" class="form-label">Razón social <span class="text-danger">*</span></label>
+                                                <input type="text" id="empresaRazonSocial" class="form-control" placeholder="Distribuidora Norte S.A." autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaNombreComercial" class="form-label">Nombre comercial</label>
+                                                <input type="text" id="empresaNombreComercial" class="form-control" placeholder="Las Lomas" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                                <div class="form-text">Si está, va en grande en los documentos.</div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaCuit" class="form-label">CUIT <span class="text-danger">*</span></label>
+                                                <input type="text" inputmode="numeric" id="empresaCuit" class="form-control" placeholder="30-71234567-8" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaCondIva" class="form-label">Condición de IVA <span class="text-danger">*</span></label>
+                                                <select id="empresaCondIva" class="form-select">
+                                                    <option value="">Seleccioná una condición</option>
+                                                    <option value="1">Responsable inscripto</option>
+                                                    <option value="2">Monotributista</option>
+                                                    <option value="3">Exento</option>
+                                                </select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="col-12 col-lg-4">
+                                        <div class="sgtl-bloque-titulo">Logo para los documentos</div>
+                                        <!-- Sin logo, el recuadro punteado para elegirlo; con logo, el de archivo cargado (§6.2). -->
+                                        <div class="sgtl-zona-archivo sgtl-zona-recuadro" id="zonaLogoEmpresa">
+                                            <span class="sgtl-zona-icono" id="empresaLogoIcono"><i class="bi bi-image" aria-hidden="true"></i></span>
+                                            <span class="d-none" id="empresaLogoMarco"><img class="sgtl-zona-imagen" id="empresaLogoPreview" alt="Logo de la empresa"></span>
+                                            <div class="sgtl-zona-texto">
+                                                <div class="small text-muted" id="empresaLogoDetalle">Sin logo: sale el nombre en texto</div>
+                                            </div>
+                                            <div class="sgtl-zona-acciones">
+                                                <button type="button" class="btn btn-primary" id="btnLogoEmpresa">
+                                                    <i class="bi bi-image me-1" aria-hidden="true"></i><span id="btnLogoEmpresaTexto">Elegir logo</span>
+                                                </button>
+                                                <button type="button" class="btn btn-link text-danger d-none" id="btnQuitarLogoEmpresa">Quitar logo</button>
+                                            </div>
+                                            <input type="file" id="empresaLogoArchivo" class="d-none" accept=".png,.svg,.jpg,.jpeg,.webp,.ico,image/*" aria-label="Logo de la empresa">
+                                        </div>
+                                        <div class="form-text">PNG, JPG, SVG, WebP o ICO, hasta 1 MB.</div>
+                                    </section>
+                                </div>
+
+                                <!-- Abajo: domicilio y contacto, uno al lado del otro desde 1200 px. -->
+                                <div class="row g-4 mt-1">
+                                    <section class="col-12 col-xl-6">
+                                        <div class="sgtl-bloque-titulo">Domicilio</div>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaProvincia" class="form-label">Provincia <span class="text-danger">*</span></label>
+                                                <select id="empresaProvincia" class="form-select"><option value="">Cargando…</option></select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaLocalidad" class="form-label">Localidad <span class="text-danger">*</span></label>
+                                                <select id="empresaLocalidad" class="form-select" disabled><option value="">Seleccioná una localidad</option></select>
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaCalle" class="form-label">Calle <span class="text-danger">*</span></label>
+                                                <input type="text" id="empresaCalle" class="form-control" placeholder="Av. Faraday" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <label for="empresaAltura" class="form-label">Altura <span class="text-danger">*</span></label>
+                                                <input type="text" id="empresaAltura" class="form-control" placeholder="1234" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                            <div class="col-6 col-md-3">
+                                                <label for="empresaCodigoPostal" class="form-label">Código postal</label>
+                                                <input type="text" id="empresaCodigoPostal" class="form-control" placeholder="5000" autocomplete="postal-code">
+                                                <div class="invalid-feedback"></div>
+                                            </div>
+                                        </div>
+                                    </section>
+
+                                    <section class="col-12 col-xl-6">
+                                        <div class="sgtl-bloque-titulo">Contacto</div>
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaTelefono" class="form-label">Teléfono</label>
+                                                <input type="text" inputmode="numeric" id="empresaTelefono" class="form-control" placeholder="3514123456" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                                <div class="form-text">Código de área sin 0 y número sin 15</div>
+                                            </div>
+                                            <div class="col-12 col-md-6">
+                                                <label for="empresaEmail" class="form-label">E-mail</label>
+                                                <input type="email" id="empresaEmail" class="form-control" placeholder="administracion@correo.com" autocomplete="off">
+                                                <div class="invalid-feedback"></div>
+                                                <div class="form-text">No cambia la cuenta que envía los e-mails.</div>
+                                            </div>
+                                        </div>
+                                    </section>
+                                </div>
+
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                                    <small class="text-muted" id="registroEmpresa"></small>
+                                    <button type="submit" class="btn btn-primary" id="btnGuardarEmpresa">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+        </div>
+    </div>
+
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <!-- La marca del sistema, y leerArchivoLogo y tamanioLogo (compartidas con Gestionar contenido). -->
+    <script src="./assets/static/gestionContenido.js"></script>
+    <!-- formatearCUIT y CONDICIONES_IVA, los mismos de la ficha del cliente. -->
+    <script src="assets/static/js/clientes.js"></script>
+
+    <script>
+        window.onload = async function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            window.loadFooter();
+
+            try {
+                await window.loadHeader();
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                window.cargarEstilosContenido().catch(function (error) { console.error(error); });
+                await cargarEmpresa();
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+            }
+        };
+
+        // Salen en los PDF (empresa-datos.js). La API guarda versiones: lo que se guarda acá vale desde hoy y los
+        // documentos ya emitidos conservan los datos (y el logo) con que se emitieron.
+        var API_EMPRESA = 'http://localhost:50222/api';
+        var provinciasEmpresa = null;
+        var validadorEmpresa = SGTL.validador([
+            { id: 'empresaRazonSocial', requerido: 'Completá la razón social.', max: 200 },
+            { id: 'empresaNombreComercial', max: 100 },
+            {
+                id: 'empresaCuit', requerido: 'Completá el CUIT.',
+                regex: /^[0-9]{2}-[0-9]{8}-[0-9]$/, mensaje: 'El CUIT tiene que tener 11 números.'
+            },
+            { id: 'empresaCondIva', requerido: 'Seleccioná la condición de IVA.' },
+            { id: 'empresaProvincia', requerido: 'Seleccioná una provincia.' },
+            { id: 'empresaLocalidad', requerido: 'Seleccioná una localidad.' },
+            { id: 'empresaCalle', requerido: 'Completá la calle.', max: 100 },
+            { id: 'empresaAltura', requerido: 'Completá la altura.', max: 10 },
+            { id: 'empresaCodigoPostal', max: 20 },
+            { id: 'empresaTelefono', soloNumeros: true, max: 10 },
+            {
+                id: 'empresaEmail', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                mensaje: 'Revisá el e-mail: tiene que tener @ y un dominio, como nombre@correo.com.'
+            }
+        ]);
+
+        function campoEmpresa(id) { return document.getElementById(id); }
+
+        // Logo de los documentos: el guardado y lo que se cambió sin guardar (undefined: nada; null: quitado; si no,
+        // { datos, nombre } del archivo elegido).
+        var logoEmpresaGuardado = null;
+        var logoEmpresaCambio;
+
+        function logoEmpresaActual() {
+            if (logoEmpresaCambio === undefined) return logoEmpresaGuardado;
+            return logoEmpresaCambio ? logoEmpresaCambio.datos : null;
+        }
+
+        function mostrarLogoEmpresa() {
+            var valor = logoEmpresaActual();
+            var boton = campoEmpresa('btnLogoEmpresa');
+            campoEmpresa('zonaLogoEmpresa').classList.toggle('cargada', !!valor);
+            campoEmpresa('empresaLogoIcono').classList.toggle('d-none', !!valor);
+            campoEmpresa('empresaLogoMarco').classList.toggle('d-none', !valor);
+            if (valor) campoEmpresa('empresaLogoPreview').src = valor; else campoEmpresa('empresaLogoPreview').removeAttribute('src');
+            campoEmpresa('empresaLogoDetalle').textContent = logoEmpresaCambio === null && logoEmpresaGuardado
+                ? 'Sin guardar · va a salir el nombre en texto'
+                : logoEmpresaCambio ? 'Sin guardar · ' + tamanioLogo(logoEmpresaCambio.datos)
+                : valor ? tamanioLogo(valor) + ' · sale en los documentos' : 'Sin logo: sale el nombre en texto';
+            campoEmpresa('btnLogoEmpresaTexto').textContent = valor ? 'Reemplazar logo' : 'Elegir logo';
+            boton.classList.toggle('btn-primary', !valor);
+            boton.classList.toggle('btn-outline-primary', !!valor);
+            campoEmpresa('btnQuitarLogoEmpresa').classList.toggle('d-none', !valor);
+        }
+
+        function cargarProvinciasEmpresa() {
+            if (!provinciasEmpresa) {
+                provinciasEmpresa = SGTL.ajax({ url: API_EMPRESA + '/Provincias', type: 'GET' },
+                    'No se pudieron cargar las provincias. Revisá la conexión y probá de nuevo.');
+                provinciasEmpresa.catch(function () { provinciasEmpresa = null; });
+            }
+            return provinciasEmpresa.then(function (lista) {
+                var select = campoEmpresa('empresaProvincia');
+                select.innerHTML = '';
+                select.appendChild(new Option('Seleccioná una provincia', ''));
+                lista.forEach(function (provincia) { select.appendChild(new Option(provincia.Nombre_Provincia, provincia.Prov_ID)); });
+            });
+        }
+
+        function cargarLocalidadesEmpresa(provinciaId) {
+            var select = campoEmpresa('empresaLocalidad');
+            select.innerHTML = '';
+            select.appendChild(new Option('Seleccioná una localidad', ''));
+            select.disabled = true;
+            if (!provinciaId) return Promise.resolve();
+            return SGTL.ajax({ url: API_EMPRESA + '/Provincias/' + provinciaId + '/Localidades', type: 'GET' },
+                'No se pudieron cargar las localidades. Revisá la conexión y probá de nuevo.').then(function (localidades) {
+                    localidades.forEach(function (localidad) { select.appendChild(new Option(localidad.Nombre_Localidad, localidad.Loc_ID)); });
+                    select.disabled = false;
+                });
+        }
+
+        // Fecha_Modi llega en hora de Argentina (la API la guarda así): se muestra tal cual.
+        function mostrarRegistroEmpresa(d) {
+            campoEmpresa('registroEmpresa').textContent = d && d.Usu_Modi && d.Fecha_Modi
+                ? 'Última modificación: ' + d.Usu_Modi + ' · ' + SGTL.fecha(d.Fecha_Modi, { hora: true })
+                : 'Todavía no se completaron.';
+            campoEmpresa('avisoEmpresaIncompleta').classList.toggle('d-none', !!(d && d.CUIT));
+        }
+
+        function mostrarEmpresa(d) {
+            campoEmpresa('empresaRazonSocial').value = d.Razon_Social || '';
+            campoEmpresa('empresaNombreComercial').value = d.Nombre_Comercial || '';
+            campoEmpresa('empresaCuit').value = formatearCUIT(d.CUIT);
+            campoEmpresa('empresaCondIva').value = CONDICIONES_IVA[d.Cond_Fiscal] ? String(d.Cond_Fiscal) : '';
+            campoEmpresa('empresaCalle').value = d.Calle || '';
+            campoEmpresa('empresaAltura').value = d.AlturaCalle || '';
+            campoEmpresa('empresaCodigoPostal').value = d.CodigoPostal || '';
+            campoEmpresa('empresaTelefono').value = d.Telefono || '';
+            campoEmpresa('empresaEmail').value = d.Email || '';
+            campoEmpresa('empresaProvincia').value = d.ProvID || '';
+            logoEmpresaGuardado = d.Logo || null;
+            logoEmpresaCambio = undefined;
+            mostrarLogoEmpresa();
+            mostrarRegistroEmpresa(d);
+            return cargarLocalidadesEmpresa(d.ProvID).then(function () {
+                campoEmpresa('empresaLocalidad').value = d.LocID || '';
+            });
+        }
+
+        function cargarEmpresa() {
+            return Promise.all([
+                SGTL.ajax({ url: API_EMPRESA + '/empresa', type: 'GET', cache: false },
+                    'No se pudieron cargar los datos de la empresa. Probá de nuevo.'),
+                cargarProvinciasEmpresa()
+            ]).then(function (r) { return mostrarEmpresa(r[0]); }).catch(function (error) {
+                SGTL.avisoFormulario('#avisoEmpresa', error.mensajeUsuario || 'No se pudieron cargar los datos de la empresa. Probá de nuevo.');
+            });
+        }
+
+        function datosFormularioEmpresa() {
+            var valor = function (id) { return campoEmpresa(id).value.trim(); };
+            return {
+                Razon_Social: valor('empresaRazonSocial'),
+                Nombre_Comercial: valor('empresaNombreComercial'),
+                CUIT: valor('empresaCuit').replace(/\D/g, ''),
+                Cond_Fiscal: parseInt(valor('empresaCondIva'), 10) || null,
+                ProvID: parseInt(valor('empresaProvincia'), 10) || null,
+                LocID: parseInt(valor('empresaLocalidad'), 10) || null,
+                Calle: valor('empresaCalle'),
+                AlturaCalle: valor('empresaAltura'),
+                CodigoPostal: valor('empresaCodigoPostal'),
+                Telefono: valor('empresaTelefono'),
+                Email: valor('empresaEmail'),
+                Logo: logoEmpresaActual()
+            };
+        }
+
+        async function guardarEmpresa(evento) {
+            evento.preventDefault();
+            validadorEmpresa.validarTodo();
+            if (!SGTL.revisarFormulario('#formEmpresa', '#avisoEmpresa')) return;
+            var listo = SGTL.procesando('#btnGuardarEmpresa', 'Guardando…');
+            try {
+                var token = localStorage.getItem('token') || '';
+                var respuesta = await SGTL.ajax({
+                    url: API_EMPRESA + '/empresa',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    headers: { Authorization: 'Bearer ' + token },
+                    data: JSON.stringify(datosFormularioEmpresa())
+                }, 'No se pudieron guardar los datos de la empresa. Probá de nuevo.');
+                if (respuesta && respuesta.SinCambios) {
+                    SGTL.toastExito('No había cambios para guardar.');
+                    return;
+                }
+                SGTL.toastExito('Datos de la empresa guardados.');
+                // Vuelve a leerlos: el logo, la última modificación y el aviso de datos incompletos quedan al día.
+                var actuales = await SGTL.ajax({ url: API_EMPRESA + '/empresa', type: 'GET', cache: false });
+                logoEmpresaGuardado = actuales.Logo || null;
+                logoEmpresaCambio = undefined;
+                mostrarLogoEmpresa();
+                mostrarRegistroEmpresa(actuales);
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoEmpresa', error.mensajeUsuario || 'No se pudieron guardar los datos de la empresa. Probá de nuevo.');
+            } finally {
+                listo();
+            }
+        }
+
+        (function prepararEmpresa() {
+            var cuit = campoEmpresa('empresaCuit');
+            cuit.addEventListener('input', function () { cuit.value = formatearCUIT(cuit.value); });
+            var provincia = campoEmpresa('empresaProvincia');
+            provincia.addEventListener('change', function () {
+                cargarLocalidadesEmpresa(provincia.value).catch(function (error) {
+                    SGTL.avisoFormulario('#avisoEmpresa', error.mensajeUsuario);
+                });
+            });
+            document.getElementById('formEmpresa').addEventListener('submit', guardarEmpresa);
+
+            var archivo = campoEmpresa('empresaLogoArchivo');
+            campoEmpresa('btnLogoEmpresa').addEventListener('click', function () { archivo.click(); });
+            campoEmpresa('btnQuitarLogoEmpresa').addEventListener('click', function () {
+                logoEmpresaCambio = logoEmpresaGuardado ? null : undefined;
+                archivo.value = '';
+                mostrarLogoEmpresa();
+            });
+            archivo.addEventListener('change', function () {
+                leerArchivoLogo(archivo, function (datos, nombre) {
+                    logoEmpresaCambio = { datos: datos, nombre: nombre };
+                    mostrarLogoEmpresa();
+                });
+            });
+        })();
+    </script>
+</body>
+
+</html>

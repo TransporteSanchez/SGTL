@@ -49,6 +49,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
+| 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Sin push** | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2148,3 +2149,101 @@ de cuenta corriente (módulo de Facu, solo texto), para decidir:
   Cancelar.
 - [ ] 3. Registrar recibo → pie Cancelar · Emitir recibo, también después de haber abierto un Ver recibo.
 
+---
+
+## 30. Gestionar empresa: los datos y el logo de la empresa en los documentos — HECHO EN LA MAC (23/10), SIN PUSH NI PRUEBA EN VM
+
+Pedido de Rocío (23/10), charlado con Facu. Hasta ahora el único dato de la empresa era "Transporte Sánchez" escrito en
+los PDF (factura, proforma y presupuesto), sin CUIT, domicilio ni contacto, y el logo de los documentos era el de la
+apariencia del sistema: con "Restablecer", todos los comprobantes salían con el de SGTL. Ahora los datos y el logo de
+la empresa se cargan en Configuración → **Gestionar empresa** y los documentos los leen de ahí.
+
+**Decisiones de Rocío:**
+- **SGTL es el sistema y la empresa lo usa:** dos pantallas en Configuración, en este orden: Gestionar e-mail ·
+  Gestionar integración de WhatsApp · **Gestionar empresa** (nueva: datos fiscales, logo para los documentos, domicilio y
+  contacto) · **Gestionar contenido** (se queda con su nombre y solo la apariencia: logo del sistema, colores y pie). No va
+  en Facturación porque los datos de la empresa también salen en los presupuestos (Viajes). Se probaron antes "todo
+  junto en una pantalla" (idea de Facu) y pestañas; con dos logos en la misma pantalla no quedaba claro cuál cambiar.
+- **Dos logos:** el **logo de la empresa** (opcional) sale solo en los documentos; sin él, el nombre en texto, nunca el
+  de SGTL. El **logo del sistema** va en el menú y el login; si la empresa quiere su marca en el sistema, lo cambia en
+  Gestionar contenido y no toca los documentos. El de la empresa arranca vacío (no se copia el de la apariencia: no se
+  sabe si es el de SGTL).
+- **Diseño de Gestionar empresa** (maqueta aprobada: `.claude/maquetas/gestion-empresa.html`, no se commitea): los datos
+  fiscales en 2 × 2 con el logo en un recuadro al lado, y abajo domicilio y contacto lado a lado.
+- **Un documento ya emitido conserva los datos y el logo con que se emitió**, como ya pasa con los del cliente: la tabla
+  guarda versiones con la fecha desde la que valen, y cada PDF pide la de su fecha de emisión. Lo que se emita después de
+  guardar (y los borradores) sale con los datos nuevos.
+- **Nada escrito en el código:** se sacó "Transporte Sánchez" de los tres PDF y del texto del reclamo a Rukas ("no
+  corresponde a ninguno de nuestros viajes"). Si no se pueden leer los datos, el PDF no se arma y avisa. Queda como
+  regla en `AGENTS.md`.
+- Obligatorios: razón social, CUIT, condición de IVA y domicilio (provincia, localidad, calle y altura). El nombre
+  comercial, si está, va en grande y la razón social debajo (ejemplos en `.claude/maquetas/pdf-empresa/`: con logo, sin
+  logo y sin logo ni nombre comercial).
+- En Gestionar contenido, la ayuda del color del menú dice "el círculo con las iniciales del usuario (arriba a la
+  derecha)" (antes "el círculo de las iniciales", que no se entendía).
+
+**Qué se hizo:**
+- `database/empresa/01_crear_empresa.sql`: tabla `EMPRESA` (columnas como en `CLIENTES`, más `Logo`) con la primera
+  versión ("Transporte Sánchez", vale desde el 01/01/2000). Mientras esa versión no tenga CUIT, el primer Guardar la
+  completa en lugar de agregar otra: así los documentos de antes también salen con los datos completos. Idempotente.
+- `EmpresaController.cs` (nuevo, sumado al `.csproj`): `GET api/empresa` (los actuales) y `GET api/empresa?fecha=AAAA-MM-DD`
+  (los que valían ese día), sin sesión como `GestionContenido`; `PUT api/empresa` solo administradores, valida igual que
+  la pantalla (también formato y tamaño del logo), no agrega versión si no cambió nada y deja la auditoría (entidad
+  `EMPRESA`, con el antes y el después; el logo, resumido).
+- `gestion-empresa.html` (nueva) y `gestion-contenido.html` (solo la apariencia, con el diseño nuevo: bloques, el logo
+  como archivo cargado con "Reemplazar logo", sin el campo de dirección web que quedaba deshabilitado). Las dos leen el
+  logo con `leerArchivoLogo` (`gestionContenido.js`). Estilo del recuadro: `.sgtl-zona-recuadro` en `sgtl.css`.
+- `assets/static/js/empresa-datos.js` (nuevo, `SGTLEmpresa.obtener(fecha)`), usado por `factura-pdf.js` (también
+  recibos y notas), `proforma-pdf.js` y `presupuesto-pdf.js`; lo cargan cuenta corriente, Gestionar y Listar proformas
+  y presupuestos. Los tres dejaron de leer `GestionContenido` y muestran el logo de la empresa sin deformarlo (la
+  proforma, además, antes no mostraba un logo que no fuera una imagen subida).
+- Menú (`sidebar-loader.js`): el orden nuevo y Gestionar empresa entre las pantallas solo de administradores. Design
+  system: §3.1, §3.2, §6.2 (recuadro), §11, §12, apéndice A y la tabla de funciones.
+- `tests/empresa-documentos.test.js` (nuevo): los PDF sin el nombre escrito ni el logo de la apariencia, cada pantalla
+  con `empresa-datos.js`, cómo se arman los renglones, que cada documento pida su fecha, los ids de las dos pantallas y
+  el orden del menú.
+
+**Para tener en cuenta:**
+- **El orden importa:** sin el script, la API no encuentra la tabla y **los PDF no se arman**. Correrlo antes de probar
+  (y avisar a Facu y Fede, porque la base es compartida y sus ramas también van a necesitar este código).
+- **Módulo de Facu:** los tres PDF son suyos. En la factura se sacó el renglón "Documento interno de gestión comercial"
+  para hacer lugar a CUIT, domicilio y contacto (siguen "NO VÁLIDO COMO COMPROBANTE FISCAL" y "DOCUMENTO DE USO INTERNO").
+  Contárselo, y también que al final quedaron dos pantallas en lugar de "todo junto".
+- La versión se elige por día: si se cambian los datos, lo emitido **ese mismo día** antes del cambio sale con los
+  datos nuevos. La proforma generada usa su `FechaEmision`, que hoy se guarda en UTC (§2): después de las 21 h puede
+  tomar el día siguiente.
+- **Permisos** (revisados el 23/10, pedido de Rocío; desde ahora es regla para toda pantalla nueva en `AGENTS.md`):
+  Gestionar empresa funciona igual que Gestionar e-mail. Solo la ven y la abren los administradores: el menú esconde
+  Configuración entera, la página manda al inicio a quien no es admin (está en las dos listas de `sidebar-loader.js`,
+  que mira el rol guardado y el que devuelve la API) y `PUT api/empresa` también rechaza a quien no es admin. Leer los
+  datos no pide permiso, como `GestionContenido`: todos los usuarios arman PDF. No tiene permiso en Grupos y permisos, a
+  propósito: los de E-mail, Gestión de contenido e Integración WhatsApp que aparecen ahí no dan acceso a nadie (ver el
+  pendiente "permisos que no dan acceso"). El de Gestionar contenido sigue llamándose "Gestión de contenido". Un PDF con logo pesa unos 400 KB (la imagen va sin comprimir, como
+  antes con el de la apariencia).
+- `views/sidebar-active.html` (del primer commit, no lo carga ninguna pantalla) todavía dice "Transporte Sanchez" en el
+  título: se puede borrar cuando se limpie el repo.
+
+**Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5):
+- [ ] 0. Rocío corre `database/empresa/01_crear_empresa.sql` en SSMS: al final muestra la fila 1 "Transporte Sánchez".
+- [ ] 1. Configuración: Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa · Gestionar contenido.
+  Con un usuario que no es admin, Configuración no aparece (sin cambios).
+- [ ] 2. Gestionar empresa: el aviso amarillo "Faltan el CUIT y el domicilio…", la razón social cargada, el recuadro
+  "Sin logo: sale el nombre en texto" con "Elegir logo" y "Todavía no se completaron.". Guardar con los campos vacíos:
+  "Revisá los campos marcados.", cada error debajo de su campo y el cursor en el primero.
+- [ ] 3. Completar los datos reales, elegir el logo de Transporte Sánchez (el recuadro dice "Sin guardar") y Guardar:
+  "Datos de la empresa guardados.", "Última modificación: usuario · fecha y hora", el recuadro con el logo y se va el
+  aviso amarillo. Guardar otra vez sin tocar nada: "No había cambios para guardar.".
+- [ ] 4. Ver PDF de una factura ya emitida (cuenta corriente), de un recibo, de una proforma generada y de un
+  presupuesto: salen el logo, el nombre, CUIT y condición de IVA, domicilio y contacto recién cargados (la primera carga
+  vale también para los documentos viejos). Enviar uno por e-mail: el adjunto también.
+- [ ] 5. Cambiar un dato (por ejemplo, el teléfono) y Guardar: el PDF de una factura de un día anterior sigue con el
+  teléfono de antes; un borrador de proforma, con el nuevo. Después dejar el dato como estaba (queda otra versión, no
+  molesta).
+- [ ] 6. "Quitar logo" y Guardar: los PDF salen con el nombre en texto, sin logo. Después volver a subirlo.
+- [ ] 7. Gestionar contenido: solo la apariencia, con el subtítulo que dice que no cambia los documentos. Cambiar el
+  color del menú y Guardar ("Apariencia guardada.", se pinta enseguida); "Reemplazar logo" con otro PNG y Guardar: cambia
+  el menú, **no** los PDF. "Restablecer valores por defecto" pide confirmación (dice que los datos y el logo de la
+  empresa no cambian) y vuelve a la marca SGTL: los PDF siguen con el logo de la empresa.
+- [ ] 8. Auditoría: filas de `EMPRESA` con el antes y el después de lo que cambió (el logo, resumido).
+- [ ] 9. Proforma de Rukas con un transporte que no es nuestro: el reclamo dice "no corresponde a ninguno de nuestros
+  viajes".

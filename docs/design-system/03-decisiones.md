@@ -34,6 +34,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
 | Exportar (§1.2) | `SGTL.descargarCSV` |
+| Datos de la empresa en un documento (§11) | `SGTLEmpresa.obtener(fechaDeEmision)` (`assets/static/js/empresa-datos.js`): `nombre` (el nombre comercial o la razón social), `lineas` (razón social, CUIT, domicilio, contacto) y `logo` (el de la empresa, listo para jsPDF, o `null`: va el nombre en texto); `SGTLEmpresa.medidaLogo` lo encaja sin deformarlo. Un documento ya emitido pasa su fecha de emisión; un borrador, `null` |
 | Escapar texto en HTML | `SGTL.escapar` |
 
 ---
@@ -251,7 +252,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Clientes | Listar clientes · Gestionar clientes |
 | Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente · Gestionar tipos de comprobante (solo administradores; se mudó desde Configuración el 22/10) |
-| Configuración | Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar contenido (toda la sección, solo administradores) |
+| Configuración | Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa (nueva, 23/10) · Gestionar contenido (toda la sección, solo administradores) |
 | Usuarios | Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos |
 | Auditoría | (ítem principal) |
 | Documentación | Consultar manual de usuario · Consultar informe de versión |
@@ -267,6 +268,14 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Subtítulo de una línea en todas las pantallas**, que diga para qué sirve. Ejemplo: "Solo
   proformas ya generadas; los borradores están en Gestionar proformas".
 - A la derecha, en la misma línea: exportar y después el alta (§1.1 y §1.2).
+- **Pantallas de configuración con varias secciones** (Gestionar e-mail, Gestionar tipos de comprobante): una tarjeta
+  con el título de la pantalla y una tarjeta por sección, con su título chico (`h6.card-title`) y una línea gris que dice
+  para qué sirve. Cada sección guarda por su cuenta (su propio "Guardar" abajo a la derecha y, a la izquierda, "Última
+  modificación: usuario · fecha"). Con una sola sección (Gestionar empresa, Gestionar contenido, WhatsApp), el formulario
+  va en la tarjeta del título, con el mismo pie.
+- **Un formulario de configuración largo** puede ir en bloques lado a lado desde 992 o 1200 px, para que no quede todo
+  uno debajo del otro (Gestionar empresa, 23/10: los datos fiscales en 2 × 2 con el logo al lado, y abajo domicilio y
+  contacto). En tablet y celular, una columna.
 - **Pestaña del navegador:** nombre de la pantalla y la sigla del sistema: `<title>Gestionar choferes · SGTL</title>`. El login lleva el nombre completo: `SGTL · Sistema de Gestión de Transporte y Logística`. Transporte Sánchez es el cliente, no el sistema (cambio del 20/10; antes era "· Transporte Sánchez").
 
 ### 3.3 Filtros
@@ -441,6 +450,11 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Un archivo ya cargado** (el Excel de una proforma de Rukas) se ve en la misma franja con la que se eligió, con
   borde fino y fondo blanco (`.sgtl-zona-archivo.cargada`): ícono, nombre, qué trae y cuándo se cargó, y a la derecha lo
   que se hace con él ("Volver a controlar", "Reemplazar Excel").
+- **Recuadro en lugar de franja** (`.sgtl-zona-archivo.sgtl-zona-recuadro`, 23/10, el logo de los documentos en
+  Gestionar empresa): cuando el archivo va al lado de otro bloque. Mismos bordes y colores; la imagen (o el ícono), una
+  línea de detalle y las acciones van centradas, en columna (`.sgtl-zona-imagen`, `.sgtl-zona-acciones`). Vacío dice qué
+  pasa sin archivo ("Sin logo: sale el nombre en texto") y el botón es "Elegir logo"; cargado, "Reemplazar logo" y, al
+  lado, el enlace rojo "Quitar logo". Lo elegido y todavía no guardado dice "Sin guardar".
 
 ### 6.3 Formularios
 
@@ -593,18 +607,29 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Color de las acciones: el azul de Mazer** (`#435ebe`, `btn-primary`): Guardar, Editar,
   links, foco de los campos. El **verde** es para crear (`btn-success`, §1.1) y para el
   siguiente paso del circuito (§1.4).
-- **El marco** usa los dos colores de Gestionar contenido (hoy verde azulado y verde oscuro):
+- **El marco** usa los dos colores de la apariencia del sistema (Gestionar contenido):
   - el **color de fondo** es el color de la marca: la pantalla toma un tono muy claro de él y el
     color entero queda en una línea arriba de la barra (cambio del 22/10, §12); en el login pinta
     el panel de la izquierda. Si es tan claro que no se lee sobre blanco (contraste menor a 4,5, como el `#e4eef8` de
     antes), la línea, los íconos de los títulos, las pestañas y el paso actual toman el color del menú o, si tampoco se
     lee, el de fondo oscurecido (`gestionContenido.js`, 23/10);
-  - el **color del menú** va en la opción elegida del menú, el círculo de las iniciales, el botón del
+  - el **color del menú** va en la opción elegida del menú, el círculo con las iniciales del usuario (arriba a la
+    derecha; así lo dice la pantalla desde el 23/10), el botón del
     login y el subrayado de las pestañas (también las de cuenta corriente, que tenían `#008c9e`).
 - **Tipografía: Nunito en todo**, también en el login (cambiado el 22/10; antes Inter).
 - **Íconos: solo Bootstrap Icons.** Se sacan Font Awesome (CDN, en login e inicio), Feather y
   Boxicons.
-- **Gestionar contenido sigue igual:** logo, pie, color de fondo y color del menú. "Restablecer"
+- **SGTL es el sistema y la empresa lo usa** (Rocío, 23/10). Por eso hay dos pantallas en Configuración, cada una con su
+  logo:
+  - **Gestionar empresa** (`gestion-empresa.html`): los **datos de la empresa** que salen en los documentos (razón social,
+    nombre comercial, CUIT, condición de IVA, domicilio, contacto) y el **logo para los documentos**. Ningún documento
+    tiene el nombre de la empresa escrito: los PDF lo leen con `empresa-datos.js` (`SGTLEmpresa.obtener(fechaDeEmision)`).
+    Sin logo de la empresa, el documento lleva el nombre en texto; nunca el de SGTL.
+  - **Gestionar contenido** (`gestion-contenido.html`): la apariencia del sistema. El **logo del sistema** va en el menú y
+    el login (la empresa puede poner el suyo si quiere ver su marca en el sistema), más el pie y los dos colores.
+    Restablecer no cambia los documentos.
+  - Los dos logos se ven como un archivo cargado (§6.2: el de la empresa en recuadro) con "Reemplazar logo"; ya no se
+    pega una dirección web. "Restablecer"
   vuelve a la marca SGTL: logo `assets/static/images/logo/sgtl-logo.png`, fondo `#435ebe` (antes `#e4eef8`: con el
   fondo claro de §12 conviene un color entero), menú `#435ebe` y
   pie `SGTL | un producto de Integra Analistas ®` (el logo se suma el 20/10). El ícono de la pestaña es siempre
@@ -621,7 +646,7 @@ Decidido el 22/10 con el lienzo "Variantes visuales SGTL" (variante B). Todo est
 `views/header.html` y `views/footer.html` son fragmentos y no vuelven a cargar la plantilla.
 No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el peso.
 
-- **Fondo:** tono muy claro del color de fondo de Gestionar contenido, con el color entero en una
+- **Fondo:** tono muy claro del color de fondo de la apariencia del sistema (Gestionar contenido), con el color entero en una
   línea de 4 px arriba de la barra blanca.
 - **Tarjetas:** esquinas de 14 px, borde casi invisible y sombra suave. El título de la pantalla
   (primera tarjeta) va en 1,4 rem y negrita fuerte; la bajada, en gris.
@@ -664,7 +689,8 @@ Historia: cómo se llamaba cada opción y cómo quedó. Lo vigente es la tabla d
 | Cuenta corriente | Cuenta Corriente de Clientes | Gestionar cuenta corriente |
 | Configuración → Facturación | Configuración de Facturación | Gestionar tipos de comprobante (22/10, idea de Facu; antes "Gestionar facturación") |
 | Configuración → E-mail | Configuración de E-mail | Gestionar e-mail |
-| Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido |
+| Configuración → Gestión de contenido | Gestionar contenido | Gestionar contenido (23/10: solo la apariencia del sistema; ahora va después de Gestionar empresa) |
+| — | — | Gestionar empresa (nueva, 23/10: datos y logo de la empresa para los documentos) |
 | Configuración → Integración WhatsApp | Integración WhatsApp | Gestionar integración de WhatsApp |
 | Auditoría | Auditoría del sistema | Auditoría (ítem principal, sin verbo; 20/10) |
 | Viajes → Presupuestos | Gestionar presupuestos | Gestionar presupuestos (20/10) |

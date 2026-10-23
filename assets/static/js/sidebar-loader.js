@@ -33,7 +33,7 @@
 
   var paginasConfiguracion = [
     'configuracion-facturacion.html', 'configuracion-email.html',
-    'configuracion-whatsapp.html', 'gestion-contenido.html'
+    'configuracion-whatsapp.html', 'gestion-contenido.html', 'gestion-empresa.html'
   ];
   var rol = '';
   try { rol = localStorage.getItem('userRole') || ''; } catch (e) { }
@@ -96,7 +96,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li><li class="submenu-item"><a href="presupuestos.html" class="submenu-link">Gestionar presupuestos</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar proformas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar proformas</a></li><li class="submenu-item"><a href="cuenta-corriente-clientes.html" class="submenu-link">Gestionar cuenta corriente</a></li><li class="submenu-item solo-admin"><a href="configuracion-facturacion.html" class="submenu-link">Gestionar tipos de comprobante</a></li></ul></li>
-              <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">Gestionar e-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestionar contenido</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Gestionar integración de WhatsApp</a></li></ul></li>
+              <li class="sidebar-item has-sub configuracion-menu"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">Gestionar e-mail</a></li><li class="submenu-item"><a href="configuracion-whatsapp.html" class="submenu-link">Gestionar integración de WhatsApp</a></li><li class="submenu-item"><a href="gestion-empresa.html" class="submenu-link">Gestionar empresa</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestionar contenido</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="manual-usuario.html" class="submenu-link">Consultar manual de usuario</a></li><li class="submenu-item"><a href="informe-version.html" class="submenu-link">Consultar informe de versión</a></li></ul></li>
@@ -150,6 +150,8 @@ var MENU_TO_PAGE = {
   'gestion de usuarios': 'gestion-usuarios.html',
   'grupos y permisos': 'gestion-gruposypermisos.html',
   'gestion de contenido': 'gestion-contenido.html',
+  // Gestionar empresa (23/10) no tiene permiso en la base: Configuración entera es solo de administradores.
+  'gestionar empresa': 'gestion-empresa.html',
   'auditoria': 'gestion-auditoria.html',
   'consultar auditoria': 'gestion-auditoria.html'
 };
@@ -160,7 +162,7 @@ function normalizaPerm(s) {
 
 var PAGINAS_CONFIGURACION = [
   'configuracion-facturacion.html', 'configuracion-email.html',
-  'configuracion-whatsapp.html', 'gestion-contenido.html'
+  'configuracion-whatsapp.html', 'gestion-contenido.html', 'gestion-empresa.html'
 ];
 
 // Solo administradores: la sección Configuración entera y las opciones marcadas .solo-admin en otras secciones
