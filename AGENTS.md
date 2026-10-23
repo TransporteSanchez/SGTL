@@ -41,7 +41,8 @@ AGENTS.md"):
    en el orden Ver detalle · Editar · Ver PDF · Cambiar estado · Siguiente paso · Activar/Inactivar ·
    Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.** El motivo es siempre
    "No se puede {acción} {sobre qué}: {qué le pasa a esta fila}" ("No se puede eliminar el chofer: está activo"), sin
-   órdenes ni reglas sueltas como "Primero…" o "Solo se…"; vale también para el pie de un modal. Fuera de las filas,
+   órdenes ni reglas sueltas como "Primero…" o "Solo se…" (la regla va solo si el motivo es el tipo de la fila: "No se
+   puede editar la factura: solo se editan los recibos"); vale también para el pie de un modal. Fuera de las filas,
    los botones llevan texto ("Editar cliente", "Reemplazar Excel"), no solo un ícono. (§1.4, §1.6)
 2. **"Ver PDF"** abre la vista previa dentro del sistema con el pie Cerrar · Enviar por e-mail · Imprimir ·
    Descargar PDF. "Enviar por e-mail" va ahí, no como botón de la fila. **El ojo** de un documento lo abre

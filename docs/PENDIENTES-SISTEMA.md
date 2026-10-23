@@ -48,7 +48,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 26 | Motivos de los botones deshabilitados con una sola frase en todas las pantallas: "No se puede {acción}: {qué le pasa a esta fila}" | Hecho en la Mac (23/10), con la estructura elegida por Rocío | **Pusheado** (`f2bc239`; 23/10) | **OK en VM (23/10)**; 5 casos sin datos para verlos (ver §26) |
 | 27 | Subtítulos de las secciones de formularios y detalles con un solo estilo (`.sgtl-bloque-titulo`): sin `h6` azules ni copias propias | Hecho en la Mac (23/10), pedido de Rocío | **Pusheado** (`3a3fa65`, `c831e1c`; 23/10) | **OK en VM (23/10)** (ver §27) |
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
-| 29 | Falla y mejoras de la reprueba del 23/10 | Para decidir con Rocío (23/10) | — | Ver §29 |
+| 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Sin push** | Sin C#: `pull` y Ctrl+F5 (ver §29) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2080,7 +2080,7 @@ subtítulos del modal de cliente en azul (`3a3fa65`, `c831e1c`).
 
 ---
 
-## 29. Reprueba del 23/10: una falla nueva y mejoras — EN CURSO (23/10)
+## 29. Reprueba del 23/10: una falla nueva y mejoras — HECHO EN LA MAC, SIN PUSH, FALTA PROBAR EN VM (23/10)
 
 Reporte: `docs/pruebas/2026-10-23-reprueba-viajes-y-proformas.md`. Los 22 puntos pedidos (§28, §26 y §27) dan OK. No se
 pudieron ver, porque no hay datos así en la base: un viaje en viaje que no venga de un presupuesto, una proforma
@@ -2096,7 +2096,7 @@ cuenta corriente.
 - [x] **Buscador** (hecho 23/10): si se elige con Enter y después se hace clic en el mismo campo, el texto no se selecciona y lo
   escrito se mete en el medio ("QUICKFOOD SPamp.A."). Seleccionar el texto en cada clic mientras haya uno elegido.
   Hacerla ya.
-- [ ] **"Solo se…" en cuenta corriente** ("No se puede editar la factura: solo se editan los recibos"): el §1.4 del
+- [x] **"Solo se…" en cuenta corriente** (hecho 23/10) ("No se puede editar la factura: solo se editan los recibos"): el §1.4 del
   design system ya lo permite cuando el motivo es el tipo de la fila, pero la lista de control de `AGENTS.md` dice "sin
   'Solo se…'" sin la excepción. Sumar la excepción a `AGENTS.md`; los textos quedan. Hacerla ya.
 - [x] **Lápiz de una proforma anulada:** dice "ya se generó"; que diga "está anulada" (hecho 23/10).
