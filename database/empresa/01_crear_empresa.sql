@@ -9,9 +9,11 @@
    emisión, igual que conserva los datos del cliente con que se emitió. La versión actual es la de
    Vigente_Desde más reciente (y, el mismo día, la última que se guardó).
 
-   La primera fila (la crea este script) tiene solo la razón social y vale desde el 01/01/2000, para que los
-   documentos de antes salgan con algo. Mientras no tenga CUIT, el primer Guardar completa esa misma fila en
-   lugar de agregar otra: así los documentos ya emitidos salen con los datos completos.
+   La tabla arranca vacía: hasta que se carguen los datos en Gestionar empresa (con CUIT y domicilio, que son
+   obligatorios), los PDF no se arman y lo avisan. Así nunca sale un documento con los datos incompletos. Los
+   documentos emitidos antes de esa primera carga salen con ella (la API usa la versión más vieja).
+   (La primera versión de este script, del 23/10, creaba una fila solo con la razón social. En la base del equipo
+   ya está completa con la primera carga de Rocío; este script no la toca.)
 
    El logo de la empresa (Logo, data URI) es el de los documentos y es parte de cada versión: una factura vieja conserva
    el logo con que se emitió. No es el logo del sistema (menú y login), que sigue en GESTION_CONTENIDO: restablecer la
@@ -21,7 +23,7 @@
    ProvID, LocID, Calle, AlturaCalle, CodigoPostal). Fuera del EDMX: la API la usa con SQL directo.
 
    Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo). Es idempotente: si la tabla ya
-   existe no la toca, y la primera fila se agrega solo si la tabla está vacía.
+   existe no la toca.
 */
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
@@ -67,9 +69,6 @@ BEGIN TRY
     -- Por si la tabla se creó con una versión anterior de este script, sin el logo.
     IF COL_LENGTH('dbo.EMPRESA', 'Logo') IS NULL
         ALTER TABLE dbo.EMPRESA ADD Logo nvarchar(max) NULL;
-
-    IF NOT EXISTS (SELECT 1 FROM dbo.EMPRESA)
-        INSERT INTO dbo.EMPRESA (Vigente_Desde, Razon_Social) VALUES ('2000-01-01', N'Transporte Sánchez');
 
     COMMIT TRANSACTION;
 

@@ -100,6 +100,13 @@ function probarPantallas() {
         assert.deepStrictEqual(faltan, [], par[0] + ' busca ids que no existen: ' + faltan.join(', '));
         assert.ok(html.indexOf('<title>' + par[1] + ' · SGTL</title>') !== -1, par[0] + ': la pestaña del navegador dice ' + par[1]);
     });
+    // Sin datos cargados (404, instalación nueva) la pantalla muestra el formulario vacío, no un error ni un aviso: los
+    // campos obligatorios ya dicen qué falta, y el script no crea una empresa a medias.
+    const empresaHtml = leer('gestion-empresa.html');
+    assert.ok(empresaHtml.indexOf('Faltan el CUIT') === -1, 'Gestionar empresa no tiene el aviso de datos incompletos');
+    assert.ok(/error\.xhr\.status === 404\) return \{\}/.test(empresaHtml), 'sin datos cargados, Gestionar empresa arranca con el formulario vacío');
+    assert.ok(!/INSERT INTO dbo\.EMPRESA/.test(leer('database/empresa/01_crear_empresa.sql')), 'el script no crea una empresa a medias');
+
     // Los datos de la empresa y la apariencia van en pantallas separadas: cada una con su logo.
     assert.ok(leer('gestion-empresa.html').indexOf('Logo para los documentos') !== -1, 'Gestionar empresa tiene el logo de los documentos');
     assert.ok(leer('gestion-contenido.html').indexOf('empresaRazonSocial') === -1, 'Gestionar contenido no tiene los datos de la empresa');

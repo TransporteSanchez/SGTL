@@ -64,9 +64,6 @@
                         </div>
                         <div class="card-body">
                             <div id="avisoEmpresa" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
-                            <div id="avisoEmpresaIncompleta" class="alert alert-warning d-none" role="status">
-                                Faltan el CUIT y el domicilio: hasta que los guardes, los documentos salen solo con el nombre.
-                            </div>
                             <form id="formEmpresa" class="form" novalidate>
                                 <!-- Arriba: los datos fiscales en 2 x 2 y, al lado, el logo de los documentos. -->
                                 <div class="row g-4">
@@ -309,8 +306,7 @@
         function mostrarRegistroEmpresa(d) {
             campoEmpresa('registroEmpresa').textContent = d && d.Usu_Modi && d.Fecha_Modi
                 ? 'Última modificación: ' + d.Usu_Modi + ' · ' + SGTL.fecha(d.Fecha_Modi, { hora: true })
-                : 'Todavía no se completaron.';
-            campoEmpresa('avisoEmpresaIncompleta').classList.toggle('d-none', !!(d && d.CUIT));
+                : 'Todavía no se cargaron.';
         }
 
         function mostrarEmpresa(d) {
@@ -334,11 +330,13 @@
         }
 
         function cargarEmpresa() {
-            return Promise.all([
-                SGTL.ajax({ url: API_EMPRESA + '/empresa', type: 'GET', cache: false },
-                    'No se pudieron cargar los datos de la empresa. Probá de nuevo.'),
-                cargarProvinciasEmpresa()
-            ]).then(function (r) { return mostrarEmpresa(r[0]); }).catch(function (error) {
+            var datos = SGTL.ajax({ url: API_EMPRESA + '/empresa', type: 'GET', cache: false },
+                'No se pudieron cargar los datos de la empresa. Probá de nuevo.').catch(function (error) {
+                    // 404: todavía no se cargaron (instalación nueva). Es el formulario vacío, no un error.
+                    if (error.xhr && error.xhr.status === 404) return {};
+                    throw error;
+                });
+            return Promise.all([datos, cargarProvinciasEmpresa()]).then(function (r) { return mostrarEmpresa(r[0]); }).catch(function (error) {
                 SGTL.avisoFormulario('#avisoEmpresa', error.mensajeUsuario || 'No se pudieron cargar los datos de la empresa. Probá de nuevo.');
             });
         }

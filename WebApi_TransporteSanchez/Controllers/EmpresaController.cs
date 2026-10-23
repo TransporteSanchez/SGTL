@@ -198,9 +198,9 @@ ORDER BY e.Vigente_Desde DESC, e.Empresa_ID DESC;";
             }
         }
 
-        // PUT api/empresa: guarda los datos nuevos (solo administradores). Mientras la primera versión no tenga CUIT, la
-        // completa (así los documentos de antes salen con los datos completos); después agrega una versión que vale desde
-        // hoy. Si no cambió nada, no agrega ninguna.
+        // PUT api/empresa: guarda los datos nuevos como una versión que vale desde hoy (solo administradores). Si no cambió
+        // nada, no agrega ninguna. Con la tabla vacía, la primera carga vale también para los documentos de antes (el GET
+        // con fecha usa la versión más vieja).
         [HttpPut, Route("")]
         public IHttpActionResult Put([FromBody] EmpresaRequest datos)
         {
@@ -232,8 +232,7 @@ ORDER BY e.Vigente_Desde DESC, e.Empresa_ID DESC;";
                             return Ok(new { SinCambios = true, Empresa_ID = actual.Empresa_ID });
                         }
 
-                        bool completarPrimera = actual != null && string.IsNullOrEmpty(actual.CUIT);
-                        int id = completarPrimera ? actual.Empresa_ID : 0;
+                        int id;
                         var parametros = new List<SqlParameter>
                         {
                             P("@razon", datos.Razon_Social), P("@nombre", datos.Nombre_Comercial), P("@cuit", datos.CUIT),
@@ -245,31 +244,19 @@ ORDER BY e.Vigente_Desde DESC, e.Empresa_ID DESC;";
                         parametros.Add(new SqlParameter("@logo", System.Data.SqlDbType.NVarChar, -1) { Value = (object)datos.Logo ?? DBNull.Value });
                         // Fecha_Modi en hora de Argentina (la base está en UTC, §2 de docs/PENDIENTES-SISTEMA.md).
                         const string ahora = "CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Argentina Standard Time' AS datetime)";
-                        string sql;
-                        if (completarPrimera)
-                        {
-                            parametros.Add(P("@id", id));
-                            sql = "UPDATE dbo.EMPRESA SET Razon_Social=@razon, Nombre_Comercial=@nombre, CUIT=@cuit, Cond_Fiscal=@cond, " +
-                                  "ProvID=@prov, LocID=@loc, Calle=@calle, AlturaCalle=@altura, CodigoPostal=@cp, Telefono=@tel, Email=@email, Logo=@logo, " +
-                                  "Fecha_Modi=" + ahora + ", Usu_Modi=@usu WHERE Empresa_ID=@id;";
-                        }
-                        else
-                        {
-                            parametros.Add(new SqlParameter("@desde", System.Data.SqlDbType.Date) { Value = FechaArgentina() });
-                            sql = "INSERT INTO dbo.EMPRESA (Vigente_Desde, Razon_Social, Nombre_Comercial, CUIT, Cond_Fiscal, ProvID, LocID, " +
-                                  "Calle, AlturaCalle, CodigoPostal, Telefono, Email, Logo, Fecha_Modi, Usu_Modi) " +
-                                  "OUTPUT INSERTED.Empresa_ID VALUES (@desde, @razon, @nombre, @cuit, @cond, @prov, @loc, @calle, @altura, @cp, " +
-                                  "@tel, @email, @logo, " + ahora + ", @usu);";
-                        }
+                        parametros.Add(new SqlParameter("@desde", System.Data.SqlDbType.Date) { Value = FechaArgentina() });
+                        const string sql = "INSERT INTO dbo.EMPRESA (Vigente_Desde, Razon_Social, Nombre_Comercial, CUIT, Cond_Fiscal, ProvID, LocID, " +
+                              "Calle, AlturaCalle, CodigoPostal, Telefono, Email, Logo, Fecha_Modi, Usu_Modi) " +
+                              "OUTPUT INSERTED.Empresa_ID VALUES (@desde, @razon, @nombre, @cuit, @cond, @prov, @loc, @calle, @altura, @cp, " +
+                              "@tel, @email, @logo, " + ahora + ", @usu);";
 
                         using (var comando = new SqlCommand(sql, conexion, transaccion))
                         {
                             comando.Parameters.AddRange(parametros.ToArray());
-                            if (completarPrimera) comando.ExecuteNonQuery();
-                            else id = Convert.ToInt32(comando.ExecuteScalar(), CultureInfo.InvariantCulture);
+                            id = Convert.ToInt32(comando.ExecuteScalar(), CultureInfo.InvariantCulture);
                         }
 
-                        Auditar(conexion, transaccion, usuario.Nombre, completarPrimera ? "UPDATE" : "INSERT", id, cambios);
+                        Auditar(conexion, transaccion, usuario.Nombre, "INSERT", id, cambios);
                         transaccion.Commit();
                         return Ok(new { SinCambios = false, Empresa_ID = id });
                     }
