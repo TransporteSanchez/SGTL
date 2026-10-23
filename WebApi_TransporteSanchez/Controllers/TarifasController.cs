@@ -151,6 +151,9 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new SGTLAuditContext(Cn()))
                 {
+                    var superpuesta = SuperposicionFija(db, dto, 0);
+                    if (superpuesta != null) return Content(HttpStatusCode.BadRequest, new List<object> { superpuesta });
+
                     var t = new TARIFAS_FIJAS
                     {
                         FechaDesde = dto.FechaDesde,
@@ -200,6 +203,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var t = db.Set<TARIFAS_FIJAS>().Find(id);
                     if (t == null) return NotFound();
+
+                    var superpuesta = SuperposicionFija(db, dto, id);
+                    if (superpuesta != null) return Content(HttpStatusCode.BadRequest, new List<object> { superpuesta });
 
                     t.FechaDesde = dto.FechaDesde;
                     t.FechaHasta = dto.FechaHasta;
@@ -452,14 +458,40 @@ namespace WebApi_TransporteSanchez.Controllers
         private List<object> ValidarFija(TarifaFijaDto d)
         {
             var e = new List<object>();
-            if (d.ClienteID <= 0) e.Add(new { PropertyName = "ClienteID", ErrorMessage = "Debe seleccionar un cliente." });
-            if (d.OrigenID <= 0) e.Add(new { PropertyName = "OrigenID", ErrorMessage = "Debe seleccionar un origen." });
-            if (d.DestinoID <= 0) e.Add(new { PropertyName = "DestinoID", ErrorMessage = "Debe seleccionar un destino." });
+            if (d.ClienteID <= 0) e.Add(new { PropertyName = "ClienteID", ErrorMessage = "Seleccioná un cliente." });
+            if (d.OrigenID <= 0) e.Add(new { PropertyName = "OrigenID", ErrorMessage = "Seleccioná un origen." });
+            if (d.DestinoID <= 0) e.Add(new { PropertyName = "DestinoID", ErrorMessage = "Seleccioná un destino." });
             if (d.FechaHasta < d.FechaDesde) e.Add(new { PropertyName = "FechaHasta", ErrorMessage = "La fecha hasta no puede ser anterior a la fecha desde." });
             if (d.ValorRuta < 0) e.Add(new { PropertyName = "ValorRuta", ErrorMessage = "El valor de ruta no puede ser negativo." });
             if (d.ValorVueltaVacio < 0) e.Add(new { PropertyName = "ValorVueltaVacio", ErrorMessage = "El valor de vuelta vacío no puede ser negativo." });
             if (d.ValorFijoNeto < 0) e.Add(new { PropertyName = "ValorFijoNeto", ErrorMessage = "El valor fijo neto no puede ser negativo." });
             return e;
+        }
+
+        // Un cliente no puede tener dos tarifas fijas del mismo recorrido vigentes el mismo día: el viaje no sabría
+        // cuál tomar. Se superponen si comparten al menos un día. Al editar, la tarifa no se compara consigo misma.
+        private static object SuperposicionFija(SGTLAuditContext db, TarifaFijaDto d, int idPropio)
+        {
+            int cliente = d.ClienteID, origen = d.OrigenID, destino = d.DestinoID;
+            var desde = d.FechaDesde.Date;
+            var hasta = d.FechaHasta.Date;
+
+            var otra = db.Set<TARIFAS_FIJAS>()
+                .Where(t => t.TarifaFija_ID != idPropio
+                         && t.ClienteID == cliente && t.OrigenID == origen && t.DestinoID == destino
+                         && t.FechaDesde <= hasta && t.FechaHasta >= desde)
+                .OrderBy(t => t.FechaDesde)
+                .FirstOrDefault();
+            if (otra == null) return null;
+
+            return new
+            {
+                PropertyName = "FechaDesde",
+                ErrorMessage = string.Format(CultureInfo.InvariantCulture,
+                    "Este cliente ya tiene la tarifa fija #{0} para el mismo recorrido, del {1:dd/MM/yyyy} al {2:dd/MM/yyyy}. " +
+                    "Cambiá las fechas para que no se superpongan o editá esa tarifa.",
+                    otra.TarifaFija_ID, otra.FechaDesde, otra.FechaHasta)
+            };
         }
 
         private List<object> ValidarKm(TarifaKmDto d)

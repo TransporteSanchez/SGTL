@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 22/10/2026.**
+**Última actualización de este documento: 23/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -50,6 +50,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **sin push** | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
+| 31 | Tarifas fijas: no deja cargar dos vigencias superpuestas para el mismo cliente y recorrido (lo encontró Facu) | Hecho en la Mac (23/10); quedan dos preguntas de Facu para decidir (qué valor usa el sistema y con qué fecha busca la tarifa el viaje) | Commit del 23/10, **sin push** | Recompilar la API y probar (ver §31) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2360,3 +2361,60 @@ así que ningún documento las usa; quedan como historial, igual que en Auditor�
   y 49 localidades agregadas). En Gestionar empresa, Registrar
   cliente y Registrar origen, la lista de provincias va en orden alfabético con "Ciudad Autónoma de Buenos Aires" entre
   Chubut y Córdoba, y al elegirla aparecen la Ciudad y los barrios (Palermo, Recoleta…). No guardar nada.
+
+---
+
+## 31. Tarifas fijas: vigencias superpuestas — HECHO EN LA MAC, SIN PUSH NI PRUEBA EN VM (23/10)
+
+Lo encontró Facu (23/10): Gestionar tarifas dejaba registrar, para QUICKFOOD Sede Quilmes → Sede Banfield, la tarifa
+#5 (01/10/2026 al 31/12/2026) aunque ya estaba la #4 (20/10/2026 al 31/10/2026). Con dos tarifas vigentes el mismo día,
+el viaje toma una sin avisar (hoy, la de "Desde" más reciente).
+
+**Qué se hizo** (`TarifasController.cs`, solo API; la pantalla ya muestra dentro del modal los errores que devuelve):
+- Al registrar y al editar una tarifa fija, la API rechaza que comparta **al menos un día** con otra del mismo cliente,
+  origen y destino. Al editar no se compara consigo misma. Una que empieza el día siguiente al que termina la otra se
+  puede cargar. Mensaje: "Este cliente ya tiene la tarifa fija #4 para el mismo recorrido, del 20/10/2026 al
+  31/10/2026. Cambiá las fechas para que no se superpongan o editá esa tarifa." (si hay varias, nombra la que empieza
+  antes).
+- Los mensajes de la API para cliente, origen y destino vacíos pasan a voseo ("Seleccioná un cliente.", §9), iguales a
+  los de la pantalla.
+
+**Datos que ya se superponen:** la #4 y la #5 de Facu. Mientras sigan así, **editar cualquiera de las dos da el error**
+hasta cambiarle las fechas o eliminar una. Para ver si hay otras (solo lectura, la corre Rocío):
+
+```sql
+SELECT a.TarifaFija_ID, b.TarifaFija_ID AS Se_superpone_con, a.ClienteID, a.OrigenID, a.DestinoID,
+       a.FechaDesde, a.FechaHasta, b.FechaDesde AS Desde_otra, b.FechaHasta AS Hasta_otra,
+       (SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifaFijaID = a.TarifaFija_ID) AS Viajes_con_a,
+       (SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifaFijaID = b.TarifaFija_ID) AS Viajes_con_b
+FROM dbo.TARIFAS_FIJAS a
+JOIN dbo.TARIFAS_FIJAS b
+  ON b.ClienteID = a.ClienteID AND b.OrigenID = a.OrigenID AND b.DestinoID = a.DestinoID
+ AND b.TarifaFija_ID > a.TarifaFija_ID
+ AND b.FechaDesde <= a.FechaHasta AND b.FechaHasta >= a.FechaDesde;
+```
+
+**Para decidir (preguntas de Facu y lo que apareció al revisarlas):**
+- [ ] **Qué valor usa el sistema.** Solo el **valor fijo neto**: viajes, presupuestos, proformas (propias y el control
+  de Rukas) y el costo del dashboard. **Valor de ruta** y **valor de vuelta vacío** se guardan pero nada los usa. La
+  #5 de Facu tiene ruta $150.000, vuelta vacío $35.000 y neto $0: un viaje con esa tarifa vale $0. Los ejemplos del
+  formulario (150.000 + 50.000 = 200.000) hacen pensar que el neto era la suma de los otros dos.
+- [ ] **Con qué fecha busca el viaje la tarifa fija.** `TarifasFijas/PorRuta` usa la vigente **hoy**, no la de la
+  fecha del viaje, y si hoy no hay ninguna toma la más reciente aunque esté vencida o empiece más adelante. La tarifa
+  por km sí usa las fechas del viaje. Ejemplo: un viaje del 28/10 cargado el 02/11 toma la tarifa de noviembre. Lo usan
+  `gestion-viajes.html` y `presupuestos.js` (módulo de Facu).
+- [ ] **Tarifas por km:** tampoco controlan que dos se superpongan (mismo período y bandas de km que se pisan). Hoy el
+  viaje toma la de banda más angosta, así que puede que sea a propósito (una banda especial dentro de una general).
+- [ ] Los tres valores del formulario son `type="number"`: según §7.3 tienen que ser montos con máscara
+  (`SGTL.enlazarMascaraMonto`). Conviene hacerlo junto con lo que se decida sobre los valores.
+
+**Probar en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; no hay que correr nada en la base):
+- [ ] 1. Gestionar tarifas → Registrar tarifa fija: QUICKFOOD, Sede Quilmes → Sede Banfield, del 15/10/2026 al
+  25/10/2026, neto 1000 → Guardar: dentro del modal, "Este cliente ya tiene la tarifa fija #5 para el mismo recorrido,
+  del 01/10/2026 al 31/12/2026. Cambiá las fechas…". No se crea nada.
+- [ ] 2. Mismo recorrido, del 01/01/2027 al 31/01/2027 (empieza el día siguiente a que termina la #5) → se guarda.
+  Después, eliminarla.
+- [ ] 3. Editar la #4 y Guardar sin cambios: el error nombra la #5 (ya estaban superpuestas). Cancelar.
+- [ ] 4. Editar la #2 (otro recorrido) y Guardar sin cambios: "Tarifa guardada." (no se compara consigo misma).
+- [ ] 5. Otro cliente con el mismo origen y destino y las mismas fechas → se guarda (la regla es por cliente). Después,
+  eliminarla.
