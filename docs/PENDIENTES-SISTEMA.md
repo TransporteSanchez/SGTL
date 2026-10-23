@@ -52,6 +52,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
+| 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **Para charlar** con Facu (23/10); no se cambió nada | — | — |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2571,3 +2572,51 @@ empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Saliero
   (990001 y 990002), que usan todos los Excel de `docs/pruebas/datos/`. Están en Listo para facturar con la tarifa #5
   ($ 850 × 17,4 km = $ 14.790, lo que esperan los Excel) y no hay proformas con 990120 ni 990130. **No cambiar los
   valores de las tarifas por km antes de la demo:** cambiaría el importe que comparan los Excel.
+
+---
+
+## 33. Editar una tarifa que ya usan viajes — PARA CHARLAR CON FACU (23/10)
+
+Lo planteó Facu (23/10): "no debería dejarte editar tarifas que estén en curso, porque ya hay viajes que las usan;
+debería pedirte que cierres esa vigencia y generes una nueva con el nuevo valor, y ahí recalcular todo". Rocío: hay que
+armar bien el flujo, porque no es tan simple como permitir o no permitir. Puede hacer falta editar justamente para
+corregir un error (lo que se decidió para Rukas). No se decidió ni se cambió nada.
+
+**Cómo funciona hoy:**
+- Gestionar tarifas deja **editar todo** de una tarifa en cualquier momento: valores, vigencia, cliente y recorrido.
+  Desde el 23/10 controla que no se superponga con otra (§31). **Eliminar** sí se rechaza si algún viaje la usa.
+- **El viaje no guarda su importe:** guarda qué tarifa usa (`TarifaFijaID` o `TarifaKmID`) y el importe se calcula cada
+  vez (fija: el neto; por km: valor por km × km). Editar el valor de una tarifa cambia el importe de **todos** sus
+  viajes en el detalle del viaje, en el dashboard y en "Traer viajes".
+- Lo que ya se emitió **no cambia**: las líneas de una proforma propia guardan su precio al traer los viajes, y las
+  facturas, sus importes. En un borrador de Rukas, "Volver a controlar" toma el importe nuevo y puede aparecer
+  "Importe distinto".
+- Cambiarle la vigencia, el cliente o el recorrido a una tarifa en uso deja viajes con una tarifa que ya no les
+  corresponde (el viaje conserva el ID).
+- Lo decidido para Rukas (`docs/negocio/PROFORMA-CLIENTES-RUKAS.md`, "SGTL está mal"): si **el valor estaba mal
+  cargado**, se edita la tarifa y se arreglan todos los viajes que la usan, "que es lo correcto porque estaba mal"; si
+  **al viaje le asignaron otra tarifa**, se cambia la del viaje, no la de la tabla.
+
+**Dos casos distintos, que el flujo tiene que separar:**
+1. **Cambio de precio** (aumento, nueva negociación): no tiene que tocar lo hecho. Se cierra la vigencia de la tarifa
+   (hasta el día anterior) y se carga otra desde el día del cambio (la propuesta de Facu). Los viajes viejos siguen con
+   la anterior y los nuevos toman la nueva por su fecha de inicio (§31).
+2. **Corrección de un error** (el valor se cargó mal): sí tiene que arreglar los viajes que la usan, salvo lo ya
+   emitido.
+
+**Para decidir:**
+- [ ] ¿Se bloquea editar el valor, la vigencia, el cliente o el recorrido de una tarifa con viajes, y se ofrece
+  "Cerrar vigencia y registrar una nueva"? ¿O se deja editar con una confirmación que diga a qué viajes afecta: N sin
+  proforma (cambian su importe), M en borrador (se recalculan) y K en una proforma generada o facturados (no cambian;
+  la diferencia iría con una nota de crédito o de débito)? ¿Se pide el motivo y queda en la auditoría?
+- [ ] "Recalcular todo" al cerrar una vigencia: ¿qué viajes pasan a la tarifa nueva? Propuesta: los que empiezan desde
+  la fecha nueva y no están en una proforma generada ni facturados. ¿Automático o con un botón que muestre la lista?
+- [ ] "Tarifa en curso": ¿vigente hoy, o con viajes en un estado determinado (por ejemplo, En viaje)?
+- [ ] ¿Hay que avisarle al cliente cuando cambia una tarifa o se corrige un viaje ya informado? ¿Desde el sistema
+  (e-mail) o por fuera?
+- [ ] Opción de fondo: que el viaje **guarde su importe** al asignarle la tarifa (como las líneas de proforma). Editar una
+  tarifa dejaría de cambiar los viajes hechos, y corregir un error sería un "Recalcular" explícito sobre los viajes
+  elegidos. Es más cambio (columna nueva en `VIAJES` con script, y que viajes, dashboard, "Traer viajes" y el control
+  de Rukas lean el importe guardado), pero hace el resto más simple y predecible.
+- Depende de esto la forma de cargar los valores reales de las tarifas (§31, "valores más reales"): pisar los valores o
+  cerrar las vigencias y cargar nuevas.
