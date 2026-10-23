@@ -50,8 +50,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 28 | Arreglos y mejoras del reporte de la VM del 23/10 (§24 y §25) | Hecho en la Mac (23/10), aprobado por Rocío; probado con la API simulada | **Pusheado** (`e7649d0` a `aef6e4a`; 23/10) | **OK en VM (23/10)**, los 10 pasos (ver §28) |
 | 29 | Falla y mejoras de la reprueba del 23/10 | Hecho en la Mac (23/10), aprobado por Rocío | **Pusheado** (`cfe08c5` a `a1e2b8a`; 23/10); las dos mejoras de cuenta corriente, **pusheadas** (`054cc38`) | **OK en VM (23/10)**; las dos mejoras, sin probar (ver §29) |
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
-| 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | Recompilar la API y probar (ver §31) |
-| 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | Sin la prueba mínima previa: falta compilar (ver §32) |
+| 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
+| 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2365,7 +2365,7 @@ así que ningún documento las usa; quedan como historial, igual que en Auditor�
 
 ---
 
-## 31. Tarifas: vigencias, neto y fecha del viaje — PUSHEADO (`1ca5d87` a `4ee7ef3`), FALTA PROBAR EN VM (23/10)
+## 31. Tarifas: vigencias, neto y fecha del viaje — PUSHEADO (`1ca5d87` a `4ee7ef3`), OK EN VM (23/10)
 
 Lo encontró Facu (23/10): Gestionar tarifas dejaba registrar, para QUICKFOOD Sede Quilmes → Sede Banfield, la tarifa
 #5 (01/10/2026 al 31/12/2026) aunque ya estaba la #4 (20/10/2026 al 31/10/2026). Con dos tarifas vigentes el mismo día,
@@ -2508,7 +2508,7 @@ FADEEAC de marzo de 2026 (por tonelada: ~$25.389 a 100 km, ~$77.700 a 500 km, ~$
 
 ---
 
-## 32. Ramas del equipo y `main` al día con `rocionuvoli` — PUSHEADO (23/10), FALTA COMPILAR Y PROBAR EN VM
+## 32. Ramas del equipo y `main` al día con `rocionuvoli` — PUSHEADO (23/10), OK EN VM (23/10)
 
 A pedido de Rocío, antes de la reunión con la profe: `facugodoy` y `fedemontenegro` pasan de `36a92c8` (22/10, 15:00) a
 `739e567`, avance directo (59 commits, ninguna tenía commits nuevos). Enseguida Rocío pidió pasar también `main`, para
@@ -2537,3 +2537,22 @@ de tarifas. Si no compila, arreglarlo en `rocionuvoli` y volver a pasarlo.
 
 **Si algo falla en la VM y no hay tiempo:** volver a `git checkout 36a92c8` (lo que tenían antes) y recompilar; los
 datos de la base corregidos hoy funcionan con esa versión.
+
+**Resultado en la VM (23/10):** `docs/pruebas/2026-10-23-ramas-y-tarifas.md`. La API compila y las 33 pruebas dieron OK
+(tarifas fijas y por km, tarifa del viaje y del presupuesto según la fecha de inicio, también escrita a mano, Gestionar
+empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Salieron, fuera de esta ronda:
+- [ ] **F1 (media): en los modales no se puede escribir la hora en el calendario.** El foco salta a la cruz del modal:
+  el calendario se agrega al `body`, fuera del modal, y Bootstrap devuelve el foco al modal. Se puede elegir con las
+  flechas o escribir fecha y hora en el campo. Arreglo en `SGTL.selectorFecha` (`sgtl-ui.js`): dentro de un modal,
+  agregar el calendario al modal. Afecta a todos los calendarios con hora en modales (viajes y presupuestos).
+- [ ] **F2 (media, módulo de Facu): recibo REC-00000013 con "Total aplicado" y "Diferencia" distintos** en Ver ($ 871.200 y
+  $ 0), Editar ($ 900.000 y $ 0) y el PDF ($ 0 y $ 0); lo imputado es $ 871.200 y quedan $ 28.800 sin imputar.
+  `cuenta-corriente-clientes.js` (782-783 y 866-867) y `api/comprobantes/{id}` (ImporteAplicado y SaldoPendiente en 0).
+- Mejoras para decidir: aviso de error del modal fuera de la vista si el modal tiene scroll; en Registrar presupuesto,
+  "Elegí el cliente" en origen y destino e importe como texto; Ver y Editar recibo con campos deshabilitados (Facu); PDF
+  de factura "Sin Proformas asociadas." (mayúscula) y en la proforma "->" y "Datos del servicio" con "—" (Facu); "Rol:
+  user" en inglés en Ver detalle del usuario; CABA en el medio de sus barrios; `console.log` de `gestionContenido.js`;
+  `DirectionsService` de Google Maps deprecado (avisan con 12 meses).
+- Datos de prueba que se ven en pantalla: grupo "PRUEBA-CLAUDE 20/10", choferes "Prueba, Fede" y "CLAUDE, PRUEBACLAUDE",
+  usuario "usuarioprueba" y conceptos de comprobantes ("asd asd", "pruebaaa", "preubaaaa888", "Factura de prueba Test",
+  "NC prueba", "Pruebaa", "dfgdgh"). Varios ya estaban anotados para limpiar antes de la tesis.
