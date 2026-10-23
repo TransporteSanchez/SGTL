@@ -139,7 +139,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Choferes, camiones | No se puede eliminar el chofer: está activo |
 | Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado |
-| Proformas | No se puede editar la proforma: ya se generó · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
+| Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
 | Proforma de Rukas (pie) | No se puede generar la proforma: hay 3 diferencias sin resolver |
 | Presupuestos | No se puede generar el viaje: el presupuesto todavía no está aceptado |
 | Cuenta corriente | No se puede editar el recibo: está anulado · No se puede anular la factura: se corrige con una nota de crédito |

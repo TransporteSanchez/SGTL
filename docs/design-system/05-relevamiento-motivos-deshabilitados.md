@@ -49,7 +49,7 @@ guardar no entran: son avisos con punto, no globitos.
 | Gestionar viajes | Eliminar (vino de un presupuesto) | Se generó desde el presupuesto #12: no se puede eliminar | No se puede eliminar el viaje: viene del presupuesto #12 |
 | Gestionar viajes | Eliminar (no está registrado) | Solo se eliminan viajes en estado Registrado | No se puede eliminar el viaje: está en viaje *(o "entregado", "listo para facturar")* |
 | Gestionar viajes | Tarjeta "Listo para facturar" | Para marcarlo, editá el viaje y cargá: N° entrega Rukas. | No se puede marcar: falta cargar N° entrega Rukas. |
-| Gestionar proformas | Editar (ya generada) | Solo se editan los borradores | No se puede editar la proforma: ya se generó |
+| Gestionar proformas | Editar (ya generada) | Solo se editan los borradores | No se puede editar la proforma: ya se generó *(anulada: "está anulada", reprueba del 23/10)* |
 | Gestionar proformas | Siguiente paso (borrador) | Primero generá la proforma | No se puede marcar como aceptada: la proforma todavía es un borrador |
 | Gestionar proformas | Siguiente paso (anulada) | Sin pasos pendientes | No se puede marcar como aceptada: la proforma está anulada |
 | Gestionar y Listar proformas | Siguiente paso (facturada) | Facturada: FAC-00000012 | No se puede emitir la factura: ya se emitió FAC-00000012 |

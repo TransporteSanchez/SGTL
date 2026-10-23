@@ -2099,7 +2099,7 @@ cuenta corriente.
 - [ ] **"Solo se…" en cuenta corriente** ("No se puede editar la factura: solo se editan los recibos"): el §1.4 del
   design system ya lo permite cuando el motivo es el tipo de la fila, pero la lista de control de `AGENTS.md` dice "sin
   'Solo se…'" sin la excepción. Sumar la excepción a `AGENTS.md`; los textos quedan. Hacerla ya.
-- [ ] **Lápiz de una proforma anulada:** dice "ya se generó"; que diga "está anulada". Hacerla ya.
+- [x] **Lápiz de una proforma anulada:** dice "ya se generó"; que diga "está anulada" (hecho 23/10).
 - [ ] **Aire arriba de dos subtítulos:** "Plantilla predeterminada" (Registrar configuración de e-mail, 8 px) y
   "Totales" (proforma propia, 16 px), con 24 px como el resto. Hacerla ya.
 - [ ] **Ver recibo** muestra el subtítulo del alta ("Registrar cobranza e imputar facturas pendientes."): sacarlo al ver

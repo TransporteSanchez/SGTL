@@ -642,7 +642,8 @@
             var id = x.Proforma_ID;
             var botones = [
                 SGTL.botonFila('ver', { id: id }),
-                SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador', motivo: 'No se puede editar la proforma: ya se generó' }),
+                SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador',
+                    motivo: 'No se puede editar la proforma: ' + (estado === 'Anulada' ? 'está anulada' : 'ya se generó') }),
                 SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' })
             ];
             if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') }));
