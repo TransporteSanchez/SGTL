@@ -2337,7 +2337,7 @@ cargar: quedó como lo dejó Facu (fondo `#6d8cab`, menú `#2f89c1`).
 **Limpieza:** no hace falta. Las versiones 2 a 4 son del mismo día que la 5 y la API siempre toma la última del día,
 así que ningún documento las usa; quedan como historial, igual que en Auditoría.
 
-**Reprueba en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; en la base, solo el script de CABA del paso 5):
+**Reprueba en la VM** (con C#: `pull`, recompilar la API y Ctrl+F5; no hay que correr nada en la base):
 - [ ] 1. Gestionar empresa: sin el aviso amarillo; los datos de Rocío y "Última modificación: …".
 - [ ] 2. Ver PDF de una proforma generada: el logo y, a su derecha, "Transporte Sánchez" en grande con la razón social
   debajo; abajo, CUIT y condición de IVA y domicilio.
@@ -2346,7 +2346,7 @@ así que ningún documento las usa; quedan como historial, igual que en Auditor�
   HH:MM" en 24 h.
 - [ ] 4. Presupuestos con la sesión vencida (más de 30 minutos): Enviar por e-mail → "Tu sesión venció. Volvé a iniciar
   sesión." y, enseguida, el login.
-- [ ] 5. CABA: Rocío corre `database/localidades/02_agregar_caba.sql` (primero con `@Aplicar = 0`: "se agrega" la
-  provincia y las 49 localidades; después con `@Aplicar = 1`: la verificación dice OK y OK). En Gestionar empresa, Registrar
+- [ ] 5. CABA: `database/localidades/02_agregar_caba.sql` **ya está corrido** (Rocío, 23/10: provincia con `Prov_ID` 24
+  y 49 localidades agregadas). En Gestionar empresa, Registrar
   cliente y Registrar origen, la lista de provincias va en orden alfabético con "Ciudad Autónoma de Buenos Aires" entre
   Chubut y Córdoba, y al elegirla aparecen la Ciudad y los barrios (Palermo, Recoleta…). No guardar nada.
