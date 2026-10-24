@@ -54,8 +54,8 @@ function probarValoresDeAgosto() {
             assert.ok(Math.abs(suba - esperada) < 0.006, tipo + ': el valor ' + v + ' no sigue la suba de la tabla');
         });
     });
-    assert.ok(/'2026-08-01', 2019, 130, 190, 250, 96577, 6, 12, 18, 60/.test(script),
-        'vigente desde el 01/08/2026, corte 2019, bandas 130/190/250, estadía 96.577 por 6 hs, 12 y 18 hs, falso flete 60 %');
+    assert.ok(/'2026-08-01', 1, 2019, 130, 190, 250, 96577, 6, 12, 18, 60/.test(script),
+        'vigente desde el 01/08/2026 para todos los clientes, corte 2019, bandas 130/190/250, estadía 96.577 por 6 hs, 12 y 18 hs, falso flete 60 %');
 }
 
 function probarViajeGuardaImporte() {
@@ -100,6 +100,22 @@ function probarFijaConExcedente() {
     assert.strictEqual(600 * 2594, 1556400);
 }
 
+// Tabla general (para todos) y tablas propias de algunos clientes, que para ellos reemplazan a la general (24/10).
+function probarTablasPorCliente() {
+    const esquema = leer('database/tarifas/02_tarifario_por_vehiculo.sql');
+    assert.ok(/CREATE TABLE dbo\.TARIFARIO_CLIENTES/.test(esquema) && /Para_Todos\s+bit NOT NULL/.test(esquema), '02 crea el alcance de cada tabla');
+    assert.ok(esquema.indexOf('UQ_TARIFARIOS_Vigente_Desde') === -1, 'una general y una propia pueden empezar el mismo día');
+    const calculo = leer('WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs');
+    assert.ok(/ORDER BY t\.Para_Todos, t\.Vigente_Desde DESC/.test(calculo), 'la tabla propia del cliente gana sobre la general');
+    assert.ok(/Vigente\(db, p\.FechaInicio, p\.ClienteID\)/.test(calculo), 'el cálculo usa el cliente del viaje');
+    assert.ok(/ClienteID = v\.ClienteID/.test(leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs')), 'el viaje pasa su cliente');
+    assert.ok(/clienteId: \$\('#clienteSelect'\)\.val\(\) \|\| 0 \}/.test(leer('gestion-viajes.html')), 'Registrar viaje calcula con el cliente');
+    assert.ok(/clienteId: el\('cliente'\)\.value/.test(leer('assets/static/js/presupuestos.js')), 'presupuestos calcula con el cliente');
+    const pantalla = leer('gestion-tarifas.html');
+    assert.ok(/id="trParaTodos" value="todos" checked/.test(pantalla) && /id="trParaAlgunos"/.test(pantalla),
+        'Gestionar tarifas elige si la tabla es para todos o para algunos clientes');
+}
+
 function probarProyecto() {
     const csproj = leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj');
     ['Controllers\\TarifarioController.cs', 'Tarifas\\TarifarioCalculo.cs'].forEach(function (archivo) {
@@ -115,5 +131,6 @@ probarTiposIguales();
 probarValoresDeAgosto();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
+probarTablasPorCliente();
 probarProyecto();
-console.log('OK: la tabla de tarifas (fija con excedente y por km), sus valores de agosto 2026 y el importe guardado del viaje');
+console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de agosto 2026 y el importe guardado del viaje');

@@ -74,7 +74,7 @@
                                  Las tarifas fijas por cliente y recorrido y las tarifas por km de antes quedan en la base para los
                                  viajes que ya las usan, pero no se cargan más. -->
                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
-                                <p class="text-muted mb-0">Cada tabla vale desde su fecha hasta que se cargue la siguiente.</p>
+                                <p class="text-muted mb-0">Cada tabla vale desde su fecha hasta que se cargue la siguiente. Una tabla propia de algunos clientes reemplaza para ellos a la de todos.</p>
                                 <button type="button" class="btn btn-success" id="btnRegistrarTarifario">
                                     <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar tabla de tarifas
                                 </button>
@@ -84,6 +84,7 @@
                                     <thead>
                                         <tr>
                                             <th>Nombre</th>
+                                            <th>Clientes</th>
                                             <th>Vigencia</th>
                                             <th class="text-center">Estado</th>
                                             <th class="text-end">Viajes</th>
@@ -91,7 +92,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>
+                                        <tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -139,6 +140,27 @@
                                     <label for="trCorte" class="form-label">Valores nuevos desde el modelo <span class="text-danger">*</span></label>
                                     <input type="text" inputmode="numeric" class="form-control" id="trCorte" maxlength="4" placeholder="2019" autocomplete="off">
                                     <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <!-- General o propia (24/10): la propia reemplaza a la general para sus clientes. -->
+                            <div class="sgtl-bloque-titulo" id="trClientesTitulo">Clientes</div>
+                            <div class="mb-4">
+                                <div class="d-flex flex-wrap gap-3" role="radiogroup" aria-labelledby="trClientesTitulo">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="trAlcance" id="trParaTodos" value="todos" checked>
+                                        <label class="form-check-label" for="trParaTodos">Todos los clientes</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="trAlcance" id="trParaAlgunos" value="algunos">
+                                        <label class="form-check-label" for="trParaAlgunos">Solo algunos clientes</label>
+                                    </div>
+                                </div>
+                                <div class="form-text" id="trAlcanceAyuda"></div>
+                                <div id="trClientesCaja" class="mt-2 d-none">
+                                    <input type="text" class="form-control mb-2" id="trClientesBuscar" placeholder="Buscar cliente" autocomplete="off" aria-label="Buscar cliente">
+                                    <div id="trClientesLista" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;"></div>
+                                    <div class="invalid-feedback" id="trClientesError"></div>
+                                    <div class="form-text" id="trClientesCuenta"></div>
                                 </div>
                             </div>
                             <div class="sgtl-bloque-titulo">Bandas de km</div>
@@ -302,6 +324,8 @@
         let tarifarios = [];
         let tarifarioEnEdicion = null;
         let formularioTarifario = null;
+        // Clientes para las tablas propias: [{ Cliente_ID, Razon_Social, Tipo_Cliente }].
+        let clientesTabla = [];
 
         function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
 
@@ -403,11 +427,25 @@
             return SGTL.estado('Anterior', 'Anterior', 'gris');
         }
 
+        // Para quién es: "Todos los clientes" (y, si hay, los que tienen tabla propia) o los clientes de la tabla propia.
+        function textoClientes(t) {
+            const nombres = function (lista) {
+                return lista.length <= 3 ? lista.join(', ') : lista.slice(0, 3).join(', ') + ' y ' + (lista.length - 3) + ' más';
+            };
+            if (t.Para_Todos) {
+                const propios = t.Clientes_Con_Tabla_Propia || [];
+                return 'Todos los clientes' + (propios.length ? '<div class="small text-muted">Salvo ' + SGTL.escapar(nombres(propios))
+                    + (propios.length === 1 ? ', que tiene tabla propia' : ', que tienen tabla propia') + '</div>' : '');
+            }
+            return SGTL.escapar(nombres((t.Clientes || []).map(function (c) { return c.Razon_Social; })));
+        }
+
         function filaTarifario(t) {
             const vigencia = t.Vigente_Hasta ? 'Del ' + SGTL.fecha(t.Vigente_Desde) + ' al ' + SGTL.fecha(t.Vigente_Hasta) : 'Desde el ' + SGTL.fecha(t.Vigente_Desde);
             const viajes = Number(t.Viajes) || 0;
             return `<tr>
                 <td>${SGTL.escapar(t.Nombre)}</td>
+                <td>${textoClientes(t)}</td>
                 <td class="text-nowrap">${vigencia}</td>
                 <td class="text-center">${estadoTarifario(t)}</td>
                 <td class="text-end">${viajes}</td>
@@ -421,22 +459,75 @@
         }
 
         function listarTarifario() {
-            SGTL.tabla.cargando('#tablaTarifario tbody', 5);
+            SGTL.tabla.cargando('#tablaTarifario tbody', 6);
             return SGTL.ajax({ url: API + '/Tarifario', type: 'GET' }, 'No se pudieron cargar las tarifas. Revisá la conexión y probá de nuevo.')
                 .then(function (data) {
                     tarifarios = Array.isArray(data) ? data : [];
                     if (tarifarios.length) SGTL.tabla.llenar('#tablaTarifario tbody', tarifarios.map(filaTarifario).join(''));
-                    else SGTL.tabla.vacia('#tablaTarifario tbody', 5, 'Todavía no hay una tabla de tarifas cargada.');
+                    else SGTL.tabla.vacia('#tablaTarifario tbody', 6, 'Todavía no hay una tabla de tarifas cargada.');
                 }, function (error) {
                     tarifarios = [];
-                    SGTL.tabla.vacia('#tablaTarifario tbody', 5, 'No se pudieron cargar las tarifas.');
+                    SGTL.tabla.vacia('#tablaTarifario tbody', 6, 'No se pudieron cargar las tarifas.');
                     SGTL.toastError(error.mensajeUsuario);
                 });
+        }
+
+        // ------------------------------------------------ Para qué clientes
+        function paraTodos() { return !$('#trParaAlgunos').is(':checked'); }
+        function clientesElegidos() {
+            return $('#trClientesLista input:checked').map(function () { return Number(this.value); }).get();
+        }
+        function dibujarClientes(elegidos) {
+            const lista = document.getElementById('trClientesLista');
+            lista.innerHTML = clientesTabla.map(function (c) {
+                const id = 'trCliente' + c.Cliente_ID;
+                return `<div class="form-check" data-nombre="${SGTL.escapar(String(c.Razon_Social || '').toLowerCase())}">
+                    <input class="form-check-input" type="checkbox" id="${id}" value="${c.Cliente_ID}"${elegidos.indexOf(c.Cliente_ID) >= 0 ? ' checked' : ''}>
+                    <label class="form-check-label" for="${id}">${SGTL.escapar(c.Razon_Social || 'Cliente #' + c.Cliente_ID)}${c.Tipo_Cliente === 'Con_plataforma' ? ' <span class="badge rounded-pill bg-white text-dark border">Rukas</span>' : ''}</label>
+                </div>`;
+            }).join('') || '<div class="small text-muted">No hay clientes cargados.</div>';
+            filtrarClientes();
+            contarClientes();
+        }
+        function filtrarClientes() {
+            const texto = String($('#trClientesBuscar').val() || '').trim().toLowerCase();
+            $('#trClientesLista .form-check').each(function () { $(this).toggleClass('d-none', texto !== '' && String($(this).attr('data-nombre')).indexOf(texto) === -1); });
+        }
+        function contarClientes() {
+            const n = clientesElegidos().length;
+            $('#trClientesCuenta').text(n === 0 ? 'Todavía no elegiste ningún cliente.' : (n === 1 ? '1 cliente elegido.' : n + ' clientes elegidos.'));
+            if (n > 0) limpiarErrorClientes();
+        }
+        function limpiarErrorClientes() {
+            $('#trClientesBuscar').removeClass('is-invalid');
+            $('#trClientesError').removeClass('d-block').text('');
+        }
+        function mostrarAlcance() {
+            const todos = paraTodos();
+            $('#trClientesCaja').toggleClass('d-none', todos);
+            $('#trAlcanceAyuda').text(todos ? 'Vale para todos los clientes, también los que se carguen después, salvo los que tienen una tabla propia.'
+                : 'Para estos clientes, esta tabla reemplaza a la de todos los clientes.');
+            if (todos) limpiarErrorClientes();
+        }
+        function validarClientes() {
+            if (paraTodos() || clientesElegidos().length) { limpiarErrorClientes(); return; }
+            $('#trClientesBuscar').addClass('is-invalid');
+            $('#trClientesError').addClass('d-block').text('Elegí al menos un cliente.');
+        }
+        function cargarClientesTabla() {
+            if (clientesTabla.length) return Promise.resolve();
+            return SGTL.ajax({ url: API + '/Clientes', type: 'GET' }).then(function (data) {
+                clientesTabla = (data || []).slice().sort(function (a, b) { return String(a.Razon_Social || '').localeCompare(String(b.Razon_Social || ''), 'es'); });
+            }, function () { clientesTabla = []; });
         }
 
         function ponerTarifario(t, conDatos) {
             $('#trNombre').val(conDatos ? t.Nombre : '');
             ponerFecha('trDesde', conDatos ? t.Vigente_Desde : null);
+            const propios = conDatos && t.Para_Todos === false;
+            $(propios ? '#trParaAlgunos' : '#trParaTodos').prop('checked', true);
+            dibujarClientes(propios ? (t.Clientes || []).map(function (c) { return c.Cliente_ID; }) : []);
+            mostrarAlcance();
             $('#trCorte').val(t.Anio_Corte);
             $('#trBanda1').val(t.Km_Banda1);
             $('#trBanda2').val(t.Km_Banda2);
@@ -462,6 +553,10 @@
             ponerFecha('trDesde', null);
             $('#tituloTarifario').text(id ? 'Editar tabla de tarifas' : 'Registrar tabla de tarifas');
             $('#infoTarifario').addClass('d-none').text('');
+            $('#trParaTodos').prop('checked', true);
+            $('#trClientesBuscar').val('');
+            dibujarClientes([]);
+            mostrarAlcance();
             actualizarEncabezados();
             const guardar = document.getElementById('btnGuardarTarifario');
             const base = id || (tarifarios[0] && tarifarios[0].Tarifario_ID);
@@ -469,12 +564,13 @@
             SGTL.modal('#modalTarifario', 'show');
             if (!base) return;
 
-            SGTL.ajax({ url: `${API}/Tarifario/${base}`, type: 'GET' }).then(function (t) {
+            Promise.all([SGTL.ajax({ url: `${API}/Tarifario/${base}`, type: 'GET' }), cargarClientesTabla()]).then(function (r) {
+                const t = r[0];
                 ponerTarifario(t, !!id);
                 const viajes = Number(t.Viajes) || 0;
                 const info = id
                     ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + ': guardar no cambia su importe. Los valores nuevos se aplican a los viajes que se registren o se editen cambiando la tarifa, el camión, los km, el inicio o la vuelta.' : '')
-                    : 'Viene con los valores de "' + t.Nombre + '": cambiá los que se actualizaron.';
+                    : 'Viene con los valores de "' + t.Nombre + '": cambiá los que se actualizaron y elegí para qué clientes es.';
                 $('#infoTarifario').toggleClass('d-none', !info).text(info);
                 guardar.disabled = false;
             }, function () {
@@ -485,6 +581,7 @@
 
         async function guardarTarifario() {
             formularioTarifario.validarTodo();
+            validarClientes();
             if (!SGTL.revisarFormulario('#formTarifario', '#avisoTarifario')) return;
 
             const valores = [];
@@ -498,6 +595,8 @@
             const dto = {
                 Nombre: $('#trNombre').val().trim(),
                 Vigente_Desde: fechaISO('trDesde'),
+                Para_Todos: paraTodos(),
+                Clientes: paraTodos() ? [] : clientesElegidos(),
                 Anio_Corte: entero('trCorte'),
                 Km_Banda1: entero('trBanda1'),
                 Km_Banda2: entero('trBanda2'),
@@ -583,6 +682,9 @@
             });
             formularioTarifario = SGTL.validador(reglas);
             $('#trCorte, #trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
+            $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
+            $('#trClientesBuscar').on('input', filtrarClientes);
+            $('#trClientesLista').on('change', 'input', contarClientes);
             $('#btnRegistrarTarifario').on('click', function () { abrirTarifario(null); });
             $('#btnGuardarTarifario').on('click', guardarTarifario);
             $('#tablaTarifario')

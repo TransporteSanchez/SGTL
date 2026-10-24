@@ -18,6 +18,9 @@ namespace WebApi_TransporteSanchez.Tarifas
     // Más dos adicionales: falso flete (un % del viaje) y módulos de estadía. Cada banda va de más del mínimo hasta el
     // máximo inclusive, como las tarifas por km de antes.
     //
+    // Cada tabla es general (para todos los clientes) o propia de algunos clientes (TARIFARIO_CLIENTES). Para un viaje
+    // vale la propia de su cliente vigente en el inicio; si no tiene, la general (Vigente).
+    //
     // El viaje guarda el importe (Importe_Base, Importe y sus detalles): cambiar después una tarifa no cambia los viajes ya
     // calculados (§33 de PENDIENTES). Los adicionales se aplican sobre cualquier tarifa, con el tarifario vigente.
     public static class TarifarioCalculo
@@ -33,6 +36,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int Tarifario_ID { get; set; }
             public string Nombre { get; set; }
             public DateTime Vigente_Desde { get; set; }
+            public bool Para_Todos { get; set; }
             public int Anio_Corte { get; set; }
             public int Km_Banda1 { get; set; }
             public int Km_Banda2 { get; set; }
@@ -68,6 +72,7 @@ namespace WebApi_TransporteSanchez.Tarifas
         public class Pedido
         {
             public int ViajeId { get; set; }            // 0 en un viaje nuevo
+            public int ClienteID { get; set; }          // define si vale una tabla propia del cliente o la general
             public bool UsaTarifario { get; set; }
             public bool PorKm { get; set; }             // con la tabla: true = tarifa por km; false = tarifa fija
             public int? TarifaFijaID { get; set; }
@@ -119,13 +124,19 @@ namespace WebApi_TransporteSanchez.Tarifas
             return modeloNuevo ? "modelo " + t.Anio_Corte + " en adelante" : "modelo " + (t.Anio_Corte - 1) + " o anterior";
         }
 
-        // La versión vigente el día del inicio del viaje: la de Vigente_Desde más reciente hasta ese día.
-        public static Tarifario Vigente(DbContext db, DateTime fecha)
+        private const string COLUMNAS_TARIFARIO =
+            "t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Para_Todos, t.Anio_Corte, t.Km_Banda1, t.Km_Banda2, t.Km_Banda3, t.Estadia_Modulo, " +
+            "t.Estadia_Horas_Modulo, t.Estadia_Desde_Horas, t.Estadia_Desde_Horas_Larga, t.Falso_Flete_Porcentaje ";
+
+        // La tabla que vale el día del inicio del viaje para ese cliente: su tabla propia más reciente hasta ese día y, si
+        // no tiene, la general más reciente. Sin cliente (clienteId = 0), la general.
+        public static Tarifario Vigente(DbContext db, DateTime fecha, int clienteId = 0)
         {
             return db.Database.SqlQuery<Tarifario>(
-                "SELECT TOP (1) Tarifario_ID, Nombre, Vigente_Desde, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
-                "Estadia_Horas_Modulo, Estadia_Desde_Horas, Estadia_Desde_Horas_Larga, Falso_Flete_Porcentaje " +
-                "FROM dbo.TARIFARIOS WHERE Vigente_Desde <= @f ORDER BY Vigente_Desde DESC", P("@f", fecha.Date)).FirstOrDefault();
+                "SELECT TOP (1) " + COLUMNAS_TARIFARIO + "FROM dbo.TARIFARIOS t " +
+                "WHERE t.Vigente_Desde <= @f AND (t.Para_Todos = 1 OR EXISTS (SELECT 1 FROM dbo.TARIFARIO_CLIENTES tc " +
+                "WHERE tc.Tarifario_ID = t.Tarifario_ID AND tc.ClienteID = @c)) " +
+                "ORDER BY t.Para_Todos, t.Vigente_Desde DESC", P("@f", fecha.Date), P("@c", clienteId)).FirstOrDefault();
         }
 
         // La 2ª vuelta: el mismo camión ya tiene otro viaje ese día que empieza antes. Devuelve ese viaje o null.
@@ -193,9 +204,9 @@ namespace WebApi_TransporteSanchez.Tarifas
 
         private static Resultado CalcularTarifario(DbContext db, Pedido p)
         {
-            var t = Vigente(db, p.FechaInicio);
+            var t = Vigente(db, p.FechaInicio, p.ClienteID);
             if (t == null)
-                return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + ". Cargala en Gestionar tarifas.");
+                return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para este cliente. Cargala en Gestionar tarifas.");
 
             if (p.CamionID <= 0) return Falla("Elegí el camión para calcular la tarifa.");
             var camion = db.Database.SqlQuery<CamionTarifa>(
@@ -276,7 +287,7 @@ namespace WebApi_TransporteSanchez.Tarifas
 
             if (p.FalsoFlete || p.EstadiaModulos > 0)
             {
-                var t = Vigente(db, p.FechaInicio);
+                var t = Vigente(db, p.FechaInicio, p.ClienteID);
                 if (t == null)
                     return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargala en Gestionar tarifas.");
 

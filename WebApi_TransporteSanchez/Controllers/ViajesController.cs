@@ -390,6 +390,7 @@ namespace WebApi_TransporteSanchez.Controllers
             return IdOpcional(actual.TarifaFijaID) != IdOpcional(nuevo.TarifaFijaID)
                 || IdOpcional(actual.TarifaKmID) != IdOpcional(nuevo.TarifaKmID)
                 || CambiaTarifario(guardada, nuevo)
+                || (UsaTarifario(nuevo.TarifarioID) && actual.ClienteID != nuevo.ClienteID)   // otro cliente puede tener otra tabla
                 || actual.CamionID != nuevo.CamionID
                 || !MismaDistancia(actual.Distancia_KM, nuevo.Distancia_KM)
                 || actual.Fecha_Inicio.Date != nuevo.Fecha_Inicio.Date;
@@ -410,6 +411,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var pedido = new TarifarioCalculo.Pedido
             {
                 ViajeId = viajeId,
+                ClienteID = v.ClienteID,
                 UsaTarifario = UsaTarifario(v.TarifarioID),
                 PorKm = UsaTarifario(v.TarifarioID) && Modo(v.Tarifa_Modo) == "Km",
                 TarifaFijaID = IdOpcional(v.TarifaFijaID),
@@ -448,6 +450,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             return new ViajeDto
             {
+                ClienteID = viaje.ClienteID,
                 OrigenID = viaje.OrigenID,
                 DestinoID = viaje.DestinoID,
                 Distancia_KM = viaje.Distancia_KM,

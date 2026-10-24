@@ -17,6 +17,11 @@
    Tablas nuevas:
      TARIFARIOS          una fila por versión de la tabla, vigente desde Vigente_Desde hasta la versión siguiente.
      TARIFARIO_VALORES   los valores de cada versión: una fila por antigüedad y tipo de camión (8 por versión).
+     TARIFARIO_CLIENTES  los clientes de una tabla propia (decisión de Rocío, 24/10).
+   General y propias: una tabla es "para todos los clientes" (Para_Todos = 1, la del PDF) o "solo para algunos"
+   (Para_Todos = 0, con sus clientes en TARIFARIO_CLIENTES; por ejemplo, otro cliente con sus propios valores). Para un
+   viaje vale la tabla propia de su cliente vigente en el inicio; si el cliente no tiene, la general. Las dos pueden
+   estar vigentes al mismo tiempo, cada una con sus versiones.
    Columnas nuevas en VIAJES (fuera del EDMX: la API las usa con SQL directo):
      TarifarioID, Tarifa_Modo ('Fija' o 'Km'), Vuelta,
      Estadia_Modulos, Falso_Flete                          lo que se eligió al cargar el viaje.
@@ -48,8 +53,10 @@ BEGIN TRY
             Tarifario_ID                int IDENTITY(1, 1) NOT NULL
                 CONSTRAINT PK_TARIFARIOS PRIMARY KEY,
             Nombre                      nvarchar(100) NOT NULL,
-            Vigente_Desde               date NOT NULL
-                CONSTRAINT UQ_TARIFARIOS_Vigente_Desde UNIQUE,
+            -- Una general y las propias pueden empezar el mismo día: la API controla que no se pisen.
+            Vigente_Desde               date NOT NULL,
+            Para_Todos                  bit NOT NULL
+                CONSTRAINT DF_TARIFARIOS_Para_Todos DEFAULT (1),
             -- Modelos desde este año usan los valores "nuevos" (2019 en la tabla de agosto 2026).
             Anio_Corte                  int NOT NULL,
             -- Límites de las bandas de km (130, 190 y 250 en la tabla de agosto 2026).
@@ -89,6 +96,18 @@ BEGIN TRY
         );
     END;
 
+    IF OBJECT_ID(N'dbo.TARIFARIO_CLIENTES', N'U') IS NULL
+    BEGIN
+        CREATE TABLE dbo.TARIFARIO_CLIENTES (
+            Tarifario_ID    int NOT NULL
+                CONSTRAINT FK_TARIFARIO_CLIENTES_TARIFARIOS REFERENCES dbo.TARIFARIOS (Tarifario_ID) ON DELETE CASCADE,
+            ClienteID       int NOT NULL
+                CONSTRAINT FK_TARIFARIO_CLIENTES_CLIENTES REFERENCES dbo.CLIENTES (Cliente_ID),
+            CONSTRAINT PK_TARIFARIO_CLIENTES PRIMARY KEY (Tarifario_ID, ClienteID)
+        );
+        CREATE INDEX IX_TARIFARIO_CLIENTES_ClienteID ON dbo.TARIFARIO_CLIENTES (ClienteID);
+    END;
+
     IF COL_LENGTH('dbo.VIAJES', 'TarifarioID') IS NULL
         ALTER TABLE dbo.VIAJES ADD TarifarioID int NULL
             CONSTRAINT FK_VIAJES_TARIFARIOS REFERENCES dbo.TARIFARIOS (Tarifario_ID);
@@ -126,9 +145,10 @@ BEGIN TRY
 
     COMMIT TRANSACTION;
 
-    -- Verificación: las dos tablas y las nueve columnas (todo "OK").
+    -- Verificación: las tres tablas y las nueve columnas (todo "OK").
     SELECT N'TARIFARIOS' AS Objeto, CASE WHEN OBJECT_ID(N'dbo.TARIFARIOS', N'U') IS NOT NULL THEN N'OK' ELSE N'FALTA' END AS Estado
     UNION ALL SELECT N'TARIFARIO_VALORES', CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_VALORES', N'U') IS NOT NULL THEN N'OK' ELSE N'FALTA' END
+    UNION ALL SELECT N'TARIFARIO_CLIENTES', CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_CLIENTES', N'U') IS NOT NULL THEN N'OK' ELSE N'FALTA' END
     UNION ALL SELECT N'VIAJES.' + c.Columna, CASE WHEN COL_LENGTH('dbo.VIAJES', c.Columna) IS NOT NULL THEN N'OK' ELSE N'FALTA' END
     FROM (VALUES (N'TarifarioID'), (N'Tarifa_Modo'), (N'Vuelta'), (N'Estadia_Modulos'), (N'Falso_Flete'), (N'Importe_Base'),
                  (N'Tarifa_Detalle'), (N'Importe'), (N'Importe_Detalle')) c (Columna);

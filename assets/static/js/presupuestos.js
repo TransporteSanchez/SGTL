@@ -200,10 +200,12 @@
         var version = ++secuencia, tipo = el('tipoTarifa').value;
         tarifa = null; el('importe').value = '';
         if (!tipo) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná un tipo de tarifa.'; return; }
+        if (!el('cliente').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná el cliente para calcular la tarifa.'; return; }
         if (!el('fechaInicio').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Completá la fecha de inicio para calcular la tarifa.'; return; }
         if (!el('camionId').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná el camión para calcular la tarifa.'; return; }
         if (!(Number(el('distancia').value) > 0)) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Elegí origen y destino para calcular la distancia y la tarifa.'; return; }
-        var params = new URLSearchParams({ tarifa: tipo, fechaInicio: el('fechaInicio').value, camionId: el('camionId').value, km: el('distancia').value, vuelta: vueltaManual ? el('vueltaPresupuesto').value : '' });
+        // Con el cliente: si tiene tabla propia vale esa; si no, la general.
+        var params = new URLSearchParams({ tarifa: tipo, fechaInicio: el('fechaInicio').value, camionId: el('camionId').value, km: el('distancia').value, vuelta: vueltaManual ? el('vueltaPresupuesto').value : '', clienteId: el('cliente').value });
         el('tarifaInfo').textContent = 'Calculando tarifa…';
         pedir(api + '/Tarifario/Calcular?' + params.toString()).then(function (r) {
             if (version !== secuencia) return;

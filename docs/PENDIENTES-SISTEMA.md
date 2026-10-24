@@ -53,7 +53,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
-| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
+| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
@@ -2663,13 +2663,19 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   se cargue la siguiente). Valores sin IVA. El año de corte y los límites de las bandas son datos de cada tabla.
 - **El viaje guarda su importe** (la "opción de fondo" del §33): cambiar la tabla no cambia los viajes ya calculados.
 - Presupuestos (módulo de Facu) calcula igual que viajes: lo hace Claude ahora y Rocío le avisa a Facu.
-- Falta saber si la tabla es de Marfrig ("ZQPA" parece un código de SAP) o para todos los clientes: Rocío lo pregunta.
-  Por ahora es general; si es de Marfrig, después se le asigna a ese cliente.
+- **Tabla general y tablas propias (24/10, segunda vuelta):** cada tabla es para todos los clientes (la del PDF, Marfrig
+  incluido, y también los que se den de alta después) o solo para algunos clientes, que se eligen de una lista con
+  buscador. Para esos clientes, su tabla propia reemplaza a la general (por ejemplo, otro cliente con sus propios
+  valores): así se "saca" un cliente de la general sin destildarlo en ningún lado. Una general y una propia pueden estar
+  vigentes al mismo tiempo, cada una con sus versiones. Para un viaje vale la propia de su cliente vigente en el inicio; si
+  no tiene (o empieza después), la general. Falta saber si el PDF es de Marfrig ("ZQPA" parece un código de SAP): si lo
+  es, se carga como general o como propia de Marfrig, sin cambiar nada del sistema.
 
 **Qué se hizo:**
 - `database/tarifas/02_tarifario_por_vehiculo.sql` (idempotente): tablas `TARIFARIOS` (una fila por tabla: nombre,
-  vigente desde, año de corte, bandas, estadía y falso flete) y `TARIFARIO_VALORES` (8 filas por tabla: antigüedad × tipo,
-  con las tres bandas fijas, la 2ª vuelta y el precio por km), y en `VIAJES` las columnas `TarifarioID`, `Tarifa_Modo`
+  vigente desde, para todos o no, año de corte, bandas, estadía y falso flete), `TARIFARIO_VALORES` (8 filas por tabla:
+  antigüedad × tipo, con las tres bandas fijas, la 2ª vuelta y el precio por km) y `TARIFARIO_CLIENTES` (los clientes de
+  una tabla propia), y en `VIAJES` las columnas `TarifarioID`, `Tarifa_Modo`
   (`Fija` o `Km`), `Vuelta`, `Estadia_Modulos`, `Falso_Flete`, `Importe_Base`, `Tarifa_Detalle`, `Importe` e
   `Importe_Detalle` (con default o vacías: el código viejo sigue andando).
 - `database/tarifas/03_cargar_tarifario_agosto_2026.sql`: primero muestra; con `@Aplicar = 1` (transacción abierta para
@@ -2687,8 +2693,10 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   que genera un presupuesto nuevo queda con la tabla, su modo, la vuelta y el importe del presupuesto (los presupuestos de
   antes siguen funcionando con su tarifa).
 - `gestion-tarifas.html`: solo la tabla de tarifas (ya no hay pestañas de fijas por recorrido ni de bandas por km): la
-  lista de tablas (vigencia y estado: Vigente, Anterior o Próxima) y el formulario como el PDF, con los bloques Datos,
-  Bandas de km, Tarifas fijas (una grilla por modelo), Tarifas por km y Adicionales. "Registrar tabla de tarifas" viene
+  lista de tablas (para qué clientes —"Todos los clientes, salvo …, que tienen tabla propia" o los de la propia—,
+  vigencia y estado: Vigente, Anterior o Próxima) y el formulario como el PDF, con los bloques Datos, Clientes (todos o
+  solo algunos, con buscador), Bandas de km, Tarifas fijas (una grilla por modelo), Tarifas por km y Adicionales. La API
+  no deja dos generales que empiecen el mismo día, ni dos propias de un mismo cliente. "Registrar tabla de tarifas" viene
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
   hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con
@@ -2729,8 +2737,11 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista y abre viajes como antes.
 - [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026", desde el 01/08/2026, Vigente. Editar:
   los valores iguales al PDF (fijas por modelo y por km). Cancelar.
-- [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos. Fecha 01/08/2026 →
-  "Ya hay una tabla de tarifas vigente desde el 01/08/2026…". Cancelar.
+- [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos, "Todos los clientes"
+  elegido. Fecha 01/08/2026 → "Ya hay una tabla para todos los clientes vigente desde el 01/08/2026…". Elegir "Solo algunos
+  clientes" sin tildar ninguno → "Elegí al menos un cliente.". Tildar un cliente de prueba, cambiar un valor y Guardar: en
+  la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
+  la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia.
 - [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
 - [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Fija viene elegida; comparar con el
   PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el

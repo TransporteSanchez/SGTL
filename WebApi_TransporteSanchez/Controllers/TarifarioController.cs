@@ -15,6 +15,8 @@ namespace WebApi_TransporteSanchez.Controllers
     /// Tabla de tarifas por tipo de camión (tablas TARIFARIOS y TARIFARIO_VALORES, database/tarifas/02 y 03; fuera del
     /// EDMX): las tarifas fijas por banda de km y las tarifas por km. Cada versión (un PDF de la empresa) vale desde
     /// Vigente_Desde hasta la siguiente. El viaje guarda su importe: editar una versión no cambia los viajes ya calculados.
+    /// Cada tabla es general (para todos los clientes) o propia de algunos clientes (TARIFARIO_CLIENTES): para esos
+    /// clientes reemplaza a la general. Una general y una propia pueden estar vigentes al mismo tiempo.
     /// </summary>
     public class TarifarioController : ApiController
     {
@@ -34,6 +36,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Tarifario_ID { get; set; }
             public string Nombre { get; set; }
             public DateTime? Vigente_Desde { get; set; }
+            public bool? Para_Todos { get; set; }       // sin dato: para todos los clientes
+            public List<int> Clientes { get; set; }      // solo si no es para todos
             public int Anio_Corte { get; set; }
             public int Km_Banda1 { get; set; }
             public int Km_Banda2 { get; set; }
@@ -52,10 +56,18 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Tarifario_ID { get; set; }
             public string Nombre { get; set; }
             public DateTime Vigente_Desde { get; set; }
+            public bool Para_Todos { get; set; }
             public DateTime? Vigente_Hasta { get; set; }
             public int Viajes { get; set; }
             public DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+        }
+
+        private class ClienteTablaRow
+        {
+            public int Tarifario_ID { get; set; }
+            public int Cliente_ID { get; set; }
+            public string Razon_Social { get; set; }
         }
 
         // Cn: la de Entity Framework (DbContext y la auditoría). CnSql: la de SQL Server, para la transacción con SqlConnection.
@@ -74,13 +86,23 @@ namespace WebApi_TransporteSanchez.Controllers
             return TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time");
         }
 
+        // Hasta: el día antes de la tabla siguiente del mismo alcance (la general siguiente, o la propia siguiente de alguno
+        // de sus clientes).
         private const string SELECT_LISTA =
-            "SELECT t.Tarifario_ID, t.Nombre, t.Vigente_Desde, " +
-            "(SELECT DATEADD(day, -1, MIN(s.Vigente_Desde)) FROM dbo.TARIFARIOS s WHERE s.Vigente_Desde > t.Vigente_Desde) AS Vigente_Hasta, " +
+            "SELECT t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Para_Todos, " +
+            "(SELECT DATEADD(day, -1, MIN(s.Vigente_Desde)) FROM dbo.TARIFARIOS s WHERE s.Vigente_Desde > t.Vigente_Desde " +
+            " AND ((t.Para_Todos = 1 AND s.Para_Todos = 1) OR (t.Para_Todos = 0 AND s.Para_Todos = 0 AND EXISTS (" +
+            "  SELECT 1 FROM dbo.TARIFARIO_CLIENTES a JOIN dbo.TARIFARIO_CLIENTES b ON b.ClienteID = a.ClienteID " +
+            "  WHERE a.Tarifario_ID = t.Tarifario_ID AND b.Tarifario_ID = s.Tarifario_ID)))) AS Vigente_Hasta, " +
             "(SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifarioID = t.Tarifario_ID) AS Viajes, t.Fecha_Modi, t.Usu_Modi " +
             "FROM dbo.TARIFARIOS t ";
 
-        // GET api/Tarifario: las versiones, la más nueva primero.
+        private const string SELECT_CLIENTES =
+            "SELECT tc.Tarifario_ID, c.Cliente_ID, ISNULL(c.Razon_Social, '') AS Razon_Social FROM dbo.TARIFARIO_CLIENTES tc " +
+            "JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID ";
+
+        // GET api/Tarifario: las tablas, la más nueva primero, con para quién es cada una. La general dice además qué
+        // clientes tienen tabla propia (para ellos no vale).
         [HttpGet]
         [Route("api/Tarifario")]
         public IHttpActionResult Listar()
@@ -88,7 +110,18 @@ namespace WebApi_TransporteSanchez.Controllers
             try
             {
                 using (var db = new DbContext(Cn()))
-                    return Ok(db.Database.SqlQuery<ListaRow>(SELECT_LISTA + "ORDER BY t.Vigente_Desde DESC").ToList());
+                {
+                    var tablas = db.Database.SqlQuery<ListaRow>(SELECT_LISTA + "ORDER BY t.Vigente_Desde DESC, t.Para_Todos").ToList();
+                    var clientes = db.Database.SqlQuery<ClienteTablaRow>(SELECT_CLIENTES).ToList();
+                    var conTablaPropia = clientes.GroupBy(c => c.Cliente_ID).Select(g => g.First().Razon_Social).OrderBy(n => n).ToList();
+                    return Ok(tablas.Select(t => new
+                    {
+                        t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Vigente_Hasta, t.Para_Todos, t.Viajes, t.Fecha_Modi, t.Usu_Modi,
+                        Clientes = clientes.Where(c => c.Tarifario_ID == t.Tarifario_ID).OrderBy(c => c.Razon_Social)
+                            .Select(c => new { c.Cliente_ID, c.Razon_Social }).ToList(),
+                        Clientes_Con_Tabla_Propia = t.Para_Todos ? conTablaPropia : new List<string>()
+                    }).ToList());
+                }
             }
             catch (Exception ex) { return InternalServerError(ex); }
         }
@@ -103,7 +136,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(Cn()))
                 {
                     var t = db.Database.SqlQuery<TarifarioCalculo.Tarifario>(
-                        "SELECT Tarifario_ID, Nombre, Vigente_Desde, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
+                        "SELECT Tarifario_ID, Nombre, Vigente_Desde, Para_Todos, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
                         "Estadia_Horas_Modulo, Estadia_Desde_Horas, Estadia_Desde_Horas_Larga, Falso_Flete_Porcentaje " +
                         "FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id", P("@id", id)).FirstOrDefault();
                     if (t == null) return NotFound();
@@ -111,9 +144,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     var valores = db.Database.SqlQuery<TarifarioCalculo.Valores>(
                         "SELECT Tarifario_ID, Modelo_Nuevo, Tipo_Vehiculo, Valor_Banda1_Vuelta1, Valor_Banda1_Vuelta2, Valor_Banda2, Valor_Banda3, Valor_Km " +
                         "FROM dbo.TARIFARIO_VALORES WHERE Tarifario_ID=@id", P("@id", id)).ToList();
+                    var clientes = db.Database.SqlQuery<ClienteTablaRow>(SELECT_CLIENTES + "WHERE tc.Tarifario_ID=@id ORDER BY c.Razon_Social", P("@id", id)).ToList();
                     return Ok(new
                     {
                         t.Tarifario_ID, t.Nombre, t.Vigente_Desde, lista.Vigente_Hasta, lista.Viajes, lista.Fecha_Modi, lista.Usu_Modi,
+                        t.Para_Todos, Clientes = clientes.Select(c => new { c.Cliente_ID, c.Razon_Social }).ToList(),
                         t.Anio_Corte, t.Km_Banda1, t.Km_Banda2, t.Km_Banda3, t.Estadia_Modulo, t.Estadia_Horas_Modulo,
                         t.Estadia_Desde_Horas, t.Estadia_Desde_Horas_Larga, t.Falso_Flete_Porcentaje,
                         Valores = valores.OrderBy(v => v.Modelo_Nuevo).ThenBy(v => Array.IndexOf(TarifarioCalculo.TiposVehiculo, v.Tipo_Vehiculo)).ToList()
@@ -123,10 +158,11 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        // GET api/Tarifario/Vigente?fecha=AAAA-MM-DD: la versión vigente ese día (sin fecha, hoy). 404 si no hay.
+        // GET api/Tarifario/Vigente?fecha=AAAA-MM-DD&clienteId=N: la tabla que vale ese día para ese cliente (la propia o la
+        // general; sin fecha, hoy; sin cliente, la general). 404 si no hay.
         [HttpGet]
         [Route("api/Tarifario/Vigente")]
-        public IHttpActionResult Vigente(string fecha = null)
+        public IHttpActionResult Vigente(string fecha = null, int clienteId = 0)
         {
             DateTime dia;
             if (string.IsNullOrWhiteSpace(fecha)) dia = AhoraArgentina().Date;
@@ -136,7 +172,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(Cn()))
                 {
-                    var t = TarifarioCalculo.Vigente(db, dia);
+                    var t = TarifarioCalculo.Vigente(db, dia, clienteId);
                     if (t == null) return Content(HttpStatusCode.NotFound, new { Mensaje = "No hay una tabla de tarifas vigente el " + dia.ToString("dd/MM/yyyy") + "." });
                     return Ok(t);
                 }
@@ -150,7 +186,7 @@ namespace WebApi_TransporteSanchez.Controllers
         [HttpGet]
         [Route("api/Tarifario/Calcular")]
         public IHttpActionResult Calcular(string tarifa, string fechaInicio, int camionId = 0, string km = null, int? vuelta = null,
-            bool falsoFlete = false, int estadia = 0, int viajeId = 0)
+            bool falsoFlete = false, int estadia = 0, int viajeId = 0, int clienteId = 0)
         {
             if (tarifa != "fija" && tarifa != "km")
                 return BadRequest("Elegí la tarifa: fija o por km.");
@@ -167,6 +203,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var pedido = new TarifarioCalculo.Pedido
             {
                 ViajeId = viajeId,
+                ClienteID = clienteId,
                 UsaTarifario = true,
                 PorKm = tarifa == "km",
                 FechaInicio = inicio,
@@ -230,17 +267,39 @@ namespace WebApi_TransporteSanchez.Controllers
                         if (id > 0 && Escalar(cn, tx, "SELECT COUNT(*) FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id", P("@id", id)) == 0)
                             return NotFound();
 
-                        var mismaFecha = Escalar(cn, tx, "SELECT ISNULL(MAX(Tarifario_ID), 0) FROM dbo.TARIFARIOS WHERE Vigente_Desde=@d AND Tarifario_ID<>@id",
-                            P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
-                        if (mismaFecha > 0)
-                            return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Vigente_Desde",
-                                ErrorMessage = "Ya hay una tabla de tarifas vigente desde el " + dto.Vigente_Desde.Value.ToString("dd/MM/yyyy") + ". Elegí otra fecha o editá esa tabla." } });
+                        // No puede haber dos tablas del mismo alcance que empiecen el mismo día: dos generales, o dos propias de
+                        // un mismo cliente.
+                        bool paraTodos = dto.Para_Todos != false;
+                        var clientes = paraTodos ? new List<int>() : dto.Clientes.Where(c => c > 0).Distinct().ToList();
+                        string fecha = dto.Vigente_Desde.Value.ToString("dd/MM/yyyy");
+                        if (paraTodos)
+                        {
+                            var otra = Texto(cn, tx, "SELECT TOP (1) Nombre FROM dbo.TARIFARIOS WHERE Para_Todos=1 AND Vigente_Desde=@d AND Tarifario_ID<>@id",
+                                P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
+                            if (otra != null)
+                                return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Vigente_Desde",
+                                    ErrorMessage = "Ya hay una tabla para todos los clientes vigente desde el " + fecha + " (\"" + otra + "\"). Elegí otra fecha o editá esa tabla." } });
+                        }
+                        else
+                        {
+                            foreach (var cliente in clientes)
+                            {
+                                var otra = Texto(cn, tx,
+                                    "SELECT TOP (1) ISNULL(c.Razon_Social, 'El cliente') + ' ya tiene la tabla \"' + t.Nombre + '\"' FROM dbo.TARIFARIOS t " +
+                                    "JOIN dbo.TARIFARIO_CLIENTES tc ON tc.Tarifario_ID = t.Tarifario_ID JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID " +
+                                    "WHERE t.Para_Todos=0 AND tc.ClienteID=@c AND t.Vigente_Desde=@d AND t.Tarifario_ID<>@id",
+                                    P("@c", cliente), P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
+                                if (otra != null)
+                                    return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Clientes",
+                                        ErrorMessage = otra + " desde el " + fecha + ". Elegí otra fecha o editá esa tabla." } });
+                            }
+                        }
 
                         var ahora = AhoraArgentina();
                         var usuario = Usuario(dto.Usuario);
                         var cabecera = new[]
                         {
-                            P("@nombre", dto.Nombre.Trim()), P("@desde", dto.Vigente_Desde.Value.Date), P("@corte", dto.Anio_Corte),
+                            P("@nombre", dto.Nombre.Trim()), P("@desde", dto.Vigente_Desde.Value.Date), P("@todos", paraTodos), P("@corte", dto.Anio_Corte),
                             P("@b1", dto.Km_Banda1), P("@b2", dto.Km_Banda2), P("@b3", dto.Km_Banda3), P("@modulo", dto.Estadia_Modulo),
                             P("@horas", dto.Estadia_Horas_Modulo), P("@desdeHoras", dto.Estadia_Desde_Horas),
                             P("@desdeHorasLarga", dto.Estadia_Desde_Horas_Larga), P("@falso", dto.Falso_Flete_Porcentaje),
@@ -250,19 +309,23 @@ namespace WebApi_TransporteSanchez.Controllers
                         if (id == 0)
                         {
                             id = Escalar(cn, tx,
-                                "INSERT INTO dbo.TARIFARIOS (Nombre, Vigente_Desde, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
+                                "INSERT INTO dbo.TARIFARIOS (Nombre, Vigente_Desde, Para_Todos, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
                                 "Estadia_Horas_Modulo, Estadia_Desde_Horas, Estadia_Desde_Horas_Larga, Falso_Flete_Porcentaje, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi) " +
-                                "OUTPUT INSERTED.Tarifario_ID VALUES (@nombre, @desde, @corte, @b1, @b2, @b3, @modulo, @horas, @desdeHoras, @desdeHorasLarga, @falso, " +
+                                "OUTPUT INSERTED.Tarifario_ID VALUES (@nombre, @desde, @todos, @corte, @b1, @b2, @b3, @modulo, @horas, @desdeHoras, @desdeHorasLarga, @falso, " +
                                 "@ahora, @usuario, @ahora, @usuario)", cabecera);
                         }
                         else
                         {
                             Ejecutar(cn, tx,
-                                "UPDATE dbo.TARIFARIOS SET Nombre=@nombre, Vigente_Desde=@desde, Anio_Corte=@corte, Km_Banda1=@b1, Km_Banda2=@b2, Km_Banda3=@b3, " +
+                                "UPDATE dbo.TARIFARIOS SET Nombre=@nombre, Vigente_Desde=@desde, Para_Todos=@todos, Anio_Corte=@corte, Km_Banda1=@b1, Km_Banda2=@b2, Km_Banda3=@b3, " +
                                 "Estadia_Modulo=@modulo, Estadia_Horas_Modulo=@horas, Estadia_Desde_Horas=@desdeHoras, Estadia_Desde_Horas_Larga=@desdeHorasLarga, " +
                                 "Falso_Flete_Porcentaje=@falso, Fecha_Modi=@ahora, Usu_Modi=@usuario WHERE Tarifario_ID=@id", cabecera);
                             Ejecutar(cn, tx, "DELETE FROM dbo.TARIFARIO_VALORES WHERE Tarifario_ID=@id", P("@id", id));
+                            Ejecutar(cn, tx, "DELETE FROM dbo.TARIFARIO_CLIENTES WHERE Tarifario_ID=@id", P("@id", id));
                         }
+
+                        foreach (var cliente in clientes)
+                            Ejecutar(cn, tx, "INSERT INTO dbo.TARIFARIO_CLIENTES (Tarifario_ID, ClienteID) VALUES (@id, @c)", P("@id", id), P("@c", cliente));
 
                         foreach (var v in dto.Valores)
                         {
@@ -315,6 +378,8 @@ namespace WebApi_TransporteSanchez.Controllers
             if (string.IsNullOrWhiteSpace(d.Nombre)) error("Nombre", "Completá el nombre.");
             else if (d.Nombre.Trim().Length > 100) error("Nombre", "El nombre puede tener hasta 100 caracteres.");
             if (!d.Vigente_Desde.HasValue) error("Vigente_Desde", "Completá desde cuándo vale.");
+            if (d.Para_Todos == false && (d.Clientes == null || !d.Clientes.Any(c => c > 0)))
+                error("Clientes", "Elegí al menos un cliente.");
             if (d.Anio_Corte < 1990 || d.Anio_Corte > 2100) error("Anio_Corte", "Completá el año del modelo desde el que valen los valores nuevos.");
             if (d.Km_Banda1 <= 0) error("Km_Banda1", "Tiene que ser mayor que cero.");
             if (d.Km_Banda2 <= d.Km_Banda1) error("Km_Banda2", "Tiene que ser mayor que " + d.Km_Banda1 + ".");
@@ -345,7 +410,9 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string Resumen(TarifarioDto d)
         {
             var es = new CultureInfo("es-AR");
-            return d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy") + ". Corte " + d.Anio_Corte
+            return d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy")
+                + (d.Para_Todos == false ? ", para los clientes " + string.Join(", ", d.Clientes.Distinct()) : ", para todos los clientes")
+                + ". Corte " + d.Anio_Corte
                 + "; bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
                 + " por módulo; falso flete " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. "
                 + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).Select(v => (v.Modelo_Nuevo ? "Nuevo " : "Anterior ") + v.Tipo_Vehiculo.Trim() + ": "
@@ -359,6 +426,16 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 cmd.Parameters.AddRange(ps.Select(p => new SqlParameter(p.ParameterName, p.Value)).ToArray());
                 return Convert.ToInt32(cmd.ExecuteScalar());
+            }
+        }
+
+        private static string Texto(SqlConnection cn, SqlTransaction tx, string sql, params SqlParameter[] ps)
+        {
+            using (var cmd = new SqlCommand(sql, cn, tx))
+            {
+                cmd.Parameters.AddRange(ps.Select(p => new SqlParameter(p.ParameterName, p.Value)).ToArray());
+                var r = cmd.ExecuteScalar();
+                return r == null || r == DBNull.Value ? null : Convert.ToString(r);
             }
         }
 

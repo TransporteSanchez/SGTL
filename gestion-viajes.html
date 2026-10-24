@@ -914,14 +914,16 @@
         function porcentaje(v) { return Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' %'; }
         function estadiaModulos() { var n = parseInt($('#estadiaModulos').val(), 10); return n > 0 ? n : 0; }
 
-        // La versión del tarifario vigente en una fecha (AAAA-MM-DD), para el falso flete, la estadía y su ayuda.
+        // La tabla de tarifas que vale en una fecha (AAAA-MM-DD) para el cliente del viaje (la propia o la general), para el
+        // falso flete, la estadía y su ayuda.
         function tarifarioVigente(fecha) {
+            var cliente = $('#clienteSelect').val() || 0, clave = fecha + '|' + cliente;
             if (!fecha) return Promise.resolve(null);
-            if (!tarifariosPorFecha[fecha]) {
-                tarifariosPorFecha[fecha] = SGTL.ajax({ url: API_VIAJES + '/Tarifario/Vigente', type: 'GET', data: { fecha: fecha } })
+            if (!tarifariosPorFecha[clave]) {
+                tarifariosPorFecha[clave] = SGTL.ajax({ url: API_VIAJES + '/Tarifario/Vigente', type: 'GET', data: { fecha: fecha, clienteId: cliente } })
                     .catch(function () { return null; });
             }
-            return tarifariosPorFecha[fecha];
+            return tarifariosPorFecha[clave];
         }
         function actualizarAyudaAdicionales() {
             tarifarioVigente(fechaInicioViaje()).then(function (t) {
@@ -1227,6 +1229,8 @@
             $('#distanciaKm').val('');
             limpiarRutaViaje();
             resolverTarifa();
+            // Cada cliente puede tener su tabla de tarifas: cambian el falso flete y la estadía.
+            actualizarAyudaAdicionales();
             if ($('#clienteBuscar').hasClass('is-invalid')) formularioViaje.validar('clienteBuscar');
         }
 
@@ -1273,7 +1277,7 @@
             setTarifaInfo('Calculando la tarifa…');
             SGTL.ajax({
                 url: API_VIAJES + '/Tarifario/Calcular', type: 'GET',
-                data: { tarifa: modo, fechaInicio: $('#fechaInicio').val(), camionId: camion, km: km, vuelta: vueltaManual ? vueltaElegida() : '', viajeId: $('#viajeIdEdicion').val() || 0 }
+                data: { tarifa: modo, fechaInicio: $('#fechaInicio').val(), camionId: camion, km: km, vuelta: vueltaManual ? vueltaElegida() : '', viajeId: $('#viajeIdEdicion').val() || 0, clienteId: $('#clienteSelect').val() || 0 }
             }).then(function (r) {
                 if (seq !== tarifarioSeq) return;
                 if (r.AplicaVuelta && !vueltaManual && r.Vuelta !== r.VueltaSugerida) {

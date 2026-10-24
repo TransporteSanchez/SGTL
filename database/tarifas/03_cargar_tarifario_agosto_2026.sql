@@ -11,7 +11,8 @@
         c. Los viajes que todavía no guardaron su importe, con el importe que les queda guardado: el MISMO que muestran
            hoy (presupuesto aceptado; si no, tarifa fija; si no, tarifa por km × km). Ningún monto cambia.
      2. Con @Aplicar = 1, dentro de una transacción que queda abierta:
-        a. Carga la versión "Tarifas a agosto 2026" (vigente desde el 01/08/2026) con sus 8 filas de valores, si no estaba.
+        a. Carga la versión "Tarifas a agosto 2026" (vigente desde el 01/08/2026, para todos los clientes) con sus 8
+           filas de valores, si no estaba.
         b. Pasa al nombre de la tabla el tipo de los camiones que se puede deducir (furgón, balancín, chasis, liviano).
         c. Guarda el importe de los viajes que no lo tienen.
         Al final muestra las cantidades: si coinciden con el diagnóstico, COMMIT; si no, ROLLBACK.
@@ -41,7 +42,7 @@ IF OBJECT_ID(N'dbo.TARIFARIOS', N'U') IS NULL OR COL_LENGTH('dbo.VIAJES', 'Impor
 /* ---------------------------------------------------------------- Diagnóstico */
 
 -- a. Versión de agosto 2026.
-SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.TARIFARIOS WHERE Vigente_Desde = '2026-08-01')
+SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.TARIFARIOS WHERE Vigente_Desde = '2026-08-01' AND Para_Todos = 1)
             THEN N'Ya está cargada' ELSE N'Se carga con @Aplicar = 1' END AS Tarifas_a_agosto_2026;
 
 -- b. Camiones y el tipo de la tabla.
@@ -113,12 +114,12 @@ BEGIN
 
     DECLARE @Tarifas int = 0, @Valores int = 0, @Camiones int = 0, @Viajes int = 0;
 
-    IF NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS WHERE Vigente_Desde = '2026-08-01')
+    IF NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS WHERE Vigente_Desde = '2026-08-01' AND Para_Todos = 1)
     BEGIN
-        INSERT INTO dbo.TARIFARIOS (Nombre, Vigente_Desde, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3,
+        INSERT INTO dbo.TARIFARIOS (Nombre, Vigente_Desde, Para_Todos, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3,
                                     Estadia_Modulo, Estadia_Horas_Modulo, Estadia_Desde_Horas, Estadia_Desde_Horas_Larga,
                                     Falso_Flete_Porcentaje, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi)
-        VALUES (N'Tarifas a agosto 2026', '2026-08-01', 2019, 130, 190, 250, 96577, 6, 12, 18, 60,
+        VALUES (N'Tarifas a agosto 2026', '2026-08-01', 1, 2019, 130, 190, 250, 96577, 6, 12, 18, 60,
                 @Ahora, @Usuario, @Ahora, @Usuario);
         SET @Tarifas = @@ROWCOUNT;
 
