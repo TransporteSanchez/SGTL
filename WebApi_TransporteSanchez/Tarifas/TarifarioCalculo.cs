@@ -6,12 +6,17 @@ using System.Linq;
 
 namespace WebApi_TransporteSanchez.Tarifas
 {
-    // Importe de un viaje (24/10/2026). Un solo cálculo para Gestionar viajes, el guardado del viaje y el tarifario.
+    // Importe de un viaje (24/10/2026). Un solo cálculo para Gestionar viajes, presupuestos, el guardado del viaje y la
+    // tabla de tarifas.
     //
-    // Tarifario por tipo de camión (tabla "Tarifas a agosto 2026", database/tarifas/02 y 03): el precio sale del tipo de
-    // camión, del año del modelo (antes o desde el año de corte), de los km de ida por banda (hasta Km_Banda1 con 1ª o 2ª
-    // vuelta, hasta Km_Banda2, hasta Km_Banda3 y, más allá, $ por km × km) y de dos adicionales: falso flete (un % del
-    // viaje) y módulos de estadía. Cada banda va de más del mínimo hasta el máximo inclusive, como las tarifas por km.
+    // Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026", database/tarifas/02 y 03; en el código, "tarifario"):
+    // el precio sale del tipo de camión, del año del modelo (antes o desde el año de corte) y de los km de ida, de una de
+    // dos formas (decisión de Rocío con Claudia, 24/10):
+    //   - Tarifa fija: el precio por viaje de la banda (hasta Km_Banda1 con 1ª o 2ª vuelta, hasta Km_Banda2, hasta
+    //     Km_Banda3). Más de Km_Banda3: la fija de Km_Banda3 más los km que pasan × el precio por km.
+    //   - Tarifa por km: todo el viaje × el precio por km.
+    // Más dos adicionales: falso flete (un % del viaje) y módulos de estadía. Cada banda va de más del mínimo hasta el
+    // máximo inclusive, como las tarifas por km de antes.
     //
     // El viaje guarda el importe (Importe_Base, Importe y sus detalles): cambiar después una tarifa no cambia los viajes ya
     // calculados (§33 de PENDIENTES). Los adicionales se aplican sobre cualquier tarifa, con el tarifario vigente.
@@ -58,11 +63,13 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int AñoModelo { get; set; }
         }
 
-        // Lo que define la tarifa del viaje. Una sola de las tres: tarifario, tarifa fija o tarifa por km.
+        // Lo que define la tarifa del viaje: la tabla de tarifas (fija o por km) o, en un viaje de antes del 24/10, la
+        // tarifa fija por recorrido o la tarifa por km que ya tenía (TarifaFijaID / TarifaKmID).
         public class Pedido
         {
             public int ViajeId { get; set; }            // 0 en un viaje nuevo
             public bool UsaTarifario { get; set; }
+            public bool PorKm { get; set; }             // con la tabla: true = tarifa por km; false = tarifa fija
             public int? TarifaFijaID { get; set; }
             public int? TarifaKmID { get; set; }
             public DateTime FechaInicio { get; set; }
@@ -85,7 +92,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public string TipoVehiculo { get; set; }
             public bool? ModeloNuevo { get; set; }
             public string Banda { get; set; }               // "hasta 130 km", "más de 250 km"…
-            public bool AplicaVuelta { get; set; }          // hasta Km_Banda1: hay 1ª y 2ª vuelta
+            public bool AplicaVuelta { get; set; }          // fija hasta Km_Banda1: hay 1ª y 2ª vuelta
             public int? Vuelta { get; set; }
 
             public decimal ImporteBase { get; set; }
@@ -188,7 +195,7 @@ namespace WebApi_TransporteSanchez.Tarifas
         {
             var t = Vigente(db, p.FechaInicio);
             if (t == null)
-                return Falla("No hay tarifario vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + ". Cargalo en Gestionar tarifas.");
+                return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + ". Cargala en Gestionar tarifas.");
 
             if (p.CamionID <= 0) return Falla("Elegí el camión para calcular la tarifa.");
             var camion = db.Database.SqlQuery<CamionTarifa>(
@@ -206,7 +213,7 @@ namespace WebApi_TransporteSanchez.Tarifas
                 "FROM dbo.TARIFARIO_VALORES WHERE Tarifario_ID=@t AND Modelo_Nuevo=@n AND Tipo_Vehiculo=@tipo",
                 P("@t", t.Tarifario_ID), P("@n", nuevo), P("@tipo", camion.Tipo.Trim())).FirstOrDefault();
             if (v == null)
-                return Falla("El tarifario \"" + t.Nombre + "\" no tiene valores para " + camion.Tipo.Trim() + ", " + Antiguedad(t, nuevo) + ". Completalo en Gestionar tarifas.");
+                return Falla("La tabla \"" + t.Nombre + "\" no tiene valores para " + camion.Tipo.Trim() + ", " + Antiguedad(t, nuevo) + ". Completala en Gestionar tarifas.");
 
             decimal km = p.Km.Value;
             var r = new Resultado
@@ -218,28 +225,35 @@ namespace WebApi_TransporteSanchez.Tarifas
                 ModeloNuevo = nuevo
             };
 
-            if (km <= t.Km_Banda1)
+            if (p.PorKm)
+            {
+                r.Banda = "tarifa por km: " + Km(km) + " km × " + Pesos(v.Valor_Km);
+                r.ImporteBase = Redondear(v.Valor_Km * km);
+            }
+            else if (km <= t.Km_Banda1)
             {
                 int vuelta = p.Vuelta == 2 ? 2 : 1;
                 r.AplicaVuelta = true;
                 r.Vuelta = vuelta;
-                r.Banda = "hasta " + t.Km_Banda1 + " km, " + vuelta + "ª vuelta";
+                r.Banda = "tarifa fija hasta " + t.Km_Banda1 + " km, " + vuelta + "ª vuelta";
                 r.ImporteBase = vuelta == 2 ? v.Valor_Banda1_Vuelta2 : v.Valor_Banda1_Vuelta1;
             }
             else if (km <= t.Km_Banda2)
             {
-                r.Banda = "más de " + t.Km_Banda1 + " y hasta " + t.Km_Banda2 + " km";
+                r.Banda = "tarifa fija de más de " + t.Km_Banda1 + " y hasta " + t.Km_Banda2 + " km";
                 r.ImporteBase = v.Valor_Banda2;
             }
             else if (km <= t.Km_Banda3)
             {
-                r.Banda = "más de " + t.Km_Banda2 + " y hasta " + t.Km_Banda3 + " km";
+                r.Banda = "tarifa fija de más de " + t.Km_Banda2 + " y hasta " + t.Km_Banda3 + " km";
                 r.ImporteBase = v.Valor_Banda3;
             }
             else
             {
-                r.Banda = "más de " + t.Km_Banda3 + " km: " + Pesos(v.Valor_Km) + " por km × " + Km(km) + " km";
-                r.ImporteBase = Redondear(v.Valor_Km * km);
+                // La fija de la última banda y los km que pasan, al precio por km (como lo calcula la empresa).
+                decimal excedente = km - t.Km_Banda3;
+                r.Banda = "tarifa fija hasta " + t.Km_Banda3 + " km (" + Pesos(v.Valor_Banda3) + ") + " + Km(excedente) + " km × " + Pesos(v.Valor_Km);
+                r.ImporteBase = v.Valor_Banda3 + Redondear(v.Valor_Km * excedente);
             }
 
             r.TarifaDetalle = t.Nombre + " · " + r.TipoVehiculo + ", " + Antiguedad(t, nuevo) + " · " + r.Banda;
@@ -264,7 +278,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             {
                 var t = Vigente(db, p.FechaInicio);
                 if (t == null)
-                    return Falla("No hay tarifario vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargalo en Gestionar tarifas.");
+                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargala en Gestionar tarifas.");
 
                 if (p.FalsoFlete)
                 {

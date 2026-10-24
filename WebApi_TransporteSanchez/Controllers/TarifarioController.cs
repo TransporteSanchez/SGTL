@@ -12,9 +12,9 @@ using WebApi_TransporteSanchez.Tarifas;
 namespace WebApi_TransporteSanchez.Controllers
 {
     /// <summary>
-    /// Tarifario por tipo de camión (tablas TARIFARIOS y TARIFARIO_VALORES, database/tarifas/02 y 03; fuera del EDMX).
-    /// Cada versión vale desde Vigente_Desde hasta la versión siguiente. El viaje guarda su importe: editar una versión
-    /// no cambia los viajes ya calculados.
+    /// Tabla de tarifas por tipo de camión (tablas TARIFARIOS y TARIFARIO_VALORES, database/tarifas/02 y 03; fuera del
+    /// EDMX): las tarifas fijas por banda de km y las tarifas por km. Cada versión (un PDF de la empresa) vale desde
+    /// Vigente_Desde hasta la siguiente. El viaje guarda su importe: editar una versión no cambia los viajes ya calculados.
     /// </summary>
     public class TarifarioController : ApiController
     {
@@ -137,21 +137,24 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(Cn()))
                 {
                     var t = TarifarioCalculo.Vigente(db, dia);
-                    if (t == null) return Content(HttpStatusCode.NotFound, new { Mensaje = "No hay tarifario vigente el " + dia.ToString("dd/MM/yyyy") + "." });
+                    if (t == null) return Content(HttpStatusCode.NotFound, new { Mensaje = "No hay una tabla de tarifas vigente el " + dia.ToString("dd/MM/yyyy") + "." });
                     return Ok(t);
                 }
             }
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        // GET api/Tarifario/Calcular: el importe del viaje con lo que hay en pantalla, con el mismo cálculo que se guarda.
-        // tarifa: "tarifario", "fija" o "km". Devuelve también si corresponde la 2ª vuelta (otro viaje del camión ese día).
+        // GET api/Tarifario/Calcular: el importe del viaje (o del presupuesto) con lo que hay en pantalla, con el mismo
+        // cálculo que se guarda. tarifa: "fija" o "km", las dos de la tabla. Devuelve también si corresponde la 2ª vuelta
+        // (el camión ya tiene otro viaje ese día que empieza antes).
         [HttpGet]
         [Route("api/Tarifario/Calcular")]
         public IHttpActionResult Calcular(string tarifa, string fechaInicio, int camionId = 0, string km = null, int? vuelta = null,
-            bool falsoFlete = false, int estadia = 0, int? tarifaFijaId = null, int? tarifaKmId = null, int viajeId = 0,
-            string origen = null, string destino = null)
+            bool falsoFlete = false, int estadia = 0, int viajeId = 0)
         {
+            if (tarifa != "fija" && tarifa != "km")
+                return BadRequest("Elegí la tarifa: fija o por km.");
+
             DateTime inicio;
             if (string.IsNullOrWhiteSpace(fechaInicio) || !DateTime.TryParse(fechaInicio, CultureInfo.InvariantCulture, DateTimeStyles.None, out inicio))
                 return BadRequest("Completá el inicio para calcular la tarifa.");
@@ -164,17 +167,14 @@ namespace WebApi_TransporteSanchez.Controllers
             var pedido = new TarifarioCalculo.Pedido
             {
                 ViajeId = viajeId,
-                UsaTarifario = tarifa == "tarifario",
-                TarifaFijaID = tarifa == "fija" ? tarifaFijaId : null,
-                TarifaKmID = tarifa == "km" ? tarifaKmId : null,
+                UsaTarifario = true,
+                PorKm = tarifa == "km",
                 FechaInicio = inicio,
                 CamionID = camionId,
                 Km = kmPedido,
                 Vuelta = vuelta,
                 FalsoFlete = falsoFlete,
-                EstadiaModulos = estadia,
-                Origen = origen,
-                Destino = destino
+                EstadiaModulos = estadia
             };
 
             try
@@ -197,7 +197,7 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        // POST api/Tarifario: versión nueva (por ejemplo, cuando llega la tabla del mes siguiente).
+        // POST api/Tarifario: tabla nueva (cuando la empresa manda la actualizada).
         [HttpPost]
         [Route("api/Tarifario")]
         public IHttpActionResult Registrar([FromBody] TarifarioDto dto)
@@ -205,7 +205,7 @@ namespace WebApi_TransporteSanchez.Controllers
             return Guardar(0, dto);
         }
 
-        // PUT api/Tarifario/{id}: corregir una versión. Los viajes ya calculados conservan su importe.
+        // PUT api/Tarifario/{id}: corregir una tabla. Los viajes ya calculados conservan su importe.
         [HttpPut]
         [Route("api/Tarifario/{id:int}")]
         public IHttpActionResult Editar(int id, [FromBody] TarifarioDto dto)
@@ -215,7 +215,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private IHttpActionResult Guardar(int id, TarifarioDto dto)
         {
-            if (dto == null) return BadRequest("No se recibieron los datos del tarifario.");
+            if (dto == null) return BadRequest("No se recibieron los datos de la tabla de tarifas.");
             bool alta = id == 0;
             var errores = Validar(dto);
             if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
@@ -234,7 +234,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
                         if (mismaFecha > 0)
                             return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Vigente_Desde",
-                                ErrorMessage = "Ya hay una versión del tarifario vigente desde el " + dto.Vigente_Desde.Value.ToString("dd/MM/yyyy") + ". Elegí otra fecha o editá esa versión." } });
+                                ErrorMessage = "Ya hay una tabla de tarifas vigente desde el " + dto.Vigente_Desde.Value.ToString("dd/MM/yyyy") + ". Elegí otra fecha o editá esa tabla." } });
 
                         var ahora = AhoraArgentina();
                         var usuario = Usuario(dto.Usuario);
@@ -277,7 +277,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         SGTLAuditContext.RegistrarEvento(Cn(), usuario.Length > 20 ? usuario.Substring(0, 20) : usuario, alta ? "INSERT" : "UPDATE",
                             "TARIFARIOS", "Tarifario_ID=" + id, Resumen(dto));
-                        return Ok(new { Tarifario_ID = id, Message = alta ? "Tarifario registrado." : "Tarifario guardado." });
+                        return Ok(new { Tarifario_ID = id, Message = alta ? "Tabla de tarifas registrada." : "Tabla de tarifas guardada." });
                     }
                 }
             }
@@ -296,12 +296,12 @@ namespace WebApi_TransporteSanchez.Controllers
                     var t = db.Database.SqlQuery<ListaRow>(SELECT_LISTA + "WHERE t.Tarifario_ID=@id", P("@id", id)).FirstOrDefault();
                     if (t == null) return NotFound();
                     if (t.Viajes > 0)
-                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el tarifario: lo usan " + t.Viajes + (t.Viajes == 1 ? " viaje." : " viajes.") });
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar la tabla de tarifas: la usan " + t.Viajes + (t.Viajes == 1 ? " viaje." : " viajes.") });
                     db.Database.ExecuteSqlCommand("DELETE FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id", P("@id", id));
                     var u = Usuario(usuario);
                     SGTLAuditContext.RegistrarEvento(Cn(), u.Length > 20 ? u.Substring(0, 20) : u, "DELETE", "TARIFARIOS", "Tarifario_ID=" + id,
                         t.Nombre + ", vigente desde el " + t.Vigente_Desde.ToString("dd/MM/yyyy"));
-                    return Ok(new { Message = "Tarifario eliminado." });
+                    return Ok(new { Message = "Tabla de tarifas eliminada." });
                 }
             }
             catch (Exception ex) { return InternalServerError(ex); }

@@ -1,5 +1,6 @@
-// Tarifario por tipo de camión (24/10): la tabla "Tarifas a agosto 2026". El precio del viaje sale del tipo de camión,
-// el año del modelo, los km (por banda, con 1ª y 2ª vuelta en la primera) y los adicionales (falso flete y estadía).
+// Tabla de tarifas por tipo de camión (24/10, decisión de Rocío con Claudia): "Tarifas a agosto 2026". El precio del
+// viaje sale del tipo de camión, el año del modelo y los km: tarifa fija por banda (con 1ª y 2ª vuelta en la primera; más
+// de 250 km, la fija de 250 más el excedente por km) o tarifa por km (todo el viaje), más falso flete y estadía.
 // El viaje guarda su importe: proformas, control de Rukas y dashboard leen el guardado, así que cambiar una tarifa
 // no cambia los viajes ya calculados (§33 de PENDIENTES).
 const assert = require('assert');
@@ -69,12 +70,34 @@ function probarViajeGuardaImporte() {
     assert.ok(guardado !== -1 && guardado < presupuesto, 'Traer viajes y el control de Rukas leen primero el importe guardado');
 
     const pantalla = leer('gestion-viajes.html');
-    ['TarifarioID:', 'Vuelta:', 'Falso_Flete:', 'Estadia_Modulos:'].forEach(function (campo) {
+    ['TarifarioID:', 'Tarifa_Modo:', 'Vuelta:', 'Falso_Flete:', 'Estadia_Modulos:'].forEach(function (campo) {
         assert.ok(pantalla.indexOf(campo) !== -1, 'Registrar viaje manda ' + campo.replace(':', ''));
     });
-    assert.ok(/id="tarifaTipoTarifario" value="tarifario" checked/.test(pantalla), 'Tarifario viene elegido al registrar un viaje');
-    assert.ok(/id="opcionTarifaKm">/.test(pantalla) && /class="form-check d-none" id="opcionTarifaKm"/.test(pantalla),
-        'Por km queda oculto: solo aparece en los viajes que ya la tienen');
+    assert.ok(/id="tarifaTipoFija" value="fija" checked/.test(pantalla), 'Fija viene elegida al registrar un viaje');
+    assert.ok(/id="tarifaTipoKm" value="km"/.test(pantalla), 'Por km es la otra opción');
+    assert.ok(pantalla.indexOf('TarifasFijas/PorRuta') === -1 && pantalla.indexOf('TarifasKm/Calcular') === -1,
+        'Registrar viaje ya no busca tarifas fijas por recorrido ni las tarifas por km de antes');
+
+    const presupuestos = leer('assets/static/js/presupuestos.js');
+    assert.ok(presupuestos.indexOf("/Tarifario/Calcular?") !== -1, 'presupuestos calcula con la tabla de tarifas, como los viajes');
+    assert.ok(presupuestos.indexOf('TarifasFijas/PorRuta') === -1 && presupuestos.indexOf('TarifasKm/Calcular') === -1,
+        'presupuestos ya no usa las tarifas de antes');
+    assert.ok(/conTabla \? \(object\)tarifario/.test(leer('WebApi_TransporteSanchez/Controllers/PresupuestosController.cs')),
+        'el viaje que genera un presupuesto nuevo queda con la tabla de tarifas');
+
+    const tarifas = leer('gestion-tarifas.html');
+    assert.ok(tarifas.indexOf('tablaFijas') === -1 && tarifas.indexOf('tablaKm') === -1,
+        'Gestionar tarifas ya no carga tarifas fijas por recorrido ni bandas por km: solo la tabla de tarifas');
+}
+
+function probarFijaConExcedente() {
+    const calculo = leer('WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs');
+    assert.ok(/decimal excedente = km - t\.Km_Banda3;/.test(calculo) && /v\.Valor_Banda3 \+ Redondear\(v\.Valor_Km \* excedente\)/.test(calculo),
+        'con tarifa fija, más de 250 km es la fija de 250 más el excedente por km');
+    assert.ok(/if \(p\.PorKm\)[\s\S]{0,200}Redondear\(v\.Valor_Km \* km\)/.test(calculo), 'con tarifa por km, todo el viaje por km');
+    // 600 km en un Balancín 2019 en adelante: fija 663.370 + 350 × 2.594 = 1.571.270; por km, 600 × 2.594 = 1.556.400.
+    assert.strictEqual(663370 + 350 * 2594, 1571270);
+    assert.strictEqual(600 * 2594, 1556400);
 }
 
 function probarProyecto() {
@@ -83,7 +106,7 @@ function probarProyecto() {
         assert.ok(csproj.indexOf('<Compile Include="' + archivo + '" />') !== -1, archivo + ' tiene que estar en el .csproj');
     });
     const esquema = leer('database/tarifas/02_tarifario_por_vehiculo.sql');
-    ['TarifarioID', 'Vuelta', 'Estadia_Modulos', 'Falso_Flete', 'Importe_Base', 'Tarifa_Detalle', 'Importe', 'Importe_Detalle'].forEach(function (c) {
+    ['TarifarioID', 'Tarifa_Modo', 'Vuelta', 'Estadia_Modulos', 'Falso_Flete', 'Importe_Base', 'Tarifa_Detalle', 'Importe', 'Importe_Detalle'].forEach(function (c) {
         assert.ok(esquema.indexOf("COL_LENGTH('dbo.VIAJES', '" + c + "') IS NULL") !== -1, '02 agrega VIAJES.' + c + ' solo si falta');
     });
 }
@@ -91,5 +114,6 @@ function probarProyecto() {
 probarTiposIguales();
 probarValoresDeAgosto();
 probarViajeGuardaImporte();
+probarFijaConExcedente();
 probarProyecto();
-console.log('OK: el tarifario por tipo de camión, sus valores de agosto 2026 y el importe guardado del viaje');
+console.log('OK: la tabla de tarifas (fija con excedente y por km), sus valores de agosto 2026 y el importe guardado del viaje');

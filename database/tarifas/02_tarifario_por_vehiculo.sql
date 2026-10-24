@@ -1,25 +1,31 @@
 /*
-   Tarifario por tipo de camión (24/10/2026): la tabla "Tarifas a agosto 2026" de la empresa.
+   Tabla de tarifas por tipo de camión (24/10/2026): la tabla "Tarifas a agosto 2026" de la empresa, que usan para
+   calcular cuánto cobrar cada viaje (todo sale de esta tabla: no hay precios acordados por cliente y recorrido).
 
    El precio de un viaje sale de:
      - El tipo de camión (Furgón, Balancín (3 ejes), Chasis (2 ejes) o Liviano) y el año del modelo: antes del año de
        corte o desde ese año (en la tabla de agosto 2026, "2018 o anterior" y "2019 en adelante"). Los dos datos ya
        están en CAMIONES (Tipo y AñoModelo); el tipo pasa a elegirse de una lista en Gestionar camiones.
-     - Los km de ida: hasta 130 (con un valor para la 1ª vuelta del día y otro para la 2ª), más de 130 y hasta 190,
-       más de 190 y hasta 250 (precio por viaje), y más de 250 ($ por km × km). Cada banda va de más del mínimo hasta
-       el máximo inclusive, como las tarifas por km (decisión del 23/10).
+     - Los km de ida, con una de dos formas (decisión de Rocío con Claudia, 24/10):
+         Tarifa fija: el precio por viaje de la banda de km: hasta 130 (con un valor para la 1ª vuelta del día y otro,
+           más barato, para la 2ª), más de 130 y hasta 190, y más de 190 y hasta 250. Si el viaje pasa los 250 km, la
+           fija de 250 más los km que pasan × el precio por km.
+         Tarifa por km: todo el viaje × el precio por km (la "larga distancia" de la tabla).
+       Cada banda va de más del mínimo hasta el máximo inclusive, como las tarifas por km de antes (decisión del 23/10).
      - Adicionales: falso flete (el camión fue a cargar y no había carga: se cobra un % del viaje) y módulos de estadía.
 
    Tablas nuevas:
      TARIFARIOS          una fila por versión de la tabla, vigente desde Vigente_Desde hasta la versión siguiente.
      TARIFARIO_VALORES   los valores de cada versión: una fila por antigüedad y tipo de camión (8 por versión).
    Columnas nuevas en VIAJES (fuera del EDMX: la API las usa con SQL directo):
-     TarifarioID, Vuelta, Estadia_Modulos, Falso_Flete     lo que se eligió al cargar el viaje.
+     TarifarioID, Tarifa_Modo ('Fija' o 'Km'), Vuelta,
+     Estadia_Modulos, Falso_Flete                          lo que se eligió al cargar el viaje.
      Importe_Base, Tarifa_Detalle                          la tarifa sin adicionales y de dónde salió.
      Importe, Importe_Detalle                              el importe del viaje con los adicionales y su detalle.
-   Desde ahora el viaje GUARDA su importe (§33 de docs/PENDIENTES-SISTEMA.md): cambiar una tarifa o el tarifario no
-   cambia los viajes ya calculados. El importe se vuelve a calcular al editar un viaje cambiando lo que define su
-   tarifa (tipo de tarifa, camión, km, inicio o vuelta).
+   Desde ahora el viaje GUARDA su importe (§33 de docs/PENDIENTES-SISTEMA.md): cambiar la tabla de tarifas no cambia
+   los viajes ya calculados. El importe se vuelve a calcular al editar un viaje cambiando lo que define su tarifa
+   (fija o por km, camión, km, inicio o vuelta). Las tarifas fijas por cliente y recorrido y las tarifas por km de antes
+   (TARIFAS_FIJAS y TARIFAS_KM) quedan en la base para los viajes que ya las usan; la pantalla ya no las ofrece.
 
    Este script no carga datos. Los valores de agosto 2026, el tipo de los camiones y el importe de los viajes que ya
    existen van en 03_cargar_tarifario_agosto_2026.sql.
@@ -87,7 +93,12 @@ BEGIN TRY
         ALTER TABLE dbo.VIAJES ADD TarifarioID int NULL
             CONSTRAINT FK_VIAJES_TARIFARIOS REFERENCES dbo.TARIFARIOS (Tarifario_ID);
 
-    -- 1 o 2: solo en viajes con tarifario de hasta Km_Banda1 km.
+    -- Con la tabla de tarifas: 'Fija' (la banda de km; más de 250, la de 250 más el excedente por km) o 'Km'.
+    IF COL_LENGTH('dbo.VIAJES', 'Tarifa_Modo') IS NULL
+        ALTER TABLE dbo.VIAJES ADD Tarifa_Modo varchar(4) NULL
+            CONSTRAINT CK_VIAJES_Tarifa_Modo CHECK (Tarifa_Modo IN ('Fija', 'Km'));
+
+    -- 1 o 2: solo con tarifa fija de la tabla y hasta Km_Banda1 km.
     IF COL_LENGTH('dbo.VIAJES', 'Vuelta') IS NULL
         ALTER TABLE dbo.VIAJES ADD Vuelta int NULL
             CONSTRAINT CK_VIAJES_Vuelta CHECK (Vuelta IN (1, 2));
@@ -115,11 +126,11 @@ BEGIN TRY
 
     COMMIT TRANSACTION;
 
-    -- Verificación: las dos tablas y las ocho columnas (todo "OK").
+    -- Verificación: las dos tablas y las nueve columnas (todo "OK").
     SELECT N'TARIFARIOS' AS Objeto, CASE WHEN OBJECT_ID(N'dbo.TARIFARIOS', N'U') IS NOT NULL THEN N'OK' ELSE N'FALTA' END AS Estado
     UNION ALL SELECT N'TARIFARIO_VALORES', CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_VALORES', N'U') IS NOT NULL THEN N'OK' ELSE N'FALTA' END
     UNION ALL SELECT N'VIAJES.' + c.Columna, CASE WHEN COL_LENGTH('dbo.VIAJES', c.Columna) IS NOT NULL THEN N'OK' ELSE N'FALTA' END
-    FROM (VALUES (N'TarifarioID'), (N'Vuelta'), (N'Estadia_Modulos'), (N'Falso_Flete'), (N'Importe_Base'),
+    FROM (VALUES (N'TarifarioID'), (N'Tarifa_Modo'), (N'Vuelta'), (N'Estadia_Modulos'), (N'Falso_Flete'), (N'Importe_Base'),
                  (N'Tarifa_Detalle'), (N'Importe'), (N'Importe_Detalle')) c (Columna);
 END TRY
 BEGIN CATCH

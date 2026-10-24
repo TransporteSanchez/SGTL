@@ -53,9 +53,11 @@ namespace WebApi_TransporteSanchez.Controllers
             // 08_*.sql (fuera del EDMX): se guarda por SQL directo despues del SaveChanges.
             public string Num_Transporte { get; set; }
 
-            // Tarifario por tipo de camión (database/tarifas/02_*.sql, fuera del EDMX): se guardan por SQL directo.
-            // TarifarioID > 0 = el viaje usa el tarifario (la API toma la versión vigente en el inicio).
+            // Tabla de tarifas por tipo de camión (database/tarifas/02_*.sql, fuera del EDMX): se guardan por SQL directo.
+            // TarifarioID > 0 = el viaje se cobra con la tabla (la API toma la versión vigente en el inicio);
+            // Tarifa_Modo: "Fija" (la banda de km; más de 250, la de 250 más el excedente por km) o "Km".
             public int? TarifarioID { get; set; }
+            public string Tarifa_Modo { get; set; }
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
@@ -133,6 +135,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? TarifaFijaID { get; set; }
             public int? TarifaKmID { get; set; }
             public int? TarifarioID { get; set; }
+            public string Tarifa_Modo { get; set; }
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
@@ -207,7 +210,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "SELECT v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino, " +
             "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
             "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.OrigenID, v.DestinoID, v.ChoferID, v.CamionID, v.ClienteID, ISNULL(c.Razon_Social,'') AS Cliente, " +
-            "v.TarifaFijaID, v.TarifaKmID, v.TarifarioID, v.Vuelta, v.Estadia_Modulos, v.Falso_Flete, v.Importe_Base, v.Tarifa_Detalle, " +
+            "v.TarifaFijaID, v.TarifaKmID, v.TarifarioID, v.Tarifa_Modo, v.Vuelta, v.Estadia_Modulos, v.Falso_Flete, v.Importe_Base, v.Tarifa_Detalle, " +
             "v.Importe, v.Importe_Detalle, v.Estado, v.Resultado_Entrega, v.Fecha_Entrega, " +
             "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia, " +
@@ -342,7 +345,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 P("@t", string.IsNullOrEmpty(numTransporte) ? null : numTransporte), P("@id", id));
         }
 
-        // ===================== Importe del viaje (tarifario, 24/10) =====================
+        // ===================== Importe del viaje (tabla de tarifas, 24/10) =====================
         // El viaje guarda su importe (database/tarifas/02_*.sql): la API lo calcula al guardar con TarifarioCalculo (no
         // toma el de la pantalla). La base (la tarifa sin adicionales) se vuelve a calcular solo si cambia lo que la
         // define o si el viaje todavía no la tiene; si no, se conserva aunque la tarifa haya cambiado después (§33).
@@ -351,6 +354,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private class TarifaGuardadaRow
         {
             public int? TarifarioID { get; set; }
+            public string Tarifa_Modo { get; set; }
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
@@ -363,16 +367,21 @@ namespace WebApi_TransporteSanchez.Controllers
         private static TarifaGuardadaRow TarifaGuardada(DbContext db, int id)
         {
             return db.Database.SqlQuery<TarifaGuardadaRow>(
-                "SELECT TarifarioID, Vuelta, Estadia_Modulos, Falso_Flete, Importe_Base, Tarifa_Detalle FROM VIAJES WHERE Viaje_ID=@id",
+                "SELECT TarifarioID, Tarifa_Modo, Vuelta, Estadia_Modulos, Falso_Flete, Importe_Base, Tarifa_Detalle FROM VIAJES WHERE Viaje_ID=@id",
                 P("@id", id)).FirstOrDefault() ?? new TarifaGuardadaRow();
         }
 
         private static bool UsaTarifario(int? tarifarioId) { return (tarifarioId ?? 0) > 0; }
 
+        // Con la tabla de tarifas: "Km" o, si no, "Fija".
+        private static string Modo(string modo) { return modo == "Km" ? "Km" : "Fija"; }
+
         private static bool CambiaTarifario(TarifaGuardadaRow guardada, ViajeDto nuevo)
         {
-            return UsaTarifario(guardada.TarifarioID) != UsaTarifario(nuevo.TarifarioID)
-                || (UsaTarifario(nuevo.TarifarioID) && (guardada.Vuelta ?? 1) != (nuevo.Vuelta ?? 1));
+            if (UsaTarifario(guardada.TarifarioID) != UsaTarifario(nuevo.TarifarioID)) return true;
+            if (!UsaTarifario(nuevo.TarifarioID)) return false;
+            if (Modo(guardada.Tarifa_Modo) != Modo(nuevo.Tarifa_Modo)) return true;
+            return Modo(nuevo.Tarifa_Modo) == "Fija" && (guardada.Vuelta ?? 1) != (nuevo.Vuelta ?? 1);
         }
 
         // Lo que define la base. Se compara antes de pasar los datos nuevos a la entidad.
@@ -402,6 +411,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 ViajeId = viajeId,
                 UsaTarifario = UsaTarifario(v.TarifarioID),
+                PorKm = UsaTarifario(v.TarifarioID) && Modo(v.Tarifa_Modo) == "Km",
                 TarifaFijaID = IdOpcional(v.TarifaFijaID),
                 TarifaKmID = IdOpcional(v.TarifaKmID),
                 FechaInicio = v.Fecha_Inicio,
@@ -446,6 +456,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 TarifaFijaID = viaje.TarifaFijaID,
                 TarifaKmID = viaje.TarifaKmID,
                 TarifarioID = tarifaEditable ? nuevo.TarifarioID : guardada.TarifarioID,
+                Tarifa_Modo = tarifaEditable ? nuevo.Tarifa_Modo : guardada.Tarifa_Modo,
                 Vuelta = tarifaEditable ? nuevo.Vuelta : guardada.Vuelta,
                 Falso_Flete = nuevo.Falso_Flete,
                 Estadia_Modulos = nuevo.Estadia_Modulos
@@ -460,9 +471,10 @@ namespace WebApi_TransporteSanchez.Controllers
         private static void GuardarImporte(DbContext db, int id, ViajeDto v, TarifarioCalculo.Resultado r)
         {
             db.Database.ExecuteSqlCommand(
-                "UPDATE VIAJES SET TarifarioID=@t, Vuelta=@vuelta, Estadia_Modulos=@est, Falso_Flete=@ff, Importe_Base=@base, " +
+                "UPDATE VIAJES SET TarifarioID=@t, Tarifa_Modo=@modo, Vuelta=@vuelta, Estadia_Modulos=@est, Falso_Flete=@ff, Importe_Base=@base, " +
                 "Tarifa_Detalle=@tdet, Importe=@imp, Importe_Detalle=@idet WHERE Viaje_ID=@id",
-                P("@t", r.TarifarioID), P("@vuelta", r.AplicaVuelta ? r.Vuelta : null), P("@est", v.Estadia_Modulos),
+                P("@t", r.TarifarioID), P("@modo", r.TarifarioID.HasValue ? Modo(v.Tarifa_Modo) : null),
+                P("@vuelta", r.AplicaVuelta ? r.Vuelta : null), P("@est", v.Estadia_Modulos),
                 P("@ff", v.Falso_Flete), P("@base", r.ImporteBase), P("@tdet", r.TarifaDetalle), P("@imp", r.Importe),
                 P("@idet", r.ImporteDetalle), P("@id", id));
         }
@@ -975,6 +987,7 @@ SELECT CAST(CASE WHEN EXISTS (
                         dto.EnProforma_Estado = est.EnProforma_Estado;
                         dto.Presupuesto_ID = est.Presupuesto_ID;
                         dto.TarifarioID = est.TarifarioID;
+                        dto.Tarifa_Modo = est.Tarifa_Modo;
                         dto.Vuelta = est.Vuelta;
                         dto.Estadia_Modulos = est.Estadia_Modulos;
                         dto.Falso_Flete = est.Falso_Flete;
@@ -1142,7 +1155,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     !MismaDistancia(viaje.Distancia_KM, viajeDto.Distancia_KM) ||
                     viaje.TarifaFijaID != ((viajeDto.TarifaFijaID ?? 0) > 0 ? viajeDto.TarifaFijaID : null) ||
                     viaje.TarifaKmID != ((viajeDto.TarifaKmID ?? 0) > 0 ? viajeDto.TarifaKmID : null) ||
-                    UsaTarifario(viajeDto.TarifarioID)))
+                    CambiaTarifario(TarifaGuardada(db, id), viajeDto)))
                     return Content(HttpStatusCode.Conflict, new { error = "El viaje se generó desde un presupuesto aceptado: el cliente, el recorrido, los km y la tarifa son los del presupuesto y no se pueden cambiar. Si cambia el recorrido, hace falta un presupuesto nuevo." });
 
                 // Importe: la base se recalcula solo si cambia lo que la define (y se puede cambiar en este estado).
@@ -1356,7 +1369,7 @@ SELECT CAST(CASE WHEN EXISTS (
             if (v.Num_de_Carga.Length > LargoReferencia)
                 errores.Add(new { PropertyName = "Num_de_Carga", ErrorMessage = "El N° entrega Rukas no puede superar " + LargoReferencia + " caracteres." });
 
-            // Una sola tarifa: tarifario, fija o por km.
+            // Una sola tarifa: la tabla de tarifas (fija o por km) o, en un viaje de antes del 24/10, la que ya tenía.
             bool tieneFija = v.TarifaFijaID.HasValue && v.TarifaFijaID.Value > 0;
             bool tieneKm = v.TarifaKmID.HasValue && v.TarifaKmID.Value > 0;
             bool tieneTarifario = UsaTarifario(v.TarifarioID);
@@ -1364,8 +1377,10 @@ SELECT CAST(CASE WHEN EXISTS (
             if (tarifas == 0)
                 errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "Asigná una tarifa al viaje." });
             else if (tarifas > 1)
-                errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "El viaje lleva una sola tarifa: tarifario, fija o por km." });
+                errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "El viaje lleva una sola tarifa." });
 
+            if (tieneTarifario && !string.IsNullOrEmpty(v.Tarifa_Modo) && v.Tarifa_Modo != "Fija" && v.Tarifa_Modo != "Km")
+                errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "Elegí la tarifa: fija o por km." });
             if (v.Vuelta.HasValue && v.Vuelta.Value != 1 && v.Vuelta.Value != 2)
                 errores.Add(new { PropertyName = "Vuelta", ErrorMessage = "La vuelta tiene que ser la 1ª o la 2ª." });
             if (v.Estadia_Modulos < 0 || v.Estadia_Modulos > TarifarioCalculo.MaxEstadiaModulos)

@@ -53,7 +53,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
-| 34 | Tarifario por tipo de camión (tabla "Tarifas a agosto 2026"): tipo y año del camión, bandas de km con 1ª y 2ª vuelta, falso flete y estadía; el viaje guarda su importe | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
+| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km por camión y mes, viajes por cliente, mes y resultado, facturación por cliente y mes) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | Commits del 24/10, **sin push** | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
 
@@ -2638,100 +2638,111 @@ estaba mal cargada, y si hay que avisarle al cliente.
 
 ---
 
-## 34. Tarifario por tipo de camión (tabla de agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
+## 34. Tabla de tarifas por tipo de camión (agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío (24/10), para la presentación del jueves 29/10: adaptar las tarifas a la tabla que dio la empresa
-("Tarifas a agosto 2026", PDF). El precio de un viaje sale de:
-- **El tipo de camión** (Furgón, Balancín (3 ejes), Chasis (2 ejes) o Liviano) y **el año del modelo** (2018 o anterior, o
-  2019 en adelante). Los dos datos ya estaban en el camión; el tipo era texto libre y pasa a una lista.
-- **Los km de ida:** hasta 130 (con un valor para la 1ª vuelta del día y otro para la 2ª), más de 130 y hasta 190, más de
-  190 y hasta 250 (precio por viaje) y más de 250 ($ por km × km). Cada banda va de más del mínimo hasta el máximo
-  inclusive, como las tarifas por km (decisión del 23/10): 130,5 km es la segunda banda.
-- **Adicionales:** falso flete (el camión fue al origen a cargar, no había carga y volvió: se cobra el 60 % del viaje) y
-  estadía (módulo de 6 hs a $ 96.577, después de 12 hs de iniciado el servicio, o 18 hs si son más de 250 km).
+("Tarifas a agosto 2026", PDF), que usan siempre para calcular cuánto cobrar un viaje. El precio sale del **tipo de
+camión** (Furgón, Balancín (3 ejes), Chasis (2 ejes) o Liviano), del **año del modelo** (2018 o anterior, o 2019 en
+adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 
-**Decisiones de Rocío (24/10):**
-- Es la lista de precios de la empresa para todos los clientes. Las tarifas fijas por cliente y recorrido siguen, para
-  precios negociados. Las tarifas por km de antes quedan para los viajes que ya las usan y para presupuestos.
-- La 2ª vuelta es el segundo viaje del mismo camión en el mismo día (solo hasta 130 km). El sistema la propone si el
-  camión ya tiene un viaje que empieza antes ese día, y se puede cambiar.
-- La estadía casi no se usa: va como un campo a mano en el viaje (cantidad de módulos), sin calcularla con las horas.
-- Los valores son sin IVA y valen desde el 01/08/2026 hasta que se cargue la próxima tabla. El año de corte (2019) y
-  los límites de las bandas son datos de cada versión, por si cambian en la próxima.
-- **El viaje guarda su importe** (la "opción de fondo" del §33): cambiar una tarifa o el tarifario no cambia los viajes
-  ya calculados.
+**Decisiones de Rocío, charladas con Claudia (24/10):**
+- **Tarifa fija:** el precio por viaje de la banda de km, por tipo y modelo de camión: hasta 130 km (un valor para la 1ª
+  vuelta del día y otro, más barato, para la 2ª), más de 130 y hasta 190, y más de 190 y hasta 250. **Si el viaje pasa los
+  250 km, la fija de 250 más los km que pasan × el precio por km** (como lo calculan ellos). Ejemplo, Balancín 2019:
+  600 km → $ 663.370 + 350 × $ 2.594 = $ 1.571.270.
+- **Tarifa por km:** todo el viaje × el precio por km de la categoría (la "larga distancia" del PDF): 600 km →
+  $ 1.556.400. Se elige a mano cuando prefieren cobrar así.
+- **No hay precios acordados por cliente y recorrido:** todo sale de la tabla. Las tarifas fijas por recorrido y las bandas
+  por km de antes (eran de prueba) dejan de cargarse; quedan en la base para los viajes que ya las usan.
+- La 2ª vuelta es el segundo viaje del mismo camión en el mismo día (solo con fija y hasta 130 km). El sistema la propone
+  si el camión ya tiene un viaje que empieza antes ese día, y se puede cambiar.
+- **Falso flete:** el camión fue al origen a cargar, no había carga y volvió: se cobra el 60 % del viaje. **Estadía:** casi
+  no se usa; va a mano en el viaje (módulos de 6 hs a $ 96.577).
+- Una tabla por PDF: fijas, por km, bandas y adicionales se cargan juntos, con la misma vigencia (desde su fecha hasta que
+  se cargue la siguiente). Valores sin IVA. El año de corte y los límites de las bandas son datos de cada tabla.
+- **El viaje guarda su importe** (la "opción de fondo" del §33): cambiar la tabla no cambia los viajes ya calculados.
+- Presupuestos (módulo de Facu) calcula igual que viajes: lo hace Claude ahora y Rocío le avisa a Facu.
+- Falta saber si la tabla es de Marfrig ("ZQPA" parece un código de SAP) o para todos los clientes: Rocío lo pregunta.
+  Por ahora es general; si es de Marfrig, después se le asigna a ese cliente.
 
 **Qué se hizo:**
-- `database/tarifas/02_tarifario_por_vehiculo.sql` (idempotente): tablas `TARIFARIOS` (una fila por versión: nombre,
-  vigente desde, año de corte, bandas, estadía y falso flete) y `TARIFARIO_VALORES` (8 filas por versión: antigüedad ×
-  tipo, con los cinco valores), y en `VIAJES` las columnas `TarifarioID`, `Vuelta`, `Estadia_Modulos`, `Falso_Flete`,
-  `Importe_Base`, `Tarifa_Detalle`, `Importe` e `Importe_Detalle` (con default o vacías: el código viejo sigue andando).
+- `database/tarifas/02_tarifario_por_vehiculo.sql` (idempotente): tablas `TARIFARIOS` (una fila por tabla: nombre,
+  vigente desde, año de corte, bandas, estadía y falso flete) y `TARIFARIO_VALORES` (8 filas por tabla: antigüedad × tipo,
+  con las tres bandas fijas, la 2ª vuelta y el precio por km), y en `VIAJES` las columnas `TarifarioID`, `Tarifa_Modo`
+  (`Fija` o `Km`), `Vuelta`, `Estadia_Modulos`, `Falso_Flete`, `Importe_Base`, `Tarifa_Detalle`, `Importe` e
+  `Importe_Detalle` (con default o vacías: el código viejo sigue andando).
 - `database/tarifas/03_cargar_tarifario_agosto_2026.sql`: primero muestra; con `@Aplicar = 1` (transacción abierta para
-  COMMIT o ROLLBACK) carga la versión de agosto 2026, pasa al nombre de la tabla el tipo de los camiones que se puede
+  COMMIT o ROLLBACK) carga la tabla de agosto 2026, pasa al nombre de la tabla el tipo de los camiones que se puede
   deducir del texto ("furgón", "balancín", "chasis", "liviano"; los demás se eligen en Gestionar camiones) y les guarda a
-  los viajes que ya existen **el mismo importe que muestran hoy** (presupuesto, tarifa fija o por km × km). Ningún monto
-  cambia: la demo de Rukas sigue dando $ 14.790 en los viajes 25 y 26.
-- API: `Tarifas/TarifarioCalculo.cs` (nuevo, un solo cálculo para todo) y `TarifarioController.cs` (nuevo: listar, ver,
-  registrar, editar, eliminar si ningún viaje lo usa, versión vigente y `Calcular` para la pantalla), los dos en el
-  `.csproj`. `ViajesController`: calcula el importe al guardar (no toma el de la pantalla) y lo guarda; la base se
-  recalcula solo si cambia el tipo de tarifa, el camión, los km, el inicio o la vuelta; falso flete y estadía se pueden
-  cargar en cualquier estado antes de facturar. `ProformasController.ImporteViaje` ("Traer viajes" y el control de
-  Rukas) y el costo del dashboard leen primero el importe guardado. `CamionesController` rechaza un tipo que no es de
-  la tabla.
-- `gestion-tarifas.html`: pestaña **Tarifario** (primera) con las versiones (vigencia y estado: Vigente, Anterior o
-  Próximo) y el formulario igual al PDF: datos, bandas, una grilla por antigüedad con los cuatro tipos y los
-  adicionales. "Registrar tarifario" viene con los valores de la versión más nueva, para cambiar solo los que subieron.
-- `gestion-viajes.html`: Tarifa con **Tarifario** (elegido de entrada) y Fija; Por km solo aparece en los viajes que ya
-  la tienen. Vuelta (hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece
-  en clientes con plataforma: los adicionales vienen de Rukas). La línea del importe muestra la cuenta. En un viaje que
-  ya salió, la tarifa queda fija y se pueden cargar falso flete y estadía. `viaje-detalle.js`: Ver detalle con el importe
-  guardado.
+  los viajes que ya existen **el mismo importe que muestran hoy**. Ningún monto cambia: la demo de Rukas sigue en
+  $ 14.790 en los viajes 25 y 26 mientras no se editen.
+- API: `Tarifas/TarifarioCalculo.cs` (nuevo, un solo cálculo para viajes, presupuestos y la tabla) y
+  `TarifarioController.cs` (nuevo: listar, ver, registrar, editar, eliminar si ningún viaje la usa, la vigente y
+  `Calcular` con `tarifa=fija|km`), los dos en el `.csproj`. `ViajesController`: calcula el importe al guardar (no toma
+  el de la pantalla) y lo guarda con su modo; la base se recalcula solo si cambia fija/por km, el camión, los km, el
+  inicio o la vuelta; falso flete y estadía se cargan en cualquier estado antes de facturar.
+  `ProformasController.ImporteViaje` ("Traer viajes" y el control de Rukas) y el costo del dashboard leen primero el
+  importe guardado. `CamionesController` rechaza un tipo que no es de la tabla. `PresupuestosController` (Facu): el viaje
+  que genera un presupuesto nuevo queda con la tabla, su modo, la vuelta y el importe del presupuesto (los presupuestos de
+  antes siguen funcionando con su tarifa).
+- `gestion-tarifas.html`: solo la tabla de tarifas (ya no hay pestañas de fijas por recorrido ni de bandas por km): la
+  lista de tablas (vigencia y estado: Vigente, Anterior o Próxima) y el formulario como el PDF, con los bloques Datos,
+  Bandas de km, Tarifas fijas (una grilla por modelo), Tarifas por km y Adicionales. "Registrar tabla de tarifas" viene
+  con los valores de la más nueva, para cambiar solo los que subieron.
+- `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
+  hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con
+  plataforma: los adicionales vienen de Rukas). La línea del importe muestra la cuenta. Un viaje de antes conserva su
+  tarifa vieja (lo dice debajo) hasta que se cambie el camión, los km o el inicio, o se elija Fija o Por km. En un viaje
+  que ya salió, la tarifa queda fija y se pueden cargar falso flete y estadía. `viaje-detalle.js`: el importe guardado.
+- `presupuestos.html` y `presupuestos.js` (Facu): el tipo de tarifa (fija o por km) calcula con la tabla, con el camión;
+  aparece "Vuelta del día" cuando corresponde y se recalcula al cambiar el camión.
 - `gestion-camiones.html`: el tipo es una lista con los cuatro de la tabla; un camión con un tipo escrito antes pide
   elegirlo ("Estaba cargado como …").
-- Design system §4.1: Vigente (verde), Anterior y Próximo (gris), para el tarifario.
-- `tests/tarifario.test.js` (nuevo): los tipos iguales en API, camiones y tarifas; los valores de agosto con la suba de
-  la tabla (detecta un número mal copiado); que el viaje mande y guarde el importe y que proformas lo lean primero.
-  Los 19 tests de `tests/` dan OK (con el Node de Cursor).
-- Probado en la Mac con una API simulada con la misma lógica: Balancín 2019, 100 km → $ 581.492 (1ª) y $ 407.089 (2ª,
-  propuesta porque el camión tenía otro viaje antes ese día); 130,5 y 160 km → $ 631.568; 600 km → $ 1.556.400; Furgón
-  2016 → $ 586.896; falso flete y 2 módulos → $ 542.049,20; camión con un tipo viejo → aviso con el enlace a Gestionar
-  camiones; viaje en viaje con tarifa por km + 1 módulo → $ 309.437; registrar y editar el tarifario, fecha repetida.
+- Design system §4.1: Vigente (verde), Anterior y Próxima (gris), para la tabla de tarifas.
+- `tests/tarifario.test.js` (nuevo): tipos iguales en API, camiones y tarifas; valores de agosto con la suba de la tabla
+  (detecta un número mal copiado); fija con excedente y por km; que viajes y presupuestos usen la tabla y que el viaje
+  guarde el importe. Los tests de `tests/` dan OK (con el Node de Cursor).
+- Probado en la Mac con una API simulada con la misma lógica (Balancín 2019): fija 100 km → $ 581.492 (1ª) y $ 407.089
+  (2ª, propuesta); 200 km → $ 663.370; 600 km → $ 1.571.270; por km 600 km → $ 1.556.400 y 100 km → $ 259.400 (sin
+  vuelta); falso flete y estadía; un viaje de antes guardado sin cambios sigue en $ 220.000 y al cambiarle el camión pasa
+  a la tabla; presupuestos con fija (2ª vuelta propuesta) y por km; camión sin tipo de la tabla → aviso con el enlace.
 
 **Para tener en cuenta:**
-- **El orden importa:** correr `02` antes de recompilar la API. Sin las columnas nuevas, la API nueva no puede listar
-  ni abrir viajes. Avisarles a Facu y Fede (base compartida); con su código de ahora siguen funcionando.
-- **Presupuestos (Facu)** sigue con tarifa fija o por km. Pasarlo al tarifario (necesita el camión para calcular) es un
-  cambio en su módulo: verlo con él después del jueves.
+- **El orden importa:** correr `02` antes de recompilar la API. Sin las columnas nuevas, la API nueva no puede listar ni
+  abrir viajes, ni generar el viaje de un presupuesto. Avisarles a Facu y Fede (base compartida).
 - **Rukas:** el control compara el importe guardado del viaje (con el falso flete, si tiene) con el importe del viaje de
-  Rukas; los adicionales de Rukas se siguen tomando sin comparar.
+  Rukas; los adicionales de Rukas se siguen tomando sin comparar. Si la tabla es la de Marfrig, el importe de un viaje
+  nuevo tendría que coincidir con el de Rukas.
 - **Falso flete y el estado del viaje:** no hubo entrega, pero el viaje sigue el circuito de siempre. Queda para la
   revisión de los flujos de viajes (¿qué estado y qué evidencia lleva?).
-- No hay un "Recalcular" de varios viajes juntos (por ejemplo, si un valor del tarifario estaba mal): por ahora, cada
-  viaje se recalcula al editarlo cambiando su tarifa (ver §33).
-- El importe del viaje se guarda por SQL directo: la auditoría del viaje no lo muestra. La del tarifario sí (entidad
+- No hay un "Recalcular" de varios viajes juntos: cada viaje se recalcula al editarlo cambiando su tarifa (ver §33).
+- El importe del viaje se guarda por SQL directo: la auditoría del viaje no lo muestra. La de la tabla sí (entidad
   `TARIFARIOS`, con un resumen de los valores). Las dos usan `GETDATE()` (UTC, §2).
-- Los valores reales de las tarifas por km (§31, "valores más reales") ya no hacen falta: los da el tarifario.
+- Las tarifas de antes (`TARIFAS_FIJAS`, `TARIFAS_KM` y sus endpoints) quedan en la base y en la API para los viajes y
+  presupuestos que ya las usan; ninguna pantalla las carga. Los "valores más reales" de la §31 ya no hacen falta.
 
 **Probar en la VM** (con C#):
 - [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK"). Después
-  `03_cargar_tarifario_agosto_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y
-  los viajes que guardan importe; con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT`.
+  `03_cargar_tarifario_agosto_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y los
+  viajes que guardan importe; con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT`.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista y abre viajes como antes.
-- [ ] 2. Gestionar tarifas → Tarifario: "Tarifas a agosto 2026", desde el 01/08/2026, Vigente. Editar: los valores
-  iguales al PDF. Cancelar.
-- [ ] 3. Registrar tarifario: viene con los valores de agosto y el nombre y la fecha vacíos. Fecha 01/08/2026 → "Ya hay
-  una versión del tarifario vigente desde el 01/08/2026…". Cancelar.
-- [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo. Editar uno: el tipo sale
-  de la lista y se guarda.
-- [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Tarifario viene elegido; con los
-  km, el importe sale de la tabla (comparar con el PDF). Cambiar el camión o los km cambia el importe; hasta 130 km
-  aparece la vuelta (2ª si el camión ya tiene un viaje antes ese día). Falso flete → 60 %; 1 módulo de estadía →
-  + $ 96.577. Guardar y volver a abrir: el mismo importe.
-- [ ] 6. Abrir un viaje de antes: el mismo importe que tenía (y en Ver detalle).
-- [ ] 7. Proformas: "Traer viajes" trae los mismos importes de antes; el caso 1 de Rukas (`docs/pruebas/datos/`) da
+- [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026", desde el 01/08/2026, Vigente. Editar:
+  los valores iguales al PDF (fijas por modelo y por km). Cancelar.
+- [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos. Fecha 01/08/2026 →
+  "Ya hay una tabla de tarifas vigente desde el 01/08/2026…". Cancelar.
+- [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
+- [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Fija viene elegida; comparar con el
+  PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el
+  excedente). Por km: todo el viaje. Falso flete → 60 %; 1 módulo de estadía → + $ 96.577. Guardar y volver a abrir:
+  el mismo importe.
+- [ ] 6. Abrir un viaje de antes: el mismo importe que tenía, con el aviso de la tarifa de antes; Guardar sin cambios no
+  cambia el importe. Ver detalle igual.
+- [ ] 7. Presupuestos: Registrar presupuesto con fija y con por km: el mismo importe que el viaje. Aceptarlo y generar el
+  viaje: el viaje tiene el importe del presupuesto.
+- [ ] 8. Proformas: "Traer viajes" trae los mismos importes de antes; el caso 1 de Rukas (`docs/pruebas/datos/`) da
   "Coincide" con $ 14.790.
-- [ ] 8. Dashboard: "Costo por viaje" del mismo período, igual que antes de los scripts.
-- [ ] 9. Un viaje en viaje: cargarle 1 módulo de estadía y guardar: se suma, la tarifa no cambia.
+- [ ] 9. Dashboard: "Costo por viaje" del mismo período, igual que antes de los scripts.
+- [ ] 10. Un viaje en viaje: cargarle 1 módulo de estadía y guardar: se suma, la tarifa no cambia.
 
 ---
 

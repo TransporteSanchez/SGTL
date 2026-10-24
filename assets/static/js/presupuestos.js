@@ -2,6 +2,8 @@
     'use strict';
     var api = 'http://localhost:50222/api', clientes = [], origenes = [], destinos = [], registros = [], choferes = [];
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
+    // Vuelta del día (tabla de tarifas, 24/10): la eligió la persona; si no, se propone la 2ª si el camión ya tiene otro viaje.
+    var vueltaManual = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
     // Filtros aplicados (§1.3: se aplican con Buscar, Enter o la cruz) y paginación del listado (§2.2).
@@ -174,48 +176,64 @@
         secuencia++; clearTimeout(timer); SGTL.reiniciarFormulario('#formulario', '#mensajeForm'); formulario.reiniciar();
         ponerFechaHora('fechaInicio', ''); ponerFechaHora('fechaFin', ''); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
         opcionesRuta(); limpiarRutaPresupuesto(); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
+        vueltaManual = false; el('vueltaPresupuesto').value = '1'; mostrarVuelta(null);
     }
+    // Con tarifa fija y hasta el primer límite de km hay 1ª y 2ª vuelta del día (la 2ª, más barata).
+    function mostrarVuelta(r) {
+        el('grupoVueltaPresupuesto').classList.toggle('d-none', !(r && r.AplicaVuelta));
+        el('vueltaPresupuestoAyuda').textContent = r && r.AplicaVuelta ? (r.ViajeAnterior ? 'El camión ya tiene el viaje #' + r.ViajeAnterior + ' antes, ese mismo día.' : 'Es el primer viaje del camión ese día.') : '';
+    }
+    // Los mensajes de la API nombran la pantalla donde se resuelve: se agrega el enlace.
+    function mensajeConEnlace(info, texto) {
+        info.textContent = '';
+        var partes = String(texto).split(/(Gestionar tarifas|Gestionar camiones)/);
+        partes.forEach(function (parte) {
+            if (parte === 'Gestionar tarifas' || parte === 'Gestionar camiones') {
+                var a = document.createElement('a'); a.href = parte === 'Gestionar tarifas' ? 'gestion-tarifas.html' : 'gestion-camiones.html';
+                a.target = '_blank'; a.rel = 'noopener'; a.textContent = parte; info.appendChild(a);
+            } else if (parte) info.appendChild(document.createTextNode(parte));
+        });
+    }
+    // Tabla de tarifas (24/10, decisión de Rocío con Claudia; el mismo cálculo que Registrar viaje): tarifa fija por banda
+    // de km (más de 250, la fija de 250 más el excedente por km) o tarifa por km, según el tipo y el modelo del camión.
     function calcular() {
-        var version = ++secuencia, tipo = el('tipoTarifa').value, url, params;
+        var version = ++secuencia, tipo = el('tipoTarifa').value;
         tarifa = null; el('importe').value = '';
-        if (!tipo) { el('tarifaInfo').textContent = 'Seleccioná un tipo de tarifa.'; return; }
-        if (tipo === 'fija') {
-            if (!el('cliente').value || !el('origenId').value || !el('destinoId').value) { el('tarifaInfo').textContent = 'Seleccioná cliente, origen y destino para buscar la tarifa fija.'; return; }
-            // La vigente en el inicio del viaje, como la de km (decisión de Rocío, 23/10).
-            if (!el('fechaInicio').value) { el('tarifaInfo').textContent = 'Completá la fecha de inicio para buscar la tarifa fija.'; return; }
-            params = new URLSearchParams({clienteId: el('cliente').value, origenId: el('origenId').value, destinoId: el('destinoId').value, fecha: el('fechaInicio').value.substring(0, 10)}); url = '/TarifasFijas/PorRuta?';
-        } else {
-            if (!el('fechaInicio').value || !el('fechaFin').value || !(Number(el('distancia').value) > 0)) { el('tarifaInfo').textContent = 'Completá las fechas y los kilómetros para calcular la tarifa.'; return; }
-            if (el('fechaFin').value < el('fechaInicio').value) { el('tarifaInfo').textContent = 'La fecha de fin no puede ser anterior a la de inicio.'; return; }
-            params = new URLSearchParams({fechaInicio: el('fechaInicio').value, fechaFin: el('fechaFin').value, km: el('distancia').value}); url = '/TarifasKm/Calcular?';
-        }
+        if (!tipo) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná un tipo de tarifa.'; return; }
+        if (!el('fechaInicio').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Completá la fecha de inicio para calcular la tarifa.'; return; }
+        if (!el('camionId').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná el camión para calcular la tarifa.'; return; }
+        if (!(Number(el('distancia').value) > 0)) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Elegí origen y destino para calcular la distancia y la tarifa.'; return; }
+        var params = new URLSearchParams({ tarifa: tipo, fechaInicio: el('fechaInicio').value, camionId: el('camionId').value, km: el('distancia').value, vuelta: vueltaManual ? el('vueltaPresupuesto').value : '' });
         el('tarifaInfo').textContent = 'Calculando tarifa…';
-        pedir(api + url + params.toString()).then(function (r) {
+        pedir(api + '/Tarifario/Calcular?' + params.toString()).then(function (r) {
             if (version !== secuencia) return;
-            var importe = Number(tipo === 'fija' ? r.ValorFijoNeto : r.MontoCalculado);
+            if (r.AplicaVuelta && !vueltaManual && r.Vuelta !== r.VueltaSugerida) {
+                el('vueltaPresupuesto').value = String(r.VueltaSugerida);
+                vueltaManual = true; calcular(); vueltaManual = false;
+                return;
+            }
+            var importe = Number(r.ImporteBase);
             if (!Number.isFinite(importe) || importe < 0) throw new Error('Importe inválido');
-            tarifa = {tipo: tipo, id: tipo === 'fija' ? r.TarifaFija_ID : r.TarifaKm_ID, valorKm: tipo === 'km' ? r.ValorKm : null, importe: importe.toFixed(2)};
+            mostrarVuelta(r);
+            if (r.AplicaVuelta) el('vueltaPresupuesto').value = String(r.Vuelta);
+            tarifa = { tipo: tipo, tarifarioId: r.TarifarioID, vuelta: r.AplicaVuelta ? r.Vuelta : null, importe: importe.toFixed(2), detalle: r.TarifaDetalle };
             el('importe').value = SGTL.monto(tarifa.importe);
-            el('tarifaInfo').textContent = tipo === 'fija' ? 'Tarifa fija #' + tarifa.id + ', vigente el ' + SGTL.fecha(el('fechaInicio').value.substring(0, 10)) + '.' : 'Tarifa por km #' + tarifa.id + ': ' + SGTL.monto(r.ValorKm) + ' por km × ' + SGTL.km(el('distancia').value) + ' km.';
+            el('tarifaInfo').textContent = r.TarifaDetalle + '.';
         }).catch(function (error) {
             if (version !== secuencia) return;
-            var info = el('tarifaInfo');
-            if (tipo === 'km' && error.status === 404 && error.respuesta && error.respuesta.Mensaje) {
-                info.textContent = 'No hay una tarifa por km vigente para las fechas seleccionadas y ' + SGTL.km(el('distancia').value) + ' km. Registrá una tarifa que cubra ese período y distancia en ';
-                var enlace = document.createElement('a'); enlace.href = 'gestion-tarifas.html'; enlace.target = '_blank'; enlace.rel = 'noopener'; enlace.textContent = 'Gestionar tarifas'; info.appendChild(enlace); info.appendChild(document.createTextNode('.'));
-            } else if (tipo === 'fija' && error.status === 404) {
-                info.textContent = 'No hay una tarifa fija del cliente para esta ruta el ' + SGTL.fecha(el('fechaInicio').value.substring(0, 10)) + '. Registrala en ';
-                var enlaceFija = document.createElement('a'); enlaceFija.href = 'gestion-tarifas.html'; enlaceFija.target = '_blank'; enlaceFija.rel = 'noopener'; enlaceFija.textContent = 'Gestionar tarifas'; info.appendChild(enlaceFija); info.appendChild(document.createTextNode('.'));
-            } else {
-                info.textContent = 'No se pudo calcular la tarifa. Revisá los datos y probá de nuevo.';
-            }
+            mostrarVuelta(null);
+            if (error.respuesta && error.respuesta.Mensaje) mensajeConEnlace(el('tarifaInfo'), error.respuesta.Mensaje);
+            else el('tarifaInfo').textContent = 'No se pudo calcular la tarifa. Revisá los datos y probá de nuevo.';
         });
     }
     function solicitarCalculo() { secuencia++; tarifa = null; el('importe').value = ''; clearTimeout(timer); timer = setTimeout(calcular, 250); }
     function datos() {
         var d = Object.assign({}, base || {}); campos.forEach(function (k) { d[k] = el(k).value; });
         d.clienteId = el('cliente').value; d.cliente = nombre('cliente'); d.origenId = el('origenId').value; d.origen = nombre('origenId'); d.destinoId = el('destinoId').value; d.destino = nombre('destinoId');
-        d.camion = nombre('camionId'); d.chofer = nombre('choferId'); d.importe = tarifa.importe; d.tarifaId = tarifa.id; d.valorKm = tarifa.valorKm;
+        d.camion = nombre('camionId'); d.chofer = nombre('choferId'); d.importe = tarifa.importe;
+        // Con la tabla de tarifas (tarifarioId); un presupuesto de antes que no se recalculó conserva su tarifa (tarifaId).
+        if (tarifa.tarifarioId) { d.tarifarioId = tarifa.tarifarioId; d.vuelta = tarifa.vuelta; d.tarifaDetalle = tarifa.detalle; delete d.tarifaId; delete d.valorKm; }
+        else { d.tarifaId = tarifa.id; d.valorKm = tarifa.valorKm; }
         if (!d.fecha) d.fecha = new Date().toLocaleDateString('en-CA'); return d;
     }
     function listar() {
@@ -298,7 +316,13 @@
         campos.forEach(function (k) { if (el(k)) el(k).value = p[k] || ''; }); ponerFechaHora('fechaInicio', p.fechaInicio); ponerFechaHora('fechaFin', p.fechaFin); actualizarTiempoEstimado();
         conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
         conservarOpcion('origenId', p.origenId, p.origen); conservarOpcion('destinoId', p.destinoId, p.destino); conservarOpcion('camionId', p.camionId, p.camion); conservarOpcion('choferId', p.choferId, p.chofer);
-        base = Object.assign({}, p); actual = Object.assign({}, p); if (p.tarifaId && p.tipoTarifa && p.importe !== undefined) { tarifa = {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)}; el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.'; }
+        base = Object.assign({}, p); actual = Object.assign({}, p);
+        if ((p.tarifarioId || p.tarifaId) && p.tipoTarifa && p.importe !== undefined) {
+            tarifa = p.tarifarioId ? {tipo: p.tipoTarifa, tarifarioId: p.tarifarioId, vuelta: p.vuelta || null, importe: String(p.importe), detalle: p.tarifaDetalle}
+                : {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)};
+            if (p.vuelta) { el('vueltaPresupuesto').value = String(p.vuelta); vueltaManual = true; mostrarVuelta({ AplicaVuelta: true }); el('vueltaPresupuestoAyuda').textContent = ''; }
+            el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.';
+        }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
         modal.show();
     }
@@ -453,6 +477,9 @@
     ['origenId', 'destinoId'].forEach(function (id) { el(id).addEventListener('change', calcularRutaPresupuesto); });
     ['fechaInicio', 'fechaFin'].forEach(function (id) { el(id).addEventListener('change', function () { actualizarTiempoEstimado(); solicitarCalculo(); }); });
     el('tipoTarifa').addEventListener('change', solicitarCalculo);
+    // El tipo y el modelo del camión cambian la tarifa; la vuelta, también.
+    el('camionId').addEventListener('change', solicitarCalculo);
+    el('vueltaPresupuesto').addEventListener('change', function () { vueltaManual = true; solicitarCalculo(); });
     el('formulario').addEventListener('input', invalidarDocumento); el('formulario').addEventListener('change', invalidarDocumento);
     el('formulario').onsubmit = function (e) {
         e.preventDefault(); if (guardando) return;
