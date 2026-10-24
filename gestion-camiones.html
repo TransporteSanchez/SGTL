@@ -105,7 +105,15 @@
                                 </div>
                             </form>
 
-                            <div class="table-responsive mt-4">
+                            <!-- Control interno (24/10): el precio del gasoil con que se estima el combustible de cada viaje. -->
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4" id="lineaGasoil">
+                                <div><span class="fw-semibold">Precio del gasoil:</span> <span id="gasoilVigente" class="text-muted">Cargando…</span></div>
+                                <button type="button" class="btn btn-outline-primary" id="btnCambiarGasoil">
+                                    <i class="bi bi-fuel-pump me-1" aria-hidden="true"></i>Cambiar precio del gasoil
+                                </button>
+                            </div>
+
+                            <div class="table-responsive mt-3">
                                 <table class="table table-striped table-hover" id="tablaCamiones">
                                     <thead>
                                         <tr>
@@ -235,11 +243,74 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
+
+                            <!-- Control interno (24/10): desde la fecha del kilometraje se le suma el recorrido completo de cada viaje. -->
+                            <div id="bloqueKilometraje">
+                                <div class="sgtl-bloque-titulo mt-4">Kilometraje y consumo</div>
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-4">
+                                        <label for="camionKmInicial" class="form-label">Kilometraje</label>
+                                        <input type="text" inputmode="numeric" id="camionKmInicial" class="form-control" placeholder="245000" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                        <div class="form-text">El del tablero, en km</div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label for="camionFechaKm" class="form-label">Fecha del kilometraje</label>
+                                        <input type="text" id="camionFechaKm" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-12 col-md-4">
+                                        <label for="camionConsumo" class="form-label">Consumo</label>
+                                        <input type="text" inputmode="decimal" id="camionConsumo" class="form-control" placeholder="35" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                        <div class="form-text">Litros cada 100 km</div>
+                                    </div>
+                                </div>
+                                <div class="form-text">Desde esa fecha se le suma el recorrido completo de cada viaje entregado: del galpón al origen, el viaje y la vuelta al galpón.</div>
+                            </div>
+                            <p class="form-text mt-4 mb-0 d-none" id="kilometrajeNoDisponible"></p>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
                         <button type="button" class="btn btn-primary" id="btnGuardarCamion">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cambiar precio del gasoil (control interno, 24/10): un precio nuevo desde una fecha; los anteriores quedan. -->
+        <div class="modal fade" id="modalGasoil" tabindex="-1" aria-labelledby="modalGasoilTitulo" aria-hidden="true"
+            data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalGasoilTitulo">Cambiar precio del gasoil</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoGasoil" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <form id="formGasoil" novalidate>
+                            <div class="row g-3">
+                                <div class="col-12 col-sm-6">
+                                    <label for="gasoilPrecio" class="form-label">Precio por litro <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" id="gasoilPrecio" class="form-control" placeholder="1.250,00" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label for="gasoilDesde" class="form-label">Vale desde <span class="text-danger">*</span></label>
+                                    <input type="text" id="gasoilDesde" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="form-text">Cada viaje usa el precio que valía en su fecha de inicio.</div>
+                        </form>
+                        <div class="sgtl-bloque-titulo mt-4">Precios cargados</div>
+                        <ul class="list-unstyled small mb-0" id="gasoilHistorial"></ul>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarGasoil">Guardar</button>
                     </div>
                 </div>
             </div>
@@ -257,6 +328,9 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <!-- Control interno: los km al galpón que falten se calculan con Google Maps al entrar. -->
+    <script src="assets/static/js/google-maps.js"></script>
+    <script src="assets/static/js/galpon-km.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -552,6 +626,7 @@
             $('#camionTipoAyuda').text('Con el tipo y el año del modelo se calcula la tarifa de sus viajes.');
             ponerFecha('camionFechaCompra', null);
             ponerFecha('camionFechaITV', null);
+            cargarKilometraje(esAlta ? null : id);
             $('#modalCamionTitulo').text(esAlta ? 'Registrar camión' : 'Editar camión');
             $('#datosEdicionCamion').toggleClass('d-none', esAlta);
             $('#estadoActualCamion, #fechaAltaCamion').empty();
@@ -641,20 +716,190 @@
             }
 
             if (!guardado) return;
-            SGTL.toastExito(esAlta ? 'Camión registrado.' : 'Camión guardado.');
+            // El kilometraje y el consumo van aparte (api/Costos), solo si cambiaron.
+            const errorKm = await guardarKilometraje(esAlta);
             buscarCamiones(esAlta ? 1 : currentPage);
+            if (errorKm && !esAlta) {
+                SGTL.avisoFormulario('#avisoCamion', 'Los datos del camión se guardaron, pero no el kilometraje. ' + errorKm);
+                return;
+            }
+            SGTL.toastExito(esAlta ? 'Camión registrado.' : 'Camión guardado.');
+            if (errorKm) SGTL.toastError('No se guardó el kilometraje del camión: cargalo desde Editar camión. ' + errorKm);
             setTimeout(function () { SGTL.modal('#modalCamion', 'hide'); }, 0);
         }
 
         $(function () {
             SGTL.selectorFecha('#camionFechaCompra', { maxDate: 'today' });
             SGTL.selectorFecha('#camionFechaITV', { maxDate: 'today' });
-            formularioCamion = SGTL.validador(reglasCamion);
+            SGTL.selectorFecha('#camionFechaKm', { maxDate: 'today' });
+            formularioCamion = SGTL.validador(reglasCamion.concat(reglasKilometraje));
             $('#btnRegistrarCamion').on('click', function () { abrirModalCamion(null); });
             $('#btnGuardarCamion').on('click', guardarCamion);
             $('#modalCamion').on('shown.bs.modal', function () {
                 if (!camionEnEdicion) $('#camionDominio').trigger('focus');
             });
+        });
+    </script>
+
+    <!-- Control interno (24/10): precio del gasoil y kilometraje y consumo del camión (api/Costos, con el token). -->
+    <script>
+        let costosHabilitados = true;
+        let kilometrajeOriginal = null;
+
+        function encabezadosCostos() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') };
+        }
+
+        // "35" o "35,5" → 35.5; vacío → null; mal escrito → NaN.
+        function numeroDecimal(texto) {
+            const t = String(texto || '').trim();
+            if (!t) return null;
+            return /^\d{1,3}([.,]\d)?$/.test(t) ? Number(t.replace(',', '.')) : NaN;
+        }
+
+        const reglasKilometraje = [
+            { id: 'camionKmInicial', soloNumeros: true, max: 7 },
+            {
+                id: 'camionFechaKm',
+                // Obligatoria solo si hay kilometraje: es desde cuándo se le suman los viajes.
+                get requerido() { return $('#camionKmInicial').val().trim() ? 'Completá la fecha del kilometraje.' : ''; },
+                validar: fechaNoFutura('kilometraje')
+            },
+            {
+                id: 'camionConsumo',
+                validar: function (valor) {
+                    const n = numeroDecimal(valor);
+                    if (isNaN(n)) return 'Escribí el consumo como 35 o 35,5.';
+                    return n < 1 || n > 200 ? 'El consumo tiene que estar entre 1 y 200 litros cada 100 km.' : '';
+                }
+            }
+        ];
+
+        function datosKilometraje() {
+            const km = $('#camionKmInicial').val().trim();
+            return {
+                Km_Inicial: km ? Number(km) : null,
+                Fecha_Km_Inicial: km ? SGTL.fechaISO(SGTL.leerFecha($('#camionFechaKm').val())) : null,
+                Consumo_L_100km: numeroDecimal($('#camionConsumo').val())
+            };
+        }
+
+        function mostrarKilometrajeDisponible(disponible, motivo) {
+            $('#bloqueKilometraje').toggleClass('d-none', !disponible);
+            $('#kilometrajeNoDisponible').toggleClass('d-none', disponible).text(motivo || '');
+        }
+
+        function cargarKilometraje(id) {
+            $('#camionKmInicial, #camionConsumo').val('');
+            ponerFecha('camionFechaKm', null);
+            kilometrajeOriginal = JSON.stringify(datosKilometraje());
+            mostrarKilometrajeDisponible(costosHabilitados, costosHabilitados ? '' : 'El kilometraje todavía no está habilitado en la base.');
+            if (!id || !costosHabilitados) return;
+            SGTL.ajax({ url: `${API}/Costos/Camiones/${id}/Kilometraje`, type: 'GET', headers: encabezadosCostos() }).then(function (k) {
+                $('#camionKmInicial').val(k.Km_Inicial == null ? '' : k.Km_Inicial);
+                ponerFecha('camionFechaKm', k.Fecha_Km_Inicial);
+                $('#camionConsumo').val(k.Consumo_L_100km == null ? '' : String(k.Consumo_L_100km).replace('.', ','));
+                kilometrajeOriginal = JSON.stringify(datosKilometraje());
+            }, function (error) {
+                mostrarKilometrajeDisponible(false, error.mensajeUsuario || 'No se pudo leer el kilometraje del camión.');
+            });
+        }
+
+        // Devuelve el motivo si no se pudo guardar, o '' si se guardó (o no hacía falta).
+        async function guardarKilometraje(esAlta) {
+            if (!costosHabilitados || $('#bloqueKilometraje').hasClass('d-none')) return '';
+            const datos = datosKilometraje();
+            if (JSON.stringify(datos) === kilometrajeOriginal) return '';
+            Object.assign(datos, esAlta ? { Dominio: $('#camionDominio').val().trim() } : { Camion_ID: camionEnEdicion });
+            try {
+                await SGTL.ajax({
+                    url: API + '/Costos/Camiones/Kilometraje', type: 'PUT', contentType: 'application/json',
+                    headers: encabezadosCostos(), data: JSON.stringify(datos)
+                }, 'No se pudo guardar el kilometraje. Probá de nuevo.');
+                kilometrajeOriginal = JSON.stringify(datosKilometraje());
+                return '';
+            } catch (error) {
+                return error.mensajeUsuario || 'Probá de nuevo.';
+            }
+        }
+
+        // ---------------------------------------------------------------- Precio del gasoil
+
+        let formularioGasoil = null;
+
+        function textoPrecio(p) {
+            return SGTL.monto(p.Precio_Litro) + ' el litro desde el ' + SGTL.fecha(p.Vigente_Desde);
+        }
+
+        function mostrarGasoil(g) {
+            $('#gasoilVigente').text(g && g.Vigente ? textoPrecio(g.Vigente) : 'todavía no se cargó').toggleClass('text-muted', !(g && g.Vigente));
+            $('#gasoilHistorial').html((g && g.Historial && g.Historial.length ? g.Historial : []).map(function (p) {
+                return '<li>' + SGTL.escapar(textoPrecio(p)) + ' <span class="text-muted">· ' + SGTL.escapar(p.Usu_Alta) + '</span></li>';
+            }).join('') || '<li class="text-muted">Todavía no hay precios cargados.</li>');
+        }
+
+        function cargarGasoil() {
+            return SGTL.ajax({ url: API + '/Costos/Gasoil', type: 'GET', cache: false, headers: encabezadosCostos() }).then(mostrarGasoil, function (error) {
+                // Sin el script de la base (409), el control de costos no se muestra.
+                if (error.xhr && error.xhr.status === 409) {
+                    costosHabilitados = false;
+                    $('#lineaGasoil').addClass('d-none');
+                    return;
+                }
+                $('#gasoilVigente').text('no se pudo leer').addClass('text-muted');
+            });
+        }
+
+        function abrirGasoil() {
+            SGTL.reiniciarFormulario('#formGasoil', '#avisoGasoil');
+            formularioGasoil.reiniciar();
+            document.getElementById('gasoilDesde')._flatpickr.setDate(new Date(), false);
+            cargarGasoil();
+            SGTL.modal('#modalGasoil', 'show');
+        }
+
+        async function guardarGasoil() {
+            formularioGasoil.validarTodo();
+            if (!SGTL.revisarFormulario('#formGasoil', '#avisoGasoil')) return;
+            const listo = SGTL.procesando('#btnGuardarGasoil', 'Guardando…');
+            try {
+                const respuesta = await SGTL.ajax({
+                    url: API + '/Costos/Gasoil', type: 'POST', contentType: 'application/json', headers: encabezadosCostos(),
+                    data: JSON.stringify({
+                        Precio_Litro: SGTL.montoCentavos($('#gasoilPrecio').val()) / 100,
+                        Vigente_Desde: SGTL.fechaISO(SGTL.leerFecha($('#gasoilDesde').val()))
+                    })
+                }, 'No se pudo guardar el precio del gasoil. Probá de nuevo.');
+                listo();
+                mostrarGasoil(respuesta);
+                SGTL.modal('#modalGasoil', 'hide');
+                SGTL.toastExito('Precio del gasoil guardado.');
+            } catch (error) {
+                listo();
+                SGTL.avisoFormulario('#avisoGasoil', error.mensajeUsuario || 'No se pudo guardar el precio del gasoil. Probá de nuevo.');
+            }
+        }
+
+        $(function () {
+            SGTL.enlazarMascaraMonto('#gasoilPrecio');
+            SGTL.selectorFecha('#gasoilDesde');
+            formularioGasoil = SGTL.validador([
+                {
+                    id: 'gasoilPrecio', requerido: 'Completá el precio por litro.',
+                    validar: function (valor) {
+                        const centavos = SGTL.montoCentavos(valor);
+                        return centavos == null ? 'Escribí el precio como 1.250,00.' : (centavos <= 0 ? 'Tiene que ser mayor que cero.' : '');
+                    }
+                },
+                {
+                    id: 'gasoilDesde', requerido: 'Completá desde qué fecha vale.',
+                    validar: function (valor) { return SGTL.leerFecha(valor) ? '' : 'Escribí la fecha como DD/MM/AAAA.'; }
+                }
+            ]);
+            $('#btnCambiarGasoil').on('click', abrirGasoil);
+            $('#btnGuardarGasoil').on('click', guardarGasoil);
+            // Al entrar: el precio vigente y, en segundo plano, los km al galpón que falten (para el kilometraje).
+            cargarGasoil().then(function () { if (costosHabilitados && window.SGTLGalpon) SGTLGalpon.completar(); });
         });
     </script>
 

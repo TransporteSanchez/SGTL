@@ -58,6 +58,14 @@ a = H.accionesDe(viaje({ EnProforma_Estado: 'Generada', EnProforma_Numero: 'PF-0
 assert.strictEqual(a.paso.motivo, 'No se puede iniciar el viaje: está en la proforma PF-00000014',
     'lo que no se puede hacer queda deshabilitado con el motivo (§1.4)');
 
+// Gastos (control interno): desde el día que empieza el viaje, también con plataforma y entregado; no facturado.
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-24T15:00:00' }, '2026-10-24T00:00:00'), true);
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-25T05:00:00' }, '2026-10-24T00:00:00'), false,
+    'un viaje que empieza mañana todavía no tiene gastos');
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Entregado', Fecha_Inicio: '2026-10-21T06:00:00' }, '2026-10-24T00:00:00'), true,
+    'puede rendir al volver');
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Facturado', Fecha_Inicio: '2026-10-16T06:00:00' }, '2026-10-24T00:00:00'), false);
+
 // El mapa abierto va en el viaje que está en viaje o, si no hay, en el primero de hoy sin salir.
 assert.strictEqual(H.viajeQueSigue([
     { Viaje_ID: 49, Estado: 'Registrado', Fecha_Inicio: '2026-10-23T06:00:00' },

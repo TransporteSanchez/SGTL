@@ -155,8 +155,31 @@
     // En filas (pedido de Rocío, 22/10): los dos bloques de cada fila empiezan a la misma altura.
     return '<div class="sgtl-detalle-grilla">' + bloque('Recorrido', recorrido, true) +
       bloque('Fechas, camión y chofer', asignacion) + bloque('Tarifa', tarifa) +
-      bloque('Entrega', entrega) + bloque('Números de referencia', numeros) + '</div>' +
+      bloque('Entrega', entrega) + bloque('Números de referencia', numeros) +
+      // Recorrido completo y costo (control interno, 24/10): lo dibuja costos-viaje.js cuando llega.
+      '<section class="sgtl-bloque sgtl-detalle-ancho d-none" id="verViajeCosto"></section></div>' +
       (registro ? '<div class="sgtl-detalle-pie mt-3">' + registro + '</div>' : '') + enlace;
+  }
+
+  // Los módulos del costo se cargan solos: las pantallas que usan este detalle no tienen que sumar nada.
+  function cargarScript(src, yaEsta) {
+    if (yaEsta()) return Promise.resolve();
+    return new Promise(function (listo, fallo) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = listo;
+      s.onerror = fallo;
+      document.head.appendChild(s);
+    });
+  }
+
+  function mostrarCosto(viaje, numero) {
+    cargarScript('assets/static/js/google-maps.js', function () { return !!window.SGTLGoogleMaps; })
+      .then(function () { return cargarScript('assets/static/js/galpon-km.js', function () { return !!window.SGTLGalpon; }); })
+      .then(function () { return cargarScript('assets/static/js/costos-viaje.js', function () { return !!window.SGTLCostosViaje; }); })
+      .then(function () {
+        window.SGTLCostosViaje.dibujar(viaje.Viaje_ID, document.getElementById('verViajeCosto'), function () { return numero === apertura; });
+      }, function () { /* sin los módulos, el detalle se ve igual, sin el costo */ });
   }
 
   function abrir(viaje, opciones) {
@@ -170,6 +193,7 @@
     Promise.all([cargarListas(), importe(viaje), pedir('/Viajes/' + encodeURIComponent(viaje.Viaje_ID))]).then(function (r) {
       if (numero !== apertura) return;
       document.getElementById('verViajeCuerpo').innerHTML = cuerpo(viaje, r[0], r[1], r[2], opciones);
+      mostrarCosto(viaje, numero);
     });
   }
 

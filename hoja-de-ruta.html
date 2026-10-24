@@ -237,6 +237,88 @@
             </div>
         </div>
 
+        <!-- Cargar gasto (control interno, 24/10): lo que el chofer rinde, con la foto o el PDF del ticket. -->
+        <div class="modal fade" id="modalGasto" tabindex="-1" aria-labelledby="modalGastoTitulo" aria-hidden="true"
+            data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalGastoTitulo">Cargar gasto</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoGasto" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <form id="formGasto" novalidate>
+                            <input type="hidden" id="gastoViajeId">
+                            <p class="text-muted mb-3" id="gastoResumen"></p>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="gastoTipo" class="form-label">Tipo de gasto <span class="text-danger">*</span></label>
+                                    <select id="gastoTipo" class="form-select">
+                                        <option value="">Seleccioná un tipo</option>
+                                        <option value="Combustible">Combustible</option>
+                                        <option value="Peaje">Peaje</option>
+                                        <option value="Comida">Comida</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="gastoImporte" class="form-label">Importe <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" id="gastoImporte" class="form-control" placeholder="85.000,00" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-6 d-none" id="campoLitros">
+                                    <label for="gastoLitros" class="form-label">Litros <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" id="gastoLitros" class="form-control" placeholder="120" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="gastoFecha" class="form-label">Fecha <span class="text-danger">*</span></label>
+                                    <input type="text" id="gastoFecha" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="gastoDetalle" class="form-label">Detalle</label>
+                                    <input type="text" id="gastoDetalle" class="form-control" placeholder="YPF de la ruta 9, km 600" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="gastoTicket" class="form-label">Foto o PDF del ticket <span class="text-danger">*</span></label>
+                                    <input type="file" id="gastoTicket" class="form-control" accept="image/*,application/pdf">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Las fotos se achican solas; el PDF, hasta 5 MB.</div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarGasto">Cargar gasto</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Los gastos que cargó el chofer en un viaje: ver el ticket o eliminar uno mal cargado. -->
+        <div class="modal fade" id="modalVerGastos" tabindex="-1" aria-labelledby="verGastosTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="verGastosTitulo">Gastos del viaje</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <ul class="list-unstyled mb-0" id="listaGastos"></ul>
+                        <p class="fw-bold text-end mt-3 mb-0" id="gastosTotal"></p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Ver la evidencia cargada (la API pide el token: se baja y se muestra acá). -->
         <div class="modal fade" id="modalVerEvidencia" tabindex="-1" aria-labelledby="verEvidenciaTitulo" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">

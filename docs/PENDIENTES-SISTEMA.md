@@ -55,7 +55,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
-| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
+| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
+| 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2854,7 +2855,7 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
 
 ---
 
-## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — HECHO EN LA MAC (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — PUSHEADO (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío para el jueves 29/10 (presentación ante el segundo profesor). Antes el chofer no usaba el sistema:
 solo recibía la hoja de ruta por WhatsApp. **Decisiones de Rocío (24/10):** alcance completo (ver, iniciar el viaje,
@@ -2965,3 +2966,81 @@ publicado; hoy el front y la API corren en `localhost`.
 - Un caso de prueba nuevo en la tesis (parte 5) con el resultado de la VM.
 - En el celular, la fecha de entrega usa el calendario del teléfono (flatpickr en modo móvil, como en todo el sistema:
   ya anotado en "Fechas en el celular" del §24).
+
+---
+
+## 37. Control interno de los viajes: recorrido completo, kilometraje, combustible estimado y gastos del chofer — HECHO EN LA MAC (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+
+Idea de Rocío (24/10) para tener control interno de cada viaje. El viaje real no es solo de A a B: el camión sale del
+galpón, va vacío al origen a buscar la carga, la lleva al destino y vuelve vacío al galpón. Ese recorrido no estaba en
+ningún lado, ni lo que cuesta. **Decisiones de Rocío (24/10):** el galpón se carga aparte en Gestionar empresa (no es el
+domicilio fiscal); todo se ve en Ver detalle del viaje; el precio del gasoil se carga en Gestionar camiones; el chofer
+carga gastos en todos sus viajes desde que empiezan; el chofer no carga kilómetros a mano (sale de Google Maps).
+
+**Qué se hizo:**
+- **Base:** `database/costos/01_galpon_kilometraje_y_gastos.sql` crea `GALPON`; `ORIGEN.Km_Galpon` y
+  `DESTINO.Km_Galpon` (km del galpón al origen y del destino al galpón); `CAMIONES.Km_Inicial`, `Fecha_Km_Inicial` y
+  `Consumo_L_100km`; `PRECIOS_GASOIL` (precio por litro con su fecha desde) y `VIAJE_GASTOS` (lo que rinde el chofer,
+  con el ticket). Idempotente, con diagnóstico (`@Aplicar = 0`). No cambia datos.
+- **Recorrido completo** = km al galpón del origen + km del viaje + km al galpón del destino. Los tramos al galpón se
+  guardan una vez por origen y por destino (no viaje por viaje), así sirve para los viajes viejos, los nuevos y los de
+  plataforma. Los calcula el navegador con Google Maps (`assets/static/js/galpon-km.js`: la clave de Google es del
+  navegador), cuando faltan: al guardar el galpón (todos, con el avance a la vista), al entrar a Gestionar camiones (en
+  segundo plano) y al abrir el detalle de un camión o de un viaje (solo los que faltan). Si cambia el galpón, se borran y
+  se vuelven a calcular.
+- **API:** `CostosController` (nuevo, en el `.csproj`): galpón, km al galpón, precio del gasoil, kilometraje del
+  camión, costo del viaje y el ticket de un gasto. Todo pide el token. El galpón lo cambia solo un administrador; el
+  gasoil y el kilometraje, administradores o "Gestión de camiones"; el costo de un viaje y los tickets, administradores o
+  permiso de viajes (el chofer no los ve). Los gastos del chofer van en `HojaDeRutaController` (ver, cargar, eliminar y
+  el ticket), con el chofer del token.
+- **Gestionar empresa:** pasa a dos secciones (§3.2 del design system): "Datos para los documentos" (lo de siempre) y
+  "Galpón" (provincia, localidad, calle y altura), cada una con su Guardar.
+- **Gestionar camiones:** arriba de la tabla, "Precio del gasoil: $ … el litro desde …" y "Cambiar precio del gasoil"
+  (con los precios anteriores: cada viaje usa el de su fecha). En Registrar y Editar camión, el bloque "Kilometraje y
+  consumo": el kilometraje del tablero, su fecha y los litros cada 100 km (se guarda después del camión).
+- **Listar camiones → Ver detalle:** "Kilometraje de hoy" = el inicial + el recorrido completo de cada viaje entregado
+  desde esa fecha (Entregado, Listo para facturar o Facturado), y el consumo.
+- **Ver detalle del viaje** (Listar y Gestionar viajes, dashboard): bloque "Recorrido completo y costo" con los tres
+  tramos y el total, el combustible estimado (km × consumo del camión × gasoil a la fecha del viaje), los gastos del
+  chofer con "Ver ticket" y el margen estimado: importe del viaje − combustible estimado − los demás gastos (el
+  combustible rendido se compara con el estimado, no se resta dos veces). Lo dibuja `costos-viaje.js`, que
+  `viaje-detalle.js` carga solo.
+- **Hoja de ruta (chofer):** "Cargar gasto" (combustible con los litros, peaje, comida u otro; importe, fecha, detalle
+  y la foto o el PDF del ticket, que se achica como la evidencia) y la lista de sus gastos del viaje, con "Ver ticket" y
+  "Eliminar" (con confirmación). En una lista y no en una tabla: en el celular una tabla no entra.
+- **Pruebas:** `tests/control-interno.test.js` (permisos de cada acción, el script, el margen y que cada pantalla cargue
+  lo suyo) y `tests/hoja-de-ruta.test.js` (cuándo se puede cargar un gasto). Las 22 pasan.
+- **Documentos:** design system (§3.2 y §10) y tesis (partes 2, 4 y 5).
+
+**Probado en la Mac** con la API simulada en el puerto 5502 (el que acepta la clave de Google, así los km son de
+verdad): guardar el galpón → "7 de 7" calculados (por ejemplo, galpón → Depósito Ferreyra 15,7 km); cambiar el precio
+del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); Ver detalle del camión (245.000 km +
+2.975,5 km de 4 viajes); Ver detalle de un viaje (824,2 km, combustible, gastos, margen); cargar un gasto con una foto de
+4 MB (subió de 925 KB) y eliminar otro, a 390 px. **La API no se compiló** (en la Mac no se puede).
+
+**Probar en la VM:**
+- [ ] 0. Rocío corre `database/costos/01_galpon_kilometraje_y_gastos.sql` (primero tal cual, después con
+  `@Aplicar = 1`). El importe del viaje es de `database/tarifas/02_…` (§34): sin ese script el detalle sale sin margen.
+- [ ] 1. `pull`, **recompilar la API** (controller nuevo `CostosController.cs`; cambió `HojaDeRutaController.cs`) y
+  Ctrl+F5. `node tests/control-interno.test.js` → OK.
+- [ ] 2. Gestionar empresa → Galpón: la dirección real del galpón → Guardar → "Galpón guardado." y debajo "Calculando
+  los km al galpón… N de M" hasta "Se calcularon los km al galpón de M de M orígenes y destinos.".
+- [ ] 3. Gestionar camiones: "Cambiar precio del gasoil" con el precio de hoy. Editar el camión: el kilometraje del
+  tablero de hoy, la fecha y el consumo (pedirle a la empresa el consumo real). Sin la fecha → "Completá la fecha del
+  kilometraje.".
+- [ ] 4. Listar camiones → Ver detalle: "Kilometraje y consumo" con el kilometraje de hoy.
+- [ ] 5. Listar viajes → Ver detalle de un viaje entregado: "Recorrido completo y costo" con los tres tramos (comparar
+  uno con Google Maps a mano), el combustible estimado y el margen.
+- [ ] 6. Como chofer (§36): "Cargar gasto" de combustible con litros y una foto → la tarjeta dice "1 · $ …"; "Ver
+  ticket" la muestra; "Eliminar" pide confirmación. Como admin, el gasto aparece en Ver detalle del viaje.
+- [ ] 7. Seguridad: con el token del chofer, `GET api/Costos/Viajes/{id}` → 403; sin token → 401.
+- [ ] 8. Auditoría: el galpón, el gasoil, el kilometraje y los gastos quedan registrados con su usuario.
+
+**Queda para después:**
+- **Viajes encadenados:** si desde un destino el camión va directo al origen del siguiente (la 2ª vuelta del día), el
+  recorrido cuenta igual la vuelta al galpón. Se podría mirar el viaje siguiente del mismo camión.
+- **Peajes estimados:** Google no los da bien en la Argentina; por ahora salen de los tickets.
+- **Tableros:** kilometraje por camión, % de km en vacío y margen por cliente o por ruta (para el chat de tableros).
+- **Adicionales que se pueden facturar al cliente** (Rocío, 24/10): algo nuevo aparte.
+- Que la oficina pueda cargar o corregir un gasto (hoy los carga el chofer desde la hoja de ruta).
+- Cuando el sistema se publique, sumar el dominio a la clave de Google Maps (hoy acepta solo `localhost:5502`).

@@ -94,6 +94,13 @@
     return r;
   }
 
+  // Gastos del viaje (control interno, 24/10): en cualquier viaje del chofer (directo o con plataforma) desde el día que
+  // empieza, aunque ya esté entregado (puede rendir al volver); no en uno facturado.
+  function puedeCargarGasto(v, hoyIso) {
+    var hoy = soloFecha(hoyIso);
+    return (v.Estado || 'Registrado') !== 'Facturado' && !!hoy && soloFecha(v.Fecha_Inicio) <= hoy;
+  }
+
   // El viaje que se muestra con el mapa abierto: el que está en viaje o, si no hay, el primero de hoy sin salir.
   function viajeQueSigue(viajes, hoyIso) {
     var hoy = soloFecha(hoyIso);
@@ -132,7 +139,9 @@
 
   // ---------------------------------------------------------------- Pantalla
 
-  var estado = { vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {} };
+  var estado = { vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {}, gastos: false };
+  var formularioGasto = null;
+  var gastosAbiertos = null;   // el viaje cuya lista de gastos está abierta
   var formularioEntrega = null;
   var formularioEvidencia = null;
   var urlEvidencia = null;
@@ -204,13 +213,21 @@
       dato('Número de remito', texto(v.Num_Remito)) +
       (esDirecto(v) ? '' : dato('N° transporte SAP', texto(v.Num_Transporte)) + dato('N° entrega Rukas', texto(v.Num_de_Carga))) +
       (v.Fecha_Entrega ? dato('Fecha de entrega', esc(SGTL.fecha(v.Fecha_Entrega))) : '') +
-      dato('Evidencia', evidencia);
+      dato('Evidencia', evidencia) +
+      (estado.gastos ? dato('Gastos', v.Gastos_Cantidad
+        ? '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-gastos" data-id="' + esc(v.Viaje_ID) + '">' +
+          esc(v.Gastos_Cantidad) + ' · ' + esc(SGTL.monto(v.Gastos_Total)) + '</button>'
+        : '<span class="text-muted">Sin gastos</span>') : '');
 
     var botones = [];
     if (a.paso) botones.push(botonPaso(v, a.paso));
     if (a.reemplazar) {
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-camera me-1" aria-hidden="true"></i>Reemplazar evidencia</button>');
+    }
+    if (estado.gastos && puedeCargarGasto(v, estado.hoy)) {
+      botones.push('<button type="button" class="btn btn-outline-primary" data-accion="cargar-gasto" data-id="' + esc(v.Viaje_ID) + '">' +
+        '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>');
     }
     var pie = botones.length || a.nota
       ? '<div class="card-footer d-grid gap-2">' + botones.join('') + (a.nota ? '<div class="form-text mt-0">' + esc(a.nota) + '</div>' : '') + '</div>'
@@ -324,6 +341,7 @@
         if (busqueda !== estado.busqueda) return;
         data = data || {};
         estado.hoy = soloFecha(data.Hoy);
+        estado.gastos = !!data.Gastos_Habilitados;
         document.getElementById('sinChofer').classList.toggle('d-none', data.Vinculado !== false);
         document.getElementById('contenidoHojaDeRuta').classList.toggle('d-none', data.Vinculado === false);
         document.getElementById('listaViajes').classList.toggle('d-none', data.Vinculado === false);
@@ -437,10 +455,10 @@
     });
   }
 
-  function reglaArchivo(id, obligatoria) {
+  function reglaArchivo(id, obligatoria, mensaje) {
     return {
       id: id,
-      requerido: obligatoria ? 'Elegí la foto o el PDF del remito.' : '',
+      requerido: obligatoria ? (mensaje || 'Elegí la foto o el PDF del remito.') : '',
       validar: function (valor, campo) { return problemaDelArchivo((campo.files || [])[0]); }
     };
   }
@@ -476,29 +494,191 @@
 
   // Ver la evidencia: la API pide el token, así que se baja con fetch y se muestra en la ventana (foto) o se ofrece abrir
   // el PDF. Un enlace directo no llevaría el token.
-  function verEvidencia(id) {
+  // La evidencia o el ticket de un gasto: la API pide el token, así que se baja y se muestra en la ventana.
+  function verArchivo(url, titulo, nombre) {
     var cuerpo = document.getElementById('verEvidenciaCuerpo');
-    document.getElementById('verEvidenciaTitulo').textContent = 'Ver evidencia del viaje #' + id;
+    document.getElementById('verEvidenciaTitulo').textContent = titulo;
     cuerpo.innerHTML = '<p class="text-muted text-center my-4">Cargando…</p>';
     if (urlEvidencia) { URL.revokeObjectURL(urlEvidencia); urlEvidencia = null; }
     SGTL.modal('#modalVerEvidencia', 'show');
-    fetch(API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Evidencia', { headers: encabezados() }).then(function (r) {
+    fetch(url, { headers: encabezados() }).then(function (r) {
       if (r.status === 401) {
         SGTL.mensajeError({ status: 401 });
         throw new Error('Tu sesión venció. Volvé a iniciar sesión.');
       }
-      if (!r.ok) throw new Error('No se pudo abrir la evidencia. Probá de nuevo.');
+      if (!r.ok) throw new Error('No se pudo abrir ' + nombre + '. Probá de nuevo.');
       return r.blob();
     }).then(function (blob) {
       urlEvidencia = URL.createObjectURL(blob);
       if (/^image\//.test(blob.type)) {
-        cuerpo.innerHTML = '<img class="img-fluid rounded d-block mx-auto" alt="Evidencia del viaje #' + esc(id) + '" src="' + urlEvidencia + '">';
+        cuerpo.innerHTML = '<img class="img-fluid rounded d-block mx-auto" alt="' + esc(titulo) + '" src="' + urlEvidencia + '">';
       } else {
-        cuerpo.innerHTML = '<p class="mb-3">La evidencia es un PDF.</p><a class="btn btn-primary" target="_blank" rel="noopener" href="' + urlEvidencia + '">' +
+        cuerpo.innerHTML = '<p class="mb-3">Es un PDF.</p><a class="btn btn-primary" target="_blank" rel="noopener" href="' + urlEvidencia + '">' +
           '<i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Abrir PDF</a>';
       }
     }).catch(function (error) {
       cuerpo.innerHTML = '<p class="text-muted text-center my-4">' + esc(error.message) + '</p>';
+    });
+  }
+
+  function verEvidencia(id) {
+    verArchivo(API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Evidencia', 'Ver evidencia del viaje #' + id, 'la evidencia');
+  }
+
+  // ---------------------------------------------------------------- Gastos del viaje (rendición del chofer)
+
+  var TIPOS_GASTO = { Combustible: 'Combustible', Peaje: 'Peaje', Comida: 'Comida', Otro: 'Otro' };
+
+  function litrosTexto(valor) {
+    var n = Number(valor);
+    return isFinite(n) ? n.toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' l' : '';
+  }
+
+  // En una lista y no en una tabla: en el celular una tabla no entra (como las tarjetas de los viajes, §10).
+  function filaGasto(g) {
+    var tipo = TIPOS_GASTO[g.Tipo] || g.Tipo;
+    var detalle = [SGTL.fecha(g.Fecha)];
+    if (g.Detalle) detalle.push(g.Detalle);
+    return '<li class="border-bottom py-3"><div class="d-flex justify-content-between gap-3">' +
+      '<div><div class="fw-semibold">' + esc(tipo) + (g.Litros != null ? ' · ' + esc(litrosTexto(g.Litros)) : '') + '</div>' +
+      '<div class="text-muted small">' + esc(detalle.join(' · ')) + '</div></div>' +
+      '<div class="fw-semibold text-nowrap">' + esc(SGTL.monto(g.Importe)) + '</div></div>' +
+      '<div class="d-flex gap-2 mt-2">' +
+      '<button type="button" class="btn btn-sm btn-outline-secondary" data-accion="ver" data-id="' + esc(g.Gasto_ID) + '">' +
+      '<i class="bi bi-paperclip me-1" aria-hidden="true"></i>Ver ticket</button>' +
+      '<button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar" data-id="' + esc(g.Gasto_ID) + '" data-importe="' + esc(g.Importe) + '">' +
+      '<i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button></div></li>';
+  }
+
+  function mostrarGastos(r) {
+    var gastos = (r && r.Gastos) || [];
+    document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(filaGasto).join('')
+      : '<li class="text-muted text-center py-4">Todavía no cargaste gastos en este viaje.</li>';
+    document.getElementById('gastosTotal').textContent = gastos.length ? 'Total: ' + SGTL.monto(r.Total) : '';
+  }
+
+  function verGastos(id) {
+    var v = estado.porId[id];
+    if (!v) return;
+    gastosAbiertos = id;
+    document.getElementById('verGastosTitulo').textContent = 'Gastos del viaje #' + id;
+    document.getElementById('listaGastos').innerHTML = '<li class="text-muted text-center py-4">Cargando…</li>';
+    document.getElementById('gastosTotal').textContent = '';
+    SGTL.modal('#modalVerGastos', 'show');
+    pedir({ url: API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Gastos', type: 'GET' },
+      'No se pudieron cargar los gastos del viaje. Probá de nuevo.').then(mostrarGastos, function (error) {
+        document.getElementById('listaGastos').innerHTML = '<li class="text-muted text-center py-4">' + esc(error.mensajeUsuario) + '</li>';
+      });
+  }
+
+  function eliminarGasto(gastoId, importe) {
+    var id = gastosAbiertos;
+    SGTL.confirmar({
+      titulo: '¿Eliminar el gasto de ' + SGTL.monto(importe) + '?',
+      mensaje: 'Se borra con su ticket. No se puede deshacer.',
+      verbo: 'Eliminar',
+      peligro: true,
+      accion: function () {
+        return pedir({ url: API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Gastos/' + encodeURIComponent(gastoId), type: 'DELETE' },
+          'No se pudo eliminar el gasto. Probá de nuevo.').then(mostrarGastos);
+      }
+    }).then(function (hecho) {
+      if (!hecho) return;
+      SGTL.toastExito('Gasto eliminado.');
+      cargar();
+    });
+  }
+
+  function abrirGasto(id) {
+    var v = estado.porId[id];
+    if (!v) return;
+    SGTL.reiniciarFormulario('#formGasto', '#avisoGasto');
+    formularioGasto.reiniciar();
+    document.getElementById('gastoViajeId').value = id;
+    document.getElementById('modalGastoTitulo').textContent = 'Cargar gasto del viaje #' + id;
+    document.getElementById('gastoResumen').textContent = (v.Origen || '') + ' → ' + (v.Destino || '');
+    document.getElementById('gastoFecha')._flatpickr.setDate(aDia(estado.hoy) || new Date(), false);
+    mostrarLitros();
+    SGTL.modal('#modalGasto', 'show');
+  }
+
+  function mostrarLitros() {
+    var combustible = document.getElementById('gastoTipo').value === 'Combustible';
+    document.getElementById('campoLitros').classList.toggle('d-none', !combustible);
+    if (!combustible) { document.getElementById('gastoLitros').value = ''; SGTL.limpiarError('#gastoLitros'); }
+  }
+
+  function numeroLitros(texto) {
+    var t = String(texto || '').trim();
+    if (!t) return null;
+    return /^\d{1,4}([.,]\d{1,2})?$/.test(t) ? Number(t.replace(',', '.')) : NaN;
+  }
+
+  var reglasGasto = [
+    { id: 'gastoTipo', requerido: 'Seleccioná el tipo de gasto.' },
+    {
+      id: 'gastoImporte', requerido: 'Completá el importe.',
+      validar: function (valor) {
+        var centavos = SGTL.montoCentavos(valor);
+        return centavos == null ? 'Escribí el importe como 85.000,00.' : (centavos <= 0 ? 'Tiene que ser mayor que cero.' : '');
+      }
+    },
+    {
+      id: 'gastoLitros',
+      get requerido() { return document.getElementById('gastoTipo').value === 'Combustible' ? 'Completá los litros que cargaste.' : ''; },
+      validar: function (valor) {
+        var n = numeroLitros(valor);
+        return isNaN(n) ? 'Escribí los litros como 120 o 120,5.' : (n <= 0 ? 'Tienen que ser más de cero.' : '');
+      }
+    },
+    {
+      id: 'gastoFecha', requerido: 'Completá la fecha del gasto.',
+      validar: function (valor) {
+        var fecha = SGTL.leerFecha(valor);
+        if (!fecha) return 'Escribila como DD/MM/AAAA.';
+        return estado.hoy && SGTL.fechaISO(fecha) > estado.hoy ? 'No puede ser posterior a hoy.' : '';
+      }
+    },
+    { id: 'gastoDetalle', max: 200 },
+    reglaArchivo('gastoTicket', true, 'Elegí la foto o el PDF del ticket.')
+  ];
+
+  function guardarGasto() {
+    var id = document.getElementById('gastoViajeId').value;
+    formularioGasto.validarTodo();
+    if (!SGTL.revisarFormulario('#formGasto', '#avisoGasto')) return;
+    var file = (document.getElementById('gastoTicket').files || [])[0];
+    var tipo = document.getElementById('gastoTipo').value;
+    var listo = SGTL.procesando('#btnGuardarGasto', 'Cargando…');
+    prepararArchivo(file).then(function (p) {
+      if (p.archivo.size > MAX_BYTES) {
+        var grande = new Error('archivo');
+        grande.mensajeUsuario = 'El ticket pesa más de 5 MB. Sacá otra foto o elegí un PDF más liviano.';
+        throw grande;
+      }
+      return leerBase64(p.archivo).then(function (b64) {
+        return pedir({
+          url: API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Gastos',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            Tipo: tipo,
+            Importe: SGTL.montoCentavos(document.getElementById('gastoImporte').value) / 100,
+            Litros: tipo === 'Combustible' ? numeroLitros(document.getElementById('gastoLitros').value) : null,
+            Fecha: SGTL.fechaISO(SGTL.leerFecha(document.getElementById('gastoFecha').value)),
+            Detalle: document.getElementById('gastoDetalle').value.trim(),
+            Nombre_Archivo: p.nombre, Content_Type: p.tipo, ContenidoBase64: b64
+          })
+        }, 'No se pudo cargar el gasto. Probá de nuevo.');
+      });
+    }).then(function () {
+      listo();
+      SGTL.modal('#modalGasto', 'hide');
+      SGTL.toastExito('Gasto del viaje #' + id + ' cargado.');
+      cargar();
+    }, function (error) {
+      listo();
+      SGTL.avisoFormulario('#avisoGasto', error.mensajeUsuario || 'No se pudo cargar el gasto. Probá de nuevo.');
     });
   }
 
@@ -607,7 +787,23 @@
       else if (accion === 'evidencia') abrirEvidencia(id);
       else if (accion === 'ver-evidencia') verEvidencia(id);
       else if (accion === 'ver-mapa') verMapa(id);
+      else if (accion === 'cargar-gasto') abrirGasto(id);
+      else if (accion === 'ver-gastos') verGastos(id);
     });
+    document.getElementById('listaGastos').addEventListener('click', function (e) {
+      var boton = e.target.closest('[data-accion]');
+      if (!boton) return;
+      if (boton.getAttribute('data-accion') === 'ver') {
+        verArchivo(API + '/HojaDeRuta/Gastos/' + encodeURIComponent(boton.getAttribute('data-id')) + '/Comprobante', 'Ver ticket', 'el ticket');
+      } else if (boton.getAttribute('data-accion') === 'eliminar') {
+        eliminarGasto(boton.getAttribute('data-id'), boton.getAttribute('data-importe'));
+      }
+    });
+    SGTL.selectorFecha('#gastoFecha');
+    SGTL.enlazarMascaraMonto('#gastoImporte');
+    formularioGasto = SGTL.validador(reglasGasto);
+    document.getElementById('gastoTipo').addEventListener('change', mostrarLitros);
+    document.getElementById('btnGuardarGasto').addEventListener('click', guardarGasto);
     if (window.SGTLGoogleMaps) {
       // Google rechazó la clave (sitio no permitido, API deshabilitada): los mapas dicen que se abran en Google Maps.
       window.SGTLGoogleMaps.alFallarAutenticacion(function () {
@@ -632,6 +828,7 @@
     horario: horario,
     accionesDe: accionesDe,
     viajeQueSigue: viajeQueSigue,
+    puedeCargarGasto: puedeCargarGasto,
     problemaDelArchivo: problemaDelArchivo
   };
 })(window, document);

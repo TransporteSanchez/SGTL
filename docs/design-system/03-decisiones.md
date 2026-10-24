@@ -35,6 +35,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
 | Exportar (§1.2) | `SGTL.descargarCSV` |
 | Datos de la empresa en un documento (§11) | `SGTLEmpresa.obtener(fechaDeEmision)` (`assets/static/js/empresa-datos.js`): `nombre` (el nombre comercial o la razón social), `lineas` (razón social, CUIT, domicilio, contacto) y `logo` (el de la empresa, listo para jsPDF, o `null`: va el nombre en texto); `SGTLEmpresa.medidaLogo` lo encaja sin deformarlo. Un documento ya emitido pasa su fecha de emisión; un borrador, `null` |
+| Control interno de los viajes (24/10) | Km al galpón de los orígenes y destinos: `SGTLGalpon.completar(opciones)` (`assets/static/js/galpon-km.js`, con Google Maps); el bloque "Recorrido completo y costo" de Ver detalle del viaje: `SGTLCostosViaje` (`assets/static/js/costos-viaje.js`, lo carga solo `viaje-detalle.js`) |
 | Mostrar un permiso (§3.1) | `SGTLPermisos.texto(nombre)` (`assets/static/js/permisos-menu.js`): el texto de su opción del menú; `lista.sort(SGTLPermisos.comparar)` los ordena como el menú |
 | Tableros del dashboard y de Tableros (§13) | `SGTLTableros` (`assets/static/js/tableros-catalogo.js`): el catálogo (`CATALOGO`, `TEMAS`), la tarjeta (`tarjeta(t, { estrella })`) y los favoritos (`leerFavoritos`, `guardarFavoritos`, `restablecer`); los datos los dibuja `dashboard.js`; estilos en `assets/static/css/tableros.css` |
 | Escapar texto en HTML | `SGTL.escapar` |
@@ -278,10 +279,11 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Subtítulo de una línea en todas las pantallas**, que diga para qué sirve. Ejemplo: "Solo
   proformas ya generadas; los borradores están en Gestionar proformas".
 - A la derecha, en la misma línea: exportar y después el alta (§1.1 y §1.2).
-- **Pantallas de configuración con varias secciones** (Gestionar e-mail, Gestionar tipos de comprobante): una tarjeta
+- **Pantallas de configuración con varias secciones** (Gestionar e-mail, Gestionar tipos de comprobante, Gestionar empresa
+  desde el 24/10: datos para los documentos y galpón): una tarjeta
   con el título de la pantalla y una tarjeta por sección, con su título chico (`h6.card-title`) y una línea gris que dice
   para qué sirve. Cada sección guarda por su cuenta (su propio "Guardar" abajo a la derecha y, a la izquierda, "Última
-  modificación: usuario · fecha"). Con una sola sección (Gestionar empresa, Gestionar contenido, WhatsApp), el formulario
+  modificación: usuario · fecha"). Con una sola sección (Gestionar contenido, WhatsApp), el formulario
   va en la tarjeta del título, con el mismo pie.
 - **Un formulario de configuración largo** puede ir en bloques lado a lado desde 992 o 1200 px, para que no quede todo
   uno debajo del otro (Gestionar empresa, 23/10: los datos fiscales en 2 × 2 con el logo al lado, y abajo domicilio y
@@ -625,7 +627,10 @@ Esto define solo cómo se muestran y cómo se cargan.
     la oficina en Gestionar viajes);
   - sin viajes: "No tenés viajes para hoy ni para los próximos días." o "No tenés viajes en los últimos 30 días."
     (no hay filtros, §2.2);
-  - las fotos de la evidencia se achican en el navegador (1600 px de lado, JPG) antes de subirlas.
+  - las fotos de la evidencia se achican en el navegador (1600 px de lado, JPG) antes de subirlas;
+  - "Cargar gasto" (control interno, 24/10) va en el pie de la tarjeta, con borde, en los viajes que ya empezaron; los
+    gastos del viaje se ven en una **lista** (no en una tabla, que en el celular no entra) con "Ver ticket" y "Eliminar"
+    con texto.
 - Los tooltips no aparecen en pantallas táctiles: por eso todo botón de solo ícono lleva también
   `aria-label` (§1.5).
 - **Modo oscuro: no.** Se sacan los estilos `theme-dark` sueltos de cuenta corriente.

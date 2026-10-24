@@ -196,6 +196,14 @@
                                     </table>
                                 </div>
                             </section>
+                            <!-- Control interno (24/10): el kilometraje de hoy, con el recorrido completo de cada viaje. -->
+                            <section class="sgtl-bloque sgtl-detalle-ancho d-none" id="detalleKilometraje">
+                                <div class="sgtl-bloque-titulo">Kilometraje y consumo</div>
+                                <div class="row">
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Kilometraje de hoy</span><div class="sgtl-dato-valor" id="detalleKmActual"></div></div></div>
+                                    <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Consumo</span><div class="sgtl-dato-valor" id="detalleConsumo"></div></div></div>
+                                </div>
+                            </section>
                         </div>
                         <div class="sgtl-detalle-pie mt-3" id="registroCamion"></div>
                     </div>
@@ -218,6 +226,9 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <!-- Control interno: los km al galpón que falten se calculan con Google Maps antes de mostrar el kilometraje. -->
+    <script src="assets/static/js/google-maps.js"></script>
+    <script src="assets/static/js/galpon-km.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -375,6 +386,44 @@
             });
         }
 
+        // Control interno (24/10): kilometraje de hoy = el inicial + el recorrido completo (galpón → origen → destino →
+        // galpón) de cada viaje entregado desde esa fecha. Sin permiso o sin el script de la base, el bloque no aparece.
+        let kilometrajePedido = 0;
+        function encabezadosCostos() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') };
+        }
+
+        function mostrarKilometraje(k, calculando) {
+            const viajes = k.Viajes === 1 ? '1 viaje entregado' : k.Viajes + ' viajes entregados';
+            const actual = k.Km_Actual == null
+                ? '<span class="text-muted">Falta cargar el kilometraje en Gestionar camiones.</span>'
+                : '<strong>' + SGTL.escapar(SGTL.km(k.Km_Actual).replace(/,\d$/, '')) + ' km</strong>' +
+                  '<div class="suave">' + SGTL.escapar(Number(k.Km_Inicial).toLocaleString('es-AR')) + ' km el ' + SGTL.escapar(SGTL.fecha(k.Fecha_Km_Inicial)) +
+                  ' + ' + SGTL.escapar(SGTL.km(k.Km_Recorridos)) + ' km de ' + viajes +
+                  (k.Viajes_Sin_Km ? (calculando ? '. Calculando los km al galpón…' : '. ' + k.Viajes_Sin_Km + ' sin los km al galpón: no suman todavía.') : '') + '</div>';
+            $('#detalleKmActual').html(actual);
+            $('#detalleConsumo').html(k.Consumo_L_100km == null
+                ? '<span class="text-muted">Falta cargarlo en Gestionar camiones.</span>'
+                : SGTL.escapar(Number(k.Consumo_L_100km).toLocaleString('es-AR', { maximumFractionDigits: 1 })) + ' litros cada 100 km');
+            $('#detalleKilometraje').removeClass('d-none');
+        }
+
+        function cargarKilometrajeCamion(camionId) {
+            const pedido = ++kilometrajePedido;
+            $('#detalleKilometraje').addClass('d-none');
+            const leer = function () {
+                return SGTL.ajax({ url: `${API}/Costos/Camiones/${camionId}/Kilometraje`, type: 'GET', cache: false, headers: encabezadosCostos() });
+            };
+            leer().then(function (k) {
+                if (pedido !== kilometrajePedido) return;
+                mostrarKilometraje(k, k.Viajes_Sin_Km > 0 && !!window.SGTLGalpon);
+                if (!k.Viajes_Sin_Km || !window.SGTLGalpon) return;
+                SGTLGalpon.completar().then(leer).then(function (nuevo) {
+                    if (pedido === kilometrajePedido) mostrarKilometraje(nuevo);
+                }, function () { if (pedido === kilometrajePedido) mostrarKilometraje(k); });
+            }, function () { /* sin permiso o sin el script: el detalle se ve sin el kilometraje */ });
+        }
+
         function verDetalleCamion(camionId, boton) {
             const listo = SGTL.procesando(boton);
             SGTL.ajax({ url: `${API}/Camiones/${camionId}`, type: 'GET' },
@@ -392,6 +441,7 @@
                     $('#detalleFechaITV').text(SGTL.fecha(camion.FechaITV));
                     $('#detalleEquipoFrio').text(camion.EquipoFrio || '');
                     cargarChoferesAsignados(camionId);
+                    cargarKilometrajeCamion(camionId);
                     SGTL.modal('#detalleCamionModal', 'show');
                 }).catch(function (error) {
                     SGTL.toastError(error.mensajeUsuario || 'No se pudo abrir el detalle del camión. Probá de nuevo.');

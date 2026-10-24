@@ -55,12 +55,19 @@
                 <!-- Los datos de la empresa que salen en los documentos (23/10). La apariencia del sistema (logo del menú,
                      colores y pie) está aparte, en Gestionar contenido. -->
                 <section class="section">
-                    <div class="card rounded me-4 ms-4 mt-4 mb-4">
+                    <!-- Dos secciones (§3.2): la tarjeta del título y una por sección, cada una con su Guardar. -->
+                    <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
                             <h5 class="card-title mb-1">
                                 <i class="bi bi-gear me-2" aria-hidden="true"></i>Gestionar empresa
                             </h5>
-                            <p class="text-muted mb-0">Los datos de la empresa que salen en las facturas, notas de crédito y de débito, recibos, proformas y presupuestos.</p>
+                            <p class="text-muted mb-0">Los datos de la empresa: los que salen en los documentos y el galpón de los camiones.</p>
+                        </div>
+                    </div>
+                    <div class="card rounded me-4 ms-4 mt-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-1">Datos para los documentos</h6>
+                            <small class="text-muted">Los que salen en las facturas, notas de crédito y de débito, recibos, proformas y presupuestos.</small>
                         </div>
                         <div class="card-body">
                             <div id="avisoEmpresa" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
@@ -179,6 +186,46 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- Galpón (control interno, 24/10): con él se calcula el recorrido completo de cada viaje. -->
+                    <div class="card rounded me-4 ms-4 mt-4 mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-1">Galpón</h6>
+                            <small class="text-muted">De dónde salen los camiones y adónde vuelven: con él se calculan los km del recorrido completo de cada viaje.</small>
+                        </div>
+                        <div class="card-body">
+                            <div id="avisoGalpon" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                            <form id="formGalpon" class="form" novalidate>
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6 col-xl-3">
+                                        <label for="galponProvincia" class="form-label">Provincia <span class="text-danger">*</span></label>
+                                        <select id="galponProvincia" class="form-select"><option value="">Cargando…</option></select>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-xl-3">
+                                        <label for="galponLocalidad" class="form-label">Localidad <span class="text-danger">*</span></label>
+                                        <select id="galponLocalidad" class="form-select" disabled><option value="">Seleccioná una localidad</option></select>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-xl-4">
+                                        <label for="galponCalle" class="form-label">Calle <span class="text-danger">*</span></label>
+                                        <input type="text" id="galponCalle" class="form-control" placeholder="Ruta 9 km 691" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-6 col-md-3 col-xl-2">
+                                        <label for="galponAltura" class="form-label">Altura</label>
+                                        <input type="text" id="galponAltura" class="form-control" placeholder="1500" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-3" id="galponCalculo" role="status"></div>
+                                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-4">
+                                    <small class="text-muted" id="registroGalpon"></small>
+                                    <button type="submit" class="btn btn-primary" id="btnGuardarGalpon">Guardar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </section>
             </div>
 
@@ -198,6 +245,9 @@
     <script src="./assets/static/gestionContenido.js"></script>
     <!-- formatearCUIT y CONDICIONES_IVA, los mismos de la ficha del cliente. -->
     <script src="assets/static/js/clientes.js"></script>
+    <!-- Galpón: los km al galpón de los orígenes y destinos se calculan con Google Maps. -->
+    <script src="assets/static/js/google-maps.js"></script>
+    <script src="assets/static/js/galpon-km.js"></script>
 
     <script>
         window.onload = async function () {
@@ -213,7 +263,7 @@
                     await window.loadSidebar();
                 }
                 window.cargarEstilosContenido().catch(function (error) { console.error(error); });
-                await cargarEmpresa();
+                await Promise.all([cargarEmpresa(), cargarGalpon()]);
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
             } catch (error) {
@@ -390,6 +440,112 @@
                 listo();
             }
         }
+
+        // ---------------------------------------------------------------- Galpón (control interno, 24/10)
+        // Se guarda aparte (api/Costos/Galpon) y no por versiones: no sale en los documentos. Si cambia la dirección, la
+        // API borra los km al galpón de los orígenes y destinos y la pantalla los vuelve a calcular con Google Maps.
+        var validadorGalpon = SGTL.validador([
+            { id: 'galponProvincia', requerido: 'Seleccioná una provincia.' },
+            { id: 'galponLocalidad', requerido: 'Seleccioná una localidad.' },
+            { id: 'galponCalle', requerido: 'Completá la calle.', max: 100 },
+            { id: 'galponAltura', max: 10 }
+        ]);
+
+        function encabezadosGalpon() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') };
+        }
+
+        function cargarLocalidadesGalpon(provinciaId) {
+            var select = campoEmpresa('galponLocalidad');
+            select.innerHTML = '';
+            select.appendChild(new Option('Seleccioná una localidad', ''));
+            select.disabled = true;
+            if (!provinciaId) return Promise.resolve();
+            return SGTL.ajax({ url: API_EMPRESA + '/Provincias/' + provinciaId + '/Localidades', type: 'GET' },
+                'No se pudieron cargar las localidades. Revisá la conexión y probá de nuevo.').then(function (localidades) {
+                    localidades.forEach(function (localidad) { select.appendChild(new Option(localidad.Nombre_Localidad, localidad.Loc_ID)); });
+                    select.disabled = false;
+                });
+        }
+
+        function mostrarGalpon(g) {
+            g = g || {};
+            campoEmpresa('galponProvincia').value = g.ProvID || '';
+            campoEmpresa('galponCalle').value = g.Calle || '';
+            campoEmpresa('galponAltura').value = g.AlturaCalle || '';
+            campoEmpresa('registroGalpon').textContent = g.Configurado && g.Usu_Modi
+                ? 'Última modificación: ' + g.Usu_Modi + ' · ' + SGTL.fecha(g.Fecha_Modi, { hora: true })
+                : 'Todavía no se cargó.';
+            return cargarLocalidadesGalpon(g.ProvID).then(function () { campoEmpresa('galponLocalidad').value = g.LocID || ''; });
+        }
+
+        function cargarGalpon() {
+            var provincias = SGTL.ajax({ url: API_EMPRESA + '/Provincias', type: 'GET' }).then(function (lista) {
+                var select = campoEmpresa('galponProvincia');
+                select.innerHTML = '';
+                select.appendChild(new Option('Seleccioná una provincia', ''));
+                lista.forEach(function (provincia) { select.appendChild(new Option(provincia.Nombre_Provincia, provincia.Prov_ID)); });
+            });
+            var galpon = SGTL.ajax({ url: API_EMPRESA + '/Costos/Galpon', type: 'GET', cache: false, headers: encabezadosGalpon() },
+                'No se pudo cargar el galpón. Probá de nuevo.');
+            return Promise.all([galpon, provincias]).then(function (r) { return mostrarGalpon(r[0]); }).catch(function (error) {
+                SGTL.avisoFormulario('#avisoGalpon', error.mensajeUsuario || 'No se pudo cargar el galpón. Probá de nuevo.');
+            });
+        }
+
+        // Después de cambiar el galpón: los km de todos los orígenes y destinos, de a uno, con el avance a la vista.
+        function recalcularKmGalpon() {
+            var texto = campoEmpresa('galponCalculo');
+            texto.textContent = 'Calculando los km al galpón de los orígenes y destinos…';
+            return SGTLGalpon.completar({
+                alAvanzar: function (hechos, total) {
+                    texto.textContent = 'Calculando los km al galpón de los orígenes y destinos: ' + hechos + ' de ' + total + '…';
+                }
+            }).then(function (r) {
+                if (!r.total) { texto.textContent = ''; return; }
+                texto.textContent = 'Se calcularon los km al galpón de ' + r.calculados + ' de ' + r.total + ' orígenes y destinos.' +
+                    (r.fallidos ? ' Los que faltan se vuelven a probar al abrir el detalle de un viaje o Gestionar camiones.' : '');
+            });
+        }
+
+        async function guardarGalpon(evento) {
+            evento.preventDefault();
+            validadorGalpon.validarTodo();
+            if (!SGTL.revisarFormulario('#formGalpon', '#avisoGalpon')) return;
+            var valor = function (id) { return campoEmpresa(id).value.trim(); };
+            var listo = SGTL.procesando('#btnGuardarGalpon', 'Guardando…');
+            try {
+                var respuesta = await SGTL.ajax({
+                    url: API_EMPRESA + '/Costos/Galpon',
+                    type: 'PUT',
+                    contentType: 'application/json',
+                    headers: encabezadosGalpon(),
+                    data: JSON.stringify({
+                        ProvID: parseInt(valor('galponProvincia'), 10) || null,
+                        LocID: parseInt(valor('galponLocalidad'), 10) || null,
+                        Calle: valor('galponCalle'),
+                        AlturaCalle: valor('galponAltura')
+                    })
+                }, 'No se pudo guardar el galpón. Probá de nuevo.');
+                SGTL.toastExito('Galpón guardado.');
+                await mostrarGalpon(respuesta.Galpon);
+                if (respuesta.Recalcular) recalcularKmGalpon();
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoGalpon', error.mensajeUsuario || 'No se pudo guardar el galpón. Probá de nuevo.');
+            } finally {
+                listo();
+            }
+        }
+
+        (function prepararGalpon() {
+            var provincia = campoEmpresa('galponProvincia');
+            provincia.addEventListener('change', function () {
+                cargarLocalidadesGalpon(provincia.value).catch(function (error) {
+                    SGTL.avisoFormulario('#avisoGalpon', error.mensajeUsuario);
+                });
+            });
+            document.getElementById('formGalpon').addEventListener('submit', guardarGalpon);
+        })();
 
         (function prepararEmpresa() {
             var cuit = campoEmpresa('empresaCuit');
