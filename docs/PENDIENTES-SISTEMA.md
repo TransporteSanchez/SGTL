@@ -2864,10 +2864,17 @@ sistema (módulo de Fede: ver abajo).
     del usuario que inició sesión), nunca de un parámetro: un chofer no ve ni toca los viajes de otro (404). El resto
     de la API sigue como estaba (CP06).
 - **Pantalla** `hoja-de-ruta.html` + `assets/static/js/hoja-de-ruta.js`, pensada para el celular (excepción del §10 del
-  design system): una tarjeta por viaje, agrupadas por día; "Hoy y próximos · Anteriores"; recorrido con "Abrir
-  recorrido en Google Maps" (el mismo enlace del WhatsApp), camión, números del viaje y evidencia.
+  design system): una tarjeta por viaje, agrupadas por día; "Hoy y próximos · Anteriores"; el recorrido con dos puntos
+  iguales unidos por una línea (pedido de Rocío); camión, números del viaje y evidencia.
+  - **Mapa** (Rocío, 24/10): el viaje que sigue (en viaje o, si no hay, el primero de hoy) muestra el mapa con el
+    recorrido dibujado, con la misma clave y el mismo cargador que Gestionar viajes (`google-maps.js`); los demás tienen
+    "Ver mapa". Debajo, "Abrir en Google Maps" (el mismo enlace del WhatsApp) para manejar con la app. La clave solo
+    acepta `localhost:5502`: desde otro puerto el mapa dice "No se pudo cargar el mapa: abrilo en Google Maps.".
   - Cliente directo: "Iniciar viaje" (con confirmación) y "Registrar entrega" (resultado, fecha con hoy por defecto y la
-    evidencia, obligatoria); ya entregado, "Reemplazar evidencia". Cliente con plataforma: solo "Subir evidencia".
+    evidencia, obligatoria); ya entregado, solo "Reemplazar evidencia" (Rocío: un viaje pasado nunca ofrece "Subir
+    evidencia"; uno entregado sin evidencia, de antes del 22/10, no tiene botón y la carga la oficina).
+  - Cliente con plataforma: **solo ver** (Rocío, 24/10: el chofer manda el remito al bot de WhatsApp de Rukas y la
+    entrega queda registrada ahí). La API también rechaza la evidencia del chofer en esos viajes.
   - Las fotos se achican a 1600 px en JPG antes de subirlas (una de 5,3 MB quedó en 715 KB); el PDF va tal cual.
   - En una proforma emitida, el paso queda deshabilitado con el motivo escrito debajo.
   - `hoja-de-ruta.html?viaje=48` marca ese viaje (y lo busca en Anteriores si ya pasó): es lo que abriría el enlace del
@@ -2890,7 +2897,8 @@ sistema (módulo de Fede: ver abajo).
 
 **Probado en la Mac** con una API simulada, a 390 px y a 1366 px: login del chofer → hoja de ruta; iniciar viaje;
 registrar entrega con una foto grande; viaje en una proforma con el paso deshabilitado; viaje con plataforma;
-Anteriores; enlace `?viaje=` sin sesión → login → vuelve al viaje marcado; admin sin chofer → aviso; Gestionar
+el mapa con el recorrido de verdad (la API simulada en el puerto 5502, que es el que acepta la clave) y "Ver mapa";
+Anteriores sin "Subir evidencia"; enlace `?viaje=` sin sesión → login → vuelve al viaje marcado; admin sin chofer → aviso; Gestionar
 usuarios: asignar, quitar y el error de un chofer que ya tiene usuario. **La API no se compiló** (en la Mac no se puede).
 
 **Probar en la VM:**
@@ -2911,7 +2919,9 @@ usuarios: asignar, quitar y el error de un chofer que ya tiene usuario. **La API
   "Ver evidencia" la muestra. "Abrir recorrido en Google Maps" abre el recorrido.
 - [ ] 7. Como admin, Gestionar viajes: el viaje está Entregado con la evidencia; Auditoría muestra el cambio de estado y
   la evidencia con el usuario del chofer.
-- [ ] 8. El viaje con plataforma tiene solo "Subir evidencia"; "Anteriores" muestra los últimos 30 días.
+- [ ] 8. El viaje en viaje (o el primero de hoy) muestra el mapa con el recorrido; los demás, "Ver mapa", que lo
+  despliega. El viaje con plataforma no tiene botones. "Anteriores" muestra los últimos 30 días y ningún viaje dice
+  "Subir evidencia": los entregados con evidencia, "Reemplazar evidencia".
 - [ ] 9. Seguridad: en Swagger o Postman, `GET http://localhost:50222/api/HojaDeRuta` sin `Authorization` → 401. Con
   el token del chofer (sale del `localStorage` del navegador), `POST api/HojaDeRuta/Viajes/{id}/Iniciar` de un viaje
   de otro chofer → 404 "Ese viaje no está en tu hoja de ruta.".
@@ -2931,6 +2941,9 @@ publicado; hoy el front y la API corren en `localhost`.
 - La sesión dura 30 minutos (`JwtConfig.ExpirationMinutes`, para todos): el chofer va a tener que volver a entrar
   seguido. Ver si conviene una sesión más larga para los choferes.
 - Volver un paso atrás desde el celular: hoy, si el chofer se equivoca, lo corrige la oficina en Gestionar viajes.
+- **Avisar la entrega de un viaje con plataforma** ("marcarlo como entregado para dejar avisado", idea de Rocío del
+  24/10): ese flujo no tiene estado Entregado (pasa de Registrado a Listo para facturar), así que es un cambio del flujo
+  de viajes con plataforma. Decidirlo con la revisión de los flujos de viajes.
 - Un caso de prueba nuevo en la tesis (parte 5) con el resultado de la VM.
 - En el celular, la fecha de entrega usa el calendario del teléfono (flatpickr en modo móvil, como en todo el sistema:
   ya anotado en "Fechas en el celular" del §24).

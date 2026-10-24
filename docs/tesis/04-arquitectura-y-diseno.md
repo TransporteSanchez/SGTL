@@ -41,11 +41,12 @@ clientes, costo por viaje), los listados y la auditoría, y aprueba los presupue
 
 **Chofer.** Usa el sistema desde el celular, con su propio usuario, en un grupo que solo abre la
 **Hoja de ruta** (desde el 24/10/2026; antes no usaba el sistema). Ve sus viajes de hoy y los
-próximos, agrupados por día: cliente, origen y destino con el enlace al recorrido en Google Maps,
-camión y números del viaje. En los viajes de clientes directos **inicia el viaje** y **registra la
-entrega** con su resultado y la foto o el PDF del remito (la evidencia); en los de clientes con
-plataforma solo carga esa evidencia, porque el seguimiento lo lleva la plataforma. Además sigue
-recibiendo por WhatsApp la hoja de ruta de cada viaje asignado. Solo ve y modifica sus propios
+próximos, agrupados por día: cliente, origen y destino con el mapa del recorrido (y el enlace para
+manejar con Google Maps), camión y números del viaje. En los viajes de clientes directos **inicia el
+viaje** y **registra la entrega** con su resultado y la foto o el PDF del remito (la evidencia, que es
+obligatoria); en los de clientes con plataforma solo consulta, porque la entrega y el remito los
+registra en la plataforma del cliente (en Rukas, mandando el remito a su bot de WhatsApp). Además
+sigue recibiendo por WhatsApp la hoja de ruta de cada viaje asignado. Solo ve y modifica sus propios
 viajes: su usuario apunta a su ficha de chofer y la API toma el chofer del token de la sesión, nunca
 de la pantalla. Su existencia se justifica porque la comunicación con el chofer era informal y no
 quedaba registrada; ahora la salida y la entrega las registra quien las hace, en el momento.

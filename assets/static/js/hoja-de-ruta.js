@@ -1,6 +1,6 @@
 // Hoja de ruta del chofer (24/10): el chofer entra con su usuario y ve sus viajes desde el celular, agrupados por día,
-// con el recorrido (y el enlace a Google Maps), el camión y los números del viaje. En los viajes de clientes directos
-// inicia el viaje y registra la entrega con la evidencia; en los de clientes con plataforma solo carga la evidencia.
+// con el recorrido (y su mapa), el camión y los números del viaje. En los viajes de clientes directos inicia el viaje y
+// registra la entrega con la evidencia (después solo la reemplaza); los de clientes con plataforma solo los mira.
 // La API (api/HojaDeRuta) saca el chofer del token: no hay forma de pedir los viajes de otro.
 // Va después de jQuery, app.js, flatpickr y sgtl-ui.js. La lógica sin pantalla está en SGTLHojaDeRuta (tests/hoja-de-ruta.test.js).
 (function (window, document) {
@@ -69,27 +69,39 @@
     return v.EnProforma_Estado === 'Generada' || v.EnProforma_Estado === 'Aceptada' ? (v.EnProforma_Numero || 'emitida') : '';
   }
 
-  // Qué puede hacer el chofer con el viaje.
+  // Qué puede hacer el chofer con el viaje (decisiones de Rocío, 24/10).
   //   paso: el siguiente paso del circuito ({ accion: 'iniciar' | 'entregar', texto, motivo si no se puede }) o null;
-  //   evidencia: 'subir' | 'reemplazar' | null; ver: si hay evidencia para abrir; nota: aclaración debajo de los botones.
+  //   reemplazar: si puede cambiar la evidencia; ver: si hay evidencia para abrir; nota: aclaración debajo.
+  // La evidencia se sube al registrar la entrega (es obligatoria): después solo se reemplaza. Un viaje entregado antes
+  // de que fuera obligatoria (22/10) y sin evidencia no ofrece nada: la carga la oficina en Gestionar viajes.
+  // Con plataforma (Rukas) el chofer solo mira: la entrega y el remito los registra en la plataforma.
   function accionesDe(v) {
-    var r = { paso: null, evidencia: null, ver: !!v.Tiene_Evidencia, nota: '' };
+    var r = { paso: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
     var estadoViaje = v.Estado || 'Registrado';
-    if (estadoViaje === 'Facturado') return r;
-    var bloquea = proformaQueBloquea(v);
     if (!esDirecto(v)) {
-      r.evidencia = v.Tiene_Evidencia ? 'reemplazar' : 'subir';
-      r.nota = 'Este viaje lo sigue la plataforma del cliente: acá solo cargás la evidencia.';
+      r.nota = 'Este viaje lo sigue la plataforma del cliente: la entrega y el remito se registran ahí.';
       return r;
     }
+    if (estadoViaje === 'Facturado') return r;
+    var bloquea = proformaQueBloquea(v);
     if (estadoViaje === 'Registrado') {
       r.paso = { accion: 'iniciar', texto: 'Iniciar viaje', motivo: bloquea ? 'No se puede iniciar el viaje: está en la proforma ' + bloquea : '' };
     } else if (estadoViaje === 'En_viaje') {
       r.paso = { accion: 'entregar', texto: 'Registrar entrega', motivo: bloquea ? 'No se puede registrar la entrega: el viaje está en la proforma ' + bloquea : '' };
     } else {
-      r.evidencia = v.Tiene_Evidencia ? 'reemplazar' : 'subir';
+      r.reemplazar = !!v.Tiene_Evidencia;
     }
     return r;
+  }
+
+  // El viaje que se muestra con el mapa abierto: el que está en viaje o, si no hay, el primero de hoy sin salir.
+  function viajeQueSigue(viajes, hoyIso) {
+    var hoy = soloFecha(hoyIso);
+    var lista = viajes || [];
+    var enViaje = lista.filter(function (v) { return v.Estado === 'En_viaje'; })[0];
+    if (enViaje) return enViaje.Viaje_ID;
+    var deHoy = lista.filter(function (v) { return soloFecha(v.Fecha_Inicio) === hoy && (v.Estado || 'Registrado') === 'Registrado'; })[0];
+    return deHoy ? deHoy.Viaje_ID : null;
   }
 
   // Km como los guarda la API ("146.8") o como se escriben ("146,8").
@@ -120,7 +132,7 @@
 
   // ---------------------------------------------------------------- Pantalla
 
-  var estado = { vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null };
+  var estado = { vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {} };
   var formularioEntrega = null;
   var formularioEvidencia = null;
   var urlEvidencia = null;
@@ -141,10 +153,22 @@
 
   function texto(valor) { var t = String(valor == null ? '' : valor).trim(); return t ? esc(t) : ''; }
 
-  function lugar(icono, nombre, direccion, etiqueta) {
-    return '<li><i class="bi ' + icono + '" aria-hidden="true"></i><div><span class="visually-hidden">' + etiqueta + ': </span>' +
+  // Origen y destino con el mismo punto, unidos por una línea punteada (.sgtl-recorrido, en la pantalla).
+  function lugar(nombre, direccion, etiqueta) {
+    return '<li><span class="visually-hidden">' + etiqueta + ': </span>' +
       '<div class="fw-semibold">' + (texto(nombre) || texto(direccion) || '—') + '</div>' +
-      (nombre && direccion ? '<div class="text-muted small">' + esc(direccion) + '</div>' : '') + '</div></li>';
+      (nombre && direccion ? '<div class="text-muted small">' + esc(direccion) + '</div>' : '') + '</li>';
+  }
+
+  // El mapa con el recorrido dibujado: abierto en el viaje que sigue; en los demás, "Ver mapa" lo despliega.
+  // "Abrir en Google Maps" abre la app del celular para manejar (el mismo enlace del WhatsApp).
+  function mapa(v, abierto) {
+    if (!v.Maps_Url) return '<div class="form-text">No hay dirección cargada para mostrar el recorrido en el mapa.</div>';
+    var abrir = '<a class="btn btn-link px-0" href="' + esc(v.Maps_Url) + '" target="_blank" rel="noopener">' +
+      '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Google Maps</a>';
+    if (abierto) return '<div class="sgtl-mapa-chofer" data-mapa="' + esc(v.Viaje_ID) + '"></div>' + abrir;
+    return '<button type="button" class="btn btn-outline-primary w-100" data-accion="ver-mapa" data-id="' + esc(v.Viaje_ID) + '">' +
+      '<i class="bi bi-map me-1" aria-hidden="true"></i>Ver mapa</button>';
   }
 
   function etiquetas(v) {
@@ -169,12 +193,12 @@
     return '<button type="button" class="btn btn-success" data-accion="' + paso.accion + '" data-id="' + esc(v.Viaje_ID) + '">' + contenido + '</button>';
   }
 
-  function tarjeta(v) {
+  function tarjeta(v, mapaAbierto) {
     var a = accionesDe(v);
     var evidencia = v.Tiene_Evidencia
       ? '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</button>'
-      : '<span class="text-muted">Sin cargar</span>';
+      : '<span class="text-muted">' + (esDirecto(v) ? 'Sin cargar' : 'En la plataforma del cliente') + '</span>';
     var datos = dato('Camión', texto(v.Camion) + (v.Camion_Detalle ? '<div class="suave">' + esc(v.Camion_Detalle) + '</div>' : '')) +
       dato('Distancia', esc(kmTexto(v.Distancia_KM))) +
       dato('Número de remito', texto(v.Num_Remito)) +
@@ -184,9 +208,9 @@
 
     var botones = [];
     if (a.paso) botones.push(botonPaso(v, a.paso));
-    if (a.evidencia) {
+    if (a.reemplazar) {
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
-        '<i class="bi bi-camera me-1" aria-hidden="true"></i>' + (a.evidencia === 'reemplazar' ? 'Reemplazar evidencia' : 'Subir evidencia') + '</button>');
+        '<i class="bi bi-camera me-1" aria-hidden="true"></i>Reemplazar evidencia</button>');
     }
     var pie = botones.length || a.nota
       ? '<div class="card-footer d-grid gap-2">' + botones.join('') + (a.nota ? '<div class="form-text mt-0">' + esc(a.nota) + '</div>' : '') + '</div>'
@@ -199,12 +223,9 @@
       '<div class="text-muted">Viaje #' + esc(v.Viaje_ID) + (v.Cliente ? ' · ' + esc(v.Cliente) : '') + '</div></div>' +
       '<div class="text-end flex-shrink-0">' + etiquetas(v) + '</div></div>' +
       '<ol class="sgtl-recorrido list-unstyled">' +
-      lugar('bi-circle', v.Origen, v.Origen_Direccion, 'Origen') +
-      lugar('bi-geo-alt-fill', v.Destino, v.Destino_Direccion, 'Destino') + '</ol>' +
-      (v.Maps_Url
-        ? '<a class="btn btn-outline-primary w-100" href="' + esc(v.Maps_Url) + '" target="_blank" rel="noopener">' +
-          '<i class="bi bi-map me-1" aria-hidden="true"></i>Abrir recorrido en Google Maps</a>'
-        : '<div class="form-text">No hay dirección cargada para armar el recorrido en Google Maps.</div>') +
+      lugar(v.Origen, v.Origen_Direccion, 'Origen') +
+      lugar(v.Destino, v.Destino_Direccion, 'Destino') + '</ol>' +
+      '<div class="sgtl-mapa-viaje" data-mapa-de="' + esc(v.Viaje_ID) + '">' + mapa(v, mapaAbierto) + '</div>' +
       '<div class="row gx-3 gy-0 mt-3">' + datos + '</div>' +
       '</div>' + pie + '</article>';
   }
@@ -222,10 +243,70 @@
 
   function dibujar() {
     if (!estado.viajes.length) { mostrarLista(sinViajes()); return; }
+    var sigue = estado.vista === 'proximos' ? viajeQueSigue(estado.viajes, estado.hoy) : null;
     mostrarLista(agruparPorDia(estado.viajes).map(function (g) {
       return '<section class="mb-2"><div class="sgtl-bloque-titulo mb-3">' + esc(tituloDia(g.fecha, estado.hoy)) + '</div>' +
-        g.viajes.map(tarjeta).join('') + '</section>';
+        g.viajes.map(function (v) {
+          return tarjeta(v, v.Viaje_ID === sigue || !!estado.mapasAbiertos[v.Viaje_ID]);
+        }).join('') + '</section>';
     }).join(''));
+    Array.prototype.forEach.call(document.querySelectorAll('#listaViajes [data-mapa]'), function (contenedor) {
+      dibujarMapa(estado.porId[contenedor.getAttribute('data-mapa')], contenedor);
+    });
+  }
+
+  // ---------------------------------------------------------------- Mapa (Google Maps, como en Gestionar viajes)
+
+  var bibliotecasMapa = null;
+  var rutas = {};
+
+  function cargarMapas() {
+    if (!bibliotecasMapa) {
+      bibliotecasMapa = window.SGTLGoogleMaps.cargar()
+        .then(function () { return Promise.all([google.maps.importLibrary('maps'), google.maps.importLibrary('routes')]); })
+        .catch(function (e) { bibliotecasMapa = null; throw e; });
+    }
+    return bibliotecasMapa;
+  }
+
+  function sinMapa(contenedor) {
+    contenedor.innerHTML = '<p class="text-muted small text-center m-0">No se pudo cargar el mapa: abrilo en Google Maps.</p>';
+  }
+
+  // La ruta de cada viaje se pide una sola vez por visita: al volver a dibujar la lista se reusa.
+  function dibujarMapa(v, contenedor) {
+    if (!v || !contenedor) return;
+    contenedor.innerHTML = '<p class="text-muted small text-center m-0">Cargando el mapa…</p>';
+    cargarMapas().then(function (libs) {
+      if (!contenedor.isConnected) return;
+      contenedor.innerHTML = '';
+      var mapaViaje = new libs[0].Map(contenedor, {
+        center: { lat: -34.6, lng: -58.4 }, zoom: 5,
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
+        // En el celular, un dedo mueve la lista y dos mueven el mapa.
+        gestureHandling: 'cooperative'
+      });
+      var dibujo = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: false });
+      if (rutas[v.Viaje_ID]) { dibujo.setDirections(rutas[v.Viaje_ID]); return; }
+      new libs[1].DirectionsService().route({
+        origin: v.Origen_Direccion + ', Argentina',
+        destination: v.Destino_Direccion + ', Argentina',
+        travelMode: 'DRIVING'
+      }, function (resultado, status) {
+        if (status !== 'OK') { sinMapa(contenedor); return; }
+        rutas[v.Viaje_ID] = resultado;
+        dibujo.setDirections(resultado);
+      });
+    }, function () { sinMapa(contenedor); });
+  }
+
+  function verMapa(id) {
+    var v = estado.porId[id];
+    var lugarMapa = document.querySelector('#listaViajes [data-mapa-de="' + id + '"]');
+    if (!v || !lugarMapa) return;
+    estado.mapasAbiertos[id] = true;
+    lugarMapa.innerHTML = mapa(v, true);
+    dibujarMapa(v, lugarMapa.querySelector('[data-mapa]'));
   }
 
   // Sin vista, vuelve a traer la misma después de una acción: deja la lista como está hasta que llega la nueva, así el
@@ -364,17 +445,14 @@
     };
   }
 
+  // Reemplazar la evidencia de un viaje entregado (por ejemplo, si la foto no se lee).
   function abrirEvidencia(id) {
     var v = estado.porId[id];
     if (!v) return;
-    var reemplaza = !!v.Tiene_Evidencia;
-    var titulo = (reemplaza ? 'Reemplazar evidencia' : 'Subir evidencia') + ' del viaje #' + id;
     SGTL.reiniciarFormulario('#formEvidencia', '#avisoEvidencia');
     document.getElementById('evidenciaViajeId').value = id;
-    document.getElementById('modalEvidenciaTitulo').textContent = titulo;
-    document.getElementById('btnGuardarEvidencia').textContent = reemplaza ? 'Reemplazar evidencia' : 'Subir evidencia';
+    document.getElementById('modalEvidenciaTitulo').textContent = 'Reemplazar evidencia del viaje #' + id;
     document.getElementById('evidenciaResumen').textContent = (v.Destino || '') + (v.Cliente ? ' · ' + v.Cliente : '');
-    document.getElementById('evidenciaActualSola').classList.toggle('d-none', !reemplaza);
     formularioEvidencia.reiniciar();
     SGTL.modal('#modalEvidencia', 'show');
   }
@@ -384,12 +462,11 @@
     formularioEvidencia.validarTodo();
     if (!SGTL.revisarFormulario('#formEvidencia', '#avisoEvidencia')) return;
     var file = (document.getElementById('evidenciaSolaArchivo').files || [])[0];
-    var reemplaza = estado.porId[id] && estado.porId[id].Tiene_Evidencia;
-    var listo = SGTL.procesando('#btnGuardarEvidencia', 'Subiendo…');
+    var listo = SGTL.procesando('#btnGuardarEvidencia', 'Reemplazando…');
     subirEvidencia(id, file).then(function () {
       listo();
       SGTL.modal('#modalEvidencia', 'hide');
-      SGTL.toastExito(reemplaza ? 'Evidencia del viaje #' + id + ' reemplazada.' : 'Evidencia del viaje #' + id + ' cargada.');
+      SGTL.toastExito('Evidencia del viaje #' + id + ' reemplazada.');
       cargar();
     }, function (error) {
       listo();
@@ -529,7 +606,14 @@
       else if (accion === 'entregar') abrirEntrega(id);
       else if (accion === 'evidencia') abrirEvidencia(id);
       else if (accion === 'ver-evidencia') verEvidencia(id);
+      else if (accion === 'ver-mapa') verMapa(id);
     });
+    if (window.SGTLGoogleMaps) {
+      // Google rechazó la clave (sitio no permitido, API deshabilitada): los mapas dicen que se abran en Google Maps.
+      window.SGTLGoogleMaps.alFallarAutenticacion(function () {
+        Array.prototype.forEach.call(document.querySelectorAll('#listaViajes [data-mapa]'), sinMapa);
+      });
+    }
     document.getElementById('btnGuardarEntrega').addEventListener('click', guardarEntrega);
     document.getElementById('btnGuardarEvidencia').addEventListener('click', guardarEvidencia);
     document.getElementById('entregaVerEvidencia').addEventListener('click', function () {
@@ -547,6 +631,7 @@
     agruparPorDia: agruparPorDia,
     horario: horario,
     accionesDe: accionesDe,
+    viajeQueSigue: viajeQueSigue,
     problemaDelArchivo: problemaDelArchivo
   };
 })(window, document);

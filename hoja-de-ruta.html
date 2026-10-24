@@ -23,19 +23,45 @@
             margin: 1rem 0;
         }
 
+        /* Recorrido (pedido de Rocío, 24/10): origen y destino con el mismo punto, unidos por una línea punteada. */
         .sgtl-recorrido li {
-            display: flex;
-            gap: .75rem;
-            align-items: flex-start;
+            position: relative;
+            padding-left: 1.5rem;
         }
 
         .sgtl-recorrido li + li {
-            margin-top: .75rem;
+            margin-top: .875rem;
         }
 
-        .sgtl-recorrido li > .bi {
-            margin-top: .15rem;
-            color: #435ebe;
+        .sgtl-recorrido li::before {
+            content: '';
+            position: absolute;
+            left: .25rem;
+            top: .4rem;
+            width: .625rem;
+            height: .625rem;
+            border-radius: 50%;
+            background-color: #435ebe;
+        }
+
+        .sgtl-recorrido li:first-child::after {
+            content: '';
+            position: absolute;
+            left: calc(.25rem + .3125rem - 1px);
+            top: 1.25rem;
+            bottom: -1.1rem;
+            border-left: 2px dotted #435ebe;
+        }
+
+        /* El mapa con el recorrido dibujado (como en Gestionar viajes). */
+        .sgtl-mapa-chofer {
+            height: 240px;
+            border-radius: 10px;
+            overflow: hidden;
+            background-color: #eef0f2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* Al ir a un viaje, que la barra fija de arriba no lo tape. */
@@ -179,13 +205,13 @@
             </div>
         </div>
 
-        <!-- Subir o reemplazar la evidencia (viajes entregados y de clientes con plataforma). -->
+        <!-- Reemplazar la evidencia de un viaje entregado (la primera se sube al registrar la entrega). -->
         <div class="modal fade" id="modalEvidencia" tabindex="-1" aria-labelledby="modalEvidenciaTitulo" aria-hidden="true"
             data-bs-backdrop="static">
             <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="modalEvidenciaTitulo">Subir evidencia</h5>
+                        <h5 class="modal-title" id="modalEvidenciaTitulo">Reemplazar evidencia</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                     </div>
                     <div class="modal-body">
@@ -193,19 +219,19 @@
                         <form id="formEvidencia" novalidate>
                             <input type="hidden" id="evidenciaViajeId">
                             <p class="text-muted mb-3" id="evidenciaResumen"></p>
-                            <div id="evidenciaActualSola" class="mb-2 d-none">
+                            <div id="evidenciaActualSola" class="mb-2">
                                 <i class="bi bi-paperclip" aria-hidden="true"></i>
                                 <button type="button" class="btn btn-link p-0 align-baseline" id="evidenciaVerActual">Ver evidencia cargada</button>
                             </div>
                             <label for="evidenciaSolaArchivo" class="form-label">Foto o PDF del remito <span class="text-danger">*</span></label>
                             <input type="file" id="evidenciaSolaArchivo" class="form-control" accept="image/*,application/pdf">
                             <div class="invalid-feedback"></div>
-                            <div class="form-text">Si ya había una evidencia, la reemplaza. Las fotos se achican solas; el PDF, hasta 5 MB.</div>
+                            <div class="form-text">Reemplaza la evidencia cargada. Las fotos se achican solas; el PDF, hasta 5 MB.</div>
                         </form>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="button" class="btn btn-primary" id="btnGuardarEvidencia">Subir evidencia</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarEvidencia">Reemplazar evidencia</button>
                     </div>
                 </div>
             </div>
@@ -238,6 +264,7 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/google-maps.js"></script>
     <script src="assets/static/js/hoja-de-ruta.js"></script>
 
     <!-- Carga de diseño -->

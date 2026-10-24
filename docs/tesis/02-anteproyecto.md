@@ -104,8 +104,9 @@ las proformas, los comprobantes y los cobros de la empresa en una sola plataform
   falla, con motivo auditado).
 - Estados según el tipo de cliente y resultado de entrega con evidencia (foto o PDF).
 - Números de referencia de la plataforma (transporte SAP, remito y número de entrega).
-- Hoja de ruta del chofer: la recibe por WhatsApp y la ve en el celular con su usuario, donde inicia
-  el viaje y registra la entrega con la foto o el PDF del remito.
+- Hoja de ruta del chofer: la recibe por WhatsApp y la ve en el celular con su usuario, con el mapa
+  del recorrido; en los viajes de clientes directos inicia el viaje y registra la entrega con la foto
+  o el PDF del remito.
 - Reglas de edición y eliminación según el estado.
 
 #### Presupuestos

@@ -38,21 +38,38 @@ function viaje(cambios) {
 let a = H.accionesDe(viaje({}));
 assert.strictEqual(a.paso.accion, 'iniciar', 'un directo registrado se inicia');
 assert.strictEqual(a.paso.motivo, '');
-assert.strictEqual(a.evidencia, null, 'antes de salir no se carga evidencia');
+assert.strictEqual(a.reemplazar, false, 'antes de salir no se carga evidencia');
 a = H.accionesDe(viaje({ Estado: 'En_viaje' }));
-assert.strictEqual(a.paso.accion, 'entregar', 'un directo en viaje registra la entrega');
+assert.strictEqual(a.paso.accion, 'entregar', 'un directo en viaje registra la entrega (con la evidencia, obligatoria)');
 a = H.accionesDe(viaje({ Estado: 'Entregado', Tiene_Evidencia: true }));
 assert.strictEqual(a.paso, null);
-assert.strictEqual(a.evidencia, 'reemplazar', 'entregado: puede cambiar la evidencia');
+assert.strictEqual(a.reemplazar, true, 'entregado: solo puede reemplazar la evidencia');
 assert.ok(a.ver);
+a = H.accionesDe(viaje({ Estado: 'Entregado', Tiene_Evidencia: false }));
+assert.ok(a.paso === null && a.reemplazar === false, 'un viaje pasado nunca ofrece subir evidencia (la carga la oficina)');
 a = H.accionesDe(viaje({ Estado: 'Facturado', Tiene_Evidencia: true }));
-assert.ok(a.paso === null && a.evidencia === null, 'facturado: ya no se toca');
+assert.ok(a.paso === null && a.reemplazar === false, 'facturado: ya no se toca');
 a = H.accionesDe(viaje({ Tipo_Cliente: 'Con_plataforma' }));
-assert.ok(a.paso === null && a.evidencia === 'subir', 'con plataforma: solo la evidencia');
+assert.ok(a.paso === null && a.reemplazar === false, 'con plataforma: el chofer solo mira (la entrega va a Rukas)');
 assert.ok(/plataforma del cliente/.test(a.nota));
+a = H.accionesDe(viaje({ Tipo_Cliente: 'Con_plataforma', Estado: 'Listo_para_facturar', Tiene_Evidencia: true }));
+assert.strictEqual(a.reemplazar, false);
 a = H.accionesDe(viaje({ EnProforma_Estado: 'Generada', EnProforma_Numero: 'PF-00000014' }));
 assert.strictEqual(a.paso.motivo, 'No se puede iniciar el viaje: está en la proforma PF-00000014',
     'lo que no se puede hacer queda deshabilitado con el motivo (§1.4)');
+
+// El mapa abierto va en el viaje que está en viaje o, si no hay, en el primero de hoy sin salir.
+assert.strictEqual(H.viajeQueSigue([
+    { Viaje_ID: 49, Estado: 'Registrado', Fecha_Inicio: '2026-10-23T06:00:00' },
+    { Viaje_ID: 52, Estado: 'En_viaje', Fecha_Inicio: '2026-10-24T05:30:00' },
+    { Viaje_ID: 53, Estado: 'Registrado', Fecha_Inicio: '2026-10-24T15:00:00' }
+], '2026-10-24T00:00:00'), 52);
+assert.strictEqual(H.viajeQueSigue([
+    { Viaje_ID: 49, Estado: 'Registrado', Fecha_Inicio: '2026-10-23T06:00:00' },
+    { Viaje_ID: 53, Estado: 'Registrado', Fecha_Inicio: '2026-10-24T15:00:00' }
+], '2026-10-24T00:00:00'), 53, 'sin ninguno en viaje, el primero de hoy');
+assert.strictEqual(H.viajeQueSigue([{ Viaje_ID: 54, Estado: 'Registrado', Fecha_Inicio: '2026-10-25T05:00:00' }], '2026-10-24'), null,
+    'si hoy no hay viajes, ninguno abierto');
 
 assert.strictEqual(H.problemaDelArchivo({ name: 'remito.jpg', type: 'image/jpeg', size: 9 * 1024 * 1024 }), '',
     'una foto grande se achica antes de subirla');
@@ -82,6 +99,9 @@ acciones.forEach(function (accion) {
 });
 assert.ok(/WHERE v\.ChoferID = @chofer/.test(api) && /P\("@chofer", sesion\.Chofer_ID\.Value\)/.test(api),
     'la hoja de ruta filtra por el chofer de la sesión');
+const subir = api.slice(api.indexOf('public async Task<IHttpActionResult> SubirEvidencia('), api.indexOf('public async Task<IHttpActionResult> VerEvidencia('));
+assert.ok(/EsConPlataforma\(v\.Tipo_Cliente\)/.test(subir) && /EstadoEnViaje/.test(subir) && /EstadoEntregado/.test(subir),
+    'el chofer sube evidencia solo en viajes directos en viaje o entregados');
 assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').includes('Controllers\\HojaDeRutaController.cs'),
     'el controller tiene que estar en el proyecto para compilarse');
 

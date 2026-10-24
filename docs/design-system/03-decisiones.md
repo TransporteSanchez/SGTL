@@ -611,11 +611,16 @@ Esto define solo cómo se muestran y cómo se cargan.
   - **una tarjeta por viaje**, en una columna (hasta 760 px en la computadora), agrupadas por día con el subtítulo del
     sistema (`.sgtl-bloque-titulo`: "Hoy · sábado 24/10/2026"). Arriba, un selector segmentado "Hoy y próximos ·
     Anteriores" (§12) en lugar de filtros;
-  - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido (origen y destino con su dirección)
-    con "Abrir recorrido en Google Maps", y los datos con `.sgtl-dato`;
+  - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido y los datos con `.sgtl-dato`. El
+    **recorrido** (Rocío, 24/10): origen y destino con el mismo punto, unidos por una línea punteada, cada uno con su
+    dirección debajo. Debajo, el **mapa con el recorrido dibujado**: abierto en el viaje que sigue (el que está en viaje
+    o, si no hay, el primero de hoy) y con "Ver mapa" en los demás, para que la lista no sea un mapa tras otro; con el
+    enlace "Abrir en Google Maps" para manejar con la app;
   - las acciones van **abajo de la tarjeta, a todo el ancho y con texto** (§1.6): el siguiente paso en verde ("Iniciar
-    viaje", "Registrar entrega") y "Subir evidencia" / "Reemplazar evidencia" con borde. Lo que no se puede hacer queda
-    deshabilitado con el motivo **escrito debajo** (§1.4), porque en el celular no hay globitos;
+    viaje", "Registrar entrega") y "Reemplazar evidencia" con borde. La evidencia se sube al registrar la entrega
+    (obligatoria), así que un viaje ya entregado solo ofrece reemplazarla; un viaje con plataforma no tiene botones (la
+    entrega y el remito van a la plataforma). Lo que no se puede hacer queda deshabilitado con el motivo **escrito
+    debajo** (§1.4), porque en el celular no hay globitos;
   - "Iniciar viaje" pide confirmación (§5.2) aunque no tiene efectos afuera: el chofer no lo puede deshacer (lo corrige
     la oficina en Gestionar viajes);
   - sin viajes: "No tenés viajes para hoy ni para los próximos días." o "No tenés viajes en los últimos 30 días."

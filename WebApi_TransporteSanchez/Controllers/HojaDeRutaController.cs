@@ -466,8 +466,9 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
             }
         }
 
-        // POST api/HojaDeRuta/Viajes/{id}/Evidencia — foto o PDF del remito (reemplaza la anterior). Cualquier viaje del
-        // chofer que no esté facturado; los tipos y el tamaño los controla ViajesController (JPG, PNG, WEBP o PDF, 5 MB).
+        // POST api/HojaDeRuta/Viajes/{id}/Evidencia — foto o PDF del remito (reemplaza la anterior). Solo viajes directos
+        // en viaje (se sube justo antes de registrar la entrega) o entregados (para reemplazarla); los de plataforma los
+        // registra el chofer en la plataforma (decisión de Rocío, 24/10). Tipos y tamaño: ViajesController (5 MB).
         [HttpPost, Route("Viajes/{id:int}/Evidencia")]
         public async Task<IHttpActionResult> SubirEvidencia(int id, [FromBody] EvidenciaChoferDto body)
         {
@@ -484,8 +485,12 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     v = ViajeDelChofer(db, ChoferDe(sesion), id);
                 }
                 if (v == null) return NoEstaEnTuHojaDeRuta();
+                if (EsConPlataforma(v.Tipo_Cliente))
+                    return Rechazo("No se puede subir la evidencia: este viaje lo sigue la plataforma del cliente.");
                 if (v.Estado == ViajesController.EstadoFacturado)
                     return Rechazo("No se puede subir la evidencia: el viaje ya está facturado.");
+                if (v.Estado != ViajesController.EstadoEnViaje && v.Estado != ViajesController.EstadoEntregado)
+                    return Rechazo("No se puede subir la evidencia: el viaje todavía no se inició.");
 
                 using (var viajes = ViajesDelSistema())
                 {
