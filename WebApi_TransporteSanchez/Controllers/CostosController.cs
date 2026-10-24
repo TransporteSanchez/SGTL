@@ -52,7 +52,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool EsAdmin { get; set; }
         }
 
-        private class GalponRow
+        internal class GalponRow
         {
             public int ProvID { get; set; }
             public int LocID { get; set; }
@@ -253,7 +253,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // ---------------------------------------------------------------- Galpón (Gestionar empresa)
 
-        private static GalponRow LeerGalpon(SGTLAuditContext db)
+        internal static GalponRow LeerGalpon(SGTLAuditContext db)
         {
             return db.Database.SqlQuery<GalponRow>(
                 "SELECT TOP (1) g.ProvID, g.LocID, g.Calle, ISNULL(g.AlturaCalle,'') AS AlturaCalle, " +
@@ -262,7 +262,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 "ORDER BY g.Galpon_ID").FirstOrDefault();
         }
 
-        private static string DireccionGalpon(GalponRow g)
+        internal static string DireccionGalpon(GalponRow g)
         {
             return g == null ? null : GoogleMapsLinkBuilder.BuildAddress(g.Calle, g.AlturaCalle, g.Localidad, g.Provincia);
         }

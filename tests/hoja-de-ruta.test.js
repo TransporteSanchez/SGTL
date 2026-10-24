@@ -59,12 +59,47 @@ assert.strictEqual(a.paso.motivo, 'No se puede iniciar el viaje: está en la pro
     'lo que no se puede hacer queda deshabilitado con el motivo (§1.4)');
 
 // Gastos (control interno): desde el día que empieza el viaje, también con plataforma y entregado; no facturado.
+// Por qué un viaje de otro día sigue en "Hoy y próximos" (Rocío, 24/10).
+assert.strictEqual(H.atraso({ Estado: 'Registrado', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-23T06:00:00' }, '2026-10-24T00:00:00'), 'Quedó sin iniciar');
+assert.strictEqual(H.atraso({ Estado: null, Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-23T06:00:00' }, '2026-10-24T00:00:00'), 'Quedó sin iniciar',
+    'un viaje viejo sin estado cuenta como Registrado');
+assert.strictEqual(H.atraso({ Estado: 'Registrado', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-24T06:00:00' }, '2026-10-24T00:00:00'), '',
+    'uno de hoy todavía no está atrasado');
+assert.strictEqual(H.atraso({ Estado: 'En_viaje', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-22T22:00:00', Fecha_Fin: '2026-10-23T06:00:00' },
+    '2026-10-24T00:00:00'), 'Entrega sin registrar');
+assert.strictEqual(H.atraso({ Estado: 'En_viaje', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-23T22:00:00', Fecha_Fin: '2026-10-24T06:00:00' },
+    '2026-10-24T00:00:00'), '', 'en viaje y llega hoy: no está atrasado');
+assert.strictEqual(H.atraso({ Estado: 'Registrado', Tipo_Cliente: 'Con_plataforma', Fecha_Inicio: '2026-10-23T06:00:00' }, '2026-10-24T00:00:00'), '',
+    'con plataforma, nada (lo sigue la plataforma)');
+assert.strictEqual(H.atraso({ Estado: 'Entregado', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-23T06:00:00' }, '2026-10-24T00:00:00'), '');
+
 assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-24T15:00:00' }, '2026-10-24T00:00:00'), true);
 assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-25T05:00:00' }, '2026-10-24T00:00:00'), false,
     'un viaje que empieza mañana todavía no tiene gastos');
 assert.strictEqual(H.puedeCargarGasto({ Estado: 'Entregado', Fecha_Inicio: '2026-10-21T06:00:00' }, '2026-10-24T00:00:00'), true,
     'puede rendir al volver');
 assert.strictEqual(H.puedeCargarGasto({ Estado: 'Facturado', Fecha_Inicio: '2026-10-16T06:00:00' }, '2026-10-24T00:00:00'), false);
+
+// Recorrido completo para el chofer: la navegación arranca donde está y termina en el galpón.
+const galpon = 'Av. Circunvalación 1500, Córdoba, Córdoba, Argentina';
+const lugares = { Origen_Direccion: 'Av. San Martín 2100, Unquillo, Córdoba', Destino_Direccion: 'Bv. Oroño 1200, Rosario, Santa Fe', Maps_Url: 'https://maps/viejo' };
+function parametros(url) {
+    const q = {};
+    url.split('?')[1].split('&').forEach(function (par) { const p = par.split('='); q[p[0]] = decodeURIComponent(p[1]); });
+    return q;
+}
+let enlace = parametros(H.enlaceNavegacion(Object.assign({ Estado: 'Registrado' }, lugares), galpon));
+assert.ok(!enlace.origin, 'sin origen: Google arranca desde donde está el chofer');
+assert.strictEqual(enlace.waypoints, 'Av. San Martín 2100, Unquillo, Córdoba, Argentina|Bv. Oroño 1200, Rosario, Santa Fe, Argentina');
+assert.strictEqual(enlace.destination, galpon, 'termina en el galpón');
+enlace = parametros(H.enlaceNavegacion(Object.assign({ Estado: 'En_viaje' }, lugares), galpon));
+assert.strictEqual(enlace.waypoints, 'Bv. Oroño 1200, Rosario, Santa Fe, Argentina', 'en viaje: falta el destino y la vuelta');
+enlace = parametros(H.enlaceNavegacion(Object.assign({ Estado: 'Entregado' }, lugares), galpon));
+assert.strictEqual(enlace.origin, galpon, 'un viaje terminado muestra la vuelta entera desde el galpón');
+assert.strictEqual(H.enlaceNavegacion(Object.assign({ Estado: 'Registrado' }, lugares), null), 'https://maps/viejo',
+    'sin galpón cargado, el enlace de siempre');
+assert.strictEqual(H.kmRecorridoCompleto({ Distancia_KM: '402.3', Km_Ida: 12.4, Km_Vuelta: 398 }), 812.7);
+assert.strictEqual(H.kmRecorridoCompleto({ Distancia_KM: '402,3', Km_Ida: null, Km_Vuelta: 398 }), null, 'sin un tramo no hay total');
 
 // El mapa abierto va en el viaje que está en viaje o, si no hay, en el primero de hoy sin salir.
 assert.strictEqual(H.viajeQueSigue([
@@ -137,5 +172,55 @@ assert.ok(menu.includes('<a href="hoja-de-ruta.html" class="sidebar-link"><i cla
     'Hoja de ruta es un ítem principal del menú');
 assert.ok(menu.includes("'hoja de ruta': 'hoja-de-ruta.html'"), 'el permiso "Hoja de ruta" abre la pantalla');
 assert.ok(menu.includes("'Login.html?volver=' + encodeURIComponent("), 'con la sesión vencida, el login sabe adónde volver');
+// El chofer (solo tiene la Hoja de ruta): el menú con el logo y solo la Hoja de ruta, plegado al entrar y que se abre con el
+// botón de tres rayitas; sin Documentación (Rocío, 24/10).
+assert.ok(/function plegarMenu\(\) \{[\s\S]*?document\.body\.classList\.add\('js-sidebar-collapsed'\);/.test(menu) &&
+    menu.includes('if (soloHojaDeRuta) marcarSoloHojaDeRuta(true);'),
+    'el menú del chofer arranca plegado');
+assert.ok(!menu.includes('sgtl-sin-menu'), 'el chofer tiene el menú (con el logo), no se esconde');
+// En el celular el menú lo abre la plantilla: el plegado de la computadora no lo puede volver a esconder.
+const plegado = leer('assets/static/js/components/sidebar.js');
+assert.ok(plegado.includes('@media (min-width: 1201px){body.js-sidebar-collapsed #sidebar{transform:translateX(-110%);}'),
+    'el plegado es solo de la computadora');
+assert.ok(plegado.includes("if (isDesktop(window)) document.body.classList.toggle('js-sidebar-collapsed');") &&
+    plegado.includes("if (window.sidebar && typeof window.sidebar.hide === 'function') window.sidebar.hide();"),
+    'en el celular el botón abre el menú y la cruz lo cierra con el fondo oscuro');
+assert.ok(/permitidas\.every\(function \(p\) \{ return p === 'hoja-de-ruta\.html'; \}\)/.test(menu) &&
+    menu.includes("if (!soloHojaDeRuta) permitidas.push('manual-usuario.html', 'informe-version.html');"),
+    'el chofer no ve la Documentación; los demás usuarios sí');
+assert.ok(login.includes("localStorage.setItem('sgtlSoloHojaDeRuta', '1')"), 'el login marca al chofer para que el menú no aparezca ni un momento');
+
+// ---------------------------------------------------------------- Cuántos viajes hay en cada vista (Rocío, 24/10)
+
+// Se cuentan con las mismas condiciones que la lista (y sin su tope); Anteriores, las del año elegido.
+assert.ok(api.includes('"SELECT ISNULL(SUM(CASE WHEN " + pendiente + " THEN 1 ELSE 0 END), 0) AS Proximos, "') &&
+    api.includes('"ISNULL(SUM(CASE WHEN NOT " + pendiente + " AND " + delAnio + " THEN 1 ELSE 0 END), 0) AS Anteriores "') &&
+    api.includes('" AND NOT " + pendiente + " AND " + delAnio + " ORDER BY v.Fecha_Inicio DESC, v.Viaje_ID DESC"'),
+    'las cantidades usan las mismas condiciones que cada vista');
+
+// Anteriores por año (arranca en el actual) y de a 30, con "Ver más viajes" (Rocío, 24/10).
+assert.ok(/public IHttpActionResult Get\(string vista = null, int\? anio = null, int\? cantidad = null\)/.test(api) &&
+    /anio\.Value <= hoy\.Year \? anio\.Value : hoy\.Year/.test(api), 'Anteriores se pide por año; sin año (o uno que no tiene sentido), el actual');
+assert.ok(/Math\.Min\(cantidad \?\? AnterioresPorPagina, AnterioresMaximo\)/.test(api) && api.includes('"SELECT TOP (" + (tope + 1) + ") v.Viaje_ID,') &&
+    /var hayMas = filas\.Count > tope;/.test(api), 'trae de a 30 (con tope) y avisa si quedan más');
+assert.ok(/if \(!anios\.Contains\(hoy\.Year\)\) anios\.Add\(hoy\.Year\);/.test(api), 'el año actual siempre se puede elegir');
+const pantallaJs = leer('assets/static/js/hoja-de-ruta.js');
+// La distancia que ve el chofer: la del recorrido completo, con la de origen a destino debajo (Rocío, 24/10).
+assert.ok(pantallaJs.includes("return dato('Recorrido completo', esc(SGTL.km(total)) + ' km<div class=\"suave\">' + esc(deOrigenADestino) + ' de origen a destino</div>');") &&
+    pantallaJs.includes("if (total == null) return dato('Distancia', esc(deOrigenADestino) + (deOrigenADestino ? '<div class=\"suave\">de origen a destino</div>' : ''));"),
+    'el chofer ve el recorrido completo y, aclarada, la distancia de origen a destino');
+// "Ver mapa" lo abre y "Ocultar mapa" lo cierra; la etiqueta amarilla dice por qué sigue un viaje de otro día.
+assert.ok(pantallaJs.includes("(abierto ? 'Ocultar mapa' : 'Ver mapa')") && pantallaJs.includes('var abrir = !mapaAbierto(v);'),
+    'el mismo enlace abre y cierra el mapa');
+assert.ok(pantallaJs.includes("if (atrasado) html += '<div class=\"mt-1\">' + SGTL.estado(atrasado, atrasado, 'amarillo') + '</div>';"),
+    'la etiqueta del atraso es amarilla, debajo del estado');
+assert.ok(pantallaJs.includes("if (estado.anio) datos.anio = estado.anio;") && pantallaJs.includes("estado.cantidad += ANTERIORES_POR_PAGINA;") &&
+    pantallaJs.includes('data-accion="ver-mas">Ver más viajes</button>'), 'la pantalla pide el año elegido y "Ver más viajes" trae 30 más');
+assert.ok(/Cantidad_Proximos = cantidades\.Proximos, Cantidad_Anteriores = cantidades\.Anteriores/.test(api), 'la API manda las dos cantidades');
+const pantallaHtml = leer('hoja-de-ruta.html');
+assert.ok(pantallaHtml.includes('Hoy y próximos<span data-cantidad-de="proximos"></span>') &&
+    pantallaHtml.includes('Anteriores<span data-cantidad-de="anteriores"></span>'), 'el selector tiene lugar para las cantidades');
+assert.ok(leer('assets/static/js/hoja-de-ruta.js').includes("var cantidades = { proximos: data.Cantidad_Proximos, anteriores: data.Cantidad_Anteriores };"),
+    'la pantalla muestra la cantidad de cada vista');
 
 console.log('OK: la hoja de ruta muestra y deja hacer lo que corresponde, solo con los viajes del chofer de la sesión');

@@ -12,15 +12,53 @@
         }
 
         /* Pensada para el celular del chofer (excepción del §10 del design system): una tarjeta por viaje, en una
-           columna. En la computadora la columna no pasa de 760 px para que se lea igual. */
+           columna, que en la tablet no pasa de 760 px. Desde 1200 px, dos columnas de tarjetas (menos scroll). */
         #encabezadoHojaDeRuta,
         #sinChofer,
         #listaViajes {
             max-width: 760px;
         }
 
+        @media (min-width: 1200px) {
+            #encabezadoHojaDeRuta,
+            #sinChofer,
+            #listaViajes {
+                max-width: none;
+            }
+        }
+
+        #listaViajes section + section {
+            margin-top: 1.5rem;
+        }
+
         .sgtl-recorrido {
-            margin: 1rem 0;
+            margin: .75rem 0 .25rem;
+        }
+
+        /* Tarjeta compacta (Rocío, 24/10): menos relleno en el celular y los botones del pie uno al lado del otro
+           (en el celular se reparten el ancho; desde 768 px, del ancho de su texto). */
+        .sgtl-viaje-chofer > .card-body,
+        .sgtl-viaje-chofer > .card-footer {
+            padding: 1rem;
+        }
+
+        .sgtl-viaje-chofer .sgtl-dato {
+            margin-bottom: .5rem;
+        }
+
+        .sgtl-viaje-chofer .card-footer .btn {
+            flex: 1 1 auto;
+        }
+
+        @media (min-width: 768px) {
+            .sgtl-viaje-chofer > .card-body,
+            .sgtl-viaje-chofer > .card-footer {
+                padding: 1.25rem 1.5rem;
+            }
+
+            .sgtl-viaje-chofer .card-footer .btn {
+                flex: 0 0 auto;
+            }
         }
 
         /* Recorrido (pedido de Rocío, 24/10): origen y destino con el mismo punto, unidos por una línea punteada. */
@@ -127,10 +165,15 @@
                                 <p class="text-muted mb-0">Tus viajes: el recorrido, el camión y la entrega.</p>
                             </div>
                         </div>
-                        <div class="card-body pt-0" id="contenidoHojaDeRuta">
+                        <div class="card-body pt-0 d-flex flex-wrap align-items-center gap-3" id="contenidoHojaDeRuta">
                             <div class="sgtl-segmentado" role="group" aria-label="Qué viajes ver" id="vistaHojaDeRuta">
-                                <button type="button" class="btn btn-sm" data-vista="proximos" aria-pressed="true">Hoy y próximos</button>
-                                <button type="button" class="btn btn-sm" data-vista="anteriores" aria-pressed="false">Anteriores</button>
+                                <button type="button" class="btn btn-sm" data-vista="proximos" aria-pressed="true">Hoy y próximos<span data-cantidad-de="proximos"></span></button>
+                                <button type="button" class="btn btn-sm" data-vista="anteriores" aria-pressed="false">Anteriores<span data-cantidad-de="anteriores"></span></button>
+                            </div>
+                            <!-- Anteriores, por año (Rocío, 24/10): arranca en el actual. -->
+                            <div class="d-flex align-items-center gap-2 d-none" id="bloqueAnio">
+                                <label class="form-label mb-0" for="anioHojaDeRuta">Año</label>
+                                <select class="form-select w-auto" id="anioHojaDeRuta"></select>
                             </div>
                         </div>
                     </div>

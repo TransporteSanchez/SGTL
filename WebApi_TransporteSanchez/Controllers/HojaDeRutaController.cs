@@ -25,7 +25,9 @@ namespace WebApi_TransporteSanchez.Controllers
     [RoutePrefix("api/HojaDeRuta")]
     public class HojaDeRutaController : ApiController
     {
-        private const int DiasAnteriores = 30;
+        // Anteriores (Rocío, 24/10): por año y de a 30 ("Ver más viajes" pide 60, 90…), con un tope por pedido.
+        private const int AnterioresPorPagina = 30;
+        private const int AnterioresMaximo = 600;
         private static readonly string[] ResultadosEntrega = { "Completa", "Parcial", "Rechazo" };
 
         private class AccesoDenegadoException : Exception
@@ -52,6 +54,12 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool Tiene_Evidencia { get; set; }
             public string EnProforma_Numero { get; set; }
             public string EnProforma_Estado { get; set; }
+        }
+
+        private class CantidadesRow
+        {
+            public int Proximos { get; set; }
+            public int Anteriores { get; set; }
         }
 
         private class ViajeRow
@@ -85,6 +93,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string EnProforma_Estado { get; set; }
             public int Gastos_Cantidad { get; set; }
             public decimal Gastos_Total { get; set; }
+            public decimal? Km_Ida { get; set; }
+            public decimal? Km_Vuelta { get; set; }
         }
 
         public class EntregaChoferDto
@@ -148,7 +158,8 @@ namespace WebApi_TransporteSanchez.Controllers
         private static readonly string[] TiposComprobante = { "image/jpeg", "image/png", "image/webp", "application/pdf" };
         private const int MaxBytesComprobante = 5 * 1024 * 1024;
 
-        // Los gastos son de database/costos/01_…: sin ese script la hoja de ruta funciona igual, sin gastos.
+        // Los gastos, el galpón y los km al galpón son de database/costos/01_…: sin ese script la hoja de ruta funciona
+        // igual, sin gastos y con el recorrido de origen a destino.
         private static bool HayGastos(SGTLAuditContext db)
         {
             return db.Database.SqlQuery<int?>("SELECT OBJECT_ID(N'dbo.VIAJE_GASTOS', N'U')").First().HasValue;
@@ -318,12 +329,13 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
 
         // ---------------------------------------------------------------- Hoja de ruta
 
-        // GET api/HojaDeRuta?vista=proximos|anteriores
+        // GET api/HojaDeRuta?vista=proximos|anteriores&anio=2026&cantidad=30
         // proximos (por defecto): lo que todavía tiene que hacer o que termina hoy o después; incluye el viaje en curso y
-        // los de clientes directos que quedaron sin salir. anteriores: el resto de los últimos 30 días, del más nuevo al
-        // más viejo. Sin chofer asignado: { Vinculado = false } (la pantalla lo explica).
+        // los de clientes directos que quedaron sin salir. anteriores: el resto, del año pedido (por defecto, el actual),
+        // del más nuevo al más viejo y los primeros `cantidad` (Hay_Mas dice si quedan; Anios, los años con viajes
+        // anteriores y el actual). Sin chofer asignado: { Vinculado = false } (la pantalla lo explica).
         [HttpGet, Route("")]
-        public IHttpActionResult Get(string vista = null)
+        public IHttpActionResult Get(string vista = null, int? anio = null, int? cantidad = null)
         {
             var anteriores = string.Equals((vista ?? "").Trim(), "anteriores", StringComparison.OrdinalIgnoreCase);
             try
@@ -339,17 +351,27 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     const string pendiente =
                         "(v.Fecha_Fin >= @hoy OR ISNULL(v.Estado,'Registrado') = 'En_viaje' " +
                         "OR (ISNULL(c.Tipo_Cliente,'Directo') <> 'Con_plataforma' AND ISNULL(v.Estado,'Registrado') = 'Registrado'))";
+                    // Anteriores: los del año pedido (un año que no tiene sentido, el actual).
+                    var anioPedido = anio.HasValue && anio.Value >= 2000 && anio.Value <= hoy.Year ? anio.Value : hoy.Year;
+                    var desde = new DateTime(anioPedido, 1, 1);
+                    const string delAnio = "v.Fecha_Inicio >= @desde AND v.Fecha_Inicio < DATEADD(year, 1, @desde)";
+                    var tope = anteriores ? Math.Max(1, Math.Min(cantidad ?? AnterioresPorPagina, AnterioresMaximo)) : 200;
                     var where = anteriores
-                        ? " AND NOT " + pendiente + " AND v.Fecha_Inicio >= DATEADD(day, -" + DiasAnteriores + ", @hoy) ORDER BY v.Fecha_Inicio DESC, v.Viaje_ID DESC"
+                        ? " AND NOT " + pendiente + " AND " + delAnio + " ORDER BY v.Fecha_Inicio DESC, v.Viaje_ID DESC"
                         : " AND " + pendiente + " ORDER BY v.Fecha_Inicio, v.Viaje_ID";
 
                     var hayGastos = HayGastos(db);
+                    // Uno más que el tope, para saber si quedan.
                     var filas = db.Database.SqlQuery<ViajeRow>(
-                        "SELECT TOP (200) v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, v.Estado, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
+                        "SELECT TOP (" + (tope + 1) + ") v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, v.Estado, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
                         (hayGastos
                             ? "(SELECT COUNT(*) FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) AS Gastos_Cantidad, " +
                               "(SELECT CAST(ISNULL(SUM(g.Importe), 0) AS decimal(12, 2)) FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) AS Gastos_Total, "
                             : "0 AS Gastos_Cantidad, CAST(0 AS decimal(12, 2)) AS Gastos_Total, ") +
+                        // Recorrido completo para el chofer (Rocío, 24/10): galpón → origen → destino → galpón.
+                        (hayGastos
+                            ? "o.Km_Galpon AS Km_Ida, d.Km_Galpon AS Km_Vuelta, "
+                            : "CAST(NULL AS decimal(9, 1)) AS Km_Ida, CAST(NULL AS decimal(9, 1)) AS Km_Vuelta, ") +
                         "v.Resultado_Entrega, v.Fecha_Entrega, " + SQL_TIENE_EVIDENCIA + " AS Tiene_Evidencia, " +
                         "ISNULL(NULLIF(LTRIM(RTRIM(c.Nombre_Comercial)),''), ISNULL(c.Razon_Social,'')) AS Cliente, " +
                         "ISNULL(o.Descripcion,'') AS Origen, ISNULL(o.Calle,'') AS Origen_Calle, ISNULL(o.AlturaCalle,'') AS Origen_Altura, " +
@@ -371,7 +393,9 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         "LEFT JOIN dbo.CAMIONES cam ON cam.Camion_ID = v.CamionID " +
                         OUTER_APPLY_PROFORMA +
                         "WHERE v.ChoferID = @chofer" + where,
-                        P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy)).ToList();
+                        P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy), P("@desde", desde)).ToList();
+                    var hayMas = filas.Count > tope;
+                    if (hayMas) filas = filas.Take(tope).ToList();
 
                     var viajes = filas.Select(f =>
                     {
@@ -404,11 +428,40 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                             f.EnProforma_Numero,
                             f.EnProforma_Estado,
                             f.Gastos_Cantidad,
-                            f.Gastos_Total
+                            f.Gastos_Total,
+                            f.Km_Ida,
+                            f.Km_Vuelta
                         };
                     }).ToList();
 
-                    return Ok(new { Vinculado = true, Chofer = sesion.Chofer, Hoy = hoy, Gastos_Habilitados = hayGastos, Viajes = viajes });
+                    // Cuántos viajes hay en cada vista, para el selector (Rocío, 24/10): con las mismas condiciones que la lista
+                    // (Anteriores, los del año elegido).
+                    var cantidades = db.Database.SqlQuery<CantidadesRow>(
+                        "SELECT ISNULL(SUM(CASE WHEN " + pendiente + " THEN 1 ELSE 0 END), 0) AS Proximos, " +
+                        "ISNULL(SUM(CASE WHEN NOT " + pendiente + " AND " + delAnio + " THEN 1 ELSE 0 END), 0) AS Anteriores " +
+                        "FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID WHERE v.ChoferID = @chofer",
+                        P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy), P("@desde", desde)).First();
+
+                    // Los años para elegir en Anteriores: los que tienen viajes anteriores y el actual, del más nuevo al más viejo.
+                    List<int> anios = null;
+                    if (anteriores)
+                    {
+                        anios = db.Database.SqlQuery<int>(
+                            "SELECT DISTINCT YEAR(v.Fecha_Inicio) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " +
+                            "WHERE v.ChoferID = @chofer AND NOT " + pendiente,
+                            P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy)).ToList();
+                        if (!anios.Contains(hoy.Year)) anios.Add(hoy.Year);
+                        anios = anios.OrderByDescending(a => a).ToList();
+                    }
+
+                    // El galpón: el mapa del chofer muestra el recorrido entero y la navegación termina ahí.
+                    var galpon = hayGastos ? CostosController.DireccionGalpon(CostosController.LeerGalpon(db)) : null;
+                    return Ok(new
+                    {
+                        Vinculado = true, Chofer = sesion.Chofer, Hoy = hoy, Gastos_Habilitados = hayGastos, Galpon = galpon,
+                        Cantidad_Proximos = cantidades.Proximos, Cantidad_Anteriores = cantidades.Anteriores,
+                        Anio = anioPedido, Anios = anios, Hay_Mas = hayMas, Viajes = viajes
+                    });
                 }
             }
             catch (Exception ex)

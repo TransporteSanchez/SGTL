@@ -228,7 +228,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   - Sin resultados, la paginación no se muestra.
 - **Mientras busca:** una fila "Cargando…" centrada en gris dentro de la tabla, en todas las
   pantallas. Reemplaza lo que había hasta que llega la respuesta.
-- **Un solo contador:** el de la paginación ("1-15 de 577"). Nada de "N resultados" aparte.
+- **Un solo contador:** el de la paginación ("1-15 de 577"). Nada de "N resultados" aparte. (La Hoja de ruta, que no
+  tiene tabla ni paginación, muestra la cantidad en su selector: §10.)
 - **Paginación** (`PaginacionSGTL`) en toda tabla que pueda pasar de 15 filas, también tarifas,
   orígenes y destinos y grupos. Las tablas de configuración (facturación, e-mail) no se paginan.
 - **Columnas:** si la pantalla filtra por estado, la tabla muestra la columna Estado. La columna
@@ -251,7 +252,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Dashboard | (ítem principal) |
 | Tableros | (ítem principal, nuevo 24/10: todos los tableros por tema; permiso de grupo propio, como el Dashboard; §13) |
-| Hoja de ruta | (ítem principal, nuevo 24/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio y un grupo de choferes que solo tiene ese; §10) |
+| Hoja de ruta | (ítem principal, nuevo 24/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
@@ -610,22 +611,40 @@ Esto define solo cómo se muestran y cómo se cargan.
   tarjetas).
 - **Excepción: Hoja de ruta** (`hoja-de-ruta.html`, 24/10; la pidió Rocío para el celular del chofer). Es la única
   pantalla pensada primero para el celular:
-  - **una tarjeta por viaje**, en una columna (hasta 760 px en la computadora), agrupadas por día con el subtítulo del
-    sistema (`.sgtl-bloque-titulo`: "Hoy · sábado 24/10/2026"). Arriba, un selector segmentado "Hoy y próximos ·
-    Anteriores" (§12) en lugar de filtros;
-  - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido y los datos con `.sgtl-dato`. El
-    **recorrido** (Rocío, 24/10): origen y destino con el mismo punto, unidos por una línea punteada, cada uno con su
-    dirección debajo. Debajo, el **mapa con el recorrido dibujado**: abierto en el viaje que sigue (el que está en viaje
-    o, si no hay, el primero de hoy) y con "Ver mapa" en los demás, para que la lista no sea un mapa tras otro; con el
-    enlace "Abrir en Google Maps" para manejar con la app;
-  - las acciones van **abajo de la tarjeta, a todo el ancho y con texto** (§1.6): el siguiente paso en verde ("Iniciar
+  - **una tarjeta por viaje**, agrupadas por día con el subtítulo del sistema (`.sgtl-bloque-titulo`: "Hoy · sábado
+    24/10/2026"): una columna en el celular y la tablet (hasta 760 px) y dos desde 1200 px, para no scrollear tanto
+    (Rocío, 24/10). Arriba, un selector segmentado "Hoy y próximos · Anteriores" (§12) en lugar de filtros, con la
+    cantidad de viajes de cada uno: "Hoy y próximos (6) · Anteriores (44)" (Rocío, 24/10). **Anteriores va por año**: al
+    lado, "Año" con los años en que tiene viajes (arranca en el actual), y los viajes de a 30, del más nuevo al más
+    viejo, con "Ver más viajes" al final; su cantidad es la del año elegido. El año cambia la lista al elegirlo, sin
+    "Buscar": elige qué ver, como el período del dashboard;
+  - **tarjetas cortas** (Rocío, 24/10), también en el celular: solo los datos que tienen valor, de a dos (de a tres desde
+    576 px); el camión, solo con el dominio; "Ver mapa" y "Abrir en Google Maps" en un renglón, y los botones del pie
+    lado a lado (en el celular se reparten el ancho);
+  - **el chofer** (un usuario que solo tiene la Hoja de ruta) tiene el menú como todos, con el logo de SGTL, pero con
+    solo "Hoja de ruta" y **plegado al entrar**: lo abre el botón de tres rayitas si quiere (Rocío, 24/10). No ve la
+    Documentación. Entra directo desde el login o el enlace, y arriba sigue su nombre con Cambiar contraseña y Cerrar
+    sesión. La oficina la ve en su menú, como siempre;
+  - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido y los datos con `.sgtl-dato`. Un
+    viaje de un día anterior que sigue en "Hoy y próximos" dice por qué con una etiqueta amarilla debajo del estado:
+    "Quedó sin iniciar" o "Entrega sin registrar" (Rocío, 24/10; la oficina los ve en "Para revisar" como Sin salir y
+    Atrasado). La **distancia** que ve el chofer es la del recorrido completo, la que hace de verdad: "Recorrido completo
+    475,4 km" con "232,5 km de origen a destino" debajo en gris; sin los km al galpón, "Distancia" con "de origen a
+    destino" (Rocío, 24/10). El **recorrido** (Rocío, 24/10): origen y destino con el mismo punto, unidos por una línea
+    punteada, cada uno con su dirección debajo. Debajo, el **mapa con el recorrido dibujado**: abierto en el viaje que
+    sigue (el que está en viaje o, si no hay, el primero de hoy) y con "Ver mapa" en los demás, para que la lista no sea
+    un mapa tras otro; abierto, el mismo enlace dice "Ocultar mapa" y lo cierra. Con el
+    galpón cargado, el mapa dibuja la vuelta completa (A galpón · B origen · C destino · D vuelta al galpón) y "Abrir en
+    Google Maps" arranca desde donde está el chofer con lo que le falta, hasta el galpón (Rocío, 24/10);
+  - las acciones van **abajo de la tarjeta y con texto** (§1.6): el siguiente paso en verde ("Iniciar
     viaje", "Registrar entrega") y "Reemplazar evidencia" con borde. La evidencia se sube al registrar la entrega
     (obligatoria), así que un viaje ya entregado solo ofrece reemplazarla; un viaje con plataforma no tiene botones (la
     entrega y el remito van a la plataforma). Lo que no se puede hacer queda deshabilitado con el motivo **escrito
     debajo** (§1.4), porque en el celular no hay globitos;
   - "Iniciar viaje" pide confirmación (§5.2) aunque no tiene efectos afuera: el chofer no lo puede deshacer (lo corrige
-    la oficina en Gestionar viajes);
-  - sin viajes: "No tenés viajes para hoy ni para los próximos días." o "No tenés viajes en los últimos 30 días."
+    la administración en Gestionar viajes). El texto (Rocío, 24/10): "¿Iniciar el viaje #53?" y solo el recorrido,
+    "Planta Unquillo → Supermercado Río Cuarto.";
+  - sin viajes: "No tenés viajes para hoy ni para los próximos días." o "No tenés viajes anteriores en 2026."
     (no hay filtros, §2.2);
   - las fotos de la evidencia se achican en el navegador (1600 px de lado, JPG) antes de subirlas;
   - "Cargar gasto" (control interno, 24/10) va en el pie de la tarjeta, con borde, en los viajes que ya empezaron; los

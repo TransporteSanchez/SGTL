@@ -24,7 +24,7 @@
   }
 
   if (!token || !username || tokenVencido(token)) {
-    ['token', 'username', 'userRole', 'nombre', 'apellido'].forEach(function (k) {
+    ['token', 'username', 'userRole', 'nombre', 'apellido', 'sgtlSoloHojaDeRuta'].forEach(function (k) {
       try { localStorage.removeItem(k); } catch (e) { }
     });
     // Después de iniciar sesión vuelve a esta pantalla (por ejemplo, el enlace de WhatsApp a la hoja de ruta).
@@ -207,14 +207,16 @@ function aplicarPermisos() {
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
       restringirConfiguracionAAdmin(rol);
-      if (rol === 'admin') { mantenerVisibleContenido(true); return; } // superadmin: acceso total
+      if (rol === 'admin') { marcarSoloHojaDeRuta(false); mantenerVisibleContenido(true); return; } // superadmin: acceso total
       if (esPaginaConfiguracion()) {
         window.location.replace('index.html');
         return;
       }
       var permitidas = (data.Menus || []).map(function (m) { return MENU_TO_PAGE[normalizaPerm(m)]; }).filter(Boolean);
-      // La documentación publicada está disponible para todos los usuarios activos.
-      permitidas.push('manual-usuario.html', 'informe-version.html');
+      var soloHojaDeRuta = permitidas.length > 0 && permitidas.every(function (p) { return p === 'hoja-de-ruta.html'; });
+      marcarSoloHojaDeRuta(soloHojaDeRuta);
+      // La documentación publicada está disponible para todos los usuarios activos, menos el chofer.
+      if (!soloHojaDeRuta) permitidas.push('manual-usuario.html', 'informe-version.html');
       // Compatibilidad temporal del prototipo frontend: hasta contar con un permiso
       // propio en base de datos, Cuenta Corriente acompaña los accesos de Facturación.
       if (permitidas.indexOf('listado-facturas.html') !== -1 || permitidas.indexOf('gestion-facturacion.html') !== -1) {
@@ -288,8 +290,29 @@ function estilosMenu() {
     document.head.appendChild(estilo);
 }
 
+// Chofer (Rocío, 24/10): si su única pantalla es la Hoja de ruta, el menú lateral (con el logo de SGTL y solo esa
+// opción) arranca cerrado y se abre con el botón de las tres rayitas; no ve la Documentación. Login.html deja la marca
+// al entrar, así el menú no aparece abierto ni un momento; los permisos la confirman.
+// En la computadora se pliega como cuando se toca el botón (components/sidebar.js); en el celular ya arranca cerrado.
+function plegarMenu() {
+  if (window.innerWidth <= 1200) return;
+  if (typeof window.ensureCollapseStyle === 'function') window.ensureCollapseStyle();
+  document.body.classList.add('js-sidebar-collapsed');
+}
+
+function marcarSoloHojaDeRuta(solo) {
+  try { if (solo) localStorage.setItem('sgtlSoloHojaDeRuta', '1'); else localStorage.removeItem('sgtlSoloHojaDeRuta'); } catch (e) { }
+  if (!document.body) return;
+  if (solo && document.body.dataset.sgtlMenuPlegado !== '1') {
+    document.body.dataset.sgtlMenuPlegado = '1';
+    plegarMenu();
+  }
+}
+
 function applySidebar(sidebarRoot, html) {
     estilosMenu();
+    var soloHojaDeRuta = false;
+    try { soloHojaDeRuta = localStorage.getItem('sgtlSoloHojaDeRuta') === '1'; } catch (e) { }
     sidebarRoot.innerHTML = html;
     var rol = '';
     try { rol = localStorage.getItem('userRole') || ''; } catch (e) { }
@@ -299,6 +322,8 @@ function applySidebar(sidebarRoot, html) {
     if (typeof window.initializeSidebar === 'function') {
       window.initializeSidebar();
     }
+    // Después de que la plantilla arma el menú (en la computadora lo abre): el del chofer arranca cerrado.
+    if (soloHojaDeRuta) marcarSoloHojaDeRuta(true);
     aplicarPermisos();
   }
   

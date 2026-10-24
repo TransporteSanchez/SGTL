@@ -264,10 +264,11 @@
 
         // Después de entrar: a la pantalla pedida o al Dashboard. Un chofer (su grupo tiene la Hoja de ruta y no el
         // Dashboard) entra directo a su hoja de ruta. Si no se pueden leer los permisos, al Dashboard, como siempre.
+        // Si su única pantalla es la Hoja de ruta, queda marcado para que el menú arranque plegado (sidebar-loader.js).
         function irDespuesDeEntrar(nombreUsuario, rol) {
             var volver = pantallaDeVuelta();
-            if (volver) { window.location.href = volver; return; }
-            if (String(rol || '').trim().toLowerCase() === 'admin') { window.location.href = 'index.html'; return; }
+            try { localStorage.removeItem('sgtlSoloHojaDeRuta'); } catch (e) { }
+            if (String(rol || '').trim().toLowerCase() === 'admin') { window.location.href = volver || 'index.html'; return; }
             fetch('http://localhost:50222/api/Usuarios/MenusPermitidos?username=' + encodeURIComponent(nombreUsuario || ''))
                 .then(function (respuesta) { return respuesta.ok ? respuesta.json() : null; })
                 .then(function (datos) {
@@ -275,9 +276,11 @@
                         return String(m || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
                     });
                     var chofer = menus.indexOf('hoja de ruta') !== -1 && menus.indexOf('dashboard') === -1;
-                    window.location.href = chofer ? 'hoja-de-ruta.html' : 'index.html';
+                    var soloHojaDeRuta = menus.length > 0 && menus.every(function (m) { return m === 'hoja de ruta'; });
+                    try { if (soloHojaDeRuta) localStorage.setItem('sgtlSoloHojaDeRuta', '1'); } catch (e) { }
+                    window.location.href = volver || (chofer ? 'hoja-de-ruta.html' : 'index.html');
                 })
-                .catch(function () { window.location.href = 'index.html'; });
+                .catch(function () { window.location.href = volver || 'index.html'; });
         }
 
         // Llamada a la API al cargar la página

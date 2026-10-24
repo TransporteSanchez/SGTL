@@ -55,7 +55,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
-| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
+| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -2863,10 +2863,16 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
 - "Top clientes en facturación" sigue siendo histórico y sin token (`CuentaCorrienteController`, de Facu).
 - Ideas que siguen abiertas del §19: rechazos por cliente o destino, uso de la flota, exportar la comparativa, km
   cargados a mano. Cada una sería un tablero más del catálogo, en su pestaña.
+- **Favoritos de entrada según el grupo** (idea de Rocío, 24/10, pendiente): hoy quien todavía no eligió favoritos ve
+  el dashboard de siempre, con todas las tarjetas. La idea es que de entrada tenga los tableros que corresponden a su
+  grupo. Dos formas, a decidir: (a) automática, los tableros que sus permisos le dejan ver (los de facturación, con
+  cuenta corriente o proformas; los de viajes, con viajes); (b) que un administrador elija los favoritos de cada grupo
+  en Gestionar grupos y permisos (tabla nueva, por ejemplo `TABLEROS_GRUPO`). Con varios grupos, todos los de sus
+  grupos. Cuando el usuario elige los suyos, mandan los suyos.
 
 ---
 
-## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — PUSHEADO (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — PUSHEADO (24/10), AJUSTES DEL 24/10 SIN PUSH; FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío para el jueves 29/10 (presentación ante el segundo profesor). Antes el chofer no usaba el sistema:
 solo recibía la hoja de ruta por WhatsApp. **Decisiones de Rocío (24/10):** alcance completo (ver, iniciar el viaje,
@@ -2882,7 +2888,7 @@ sistema (módulo de Fede: ver abajo).
 - **API:** `HojaDeRutaController` (nuevo, sumado al `.csproj`):
   - `GET api/HojaDeRuta?vista=proximos|anteriores`: los viajes del chofer de la sesión. "Hoy y próximos": los que
     terminan hoy o después, el que está en viaje y los de clientes directos que quedaron sin salir; "Anteriores": el
-    resto de los últimos 30 días. El "hoy" es el de la Argentina (`AT TIME ZONE` en el SQL), no la hora de la máquina.
+    resto, por año (ver los ajustes del 24/10). El "hoy" es el de la Argentina (`AT TIME ZONE` en el SQL), no la hora de la máquina.
   - `POST …/Viajes/{id}/Iniciar`, `POST …/Viajes/{id}/Entrega` (resultado y fecha), `POST` y `GET …/Viajes/{id}/Evidencia`:
     controlan que el viaje sea del chofer y que le toque ese paso; el cambio lo hace `ViajesController` (mismas reglas,
     auditoría y mensajes que Gestionar viajes), con el usuario del token como autor. **Para el chat de viajes:** usa
@@ -2925,6 +2931,53 @@ sistema (módulo de Fede: ver abajo).
 - **Documentos:** tesis (partes 2, 4 y 5: el chofer usa el sistema, su relación en el DER y la capacitación) y design
   system (§3.1 y la excepción del §10).
 
+**Ajustes del 24/10, después de verla Rocío** (commit aparte; cambian `HojaDeRutaController.cs` y `CostosController.cs`:
+**recompilar**):
+- **Recorrido completo para el chofer:** con el galpón cargado (§37), el mapa dibuja galpón → origen → destino → galpón
+  (letras A a D) y "Abrir en Google Maps" arranca desde donde está el chofer con lo que le falta: sin salir, origen →
+  destino → galpón; en viaje, destino → galpón. La API manda el galpón y los km al galpón. Sin galpón, como antes.
+- **La distancia que ve el chofer** es la del recorrido completo, la que hace de verdad: "Recorrido completo 475,4 km" y
+  debajo, en gris, "232,5 km de origen a destino" (Rocío eligió esta entre tres maquetas). Sin los km al galpón (no hay
+  galpón o todavía no se calcularon), "Distancia 232,5 km" con "de origen a destino" debajo.
+- **"Iniciar viaje"** pregunta "¿Iniciar el viaje #53?" con solo el recorrido ("Planta Unquillo → Supermercado Río
+  Cuarto.").
+- **"Ver mapa" y "Ocultar mapa":** el mismo enlace abre el mapa y, abierto, lo cierra (también el del viaje que sigue).
+- **Por qué sigue un viaje de otro día:** "Hoy y próximos" incluye los viajes directos de días anteriores que no se
+  iniciaron o que siguen en viaje (para que el chofer no los pierda de vista). Ahora lo dice una etiqueta amarilla
+  debajo del estado: "Quedó sin iniciar" o "Entrega sin registrar".
+- **Anteriores por año:** para cuando el chofer junte años de viajes, "Anteriores" tiene al lado "Año" (los años con
+  viajes y el actual; arranca en el actual) y trae los viajes de a 30, del más nuevo al más viejo, con "Ver más viajes"
+  al final (`GET api/HojaDeRuta?vista=anteriores&anio=2026&cantidad=30`, que devuelve `Anios` y `Hay_Mas`). Antes eran
+  los últimos 30 días.
+- **Cuántos viajes hay:** el selector dice "Hoy y próximos (6) · Anteriores (44)"; la de Anteriores es la del año
+  elegido. La API los cuenta con las mismas condiciones que cada lista (`Cantidad_Proximos` y `Cantidad_Anteriores`).
+- **Pantalla grande:** dos columnas de tarjetas desde 1200 px.
+- **Tarjetas más cortas, también en el celular:** solo los datos que tienen valor (de a dos; de a tres desde 576 px), el
+  camión solo con el dominio, "Ver mapa" y "Abrir en Google Maps" en un renglón y los botones del pie lado a lado. A
+  390 px, una tarjeta pasó de unos 650 a 420 px de alto.
+- **El menú del chofer:** un usuario que solo tiene la Hoja de ruta tiene el menú con el logo de SGTL y solo "Hoja de
+  ruta", plegado al entrar; el botón de tres rayitas lo abre. No ve la Documentación (Manual e Informe de versión, que el
+  resto de los usuarios sigue viendo). `Login.html` lo marca al entrar y `sidebar-loader.js` lo confirma con los
+  permisos.
+- **Arreglo del menú en el celular (todas las pantallas, commit aparte "Menú: …"):** el botón de tres rayitas
+  oscurecía la pantalla pero el menú no aparecía, y la cruz lo cerraba dejando la pantalla oscura y sin scroll. El
+  plegado de `components/sidebar.js` ahora es solo de la computadora (más de 1200 px); en el celular lo maneja la
+  plantilla.
+
+**Probar en la VM los ajustes** (después de los pasos de abajo, con el script de §37 corrido y el galpón cargado):
+- [ ] A. Un viaje del chofer de ayer, sin iniciar: aparece en "Hoy y próximos" con la etiqueta amarilla "Quedó sin
+  iniciar". Uno en viaje que llegaba ayer: "Entrega sin registrar".
+- [ ] B. Las cantidades del selector coinciden con las tarjetas de cada vista (Anteriores, con "Ver más viajes" hasta el
+  final) y cambian al iniciar o entregar un viaje de un día anterior. Con viajes de otro año, elegirlo en "Año".
+- [ ] C. Un viaje con el galpón y los km al galpón calculados (abrir antes su Ver detalle como admin): "Recorrido
+  completo" con el total y "… de origen a destino" debajo; el mapa con A a D. Uno sin km al galpón: "Distancia".
+- [ ] D. "Ver mapa" abre el mapa y "Ocultar mapa" lo cierra, también en el viaje que arranca con el mapa abierto.
+- [ ] E. Entrar como chofer → menú plegado; el botón lo abre con el logo y solo "Hoja de ruta". Escribir
+  `manual-usuario.html` en la barra → vuelve a la hoja de ruta.
+- [ ] F. F12 a 390 px, en cualquier pantalla y con cualquier usuario: el botón de tres rayitas abre el menú; la cruz y
+  tocar afuera lo cierran y se puede volver a scrollear. Como admin en la computadora: el menú de siempre, y el botón
+  lo pliega y lo vuelve a abrir.
+
 **Probado en la Mac** con una API simulada, a 390 px y a 1366 px: login del chofer → hoja de ruta; iniciar viaje;
 registrar entrega con una foto grande; viaje en una proforma con el paso deshabilitado; viaje con plataforma;
 el mapa con el recorrido de verdad (la API simulada en el puerto 5502, que es el que acepta la clave) y "Ver mapa";
@@ -2942,16 +2995,17 @@ usuarios: asignar, quitar y el error de un chofer que ya tiene usuario. **La API
   creíbles). Editar otro usuario: ese chofer ya no aparece en la lista. Editar el nuevo: muestra su chofer.
 - [ ] 4. Gestionar viajes: registrar para ese chofer un viaje de cliente directo para hoy, otro para mañana y uno de un
   cliente con plataforma.
-- [ ] 5. Cerrar sesión y entrar con el usuario chofer: va directo a la Hoja de ruta y el menú tiene solo Hoja de ruta y
-  Documentación. Escribir `index.html` en la barra lleva de vuelta a la hoja de ruta.
+- [ ] 5. Cerrar sesión y entrar con el usuario chofer: va directo a la Hoja de ruta con el menú plegado; el botón de tres
+  rayitas lo abre con el logo y solo "Hoja de ruta". Escribir `index.html` en la barra lleva de vuelta a la hoja de ruta.
 - [ ] 6. F12 a 390 px: el viaje de hoy → "Iniciar viaje" → confirmar → En viaje. "Registrar entrega" sin completar →
   errores debajo de cada campo y "Revisá los campos marcados."; con resultado y una foto → "Viaje #N entregado." y
-  "Ver evidencia" la muestra. "Abrir recorrido en Google Maps" abre el recorrido.
+  "Ver evidencia" la muestra. "Abrir en Google Maps" abre el recorrido.
 - [ ] 7. Como admin, Gestionar viajes: el viaje está Entregado con la evidencia; Auditoría muestra el cambio de estado y
   la evidencia con el usuario del chofer.
 - [ ] 8. El viaje en viaje (o el primero de hoy) muestra el mapa con el recorrido; los demás, "Ver mapa", que lo
-  despliega. El viaje con plataforma no tiene botones. "Anteriores" muestra los últimos 30 días y ningún viaje dice
-  "Subir evidencia": los entregados con evidencia, "Reemplazar evidencia".
+  despliega ("Ocultar mapa" lo cierra). El viaje con plataforma no tiene botones. "Anteriores" arranca en el año actual (si el chofer tiene viajes
+  de otro año, elegirlo en "Año") y ningún viaje dice "Subir evidencia": los entregados con evidencia, "Reemplazar
+  evidencia".
 - [ ] 9. Seguridad: en Swagger o Postman, `GET http://localhost:50222/api/HojaDeRuta` sin `Authorization` → 401. Con
   el token del chofer (sale del `localStorage` del navegador), `POST api/HojaDeRuta/Viajes/{id}/Iniciar` de un viaje
   de otro chofer → 404 "Ese viaje no está en tu hoja de ruta.".
@@ -2975,6 +3029,10 @@ publicado; hoy el front y la API corren en `localhost`.
   24/10): ese flujo no tiene estado Entregado (pasa de Registrado a Listo para facturar), así que es un cambio del flujo
   de viajes con plataforma. Decidirlo con la revisión de los flujos de viajes.
 - Un caso de prueba nuevo en la tesis (parte 5) con el resultado de la VM.
+- **Estadísticas del chofer** (idea de Rocío, 24/10): que vea las suyas. Propuesta: un resumen corto arriba de la hoja
+  de ruta (este mes: viajes entregados, km del recorrido completo, gastos rendidos), no un dashboard aparte: el chofer
+  no tiene Dashboard ni Tableros y usa el celular. Solo lo suyo, sin compararlo con otros choferes. Sale de lo que ya
+  hay (`VIAJES`, `VIAJE_GASTOS` y los km al galpón del §37), con el chofer del token.
 - En el celular, la fecha de entrega usa el calendario del teléfono (flatpickr en modo móvil, como en todo el sistema:
   ya anotado en "Fechas en el celular" del §24).
 

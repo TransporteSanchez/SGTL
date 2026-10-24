@@ -73,7 +73,7 @@
   //   paso: el siguiente paso del circuito ({ accion: 'iniciar' | 'entregar', texto, motivo si no se puede }) o null;
   //   reemplazar: si puede cambiar la evidencia; ver: si hay evidencia para abrir; nota: aclaración debajo.
   // La evidencia se sube al registrar la entrega (es obligatoria): después solo se reemplaza. Un viaje entregado antes
-  // de que fuera obligatoria (22/10) y sin evidencia no ofrece nada: la carga la oficina en Gestionar viajes.
+  // de que fuera obligatoria (22/10) y sin evidencia no ofrece nada: la carga la administración en Gestionar viajes.
   // Con plataforma (Rukas) el chofer solo mira: la entrega y el remito los registra en la plataforma.
   function accionesDe(v) {
     var r = { paso: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
@@ -94,11 +94,47 @@
     return r;
   }
 
+  // Por qué un viaje de un día anterior sigue en "Hoy y próximos" (Rocío, 24/10): uno directo que no se inició en su día
+  // o que ya tendría que haber llegado y sigue en viaje. Va como etiqueta amarilla debajo del estado (la oficina los ve
+  // en "Para revisar" del dashboard como Sin salir y Atrasado). Con plataforma no: pasado el día va a Anteriores.
+  function atraso(v, hoyIso) {
+    var hoy = soloFecha(hoyIso);
+    if (!hoy || !esDirecto(v)) return '';
+    var estadoViaje = v.Estado || 'Registrado';
+    if (estadoViaje === 'Registrado' && soloFecha(v.Fecha_Inicio) < hoy) return 'Quedó sin iniciar';
+    if (estadoViaje === 'En_viaje' && soloFecha(v.Fecha_Fin || v.Fecha_Inicio) < hoy) return 'Entrega sin registrar';
+    return '';
+  }
+
   // Gastos del viaje (control interno, 24/10): en cualquier viaje del chofer (directo o con plataforma) desde el día que
   // empieza, aunque ya esté entregado (puede rendir al volver); no en uno facturado.
   function puedeCargarGasto(v, hoyIso) {
     var hoy = soloFecha(hoyIso);
     return (v.Estado || 'Registrado') !== 'Facturado' && !!hoy && soloFecha(v.Fecha_Inicio) <= hoy;
+  }
+
+  // Recorrido completo para el chofer (Rocío, 24/10): galpón → origen → destino → galpón.
+  // "Abrir en Google Maps" arranca desde donde está el chofer (sin origen, Google usa su ubicación) y sigue con lo que le
+  // falta, hasta el galpón: sin salir, origen → destino → galpón; en viaje, destino → galpón. Un viaje terminado muestra
+  // la vuelta entera desde el galpón. Sin galpón cargado, el enlace de siempre (origen → destino).
+  function enlaceNavegacion(v, galpon) {
+    var origen = v.Origen_Direccion ? v.Origen_Direccion + ', Argentina' : '';
+    var destino = v.Destino_Direccion ? v.Destino_Direccion + ', Argentina' : '';
+    if (!galpon || !origen || !destino) return v.Maps_Url || '';
+    var base = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(galpon);
+    var estadoViaje = v.Estado || 'Registrado';
+    if (estadoViaje === 'Registrado') return base + '&waypoints=' + encodeURIComponent(origen + '|' + destino);
+    if (estadoViaje === 'En_viaje') return base + '&waypoints=' + encodeURIComponent(destino);
+    return base + '&origin=' + encodeURIComponent(galpon) + '&waypoints=' + encodeURIComponent(origen + '|' + destino);
+  }
+
+  // Km del recorrido completo: los del viaje más los del galpón al origen y del destino al galpón (null si falta alguno).
+  function kmRecorridoCompleto(v) {
+    var t = String(v.Distancia_KM == null ? '' : v.Distancia_KM).trim();
+    if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
+    var viaje = t ? Number(t) : NaN;
+    if (v.Km_Ida == null || v.Km_Vuelta == null || !isFinite(viaje)) return null;
+    return Math.round((Number(v.Km_Ida) + viaje + Number(v.Km_Vuelta)) * 10) / 10;
   }
 
   // El viaje que se muestra con el mapa abierto: el que está en viaje o, si no hay, el primero de hoy sin salir.
@@ -139,7 +175,12 @@
 
   // ---------------------------------------------------------------- Pantalla
 
-  var estado = { vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {}, gastos: false };
+  // Anteriores (Rocío, 24/10): por año (arranca en el actual) y de a 30, con "Ver más viajes".
+  var ANTERIORES_POR_PAGINA = 30;
+  var estado = {
+    vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {}, gastos: false,
+    anio: null, cantidad: ANTERIORES_POR_PAGINA, hayMas: false, sigue: null
+  };
   var formularioGasto = null;
   var gastosAbiertos = null;   // el viaje cuya lista de gastos está abierta
   var formularioEntrega = null;
@@ -156,7 +197,7 @@
   }
 
   function dato(etiqueta, valorHtml) {
-    return '<div class="col-6"><div class="sgtl-dato"><div class="sgtl-dato-etiqueta">' + esc(etiqueta) + '</div>' +
+    return '<div class="col-6 col-sm-4"><div class="sgtl-dato"><div class="sgtl-dato-etiqueta">' + esc(etiqueta) + '</div>' +
       '<div class="sgtl-dato-valor">' + (valorHtml || '—') + '</div></div></div>';
   }
 
@@ -172,12 +213,22 @@
   // El mapa con el recorrido dibujado: abierto en el viaje que sigue; en los demás, "Ver mapa" lo despliega.
   // "Abrir en Google Maps" abre la app del celular para manejar (el mismo enlace del WhatsApp).
   function mapa(v, abierto) {
-    if (!v.Maps_Url) return '<div class="form-text">No hay dirección cargada para mostrar el recorrido en el mapa.</div>';
-    var abrir = '<a class="btn btn-link px-0" href="' + esc(v.Maps_Url) + '" target="_blank" rel="noopener">' +
+    var enlace = enlaceNavegacion(v, estado.galpon);
+    if (!enlace) return '<div class="form-text">No hay dirección cargada para mostrar el recorrido en el mapa.</div>';
+    var abrir = '<a class="btn btn-link px-0" href="' + esc(enlace) + '" target="_blank" rel="noopener">' +
       '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Google Maps</a>';
-    if (abierto) return '<div class="sgtl-mapa-chofer" data-mapa="' + esc(v.Viaje_ID) + '"></div>' + abrir;
-    return '<button type="button" class="btn btn-outline-primary w-100" data-accion="ver-mapa" data-id="' + esc(v.Viaje_ID) + '">' +
-      '<i class="bi bi-map me-1" aria-hidden="true"></i>Ver mapa</button>';
+    var letras = estado.galpon ? '<div class="form-text mt-1">A: galpón · B: origen · C: destino · D: vuelta al galpón</div>' : '';
+    // "Ver mapa" lo abre y, abierto, "Ocultar mapa" lo cierra (Rocío, 24/10), en el mismo lugar.
+    var enlaces = '<div class="d-flex flex-wrap gap-3"><button type="button" class="btn btn-link px-0" data-accion="ver-mapa" data-id="' +
+      esc(v.Viaje_ID) + '" aria-expanded="' + (abierto ? 'true' : 'false') + '"><i class="bi bi-map me-1" aria-hidden="true"></i>' +
+      (abierto ? 'Ocultar mapa' : 'Ver mapa') + '</button>' + abrir + '</div>';
+    return abierto ? enlaces + '<div class="sgtl-mapa-chofer" data-mapa="' + esc(v.Viaje_ID) + '"></div>' + letras : enlaces;
+  }
+
+  // Abierto: lo que eligió el chofer con "Ver mapa" / "Ocultar mapa" y, si no tocó nada, solo el del viaje que sigue.
+  function mapaAbierto(v) {
+    var elegido = estado.mapasAbiertos[v.Viaje_ID];
+    return elegido != null ? elegido : v.Viaje_ID === estado.sigue;
   }
 
   function etiquetas(v) {
@@ -186,6 +237,8 @@
       var resultado = v.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : v.Resultado_Entrega;
       html += '<div class="mt-1">' + SGTL.estado(v.Resultado_Entrega, resultado, COLOR_RESULTADO[v.Resultado_Entrega]) + '</div>';
     }
+    var atrasado = atraso(v, estado.hoy);
+    if (atrasado) html += '<div class="mt-1">' + SGTL.estado(atrasado, atrasado, 'amarillo') + '</div>';
     return html;
   }
 
@@ -197,27 +250,34 @@
     if (paso.motivo) {
       var idMotivo = 'motivo-viaje-' + esc(v.Viaje_ID);
       return '<button type="button" class="btn btn-success" disabled aria-describedby="' + idMotivo + '">' + contenido + '</button>' +
-        '<div class="form-text mt-0" id="' + idMotivo + '">' + esc(paso.motivo) + '.</div>';
+        '<div class="form-text mt-0 w-100" id="' + idMotivo + '">' + esc(paso.motivo) + '.</div>';
     }
     return '<button type="button" class="btn btn-success" data-accion="' + paso.accion + '" data-id="' + esc(v.Viaje_ID) + '">' + contenido + '</button>';
   }
 
-  function tarjeta(v, mapaAbierto) {
+  // La distancia que ve el chofer (Rocío, 24/10): la del recorrido completo, que es la que hace de verdad, con la de
+  // origen a destino debajo en gris. Sin los km al galpón (no hay galpón o todavía no se calcularon), la de origen a
+  // destino, aclarada igual.
+  function distanciaDelViaje(v) {
+    var total = kmRecorridoCompleto(v);
+    var deOrigenADestino = kmTexto(v.Distancia_KM);
+    if (total == null) return dato('Distancia', esc(deOrigenADestino) + (deOrigenADestino ? '<div class="suave">de origen a destino</div>' : ''));
+    return dato('Recorrido completo', esc(SGTL.km(total)) + ' km<div class="suave">' + esc(deOrigenADestino) + ' de origen a destino</div>');
+  }
+
+  function tarjeta(v, conMapa) {
     var a = accionesDe(v);
-    var evidencia = v.Tiene_Evidencia
-      ? '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
-        '<i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</button>'
-      : '<span class="text-muted">' + (esDirecto(v) ? 'Sin cargar' : 'En la plataforma del cliente') + '</span>';
-    var datos = dato('Camión', texto(v.Camion) + (v.Camion_Detalle ? '<div class="suave">' + esc(v.Camion_Detalle) + '</div>' : '')) +
-      dato('Distancia', esc(kmTexto(v.Distancia_KM))) +
-      dato('Número de remito', texto(v.Num_Remito)) +
-      (esDirecto(v) ? '' : dato('N° transporte SAP', texto(v.Num_Transporte)) + dato('N° entrega Rukas', texto(v.Num_de_Carga))) +
+    // Solo los datos que tienen valor (Rocío, 24/10: que la tarjeta no sea tan larga). El camión, solo el dominio.
+    var si = function (valor, etiqueta, html) { return String(valor == null ? '' : valor).trim() ? dato(etiqueta, html) : ''; };
+    var datos = dato('Camión', texto(v.Camion)) +
+      distanciaDelViaje(v) +
+      si(v.Num_Remito, 'Número de remito', texto(v.Num_Remito)) +
+      (esDirecto(v) ? '' : si(v.Num_Transporte, 'N° transporte SAP', texto(v.Num_Transporte)) + si(v.Num_de_Carga, 'N° entrega Rukas', texto(v.Num_de_Carga))) +
       (v.Fecha_Entrega ? dato('Fecha de entrega', esc(SGTL.fecha(v.Fecha_Entrega))) : '') +
-      dato('Evidencia', evidencia) +
-      (estado.gastos ? dato('Gastos', v.Gastos_Cantidad
-        ? '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-gastos" data-id="' + esc(v.Viaje_ID) + '">' +
-          esc(v.Gastos_Cantidad) + ' · ' + esc(SGTL.monto(v.Gastos_Total)) + '</button>'
-        : '<span class="text-muted">Sin gastos</span>') : '');
+      (v.Tiene_Evidencia ? dato('Evidencia', '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-evidencia" data-id="' +
+        esc(v.Viaje_ID) + '"><i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</button>') : '') +
+      (estado.gastos && v.Gastos_Cantidad ? dato('Gastos', '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-gastos" data-id="' +
+        esc(v.Viaje_ID) + '">' + esc(v.Gastos_Cantidad) + ' · ' + esc(SGTL.monto(v.Gastos_Total)) + '</button>') : '');
 
     var botones = [];
     if (a.paso) botones.push(botonPaso(v, a.paso));
@@ -230,10 +290,11 @@
         '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>');
     }
     var pie = botones.length || a.nota
-      ? '<div class="card-footer d-grid gap-2">' + botones.join('') + (a.nota ? '<div class="form-text mt-0">' + esc(a.nota) + '</div>' : '') + '</div>'
+      ? '<div class="card-footer d-flex flex-wrap align-items-center gap-2">' + botones.join('') +
+        (a.nota ? '<div class="form-text mt-0 w-100">' + esc(a.nota) + '</div>' : '') + '</div>'
       : '';
 
-    return '<article class="card sgtl-viaje-chofer mb-3" id="viaje-' + esc(v.Viaje_ID) + '" aria-label="Viaje #' + esc(v.Viaje_ID) + '">' +
+    return '<article class="card sgtl-viaje-chofer mb-0" id="viaje-' + esc(v.Viaje_ID) + '" aria-label="Viaje #' + esc(v.Viaje_ID) + '">' +
       '<div class="card-body">' +
       '<div class="d-flex justify-content-between align-items-start gap-2">' +
       '<div><div class="fs-5 fw-bold">' + esc(horario(v)) + '</div>' +
@@ -242,8 +303,8 @@
       '<ol class="sgtl-recorrido list-unstyled">' +
       lugar(v.Origen, v.Origen_Direccion, 'Origen') +
       lugar(v.Destino, v.Destino_Direccion, 'Destino') + '</ol>' +
-      '<div class="sgtl-mapa-viaje" data-mapa-de="' + esc(v.Viaje_ID) + '">' + mapa(v, mapaAbierto) + '</div>' +
-      '<div class="row gx-3 gy-0 mt-3">' + datos + '</div>' +
+      '<div class="sgtl-mapa-viaje" data-mapa-de="' + esc(v.Viaje_ID) + '">' + mapa(v, conMapa) + '</div>' +
+      '<div class="row gx-3 gy-0 mt-2">' + datos + '</div>' +
       '</div>' + pie + '</article>';
   }
 
@@ -254,19 +315,25 @@
 
   function sinViajes() {
     return '<p class="text-muted text-center my-5">' + (estado.vista === 'anteriores'
-      ? 'No tenés viajes en los últimos 30 días.'
+      ? 'No tenés viajes anteriores en ' + esc(estado.anio) + '.'
       : 'No tenés viajes para hoy ni para los próximos días.') + '</p>';
+  }
+
+  function botonVerMas() {
+    return estado.vista === 'anteriores' && estado.hayMas
+      ? '<div class="text-center mt-3"><button type="button" class="btn btn-outline-primary" data-accion="ver-mas">Ver más viajes</button></div>'
+      : '';
   }
 
   function dibujar() {
     if (!estado.viajes.length) { mostrarLista(sinViajes()); return; }
-    var sigue = estado.vista === 'proximos' ? viajeQueSigue(estado.viajes, estado.hoy) : null;
+    estado.sigue = estado.vista === 'proximos' ? viajeQueSigue(estado.viajes, estado.hoy) : null;
     mostrarLista(agruparPorDia(estado.viajes).map(function (g) {
       return '<section class="mb-2"><div class="sgtl-bloque-titulo mb-3">' + esc(tituloDia(g.fecha, estado.hoy)) + '</div>' +
-        g.viajes.map(function (v) {
-          return tarjeta(v, v.Viaje_ID === sigue || !!estado.mapasAbiertos[v.Viaje_ID]);
-        }).join('') + '</section>';
-    }).join(''));
+        '<div class="row g-3 align-items-start">' + g.viajes.map(function (v) {
+          return '<div class="col-12 col-xl-6">' + tarjeta(v, mapaAbierto(v)) + '</div>';
+        }).join('') + '</div></section>';
+    }).join('') + botonVerMas());
     Array.prototype.forEach.call(document.querySelectorAll('#listaViajes [data-mapa]'), function (contenedor) {
       dibujarMapa(estado.porId[contenedor.getAttribute('data-mapa')], contenedor);
     });
@@ -305,11 +372,12 @@
       });
       var dibujo = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: false });
       if (rutas[v.Viaje_ID]) { dibujo.setDirections(rutas[v.Viaje_ID]); return; }
-      new libs[1].DirectionsService().route({
-        origin: v.Origen_Direccion + ', Argentina',
-        destination: v.Destino_Direccion + ', Argentina',
-        travelMode: 'DRIVING'
-      }, function (resultado, status) {
+      var origen = v.Origen_Direccion + ', Argentina', destino = v.Destino_Direccion + ', Argentina';
+      var pedido = estado.galpon
+        ? { origin: estado.galpon, destination: estado.galpon, travelMode: 'DRIVING',
+            waypoints: [{ location: origen, stopover: true }, { location: destino, stopover: true }] }
+        : { origin: origen, destination: destino, travelMode: 'DRIVING' };
+      new libs[1].DirectionsService().route(pedido, function (resultado, status) {
         if (status !== 'OK') { sinMapa(contenedor); return; }
         rutas[v.Viaje_ID] = resultado;
         dibujo.setDirections(resultado);
@@ -321,31 +389,41 @@
     var v = estado.porId[id];
     var lugarMapa = document.querySelector('#listaViajes [data-mapa-de="' + id + '"]');
     if (!v || !lugarMapa) return;
-    estado.mapasAbiertos[id] = true;
-    lugarMapa.innerHTML = mapa(v, true);
-    dibujarMapa(v, lugarMapa.querySelector('[data-mapa]'));
+    var abrir = !mapaAbierto(v);
+    estado.mapasAbiertos[id] = abrir;
+    lugarMapa.innerHTML = mapa(v, abrir);
+    if (abrir) dibujarMapa(v, lugarMapa.querySelector('[data-mapa]'));
   }
 
   // Sin vista, vuelve a traer la misma después de una acción: deja la lista como está hasta que llega la nueva, así el
   // chofer no pierde el lugar en el celular.
   function cargar(vista) {
     var otraVista = !!vista;
-    if (vista) estado.vista = vista;
+    if (vista) { estado.vista = vista; estado.cantidad = ANTERIORES_POR_PAGINA; }
     var busqueda = ++estado.busqueda;
+    var datos = { vista: estado.vista };
+    if (estado.anio) datos.anio = estado.anio;
+    if (estado.vista === 'anteriores') datos.cantidad = estado.cantidad;
+    document.getElementById('bloqueAnio').classList.toggle('d-none', estado.vista !== 'anteriores');
     Array.prototype.forEach.call(document.querySelectorAll('#vistaHojaDeRuta [data-vista]'), function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-vista') === estado.vista));
     });
     if (otraVista) mostrarLista('<p class="text-muted text-center my-5">Cargando…</p>');
-    return pedir({ url: API + '/HojaDeRuta', type: 'GET', data: { vista: estado.vista } },
+    return pedir({ url: API + '/HojaDeRuta', type: 'GET', data: datos },
       'No se pudo cargar tu hoja de ruta. Revisá la conexión y probá de nuevo.').then(function (data) {
         if (busqueda !== estado.busqueda) return;
         data = data || {};
         estado.hoy = soloFecha(data.Hoy);
         estado.gastos = !!data.Gastos_Habilitados;
+        estado.galpon = data.Galpon || null;
         document.getElementById('sinChofer').classList.toggle('d-none', data.Vinculado !== false);
         document.getElementById('contenidoHojaDeRuta').classList.toggle('d-none', data.Vinculado === false);
         document.getElementById('listaViajes').classList.toggle('d-none', data.Vinculado === false);
         if (data.Vinculado === false) return;
+        if (data.Anio) estado.anio = data.Anio;
+        estado.hayMas = !!data.Hay_Mas;
+        if (data.Anios) mostrarAnios(data.Anios);
+        mostrarCantidades(data);
         estado.viajes = data.Viajes || [];
         estado.porId = {};
         estado.viajes.forEach(function (v) { estado.porId[v.Viaje_ID] = v; });
@@ -356,6 +434,33 @@
         mostrarLista('<p class="text-muted text-center my-5">No se pudo cargar tu hoja de ruta.</p>');
         SGTL.toastError(error.mensajeUsuario);
       });
+  }
+
+  // Los años con viajes anteriores (y el actual), del más nuevo al más viejo.
+  function mostrarAnios(anios) {
+    document.getElementById('anioHojaDeRuta').innerHTML = anios.map(function (a) {
+      return '<option value="' + esc(a) + '"' + (Number(a) === Number(estado.anio) ? ' selected' : '') + '>' + esc(a) + '</option>';
+    }).join('');
+  }
+
+  // "Ver más viajes": vuelve a pedir Anteriores con 30 más (la lista queda como está hasta que llegan).
+  function verMas(boton) {
+    boton.disabled = true;
+    boton.textContent = 'Cargando…';
+    estado.cantidad += ANTERIORES_POR_PAGINA;
+    cargar();
+  }
+
+  // Cuántos viajes hay en cada vista, en el selector: "Hoy y próximos (3)", "Anteriores (12)" (Rocío, 24/10).
+  // (El espacio lo da el margen: el botón es flex y se come el espacio del principio.)
+  function textoCantidad(cantidad) { return cantidad == null ? '' : '(' + cantidad + ')'; }
+
+  function mostrarCantidades(data) {
+    var cantidades = { proximos: data.Cantidad_Proximos, anteriores: data.Cantidad_Anteriores };
+    Array.prototype.forEach.call(document.querySelectorAll('#vistaHojaDeRuta [data-cantidad-de]'), function (lugar) {
+      lugar.textContent = textoCantidad(cantidades[lugar.getAttribute('data-cantidad-de')]);
+      lugar.classList.toggle('ms-1', lugar.textContent !== '');
+    });
   }
 
   // El enlace de WhatsApp abre hoja-de-ruta.html?viaje=48: se marca ese viaje (y si ya pasó, se busca en Anteriores).
@@ -381,7 +486,8 @@
     if (!v) return;
     SGTL.confirmar({
       titulo: '¿Iniciar el viaje #' + id + '?',
-      mensaje: (v.Origen || 'Origen') + ' → ' + (v.Destino || 'destino') + '. La oficina lo ve en viaje; si te equivocaste, avisale para que lo corrija.',
+      // "La administración": es el área que trabaja con el chofer (relevamiento, parte 1 de la tesis).
+      mensaje: (v.Origen || 'Origen') + ' → ' + (v.Destino || 'destino') + '.',
       verbo: 'Iniciar viaje',
       accion: function () {
         return pedir({ url: API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/Iniciar', type: 'POST' },
@@ -789,6 +895,11 @@
       else if (accion === 'ver-mapa') verMapa(id);
       else if (accion === 'cargar-gasto') abrirGasto(id);
       else if (accion === 'ver-gastos') verGastos(id);
+      else if (accion === 'ver-mas') verMas(boton);
+    });
+    document.getElementById('anioHojaDeRuta').addEventListener('change', function () {
+      estado.anio = Number(this.value);
+      cargar('anteriores');
     });
     document.getElementById('listaGastos').addEventListener('click', function (e) {
       var boton = e.target.closest('[data-accion]');
@@ -828,7 +939,10 @@
     horario: horario,
     accionesDe: accionesDe,
     viajeQueSigue: viajeQueSigue,
+    enlaceNavegacion: enlaceNavegacion,
+    kmRecorridoCompleto: kmRecorridoCompleto,
     puedeCargarGasto: puedeCargarGasto,
+    atraso: atraso,
     problemaDelArchivo: problemaDelArchivo
   };
 })(window, document);
