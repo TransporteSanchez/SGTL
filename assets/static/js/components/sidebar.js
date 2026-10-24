@@ -44,7 +44,9 @@ function ensureCollapseStyle() {
   if (document.getElementById('js-sidebar-collapse-style')) return;
   var st = document.createElement('style');
   st.id = 'js-sidebar-collapse-style';
-  st.textContent = '#sidebar{transition:transform .3s ease;} #main{transition:margin-left .3s ease;} body.js-sidebar-collapsed #sidebar{transform:translateX(-110%);} body.js-sidebar-collapsed #main{margin-left:0 !important;}';
+  // Solo en la computadora: en el celular el menú lo abre y lo cierra la plantilla (con el fondo oscuro), y este
+  // plegado lo volvía a esconder apenas se abría (24/10).
+  st.textContent = '#sidebar{transition:transform .3s ease;} #main{transition:margin-left .3s ease;} @media (min-width: 1201px){body.js-sidebar-collapsed #sidebar{transform:translateX(-110%);} body.js-sidebar-collapsed #main{margin-left:0 !important;}}';
   document.head.appendChild(st);
 }
 
@@ -56,7 +58,8 @@ function bindGlobalButtons() {
     if (burger) {
       e.preventDefault();
       ensureCollapseStyle();
-      document.body.classList.toggle('js-sidebar-collapsed');
+      // En el celular lo abre la plantilla; el plegado es solo de la computadora.
+      if (isDesktop(window)) document.body.classList.toggle('js-sidebar-collapsed');
       return;
     }
     const hide = e.target.closest && e.target.closest('.sidebar-hide');
@@ -64,6 +67,9 @@ function bindGlobalButtons() {
       e.preventDefault();
       const sidebar = document.getElementById('sidebar');
       if (!sidebar) return;
+      // Con la plantilla, para que saque también el fondo oscuro y devuelva el scroll (el menú se arma después de que
+      // ella engancha la cruz, y la pantalla quedaba oscura y sin scroll).
+      if (window.sidebar && typeof window.sidebar.hide === 'function') window.sidebar.hide();
       sidebar.classList.remove('active');
       sidebar.classList.add('inactive');
     }
