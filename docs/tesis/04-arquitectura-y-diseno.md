@@ -15,7 +15,7 @@ flowchart LR
     AG(["Administración general"]) --- S
     AI(["Administración impositiva"]) --- S
     DIR(["Dirección"]) --- S
-    S --- CH(["Chofer<br/>(recibe WhatsApp)"])
+    S --- CH(["Chofer<br/>(hoja de ruta en el celular)"])
     S --- PL(["Plataforma del cliente<br/>Rukas (Excel)"])
     S --- EXT(["Servicios externos<br/>Google Maps · WhatsApp Cloud · SMTP"])
 ```
@@ -39,9 +39,16 @@ crédito y débito según sus permisos.
 los informes de ingresos y egresos. Consulta el tablero de inicio (viajes por mes, principales
 clientes, costo por viaje), los listados y la auditoría, y aprueba los presupuestos.
 
-**Chofer.** No usa el sistema directamente: recibe por WhatsApp la hoja de ruta de cada viaje
-asignado (cliente, origen, destino, fecha y enlace a Google Maps). Su existencia se justifica porque
-la comunicación con el chofer era informal y no quedaba registrada.
+**Chofer.** Usa el sistema desde el celular, con su propio usuario, en un grupo que solo abre la
+**Hoja de ruta** (desde el 24/10/2026; antes no usaba el sistema). Ve sus viajes de hoy y los
+próximos, agrupados por día: cliente, origen y destino con el enlace al recorrido en Google Maps,
+camión y números del viaje. En los viajes de clientes directos **inicia el viaje** y **registra la
+entrega** con su resultado y la foto o el PDF del remito (la evidencia); en los de clientes con
+plataforma solo carga esa evidencia, porque el seguimiento lo lleva la plataforma. Además sigue
+recibiendo por WhatsApp la hoja de ruta de cada viaje asignado. Solo ve y modifica sus propios
+viajes: su usuario apunta a su ficha de chofer y la API toma el chofer del token de la sesión, nunca
+de la pantalla. Su existencia se justifica porque la comunicación con el chofer era informal y no
+quedaba registrada; ahora la salida y la entrega las registra quien las hace, en el momento.
 
 **Plataforma del cliente (Rukas).** Sistema externo del cliente Marfrig. No se conecta con SGTL: el
 intercambio es el Excel de la proforma que se importa y los números de referencia (transporte SAP,
@@ -66,7 +73,8 @@ SGTL es una aplicación web con arquitectura cliente-servidor en tres capas:
   compartido (`assets/static/js/sgtl-ui.js`) concentra los avisos, confirmaciones, estados, fechas y
   montos del design system. Los PDF de presupuestos, proformas y facturas se generan en el navegador
   con jsPDF, y las exportaciones a Excel con SheetJS. El menú lateral se arma según los permisos del
-  usuario.
+  usuario. La hoja de ruta del chofer (`hoja-de-ruta.html`) está pensada para el celular: una
+  tarjeta por viaje, en una columna.
 - **Capa de lógica de negocio.** API REST en ASP.NET Web API 2 sobre .NET Framework 4.8, organizada en
   33 controladores (uno por entidad o proceso: Viajes, Proformas, ProformasPlataforma, Comprobantes,
   CuentaCorriente, Presupuestos, Usuarios, Grupos, Auditoría, etc.). Aplica las reglas del negocio:
@@ -81,7 +89,8 @@ SGTL es una aplicación web con arquitectura cliente-servidor en tres capas:
   idempotentes en `database/<módulo>/`.
 
 El usuario ingresa con usuario y contraseña; la API devuelve un **token JWT** con su usuario y rol,
-que la pantalla conserva durante la sesión.
+que la pantalla conserva durante la sesión. La hoja de ruta del chofer exige ese token en cada pedido
+y saca de él qué chofer es, así un chofer no puede ver ni modificar los viajes de otro.
 
 ### Diagrama de despliegue
 
@@ -114,7 +123,7 @@ flowchart LR
 
 | Nodo / componente | Descripción |
 |---|---|
-| Equipo del usuario | PC o notebook con un navegador actualizado. La empresa ya tiene dos PC con Windows 10 Pro. |
+| Equipo del usuario | PC o notebook con un navegador actualizado. La empresa ya tiene dos PC con Windows 10 Pro. Los choferes entran a su hoja de ruta desde el navegador del celular. |
 | Sitio estático | Las páginas HTML, CSS y JS, publicadas en el mismo App Service. En desarrollo las sirve Live Server (puerto 5502). |
 | API REST SGTL | Aplicación ASP.NET publicada en Azure App Service desde Visual Studio (Publicar). En desarrollo corre en IIS Express (`http://localhost:50222/api`). |
 | Azure SQL | Base `Transporte_Sanchez` en el servidor `sql-tesis`, compartida por el equipo. Solo la API se conecta. |
@@ -301,6 +310,7 @@ erDiagram
 
 ```mermaid
 erDiagram
+    CHOFERES |o--o| USUARIOS : "su usuario"
     USUARIOS ||--o{ GRUPOS_USUARIOS : integra
     GRUPOS ||--o{ GRUPOS_USUARIOS : agrupa
     GRUPOS ||--o{ GRUPOS_MENU : habilita

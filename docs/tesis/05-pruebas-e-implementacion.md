@@ -201,7 +201,7 @@ de SGTL con la que se arma hoy antes de dejar las planillas.
 | Etapa | Módulos | Áreas |
 |---|---|---|
 | 1 | Usuarios y grupos, camiones, choferes, clientes, orígenes y destinos, tarifas | Administración |
-| 2 | Viajes (con WhatsApp al chofer y mapa) y presupuestos | Administración y choferes |
+| 2 | Viajes (con la hoja de ruta del chofer en el celular, WhatsApp y mapa) y presupuestos | Administración y choferes |
 | 3 | Proformas propias y de plataforma, facturación (un mes en paralelo con el circuito actual) | Administración |
 | 4 | Cuenta corriente, recibos, tablero de inicio y auditoría | Administración impositiva y Dirección |
 
@@ -216,7 +216,7 @@ material de apoyo es el **manual de usuario en línea** del sistema.
 | Administración general | Encargada administrativa general | Camiones, choferes, clientes, recorridos, tarifas, viajes, presupuestos, proformas y facturación | 2 sesiones de 2 h |
 | Administración impositiva | Encargada administrativa impositiva | Cuenta corriente, recibos, notas de crédito y débito | 1 sesión de 1 h |
 | Dirección | Dueño | Tablero de inicio, listados y aprobación de presupuestos | 1 sesión de 1 h |
-| Chofer | Choferes | Qué mensaje reciben por WhatsApp y cómo abrir la ruta | 15 minutos |
+| Chofer | Choferes | Entrar con su usuario desde el celular, ver la hoja de ruta, abrir el recorrido en Google Maps, iniciar el viaje y registrar la entrega con la foto del remito; qué mensaje reciben por WhatsApp | 30 minutos |
 
 ### Preparación de la instalación
 
