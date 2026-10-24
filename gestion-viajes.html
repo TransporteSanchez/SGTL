@@ -225,6 +225,7 @@
                         <input type="hidden" id="viajeIdEdicion" value="">
                         <input type="hidden" id="tarifaFijaId" value="">
                         <input type="hidden" id="tarifaKmId" value="">
+                        <input type="hidden" id="tarifarioId" value="">
                         <!-- Km del viaje como los guarda la API (con punto): los pone Google o la distancia a mano. -->
                         <input type="hidden" id="distanciaKm" value="">
                         <div class="row g-4">
@@ -279,19 +280,55 @@
                                     <div class="sgtl-bloque-titulo" id="tituloBloqueTarifa">Tarifa <span class="text-danger" id="tarifaMarca">*</span></div>
                                     <div class="sgtl-dato-fijo d-none" id="fijoTarifa"></div>
                                     <div id="camposTarifa">
-                                        <div class="d-flex gap-3" role="radiogroup" aria-labelledby="tituloBloqueTarifa">
+                                        <!-- Tarifario: la tabla por tipo de camión, año del modelo y km (24/10). Por km queda solo para
+                                             los viajes que ya la tenían. -->
+                                        <div class="d-flex flex-wrap gap-3" role="radiogroup" aria-labelledby="tituloBloqueTarifa">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoTarifario" value="tarifario" checked>
+                                                <label class="form-check-label" for="tarifaTipoTarifario">Tarifario</label>
+                                            </div>
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoFija" value="fija">
                                                 <label class="form-check-label" for="tarifaTipoFija">Fija</label>
                                             </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoKm" value="km" checked>
+                                            <div class="form-check d-none" id="opcionTarifaKm">
+                                                <input class="form-check-input" type="radio" name="tipoTarifa" id="tarifaTipoKm" value="km">
                                                 <label class="form-check-label" for="tarifaTipoKm">Por km</label>
                                             </div>
                                         </div>
                                         <div id="tarifaError" class="invalid-feedback"></div>
+                                        <div id="grupoVuelta" class="mt-2 d-none">
+                                            <div class="d-flex flex-wrap align-items-center gap-3" role="radiogroup" aria-labelledby="etiquetaVuelta">
+                                                <span class="form-label mb-0" id="etiquetaVuelta">Vuelta</span>
+                                                <div class="form-check mb-0">
+                                                    <input class="form-check-input" type="radio" name="vueltaViaje" id="vuelta1" value="1" checked>
+                                                    <label class="form-check-label" for="vuelta1">1ª vuelta</label>
+                                                </div>
+                                                <div class="form-check mb-0">
+                                                    <input class="form-check-input" type="radio" name="vueltaViaje" id="vuelta2" value="2">
+                                                    <label class="form-check-label" for="vuelta2">2ª vuelta</label>
+                                                </div>
+                                            </div>
+                                            <div class="form-text" id="vueltaAyuda"></div>
+                                        </div>
                                         <div id="tarifaInfo" class="mt-2"></div>
                                         <div id="tarifaSugerida" class="small text-muted mt-1 d-none"></div>
+                                    </div>
+                                    <!-- Se conocen después del viaje: se cargan también cuando la tarifa ya quedó fija. -->
+                                    <div class="row g-3 mt-1" id="grupoAdicionales">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="falsoFlete">
+                                                <label class="form-check-label" for="falsoFlete">Falso flete</label>
+                                            </div>
+                                            <div class="form-text" id="falsoFleteAyuda">Fue a cargar y no había carga: se cobra una parte del viaje.</div>
+                                        </div>
+                                        <div class="col-md-6" id="grupoEstadia">
+                                            <label for="estadiaModulos" class="form-label">Módulos de estadía</label>
+                                            <input type="text" inputmode="numeric" class="form-control" id="estadiaModulos" value="0" maxlength="2" autocomplete="off">
+                                            <div class="invalid-feedback"></div>
+                                            <div class="form-text" id="estadiaAyuda"></div>
+                                        </div>
                                     </div>
                                 </section>
 
@@ -817,6 +854,10 @@
         // Tarifa fija de la ruta elegida: undefined = falta la ruta, 'sinFecha' = falta el inicio, 'buscando', null = la ruta
         // no tiene ese día, o { id, valor }. fechaTarifaFija: el inicio con el que se buscó.
         var tarifaFijaRuta, tarifaFijaSeq = 0, tarifaKmSeq = 0, fechaTarifaFija = '';
+        // Tarifario (24/10): baseTarifa es la tarifa elegida sin adicionales ({ importe, detalle }); el total suma falso flete
+        // y estadía con la versión del tarifario vigente en el inicio. La API vuelve a calcular todo al guardar.
+        // vueltaManual: la vuelta la eligió la persona (si no, se propone la 2ª si el camión ya tiene otro viaje ese día).
+        var baseTarifa = null, tarifarioSeq = 0, vueltaManual = false, tarifariosPorFecha = {};
         var formularioViaje = null;
         const ETIQUETA_RUKAS = '<span class="badge rounded-pill bg-white text-dark border">Rukas</span>';
         const ENLACE_TARIFAS = '<a href="gestion-tarifas.html" target="_blank" rel="noopener">Gestionar tarifas</a>';
@@ -869,9 +910,66 @@
             $('input[name="tipoTarifa"]').removeClass('is-invalid');
             $('#tarifaError').removeClass('d-block').text('');
         }
-        function textoImporteFija(valor) { return '<strong>' + SGTL.monto(valor) + '</strong><span>neto · tarifa fija de la ruta</span>'; }
-        function textoImporteKm(valorKm, km, monto) {
-            return '<strong>' + SGTL.monto(monto) + '</strong><span>neto · ' + SGTL.monto(valorKm) + ' por km × ' + SGTL.km(km) + ' km</span>';
+        // Los mensajes de la API nombran la pantalla donde se resuelve: se ve como enlace.
+        function conEnlaces(texto) {
+            return SGTL.escapar(texto).replace('Gestionar tarifas', ENLACE_TARIFAS)
+                .replace('Gestionar camiones', '<a href="gestion-camiones.html" target="_blank" rel="noopener">Gestionar camiones</a>');
+        }
+        function redondear(v) { return Math.round(Number(v) * 100) / 100; }
+        function porcentaje(v) { return Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' %'; }
+        function estadiaModulos() { var n = parseInt($('#estadiaModulos').val(), 10); return n > 0 ? n : 0; }
+
+        // La versión del tarifario vigente en una fecha (AAAA-MM-DD), para el falso flete, la estadía y su ayuda.
+        function tarifarioVigente(fecha) {
+            if (!fecha) return Promise.resolve(null);
+            if (!tarifariosPorFecha[fecha]) {
+                tarifariosPorFecha[fecha] = SGTL.ajax({ url: API_VIAJES + '/Tarifario/Vigente', type: 'GET', data: { fecha: fecha } })
+                    .catch(function () { return null; });
+            }
+            return tarifariosPorFecha[fecha];
+        }
+        function actualizarAyudaAdicionales() {
+            tarifarioVigente(fechaInicioViaje()).then(function (t) {
+                $('#falsoFleteAyuda').text(t ? 'Fue a cargar y no había carga: se cobra el ' + porcentaje(t.Falso_Flete_Porcentaje) + ' del viaje.'
+                    : 'Fue a cargar y no había carga: se cobra una parte del viaje.');
+                $('#estadiaAyuda').text(t ? 'Módulo de ' + t.Estadia_Horas_Modulo + ' hs: ' + SGTL.monto(t.Estadia_Modulo) + '. Corre después de '
+                    + t.Estadia_Desde_Horas + ' hs de iniciado el servicio (' + t.Estadia_Desde_Horas_Larga + ' hs si son más de ' + t.Km_Banda3 + ' km).' : '');
+            });
+        }
+
+        // El importe del viaje: la base y, si hay, falso flete y estadía. Va en la línea de la tarifa o, si la tarifa ya
+        // quedó fija, en el dato fijo del bloque.
+        function mostrarImporte() {
+            if (!baseTarifa) return;
+            var base = baseTarifa, falso = $('#falsoFlete').is(':checked'), modulos = estadiaModulos();
+            var pintar = function (t) {
+                var total = Number(base.importe), partes = [];
+                if (falso) {
+                    var conFalso = redondear(base.importe * t.Falso_Flete_Porcentaje / 100);
+                    partes.push('falso flete ' + porcentaje(t.Falso_Flete_Porcentaje) + ': ' + SGTL.monto(conFalso));
+                    total = conFalso;
+                }
+                if (modulos > 0) {
+                    var estadia = redondear(t.Estadia_Modulo * modulos);
+                    partes.push(modulos + (modulos === 1 ? ' módulo' : ' módulos') + ' de estadía: ' + SGTL.monto(estadia));
+                    total = redondear(total + estadia);
+                }
+                var html = '<strong>' + SGTL.monto(total) + '</strong><span>neto · ' + SGTL.escapar(base.detalle)
+                    + (partes.length ? ' · ' + SGTL.monto(base.importe) + ' · ' + SGTL.escapar(partes.join(' · ')) : '') + '</span>';
+                if (rutaFija()) $('#fijoTarifa').html(html); else setTarifaInfo(html, 'ok');
+            };
+            if (!falso && !modulos) { pintar(null); return; }
+            var fecha = fechaInicioViaje();
+            tarifarioVigente(fecha).then(function (t) {
+                if (base !== baseTarifa) return;
+                if (t) { pintar(t); return; }
+                var aviso = 'No hay tarifario vigente el ' + SGTL.fecha(fecha) + ' para calcular el falso flete y la estadía. Cargalo en ' + ENLACE_TARIFAS + '.';
+                if (rutaFija()) $('#fijoTarifa').html(aviso); else setTarifaInfo(aviso, 'falta');
+            });
+        }
+        function ponerBase(importe, detalle) {
+            baseTarifa = { importe: Number(importe), detalle: detalle };
+            mostrarImporte();
         }
 
         // ===================== MAPA (Google Maps) =====================
@@ -964,7 +1062,7 @@
             usarDistanciaManual(true, motivo);
             // Si no se puede cargar a mano (recorrido fijo), el motivo queda debajo del mapa.
             msgMapa(rutaFija() ? motivo : '', 'error');
-            if (kmCambia && tipoTarifa() === 'km') resolverTarifaKm();
+            if (kmCambia) resolverTarifaSegunKm();
         }
         function onRutaViajeCambiada() {
             var dir = directionsRenderer.getDirections();
@@ -988,7 +1086,7 @@
             $('#distanciaKm').val(km);
             mostrarKm(km);
             msgMapa(direccionCorta(desde) + ' → ' + direccionCorta(hasta));
-            if (tipoTarifa() === 'km') resolverTarifaKm();
+            resolverTarifaSegunKm();
         }
         function calcularRutaViaje() {
             var oId = $('#origenSelect').val(), dId = $('#destinoSelect').val();
@@ -1058,6 +1156,8 @@
             // Directo: el chofer recibe la hoja de ruta por WhatsApp al registrar el viaje.
             $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted fw-normal', conPlataforma).toggleClass('text-danger', !conPlataforma);
             reglasViaje.chofer.requerido = conPlataforma ? '' : 'Seleccioná un chofer.';
+            // Con plataforma los adicionales (estadía, peajes) vienen de Rukas: no se cargan en el viaje.
+            $('#grupoEstadia').toggleClass('d-none', conPlataforma && estadiaModulos() === 0);
             // Si ya estaba marcado (por ejemplo, después de Guardar), se vuelve a mirar con la regla nueva: un chofer
             // opcional no queda en rojo (reporte de la VM del 23/10, F3).
             if (formularioViaje && $('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
@@ -1137,12 +1237,61 @@
         }
 
         // ===================== TARIFA AUTOMÁTICA =====================
-        // "Por km" viene elegida (decisión de Rocío, 22/10). Si la ruta tiene tarifa fija, una línea gris lo dice.
+        // "Tarifario" viene elegida (24/10; antes "Por km", decisión del 22/10). Si la ruta tiene tarifa fija, una línea
+        // gris lo dice.
         function tipoTarifa() { return $('input[name="tipoTarifa"]:checked').val() || ''; }
         function tarifaEditable() { return !rutaFija(); }
         function resolverTarifa() {
             if (!tarifaEditable()) return;
-            if (tipoTarifa() === 'fija') resolverTarifaFija(); else resolverTarifaKm();
+            if (tipoTarifa() === 'fija') resolverTarifaFija(); else resolverTarifaSegunKm();
+        }
+        // Las que dependen de la distancia: se vuelven a calcular cuando cambian los km.
+        function resolverTarifaSegunKm() {
+            if (tipoTarifa() === 'tarifario') resolverTarifario();
+            else if (tipoTarifa() === 'km') resolverTarifaKm();
+            else $('#grupoVuelta').addClass('d-none');
+        }
+        function vueltaElegida() { return parseInt($('input[name="vueltaViaje"]:checked').val(), 10) || 1; }
+        // Tarifario: tipo de camión y año del modelo, km y vuelta. Hasta el primer límite de km hay 1ª y 2ª vuelta; si el
+        // camión ya tiene otro viaje ese día y la persona no eligió, se propone la 2ª.
+        function resolverTarifario() {
+            var seq = ++tarifarioSeq, km = kmNumero($('#distanciaKm').val()), camion = $('#camionSelect').val();
+            $('#tarifaFijaId, #tarifaKmId, #tarifarioId').val('');
+            baseTarifa = null;
+            mostrarSugerenciaFija();
+            if (!$('#fechaInicio').val()) { $('#grupoVuelta').addClass('d-none'); setTarifaInfo('Completá el inicio para calcular la tarifa.'); return; }
+            if (!camion) { $('#grupoVuelta').addClass('d-none'); setTarifaInfo('Elegí el camión para calcular la tarifa.'); return; }
+            if (!(km > 0)) {
+                $('#grupoVuelta').addClass('d-none');
+                setTarifaInfo(distanciaManual ? 'Cargá la distancia para calcular la tarifa.' : 'Elegí origen y destino para calcular la distancia y la tarifa.');
+                return;
+            }
+            setTarifaInfo('Calculando la tarifa…');
+            SGTL.ajax({
+                url: API_VIAJES + '/Tarifario/Calcular', type: 'GET',
+                data: { tarifa: 'tarifario', fechaInicio: $('#fechaInicio').val(), camionId: camion, km: km, vuelta: vueltaManual ? vueltaElegida() : '', viajeId: $('#viajeIdEdicion').val() || 0 }
+            }).then(function (r) {
+                if (seq !== tarifarioSeq) return;
+                if (r.AplicaVuelta && !vueltaManual && r.Vuelta !== r.VueltaSugerida) {
+                    $('#vuelta' + r.VueltaSugerida).prop('checked', true);
+                    vueltaManual = true;
+                    resolverTarifario();
+                    vueltaManual = false;
+                    return;
+                }
+                $('#grupoVuelta').toggleClass('d-none', !r.AplicaVuelta);
+                if (r.AplicaVuelta) {
+                    $('#vuelta' + r.Vuelta).prop('checked', true);
+                    $('#vueltaAyuda').text(r.ViajeAnterior ? 'El camión ya tiene el viaje #' + r.ViajeAnterior + ' antes, ese mismo día.' : 'Es el primer viaje del camión ese día.');
+                }
+                $('#tarifarioId').val(r.TarifarioID);
+                ponerBase(r.ImporteBase, r.TarifaDetalle);
+            }).catch(function (e) {
+                if (seq !== tarifarioSeq) return;
+                $('#grupoVuelta').addClass('d-none');
+                var r = e.xhr && e.xhr.responseJSON;
+                setTarifaInfo(r && r.Mensaje ? conEnlaces(r.Mensaje) : SGTL.escapar(e.mensajeUsuario), 'falta');
+            });
         }
         // Busca la tarifa fija de la ruta vigente en el inicio del viaje (como la de km; decisión de Rocío, 23/10): con
         // Fija elegida es la tarifa; con Por km, la línea gris que avisa que existe.
@@ -1165,27 +1314,31 @@
             return listo.promise();
         }
         function mostrarSugerenciaFija() {
-            var hay = tipoTarifa() === 'km' && tarifaEditable() && tarifaFijaRuta && tarifaFijaRuta.id;
+            var hay = tipoTarifa() !== 'fija' && tarifaEditable() && tarifaFijaRuta && tarifaFijaRuta.id;
             $('#tarifaSugerida').toggleClass('d-none', !hay).text(hay ? 'Esta ruta tiene tarifa fija de ' + SGTL.monto(tarifaFijaRuta.valor) + '.' : '');
         }
         function resolverTarifaFija() {
-            $('#tarifaKmId').val('');
+            $('#tarifaKmId, #tarifarioId').val('');
+            $('#grupoVuelta').addClass('d-none');
+            baseTarifa = null;
             mostrarSugerenciaFija();
             if (tarifaFijaRuta === undefined) { $('#tarifaFijaId').val(''); setTarifaInfo('Elegí origen y destino para ver la tarifa.'); return; }
             if (tarifaFijaRuta === 'sinFecha') { $('#tarifaFijaId').val(''); setTarifaInfo('Completá el inicio para buscar la tarifa fija.'); return; }
             if (tarifaFijaRuta === 'buscando') { $('#tarifaFijaId').val(''); setTarifaInfo('Buscando la tarifa…'); return; }
             if (!tarifaFijaRuta) {
                 $('#tarifaFijaId').val('');
-                setTarifaInfo('No hay tarifa fija de esta ruta para el ' + SGTL.fecha(fechaInicioViaje()) + '. Elegí Por km o cargala en ' + ENLACE_TARIFAS + '.', 'falta');
+                setTarifaInfo('No hay tarifa fija de esta ruta para el ' + SGTL.fecha(fechaInicioViaje()) + '. Elegí Tarifario o cargala en ' + ENLACE_TARIFAS + '.', 'falta');
                 return;
             }
             $('#tarifaFijaId').val(tarifaFijaRuta.id);
-            setTarifaInfo(textoImporteFija(tarifaFijaRuta.valor), 'ok');
+            ponerBase(tarifaFijaRuta.valor, 'tarifa fija de la ruta');
         }
         function resolverTarifaKm() {
             var fi = $('#fechaInicio').val(), ff = $('#fechaFin').val(), km = kmNumero($('#distanciaKm').val());
             var seq = ++tarifaKmSeq;
-            $('#tarifaFijaId').val('');
+            $('#tarifaFijaId, #tarifarioId').val('');
+            $('#grupoVuelta').addClass('d-none');
+            baseTarifa = null;
             mostrarSugerenciaFija();
             if (!fi || !ff) { $('#tarifaKmId').val(''); setTarifaInfo('Completá el inicio y el fin para calcular la tarifa por km.'); return; }
             if (!(km > 0)) {
@@ -1198,7 +1351,7 @@
                 .done(function (r) {
                     if (seq !== tarifaKmSeq) return;
                     $('#tarifaKmId').val(r.TarifaKm_ID);
-                    setTarifaInfo(textoImporteKm(r.ValorKm, km, r.MontoCalculado), 'ok');
+                    ponerBase(r.MontoCalculado, SGTL.monto(r.ValorKm) + ' por km × ' + SGTL.km(km) + ' km');
                 })
                 .fail(function (xhr) {
                     if (seq !== tarifaKmSeq) return;
@@ -1208,19 +1361,21 @@
                         : 'No hay tarifa por km para esas fechas y esa distancia. Cargala en ' + ENLACE_TARIFAS + '.'), 'falta');
                 });
         }
-        // Al abrir un viaje: el importe de la tarifa que tiene guardada (o el del presupuesto), sin volver a buscarla.
+        // Al abrir un viaje: el importe que guardó (desde el 24/10); si es de antes y no lo tiene, el de su tarifa (o el
+        // del presupuesto), sin volver a buscarla.
         function importeGuardado(v) {
+            if (v.Importe_Base != null) return Promise.resolve({ importe: v.Importe_Base, detalle: v.Tarifa_Detalle || 'tarifa guardada' });
             var km = kmNumero(v.Distancia_KM);
             var porTarifa = function () {
                 if (v.TarifaFijaID > 0) {
                     return SGTL.ajax({ url: API_VIAJES + '/Tarifas/Fijas/' + v.TarifaFijaID, type: 'GET' })
-                        .then(function (t) { return { importe: t.ValorFijoNeto, detalle: 'tarifa fija de la ruta', html: textoImporteFija(t.ValorFijoNeto) }; });
+                        .then(function (t) { return { importe: t.ValorFijoNeto, detalle: 'tarifa fija de la ruta' }; });
                 }
                 if (v.TarifaKmID > 0) {
                     return SGTL.ajax({ url: API_VIAJES + '/Tarifas/Km/' + v.TarifaKmID, type: 'GET' })
                         .then(function (t) {
                             var monto = Math.round(Number(t.ValorKm) * (km || 0) * 100) / 100;
-                            return { importe: monto, detalle: SGTL.monto(t.ValorKm) + ' por km × ' + SGTL.km(km || 0) + ' km', html: textoImporteKm(t.ValorKm, km || 0, monto) };
+                            return { importe: monto, detalle: SGTL.monto(t.ValorKm) + ' por km × ' + SGTL.km(km || 0) + ' km' };
                         });
                 }
                 return Promise.resolve(null);
@@ -1341,8 +1496,16 @@
             if (formularioViaje) formularioViaje.reiniciar();
             if (window.fpInicio) fpInicio.clear();
             if (window.fpFin) fpFin.clear();
-            $('#viajeIdEdicion, #tarifaFijaId, #tarifaKmId, #distanciaKm').val('');
-            $('#tarifaTipoKm').prop('checked', true);
+            $('#viajeIdEdicion, #tarifaFijaId, #tarifaKmId, #tarifarioId, #distanciaKm').val('');
+            $('#tarifaTipoTarifario').prop('checked', true);
+            $('#opcionTarifaKm').addClass('d-none');
+            $('#vuelta1').prop('checked', true);
+            $('#grupoVuelta').addClass('d-none');
+            $('#vueltaAyuda').text('');
+            vueltaManual = false;
+            baseTarifa = null;
+            $('#falsoFlete').prop('checked', false);
+            $('#estadiaModulos').val('0');
             bloquearDatosDelViaje(null);
             $('#origenSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
             $('#destinoSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
@@ -1356,6 +1519,7 @@
             $('#tarifaSugerida').addClass('d-none').text('');
             limpiarRutaViaje();
             aplicarReglasTipoCliente();
+            actualizarAyudaAdicionales();
         }
 
         function abrirModalAltaViaje() {
@@ -1405,16 +1569,24 @@
                         if (window.fpInicio) fpInicio.setDate(v.Fecha_Inicio, false); else $('#fechaInicio').val(String(v.Fecha_Inicio || '').substring(0, 16));
                         if (window.fpFin) fpFin.setDate(v.Fecha_Fin, false); else $('#fechaFin').val(String(v.Fecha_Fin || '').substring(0, 16));
                         fechasVistas = fechasDelViaje();
-                        if (v.TarifaFijaID > 0) { $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID); }
-                        else if (v.TarifaKmID > 0) { $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID); }
+                        if (v.TarifarioID > 0) {
+                            $('#tarifaTipoTarifario').prop('checked', true);
+                            $('#tarifarioId').val(v.TarifarioID);
+                            // La vuelta guardada se respeta: no se vuelve a proponer.
+                            vueltaManual = true;
+                            if (v.Vuelta) { $('#vuelta' + v.Vuelta).prop('checked', true); $('#grupoVuelta').removeClass('d-none'); }
+                        }
+                        else if (v.TarifaFijaID > 0) { $('#tarifaTipoFija').prop('checked', true); $('#tarifaFijaId').val(v.TarifaFijaID); }
+                        else if (v.TarifaKmID > 0) { $('#opcionTarifaKm').removeClass('d-none'); $('#tarifaTipoKm').prop('checked', true); $('#tarifaKmId').val(v.TarifaKmID); }
+                        $('#falsoFlete').prop('checked', !!v.Falso_Flete);
+                        $('#estadiaModulos').val(v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0);
                         viajeEditado = { ChoferID: v.ChoferID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
                         bloquearDatosDelViaje(v);
                         setTarifaInfo('Buscando la tarifa…');
+                        actualizarAyudaAdicionales();
                         importeGuardado(v).then(function (r) {
-                            if (!r) { setTarifaInfo('El viaje no tiene tarifa asignada.'); return; }
-                            var html = '<strong>' + SGTL.monto(r.importe) + '</strong> <span class="suave">neto · ' + SGTL.escapar(r.detalle) + '</span>';
-                            if (rutaFija()) $('#fijoTarifa').html(html);
-                            else setTarifaInfo('<strong>' + SGTL.monto(r.importe) + '</strong><span>neto · ' + SGTL.escapar(r.detalle) + '</span>', 'ok');
+                            if (!r) { if (rutaFija()) $('#fijoTarifa').text('El viaje no tiene tarifa asignada.'); else setTarifaInfo('El viaje no tiene tarifa asignada.'); return; }
+                            ponerBase(r.importe, r.detalle);
                         }).catch(function () {
                             if (rutaFija()) $('#fijoTarifa').text('No se pudo leer el importe de la tarifa.');
                             else setTarifaInfo('No se pudo leer el importe de la tarifa guardada.');
@@ -1451,6 +1623,10 @@
                 CamionID: parseInt($('#camionSelect').val()) || 0,
                 TarifaFijaID: tipo === 'fija' ? (parseInt($('#tarifaFijaId').val()) || 0) : 0,
                 TarifaKmID: tipo === 'km' ? (parseInt($('#tarifaKmId').val()) || 0) : 0,
+                TarifarioID: tipo === 'tarifario' ? (parseInt($('#tarifarioId').val()) || 0) : 0,
+                Vuelta: tipo === 'tarifario' && !$('#grupoVuelta').hasClass('d-none') ? vueltaElegida() : null,
+                Falso_Flete: $('#falsoFlete').is(':checked'),
+                Estadia_Modulos: estadiaModulos(),
                 ClienteID: parseInt($('#clienteSelect').val()) || 0,
                 Usu_Alta: usuarioActual(),
                 Usu_Modi: usuarioActual()
@@ -1479,6 +1655,7 @@
             camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.' },
             chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? '' : 'Elegí un chofer de la lista.'; } },
             km: { id: 'kmManual', validar: function (valor) { return kmNumero(valor) > 0 ? '' : 'Escribí los km con números, por ejemplo 146,8.'; } },
+            estadia: { id: 'estadiaModulos', soloNumeros: true, max: 2 },
             motivo: { id: 'motivoKmManual', requerido: '' }
         };
         function crearFormularioViaje() {
@@ -1490,10 +1667,12 @@
             // Sin ruta todavía, los que se marcan son origen y destino.
             if (!tarifaEditable() || !$('#origenSelect').val() || !$('#destinoSelect').val()) { limpiarErrorTarifa(); return true; }
             var tipo = tipoTarifa();
-            if (tipo === 'fija' ? $('#tarifaFijaId').val() : $('#tarifaKmId').val()) { limpiarErrorTarifa(); return true; }
+            var campo = { fija: '#tarifaFijaId', km: '#tarifaKmId', tarifario: '#tarifarioId' }[tipo];
+            if (campo && $(campo).val()) { limpiarErrorTarifa(); return true; }
             $('input[name="tipoTarifa"]').addClass('is-invalid');
-            $('#tarifaError').addClass('d-block').text(tipo === 'fija' ? 'Esta ruta no tiene tarifa fija: elegí Por km.'
-                : 'Falta la tarifa por km: revisá las fechas y la distancia, o cargala en Gestionar tarifas.');
+            $('#tarifaError').addClass('d-block').text(tipo === 'fija' ? 'Esta ruta no tiene tarifa fija: elegí Tarifario.'
+                : (tipo === 'km' ? 'Falta la tarifa por km: revisá las fechas y la distancia, o cargala en Gestionar tarifas.'
+                    : 'Falta la tarifa: revisá el aviso de arriba.'));
             return false;
         }
 
@@ -1583,7 +1762,7 @@
             if (!(v.Num_Transporte || '').trim()) faltan.push('N° transporte SAP');
             if (!(v.Num_Remito || '').trim()) faltan.push('número de remito');
             if (!(v.Num_de_Carga || '').trim()) faltan.push('N° entrega Rukas');
-            if (!(v.TarifaFijaID > 0) && !(v.TarifaKmID > 0)) faltan.push('tarifa');
+            if (!(v.TarifaFijaID > 0) && !(v.TarifaKmID > 0) && !(v.TarifarioID > 0)) faltan.push('tarifa');
             return faltan;
         }
 
@@ -1816,7 +1995,8 @@
                 // Calendario del sistema (§7.1): se ve DD/MM/AAAA HH:MM y el campo sigue guardando AAAA-MM-DD HH:MM.
                 var alCambiarFecha = function () {
                     fechasVistas = fechasDelViaje();
-                    if (tipoTarifa() === 'km' && tarifaEditable()) resolverTarifaKm();
+                    if (tarifaEditable()) resolverTarifaSegunKm();
+                    actualizarAyudaAdicionales();
                     // La tarifa fija también depende del inicio: se vuelve a buscar la de ese día.
                     if (tarifaEditable() && fechaInicioViaje() !== fechaTarifaFija) {
                         if (tipoTarifa() === 'fija') setTarifaInfo('Buscando la tarifa…');
@@ -1854,7 +2034,7 @@
                 var n = kmNumero(this.value);
                 $('#distanciaKm').val(n > 0 ? String(n) : '');
                 mostrarKm($('#distanciaKm').val());
-                if (tipoTarifa() === 'km') resolverTarifaKm();
+                resolverTarifaSegunKm();
             });
             $('#clienteSelect').on('change', onClienteChangeViaje);
             $('#choferSelect').on('change', function () {
@@ -1878,13 +2058,18 @@
                 if ($('#origenSelect').val() && $('#destinoSelect').val()) { calcularRutaViaje(); }
                 else { $('#distanciaKm').val(''); limpiarRutaViaje(); }
                 if (tipoTarifa() === 'fija') setTarifaInfo('Buscando la tarifa…');
-                else if (!$('#distanciaKm').val()) resolverTarifaKm();
+                else if (!$('#distanciaKm').val()) resolverTarifaSegunKm();
                 consultarTarifaFijaRuta().always(function () {
                     if (tipoTarifa() === 'fija') resolverTarifaFija(); else mostrarSugerenciaFija();
                 });
                 actualizarAvisoWhatsApp();
             });
             $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
+            // Tarifario: el camión (tipo y año del modelo) y la vuelta cambian la tarifa.
+            $('#camionSelect').on('change', function () { if (tarifaEditable() && tipoTarifa() === 'tarifario') resolverTarifario(); });
+            $('input[name="vueltaViaje"]').on('change', function () { vueltaManual = true; resolverTarifario(); });
+            $('#falsoFlete').on('change', mostrarImporte);
+            $('#estadiaModulos').on('input', mostrarImporte);
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
             // gestion-viajes.html?viaje=ID abre ese viaje para editar (enlace "Abrir viaje" del control de proforma de plataforma).
             var viajeEnUrl = parseInt(new URLSearchParams(window.location.search).get('viaje'), 10);

@@ -188,8 +188,16 @@
                                 </div>
                                 <div class="col-12 col-md-8">
                                     <label for="camionTipo" class="form-label">Tipo <span class="text-danger">*</span></label>
-                                    <input type="text" id="camionTipo" class="form-control" placeholder="Vehículo de carga" autocomplete="off">
+                                    <!-- Los tipos de la tabla de tarifas (tarifario, 24/10): con el tipo y el año del modelo se calcula la tarifa del viaje. -->
+                                    <select id="camionTipo" class="form-select">
+                                        <option value="">Seleccioná el tipo</option>
+                                        <option value="Furgón">Furgón</option>
+                                        <option value="Balancín (3 ejes)">Balancín (3 ejes)</option>
+                                        <option value="Chasis (2 ejes)">Chasis (2 ejes)</option>
+                                        <option value="Liviano">Liviano</option>
+                                    </select>
                                     <div class="invalid-feedback"></div>
+                                    <div class="form-text" id="camionTipoAyuda">Con el tipo y el año del modelo se calcula la tarifa de sus viajes.</div>
                                 </div>
                             </div>
 
@@ -509,7 +517,7 @@
                     return Number(valor) > new Date().getFullYear() ? 'El año del modelo no puede ser posterior al actual.' : '';
                 }
             },
-            { id: 'camionTipo', requerido: 'Completá el tipo.', max: 50 },
+            { id: 'camionTipo', requerido: 'Seleccioná el tipo.' },
             {
                 id: 'camionMotor', requerido: 'Completá el número de motor.', mayusculas: true, max: 17,
                 regex: /^(?=.*[A-Z])(?=.*[0-9])[A-Z0-9]{8,17}$/,
@@ -541,6 +549,7 @@
             camionEnEdicion = esAlta ? null : id;
             SGTL.reiniciarFormulario('#formCamion', '#avisoCamion');
             formularioCamion.reiniciar();
+            $('#camionTipoAyuda').text('Con el tipo y el año del modelo se calcula la tarifa de sus viajes.');
             ponerFecha('camionFechaCompra', null);
             ponerFecha('camionFechaITV', null);
             $('#modalCamionTitulo').text(esAlta ? 'Registrar camión' : 'Editar camión');
@@ -557,7 +566,13 @@
                     $('#camionMarca').val(data.Marca);
                     $('#camionModelo').val(data.Modelo);
                     $('#camionAnio').val(data.AñoModelo);
-                    $('#camionTipo').val(data.Tipo);
+                    // Un tipo cargado a mano antes del tarifario (24/10) no está en la lista: se pide elegirlo.
+                    const tipo = (data.Tipo || '').trim();
+                    const deLaLista = $('#camionTipo option').filter(function () { return this.value === tipo; }).length > 0;
+                    $('#camionTipo').val(deLaLista ? tipo : '');
+                    $('#camionTipoAyuda').text(deLaLista || !tipo
+                        ? 'Con el tipo y el año del modelo se calcula la tarifa de sus viajes.'
+                        : 'Estaba cargado como "' + tipo + '": elegí el tipo de la tabla de tarifas.');
                     $('#camionMotor').val(data.NumMotor);
                     $('#camionChasis').val(data.NumChasis);
                     $('#camionEquipoFrio').val(data.EquipoFrio);

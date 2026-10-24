@@ -438,6 +438,8 @@
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />
     <Compile Include="Controllers\TarifasKmController.cs" />
+    <Compile Include="Controllers\TarifarioController.cs" />
+    <Compile Include="Tarifas\TarifarioCalculo.cs" />
     <Compile Include="Services\WhatsApp\GoogleMapsLinkBuilder.cs" />
     <Compile Include="Services\WhatsApp\IWhatsAppNotifier.cs" />
     <Compile Include="Services\WhatsApp\PhoneNumberHelper.cs" />

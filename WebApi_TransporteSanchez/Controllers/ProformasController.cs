@@ -95,14 +95,16 @@ namespace WebApi_TransporteSanchez.Controllers
         public class UsuarioDto { public string Usuario { get; set; } }
         // ======================= Importe de SGTL de un viaje =======================
         // Un solo cálculo para "Traer viajes" (PrellenarViajes) y el control de la proforma de plataforma
-        // (ProformasPlataformaController), para que den lo mismo: presupuesto aceptado; si no, tarifa fija;
-        // si no, tarifa por km × km.
+        // (ProformasPlataformaController), para que den lo mismo: el importe que guardó el viaje (desde el 24/10, con el
+        // tarifario y los adicionales); si no lo tiene, presupuesto aceptado; si no, tarifa fija; si no, tarifa por km × km.
 
         private class TarifaValor { public int Id { get; set; } public decimal Valor { get; set; } }
         private class PresupuestoViaje { public int ViajeID { get; set; } public int Presupuesto_ID { get; set; } public string Datos { get; set; } }
+        internal class ImporteGuardado { public int Viaje_ID { get; set; } public decimal Importe { get; set; } public string Importe_Detalle { get; set; } }
 
         internal class TarifasViaje
         {
+            internal Dictionary<int, ImporteGuardado> Guardados;
             internal Dictionary<int, decimal> Fijas;
             internal Dictionary<int, decimal> Kms;
             internal Dictionary<int, int> PresupuestoId;
@@ -122,6 +124,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 "SELECT ViajeID, Presupuesto_ID, Datos FROM dbo.PRESUPUESTOS WHERE ViajeID IS NOT NULL AND Estado='Aceptado'").ToList();
             return new TarifasViaje
             {
+                Guardados = db.Database.SqlQuery<ImporteGuardado>(
+                    "SELECT Viaje_ID, Importe, ISNULL(Importe_Detalle,'') AS Importe_Detalle FROM dbo.VIAJES WHERE Importe IS NOT NULL")
+                    .ToList().ToDictionary(x => x.Viaje_ID),
                 Fijas = db.Database.SqlQuery<TarifaValor>("SELECT TarifaFija_ID AS Id, ValorFijoNeto AS Valor FROM dbo.TARIFAS_FIJAS")
                     .ToList().ToDictionary(t => t.Id, t => t.Valor),
                 Kms = db.Database.SqlQuery<TarifaValor>("SELECT TarifaKm_ID AS Id, ValorKm AS Valor FROM dbo.TARIFAS_KM")
@@ -138,6 +143,13 @@ namespace WebApi_TransporteSanchez.Controllers
             string distanciaKm, string origen, string destino)
         {
             var r = new ImporteViajeResultado();
+            ImporteGuardado guardado;
+            if (t.Guardados.TryGetValue(viajeId, out guardado))
+            {
+                r.Importe = guardado.Importe;
+                r.TarifaUsada = guardado.Importe_Detalle;
+                return r;
+            }
             if (t.PresupuestoDatos.ContainsKey(viajeId))
             {
                 int presupuestoId = t.PresupuestoId[viajeId];

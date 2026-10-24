@@ -46,9 +46,14 @@
     return listas;
   }
 
-  // Importe del viaje: el del presupuesto aceptado si viene de uno; si no, la tarifa fija o la tarifa por km × km
-  // (el mismo orden que usa la proforma).
+  // Importe del viaje: el que guardó al calcular su tarifa (desde el 24/10, con el tarifario, el falso flete y la
+  // estadía). Si es de antes y no lo tiene: el del presupuesto aceptado si viene de uno; si no, la tarifa fija o la
+  // tarifa por km × km (el mismo orden que usa la proforma).
   function importe(v) {
+    if (v.Importe != null) {
+      var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0;
+      return Promise.resolve({ importe: v.Importe, detalle: (conAdicionales ? v.Importe_Detalle : v.Tarifa_Detalle) || 'tarifa guardada' });
+    }
     var km = kmNumero(v.Distancia_KM);
     var porTarifa = function () {
       if (v.TarifaFijaID > 0) {
@@ -127,7 +132,7 @@
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
     var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">neto · ' + esc(imp.detalle) + '</span>'
-      : (v.TarifaFijaID > 0 || v.TarifaKmID > 0 ? 'No se pudo leer el importe de la tarifa.' : 'Sin tarifa asignada.'));
+      : (v.TarifaFijaID > 0 || v.TarifaKmID > 0 || v.TarifarioID > 0 ? 'No se pudo leer el importe de la tarifa.' : 'Sin tarifa asignada.'));
 
     var entregado = !!(v.Resultado_Entrega || v.Fecha_Entrega);
     var evidencia = v.Tiene_Evidencia

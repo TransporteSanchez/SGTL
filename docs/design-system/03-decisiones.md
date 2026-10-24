@@ -314,10 +314,10 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 
 | Color | Significa | Estados |
 |---|---|---|
-| Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión |
+| Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión; en el tarifario (24/10): Anterior, Próximo |
 | Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
 | Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
-| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10) |
+| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10), Vigente (tarifario, 24/10) |
 | Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.

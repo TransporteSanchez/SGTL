@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Tarifas;
 
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -414,6 +415,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
             }
 
+            var erroresTipo = ValidarTipo(camionDto);
+            if (erroresTipo.Any())
+            {
+                return Content(HttpStatusCode.BadRequest, erroresTipo);
+            }
+
             try
             {
                 // Obtener la cadena de conexión dinámica
@@ -482,12 +489,29 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+        // Con el tipo y el año del modelo se calcula la tarifa del viaje (tarifario, 24/10): el tipo es uno de la tabla.
+        private static List<object> ValidarTipo(CamionDTO camionDto)
+        {
+            var errores = new List<object>();
+            if (camionDto == null || !TarifarioCalculo.TipoValido(camionDto.Tipo))
+                errores.Add(new { PropertyName = "Tipo", ErrorMessage = "Elegí el tipo de camión: " + string.Join(", ", TarifarioCalculo.TiposVehiculo) + "." });
+            else
+                camionDto.Tipo = camionDto.Tipo.Trim();
+            return errores;
+        }
+
         // PUT: api/Camiones/{id}
         public IHttpActionResult Put(int id, [FromBody] CamionDTO camionDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+            }
+
+            var erroresTipo = ValidarTipo(camionDto);
+            if (erroresTipo.Any())
+            {
+                return Content(HttpStatusCode.BadRequest, erroresTipo);
             }
 
             // Obtener la cadena de conexión dinámica

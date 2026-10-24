@@ -65,13 +65,16 @@
                             <h5 class="card-title mb-1">
                                 <i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Gestionar tarifas
                             </h5>
-                            <p class="text-muted mb-0">Cargá las tarifas fijas por cliente y recorrido, y las tarifas por km según la distancia.</p>
+                            <p class="text-muted mb-0">Cargá el tarifario por tipo de camión y las tarifas fijas por cliente y recorrido. Las tarifas por km quedan para los viajes que ya las usan.</p>
                         </div>
 
                         <div class="card-body">
                             <ul class="nav nav-tabs" id="tarifasTab" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="tab-fijas" data-bs-toggle="tab" data-bs-target="#pane-fijas" type="button" role="tab">Tarifas fijas</button>
+                                    <button class="nav-link active" id="tab-tarifario" data-bs-toggle="tab" data-bs-target="#pane-tarifario" type="button" role="tab">Tarifario</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="tab-fijas" data-bs-toggle="tab" data-bs-target="#pane-fijas" type="button" role="tab">Tarifas fijas</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
                                     <button class="nav-link" id="tab-km" data-bs-toggle="tab" data-bs-target="#pane-km" type="button" role="tab">Tarifas por km</button>
@@ -79,7 +82,34 @@
                             </ul>
 
                             <div class="tab-content pt-4">
-                                <div class="tab-pane fade show active" id="pane-fijas" role="tabpanel" aria-labelledby="tab-fijas">
+                                <!-- Tarifario por tipo de camión (24/10): la tabla de la empresa ("Tarifas a agosto 2026"). Cada versión vale
+                                     desde su fecha hasta la siguiente; el viaje guarda su importe, así que editarla no cambia los ya calculados. -->
+                                <div class="tab-pane fade show active" id="pane-tarifario" role="tabpanel" aria-labelledby="tab-tarifario">
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                        <p class="text-muted mb-0">El precio del viaje según el tipo de camión, el año del modelo y los km. Cada versión vale desde su fecha hasta la siguiente.</p>
+                                        <button type="button" class="btn btn-success" id="btnRegistrarTarifario">
+                                            <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar tarifario
+                                        </button>
+                                    </div>
+                                    <div class="table-responsive mt-4">
+                                        <table class="table table-striped table-hover" id="tablaTarifario">
+                                            <thead>
+                                                <tr>
+                                                    <th>Nombre</th>
+                                                    <th>Vigencia</th>
+                                                    <th class="text-center">Estado</th>
+                                                    <th class="text-end">Viajes</th>
+                                                    <th class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div class="tab-pane fade" id="pane-fijas" role="tabpanel" aria-labelledby="tab-fijas">
                                     <!-- Filtros (§1.3 y §3.3): cliente y vigencia buscan al elegir; el texto, con Enter o Buscar; cada uno se borra con su cruz. -->
                                     <form id="busquedaFijaForm" class="row g-3 align-items-end" novalidate>
                                         <div class="col-12 col-sm-6 col-lg-3">
@@ -180,6 +210,97 @@
 
             </footer>
 
+        </div>
+
+        <!-- Modal Registrar / Editar tarifario -->
+        <div class="modal fade" id="modalTarifario" tabindex="-1" aria-labelledby="tituloTarifario" aria-hidden="true" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-xl modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="tituloTarifario">Registrar tarifario</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoTarifario" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <div id="infoTarifario" class="alert alert-info py-2 d-none" role="status"></div>
+                        <form id="formTarifario" novalidate>
+                            <div class="sgtl-bloque-titulo">Datos</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6">
+                                    <label for="trNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="trNombre" maxlength="100" placeholder="Tarifas a agosto 2026" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label for="trDesde" class="form-label">Vigente desde <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="trDesde" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label for="trCorte" class="form-label">Valores nuevos desde el modelo <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="numeric" class="form-control" id="trCorte" maxlength="4" placeholder="2019" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="sgtl-bloque-titulo">Bandas de km</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-3">
+                                    <label for="trBanda1" class="form-label">Primera, hasta <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda1" maxlength="4" placeholder="130" autocomplete="off"><span class="input-group-text">km</span></div>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Con 1ª y 2ª vuelta</div>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label for="trBanda2" class="form-label">Segunda, hasta <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda2" maxlength="4" placeholder="190" autocomplete="off"><span class="input-group-text">km</span></div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-3">
+                                    <label for="trBanda3" class="form-label">Tercera, hasta <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda3" maxlength="4" placeholder="250" autocomplete="off"><span class="input-group-text">km</span></div>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Más lejos, $ por km × km</div>
+                                </div>
+                            </div>
+                            <div id="grillasTarifario"></div>
+                            <div class="sgtl-bloque-titulo">Adicionales</div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-4">
+                                    <label for="trFalsoFlete" class="form-label">Falso flete <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="decimal" class="form-control text-end" id="trFalsoFlete" maxlength="6" placeholder="60" autocomplete="off"><span class="input-group-text">%</span></div>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Del viaje, cuando fue a cargar y no había carga</div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="trEstadia" class="form-label">Módulo de estadía <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="decimal" class="form-control text-end" id="trEstadia" placeholder="96.577,00" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="trEstadiaHoras" class="form-label">Horas por módulo <span class="text-danger">*</span></label>
+                                    <input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaHoras" maxlength="2" placeholder="6" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="trEstadiaDesde" class="form-label">La estadía corre después de <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaDesde" maxlength="2" placeholder="12" autocomplete="off"><span class="input-group-text">hs</span></div>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text" id="trEstadiaDesdeAyuda">De iniciado el servicio, hasta la tercera banda</div>
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label for="trEstadiaDesdeLarga" class="form-label">En larga distancia, después de <span class="text-danger">*</span></label>
+                                    <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaDesdeLarga" maxlength="2" placeholder="18" autocomplete="off"><span class="input-group-text">hs</span></div>
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarTarifario">Guardar</button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Modal Registrar / Editar tarifa fija -->
@@ -708,6 +829,260 @@
             setTimeout(function () { SGTL.modal(esFija ? '#modalFija' : '#modalKm', 'hide'); }, 0);
         }
 
+        // ------------------------------------------------ Tarifario por tipo de camión (24/10)
+        // Una versión por tabla de la empresa ("Tarifas a agosto 2026"): los valores por antigüedad (antes o desde el año de
+        // corte) y tipo de camión, las bandas de km y los adicionales. La API la guarda entera (TarifarioController).
+
+        const TIPOS_VEHICULO = ['Furgón', 'Balancín (3 ejes)', 'Chasis (2 ejes)', 'Liviano'];
+        const CAMPOS_VALOR = [
+            { clave: 'Valor_Banda1_Vuelta1', id: 'v1' }, { clave: 'Valor_Banda1_Vuelta2', id: 'v2' },
+            { clave: 'Valor_Banda2', id: 'b2' }, { clave: 'Valor_Banda3', id: 'b3' }, { clave: 'Valor_Km', id: 'km' }
+        ];
+        let tarifarios = [];
+        let tarifarioEnEdicion = null;
+        let formularioTarifario = null;
+
+        function idValor(nuevo, i, campo) { return 'tv' + (nuevo ? 1 : 0) + '_' + i + '_' + campo; }
+        function entero(id) { const n = parseInt($('#' + id).val(), 10); return isNaN(n) ? null : n; }
+        function decimal(id) { const t = String($('#' + id).val() || '').trim().replace(',', '.'); return t === '' || isNaN(Number(t)) ? null : Number(t); }
+        function hoyISO() { const d = new Date(); return SGTL.fechaISO(d); }
+
+        function armarGrillasTarifario() {
+            let html = '';
+            [false, true].forEach(function (nuevo) {
+                html += `<div class="sgtl-bloque-titulo" id="tituloGrilla${nuevo ? 1 : 0}"></div>
+                    <div class="table-responsive mb-4"><table class="table align-middle mb-0">
+                    <thead><tr><th>Tipo de camión</th>
+                        <th class="text-end" data-encabezado="v1"></th><th class="text-end">2ª vuelta</th>
+                        <th class="text-end" data-encabezado="b2"></th><th class="text-end" data-encabezado="b3"></th>
+                        <th class="text-end" data-encabezado="km"></th></tr></thead><tbody>`;
+                TIPOS_VEHICULO.forEach(function (tipo, i) {
+                    html += `<tr><th scope="row" class="fw-normal text-nowrap">${SGTL.escapar(tipo)}</th>`;
+                    CAMPOS_VALOR.forEach(function (c) {
+                        html += `<td style="min-width: 8.5rem"><input type="text" inputmode="decimal" class="form-control text-end" id="${idValor(nuevo, i, c.id)}"
+                            autocomplete="off" aria-label="${SGTL.escapar(tipo)}, ${c.id === 'v2' ? '2ª vuelta' : ''}" data-campo="${c.id}"><div class="invalid-feedback"></div></td>`;
+                    });
+                    html += '</tr>';
+                });
+                html += '</tbody></table></div>';
+            });
+            $('#grillasTarifario').html(html);
+            $('#grillasTarifario input').each(function () { SGTL.enlazarMascaraMonto(this); });
+        }
+
+        // Los títulos de las grillas y las columnas dicen el año de corte y los km de cada banda que se están cargando.
+        function actualizarEncabezados() {
+            const corte = entero('trCorte'), b1 = entero('trBanda1'), b2 = entero('trBanda2'), b3 = entero('trBanda3');
+            $('#tituloGrilla0').text(corte ? 'Modelo ' + (corte - 1) + ' o anterior' : 'Modelos anteriores al año de corte');
+            $('#tituloGrilla1').text(corte ? 'Modelo ' + corte + ' en adelante' : 'Modelos desde el año de corte');
+            const textos = {
+                v1: 'Hasta ' + (b1 || '…') + ' km, 1ª vuelta',
+                b2: 'Hasta ' + (b2 || '…') + ' km',
+                b3: 'Hasta ' + (b3 || '…') + ' km',
+                km: 'Más de ' + (b3 || '…') + ' km, por km'
+            };
+            $('#grillasTarifario [data-encabezado]').each(function () { $(this).text(textos[$(this).data('encabezado')]); });
+            $('#grillasTarifario input').each(function () {
+                const fila = $(this).closest('tr').find('th').text();
+                const c = $(this).data('campo');
+                $(this).attr('aria-label', fila + ', ' + (c === 'v2' ? 'hasta ' + (b1 || '…') + ' km, 2ª vuelta' : textos[c].toLowerCase()));
+            });
+            $('#trEstadiaDesdeAyuda').text('De iniciado el servicio, hasta ' + (b3 || '…') + ' km');
+        }
+
+        function estadoTarifario(t) {
+            const desde = dia(t.Vigente_Desde), hoy = hoyISO();
+            if (desde > hoy) return SGTL.estado('Próximo', 'Próximo', 'gris');
+            if (!t.Vigente_Hasta || dia(t.Vigente_Hasta) >= hoy) return SGTL.estado('Vigente', 'Vigente', 'verde');
+            return SGTL.estado('Anterior', 'Anterior', 'gris');
+        }
+
+        function filaTarifario(t) {
+            const vigencia = t.Vigente_Hasta ? 'Del ' + SGTL.fecha(t.Vigente_Desde) + ' al ' + SGTL.fecha(t.Vigente_Hasta) : 'Desde el ' + SGTL.fecha(t.Vigente_Desde);
+            const viajes = Number(t.Viajes) || 0;
+            return `<tr>
+                <td>${SGTL.escapar(t.Nombre)}</td>
+                <td class="text-nowrap">${vigencia}</td>
+                <td class="text-center">${estadoTarifario(t)}</td>
+                <td class="text-end">${viajes}</td>
+                <td class="text-center">${SGTL.accionesFila([
+                    SGTL.botonFila('editar', { id: t.Tarifario_ID }),
+                    SGTL.botonFila('eliminar', viajes > 0
+                        ? { id: t.Tarifario_ID, deshabilitado: true, motivo: 'No se puede eliminar el tarifario: lo ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') }
+                        : { id: t.Tarifario_ID })
+                ])}</td>
+            </tr>`;
+        }
+
+        function listarTarifario() {
+            SGTL.tabla.cargando('#tablaTarifario tbody', 5);
+            return SGTL.ajax({ url: API + '/Tarifario', type: 'GET' }, 'No se pudo cargar el tarifario. Revisá la conexión y probá de nuevo.')
+                .then(function (data) {
+                    tarifarios = Array.isArray(data) ? data : [];
+                    if (tarifarios.length) SGTL.tabla.llenar('#tablaTarifario tbody', tarifarios.map(filaTarifario).join(''));
+                    else SGTL.tabla.vacia('#tablaTarifario tbody', 5, 'Todavía no hay un tarifario cargado.');
+                }, function (error) {
+                    tarifarios = [];
+                    SGTL.tabla.vacia('#tablaTarifario tbody', 5, 'No se pudo cargar el tarifario.');
+                    SGTL.toastError(error.mensajeUsuario);
+                });
+        }
+
+        function ponerTarifario(t, conDatos) {
+            $('#trNombre').val(conDatos ? t.Nombre : '');
+            ponerFecha('trDesde', conDatos ? t.Vigente_Desde : null);
+            $('#trCorte').val(t.Anio_Corte);
+            $('#trBanda1').val(t.Km_Banda1);
+            $('#trBanda2').val(t.Km_Banda2);
+            $('#trBanda3').val(t.Km_Banda3);
+            $('#trFalsoFlete').val(String(t.Falso_Flete_Porcentaje).replace('.', ','));
+            ponerMonto('trEstadia', t.Estadia_Modulo);
+            $('#trEstadiaHoras').val(t.Estadia_Horas_Modulo);
+            $('#trEstadiaDesde').val(t.Estadia_Desde_Horas);
+            $('#trEstadiaDesdeLarga').val(t.Estadia_Desde_Horas_Larga);
+            (t.Valores || []).forEach(function (v) {
+                const i = TIPOS_VEHICULO.indexOf(v.Tipo_Vehiculo);
+                if (i < 0) return;
+                CAMPOS_VALOR.forEach(function (c) { ponerMonto(idValor(v.Modelo_Nuevo, i, c.id), v[c.clave]); });
+            });
+            actualizarEncabezados();
+        }
+
+        // Registrar viene con los valores del tarifario más nuevo: cuando llega la tabla del mes siguiente, se cambian
+        // solo los que se actualizaron.
+        function abrirTarifario(id) {
+            tarifarioEnEdicion = id || null;
+            SGTL.reiniciarFormulario('#formTarifario', '#avisoTarifario');
+            formularioTarifario.reiniciar();
+            ponerFecha('trDesde', null);
+            $('#tituloTarifario').text(id ? 'Editar tarifario' : 'Registrar tarifario');
+            $('#infoTarifario').addClass('d-none').text('');
+            actualizarEncabezados();
+            const guardar = document.getElementById('btnGuardarTarifario');
+            const base = id || (tarifarios[0] && tarifarios[0].Tarifario_ID);
+            guardar.disabled = !!base;
+            SGTL.modal('#modalTarifario', 'show');
+            if (!base) return;
+
+            SGTL.ajax({ url: `${API}/Tarifario/${base}`, type: 'GET' }).then(function (t) {
+                ponerTarifario(t, !!id);
+                const viajes = Number(t.Viajes) || 0;
+                const info = id
+                    ? (viajes > 0 ? 'Lo ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + ': guardar no cambia su importe. Los valores nuevos se aplican a los viajes que se registren o se editen cambiando el camión, los km, el inicio o la vuelta.' : '')
+                    : 'Viene con los valores de "' + t.Nombre + '": cambiá los que se actualizaron.';
+                $('#infoTarifario').toggleClass('d-none', !info).text(info);
+                guardar.disabled = false;
+            }, function () {
+                SGTL.modal('#modalTarifario', 'hide');
+                SGTL.toastError('No se pudo cargar el tarifario. Probá de nuevo.');
+            });
+        }
+
+        async function guardarTarifario() {
+            formularioTarifario.validarTodo();
+            if (!SGTL.revisarFormulario('#formTarifario', '#avisoTarifario')) return;
+
+            const valores = [];
+            [false, true].forEach(function (nuevo) {
+                TIPOS_VEHICULO.forEach(function (tipo, i) {
+                    const fila = { Modelo_Nuevo: nuevo, Tipo_Vehiculo: tipo };
+                    CAMPOS_VALOR.forEach(function (c) { fila[c.clave] = centavosCampo(idValor(nuevo, i, c.id)) / 100; });
+                    valores.push(fila);
+                });
+            });
+            const dto = {
+                Nombre: $('#trNombre').val().trim(),
+                Vigente_Desde: fechaISO('trDesde'),
+                Anio_Corte: entero('trCorte'),
+                Km_Banda1: entero('trBanda1'),
+                Km_Banda2: entero('trBanda2'),
+                Km_Banda3: entero('trBanda3'),
+                Falso_Flete_Porcentaje: decimal('trFalsoFlete'),
+                Estadia_Modulo: centavosCampo('trEstadia') / 100,
+                Estadia_Horas_Modulo: entero('trEstadiaHoras'),
+                Estadia_Desde_Horas: entero('trEstadiaDesde'),
+                Estadia_Desde_Horas_Larga: entero('trEstadiaDesdeLarga'),
+                Valores: valores,
+                Usuario: usuarioActual()
+            };
+
+            const enEdicion = tarifarioEnEdicion;
+            const listo = SGTL.procesando('#btnGuardarTarifario', 'Guardando…');
+            let guardado = false;
+            try {
+                await SGTL.ajax({
+                    url: API + '/Tarifario' + (enEdicion ? '/' + enEdicion : ''),
+                    type: enEdicion ? 'PUT' : 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(dto)
+                }, 'No se pudo guardar el tarifario. Revisá la conexión y probá de nuevo.');
+                guardado = true;
+            } catch (error) {
+                SGTL.avisoFormulario('#avisoTarifario', mensajeTarifa(error, 'No se pudo guardar el tarifario. Probá de nuevo.'));
+            } finally {
+                listo();
+            }
+
+            if (!guardado) return;
+            SGTL.toastExito(enEdicion ? 'Tarifario guardado.' : 'Tarifario registrado.');
+            listarTarifario();
+            setTimeout(function () { SGTL.modal('#modalTarifario', 'hide'); }, 0);
+        }
+
+        function eliminarTarifario(id) {
+            const t = tarifarios.filter(function (x) { return x.Tarifario_ID === id; })[0];
+            SGTL.confirmar({
+                titulo: '¿Eliminar el tarifario "' + (t ? t.Nombre : '#' + id) + '"?',
+                mensaje: 'No se puede deshacer.',
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({ url: API + '/Tarifario/' + id + '?usuario=' + encodeURIComponent(usuarioActual()), type: 'DELETE' },
+                        'No se pudo eliminar el tarifario. Probá de nuevo.');
+                }
+            }).then(function (eliminado) {
+                if (!eliminado) return;
+                SGTL.toastExito('Tarifario eliminado.');
+                listarTarifario();
+            });
+        }
+
+        function iniciarTarifario() {
+            armarGrillasTarifario();
+            SGTL.selectorFecha('#trDesde');
+            SGTL.enlazarMascaraMonto('#trEstadia');
+            const enteroEntre = function (min, max, mensaje) {
+                return function (valor) { const n = Number(valor); return /^\d+$/.test(String(valor).trim()) && n >= min && n <= max ? '' : mensaje; };
+            };
+            const reglas = [
+                { id: 'trNombre', requerido: 'Completá el nombre.', max: 100 },
+                { id: 'trDesde', requerido: 'Completá desde cuándo vale.', validar: fechaValida },
+                { id: 'trCorte', requerido: 'Completá el año del modelo.', soloNumeros: true, max: 4, validar: enteroEntre(1990, 2100, 'Escribí un año, por ejemplo 2019.') },
+                { id: 'trBanda1', requerido: 'Completá los km.', soloNumeros: true, max: 4, validar: enteroEntre(1, 9999, 'Tiene que ser mayor que cero.') },
+                { id: 'trBanda2', requerido: 'Completá los km.', soloNumeros: true, max: 4,
+                    validar: function (valor) { const b1 = entero('trBanda1'); return b1 != null && Number(valor) <= b1 ? 'Tiene que ser mayor que ' + b1 + ' km.' : ''; } },
+                { id: 'trBanda3', requerido: 'Completá los km.', soloNumeros: true, max: 4,
+                    validar: function (valor) { const b2 = entero('trBanda2'); return b2 != null && Number(valor) <= b2 ? 'Tiene que ser mayor que ' + b2 + ' km.' : ''; } },
+                { id: 'trFalsoFlete', requerido: 'Completá el porcentaje.',
+                    validar: function () { const n = decimal('trFalsoFlete'); return n != null && n > 0 && n <= 100 ? '' : 'Tiene que ser más de 0 y hasta 100.'; } },
+                { id: 'trEstadia', requerido: 'Completá el valor del módulo.', validar: montoValido },
+                { id: 'trEstadiaHoras', requerido: 'Completá las horas.', soloNumeros: true, max: 2, validar: enteroEntre(1, 99, 'Tiene que ser mayor que cero.') },
+                { id: 'trEstadiaDesde', requerido: 'Completá las horas.', soloNumeros: true, max: 2 },
+                { id: 'trEstadiaDesdeLarga', requerido: 'Completá las horas.', soloNumeros: true, max: 2 }
+            ];
+            $('#grillasTarifario input').each(function () {
+                reglas.push({ id: this.id, requerido: 'Completá el valor.', validar: montoMayorQueCero });
+            });
+            formularioTarifario = SGTL.validador(reglas);
+            $('#trCorte, #trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
+            $('#btnRegistrarTarifario').on('click', function () { abrirTarifario(null); });
+            $('#btnGuardarTarifario').on('click', guardarTarifario);
+            $('#tablaTarifario')
+                .on('click', '[data-accion="editar"]', function () { abrirTarifario($(this).data('id')); })
+                .on('click', '[data-accion="eliminar"]', function () { eliminarTarifario($(this).data('id')); });
+            listarTarifario();
+        }
+
         function eliminar(tipo, id) {
             SGTL.confirmar({
                 titulo: tipo === 'fija' ? `¿Eliminar la tarifa fija #${id}?` : `¿Eliminar la tarifa por km #${id}?`,
@@ -786,6 +1161,7 @@
             }, function () { /* Sin la lista de clientes, el filtro queda en "Todos". */ });
             listar('fija');
             listar('km');
+            iniciarTarifario();
         });
     </script>
 
