@@ -54,15 +54,13 @@
     return grupos;
   }
 
-  // "06:00 a 14:30"; si termina otro día, "06:00 a 25/10/2026 14:30".
+  // "06:00 a 14:30"; si termina otro día, "22:00 a 06:15 del 28/10/2026".
   function horario(v) {
     var inicio = hhmm(v.Fecha_Inicio), fin = hhmm(v.Fecha_Fin);
     if (!fin) return inicio;
-    if (soloFecha(v.Fecha_Fin) !== soloFecha(v.Fecha_Inicio)) {
-      var diaFin = aDia(v.Fecha_Fin);
-      return inicio + ' a ' + (diaFin ? ddmmaaaa(diaFin) + ' ' : '') + fin;
-    }
-    return inicio + ' a ' + fin;
+    var diaFin = aDia(v.Fecha_Fin);
+    var otroDia = diaFin && soloFecha(v.Fecha_Fin) !== soloFecha(v.Fecha_Inicio);
+    return inicio + ' a ' + fin + (otroDia ? ' del ' + ddmmaaaa(diaFin) : '');
   }
 
   function esDirecto(v) { return v.Tipo_Cliente !== 'Con_plataforma'; }

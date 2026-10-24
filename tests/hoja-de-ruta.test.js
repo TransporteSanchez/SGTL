@@ -29,7 +29,7 @@ assert.strictEqual(grupos.length, 2, 'un grupo por día de inicio');
 assert.strictEqual(grupos[0].viajes.length, 2);
 
 assert.strictEqual(H.horario({ Fecha_Inicio: '2026-10-24T06:00:00', Fecha_Fin: '2026-10-24T14:30:00' }), '06:00 a 14:30');
-assert.strictEqual(H.horario({ Fecha_Inicio: '2026-10-24T22:00:00', Fecha_Fin: '2026-10-25T06:15:00' }), '22:00 a 25/10/2026 06:15',
+assert.strictEqual(H.horario({ Fecha_Inicio: '2026-10-24T22:00:00', Fecha_Fin: '2026-10-25T06:15:00' }), '22:00 a 06:15 del 25/10/2026',
     'si termina otro día, se dice qué día');
 
 function viaje(cambios) {

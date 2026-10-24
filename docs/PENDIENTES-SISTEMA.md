@@ -2863,8 +2863,8 @@ sistema (módulo de Fede: ver abajo).
     WhatsApp.
   - Cubre en parte VIA-09 (`docs/design-system/04-relevamiento-funcional.md`): el viaje que nace de un presupuesto no
     manda el WhatsApp, pero el chofer lo ve igual en su hoja de ruta.
-- **Gestionar usuarios:** bloque "Chofer" en Registrar y Editar usuario, con el buscador compartido; lista los choferes
-  sin usuario (y el del usuario). Se guarda después del usuario: si falla, el usuario queda guardado y el modal lo dice
+- **Gestionar usuarios:** campo "Chofer" en Registrar y Editar usuario (bloque Acceso, debajo de Rol), con el buscador
+  compartido; lista los choferes sin usuario (y el del usuario). Se guarda después del usuario: si falla, el usuario queda guardado y el modal lo dice
   (en el alta pasa a "Editar usuario" para no duplicarlo).
 - **Menú y permiso:** "Hoja de ruta" es un ítem principal, después de Tableros (`sidebar-loader.js`,
   `permisos-menu.js` y el catálogo de `GruposController`, en la sección General).
