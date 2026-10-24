@@ -213,10 +213,10 @@ material de apoyo es el **manual de usuario en línea** del sistema.
 | Perfil | Participantes | Contenidos | Duración |
 |---|---|---|---|
 | Administrador | Claudia Sánchez | Usuarios, grupos, permisos, configuración de correo, WhatsApp y facturación, auditoría | 1 sesión de 2 h |
-| Administración general | Encargada administrativa general | Camiones, choferes, clientes, recorridos, tarifas, viajes, presupuestos, proformas y facturación | 2 sesiones de 2 h |
+| Administración general | Encargada administrativa general | Camiones, choferes, clientes, recorridos, tarifas, viajes, presupuestos, proformas y facturación; galpón, precio del gasoil, kilometraje de los camiones y el costo y los gastos de cada viaje | 2 sesiones de 2 h |
 | Administración impositiva | Encargada administrativa impositiva | Cuenta corriente, recibos, notas de crédito y débito | 1 sesión de 1 h |
 | Dirección | Dueño | Tablero de inicio, listados y aprobación de presupuestos | 1 sesión de 1 h |
-| Chofer | Choferes | Entrar con su usuario desde el celular, ver la hoja de ruta, abrir el recorrido en Google Maps, iniciar el viaje y registrar la entrega con la foto del remito; qué mensaje reciben por WhatsApp | 30 minutos |
+| Chofer | Choferes | Entrar con su usuario desde el celular, ver la hoja de ruta, abrir el recorrido en Google Maps, iniciar el viaje y registrar la entrega con la foto del remito, cargar los gastos con el ticket; qué mensaje reciben por WhatsApp | 30 minutos |
 
 ### Preparación de la instalación
 

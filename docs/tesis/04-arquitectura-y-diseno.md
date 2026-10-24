@@ -45,7 +45,8 @@ próximos, agrupados por día: cliente, origen y destino con el mapa del recorri
 manejar con Google Maps), camión y números del viaje. En los viajes de clientes directos **inicia el
 viaje** y **registra la entrega** con su resultado y la foto o el PDF del remito (la evidencia, que es
 obligatoria); en los de clientes con plataforma solo consulta, porque la entrega y el remito los
-registra en la plataforma del cliente (en Rukas, mandando el remito a su bot de WhatsApp). Además
+registra en la plataforma del cliente (en Rukas, mandando el remito a su bot de WhatsApp). En todos
+rinde los gastos del viaje (combustible con sus litros, peajes, comida) con la foto del ticket. Además
 sigue recibiendo por WhatsApp la hoja de ruta de cada viaje asignado. Solo ve y modifica sus propios
 viajes: su usuario apunta a su ficha de chofer y la API toma el chofer del token de la sesión, nunca
 de la pantalla. Su existencia se justifica porque la comunicación con el chofer era informal y no
@@ -281,6 +282,7 @@ erDiagram
     TARIFAS_FIJAS ||--o{ VIAJES : valoriza
     TARIFAS_KM ||--o{ VIAJES : valoriza
     VIAJES ||--o{ VIAJE_EVIDENCIA : documenta
+    VIAJES ||--o{ VIAJE_GASTOS : rinde
 ```
 
 ### Presupuestos, proformas y facturación
@@ -320,7 +322,12 @@ erDiagram
     PERMISOS ||--o{ GRUPOS_PERMISOS : otorgado
 ```
 
-Tablas de soporte sin relaciones de negocio: `AUDITORIA`, `GESTION_CONTENIDO`, `MANUAL_USUARIO`,
+El recorrido completo de cada viaje (galpón → origen → destino → galpón) usa los km al galpón que se
+guardan en cada origen y destino (`Km_Galpon`), calculados con Google Maps desde la dirección de
+`GALPON`; el kilometraje de los camiones y el combustible estimado salen de `CAMIONES` (kilometraje
+inicial y consumo) y de `PRECIOS_GASOIL` (el precio vigente a la fecha del viaje).
+
+Tablas de soporte sin relaciones de negocio: `GALPON`, `PRECIOS_GASOIL`, `AUDITORIA`, `GESTION_CONTENIDO`, `MANUAL_USUARIO`,
 `VERSIONES`, `EmailServidor`, `CONFIGURACION_EMAIL_MODULO`, `HISTORIAL_ENVIOS_COMPROBANTES`,
 `WHATSAPP_CONFIG`, `FACTURACION_TIPOS_COMPROBANTE`.
 

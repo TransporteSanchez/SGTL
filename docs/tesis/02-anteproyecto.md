@@ -107,6 +107,10 @@ las proformas, los comprobantes y los cobros de la empresa en una sola plataform
 - Hoja de ruta del chofer: la recibe por WhatsApp y la ve en el celular con su usuario, con el mapa
   del recorrido; en los viajes de clientes directos inicia el viaje y registra la entrega con la foto
   o el PDF del remito.
+- Control interno de cada viaje: el recorrido completo desde el galpón (ida vacío a buscar la carga,
+  el viaje y la vuelta vacío) calculado con Google Maps, el kilometraje de los camiones, el combustible
+  estimado con el consumo del camión y el precio del gasoil, el margen estimado y los gastos que rinde
+  el chofer con la foto del ticket.
 - Reglas de edición y eliminación según el estado.
 
 #### Presupuestos
@@ -142,8 +146,10 @@ las proformas, los comprobantes y los cobros de la empresa en una sola plataform
   proforma, que conserva su número, y en SGTL se reemplaza el Excel; si emitiera otra, se elimina el
   borrador y se importa la nueva. El supuesto sale de las acciones que se ven en la pantalla de Rukas.
 - No hace seguimiento en tiempo real del camión ni monitoreo de temperatura de la carga.
-- No gestiona el mantenimiento de las unidades, los gastos de viaje, los proveedores ni la
-  liquidación de sueldos (estaban en los requerimientos de 2022 y quedan como evolutivos).
+- No gestiona el mantenimiento de las unidades, los proveedores ni la liquidación de sueldos
+  (estaban en los requerimientos de 2022 y quedan como evolutivos). De los gastos de viaje registra
+  los que rinde el chofer y estima el combustible, pero no los paga ni lleva la cuenta de los
+  proveedores.
 - No emite el remito: el remito es del cliente; SGTL guarda su número y su escaneo.
 - Los avisos por WhatsApp son al chofer; no hay notificaciones al cliente.
 - Funciona con conexión a internet.
@@ -160,7 +166,7 @@ Surgen de las pruebas y revisiones del sistema y de los requerimientos de 2022 q
 - Autocompletar direcciones con Google Places y guardar coordenadas; desplegables con búsqueda.
 - Mantenimiento de unidades con alertas de vencimientos (ITV, seguros, service de frío) y
   vencimientos de documentación del chofer.
-- Gastos de viaje, proveedores y cuenta corriente de proveedores.
+- Proveedores y cuenta corriente de proveedores (pagar los gastos de viaje que ya se registran).
 - Integración directa con plataformas de clientes (API) y otras plataformas además de Rukas.
 - Seguimiento del viaje en tiempo real.
 
