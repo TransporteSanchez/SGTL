@@ -430,6 +430,7 @@
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GestionContenidoController.cs" />
     <Compile Include="Controllers\GruposController.cs" />
+    <Compile Include="Controllers\HojaDeRutaController.cs" />
     <Compile Include="Controllers\MenuController.cs" />
     <Compile Include="Controllers\OrigenController.cs" />
     <Compile Include="Controllers\ProvinciasController.cs" />

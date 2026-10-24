@@ -250,6 +250,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Dashboard | (ítem principal) |
 | Tableros | (ítem principal, nuevo 24/10: todos los tableros por tema; permiso de grupo propio, como el Dashboard; §13) |
+| Hoja de ruta | (ítem principal, nuevo 24/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio y un grupo de choferes que solo tiene ese; §10) |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
@@ -260,7 +261,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Auditoría | (ítem principal) |
 | Documentación | Consultar manual de usuario · Consultar informe de versión |
 
-- **Ítems principales:** "Dashboard", "Tableros" y "Auditoría" quedan sin verbo.
+- **Ítems principales:** "Dashboard", "Tableros", "Hoja de ruta" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
 - **Los permisos se ven con el texto de su opción del menú** y en el mismo orden (23/10), en Gestionar grupos y
@@ -605,6 +606,21 @@ Esto define solo cómo se muestran y cómo se cargan.
 
 - En celular el objetivo es que funcione, no que esté optimizado (las tablas no se convierten en
   tarjetas).
+- **Excepción: Hoja de ruta** (`hoja-de-ruta.html`, 24/10; la pidió Rocío para el celular del chofer). Es la única
+  pantalla pensada primero para el celular:
+  - **una tarjeta por viaje**, en una columna (hasta 760 px en la computadora), agrupadas por día con el subtítulo del
+    sistema (`.sgtl-bloque-titulo`: "Hoy · sábado 24/10/2026"). Arriba, un selector segmentado "Hoy y próximos ·
+    Anteriores" (§12) en lugar de filtros;
+  - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido (origen y destino con su dirección)
+    con "Abrir recorrido en Google Maps", y los datos con `.sgtl-dato`;
+  - las acciones van **abajo de la tarjeta, a todo el ancho y con texto** (§1.6): el siguiente paso en verde ("Iniciar
+    viaje", "Registrar entrega") y "Subir evidencia" / "Reemplazar evidencia" con borde. Lo que no se puede hacer queda
+    deshabilitado con el motivo **escrito debajo** (§1.4), porque en el celular no hay globitos;
+  - "Iniciar viaje" pide confirmación (§5.2) aunque no tiene efectos afuera: el chofer no lo puede deshacer (lo corrige
+    la oficina en Gestionar viajes);
+  - sin viajes: "No tenés viajes para hoy ni para los próximos días." o "No tenés viajes en los últimos 30 días."
+    (no hay filtros, §2.2);
+  - las fotos de la evidencia se achican en el navegador (1600 px de lado, JPG) antes de subirlas.
 - Los tooltips no aparecen en pantallas táctiles: por eso todo botón de solo ícono lleva también
   `aria-label` (§1.5).
 - **Modo oscuro: no.** Se sacan los estilos `theme-dark` sueltos de cuenta corriente.

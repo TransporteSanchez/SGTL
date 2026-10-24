@@ -202,6 +202,21 @@
                                 </div>
                             </div>
 
+                            <!-- Hoja de ruta (24/10): la cuenta de un chofer apunta a su ficha de Gestionar choferes. -->
+                            <div class="sgtl-bloque-titulo">Chofer</div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-12 col-md-6" id="campoChofer">
+                                    <label for="usuarioChofer" class="form-label">Chofer</label>
+                                    <select id="usuarioChofer" class="form-select">
+                                        <option value="">No es chofer</option>
+                                    </select>
+                                    <div class="form-text">Solo si el usuario es un chofer: en la Hoja de ruta ve los viajes de ese chofer.</div>
+                                </div>
+                                <div class="col-12 d-none" id="choferNoDisponible">
+                                    <p class="form-text mt-0 mb-0" id="choferNoDisponibleTexto"></p>
+                                </div>
+                            </div>
+
                             <div id="seccionGrupos" class="d-none">
                                 <div class="sgtl-bloque-titulo">Grupos <span class="text-danger">*</span></div>
                                 <p class="form-text mt-0 mb-3">El rol user necesita al menos un grupo: define qué pantallas ve.</p>
@@ -242,6 +257,7 @@
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -542,6 +558,71 @@
             $('label[for="usuarioActivo"]').text(activo ? 'Activo' : 'Inactivo');
         }
 
+        // Hoja de ruta (24/10): el chofer del usuario se lee y se guarda en api/HojaDeRuta (con el token), después de
+        // guardar el usuario. La lista trae los choferes sin usuario y el de este usuario (un chofer, una sola cuenta).
+        let choferOriginal = '';
+        let choferDisponible = false;
+
+        function encabezadosSesion() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') };
+        }
+
+        function mensajeChofer(error, porDefecto) {
+            const datos = (error && error.xhr && error.xhr.responseJSON) || {};
+            if (error && error.xhr && error.xhr.status === 403 && datos.message) return datos.message;
+            return (error && error.mensajeUsuario) || porDefecto;
+        }
+
+        function textoChofer(ch) {
+            return (ch.Apellido || '').trim() + ', ' + (ch.Nombre || '').trim() + ' (DNI ' + (ch.DNI || '').trim() + ')';
+        }
+
+        // Si no se pueden leer los choferes, el campo no se muestra: se dice por qué, en texto (§6.3).
+        function mostrarCampoChofer(disponible, motivo) {
+            choferDisponible = disponible;
+            $('#campoChofer').toggleClass('d-none', !disponible);
+            $('#choferNoDisponible').toggleClass('d-none', disponible);
+            $('#choferNoDisponibleTexto').text(motivo || '');
+        }
+
+        // Nunca falla: si no se pudo leer, deja el campo como texto con el motivo.
+        function cargarChoferUsuario(id) {
+            const select = document.getElementById('usuarioChofer');
+            select.innerHTML = '';
+            select.appendChild(new Option('No es chofer', ''));
+            choferOriginal = '';
+            mostrarCampoChofer(true);
+            SelectClientePredictivo.sincronizar(select);
+            const pedidos = [SGTL.ajax({ url: API + '/HojaDeRuta/Choferes', type: 'GET', headers: encabezadosSesion() })];
+            if (id) pedidos.push(SGTL.ajax({ url: `${API}/HojaDeRuta/Usuarios/${id}/Chofer`, type: 'GET', headers: encabezadosSesion() }));
+            return Promise.all(pedidos).then(function (respuestas) {
+                const actual = id && respuestas[1] && respuestas[1].ChoferID ? String(respuestas[1].ChoferID) : '';
+                (respuestas[0] || []).filter(function (ch) {
+                    return !ch.Usuario_ID || String(ch.Usuario_ID) === String(id);
+                }).forEach(function (ch) {
+                    const opcion = new Option(textoChofer(ch), ch.Chofer_ID);
+                    if ((ch.EstadoChofer || '').trim() === 'Inactivo') opcion.setAttribute('data-etiqueta', 'Inactivo');
+                    select.appendChild(opcion);
+                });
+                select.value = actual;
+                choferOriginal = actual;
+                SelectClientePredictivo.sincronizar(select);
+            }, function (error) {
+                mostrarCampoChofer(false, mensajeChofer(error, 'No se pudieron cargar los choferes: el chofer del usuario no se puede cambiar ahora.'));
+            });
+        }
+
+        // Después de registrar, si el chofer no se pudo asignar: el modal pasa a editar ese usuario (Guardar no lo duplica).
+        function pasarAEdicion(id) {
+            usuarioEnEdicion = id;
+            $('#modalUsuarioTitulo').text('Editar usuario');
+            $('#usuarioNombreUsuario').prop('disabled', true);
+            $('#marcaNombreUsuario, #marcaContrasenia').addClass('d-none');
+            $('#ayudaNombreUsuario').text('No se puede cambiar');
+            $('#ayudaContrasenia').text('Dejala vacía para conservar la actual');
+            $('#usuarioContrasenia').val('');
+        }
+
         function abrirModalUsuario(id) {
             const esAlta = !id;
             usuarioEnEdicion = esAlta ? null : id;
@@ -580,7 +661,7 @@
                 return mostrarSeccionGrupos();
             });
 
-            carga.then(function () { guardar.disabled = false; }, function (error) {
+            Promise.all([carga, cargarChoferUsuario(esAlta ? null : id)]).then(function () { guardar.disabled = false; }, function (error) {
                 if (esAlta) {
                     SGTL.avisoFormulario('#avisoUsuario', error.mensajeUsuario);
                     return;
@@ -628,8 +709,9 @@
 
             const listo = SGTL.procesando(boton, 'Guardando…');
             let guardado = false;
+            let respuesta = null;
             try {
-                await SGTL.ajax({
+                respuesta = await SGTL.ajax({
                     url: esAlta ? API + '/Usuarios' : `${API}/Usuarios/${usuarioEnEdicion}`,
                     type: esAlta ? 'POST' : 'PUT',
                     contentType: 'application/json',
@@ -637,6 +719,7 @@
                 }, 'No se pudo guardar el usuario. Revisá la conexión y probá de nuevo.');
                 guardado = true;
             } catch (error) {
+                listo();
                 const datos = (error.xhr && error.xhr.responseJSON) || {};
                 if (datos.code === 'usuario_duplicado') {
                     SGTL.marcarError('#usuarioNombreUsuario', 'Ya existe un usuario con ese nombre de usuario.');
@@ -644,11 +727,33 @@
                 } else {
                     SGTL.avisoFormulario('#avisoUsuario', error.mensajeUsuario || 'No se pudo guardar el usuario. Probá de nuevo.');
                 }
-            } finally {
-                listo();
             }
 
             if (!guardado) return;
+
+            // El chofer (Hoja de ruta) va aparte, solo si cambió.
+            const idGuardado = esAlta ? (respuesta && respuesta.Usuario_ID) : usuarioEnEdicion;
+            const chofer = choferDisponible ? String($('#usuarioChofer').val() || '') : choferOriginal;
+            if (chofer !== choferOriginal && idGuardado) {
+                try {
+                    await SGTL.ajax({
+                        url: `${API}/HojaDeRuta/Usuarios/${idGuardado}/Chofer`,
+                        type: 'PUT',
+                        contentType: 'application/json',
+                        headers: encabezadosSesion(),
+                        data: JSON.stringify({ ChoferID: chofer ? Number(chofer) : null })
+                    }, 'No se pudo asignar el chofer. Probá de nuevo.');
+                    choferOriginal = chofer;
+                } catch (error) {
+                    listo();
+                    buscarUsuarios(esAlta ? 1 : currentPage);
+                    if (esAlta) pasarAEdicion(idGuardado);
+                    SGTL.avisoFormulario('#avisoUsuario', (esAlta ? 'El usuario se registró' : 'Los datos del usuario se guardaron') +
+                        ', pero no se le asignó el chofer. ' + mensajeChofer(error, 'Probá de nuevo.'));
+                    return;
+                }
+            }
+            listo();
             SGTL.toastExito(esAlta ? 'Usuario registrado.' : 'Usuario guardado.');
             buscarUsuarios(esAlta ? 1 : currentPage);
             setTimeout(function () { SGTL.modal('#modalUsuario', 'hide'); }, 0);
@@ -656,6 +761,9 @@
 
         $(function () {
             formularioUsuario = SGTL.validador(reglasUsuario);
+            SelectClientePredictivo.inicializar('usuarioChofer', {
+                placeholder: 'No es chofer', textoVacio: 'No hay choferes sin usuario que coincidan.', idCampo: 'usuarioChoferBusqueda'
+            });
             $('#usuarioNombreUsuario').on('input', function () {
                 this.value = this.value.replace(/[^A-Za-z0-9_]/g, '');
             });

@@ -255,6 +255,31 @@
             document.getElementById(idMensaje).style.display = texto ? 'block' : 'none';
         }
 
+        // La pantalla que se pidió antes de iniciar sesión (Login.html?volver=hoja-de-ruta.html%3Fviaje%3D48, la arma
+        // sidebar-loader.js): solo una pantalla del sistema, nunca otra dirección.
+        function pantallaDeVuelta() {
+            var volver = new URLSearchParams(window.location.search).get('volver') || '';
+            return /^[a-z0-9-]+\.html(\?[a-z0-9=&_.%-]*)?$/i.test(volver) && !/^login\.html/i.test(volver) ? volver : '';
+        }
+
+        // Después de entrar: a la pantalla pedida o al Dashboard. Un chofer (su grupo tiene la Hoja de ruta y no el
+        // Dashboard) entra directo a su hoja de ruta. Si no se pueden leer los permisos, al Dashboard, como siempre.
+        function irDespuesDeEntrar(nombreUsuario, rol) {
+            var volver = pantallaDeVuelta();
+            if (volver) { window.location.href = volver; return; }
+            if (String(rol || '').trim().toLowerCase() === 'admin') { window.location.href = 'index.html'; return; }
+            fetch('http://localhost:50222/api/Usuarios/MenusPermitidos?username=' + encodeURIComponent(nombreUsuario || ''))
+                .then(function (respuesta) { return respuesta.ok ? respuesta.json() : null; })
+                .then(function (datos) {
+                    var menus = ((datos && datos.Menus) || []).map(function (m) {
+                        return String(m || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+                    });
+                    var chofer = menus.indexOf('hoja de ruta') !== -1 && menus.indexOf('dashboard') === -1;
+                    window.location.href = chofer ? 'hoja-de-ruta.html' : 'index.html';
+                })
+                .catch(function () { window.location.href = 'index.html'; });
+        }
+
         // Llamada a la API al cargar la página
         window.onload = loadContent;
 
@@ -308,8 +333,7 @@
                                 localStorage.setItem('nombre', data.Nombre);
                                 localStorage.setItem('apellido', data.Apellido);
 
-                                // Redirigir al usuario al dashboard
-                                window.location.href = 'index.html';
+                                irDespuesDeEntrar(data.Nombre_Usuario, data.Rol);
                             } catch (e) {
                                 console.error("Error al parsear la respuesta JSON de login:", e);
                                 mostrarToastError();

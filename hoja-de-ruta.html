@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hoja de ruta · SGTL</title>
+
+    <style>
+        #app {
+            display: none;
+        }
+
+        /* Pensada para el celular del chofer (excepción del §10 del design system): una tarjeta por viaje, en una
+           columna. En la computadora la columna no pasa de 760 px para que se lea igual. */
+        #encabezadoHojaDeRuta,
+        #sinChofer,
+        #listaViajes {
+            max-width: 760px;
+        }
+
+        .sgtl-recorrido {
+            margin: 1rem 0;
+        }
+
+        .sgtl-recorrido li {
+            display: flex;
+            gap: .75rem;
+            align-items: flex-start;
+        }
+
+        .sgtl-recorrido li + li {
+            margin-top: .75rem;
+        }
+
+        .sgtl-recorrido li > .bi {
+            margin-top: .15rem;
+            color: #435ebe;
+        }
+
+        /* Al ir a un viaje, que la barra fija de arriba no lo tape. */
+        .sgtl-viaje-chofer {
+            scroll-margin-top: 6rem;
+        }
+
+        /* El viaje del enlace de WhatsApp (hoja-de-ruta.html?viaje=48). */
+        .sgtl-viaje-chofer.sgtl-viaje-pedido {
+            box-shadow: 0 0 0 2px #435ebe;
+        }
+
+        @media (max-width: 575.98px) {
+            .sgtl-hoja-de-ruta {
+                margin-left: .75rem !important;
+                margin-right: .75rem !important;
+            }
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
+
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
+</head>
+
+<body>
+
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando…</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <!--Header-->
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4 sgtl-hoja-de-ruta" id="encabezadoHojaDeRuta">
+                        <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-signpost-split me-2" aria-hidden="true"></i>Hoja de ruta
+                                </h5>
+                                <p class="text-muted mb-0">Tus viajes: el recorrido, el camión y la entrega.</p>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0" id="contenidoHojaDeRuta">
+                            <div class="sgtl-segmentado" role="group" aria-label="Qué viajes ver" id="vistaHojaDeRuta">
+                                <button type="button" class="btn btn-sm" data-vista="proximos" aria-pressed="true">Hoy y próximos</button>
+                                <button type="button" class="btn btn-sm" data-vista="anteriores" aria-pressed="false">Anteriores</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info me-4 ms-4 sgtl-hoja-de-ruta d-none" role="status" id="sinChofer">
+                        Tu usuario no tiene un chofer asignado, así que no hay viajes para mostrar. Pedile al administrador que
+                        te lo asigne en Gestionar usuarios.
+                    </div>
+
+                    <div class="me-4 ms-4 sgtl-hoja-de-ruta" id="listaViajes" aria-live="polite">
+                        <p class="text-muted text-center my-5">Cargando…</p>
+                    </div>
+                </section>
+            </div>
+
+            <!--Footer-->
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+        </div>
+
+        <!-- Registrar entrega: resultado, fecha y evidencia (la misma regla que Gestionar viajes para un viaje directo). -->
+        <div class="modal fade" id="modalEntrega" tabindex="-1" aria-labelledby="modalEntregaTitulo" aria-hidden="true"
+            data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEntregaTitulo">Registrar entrega</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoEntrega" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <form id="formEntrega" novalidate>
+                            <input type="hidden" id="entregaViajeId">
+                            <p class="text-muted mb-3" id="entregaResumen"></p>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="entregaResultado" class="form-label">Resultado de la entrega <span class="text-danger">*</span></label>
+                                    <select id="entregaResultado" class="form-select">
+                                        <option value="">Seleccioná un resultado</option>
+                                        <option value="Completa">Completa</option>
+                                        <option value="Parcial">Parcial</option>
+                                        <option value="Rechazo">Rechazo</option>
+                                    </select>
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Parcial: se entregó una parte de la carga. Rechazo: el cliente no recibió la carga.</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="entregaFecha" class="form-label">Fecha de entrega <span class="text-danger">*</span></label>
+                                    <input type="text" id="entregaFecha" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="entregaEvidencia" class="form-label">Evidencia de la entrega <span class="text-danger" id="entregaEvidenciaMarca">*</span></label>
+                                    <div id="entregaEvidenciaActual" class="mb-2 d-none">
+                                        <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                        <button type="button" class="btn btn-link p-0 align-baseline" id="entregaVerEvidencia">Ver evidencia cargada</button>
+                                    </div>
+                                    <input type="file" id="entregaEvidencia" class="form-control" accept="image/*,application/pdf">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text" id="entregaEvidenciaAyuda"></div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarEntrega">Registrar entrega</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subir o reemplazar la evidencia (viajes entregados y de clientes con plataforma). -->
+        <div class="modal fade" id="modalEvidencia" tabindex="-1" aria-labelledby="modalEvidenciaTitulo" aria-hidden="true"
+            data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="modalEvidenciaTitulo">Subir evidencia</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="avisoEvidencia" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                        <form id="formEvidencia" novalidate>
+                            <input type="hidden" id="evidenciaViajeId">
+                            <p class="text-muted mb-3" id="evidenciaResumen"></p>
+                            <div id="evidenciaActualSola" class="mb-2 d-none">
+                                <i class="bi bi-paperclip" aria-hidden="true"></i>
+                                <button type="button" class="btn btn-link p-0 align-baseline" id="evidenciaVerActual">Ver evidencia cargada</button>
+                            </div>
+                            <label for="evidenciaSolaArchivo" class="form-label">Foto o PDF del remito <span class="text-danger">*</span></label>
+                            <input type="file" id="evidenciaSolaArchivo" class="form-control" accept="image/*,application/pdf">
+                            <div class="invalid-feedback"></div>
+                            <div class="form-text">Si ya había una evidencia, la reemplaza. Las fotos se achican solas; el PDF, hasta 5 MB.</div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="button" class="btn btn-primary" id="btnGuardarEvidencia">Subir evidencia</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ver la evidencia cargada (la API pide el token: se baja y se muestra acá). -->
+        <div class="modal fade" id="modalVerEvidencia" tabindex="-1" aria-labelledby="verEvidenciaTitulo" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="verEvidenciaTitulo">Ver evidencia</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body" id="verEvidenciaCuerpo"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!--Scripts-->
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/hoja-de-ruta.js"></script>
+
+    <!-- Carga de diseño -->
+    <script>
+        window.onload = async function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            window.loadHeader();
+            window.loadFooter();
+
+            try {
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                await loadSettings();
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                SGTLHojaDeRuta.iniciar();
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'No se pudo cargar la pantalla. Revisá la conexión y probá de nuevo.';
+            }
+        };
+
+        async function loadSettings() {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
+
+                xhr.onload = function () {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const data = JSON.parse(xhr.responseText);
+                        if (data) {
+                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
+                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
+                            resolve();
+                        } else {
+                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
+                        }
+                    } else {
+                        reject(new Error('Error en la carga de la API'));
+                    }
+                };
+
+                xhr.onerror = function () {
+                    reject(new Error('Error de red'));
+                };
+
+                xhr.send();
+            });
+        }
+    </script>
+
+</body>
+
+</html>

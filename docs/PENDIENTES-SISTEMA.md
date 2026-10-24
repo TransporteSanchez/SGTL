@@ -55,6 +55,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
 | 34 | Tarifario por tipo de camión (tabla "Tarifas a agosto 2026"): tipo y año del camión, bandas de km con 1ª y 2ª vuelta, falso flete y estadía; el viaje guarda su importe | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km por camión y mes, viajes por cliente, mes y resultado, facturación por cliente y mes) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | Commits del 24/10, **sin push** | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
+| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2821,3 +2822,104 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
 - "Top clientes en facturación" sigue siendo histórico y sin token (`CuentaCorrienteController`, de Facu).
 - Ideas que siguen abiertas del §19: rechazos por cliente o destino, uso de la flota, exportar la comparativa, km
   cargados a mano. Cada una sería un tablero más del catálogo, en su pestaña.
+
+---
+
+## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — HECHO EN LA MAC (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+
+Pedido de Rocío para el jueves 29/10 (presentación ante el segundo profesor). Antes el chofer no usaba el sistema:
+solo recibía la hoja de ruta por WhatsApp. **Decisiones de Rocío (24/10):** alcance completo (ver, iniciar el viaje,
+registrar la entrega y subir la evidencia desde el celular); el chofer es un usuario más, en un grupo que solo abre la
+Hoja de ruta, y su cuenta apunta a su ficha de Gestionar choferes (el vínculo es del usuario: no todo chofer tiene
+cuenta); opción propia en el menú, con permiso de grupo; la hoja de ruta por WhatsApp sigue y se le suma el enlace al
+sistema (módulo de Fede: ver abajo).
+
+**Qué se hizo:**
+- **Base:** `database/hoja-de-ruta/01_usuario_chofer.sql` agrega `USUARIOS.ChoferID` (vacío = no es chofer), la FK a
+  `CHOFERES` y un índice único (un chofer, una sola cuenta). Idempotente: con `@Aplicar = 0` dice qué falta; con 1 lo
+  aplica. No cambia datos y el EDMX no se toca (SQL directo).
+- **API:** `HojaDeRutaController` (nuevo, sumado al `.csproj`):
+  - `GET api/HojaDeRuta?vista=proximos|anteriores`: los viajes del chofer de la sesión. "Hoy y próximos": los que
+    terminan hoy o después, el que está en viaje y los de clientes directos que quedaron sin salir; "Anteriores": el
+    resto de los últimos 30 días. El "hoy" es el de la Argentina (`AT TIME ZONE` en el SQL), no la hora de la máquina.
+  - `POST …/Viajes/{id}/Iniciar`, `POST …/Viajes/{id}/Entrega` (resultado y fecha), `POST` y `GET …/Viajes/{id}/Evidencia`:
+    controlan que el viaje sea del chofer y que le toque ese paso; el cambio lo hace `ViajesController` (mismas reglas,
+    auditoría y mensajes que Gestionar viajes), con el usuario del token como autor. **Para el chat de viajes:** usa
+    `ViajesController.CambiarEstado`, `SubirEvidencia` y `DescargarEvidencia` con sus DTO; si cambian de firma, la API
+    no compila hasta ajustar `HojaDeRutaController`.
+  - `GET …/Choferes` y `GET` / `PUT …/Usuarios/{id}/Chofer`: el vínculo de Gestionar usuarios (administradores o
+    permiso "Gestión de usuarios").
+  - **Seguridad:** todas las acciones exigen el token (sin él, 401) y el chofer sale del token (`USUARIOS.ChoferID`
+    del usuario que inició sesión), nunca de un parámetro: un chofer no ve ni toca los viajes de otro (404). El resto
+    de la API sigue como estaba (CP06).
+- **Pantalla** `hoja-de-ruta.html` + `assets/static/js/hoja-de-ruta.js`, pensada para el celular (excepción del §10 del
+  design system): una tarjeta por viaje, agrupadas por día; "Hoy y próximos · Anteriores"; recorrido con "Abrir
+  recorrido en Google Maps" (el mismo enlace del WhatsApp), camión, números del viaje y evidencia.
+  - Cliente directo: "Iniciar viaje" (con confirmación) y "Registrar entrega" (resultado, fecha con hoy por defecto y la
+    evidencia, obligatoria); ya entregado, "Reemplazar evidencia". Cliente con plataforma: solo "Subir evidencia".
+  - Las fotos se achican a 1600 px en JPG antes de subirlas (una de 5,3 MB quedó en 715 KB); el PDF va tal cual.
+  - En una proforma emitida, el paso queda deshabilitado con el motivo escrito debajo.
+  - `hoja-de-ruta.html?viaje=48` marca ese viaje (y lo busca en Anteriores si ya pasó): es lo que abriría el enlace del
+    WhatsApp.
+  - Cubre en parte VIA-09 (`docs/design-system/04-relevamiento-funcional.md`): el viaje que nace de un presupuesto no
+    manda el WhatsApp, pero el chofer lo ve igual en su hoja de ruta.
+- **Gestionar usuarios:** bloque "Chofer" en Registrar y Editar usuario, con el buscador compartido; lista los choferes
+  sin usuario (y el del usuario). Se guarda después del usuario: si falla, el usuario queda guardado y el modal lo dice
+  (en el alta pasa a "Editar usuario" para no duplicarlo).
+- **Menú y permiso:** "Hoja de ruta" es un ítem principal, después de Tableros (`sidebar-loader.js`,
+  `permisos-menu.js` y el catálogo de `GruposController`, en la sección General).
+- **Login:** un usuario que tiene la Hoja de ruta y no el Dashboard entra directo a su hoja de ruta. Con la sesión
+  vencida, el login vuelve a la pantalla que se pidió (`Login.html?volver=…`, solo pantallas del sistema): así el
+  enlace del WhatsApp lleva al viaje.
+- **Prueba:** `tests/hoja-de-ruta.test.js` (qué ve y puede hacer el chofer, que la API saque el chofer del token y que
+  el login no vuelva a otra dirección). Las 21 pruebas pasan; en la Mac se corrieron con el Node que trae VS Code:
+  `ELECTRON_RUN_AS_NODE=1 "/Applications/Visual Studio Code.app/Contents/MacOS/Code" tests/<archivo>.test.js`.
+- **Documentos:** tesis (partes 2, 4 y 5: el chofer usa el sistema, su relación en el DER y la capacitación) y design
+  system (§3.1 y la excepción del §10).
+
+**Probado en la Mac** con una API simulada, a 390 px y a 1366 px: login del chofer → hoja de ruta; iniciar viaje;
+registrar entrega con una foto grande; viaje en una proforma con el paso deshabilitado; viaje con plataforma;
+Anteriores; enlace `?viaje=` sin sesión → login → vuelve al viaje marcado; admin sin chofer → aviso; Gestionar
+usuarios: asignar, quitar y el error de un chofer que ya tiene usuario. **La API no se compiló** (en la Mac no se puede).
+
+**Probar en la VM:**
+- [ ] 0. Rocío corre `database/hoja-de-ruta/01_usuario_chofer.sql`: primero tal cual (dice "Falta" en las tres), después
+  con `@Aplicar = 1` ("Listo: …"). Correrlo otra vez: "Ya está" en las tres.
+- [ ] 1. `pull`, **recompilar la API** (controller nuevo `HojaDeRutaController.cs`; cambió `GruposController.cs`) y
+  Ctrl+F5. `node tests/hoja-de-ruta.test.js` → OK.
+- [ ] 2. Como admin, Gestionar grupos y permisos: registrar el grupo "Choferes" y tildarle solo "Hoja de ruta" (está en
+  General).
+- [ ] 3. Gestionar usuarios → Registrar usuario: rol user, grupo Choferes y en "Chofer" un chofer de prueba (nombres
+  creíbles). Editar otro usuario: ese chofer ya no aparece en la lista. Editar el nuevo: muestra su chofer.
+- [ ] 4. Gestionar viajes: registrar para ese chofer un viaje de cliente directo para hoy, otro para mañana y uno de un
+  cliente con plataforma.
+- [ ] 5. Cerrar sesión y entrar con el usuario chofer: va directo a la Hoja de ruta y el menú tiene solo Hoja de ruta y
+  Documentación. Escribir `index.html` en la barra lleva de vuelta a la hoja de ruta.
+- [ ] 6. F12 a 390 px: el viaje de hoy → "Iniciar viaje" → confirmar → En viaje. "Registrar entrega" sin completar →
+  errores debajo de cada campo y "Revisá los campos marcados."; con resultado y una foto → "Viaje #N entregado." y
+  "Ver evidencia" la muestra. "Abrir recorrido en Google Maps" abre el recorrido.
+- [ ] 7. Como admin, Gestionar viajes: el viaje está Entregado con la evidencia; Auditoría muestra el cambio de estado y
+  la evidencia con el usuario del chofer.
+- [ ] 8. El viaje con plataforma tiene solo "Subir evidencia"; "Anteriores" muestra los últimos 30 días.
+- [ ] 9. Seguridad: en Swagger o Postman, `GET http://localhost:50222/api/HojaDeRuta` sin `Authorization` → 401. Con
+  el token del chofer (sale del `localStorage` del navegador), `POST api/HojaDeRuta/Viajes/{id}/Iniciar` de un viaje
+  de otro chofer → 404 "Ese viaje no está en tu hoja de ruta.".
+- [ ] 10. Como admin sin chofer asignado, Hoja de ruta: el aviso "Tu usuario no tiene un chofer asignado…".
+- [ ] 11. Cerrar sesión y abrir `http://localhost:5502/hoja-de-ruta.html?viaje={id}` → login con el chofer → vuelve al
+  viaje, marcado.
+- [ ] 12. Al terminar, borrar los viajes y el usuario de prueba (por ID y nombre) y quitarle el chofer al usuario.
+
+**Para coordinar con Fede (WhatsApp, su módulo; no se tocó nada):** Rocío eligió sumarle a la hoja de ruta por
+WhatsApp el enlace al sistema. Haría falta: en la plantilla de Meta, un botón con URL dinámica (o una variable más) que
+termine en `hoja-de-ruta.html?viaje={id}`; en `ViajeWhatsAppDispatcher` mandar el número del viaje (el payload ya lo
+tiene: `ViajeId`) y la dirección pública del sistema (un dato nuevo en Gestionar integración de WhatsApp). La plantilla
+nueva la tiene que aprobar Meta. **Ojo:** desde el celular del chofer el enlace anda recién cuando el sistema esté
+publicado; hoy el front y la API corren en `localhost`.
+
+**Queda para después:**
+- La sesión dura 30 minutos (`JwtConfig.ExpirationMinutes`, para todos): el chofer va a tener que volver a entrar
+  seguido. Ver si conviene una sesión más larga para los choferes.
+- Volver un paso atrás desde el celular: hoy, si el chofer se equivoca, lo corrige la oficina en Gestionar viajes.
+- Un caso de prueba nuevo en la tesis (parte 5) con el resultado de la VM.
+- En el celular, la fecha de entrega usa el calendario del teléfono (flatpickr en modo móvil, como en todo el sistema:
+  ya anotado en "Fechas en el celular" del §24).

@@ -27,7 +27,8 @@
     ['token', 'username', 'userRole', 'nombre', 'apellido'].forEach(function (k) {
       try { localStorage.removeItem(k); } catch (e) { }
     });
-    window.location.replace('Login.html');
+    // Después de iniciar sesión vuelve a esta pantalla (por ejemplo, el enlace de WhatsApp a la hoja de ruta).
+    window.location.replace('Login.html?volver=' + encodeURIComponent(page + window.location.search));
     return;
   }
 
@@ -92,6 +93,7 @@ function markActiveSidebarItem() {
           <ul class="menu">
               <li class="sidebar-item"><a href="index.html" class="sidebar-link"><i class="bi bi-grid-fill"></i><span>Dashboard</span></a></li>
               <li class="sidebar-item"><a href="tableros.html" class="sidebar-link"><i class="bi bi-bar-chart-line"></i><span>Tableros</span></a></li>
+              <li class="sidebar-item"><a href="hoja-de-ruta.html" class="sidebar-link"><i class="bi bi-signpost-split"></i><span>Hoja de ruta</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-person"></i><span>Choferes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-choferes.html" class="submenu-link">Listar choferes</a></li><li class="submenu-item"><a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-truck"></i><span>Camiones</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-camiones.html" class="submenu-link">Listar camiones</a></li><li class="submenu-item"><a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li><li class="submenu-item"><a href="presupuestos.html" class="submenu-link">Gestionar presupuestos</a></li></ul></li>
@@ -111,6 +113,8 @@ var API_PERM = 'http://localhost:50222/api';
 var MENU_TO_PAGE = {
   'dashboard': 'index.html',
   'tableros': 'tableros.html',
+  // Hoja de ruta del chofer (24/10): el grupo de los choferes tiene solo este permiso.
+  'hoja de ruta': 'hoja-de-ruta.html',
   'listado de choferes': 'listado-choferes.html',
   'gestion de choferes': 'gestion-choferes.html',
   'listado de camiones': 'listado-camiones.html',

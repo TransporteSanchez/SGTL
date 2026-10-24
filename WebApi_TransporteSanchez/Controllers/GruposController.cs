@@ -34,6 +34,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             // "Tableros" (24/10): la pantalla con todos los tableros por tema, con permiso propio como el Dashboard.
             "Dashboard", "Tableros",
+            // "Hoja de ruta" (24/10): la pantalla del chofer; el grupo de los choferes tiene solo este permiso.
+            "Hoja de ruta",
             "Listado de choferes", "Gestión de choferes",
             "Listado de camiones", "Gestión de camiones",
             "Listado de viajes", "Gestión de viajes", "Gestión de orígenes y destinos", "Gestión de tarifas", "Presupuestos",
@@ -51,6 +53,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 { "dashboard", "General" },
                 { "tableros", "General" },
+                { "hoja de ruta", "General" },
                 { "listado de choferes", "Choferes" },
                 { "gestion de choferes", "Choferes" },
                 { "listado de camiones", "Camiones" },
