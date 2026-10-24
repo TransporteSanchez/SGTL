@@ -666,6 +666,16 @@
     return d.getFullYear() + '-' + dosCifras(d.getMonth() + 1) + '-' + dosCifras(d.getDate());
   }
 
+  // El calendario se dibuja en el body, fuera del modal: Bootstrap le saca el foco a todo lo que está
+  // afuera y lo devuelve a la cruz del modal, así que no se podía escribir la hora. El foco dentro del
+  // calendario no le llega a Bootstrap.
+  function focoDentroDelCalendario(fp) {
+    if (fp && fp.calendarContainer) {
+      fp.calendarContainer.addEventListener('focusin', function (e) { e.stopPropagation(); });
+    }
+    return fp;
+  }
+
   // Selector de una fecha para formularios (§7.1): se ve y se escribe DD/MM/AAAA.
   // Para mandar a la API: SGTL.fechaISO(SGTL.leerFecha(input.value)).
   function selectorFecha(objetivo, opciones) {
@@ -674,7 +684,7 @@
     var configuracion = { dateFormat: 'd/m/Y', allowInput: true };
     if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) configuracion.locale = 'es';
     Object.keys(opciones || {}).forEach(function (clave) { configuracion[clave] = opciones[clave]; });
-    return window.flatpickr(input, configuracion);
+    return focoDentroDelCalendario(window.flatpickr(input, configuracion));
   }
 
   // Selector de rango "Desde y hasta" para filtros (§7.1). Se ve DD/MM/AAAA y guarda AAAA-MM-DD.
@@ -693,7 +703,7 @@
     };
     if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) configuracion.locale = 'es';
     Object.keys(opciones || {}).forEach(function (clave) { configuracion[clave] = opciones[clave]; });
-    return window.flatpickr(input, configuracion);
+    return focoDentroDelCalendario(window.flatpickr(input, configuracion));
   }
 
   // { desde: 'AAAA-MM-DD', hasta: 'AAAA-MM-DD' } del rango elegido, o null si está vacío.

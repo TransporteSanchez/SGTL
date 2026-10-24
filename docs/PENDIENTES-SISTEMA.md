@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 23/10/2026.**
+**Última actualización de este documento: 24/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -2542,10 +2542,16 @@ datos de la base corregidos hoy funcionan con esa versión.
 **Resultado en la VM (23/10):** `docs/pruebas/2026-10-23-ramas-y-tarifas.md`. La API compila y las 33 pruebas dieron OK
 (tarifas fijas y por km, tarifa del viaje y del presupuesto según la fecha de inicio, también escrita a mano, Gestionar
 empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Salieron, fuera de esta ronda:
-- [ ] **F1 (media): en los modales no se puede escribir la hora en el calendario.** El foco salta a la cruz del modal:
-  el calendario se agrega al `body`, fuera del modal, y Bootstrap devuelve el foco al modal. Se puede elegir con las
-  flechas o escribir fecha y hora en el campo. Arreglo en `SGTL.selectorFecha` (`sgtl-ui.js`): dentro de un modal,
-  agregar el calendario al modal. Afecta a todos los calendarios con hora en modales (viajes y presupuestos).
+- [x] **F1 (media): en los modales no se puede escribir la hora en el calendario** — HECHO (24/10), FALTA PROBAR EN VM.
+  El foco saltaba a la cruz del modal: el calendario se agrega al `body`, fuera del modal, y el control de foco de
+  Bootstrap 5.3 lo devuelve al modal. Arreglo en `sgtl-ui.js` (`SGTL.selectorFecha` y `SGTL.rangoFechas`): el foco
+  dentro del calendario no le llega a Bootstrap. El calendario sigue en el `body` (agregarlo al modal lo desacomodaba
+  cuando el modal tiene scroll). Probado en la Mac con un modal igual al de Registrar viaje: sin el arreglo el foco
+  terminaba en la cruz; con el arreglo se escribe la hora, Tab pasa a los minutos, Enter cierra el calendario y el modal
+  sigue abierto.
+  **Probar en la VM** (sin C#: `pull` y Ctrl+F5): Registrar viaje → Inicio → elegir un día → clic en la hora, escribir
+  `08`, Tab, `45`, Enter: el campo dice "DD/MM/AAAA 08:45" y el modal sigue abierto. Lo mismo en Fin y en Registrar
+  presupuesto. Cancelar sin guardar.
 - [ ] **F2 (media, módulo de Facu): recibo REC-00000013 con "Total aplicado" y "Diferencia" distintos** en Ver ($ 871.200 y
   $ 0), Editar ($ 900.000 y $ 0) y el PDF ($ 0 y $ 0); lo imputado es $ 871.200 y quedan $ 28.800 sin imputar.
   `cuenta-corriente-clientes.js` (782-783 y 866-867) y `api/comprobantes/{id}` (ImporteAplicado y SaldoPendiente en 0).
