@@ -54,7 +54,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
-| 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km por camión y mes, viajes por cliente, mes y resultado, facturación por cliente y mes) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | Commits del 24/10, **sin push** | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
+| 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | Commits del 24/10, **sin push** | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -2757,13 +2757,14 @@ de cuenta corriente, **avisarle a Facu**).
 
 **Qué cambió:**
 - **Pantalla nueva `tableros.html`** (menú → Tableros): el mismo período que el dashboard y cuatro pestañas:
-  - **Viajes (11):** Viajes, Entregados, Pendientes de entrega, Entregados con rechazo, Para revisar, Próximos viajes,
-    Viajes por mes, **Viajes por cliente, mes y resultado** (nuevo), Últimos viajes, Comparativa por mes, Calendario.
-  - **Flota (6):** Camiones activos, Km recorridos, ITV de camiones, Km por mes, Km por camión, **Km por camión y por
-    mes** (nuevo).
+  - **Viajes (13):** Viajes, Entregados, Pendientes de entrega, Entregados con rechazo, Para revisar, Próximos viajes,
+    Viajes por mes, **Viajes por cliente, mes y resultado**, **Recorridos más usados**, **Rechazos por cliente y
+    destino** (nuevos), Últimos viajes, Comparativa por mes, Calendario.
+  - **Flota (7):** Camiones activos, Km recorridos, ITV de camiones, Km por mes, Km por camión, **Km por camión y por
+    mes** e **Ingresos por camión y por mes** (nuevos).
   - **Choferes (2):** Choferes activos, Km por chofer.
-  - **Facturación (4):** Costo por viaje, Top clientes en facturación, **Deuda vencida por cliente** y **Facturación por
-    cliente y por mes** (nuevos).
+  - **Facturación (5):** Costo por viaje, Top clientes en facturación, **Deuda vencida por cliente**, **Facturación por
+    cliente y por mes** y **Antigüedad de la deuda** (nuevos).
   - Cada tarjeta tiene la **estrella**: la suma al final del dashboard o la saca, y se guarda en el momento (toast).
     Recuerda la última pestaña (en el navegador).
 - **Gráficos de tres datos** (con el skill de visualización: colores validados, un solo tono para cantidades, sin 3D):
@@ -2798,6 +2799,18 @@ de cuenta corriente, **avisarle a Facu**).
 - De paso: en "Km por camión" y "Km por chofer", con la tarjeta angosta el eje tiene menos marcas (los números se
   pisaban).
 
+**Segunda tanda (24/10, pedida por Rocío: "el profe pidió mucho de tres datos"),** cuatro mapas de calor más:
+- **Ingresos por camión y por mes** (Flota): el importe que calculó cada viaje con su tarifa (§34), facturado o no;
+  en el globito, también el importe por km. Los viajes sin importe no se suman y la nota dice cuántos son. **Necesita
+  los scripts de tarifas (§34)**: sin ellos, los viajes no tienen importe y la tarjeta lo dice.
+- **Recorridos más usados** (Viajes): origen × destino × viajes del período, con los km en el globito.
+- **Rechazos por cliente y destino** (Viajes): qué % de las entregas del período fue con rechazo. Las celdas con menos
+  de 3 entregas van más claras (el % puede engañar); los totales son el % de cada cliente y de cada destino.
+- **Antigüedad de la deuda** (Facturación, "Hoy"): cliente × al día / vencido hace 1-30, 31-60, 61-90 y más de 90 días
+  × monto. `api/tableros/deuda` devuelve los cuatro tramos (misma cuenta que la deuda vencida); un solo pedido para
+  las dos tarjetas de deuda.
+- El mapa de calor ahora admite porcentajes, celdas con pocos datos y una nota (§13 del design system).
+
 Probado en la Mac con una API simulada (16 clientes, 5 camiones, viajes inventados), a 1366 y 375 px: las cuatro
 pestañas, Último mes (por semana), Trimestre y Año (12 meses), estrella (agregar y sacar, se guarda y el dashboard la
 muestra al final), Personalizar (sacar, mover, Guardar, recargar, Cancelar), dashboard vacío y Restablecer, el diseño
@@ -2813,7 +2826,12 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
   Km por camión y por mes: los totales por camión coinciden con "Km por camión" del mismo período.
 - [ ] 4. Facturación → Facturación por cliente y por mes: el total de un cliente en un mes coincide con sus facturas y
   notas de débito menos notas de crédito de ese mes en Gestionar cuenta corriente. Deuda vencida: lo vencido de un
-  cliente coincide con su "Deuda vencida" en cuenta corriente.
+  cliente coincide con su "Deuda vencida" en cuenta corriente. Antigüedad de la deuda: la suma de los cuatro tramos
+  vencidos de un cliente es su "Vencido" de Deuda vencida, y "Al día", su "Por vencer".
+- [ ] 4b. Flota → Ingresos por camión y por mes: el total de un camión en un mes coincide con la suma de los importes de
+  sus viajes en Gestionar viajes (con los scripts de tarifas corridos). Viajes → Recorridos más usados: el total de un
+  recorrido coincide con Listar viajes filtrado por ese origen y destino. Rechazos por cliente y destino: abrir una
+  celda con rechazo y comparar con los viajes de ese cliente a ese destino.
 - [ ] 5. Tocar la estrella de "Km por camión y por mes": toast y estrella llena. En SSMS, una fila en
   `TABLEROS_USUARIO` y los favoritos en `TABLEROS_FAVORITOS`. Ir al dashboard: la tarjeta está al final.
 - [ ] 6. Personalizar: sacar una tarjeta con la estrella, mover otra, Guardar → "Dashboard guardado.". F5 → quedó así.

@@ -53,7 +53,8 @@
 
   // Los ids de los tableros que usan los viajes del período: si no hay ninguno en la pantalla, no se piden.
   var USAN_VIAJES_DEL_PERIODO = ['kpi-viajes', 'kpi-entregados', 'kpi-pendientes', 'kpi-rechazo', 'kpi-km', 'grafico-viajes', 'grafico-km',
-    'grafico-camiones', 'grafico-choferes', 'ultimos-viajes', 'comparativa-meses', 'calor-camiones', 'clientes-mes'];
+    'grafico-camiones', 'grafico-choferes', 'ultimos-viajes', 'comparativa-meses', 'calor-camiones', 'clientes-mes', 'calor-ingresos',
+    'calor-recorridos', 'calor-rechazos'];
 
   var dash = {
     periodo: null,
@@ -395,6 +396,9 @@
     graficoReparto('chofer', actual, total);
     graficoClientesMes(actual, grupos.lista, p);
     calorCamiones(actual, grupos.lista, p);
+    calorIngresos(actual, grupos.lista, p);
+    calorRecorridos(actual);
+    calorRechazos(actual);
     tablaUltimos(actual);
     tablaComparativa(grupos, total, p);
     if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 60);
@@ -408,8 +412,7 @@
     ['grafico-viajes', 'grafico-km', 'grafico-camiones', 'grafico-choferes'].forEach(function (id) { mensajeGrafico(id, texto); });
     ponerHtml('ultimos-viajes', '<tr><td colspan="5" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>');
     ponerHtml('comparativa-meses', '<tr><td colspan="8" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>');
-    ponerHtml('clientes-mes', mensaje(texto));
-    ponerHtml('calor-camiones', mensaje(texto));
+    ['clientes-mes', 'calor-camiones', 'calor-ingresos', 'calor-recorridos', 'calor-rechazos'].forEach(function (id) { ponerHtml(id, mensaje(texto)); });
   }
 
   // ---------------------------------------------------------------- Indicadores
@@ -735,82 +738,238 @@
   // ---------------------------------------------------------------- Mapa de calor (§13)
 
   // Una tabla con un número en cada celda; el fondo, del claro al oscuro según el valor (el máximo es el más oscuro).
-  // o: { encabezado, columnas: [{ corto, largo }], filas: [{ nombre, detalle, valores: [], extra: [] }], formato(v),
-  //      globo(fila, i, v), total(v), sinDato (texto del gris), unidad (para el máximo de la escala) }.
+  // o: { encabezado (para el lector de pantalla), esquina (texto chico en la esquina, opcional),
+  //      columnas: [{ corto, largo }], filas: [{ nombre, detalle, valores: [] }], formato(v) (celdas y totales de las
+  //      columnas), total(v) (totales de las filas y el general), globo(fila, i, v), sinDato (texto del gris),
+  //      unidad (para el máximo de la escala), nota (debajo de la escala),
+  //      conDato(fila, i) (si no, gris con "—"; por defecto, todo valor distinto de 0),
+  //      atenuar(fila, i) (pocos datos: la celda va más clara),
+  //      totalFila(fila), totalColumna(i), totalGeneral (por defecto, las sumas) }.
   function mapaCalor(cont, o) {
+    var conDato = o.conDato || function (f, i) { return f.valores[i] !== 0; };
+    var suma = function (lista) { return lista.reduce(function (s, v) { return s + v; }, 0); };
+    var totalFila = o.totalFila || function (f) { return suma(f.valores); };
+    var totalColumna = o.totalColumna || function (i) { return suma(o.filas.map(function (f) { return f.valores[i]; })); };
+    var totalesColumna = o.columnas.map(function (c, i) { return totalColumna(i); });
+    var totalGeneral = o.totalGeneral !== undefined ? o.totalGeneral : suma(totalesColumna);
     var maximo = 0;
-    o.filas.forEach(function (f) { f.valores.forEach(function (v) { if (v > maximo) maximo = v; }); });
-    var totalesColumna = o.columnas.map(function (c, i) { return o.filas.reduce(function (s, f) { return s + f.valores[i]; }, 0); });
-    var totalGeneral = totalesColumna.reduce(function (s, v) { return s + v; }, 0);
+    o.filas.forEach(function (f) { f.valores.forEach(function (v, i) { if (conDato(f, i) && v > maximo) maximo = v; }); });
 
     function celda(f, v, i) {
-      var globo = esc(o.globo(f, i, v));
-      if (!(v > 0)) {
-        return '<td class="dash-calor-vacio" data-bs-toggle="tooltip" title="' + globo + '">' + (v < 0 ? esc(o.formato(v)) : '—') + '</td>';
-      }
+      var globo = ' data-bs-toggle="tooltip" title="' + esc(o.globo(f, i, v)) + '"';
+      var atenuada = o.atenuar && o.atenuar(f, i) ? ' dash-calor-poco' : '';
+      if (!conDato(f, i)) return '<td class="dash-calor-vacio"' + globo + '>—</td>';
+      // Cero o negativo (una nota de crédito): con su número, sin color.
+      if (!(v > 0)) return '<td class="dash-calor-cero' + atenuada + '"' + globo + '>' + esc(o.formato(v)) + '</td>';
       var paso = Math.min(RAMPA_CALOR.length - 1, Math.floor(v / maximo * RAMPA_CALOR.length));
-      return '<td class="' + (paso < 4 ? 'dash-calor-tinta' : 'dash-calor-blanco') + '" style="background-color:' + RAMPA_CALOR[paso] +
-        '" data-bs-toggle="tooltip" title="' + globo + '">' + esc(o.formato(v)) + '</td>';
+      return '<td class="' + (paso < 4 ? 'dash-calor-tinta' : 'dash-calor-blanco') + atenuada + '" style="background-color:' + RAMPA_CALOR[paso] +
+        '"' + globo + '>' + esc(o.formato(v)) + '</td>';
     }
 
-    cont.innerHTML = '<div class="dash-calor-marco"><table class="dash-calor"><thead><tr><th scope="col"><span class="visually-hidden">' + esc(o.encabezado) + '</span></th>' +
+    var esquina = o.esquina
+      ? '<th scope="col" class="dash-calor-esquina">' + esc(o.esquina) + '</th>'
+      : '<th scope="col"><span class="visually-hidden">' + esc(o.encabezado) + '</span></th>';
+    cont.innerHTML = '<div class="dash-calor-marco"><table class="dash-calor"><thead><tr>' + esquina +
       o.columnas.map(function (c) { return '<th scope="col" title="' + esc(c.largo) + '">' + esc(c.corto) + '</th>'; }).join('') +
       '<th scope="col" class="dash-calor-total">Total</th></tr></thead><tbody>' +
       o.filas.map(function (f) {
-        var total = f.valores.reduce(function (s, v) { return s + v; }, 0);
         return '<tr><th scope="row">' + esc(f.nombre) + (f.detalle ? '<small>' + esc(f.detalle) + '</small>' : '') + '</th>' +
           f.valores.map(function (v, i) { return celda(f, v, i); }).join('') +
-          '<td class="dash-calor-total">' + esc(o.total(total)) + '</td></tr>';
+          '<td class="dash-calor-total">' + esc(o.total(totalFila(f))) + '</td></tr>';
       }).join('') +
       '</tbody><tfoot><tr><th scope="row">Total</th>' +
       totalesColumna.map(function (v) { return '<td class="dash-calor-total text-center">' + esc(o.formato(v)) + '</td>'; }).join('') +
       '<td class="dash-calor-total">' + esc(o.total(totalGeneral)) + '</td></tr></tfoot></table></div>' +
       '<div class="dash-escala" aria-hidden="true"><span class="dash-escala-paso" style="background-color:' + SIN_DATO + '"></span><span>' + esc(o.sinDato) +
       '</span><span class="ms-2">Menos</span>' + RAMPA_CALOR.map(function (c) { return '<span class="dash-escala-paso" style="background-color:' + c + '"></span>'; }).join('') +
-      '<span>Más (hasta ' + esc(o.formato(maximo) + (o.unidad || '')) + ')</span></div>';
+      '<span>Más (hasta ' + esc(o.formato(maximo) + (o.unidad || '')) + ')</span></div>' +
+      (o.nota ? '<p class="small text-muted mb-0 mt-2">' + esc(o.nota) + '</p>' : '');
   }
 
-  // Km del período por camión y por mes (o semana). Los 8 con más km; si hay más, los 7 primeros y "Otros".
-  function calorCamiones(viajes, grupos, p) {
-    var cont = el('calor-camiones');
-    if (!cont) return;
-    poner('titulo-kmcamionmes', p.porSemana ? 'Km por camión y por semana' : 'Km por camión y por mes');
-    var como = REPARTOS.camion;
+  function indiceGrupos(grupos) {
     var indice = {};
     grupos.forEach(function (g, i) { indice[g.clave] = i; });
+    return indice;
+  }
+
+  function ceros(n) { var lista = []; for (var i = 0; i < n; i++) lista.push(0); return lista; }
+
+  // Suma de las listas de varias filas, posición por posición (para "Otros").
+  function sumarListas(filas, campo, largo) {
+    return ceros(largo).map(function (cero, i) { return filas.reduce(function (s, f) { return s + f[campo][i]; }, 0); });
+  }
+
+  // Por camión y por mes (o semana): suma lo que devuelve valor(viaje) (null: el viaje no cuenta), con la cantidad de
+  // viajes y los km de cada celda. Los 8 camiones con más total; si hay más, los 7 primeros y "Otros".
+  function filasPorCamion(viajes, grupos, valor) {
+    var como = REPARTOS.camion;
+    var indice = indiceGrupos(grupos);
     var porCamion = {};
     viajes.forEach(function (v) {
       var i = indice[v._clave];
       if (i === undefined) return;
+      var x = valor(v);
+      if (x === null) return;
       var id = como.clave(v);
-      var c = porCamion[id] || (porCamion[id] = { id: id, valores: grupos.map(function () { return 0; }), extra: grupos.map(function () { return 0; }), km: 0 });
-      c.valores[i] += v._km;
-      c.extra[i]++;
-      c.km += v._km;
+      var c = porCamion[id] || (porCamion[id] = { id: id, valores: ceros(grupos.length), viajes: ceros(grupos.length), km: ceros(grupos.length), total: 0 });
+      c.valores[i] += x;
+      c.viajes[i]++;
+      c.km[i] += v._km;
+      c.total += x;
     });
     var filas = Object.keys(porCamion).map(function (k) { return porCamion[k]; })
-      .filter(function (c) { return c.km > 0; })
-      .sort(function (a, b) { return b.km - a.km; });
-    if (!filas.length) { cont.innerHTML = mensaje('No hay km cargados en el período.'); return; }
+      .filter(function (c) { return c.total > 0; })
+      .sort(function (a, b) { return b.total - a.total; });
     if (filas.length > 8) {
       var resto = filas.splice(7);
       filas.push({
-        otros: resto.length,
-        valores: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.valores[i]; }, 0); }),
-        extra: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.extra[i]; }, 0); })
+        otros: resto.length, valores: sumarListas(resto, 'valores', grupos.length),
+        viajes: sumarListas(resto, 'viajes', grupos.length), km: sumarListas(resto, 'km', grupos.length)
       });
     }
     filas.forEach(function (c) {
       c.nombre = c.otros ? 'Otros ' + c.otros : (c.id ? como.nombre(c.id) : como.sinAsignar);
       c.detalle = c.otros ? c.otros + ' camiones' : (c.id ? [como.detalle(c.id), como.inactivo(c.id) ? 'inactivo' : ''].filter(Boolean).join(' · ') : '');
     });
+    return filas;
+  }
+
+  // Km del período por camión y por mes (o semana).
+  function calorCamiones(viajes, grupos, p) {
+    var cont = el('calor-camiones');
+    if (!cont) return;
+    poner('titulo-kmcamionmes', p.porSemana ? 'Km por camión y por semana' : 'Km por camión y por mes');
+    var filas = filasPorCamion(viajes, grupos, function (v) { return v._km; });
+    if (!filas.length) { cont.innerHTML = mensaje('No hay km cargados en el período.'); return; }
     mapaCalor(cont, {
       encabezado: 'Camión', columnas: grupos, filas: filas, sinDato: 'Sin km', unidad: ' km',
       formato: compacto,
       total: function (v) { return formatoEntero.format(v) + ' km'; },
       globo: function (f, i, v) {
-        return f.nombre + ' · ' + grupos[i].largo + ': ' + (v > 0 ? formatoEntero.format(v) + ' km en ' + cantidadViajes(f.extra[i]) : 'sin km');
+        return f.nombre + ' · ' + grupos[i].largo + ': ' + (v > 0 ? formatoEntero.format(v) + ' km en ' + cantidadViajes(f.viajes[i]) : 'sin km');
       }
+    });
+  }
+
+  // Importe de los viajes del período por camión y por mes (o semana): el que calculó cada viaje con su tarifa (§34 de
+  // los pendientes), facturado o no. En el globito, también el importe por km.
+  function calorIngresos(viajes, grupos, p) {
+    var cont = el('calor-ingresos');
+    if (!cont) return;
+    poner('titulo-ingresoscamionmes', p.porSemana ? 'Ingresos por camión y por semana' : 'Ingresos por camión y por mes');
+    var sinImporte = 0;
+    var filas = filasPorCamion(viajes, grupos, function (v) {
+      var importe = v.Importe === null || v.Importe === undefined || v.Importe === '' ? NaN : Number(v.Importe);
+      if (!isFinite(importe)) { sinImporte++; return null; }
+      return importe;
+    });
+    if (!filas.length) {
+      cont.innerHTML = mensaje(sinImporte ? 'Los viajes del período no tienen el importe calculado.' : 'No hay viajes en el período.');
+      return;
+    }
+    var pesos = function (v) { return SGTL.monto(v, { sinDecimales: true }); };
+    mapaCalor(cont, {
+      encabezado: 'Camión', columnas: grupos, filas: filas, sinDato: 'Sin viajes',
+      formato: montoCompacto, total: pesos,
+      globo: function (f, i, v) {
+        if (!f.viajes[i]) return f.nombre + ' · ' + grupos[i].largo + ': sin viajes con importe';
+        return f.nombre + ' · ' + grupos[i].largo + ': ' + pesos(v) + ' en ' + cantidadViajes(f.viajes[i]) +
+          (f.km[i] > 0 ? ' · ' + pesos(v / f.km[i]) + ' por km' : '');
+      },
+      nota: 'El importe que calculó cada viaje con su tarifa, facturado o no.' + (sinImporte
+        ? ' ' + (sinImporte === 1 ? '1 viaje del período no tiene el importe calculado y no se suma.' : sinImporte + ' viajes del período no tienen el importe calculado y no se suman.')
+        : '')
+    });
+  }
+
+  // Los nombres ordenados por cantidad de viajes; si hay más de 8, los 7 primeros y "Otros (n)". lugar(viaje) dice en
+  // qué posición cuenta cada viaje.
+  function ranking(viajes, nombreDe) {
+    var cuenta = {};
+    viajes.forEach(function (v) { var n = nombreDe(v); cuenta[n] = (cuenta[n] || 0) + 1; });
+    var nombres = Object.keys(cuenta).sort(function (a, b) { return cuenta[b] - cuenta[a] || a.localeCompare(b); });
+    var posicion = {};
+    if (nombres.length > 8) {
+      var resto = nombres.splice(7);
+      resto.forEach(function (n) { posicion[n] = 7; });
+      nombres.push('Otros (' + resto.length + ')');
+    }
+    nombres.forEach(function (n, i) { if (posicion[n] === undefined) posicion[n] = i; });
+    return { nombres: nombres, lugar: function (v) { return posicion[nombreDe(v)]; } };
+  }
+
+  function origenDe(v) { return String(v.Origen || '').trim() || 'Sin origen'; }
+  function destinoDe(v) { return String(v.Destino || '').trim() || 'Sin destino'; }
+  function clienteDe(v) { return String(v.Cliente || '').trim() || 'Sin cliente'; }
+
+  // Origen × destino: cuántos viajes del período hizo cada recorrido (con sus km en el globito). Los 8 orígenes y los 8
+  // destinos con más viajes; el resto, en "Otros".
+  function calorRecorridos(viajes) {
+    var cont = el('calor-recorridos');
+    if (!cont) return;
+    if (!viajes.length) { cont.innerHTML = mensaje('No hay viajes en el período.'); return; }
+    var origenes = ranking(viajes, origenDe);
+    var destinos = ranking(viajes, destinoDe);
+    var filas = origenes.nombres.map(function (n) { return { nombre: n, valores: ceros(destinos.nombres.length), km: ceros(destinos.nombres.length) }; });
+    viajes.forEach(function (v) {
+      var f = filas[origenes.lugar(v)];
+      var i = destinos.lugar(v);
+      f.valores[i]++;
+      f.km[i] += v._km;
+    });
+    var columnas = destinos.nombres.map(function (n) { return { corto: n, largo: n }; });
+    mapaCalor(cont, {
+      encabezado: 'Origen', esquina: 'Origen ↓ · destino →', columnas: columnas, filas: filas, sinDato: 'Sin viajes', unidad: ' viajes',
+      formato: function (v) { return formatoEntero.format(v); },
+      total: cantidadViajes,
+      globo: function (f, i, v) {
+        return f.nombre + ' → ' + columnas[i].largo + ': ' + (v ? cantidadViajes(v) + ' · ' + formatoEntero.format(f.km[i]) + ' km' +
+          (f.km[i] > 0 ? ' (' + formatoEntero.format(f.km[i] / v) + ' km por viaje)' : '') : 'sin viajes');
+      }
+    });
+  }
+
+  // Cliente × destino: qué parte de las entregas del período fue con rechazo. Cuentan los viajes ya entregados (entregado,
+  // listo para facturar o facturado); con menos de 3 entregas la celda va más clara, porque el % puede engañar.
+  var MINIMO_ENTREGAS = 3;
+
+  function calorRechazos(viajes) {
+    var cont = el('calor-rechazos');
+    if (!cont) return;
+    var entregados = viajes.filter(function (v) { return v._grupo !== 'pendiente'; });
+    if (!entregados.length) { cont.innerHTML = mensaje('No hay entregas en el período.'); return; }
+    var clientes = ranking(entregados, clienteDe);
+    var destinos = ranking(entregados, destinoDe);
+    var largo = destinos.nombres.length;
+    var filas = clientes.nombres.map(function (n) { return { nombre: n, entregas: ceros(largo), rechazos: ceros(largo) }; });
+    entregados.forEach(function (v) {
+      var f = filas[clientes.lugar(v)];
+      var i = destinos.lugar(v);
+      f.entregas[i]++;
+      if (v._grupo === 'rechazo') f.rechazos[i]++;
+    });
+    var pct = function (rechazos, entregas) { return entregas ? Math.round(rechazos / entregas * 100) : 0; };
+    filas.forEach(function (f) { f.valores = f.entregas.map(function (e, i) { return pct(f.rechazos[i], e); }); });
+    var suma = function (lista) { return lista.reduce(function (s, v) { return s + v; }, 0); };
+    var columnas = destinos.nombres.map(function (n) { return { corto: n, largo: n }; });
+    var porcentaje = function (v) { return formatoEntero.format(v) + ' %'; };
+    mapaCalor(cont, {
+      encabezado: 'Cliente', esquina: 'Cliente ↓ · destino →', columnas: columnas, filas: filas, sinDato: 'Sin entregas',
+      formato: porcentaje, total: porcentaje,
+      conDato: function (f, i) { return f.entregas[i] > 0; },
+      atenuar: function (f, i) { return f.entregas[i] < MINIMO_ENTREGAS; },
+      totalFila: function (f) { return pct(suma(f.rechazos), suma(f.entregas)); },
+      totalColumna: function (i) {
+        return pct(suma(filas.map(function (f) { return f.rechazos[i]; })), suma(filas.map(function (f) { return f.entregas[i]; })));
+      },
+      totalGeneral: pct(entregados.filter(function (v) { return v._grupo === 'rechazo'; }).length, entregados.length),
+      globo: function (f, i, v) {
+        var n = f.entregas[i];
+        if (!n) return f.nombre + ' → ' + columnas[i].largo + ': sin entregas';
+        return f.nombre + ' → ' + columnas[i].largo + ': ' + f.rechazos[i] + ' de ' + n + (n === 1 ? ' entrega' : ' entregas') +
+          ' con rechazo (' + v + ' %)' + (n < MINIMO_ENTREGAS ? ' · pocas entregas' : '');
+      },
+      nota: 'Sobre los viajes entregados del período. Las celdas más claras tienen menos de ' + MINIMO_ENTREGAS + ' entregas: el porcentaje puede engañar.'
     });
   }
 
@@ -936,41 +1095,83 @@
     });
   }
 
-  // Deuda de cada cliente: lo vencido (de mayor a menor) y lo que vence más adelante. No depende del período.
+  // Deuda de los clientes (no depende del período): la usan "Deuda vencida por cliente" y "Antigüedad de la deuda", con un
+  // solo pedido a la API.
   function cargarDeuda() {
-    var cuerpo = el('deuda-clientes');
-    if (!cuerpo) return;
+    var hayTabla = hay('deuda-clientes');
+    var hayAntiguedad = hay('calor-deuda');
+    if (!hayTabla && !hayAntiguedad) return;
     pedirConSesion('/tableros/deuda').done(function (datos) {
       var filas = Array.isArray(datos) ? datos : [];
-      var conVencida = filas.filter(function (r) { return Number(r.Vencida) > 0; });
-      var vencida = filas.reduce(function (s, r) { return s + (Number(r.Vencida) || 0); }, 0);
-      var porVencer = filas.reduce(function (s, r) { return s + (Number(r.PorVencer) || 0); }, 0);
-      poner('deuda-cantidad', conVencida.length ? 'Hoy · ' + conVencida.length + (conVencida.length === 1 ? ' cliente' : ' clientes') : 'Hoy');
-      poner('deuda-resumen', 'Vencido ' + SGTL.monto(vencida, { sinDecimales: true }) + ' · por vencer ' + SGTL.monto(porVencer, { sinDecimales: true }));
-      var resumen = el('deuda-resumen');
-      if (resumen) resumen.classList.toggle('d-none', !filas.length);
-      if (!filas.length) {
-        cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' +
-          '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Ningún cliente tiene deuda pendiente.</td></tr>';
-        return;
-      }
-      var hoy = inicioDia(new Date());
-      SGTL.tabla.llenar(cuerpo, filas.map(function (r) {
-        var desde = leerFechaApi(r.VencimientoMasViejo);
-        var dias = desde ? diasEntre(desde, hoy) : 0;
-        // Debajo del cliente, desde cuándo debe lo vencido (el comprobante vencido más viejo).
-        var vencidoDesde = desde ? 'Vencido desde el ' + SGTL.fecha(desde) + ' (hace ' + dias + (dias === 1 ? ' día)' : ' días)') : 'Nada vencido';
-        return '<tr>' +
-          '<td class="dash-celda-texto">' + esc(r.Cliente) + '<small class="d-block text-muted text-truncate">' + esc(vencidoDesde) + '</small></td>' +
-          '<td class="text-end text-nowrap">' + (Number(r.Vencida) > 0 ? esc(SGTL.monto(r.Vencida, { sinDecimales: true })) : '—') + '</td>' +
-          '<td class="text-end text-nowrap">' + (Number(r.PorVencer) > 0 ? esc(SGTL.monto(r.PorVencer, { sinDecimales: true })) : '—') + '</td>' +
-          '</tr>';
-      }).join(''));
+      if (hayTabla) mostrarDeudaVencida(filas);
+      if (hayAntiguedad) mostrarAntiguedad(filas);
     }).fail(function (xhr) {
-      poner('deuda-cantidad', 'Hoy');
-      var resumen = el('deuda-resumen');
-      if (resumen) resumen.classList.add('d-none');
-      cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + esc(textoErrorSesion(xhr, 'No se pudo cargar la deuda de los clientes.')) + '</td></tr>';
+      var texto = textoErrorSesion(xhr, 'No se pudo cargar la deuda de los clientes.');
+      if (hayTabla) {
+        poner('deuda-cantidad', 'Hoy');
+        var resumen = el('deuda-resumen');
+        if (resumen) resumen.classList.add('d-none');
+        el('deuda-clientes').innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>';
+      }
+      if (hayAntiguedad) ponerHtml('calor-deuda', mensaje(texto));
+    });
+  }
+
+  // Lo vencido de cada cliente (de mayor a menor) y lo que vence más adelante.
+  function mostrarDeudaVencida(filas) {
+    var cuerpo = el('deuda-clientes');
+    var conVencida = filas.filter(function (r) { return Number(r.Vencida) > 0; });
+    var vencida = filas.reduce(function (s, r) { return s + (Number(r.Vencida) || 0); }, 0);
+    var porVencer = filas.reduce(function (s, r) { return s + (Number(r.PorVencer) || 0); }, 0);
+    poner('deuda-cantidad', conVencida.length ? 'Hoy · ' + conVencida.length + (conVencida.length === 1 ? ' cliente' : ' clientes') : 'Hoy');
+    poner('deuda-resumen', 'Vencido ' + SGTL.monto(vencida, { sinDecimales: true }) + ' · por vencer ' + SGTL.monto(porVencer, { sinDecimales: true }));
+    var resumen = el('deuda-resumen');
+    if (resumen) resumen.classList.toggle('d-none', !filas.length);
+    if (!filas.length) {
+      cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' +
+        '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Ningún cliente tiene deuda pendiente.</td></tr>';
+      return;
+    }
+    var hoy = inicioDia(new Date());
+    SGTL.tabla.llenar(cuerpo, filas.map(function (r) {
+      var desde = leerFechaApi(r.VencimientoMasViejo);
+      var dias = desde ? diasEntre(desde, hoy) : 0;
+      // Debajo del cliente, desde cuándo debe lo vencido (el comprobante vencido más viejo).
+      var vencidoDesde = desde ? 'Vencido desde el ' + SGTL.fecha(desde) + ' (hace ' + dias + (dias === 1 ? ' día)' : ' días)') : 'Nada vencido';
+      return '<tr>' +
+        '<td class="dash-celda-texto">' + esc(r.Cliente) + '<small class="d-block text-muted text-truncate">' + esc(vencidoDesde) + '</small></td>' +
+        '<td class="text-end text-nowrap">' + (Number(r.Vencida) > 0 ? esc(SGTL.monto(r.Vencida, { sinDecimales: true })) : '—') + '</td>' +
+        '<td class="text-end text-nowrap">' + (Number(r.PorVencer) > 0 ? esc(SGTL.monto(r.PorVencer, { sinDecimales: true })) : '—') + '</td>' +
+        '</tr>';
+    }).join(''));
+  }
+
+  // Antigüedad de la deuda: cliente × tramo (lo que todavía no venció y lo vencido según hace cuánto) × monto.
+  var TRAMOS_DEUDA = [
+    { campo: 'PorVencer', corto: 'Al día', largo: 'al día (todavía no venció)' },
+    { campo: 'Vencida1a30', corto: '1 a 30 días', largo: 'vencido hace 1 a 30 días' },
+    { campo: 'Vencida31a60', corto: '31 a 60 días', largo: 'vencido hace 31 a 60 días' },
+    { campo: 'Vencida61a90', corto: '61 a 90 días', largo: 'vencido hace 61 a 90 días' },
+    { campo: 'VencidaMas90', corto: 'Más de 90 días', largo: 'vencido hace más de 90 días' }
+  ];
+
+  function mostrarAntiguedad(datos) {
+    var cont = el('calor-deuda');
+    if (!datos.length) { cont.innerHTML = mensaje('Ningún cliente tiene deuda pendiente.'); return; }
+    // Viene ordenado por lo vencido, de mayor a menor. Más de 8 clientes: los 7 primeros y "Otros clientes".
+    var filas = datos.map(function (r) {
+      return { nombre: String(r.Cliente || '').trim() || 'Sin nombre', valores: TRAMOS_DEUDA.map(function (t) { return Number(r[t.campo]) || 0; }) };
+    });
+    if (filas.length > 8) {
+      var resto = filas.splice(7);
+      filas.push({ nombre: 'Otros clientes (' + resto.length + ')', valores: sumarListas(resto, 'valores', TRAMOS_DEUDA.length) });
+    }
+    var pesos = function (v) { return SGTL.monto(v, { sinDecimales: true }); };
+    mapaCalor(cont, {
+      encabezado: 'Cliente', columnas: TRAMOS_DEUDA, filas: filas, sinDato: 'Nada',
+      formato: montoCompacto, total: pesos,
+      globo: function (f, i, v) { return f.nombre + ' · ' + TRAMOS_DEUDA[i].largo + ': ' + (v ? pesos(v) : 'nada'); },
+      nota: 'Lo que falta cobrar de facturas y notas de débito, según cuánto hace que venció.'
     });
   }
 

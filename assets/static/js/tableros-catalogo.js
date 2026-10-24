@@ -53,6 +53,9 @@
     { id: 'viajesmes', tema: 'viajes', titulo: 'Viajes por mes', tituloId: 'titulo-grafico-viajes', tipo: 'grafico', w: 8, tw: 12, h: 6, minH: 4, cuerpo: '<div id="grafico-viajes"></div>' },
     // Nuevo (24/10): tres datos, cliente × mes × resultado, en un gráfico chico por cliente con la misma escala.
     { id: 'clientesmes', tema: 'viajes', titulo: 'Viajes por cliente, mes y resultado', tituloId: 'titulo-clientesmes', tipo: 'natural', w: 12, h: 7, minH: 5, cuerpo: '<div id="clientes-mes"><p class="dash-mensaje">Cargando…</p></div>' },
+    // Nuevos (24/10, segunda tanda): origen × destino × viajes y cliente × destino × % de entregas con rechazo.
+    { id: 'recorridos', tema: 'viajes', titulo: 'Recorridos más usados', tipo: 'natural', w: 12, h: 7, minH: 4, cuerpo: '<div id="calor-recorridos"><p class="dash-mensaje">Cargando…</p></div>' },
+    { id: 'rechazos', tema: 'viajes', titulo: 'Rechazos por cliente y destino', tipo: 'natural', w: 12, h: 7, minH: 4, cuerpo: '<div id="calor-rechazos"><p class="dash-mensaje">Cargando…</p></div>' },
     {
       id: 'ultimos', tema: 'viajes', titulo: 'Últimos viajes', tipo: 'lista', w: 12, h: 6, minH: 4, sinRelleno: true,
       cuerpo: cargandoTabla('ultimos-viajes', 5, '<th class="text-center">Fecha</th><th>Recorrido y cliente</th><th class="text-end">Km</th><th class="text-center">Estado</th><th class="text-center">Acciones</th>')
@@ -75,6 +78,8 @@
     { id: 'kmcamion', tema: 'flota', titulo: 'Km por camión', tipo: 'grafico', w: 6, tw: 4, h: 5, minH: 4, cuerpo: '<div id="grafico-camiones"></div>' },
     // Nuevo (24/10): tres datos, camión × mes × km, en un mapa de calor.
     { id: 'kmcamionmes', tema: 'flota', titulo: 'Km por camión y por mes', tituloId: 'titulo-kmcamionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-camiones"><p class="dash-mensaje">Cargando…</p></div>' },
+    // Nuevo (24/10, segunda tanda): camión × mes × importe de los viajes (el que guarda cada viaje con su tarifa).
+    { id: 'ingresoscamionmes', tema: 'flota', titulo: 'Ingresos por camión y por mes', tituloId: 'titulo-ingresoscamionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-ingresos"><p class="dash-mensaje">Cargando…</p></div>' },
 
     // ---- Choferes
     {
@@ -93,7 +98,9 @@
       cuerpo: '<div class="small text-muted px-3 py-2 d-none" id="deuda-resumen"></div>' +
         cargandoTabla('deuda-clientes', 3, '<th>Cliente</th><th class="text-end">Vencido</th><th class="text-end">Por vencer</th>')
     },
-    { id: 'facturacionmes', tema: 'facturacion', titulo: 'Facturación por cliente y por mes', tituloId: 'titulo-facturacionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-facturacion"><p class="dash-mensaje">Cargando…</p></div>' }
+    { id: 'facturacionmes', tema: 'facturacion', titulo: 'Facturación por cliente y por mes', tituloId: 'titulo-facturacionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-facturacion"><p class="dash-mensaje">Cargando…</p></div>' },
+    // Nuevo (24/10, segunda tanda): cliente × antigüedad de lo vencido × monto.
+    { id: 'deudaantiguedad', tema: 'facturacion', titulo: 'Antigüedad de la deuda', alcance: 'Hoy', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-deuda"><p class="dash-mensaje">Cargando…</p></div>' }
   ];
 
   var POR_ID = {};

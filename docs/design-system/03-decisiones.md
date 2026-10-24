@@ -725,11 +725,15 @@ Decidido por Rocío con la maqueta del 24/10. Lo usan el dashboard y la pantalla
   el dashboard de siempre; Restablecer vuelve a ese. Favoritos y lugar se guardan en la base, por usuario.
 - **Alcance:** un tablero que no sigue el período lo dice en el título ("Hoy", "Histórico"), como desde el 21/10.
 - **Comparar tres datos, nunca en 3D.** Dos formas:
-  - **Mapa de calor** (dos categorías y un valor: km por camión y por mes, facturación por cliente y por mes): una tabla
+  - **Mapa de calor** (dos categorías y un valor: km e ingresos por camión y por mes, facturación por cliente y por mes,
+    recorridos origen × destino, rechazos por cliente y destino, antigüedad de la deuda): una tabla
     con el número en cada celda y el fondo en **un solo tono del azul de las acciones, de claro (poco) a oscuro (mucho)**
-    (ocho pasos, `RAMPA_CALOR` en `dashboard.js`); sin dato, gris claro con "—". Última fila y última columna con los
-    totales, y debajo la escala ("Menos … Más (hasta …)"). El número va en azul oscuro sobre los pasos claros y en
-    blanco sobre los oscuros. Más de 8 filas: las 7 primeras y "Otros". En celular el nombre queda fijo y las celdas se
+    (ocho pasos, `RAMPA_CALOR` en `dashboard.js`); sin dato, gris claro con "—"; un cero (o un negativo) con su número,
+    en blanco. Última fila y última columna con los totales (en un porcentaje, el de la fila o la columna, no la suma),
+    y debajo la escala ("Menos … Más (hasta …)") y, si hace falta, una nota de qué cuenta. El número va en azul oscuro
+    sobre los pasos claros y en blanco sobre los oscuros. Si filas y columnas son de cosas distintas, la esquina lo dice
+    ("Origen ↓ · destino →"). **Con pocos datos** (un % sobre menos de 3 entregas), la celda va más clara y la nota lo
+    explica. Más de 8 filas o columnas: las 7 primeras y "Otros". En celular el nombre queda fijo y las celdas se
     desplazan.
   - **Gráficos chicos con la misma escala** (una categoría, el tiempo y un estado: viajes por cliente, mes y
     resultado): un gráfico por cliente con las barras apiladas en los colores del §4 (verde entregado, amarillo parcial,

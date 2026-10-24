@@ -39,8 +39,8 @@ T.DISENO_POR_DEFECTO.forEach(function (it) {
     assert.ok(it.x >= 0 && it.x + it.w <= 12, '"' + it.id + '" se sale de las 12 columnas');
 });
 
-// Los gráficos de tres datos pedidos por Rocío (24/10) están en el catálogo.
-['kmcamionmes', 'clientesmes', 'facturacionmes', 'deudavencida'].forEach(function (id) {
+// Los gráficos de tres datos pedidos por Rocío (24/10, en dos tandas) están en el catálogo.
+['kmcamionmes', 'clientesmes', 'facturacionmes', 'deudavencida', 'ingresoscamionmes', 'recorridos', 'rechazos', 'deudaantiguedad'].forEach(function (id) {
     assert.ok(claves.has(id), 'falta el tablero "' + id + '"');
 });
 
@@ -74,6 +74,11 @@ assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').index
 const controlador = leer('WebApi_TransporteSanchez/Controllers/TablerosController.cs');
 assert.ok(controlador.indexOf('@"^[a-z0-9-]{1,40}$"') !== -1, 'la API valida las claves con el mismo formato que esta prueba');
 assert.ok(controlador.indexOf('Request.Headers.Authorization') !== -1, 'el usuario sale del token, no de un parámetro');
+// La antigüedad de la deuda sale de los tramos que devuelve api/tableros/deuda.
+['Vencida1a30', 'Vencida31a60', 'Vencida61a90', 'VencidaMas90'].forEach(function (campo) {
+    assert.ok(controlador.indexOf(campo) !== -1, 'api/tableros/deuda tiene que devolver ' + campo);
+    assert.ok(tablero.indexOf("'" + campo + "'") !== -1, 'dashboard.js tiene que mostrar ' + campo);
+});
 const script = leer('database/tableros/01_crear_tableros_favoritos.sql');
 ['TABLEROS_USUARIO', 'TABLEROS_FAVORITOS', "N'Tableros'"].forEach(function (texto) {
     assert.ok(script.indexOf(texto) !== -1, 'el script de la base tiene que crear ' + texto);

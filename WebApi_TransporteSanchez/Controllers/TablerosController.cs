@@ -58,6 +58,11 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal PorVencer { get; set; }
             public int ComprobantesVencidos { get; set; }
             public DateTime? VencimientoMasViejo { get; set; }
+            // Antigüedad de lo vencido (días desde el vencimiento): la suma de los cuatro tramos es Vencida.
+            public decimal Vencida1a30 { get; set; }
+            public decimal Vencida31a60 { get; set; }
+            public decimal Vencida61a90 { get; set; }
+            public decimal VencidaMas90 { get; set; }
         }
 
         private class UsuarioSesion
@@ -355,9 +360,11 @@ ORDER BY Fecha, c.ClienteID;", conexion))
             }
         }
 
-        // GET api/tableros/deuda → por cliente, lo que falta cobrar de facturas y notas de débito: vencido (antes de hoy) y por
-        // vencer. Misma cuenta que el saldo de cuenta corriente (CuentaCorrienteController.ObtenerSaldoGeneral: lo emitido
-        // menos lo aplicado vigente, solo clientes activos), con el día de hoy de Argentina.
+        // GET api/tableros/deuda → por cliente, lo que falta cobrar de facturas y notas de débito: vencido (antes de hoy), por
+        // vencer y lo vencido por antigüedad (1 a 30, 31 a 60, 61 a 90 y más de 90 días). Lo usan "Deuda vencida por cliente"
+        // y "Antigüedad de la deuda". Misma cuenta que el saldo de cuenta corriente
+        // (CuentaCorrienteController.ObtenerSaldoGeneral: lo emitido menos lo aplicado vigente, solo clientes activos), con el
+        // día de hoy de Argentina.
         [HttpGet, Route("deuda")]
         public IHttpActionResult GetDeuda()
         {
@@ -386,7 +393,11 @@ SELECT d.ClienteID,
        CAST(SUM(CASE WHEN d.FechaVencimiento < @hoy THEN d.Pendiente ELSE 0 END) AS decimal(18,2)) AS Vencida,
        CAST(SUM(CASE WHEN d.FechaVencimiento < @hoy THEN 0 ELSE d.Pendiente END) AS decimal(18,2)) AS PorVencer,
        SUM(CASE WHEN d.FechaVencimiento < @hoy THEN 1 ELSE 0 END) AS ComprobantesVencidos,
-       MIN(CASE WHEN d.FechaVencimiento < @hoy THEN d.FechaVencimiento END) AS VencimientoMasViejo
+       MIN(CASE WHEN d.FechaVencimiento < @hoy THEN d.FechaVencimiento END) AS VencimientoMasViejo,
+       CAST(SUM(CASE WHEN d.FechaVencimiento < @hoy AND DATEDIFF(day, d.FechaVencimiento, @hoy) <= 30 THEN d.Pendiente ELSE 0 END) AS decimal(18,2)) AS Vencida1a30,
+       CAST(SUM(CASE WHEN DATEDIFF(day, d.FechaVencimiento, @hoy) BETWEEN 31 AND 60 THEN d.Pendiente ELSE 0 END) AS decimal(18,2)) AS Vencida31a60,
+       CAST(SUM(CASE WHEN DATEDIFF(day, d.FechaVencimiento, @hoy) BETWEEN 61 AND 90 THEN d.Pendiente ELSE 0 END) AS decimal(18,2)) AS Vencida61a90,
+       CAST(SUM(CASE WHEN DATEDIFF(day, d.FechaVencimiento, @hoy) > 90 THEN d.Pendiente ELSE 0 END) AS decimal(18,2)) AS VencidaMas90
 FROM Deudas d
 JOIN dbo.CLIENTES cl ON cl.Cliente_ID = d.ClienteID
 WHERE d.Pendiente > 0
@@ -405,7 +416,11 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;", conexion))
                                     Vencida = Importe(r, "Vencida"),
                                     PorVencer = Importe(r, "PorVencer"),
                                     ComprobantesVencidos = Convert.ToInt32(r["ComprobantesVencidos"], CultureInfo.InvariantCulture),
-                                    VencimientoMasViejo = r["VencimientoMasViejo"] == DBNull.Value ? (DateTime?)null : (DateTime)r["VencimientoMasViejo"]
+                                    VencimientoMasViejo = r["VencimientoMasViejo"] == DBNull.Value ? (DateTime?)null : (DateTime)r["VencimientoMasViejo"],
+                                    Vencida1a30 = Importe(r, "Vencida1a30"),
+                                    Vencida31a60 = Importe(r, "Vencida31a60"),
+                                    Vencida61a90 = Importe(r, "Vencida61a90"),
+                                    VencidaMas90 = Importe(r, "VencidaMas90")
                                 });
                             }
                         }
