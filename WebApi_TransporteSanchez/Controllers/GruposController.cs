@@ -32,7 +32,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static readonly string[] CatalogoMenuPermisos =
         {
-            "Dashboard",
+            // "Tableros" (24/10): la pantalla con todos los tableros por tema, con permiso propio como el Dashboard.
+            "Dashboard", "Tableros",
             "Listado de choferes", "Gestión de choferes",
             "Listado de camiones", "Gestión de camiones",
             "Listado de viajes", "Gestión de viajes", "Gestión de orígenes y destinos", "Gestión de tarifas", "Presupuestos",
@@ -49,6 +50,7 @@ namespace WebApi_TransporteSanchez.Controllers
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "dashboard", "General" },
+                { "tableros", "General" },
                 { "listado de choferes", "Choferes" },
                 { "gestion de choferes", "Choferes" },
                 { "listado de camiones", "Camiones" },

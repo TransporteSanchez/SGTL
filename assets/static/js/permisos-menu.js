@@ -10,7 +10,7 @@
 
     // [nombre en la base, sin tildes ni mayúsculas; texto del menú], en el orden del menú.
     var OPCIONES_DEL_MENU = [
-        ['dashboard', 'Dashboard'],
+        ['dashboard', 'Dashboard'], ['tableros', 'Tableros'],
         ['listado de choferes', 'Listar choferes'], ['gestion de choferes', 'Gestionar choferes'],
         ['listado de camiones', 'Listar camiones'], ['gestion de camiones', 'Gestionar camiones'],
         ['listado de viajes', 'Listar viajes'], ['gestion de viajes', 'Gestionar viajes'],

@@ -1,5 +1,8 @@
-// Dashboard (index.html): período, indicadores, gráficos y listas de viajes.
-// Los viajes salen de api/Viajes/Buscar (filtra por Fecha_Inicio) y se agrupan acá, en el navegador.
+// Tableros: período, indicadores, gráficos y listas. Lo usan el dashboard (index.html, solo los favoritos del usuario) y
+// la pantalla Tableros (tableros.html, todos); las tarjetas las arma tableros-catalogo.js. Cada función dibuja su tablero
+// solo si está en la pantalla, y los datos que ningún tablero visible usa no se piden.
+// Los viajes salen de api/Viajes/Buscar (filtra por Fecha_Inicio) y se agrupan acá, en el navegador. La facturación y la
+// deuda, de api/tableros (solo lectura de cuenta corriente, con el token).
 // Usa window.SGTL (sgtl-ui.js), ApexCharts, FullCalendar y flatpickr.
 (function () {
   'use strict';
@@ -32,6 +35,11 @@
   var GRILLA = '#e9ecef';
   var EJE = '#ced4da';
 
+  // Mapas de calor (§13 del design system): un solo tono, el azul de las acciones, de claro (poco) a oscuro (mucho).
+  // Los cuatro primeros pasos llevan el número en azul oscuro; los cuatro últimos, en blanco.
+  var RAMPA_CALOR = ['#eaeefa', '#cdd7f1', '#adbde7', '#8da3dd', '#6c85d0', '#4c67c2', '#354eac', '#223692'];
+  var SIN_DATO = '#f1f3f6';
+
   var PERIODOS = {
     mes: { meses: 1 },
     trimestre: { meses: 3 },
@@ -43,12 +51,18 @@
   var MESES_LARGOS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   var DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
+  // Los ids de los tableros que usan los viajes del período: si no hay ninguno en la pantalla, no se piden.
+  var USAN_VIAJES_DEL_PERIODO = ['kpi-viajes', 'kpi-entregados', 'kpi-pendientes', 'kpi-rechazo', 'kpi-km', 'grafico-viajes', 'grafico-km',
+    'grafico-camiones', 'grafico-choferes', 'ultimos-viajes', 'comparativa-meses', 'calor-camiones', 'clientes-mes'];
+
   var dash = {
     periodo: null,
     choferes: {},
     camiones: {},
     viajes: {},          // por Viaje_ID, para abrir el detalle
     graficos: {},        // id → { chart, el, tamano(alto, ancho) }
+    pendientes: {},      // gráficos de una pestaña oculta: se dibujan al mostrarla
+    calendarioPendiente: false,
     pedido: 0            // para descartar respuestas viejas si se cambia el período rápido
   };
   var catalogos = null;  // promesa de choferes y camiones
@@ -63,8 +77,17 @@
     return formatoEntero.format(v);
   }
 
+  // "$ 1,2 M", "$ 850 mil", "−$ 12 mil": el monto entero va en el globito y en los totales.
+  function montoCompacto(v) {
+    return (v < 0 ? '−' : '') + '$ ' + compacto(Math.abs(v));
+  }
+
   function esc(valor) { return SGTL.escapar(valor); }
   function el(id) { return document.getElementById(id); }
+  function hay(id) { return !!el(id); }
+  function poner(id, texto) { var e = el(id); if (e) e.textContent = texto; }
+  function ponerHtml(id, html) { var e = el(id); if (e) e.innerHTML = html; }
+  function mensaje(texto) { return '<p class="dash-mensaje">' + esc(texto) + '</p>'; }
 
   // ---------------------------------------------------------------- Fechas
 
@@ -148,8 +171,7 @@
     });
     var input = el('periodoRango');
     if (input && input._flatpickr) input._flatpickr.setDate([p.desde, p.hasta], false);
-    var texto = el('periodoTexto');
-    if (texto) texto.textContent = 'Del ' + textoRango(p.desde, p.hasta) + ' · comparado con el ' + textoRango(p.antDesde, p.antHasta);
+    poner('periodoTexto', 'Del ' + textoRango(p.desde, p.hasta) + ' · comparado con el ' + textoRango(p.antDesde, p.antHasta));
   }
 
   function elegirPeriodo(tipo, desde, hasta) {
@@ -183,6 +205,20 @@
 
   function pedir(url, datos) {
     return $.ajax({ url: API + url, type: 'GET', dataType: 'json', data: datos || {} });
+  }
+
+  // api/tableros pide el token (es el usuario de la sesión, no un parámetro).
+  function pedirConSesion(url, datos) {
+    return $.ajax({
+      url: API + url, type: 'GET', dataType: 'json', cache: false, data: datos || {},
+      headers: { Authorization: 'Bearer ' + (window.SGTLTableros ? SGTLTableros.token() : '') }
+    });
+  }
+
+  // Texto para la tarjeta cuando api/tableros no responde. Con la sesión vencida, además lleva al login (SGTL.mensajeError).
+  function textoErrorSesion(xhr, porDefecto) {
+    if (xhr && xhr.status === 403) return 'No tenés permiso para ver la facturación.';
+    return SGTL.mensajeError(xhr, porDefecto);
   }
 
   // 404 = la lista está vacía (Choferes y Camiones responden así).
@@ -254,6 +290,9 @@
     c.km += v._km;
   }
 
+  // La clave del mes (o de la semana) de una fecha, la misma que arma armarGrupos.
+  function claveGrupo(fecha, p) { return SGTL.fechaISO(p.porSemana ? lunes(fecha) : inicioMes(fecha)); }
+
   // Grupos del gráfico (meses o semanas) y el inmediatamente anterior, para la variación de la tabla.
   function armarGrupos(p) {
     var siguiente = p.porSemana ? function (d) { return sumarDias(d, 7); } : function (d) { return new Date(d.getFullYear(), d.getMonth() + 1, 1); };
@@ -273,14 +312,20 @@
       if (p.porSemana) {
         g.corto = diaMes(g.inicio);
         g.largo = 'Semana del ' + diaMes(g.inicio) + ' al ' + diaMes(g.fin);
+        g.minimo = String(g.inicio.getDate());
       } else {
         var conAnio = varios && (i === 0 || g.inicio.getMonth() === 0);
         g.corto = MESES[g.inicio.getMonth()] + (conAnio ? ' ' + String(g.inicio.getFullYear()).slice(2) : '');
         g.largo = MESES_LARGOS[g.inicio.getMonth()] + ' ' + g.inicio.getFullYear();
+        g.minimo = MESES[g.inicio.getMonth()].charAt(0);
       }
       if (enCurso) g.largo += ' (en curso)';
     });
     return { lista: lista, anterior: anterior };
+  }
+
+  function usaViajesDelPeriodo() {
+    return USAN_VIAJES_DEL_PERIODO.some(hay);
   }
 
   function cargarPeriodo() {
@@ -288,32 +333,36 @@
     var numero = ++dash.pedido;
     var grupos = armarGrupos(p);
     var desdeConsulta = p.antDesde < grupos.anterior.inicio ? p.antDesde : grupos.anterior.inicio;
-    var tablero = document.querySelector('.grid-stack');
-    if (tablero) tablero.classList.add('dash-actualizando');
 
-    var viajes = buscarViajes(desdeConsulta, p.hasta);
-    var costo = pedir('/Viajes/ResumenCosto', { fechaDesde: SGTL.fechaISO(p.desde), fechaHasta: SGTL.fechaISO(p.hasta) });
-    var costoAnterior = pedir('/Viajes/ResumenCosto', { fechaDesde: SGTL.fechaISO(p.antDesde), fechaHasta: SGTL.fechaISO(p.antHasta) });
+    cargarFacturacion(p, grupos.lista, numero);
 
-    $.when(viajes, catalogos).done(function (todos) {
-      if (numero !== dash.pedido) return;
-      procesarViajes(p, grupos, todos);
-    }).fail(function () {
-      if (numero !== dash.pedido) return;
-      SGTL.toastError('No se pudieron cargar los viajes del período. Revisá la conexión y probá de nuevo.');
-      sinDatosPeriodo('No se pudieron cargar los viajes.');
-    }).always(function () {
-      if (numero === dash.pedido && tablero) tablero.classList.remove('dash-actualizando');
-    });
+    if (usaViajesDelPeriodo()) {
+      document.body.classList.add('dash-actualizando');
+      var viajes = buscarViajes(desdeConsulta, p.hasta);
+      $.when(viajes, catalogos).done(function (todos) {
+        if (numero !== dash.pedido) return;
+        procesarViajes(p, grupos, todos);
+      }).fail(function () {
+        if (numero !== dash.pedido) return;
+        SGTL.toastError('No se pudieron cargar los viajes del período. Revisá la conexión y probá de nuevo.');
+        sinDatosPeriodo('No se pudieron cargar los viajes.');
+      }).always(function () {
+        if (numero === dash.pedido) document.body.classList.remove('dash-actualizando');
+      });
+    }
 
-    $.when(costo, costoAnterior).done(function (r1, r2) {
-      if (numero !== dash.pedido) return;
-      mostrarCosto(r1[0], r2[0]);
-    }).fail(function () {
-      if (numero !== dash.pedido) return;
-      el('costo-promedio-texto').textContent = '—';
-      el('costo-detalle').textContent = 'No disponible';
-    });
+    if (hay('costo-promedio-texto')) {
+      var costo = pedir('/Viajes/ResumenCosto', { fechaDesde: SGTL.fechaISO(p.desde), fechaHasta: SGTL.fechaISO(p.hasta) });
+      var costoAnterior = pedir('/Viajes/ResumenCosto', { fechaDesde: SGTL.fechaISO(p.antDesde), fechaHasta: SGTL.fechaISO(p.antHasta) });
+      $.when(costo, costoAnterior).done(function (r1, r2) {
+        if (numero !== dash.pedido) return;
+        mostrarCosto(r1[0], r2[0]);
+      }).fail(function () {
+        if (numero !== dash.pedido) return;
+        poner('costo-promedio-texto', '—');
+        poner('costo-detalle', 'No disponible');
+      });
+    }
   }
 
   function procesarViajes(p, grupos, todos) {
@@ -329,7 +378,7 @@
       var f = registrarViaje(v)._fecha;
       if (!f) return;
       v._grupo = grupoDe(v);
-      var clave = SGTL.fechaISO(p.porSemana ? lunes(f) : inicioMes(f));
+      var clave = v._clave = claveGrupo(f, p);
       if (f >= p.desde && f < finPeriodo) {
         actual.push(v);
         sumar(total, v);
@@ -344,6 +393,8 @@
     graficoKm(grupos.lista, p);
     graficoReparto('camion', actual, total);
     graficoReparto('chofer', actual, total);
+    graficoClientesMes(actual, grupos.lista, p);
+    calorCamiones(actual, grupos.lista, p);
     tablaUltimos(actual);
     tablaComparativa(grupos, total, p);
     if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 60);
@@ -351,12 +402,14 @@
 
   function sinDatosPeriodo(texto) {
     ['kpi-viajes', 'kpi-entregados', 'kpi-pendientes', 'kpi-rechazo', 'kpi-km'].forEach(function (id) {
-      el(id).textContent = '—';
-      el(id + '-detalle').textContent = '';
+      poner(id, '—');
+      poner(id + '-detalle', '');
     });
     ['grafico-viajes', 'grafico-km', 'grafico-camiones', 'grafico-choferes'].forEach(function (id) { mensajeGrafico(id, texto); });
-    el('ultimos-viajes').innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>';
-    el('comparativa-meses').innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>';
+    ponerHtml('ultimos-viajes', '<tr><td colspan="5" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>');
+    ponerHtml('comparativa-meses', '<tr><td colspan="8" class="text-center text-muted py-4">' + esc(texto) + '</td></tr>');
+    ponerHtml('clientes-mes', mensaje(texto));
+    ponerHtml('calor-camiones', mensaje(texto));
   }
 
   // ---------------------------------------------------------------- Indicadores
@@ -385,35 +438,33 @@
 
   function mostrarIndicadores(t, ant) {
     var entregados = t.entregado + t.parcial + t.rechazo;
-    el('kpi-viajes').textContent = formatoEntero.format(t.viajes);
-    el('kpi-viajes-detalle').innerHTML = variacion(t.viajes, ant.viajes, true);
+    poner('kpi-viajes', formatoEntero.format(t.viajes));
+    ponerHtml('kpi-viajes-detalle', variacion(t.viajes, ant.viajes, true));
 
-    el('kpi-entregados').textContent = formatoEntero.format(entregados);
-    el('kpi-entregados-detalle').textContent = porcentaje(entregados, t.viajes) + ' de los viajes';
+    poner('kpi-entregados', formatoEntero.format(entregados));
+    poner('kpi-entregados-detalle', porcentaje(entregados, t.viajes) + ' de los viajes');
 
-    el('kpi-pendientes').textContent = formatoEntero.format(t.pendiente);
-    el('kpi-pendientes-detalle').textContent = t.pendiente
+    poner('kpi-pendientes', formatoEntero.format(t.pendiente));
+    poner('kpi-pendientes-detalle', t.pendiente
       ? t.enViaje + ' en viaje · ' + (t.pendiente - t.enViaje) + ' sin salir'
-      : 'Todos los viajes se entregaron';
+      : 'Todos los viajes se entregaron');
 
-    el('kpi-rechazo').textContent = formatoEntero.format(t.rechazo);
-    el('kpi-rechazo-detalle').textContent = porcentaje(t.rechazo, entregados) + ' de los entregados · ' +
-      t.parcial + (t.parcial === 1 ? ' parcial' : ' parciales');
+    poner('kpi-rechazo', formatoEntero.format(t.rechazo));
+    poner('kpi-rechazo-detalle', porcentaje(t.rechazo, entregados) + ' de los entregados · ' +
+      t.parcial + (t.parcial === 1 ? ' parcial' : ' parciales'));
 
-    el('kpi-km').textContent = formatoEntero.format(Math.round(t.km));
-    el('kpi-km-detalle').innerHTML = variacion(Math.round(t.km), Math.round(ant.km), true);
+    poner('kpi-km', formatoEntero.format(Math.round(t.km)));
+    ponerHtml('kpi-km-detalle', variacion(Math.round(t.km), Math.round(ant.km), true));
   }
 
   function mostrarCosto(r, ant) {
-    var promedio = el('costo-promedio-texto');
-    var detalle = el('costo-detalle');
     if (r && r.cantidadViajes > 0) {
-      promedio.textContent = SGTL.monto(r.costoPromedio, { sinDecimales: true });
-      detalle.innerHTML = 'Total ' + esc(SGTL.monto(r.costoTotal, { sinDecimales: true })) + ' ' +
-        variacion(Number(r.costoTotal) || 0, Number(ant && ant.costoTotal) || 0, true, { corto: true });
+      poner('costo-promedio-texto', SGTL.monto(r.costoPromedio, { sinDecimales: true }));
+      ponerHtml('costo-detalle', 'Total ' + esc(SGTL.monto(r.costoTotal, { sinDecimales: true })) + ' ' +
+        variacion(Number(r.costoTotal) || 0, Number(ant && ant.costoTotal) || 0, true, { corto: true }));
     } else {
-      promedio.textContent = '—';
-      detalle.textContent = 'Sin viajes en el período';
+      poner('costo-promedio-texto', '—');
+      poner('costo-detalle', 'Sin viajes en el período');
     }
   }
 
@@ -423,6 +474,7 @@
     var g = dash.graficos[id];
     if (g && g.chart) { g.chart.destroy(); }
     delete dash.graficos[id];
+    delete dash.pendientes[id];
     var cont = el(id);
     if (cont) cont.innerHTML = '<p class="text-muted text-center py-5 mb-0">' + esc(texto) + '</p>';
   }
@@ -441,15 +493,16 @@
     return Math.max.apply(null, textos.map(function (t) { return lienzo.measureText(t).width; }));
   }
 
-  // Máximo del eje en números redondos (5.000, 10.000, 25.000) con 5 marcas o menos.
-  function escalaRedonda(valor) {
+  // Máximo del eje en números redondos (5.000, 10.000, 25.000) con 5 marcas o menos (o las que se pidan).
+  function escalaRedonda(valor, maximoMarcas) {
+    var tope = maximoMarcas || 5;
     if (!(valor > 0)) return { max: 1, marcas: 1 };
     var potencia = Math.pow(10, Math.floor(Math.log10(valor)));
     var pasos = [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10];
     for (var i = 0; i < pasos.length; i++) {
       var paso = pasos[i] * potencia;
       var marcas = Math.ceil(valor / paso);
-      if (marcas <= 5) return { max: marcas * paso, marcas: marcas };
+      if (marcas <= tope) return { max: marcas * paso, marcas: marcas };
     }
     return { max: valor, marcas: 4 };
   }
@@ -474,10 +527,16 @@
     };
   }
 
-  // Crea el gráfico o, si ya está, lo actualiza con los datos nuevos (sin parpadeo).
+  // Crea el gráfico o, si ya está, lo actualiza con los datos nuevos (sin parpadeo). Si la tarjeta está en una pestaña
+  // oculta de Tableros, lo deja para cuando se muestre (ApexCharts no puede medir una tarjeta oculta).
   function dibujar(id, opciones, tamano) {
     var cont = el(id);
     if (!cont) return;
+    if (!cont.offsetParent) {
+      dash.pendientes[id] = { opciones: opciones, tamano: tamano };
+      return;
+    }
+    delete dash.pendientes[id];
     var g = dash.graficos[id];
     var alto = altoDisponible(cont);
     var completo = $.extend(true, {}, opciones, tamano(alto, cont.clientWidth || 600));
@@ -495,8 +554,9 @@
   function cantidadViajes(n) { return formatoEntero.format(n) + (n === 1 ? ' viaje' : ' viajes'); }
 
   function graficoViajes(grupos, p) {
+    if (!hay('grafico-viajes')) return;
     var total = grupos.reduce(function (s, g) { return s + g.viajes; }, 0);
-    el('titulo-grafico-viajes').textContent = p.porSemana ? 'Viajes por semana' : 'Viajes por mes';
+    poner('titulo-grafico-viajes', p.porSemana ? 'Viajes por semana' : 'Viajes por mes');
     if (!total) { mensajeGrafico('grafico-viajes', 'No hay viajes en el período.'); return; }
     var opciones = $.extend(true, base(), {
       chart: { type: 'bar', stacked: true },
@@ -524,8 +584,9 @@
   }
 
   function graficoKm(grupos, p) {
+    if (!hay('grafico-km')) return;
     var total = grupos.reduce(function (s, g) { return s + g.km; }, 0);
-    el('titulo-grafico-km').textContent = p.porSemana ? 'Km por semana' : 'Km por mes';
+    poner('titulo-grafico-km', p.porSemana ? 'Km por semana' : 'Km por mes');
     if (!total) { mensajeGrafico('grafico-km', 'No hay km cargados en el período.'); return; }
     var opciones = $.extend(true, base(), {
       chart: { type: 'bar' },
@@ -550,13 +611,14 @@
     });
   }
 
-  // Cómo se agrupan los km del período en "Km por camión" y "Km por chofer".
+  // Cómo se agrupan los km del período en "Km por camión" y "Km por chofer" (y en el mapa de calor de camiones).
   var REPARTOS = {
     camion: {
       grafico: 'grafico-camiones', plural: 'camiones',
       clave: function (v) { return v.CamionID || 0; },
       nombre: function (id) { return dominio(id); },
       detalle: function (id) { var c = dash.camiones[id]; return c ? [c.Marca, c.Modelo].filter(Boolean).join(' ') : ''; },
+      inactivo: function (id) { var c = dash.camiones[id]; return !!c && String(c.EstadoCamion || '').toLowerCase() !== 'activo'; },
       sinAsignar: 'Sin camión'
     },
     chofer: {
@@ -572,6 +634,7 @@
   // Km y viajes del período por camión o por chofer. Más de 8: el resto va a "Otros".
   function graficoReparto(tipo, viajes, total) {
     var como = REPARTOS[tipo];
+    if (!hay(como.grafico)) return;
     var grupos = {};
     viajes.forEach(function (v) {
       var id = como.clave(v);
@@ -604,8 +667,9 @@
       var corto = lugar - anchoLargo - 12 < lugar * 0.45;
       var anchoNumero = corto ? anchoCorto : anchoLargo;
       var libre = Math.max(lugar - anchoNumero - 12, lugar * 0.4);
+      // En una tarjeta angosta, menos marcas en el eje: si no, los números se pisan ("25 mil50 mil").
       return {
-        escala: escalaRedonda(Math.max(filas[0].km * lugar / libre, filas[0].km * 1.1)),
+        escala: escalaRedonda(Math.max(filas[0].km * lugar / libre, filas[0].km * 1.1), ancho < 480 ? 3 : 5),
         texto: corto ? textoCorto : textoLargo
       };
     };
@@ -649,8 +713,13 @@
     });
   }
 
-  // Se llama al agrandar o achicar una tarjeta (Personalizar) y al cambiar el ancho de la ventana.
+  // Se llama al agrandar o achicar una tarjeta (Personalizar), al cambiar el ancho de la ventana y al mostrar una
+  // pestaña de Tableros (ahí se dibujan los gráficos que estaban esperando).
   function ajustarGraficos() {
+    Object.keys(dash.pendientes).forEach(function (id) {
+      var cont = el(id);
+      if (cont && cont.offsetParent) dibujar(id, dash.pendientes[id].opciones, dash.pendientes[id].tamano);
+    });
     Object.keys(dash.graficos).forEach(function (id) {
       var g = dash.graficos[id];
       if (!g || !g.chart || !g.el.isConnected || !g.el.offsetParent) return;
@@ -663,14 +732,257 @@
     });
   }
 
+  // ---------------------------------------------------------------- Mapa de calor (§13)
+
+  // Una tabla con un número en cada celda; el fondo, del claro al oscuro según el valor (el máximo es el más oscuro).
+  // o: { encabezado, columnas: [{ corto, largo }], filas: [{ nombre, detalle, valores: [], extra: [] }], formato(v),
+  //      globo(fila, i, v), total(v), sinDato (texto del gris), unidad (para el máximo de la escala) }.
+  function mapaCalor(cont, o) {
+    var maximo = 0;
+    o.filas.forEach(function (f) { f.valores.forEach(function (v) { if (v > maximo) maximo = v; }); });
+    var totalesColumna = o.columnas.map(function (c, i) { return o.filas.reduce(function (s, f) { return s + f.valores[i]; }, 0); });
+    var totalGeneral = totalesColumna.reduce(function (s, v) { return s + v; }, 0);
+
+    function celda(f, v, i) {
+      var globo = esc(o.globo(f, i, v));
+      if (!(v > 0)) {
+        return '<td class="dash-calor-vacio" data-bs-toggle="tooltip" title="' + globo + '">' + (v < 0 ? esc(o.formato(v)) : '—') + '</td>';
+      }
+      var paso = Math.min(RAMPA_CALOR.length - 1, Math.floor(v / maximo * RAMPA_CALOR.length));
+      return '<td class="' + (paso < 4 ? 'dash-calor-tinta' : 'dash-calor-blanco') + '" style="background-color:' + RAMPA_CALOR[paso] +
+        '" data-bs-toggle="tooltip" title="' + globo + '">' + esc(o.formato(v)) + '</td>';
+    }
+
+    cont.innerHTML = '<div class="dash-calor-marco"><table class="dash-calor"><thead><tr><th scope="col"><span class="visually-hidden">' + esc(o.encabezado) + '</span></th>' +
+      o.columnas.map(function (c) { return '<th scope="col" title="' + esc(c.largo) + '">' + esc(c.corto) + '</th>'; }).join('') +
+      '<th scope="col" class="dash-calor-total">Total</th></tr></thead><tbody>' +
+      o.filas.map(function (f) {
+        var total = f.valores.reduce(function (s, v) { return s + v; }, 0);
+        return '<tr><th scope="row">' + esc(f.nombre) + (f.detalle ? '<small>' + esc(f.detalle) + '</small>' : '') + '</th>' +
+          f.valores.map(function (v, i) { return celda(f, v, i); }).join('') +
+          '<td class="dash-calor-total">' + esc(o.total(total)) + '</td></tr>';
+      }).join('') +
+      '</tbody><tfoot><tr><th scope="row">Total</th>' +
+      totalesColumna.map(function (v) { return '<td class="dash-calor-total text-center">' + esc(o.formato(v)) + '</td>'; }).join('') +
+      '<td class="dash-calor-total">' + esc(o.total(totalGeneral)) + '</td></tr></tfoot></table></div>' +
+      '<div class="dash-escala" aria-hidden="true"><span class="dash-escala-paso" style="background-color:' + SIN_DATO + '"></span><span>' + esc(o.sinDato) +
+      '</span><span class="ms-2">Menos</span>' + RAMPA_CALOR.map(function (c) { return '<span class="dash-escala-paso" style="background-color:' + c + '"></span>'; }).join('') +
+      '<span>Más (hasta ' + esc(o.formato(maximo) + (o.unidad || '')) + ')</span></div>';
+  }
+
+  // Km del período por camión y por mes (o semana). Los 8 con más km; si hay más, los 7 primeros y "Otros".
+  function calorCamiones(viajes, grupos, p) {
+    var cont = el('calor-camiones');
+    if (!cont) return;
+    poner('titulo-kmcamionmes', p.porSemana ? 'Km por camión y por semana' : 'Km por camión y por mes');
+    var como = REPARTOS.camion;
+    var indice = {};
+    grupos.forEach(function (g, i) { indice[g.clave] = i; });
+    var porCamion = {};
+    viajes.forEach(function (v) {
+      var i = indice[v._clave];
+      if (i === undefined) return;
+      var id = como.clave(v);
+      var c = porCamion[id] || (porCamion[id] = { id: id, valores: grupos.map(function () { return 0; }), extra: grupos.map(function () { return 0; }), km: 0 });
+      c.valores[i] += v._km;
+      c.extra[i]++;
+      c.km += v._km;
+    });
+    var filas = Object.keys(porCamion).map(function (k) { return porCamion[k]; })
+      .filter(function (c) { return c.km > 0; })
+      .sort(function (a, b) { return b.km - a.km; });
+    if (!filas.length) { cont.innerHTML = mensaje('No hay km cargados en el período.'); return; }
+    if (filas.length > 8) {
+      var resto = filas.splice(7);
+      filas.push({
+        otros: resto.length,
+        valores: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.valores[i]; }, 0); }),
+        extra: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.extra[i]; }, 0); })
+      });
+    }
+    filas.forEach(function (c) {
+      c.nombre = c.otros ? 'Otros ' + c.otros : (c.id ? como.nombre(c.id) : como.sinAsignar);
+      c.detalle = c.otros ? c.otros + ' camiones' : (c.id ? [como.detalle(c.id), como.inactivo(c.id) ? 'inactivo' : ''].filter(Boolean).join(' · ') : '');
+    });
+    mapaCalor(cont, {
+      encabezado: 'Camión', columnas: grupos, filas: filas, sinDato: 'Sin km', unidad: ' km',
+      formato: compacto,
+      total: function (v) { return formatoEntero.format(v) + ' km'; },
+      globo: function (f, i, v) {
+        return f.nombre + ' · ' + grupos[i].largo + ': ' + (v > 0 ? formatoEntero.format(v) + ' km en ' + cantidadViajes(f.extra[i]) : 'sin km');
+      }
+    });
+  }
+
+  // ---------------------------------------------------------------- Viajes por cliente, mes y resultado (§13)
+
+  // Un gráfico chico por cliente, todos con la misma escala: barras por mes (o semana) con el resultado de la entrega.
+  // Los 6 clientes con más viajes; si hay más de 7, el resto va junto en "Otros clientes".
+  function graficoClientesMes(viajes, grupos, p) {
+    var cont = el('clientes-mes');
+    if (!cont) return;
+    poner('titulo-clientesmes', p.porSemana ? 'Viajes por cliente, semana y resultado' : 'Viajes por cliente, mes y resultado');
+    if (!viajes.length) { cont.innerHTML = mensaje('No hay viajes en el período.'); return; }
+    var indice = {};
+    grupos.forEach(function (g, i) { indice[g.clave] = i; });
+    var porCliente = {};
+    viajes.forEach(function (v) {
+      var i = indice[v._clave];
+      if (i === undefined) return;
+      var id = v.ClienteID || 0;
+      var c = porCliente[id] || (porCliente[id] = { nombre: String(v.Cliente || '').trim() || 'Sin cliente', columnas: grupos.map(function () { return contador(); }), total: contador() });
+      sumar(c.columnas[i], v);
+      sumar(c.total, v);
+    });
+    var clientes = Object.keys(porCliente).map(function (k) { return porCliente[k]; })
+      .sort(function (a, b) { return b.total.viajes - a.total.viajes || a.nombre.localeCompare(b.nombre); });
+    var agrupados = false;
+    if (clientes.length > 7) {
+      var resto = clientes.splice(6);
+      var otros = { nombre: 'Otros clientes (' + resto.length + ')', columnas: grupos.map(function () { return contador(); }), total: contador() };
+      resto.forEach(function (c) {
+        c.columnas.forEach(function (col, i) { GRUPOS.forEach(function (g) { otros.columnas[i][g.id] += col[g.id]; }); otros.columnas[i].viajes += col.viajes; });
+        GRUPOS.forEach(function (g) { otros.total[g.id] += c.total[g.id]; });
+        otros.total.viajes += c.total.viajes;
+      });
+      clientes.push(otros);
+      agrupados = true;
+    }
+    var maximo = 0;
+    clientes.forEach(function (c) { c.columnas.forEach(function (col) { if (col.viajes > maximo) maximo = col.viajes; }); });
+    var ALTO = 88;   // 5,5 rem: el alto del gráfico chico
+    var etiqueta = grupos.length <= 6 ? 'corto' : 'minimo';
+
+    function columna(c, col, i) {
+      var partes = GRUPOS.filter(function (g) { return col[g.id] > 0; });
+      var lugar = ALTO - 2 * Math.max(0, partes.length - 1);
+      var detalle = partes.map(function (g) {
+        var n = col[g.id];
+        var texto = { entregado: n === 1 ? 'entregado' : 'entregados', parcial: n === 1 ? 'parcial' : 'parciales', rechazo: 'con rechazo', pendiente: n === 1 ? 'pendiente' : 'pendientes' }[g.id];
+        return n + ' ' + texto;
+      }).join(', ');
+      var globo = c.nombre + ' · ' + grupos[i].largo + ': ' + (col.viajes ? cantidadViajes(col.viajes) + ' (' + detalle + ')' : 'sin viajes');
+      return '<div class="dash-mini-columna" data-bs-toggle="tooltip" title="' + esc(globo) + '">' +
+        partes.map(function (g) {
+          return '<span style="height:' + Math.max(2, Math.round(col[g.id] / maximo * lugar)) + 'px;background-color:' + g.color + '"></span>';
+        }).join('') + '</div>';
+    }
+
+    function resumen(c) {
+      var entregados = c.total.entregado + c.total.parcial + c.total.rechazo;
+      var rechazos = !entregados ? 'sin entregas todavía' : (c.total.rechazo ? porcentaje(c.total.rechazo, entregados) + ' con rechazo' : 'sin rechazos');
+      return cantidadViajes(c.total.viajes) + ' · ' + rechazos;
+    }
+
+    cont.innerHTML = '<div class="dash-leyenda">' + GRUPOS.map(function (g) {
+      return '<span><span class="dash-leyenda-punto" style="background-color:' + g.color + '"></span>' + esc(g.texto) + '</span>';
+    }).join('') + '</div>' +
+      '<div class="dash-multiples">' + clientes.map(function (c) {
+        return '<div><h6 class="dash-mini-titulo" title="' + esc(c.nombre) + '">' + esc(c.nombre) + '</h6>' +
+          '<div class="dash-mini-detalle">' + esc(resumen(c)) + '</div>' +
+          '<div class="dash-mini-grafico">' + c.columnas.map(function (col, i) { return columna(c, col, i); }).join('') + '</div>' +
+          '<div class="dash-mini-ejes" aria-hidden="true">' + grupos.map(function (g) { return '<span>' + esc(g[etiqueta]) + '</span>'; }).join('') + '</div></div>';
+      }).join('') + '</div>' +
+      '<p class="small text-muted mb-0 mt-3">' + (agrupados ? 'Los 6 clientes con más viajes del período; el resto, junto en "Otros clientes". ' : '') +
+      'Todos con la misma escala: la barra más alta es de ' + cantidadViajes(maximo) + '.</p>';
+  }
+
+  // ---------------------------------------------------------------- Facturación y deuda (cuenta corriente, solo lectura)
+
+  // Facturación del período por cliente y por mes (o semana): facturas y notas de débito menos notas de crédito.
+  function cargarFacturacion(p, grupos, numero) {
+    var cont = el('calor-facturacion');
+    if (!cont) return;
+    poner('titulo-facturacionmes', p.porSemana ? 'Facturación por cliente y por semana' : 'Facturación por cliente y por mes');
+    pedirConSesion('/tableros/facturacion', { fechaDesde: SGTL.fechaISO(p.desde), fechaHasta: SGTL.fechaISO(p.hasta) }).done(function (datos) {
+      if (numero !== dash.pedido) return;
+      var indice = {};
+      grupos.forEach(function (g, i) { indice[g.clave] = i; });
+      var porCliente = {};
+      (datos || []).forEach(function (r) {
+        var fecha = leerFechaApi(r.Fecha);
+        var i = fecha ? indice[claveGrupo(fecha, p)] : undefined;
+        if (i === undefined) return;
+        var c = porCliente[r.ClienteID] || (porCliente[r.ClienteID] = {
+          nombre: String(r.Cliente || '').trim() || 'Sin nombre', valores: grupos.map(function () { return 0; }), extra: grupos.map(function () { return 0; }), total: 0
+        });
+        c.valores[i] += Number(r.Total) || 0;
+        c.extra[i] += Number(r.Comprobantes) || 0;
+        c.total += Number(r.Total) || 0;
+      });
+      var filas = Object.keys(porCliente).map(function (k) { return porCliente[k]; })
+        .sort(function (a, b) { return b.total - a.total || a.nombre.localeCompare(b.nombre); });
+      if (!filas.length) { cont.innerHTML = mensaje('No hay comprobantes emitidos en el período.'); return; }
+      if (filas.length > 8) {
+        var resto = filas.splice(7);
+        filas.push({
+          nombre: 'Otros clientes (' + resto.length + ')',
+          valores: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.valores[i]; }, 0); }),
+          extra: grupos.map(function (g, i) { return resto.reduce(function (s, c) { return s + c.extra[i]; }, 0); })
+        });
+      }
+      mapaCalor(cont, {
+        encabezado: 'Cliente', columnas: grupos, filas: filas, sinDato: 'Sin facturar',
+        formato: montoCompacto,
+        total: function (v) { return SGTL.monto(v, { sinDecimales: true }); },
+        globo: function (f, i, v) {
+          var n = f.extra[i];
+          return f.nombre + ' · ' + grupos[i].largo + ': ' + (n ? SGTL.monto(v, { sinDecimales: true }) + ' en ' + n + (n === 1 ? ' comprobante' : ' comprobantes') : 'sin facturar');
+        }
+      });
+    }).fail(function (xhr) {
+      if (numero !== dash.pedido) return;
+      cont.innerHTML = mensaje(textoErrorSesion(xhr, 'No se pudo cargar la facturación.'));
+    });
+  }
+
+  // Deuda de cada cliente: lo vencido (de mayor a menor) y lo que vence más adelante. No depende del período.
+  function cargarDeuda() {
+    var cuerpo = el('deuda-clientes');
+    if (!cuerpo) return;
+    pedirConSesion('/tableros/deuda').done(function (datos) {
+      var filas = Array.isArray(datos) ? datos : [];
+      var conVencida = filas.filter(function (r) { return Number(r.Vencida) > 0; });
+      var vencida = filas.reduce(function (s, r) { return s + (Number(r.Vencida) || 0); }, 0);
+      var porVencer = filas.reduce(function (s, r) { return s + (Number(r.PorVencer) || 0); }, 0);
+      poner('deuda-cantidad', conVencida.length ? 'Hoy · ' + conVencida.length + (conVencida.length === 1 ? ' cliente' : ' clientes') : 'Hoy');
+      poner('deuda-resumen', 'Vencido ' + SGTL.monto(vencida, { sinDecimales: true }) + ' · por vencer ' + SGTL.monto(porVencer, { sinDecimales: true }));
+      var resumen = el('deuda-resumen');
+      if (resumen) resumen.classList.toggle('d-none', !filas.length);
+      if (!filas.length) {
+        cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' +
+          '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>Ningún cliente tiene deuda pendiente.</td></tr>';
+        return;
+      }
+      var hoy = inicioDia(new Date());
+      SGTL.tabla.llenar(cuerpo, filas.map(function (r) {
+        var desde = leerFechaApi(r.VencimientoMasViejo);
+        var dias = desde ? diasEntre(desde, hoy) : 0;
+        // Debajo del cliente, desde cuándo debe lo vencido (el comprobante vencido más viejo).
+        var vencidoDesde = desde ? 'Vencido desde el ' + SGTL.fecha(desde) + ' (hace ' + dias + (dias === 1 ? ' día)' : ' días)') : 'Nada vencido';
+        return '<tr>' +
+          '<td class="dash-celda-texto">' + esc(r.Cliente) + '<small class="d-block text-muted text-truncate">' + esc(vencidoDesde) + '</small></td>' +
+          '<td class="text-end text-nowrap">' + (Number(r.Vencida) > 0 ? esc(SGTL.monto(r.Vencida, { sinDecimales: true })) : '—') + '</td>' +
+          '<td class="text-end text-nowrap">' + (Number(r.PorVencer) > 0 ? esc(SGTL.monto(r.PorVencer, { sinDecimales: true })) : '—') + '</td>' +
+          '</tr>';
+      }).join(''));
+    }).fail(function (xhr) {
+      poner('deuda-cantidad', 'Hoy');
+      var resumen = el('deuda-resumen');
+      if (resumen) resumen.classList.add('d-none');
+      cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + esc(textoErrorSesion(xhr, 'No se pudo cargar la deuda de los clientes.')) + '</td></tr>';
+    });
+  }
+
   // ---------------------------------------------------------------- Tablas y listas
 
   function tablaUltimos(viajes) {
+    var cuerpo = el('ultimos-viajes');
+    if (!cuerpo) return;
     var ahora = new Date();
     var filas = viajes.filter(function (v) { return v._fecha <= ahora; })
       .sort(function (a, b) { return b._fecha - a._fecha || b.Viaje_ID - a.Viaje_ID; })
       .slice(0, 8);
-    var cuerpo = el('ultimos-viajes');
     if (!filas.length) {
       cuerpo.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">No hay viajes en el período.</td></tr>';
       return;
@@ -689,8 +1001,9 @@
 
   // Más reciente arriba; la variación es contra el mes (o la semana) anterior.
   function tablaComparativa(grupos, total, p) {
-    el('titulo-comparativa').textContent = p.porSemana ? 'Comparativa por semana' : 'Comparativa por mes';
-    el('comparativa-columna').textContent = p.porSemana ? 'Semana' : 'Mes';
+    if (!hay('comparativa-meses')) return;
+    poner('titulo-comparativa', p.porSemana ? 'Comparativa por semana' : 'Comparativa por mes');
+    poner('comparativa-columna', p.porSemana ? 'Semana' : 'Mes');
     var lista = grupos.lista;
     var filas = lista.map(function (g, i) {
       var previo = i === 0 ? grupos.anterior : lista[i - 1];
@@ -725,13 +1038,14 @@
 
   // Desde hoy, sin entregar todavía. No depende del período elegido.
   function cargarProximos() {
+    if (!hay('proximos-viajes')) return;
     var hoy = inicioDia(new Date());
     $.when(buscarViajes(hoy, null), catalogos).done(function (todos) {
       var proximos = todos.map(registrarViaje)
         .filter(function (v) { return v._fecha && v._fecha >= hoy && grupoDe(v) === 'pendiente'; })
         .sort(function (a, b) { return a._fecha - b._fecha || a.Viaje_ID - b.Viaje_ID; });
       var cont = el('proximos-viajes');
-      el('proximos-cantidad').textContent = proximos.length ? cantidadViajes(proximos.length) : '';
+      poner('proximos-cantidad', proximos.length ? cantidadViajes(proximos.length) : '');
       if (!proximos.length) {
         cont.innerHTML = '<div class="text-muted text-center py-4">No hay viajes programados.</div>';
         return;
@@ -745,13 +1059,14 @@
           '<small class="text-muted d-block text-truncate">' + extra + '</small></button>';
       }).join('');
     }).fail(function () {
-      el('proximos-viajes').innerHTML = '<div class="text-muted text-center py-4">No se pudieron cargar los viajes.</div>';
+      ponerHtml('proximos-viajes', '<div class="text-muted text-center py-4">No se pudieron cargar los viajes.</div>');
     });
   }
 
   function cargarTopClientes() {
+    var cont = el('top-clientes-list');
+    if (!cont) return;
     pedir('/dashboard/top-clientes-facturacion', { cantidad: 5 }).done(function (data) {
-      var cont = el('top-clientes-list');
       if (!data || !data.length) {
         cont.innerHTML = '<div class="text-muted text-center py-4">Todavía no hay comprobantes emitidos.</div>';
         return;
@@ -762,7 +1077,7 @@
           '</span><strong class="text-nowrap">' + esc(SGTL.monto(c.Facturacion)) + '</strong></div>';
       }).join('');
     }).fail(function () {
-      el('top-clientes-list').innerHTML = '<div class="text-muted text-center py-4">No se pudo cargar la facturación.</div>';
+      cont.innerHTML = '<div class="text-muted text-center py-4">No se pudo cargar la facturación.</div>';
     });
   }
 
@@ -815,6 +1130,7 @@
   // Viajes que piden atención, sin importar el período: estado sin actualizar o falta algo para facturar.
   // Se piden solo los estados que pueden tener algo pendiente (los facturados, que son la mayoría, no).
   function cargarRevisar() {
+    if (!hay('revisar-viajes')) return;
     var ahora = new Date();
     var hoy = inicioDia(ahora);
     var pedidos = [
@@ -836,8 +1152,8 @@
       // Primero lo más urgente; dentro de cada motivo, lo más viejo.
       filas.sort(function (a, b) { return a.orden - b.orden || a.fecha - b.fecha || a.viaje.Viaje_ID - b.viaje.Viaje_ID; });
 
-      el('revisar-cantidad').textContent = filas.length ? 'Hoy · ' + cantidadViajes(filas.length) : 'Hoy';
-      el('revisar-resumen').textContent = resumenMotivos(filas);
+      poner('revisar-cantidad', filas.length ? 'Hoy · ' + cantidadViajes(filas.length) : 'Hoy');
+      poner('revisar-resumen', resumenMotivos(filas));
       el('revisar-resumen').classList.toggle('d-none', !filas.length);
       var cuerpo = el('revisar-viajes');
       if (!filas.length) {
@@ -861,9 +1177,10 @@
           '</tr>';
       }).join(''));
     }).fail(function () {
-      el('revisar-resumen').classList.add('d-none');
-      el('revisar-cantidad').textContent = 'Hoy';
-      el('revisar-viajes').innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">No se pudieron cargar los viajes.</td></tr>';
+      var resumen = el('revisar-resumen');
+      if (resumen) resumen.classList.add('d-none');
+      poner('revisar-cantidad', 'Hoy');
+      ponerHtml('revisar-viajes', '<tr><td colspan="3" class="text-center text-muted py-4">No se pudieron cargar los viajes.</td></tr>');
     });
   }
 
@@ -884,6 +1201,8 @@
 
   // Camiones activos con la ITV vencida o que vence en los próximos 30 días.
   function mostrarItv(camiones) {
+    var cont = el('itv-camiones');
+    if (!cont) return;
     var hoy = inicioDia(new Date());
     var lista = camiones.filter(function (c) { return String(c.EstadoCamion || '').toLowerCase() === 'activo'; })
       .map(function (c) {
@@ -895,8 +1214,7 @@
       .filter(Boolean)
       .sort(function (a, b) { return a.vence - b.vence; });
     var avisos = lista.filter(function (x) { return x.dias <= DIAS_AVISO_ITV; });
-    var cont = el('itv-camiones');
-    el('itv-cantidad').textContent = avisos.length ? 'Hoy · ' + avisos.length + (avisos.length === 1 ? ' camión' : ' camiones') : 'Hoy';
+    poner('itv-cantidad', avisos.length ? 'Hoy · ' + avisos.length + (avisos.length === 1 ? ' camión' : ' camiones') : 'Hoy');
 
     if (!avisos.length) {
       var proximo = lista[0];
@@ -924,10 +1242,12 @@
   }
 
   function medidor(id, activos, total) {
-    el(id + '-activos-texto').textContent = activos + ' / ' + total;
-    el(id + '-activos-bar').style.width = (total ? Math.round(activos / total * 100) : 0) + '%';
-    el(id + '-activos-bar').parentNode.setAttribute('aria-valuenow', String(activos));
-    el(id + '-activos-bar').parentNode.setAttribute('aria-valuemax', String(total));
+    var barra = el(id + '-activos-bar');
+    if (!barra) return;
+    poner(id + '-activos-texto', activos + ' / ' + total);
+    barra.style.width = (total ? Math.round(activos / total * 100) : 0) + '%';
+    barra.parentNode.setAttribute('aria-valuenow', String(activos));
+    barra.parentNode.setAttribute('aria-valuemax', String(total));
   }
 
   // ---------------------------------------------------------------- Detalle del viaje
@@ -941,9 +1261,12 @@
   // ---------------------------------------------------------------- Calendario
 
   // Pide solo los viajes del mes que se ve (antes traía todos). Clic en un viaje: su detalle.
+  // En una pestaña oculta de Tableros espera a que se muestre (FullCalendar no puede medirse oculto).
   function iniciarCalendario() {
     var $cal = $('#calendarioViajes');
     if (!$cal.length || !$.fn.fullCalendar) return;
+    if (!$cal.is(':visible')) { dash.calendarioPendiente = true; return; }
+    dash.calendarioPendiente = false;
     $cal.fullCalendar({
       locale: 'es',
       defaultView: 'month',
@@ -985,6 +1308,12 @@
     });
   }
 
+  // Al mostrar una pestaña de Tableros: dibuja lo que esperaba a estar visible.
+  function alMostrar() {
+    if (dash.calendarioPendiente) iniciarCalendario();
+    ajustarGraficos();
+  }
+
   // ---------------------------------------------------------------- Inicio
 
   function iniciar() {
@@ -994,13 +1323,13 @@
       mostrarFlota(choferes, camiones);
       mostrarItv(camiones);
     }, function () {
-      ['choferes', 'camiones'].forEach(function (id) { el(id + '-activos-texto').textContent = '—'; });
-      el('itv-camiones').innerHTML = '<div class="text-muted text-center py-4">No se pudieron cargar los camiones.</div>';
+      ['choferes', 'camiones'].forEach(function (id) { poner(id + '-activos-texto', '—'); });
+      ponerHtml('itv-camiones', '<div class="text-muted text-center py-4">No se pudieron cargar los camiones.</div>');
       return $.Deferred().resolve().promise(); // sin catálogos igual se muestran los viajes
     });
 
     prepararFiltroPeriodo();
-    $('.grid-stack').on('click', '[data-accion="ver"], .dash-viaje', function () {
+    $(document).on('click', '.dash-tarjeta [data-accion="ver"], .dash-tarjeta .dash-viaje', function () {
       mostrarDetalle($(this).data('id') || $(this).data('viaje'));
     });
 
@@ -1008,8 +1337,9 @@
     cargarRevisar();
     cargarProximos();
     cargarTopClientes();
+    cargarDeuda();
     iniciarCalendario();
   }
 
-  window.SGTLDashboard = { iniciar: iniciar, ajustarGraficos: ajustarGraficos };
+  window.SGTLDashboard = { iniciar: iniciar, ajustarGraficos: ajustarGraficos, alMostrar: alMostrar };
 })();

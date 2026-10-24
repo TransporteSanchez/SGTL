@@ -54,6 +54,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
 | 34 | Tarifario por tipo de camión (tabla "Tarifas a agosto 2026"): tipo y año del camión, bandas de km con 1ª y 2ª vuelta, falso flete y estadía; el viaje guarda su importe | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
+| 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km por camión y mes, viajes por cliente, mes y resultado, facturación por cliente y mes) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | Commits del 24/10, **sin push** | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -868,7 +869,7 @@ Probado en la Mac con una API falsa (viajes inventados, sin base) a 1366 y 390 p
 
 **Ideas para sumar** (pedido de "ver qué más tiene valor"; Rocío decide). Hechas el 21/10: Para revisar, ITV de camiones y Km por chofer (ver arriba). Quedan:
 - [ ] **Rechazos por cliente o por destino**: dónde se concentran. Solo frente.
-- [ ] **Facturación del período y deuda vencida**: fechas en `dashboard/top-clientes-facturacion` y un total de saldo vencido. Es cuenta corriente: coordinar con Facu.
+- [x] **Facturación del período y deuda vencida**: hecho el 24/10 como tableros nuevos (facturación por cliente y por mes, deuda vencida por cliente), ver §35. Es cuenta corriente: avisarle a Facu.
 - [ ] **Uso de la flota**: % de camiones con al menos un viaje en el período y días sin viajes de cada uno. Solo frente.
 - [ ] **Exportar la comparativa** a CSV con el botón de exportar del design system.
 - [ ] **Km cargados a mano** en el período (auditoría `KM_MANUAL`): control de calidad del dato. Necesita un endpoint.
@@ -2730,3 +2731,93 @@ Pedido de Rocío (24/10), para la presentación del jueves 29/10: adaptar las ta
   "Coincide" con $ 14.790.
 - [ ] 8. Dashboard: "Costo por viaje" del mismo período, igual que antes de los scripts.
 - [ ] 9. Un viaje en viaje: cargarle 1 módulo de estadía y guardar: se suma, la tarifa no cambia.
+
+---
+
+## 35. Tableros: todos los tableros por tema, gráficos de tres datos y favoritos en el dashboard — HECHO EN LA MAC (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+
+Pedido de Rocío para el jueves 29/10 (segundo profesor): llevar los tableros del dashboard a una pantalla general
+agrupada por tema, sumar gráficos que comparen tres datos (sin 3D) y que cada usuario marque favoritos que ve en su
+dashboard y acomoda. Decisiones de Rocío con la maqueta del 24/10: pestañas por tema; estrella amarilla; en el
+dashboard la estrella solo en Personalizar; "Tableros" como ítem principal debajo de Dashboard, **con permiso de grupo
+propio**; entran km por camión y por mes, viajes por cliente, mes y resultado, y facturación y deuda (de solo lectura
+de cuenta corriente, **avisarle a Facu**).
+
+**Qué cambió:**
+- **Pantalla nueva `tableros.html`** (menú → Tableros): el mismo período que el dashboard y cuatro pestañas:
+  - **Viajes (11):** Viajes, Entregados, Pendientes de entrega, Entregados con rechazo, Para revisar, Próximos viajes,
+    Viajes por mes, **Viajes por cliente, mes y resultado** (nuevo), Últimos viajes, Comparativa por mes, Calendario.
+  - **Flota (6):** Camiones activos, Km recorridos, ITV de camiones, Km por mes, Km por camión, **Km por camión y por
+    mes** (nuevo).
+  - **Choferes (2):** Choferes activos, Km por chofer.
+  - **Facturación (4):** Costo por viaje, Top clientes en facturación, **Deuda vencida por cliente** y **Facturación por
+    cliente y por mes** (nuevos).
+  - Cada tarjeta tiene la **estrella**: la suma al final del dashboard o la saca, y se guarda en el momento (toast).
+    Recuerda la última pestaña (en el navegador).
+- **Gráficos de tres datos** (con el skill de visualización: colores validados, un solo tono para cantidades, sin 3D):
+  - **Km por camión y por mes** y **Facturación por cliente y por mes**: mapa de calor (tabla con el número en cada
+    celda, azul más oscuro = más), totales por fila y columna y la escala abajo. Más de 8 filas: 7 y "Otros". Con
+    Último mes van por semana.
+  - **Viajes por cliente, mes y resultado:** un gráfico chico por cliente (los 6 con más viajes y "Otros clientes"),
+    todos con la misma escala, con las barras apiladas en entregado / parcial / con rechazo / pendiente y el % de
+    rechazo de cada cliente.
+  - **Deuda vencida por cliente** ("Hoy"): vencido y por vencer por cliente, de mayor a menor, con desde cuándo debe.
+  - Facturación = facturas y notas de débito emitidas menos notas de crédito, por fecha de emisión (la cuenta de "Top
+    clientes"). Deuda = lo emitido menos lo aplicado, de clientes activos (la cuenta del saldo de cuenta corriente), con
+    el día de hoy de Argentina. Sin permiso de cuenta corriente o de proformas, esas dos tarjetas dicen "No tenés permiso
+    para ver la facturación."
+- **Dashboard (`index.html`):** muestra los **favoritos** del usuario, que se guardan **en la base** (antes, solo en el
+  navegador: `api/DashboardLayout` nunca existió). Quien todavía no eligió ve el dashboard de siempre. Personalizar mueve
+  y agranda (como antes) y saca tableros con la estrella; "Widgets" pasa a ser **"Agregar tableros"** (lleva a Tableros;
+  sin el permiso, deshabilitado con el motivo). Restablecer vuelve al de siempre. Si alguien saca todos, el dashboard lo
+  dice y ofrece Agregar tableros o Restablecer. El diseño que alguien haya guardado en el navegador antes de esto se
+  usa hasta que guarde (ahí pasa a la base).
+- **API:** `TablerosController` nuevo (en el `.csproj`): `GET/PUT/DELETE api/tableros/favoritos` (el usuario sale del
+  token), `GET api/tableros/facturacion?fechaDesde&fechaHasta` y `GET api/tableros/deuda` (solo lectura de
+  `COMPROBANTES` y `CUENTA_CORRIENTE_APLICACIONES`; no toca `CuentaCorrienteController`). Permiso "Tableros" en
+  `GruposController` (catálogo y sección General).
+- **Base:** `database/tableros/01_crear_tableros_favoritos.sql` (idempotente): `TABLEROS_USUARIO` (quién ya eligió),
+  `TABLEROS_FAVORITOS` (tablero, orden y lugar en la grilla) y el permiso "Tableros" en `MENU`. No se lo da a ningún
+  grupo: se tilda en Gestionar grupos y permisos. Al borrar un usuario se borran sus favoritos.
+- **Código:** el catálogo de tableros (`assets/static/js/tableros-catalogo.js`) lo usan las dos pantallas; `dashboard.js`
+  dibuja solo los tableros que están en la pantalla (y no pide datos que nadie usa); estilos en
+  `assets/static/css/tableros.css`. Design system: §3.1 (menú) y §13 nuevo (tableros, estrella, mapa de calor, gráficos
+  chicos). Prueba nueva: `tests/tableros.test.js`.
+- De paso: en "Km por camión" y "Km por chofer", con la tarjeta angosta el eje tiene menos marcas (los números se
+  pisaban).
+
+Probado en la Mac con una API simulada (16 clientes, 5 camiones, viajes inventados), a 1366 y 375 px: las cuatro
+pestañas, Último mes (por semana), Trimestre y Año (12 meses), estrella (agregar y sacar, se guarda y el dashboard la
+muestra al final), Personalizar (sacar, mover, Guardar, recargar, Cancelar), dashboard vacío y Restablecer, el diseño
+viejo del navegador, la API sin las tablas (el dashboard queda como siempre y la estrella avisa el error), sin permiso
+de facturación y un usuario sin el permiso Tableros (sin menú, la pantalla manda al inicio y "Agregar tableros" queda
+deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta con datos reales y el C# compilado.**
+
+**Probar en la VM** (con C#):
+- [ ] 0. Rocío corre `database/tableros/01_crear_tableros_favoritos.sql` (dice qué creó y la verificación da 0 · 0 · 1).
+- [ ] 1. `pull`, **recompilar la API** (hay un controller nuevo) y Ctrl+F5. `node tests/tableros.test.js` → OK.
+- [ ] 2. Dashboard: igual que antes (los mismos tableros y en el mismo lugar) y sin errores nuevos en la consola.
+- [ ] 3. Menú → Tableros (como admin): cuatro pestañas; el período cambia los números y los gráficos de todas.
+  Km por camión y por mes: los totales por camión coinciden con "Km por camión" del mismo período.
+- [ ] 4. Facturación → Facturación por cliente y por mes: el total de un cliente en un mes coincide con sus facturas y
+  notas de débito menos notas de crédito de ese mes en Gestionar cuenta corriente. Deuda vencida: lo vencido de un
+  cliente coincide con su "Deuda vencida" en cuenta corriente.
+- [ ] 5. Tocar la estrella de "Km por camión y por mes": toast y estrella llena. En SSMS, una fila en
+  `TABLEROS_USUARIO` y los favoritos en `TABLEROS_FAVORITOS`. Ir al dashboard: la tarjeta está al final.
+- [ ] 6. Personalizar: sacar una tarjeta con la estrella, mover otra, Guardar → "Dashboard guardado.". F5 → quedó así.
+  Abrir el sistema en otro navegador con el mismo usuario: el mismo dashboard.
+- [ ] 7. Restablecer → el dashboard de siempre (y las filas del usuario se borran de las dos tablas).
+- [ ] 8. Con un usuario que no es admin: sin el permiso, Tableros no está en el menú y escribir `tableros.html` lleva al
+  inicio; en Personalizar, "Agregar tableros" deshabilitado con "No se puede abrir Tableros: no tenés permiso". Tildarle
+  "Tableros" a su grupo en Gestionar grupos y permisos (aparece en General, debajo de Dashboard) → ahora entra. Si el
+  grupo no tiene cuenta corriente ni proformas, las tarjetas de facturación dicen que no tiene permiso.
+- [ ] 9. F12 a 390 px: Tableros en una columna, las pestañas se desplazan de costado y el mapa de calor también (con el
+  nombre fijo).
+
+**Para tener en cuenta:**
+- **Avisarle a Facu:** los dos tableros de facturación leen sus tablas (`COMPROBANTES`, `CUENTA_CORRIENTE_APLICACIONES`)
+  desde `TablerosController`, de solo lectura, con sus mismas cuentas. Si él cambia cómo se calcula el saldo, hay que
+  cambiarlo también acá.
+- "Top clientes en facturación" sigue siendo histórico y sin token (`CuentaCorrienteController`, de Facu).
+- Ideas que siguen abiertas del §19: rechazos por cliente o destino, uso de la flota, exportar la comparativa, km
+  cargados a mano. Cada una sería un tablero más del catálogo, en su pestaña.

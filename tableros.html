@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableros · SGTL</title>
+    <style>
+        #app {
+            display: none;
+        }
+
+        #loading-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+        }
+    </style>
+
+    <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
+    <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
+    <link rel="stylesheet" href="./assets/static/css/tableros.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
+    <style>
+        #periodoRango + .form-control, #periodoRango { width: 13.5rem; background-color: #fff; }
+        /* En celular el período ocupa el ancho de la tarjeta (si no, "Año" queda afuera). */
+        @media (max-width: 575.98px) {
+            #periodoRapido { display: flex; width: 100%; }
+            #periodoRapido > .btn { flex: 1 1 auto; justify-content: center; padding-left: .25rem; padding-right: .25rem; }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="loading-message" style="display: none;">
+        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
+            <span class="visually-hidden">Cargando…</span>
+        </div>
+    </div>
+
+    <script src="assets/static/js/initTheme.js"></script>
+    <div id="app">
+        <div id="sidebar"></div>
+
+        <div id="main" class='layout-navbar navbar-fixed'>
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block">
+                            <i class="bi bi-justify fs-3"></i>
+                        </a>
+                        <div id="header-container"></div>
+                        <script src="./assets/static/js/header.js"></script>
+                    </div>
+                </nav>
+            </header>
+
+            <div class="page-heading">
+                <!-- Todos los tableros agrupados por tema (24/10). La estrella suma o saca cada uno del dashboard del usuario;
+                     las tarjetas las arma tableros-catalogo.js y las dibuja dashboard.js, igual que en el dashboard. -->
+                <section class="section">
+                    <div class="card rounded me-4 ms-4 mt-4 mb-4">
+                        <div class="card-header d-flex flex-wrap justify-content-between align-items-start gap-3">
+                            <div>
+                                <h5 class="card-title mb-1">
+                                    <i class="bi bi-bar-chart-line me-2" aria-hidden="true"></i>Tableros
+                                </h5>
+                                <p class="text-muted mb-0">Todos los tableros agrupados por tema. Marcá con la estrella los que querés ver en tu dashboard.</p>
+                            </div>
+                            <!-- El mismo período que el dashboard (recuerda el último elegido en los dos). -->
+                            <div class="d-flex flex-column align-items-start align-items-md-end gap-1">
+                                <div class="d-flex flex-wrap gap-2 align-items-center justify-content-md-end">
+                                    <div class="sgtl-segmentado" role="group" aria-label="Período" id="periodoRapido">
+                                        <button type="button" class="btn btn-sm" data-periodo="mes" aria-pressed="false">Último mes</button>
+                                        <button type="button" class="btn btn-sm" data-periodo="trimestre" aria-pressed="false">Trimestre</button>
+                                        <button type="button" class="btn btn-sm" data-periodo="semestre" aria-pressed="false">Semestre</button>
+                                        <button type="button" class="btn btn-sm" data-periodo="anio" aria-pressed="false">Año</button>
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm" id="periodoRango" placeholder="Desde y hasta" aria-label="Desde y hasta">
+                                </div>
+                                <p class="text-muted small mb-0 text-md-end" id="periodoTexto">&nbsp;</p>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+                            <ul class="nav nav-tabs tableros-pestanas" id="tablerosPestanas" role="tablist"></ul>
+                            <div class="tab-content pt-4" id="tablerosPaneles"></div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <footer>
+                <div id="footer-container"></div>
+                <script src="./assets/static/js/footer.js"></script>
+            </footer>
+        </div>
+    </div>
+
+    <script src="assets/extensions/jquery/jquery.min.js"></script>
+    <!-- moment solo queda porque lo necesita FullCalendar 3 (calendario de viajes). -->
+    <script src="assets/extensions/jquery/moment.min.js"></script>
+    <script src="assets/extensions/fullcalendar/fullcalendar.min.js"></script>
+    <script src="assets/extensions/fullcalendar/locale/es.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/viaje-detalle.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/tableros-catalogo.js"></script>
+    <script src="assets/static/js/dashboard.js"></script>
+
+    <script>
+        window.onload = async function () {
+            const loadingMessage = document.getElementById('loading-message');
+            loadingMessage.style.display = 'block';
+            document.getElementById('app').style.display = 'none';
+
+            window.loadFooter();
+
+            try {
+                await window.loadHeader();
+                if (typeof window.loadSidebar === 'function') {
+                    await window.loadSidebar();
+                }
+                window.cargarEstilosContenido().catch(function (error) { console.error(error); });
+                await armarTableros();
+                loadingMessage.style.display = 'none';
+                document.getElementById('app').style.display = 'block';
+                // Con la pantalla a la vista: la pestaña elegida y, después, los datos (los gráficos miden su tarjeta).
+                mostrarPestanaGuardada();
+                window.SGTLDashboard.iniciar();
+            } catch (error) {
+                console.error('Error al cargar el header, footer o los datos:', error);
+                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
+            }
+        };
+
+        var CLAVE_PESTANA = 'sgtl-tableros-pestana';
+        var favoritos = { lista: [] };   // los del usuario (o el diseño por defecto si todavía no eligió)
+        var guardandoEstrella = false;
+
+        // Ancho de cada tarjeta según su ancho en el dashboard (12 columnas).
+        var COLUMNAS = {
+            3: 'col-12 col-sm-6 col-xl-3', 4: 'col-12 col-md-6 col-xl-4', 6: 'col-12 col-xl-6', 8: 'col-12 col-xl-8', 12: 'col-12'
+        };
+        var ALTO_FILA = 62, MARGEN = 8;
+
+        function esFavorito(id) {
+            return favoritos.lista.some(function (it) { return it.id === id; });
+        }
+
+        function columnaTablero(t) {
+            // Los gráficos y las listas, con el alto que tienen en el dashboard; el resto, el que necesita.
+            var fijo = t.tipo === 'grafico' || t.tipo === 'lista';
+            return '<div class="' + (COLUMNAS[t.tw || t.w] || 'col-12') + (fijo ? ' tablero-alto-fijo' : '') + '"' +
+                (fijo ? ' style="--alto-tablero:' + (t.h * ALTO_FILA - MARGEN) + 'px"' : '') + '>' +
+                SGTLTableros.tarjeta(t, { estrella: esFavorito(t.id) }) + '</div>';
+        }
+
+        async function armarTableros() {
+            favoritos = await SGTLTableros.leerFavoritos();
+            var pestanas = document.getElementById('tablerosPestanas');
+            var paneles = document.getElementById('tablerosPaneles');
+            pestanas.innerHTML = SGTLTableros.TEMAS.map(function (tema, i) {
+                var cantidad = SGTLTableros.CATALOGO.filter(function (t) { return t.tema === tema.id; }).length;
+                return '<li class="nav-item" role="presentation"><button class="nav-link' + (i === 0 ? ' active' : '') + '" id="tab-' + tema.id +
+                    '" data-bs-toggle="tab" data-bs-target="#pane-' + tema.id + '" type="button" role="tab" aria-controls="pane-' + tema.id +
+                    '" aria-selected="' + (i === 0) + '" data-tema="' + tema.id + '">' + SGTL.escapar(tema.texto) +
+                    ' <span class="text-muted">· ' + cantidad + '</span></button></li>';
+            }).join('');
+            // Por tema: los indicadores en una fila y, debajo, el resto (cada tarjeta con su alto, sin estirarse).
+            paneles.innerHTML = SGTLTableros.TEMAS.map(function (tema, i) {
+                var delTema = SGTLTableros.CATALOGO.filter(function (t) { return t.tema === tema.id; });
+                var indicadores = delTema.filter(function (t) { return t.tipo === 'kpi'; });
+                var resto = delTema.filter(function (t) { return t.tipo !== 'kpi'; });
+                return '<div class="tab-pane fade' + (i === 0 ? ' show active' : '') + '" id="pane-' + tema.id + '" role="tabpanel" aria-labelledby="tab-' + tema.id + '">' +
+                    (indicadores.length ? '<div class="row g-3 mb-3 tableros-grilla">' + indicadores.map(columnaTablero).join('') + '</div>' : '') +
+                    '<div class="row g-3 align-items-start tableros-grilla">' + resto.map(columnaTablero).join('') + '</div></div>';
+            }).join('');
+
+            pestanas.addEventListener('shown.bs.tab', function (e) {
+                try { localStorage.setItem(CLAVE_PESTANA, e.target.getAttribute('data-tema')); } catch (x) { }
+                window.SGTLDashboard.alMostrar();
+            });
+            paneles.addEventListener('click', function (e) {
+                var boton = e.target.closest('.dash-estrella');
+                if (boton) cambiarFavorito(boton);
+            });
+        }
+
+        // La última pestaña que se miró (en este navegador).
+        function mostrarPestanaGuardada() {
+            var tema = null;
+            try { tema = localStorage.getItem(CLAVE_PESTANA); } catch (e) { }
+            var boton = tema ? document.querySelector('#tablerosPestanas [data-tema="' + tema + '"]') : null;
+            if (boton && !boton.classList.contains('active')) boton.click();
+        }
+
+        // Estrella: suma el tablero al final del dashboard o lo saca. Se guarda enseguida, de a uno por vez.
+        function cambiarFavorito(boton) {
+            if (guardandoEstrella) return;
+            var id = boton.getAttribute('data-tablero');
+            var marcada = boton.getAttribute('aria-pressed') === 'true';
+            var lista = marcada
+                ? favoritos.lista.filter(function (it) { return it.id !== id; })
+                : favoritos.lista.concat([{ id: id }]);
+            var titulo = SGTLTableros.tablero(id).titulo;
+            var error = marcada ? 'No se pudo sacar "' + titulo + '" de tu dashboard. Probá de nuevo.'
+                : 'No se pudo agregar "' + titulo + '" a tu dashboard. Probá de nuevo.';
+            guardandoEstrella = true;
+            var estrellas = document.querySelectorAll('#tablerosPaneles .dash-estrella');
+            Array.prototype.forEach.call(estrellas, function (b) { b.disabled = true; });
+            SGTLTableros.guardarFavoritos(lista, error).then(function () {
+                favoritos.lista = lista;
+                favoritos.personalizado = true;
+                SGTLTableros.marcarEstrella(boton, !marcada);
+                SGTL.toastExito(marcada ? '"' + titulo + '" salió de tu dashboard.' : '"' + titulo + '" se agregó a tu dashboard.');
+            }, function (e) {
+                SGTL.toastError(e.mensajeUsuario || error);
+            }).then(function () {
+                guardandoEstrella = false;
+                Array.prototype.forEach.call(estrellas, function (b) { b.disabled = false; });
+            });
+        }
+
+        // Los gráficos se acomodan al ancho de la ventana (en el dashboard lo hace la grilla).
+        var esperaVentana = null;
+        window.addEventListener('resize', function () {
+            clearTimeout(esperaVentana);
+            esperaVentana = setTimeout(function () { window.SGTLDashboard.ajustarGraficos(); }, 150);
+        });
+        window.ajustarWidgetsVivos = function () { window.SGTLDashboard.ajustarGraficos(); };
+    </script>
+</body>
+
+</html>

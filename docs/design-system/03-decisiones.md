@@ -36,6 +36,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Exportar (§1.2) | `SGTL.descargarCSV` |
 | Datos de la empresa en un documento (§11) | `SGTLEmpresa.obtener(fechaDeEmision)` (`assets/static/js/empresa-datos.js`): `nombre` (el nombre comercial o la razón social), `lineas` (razón social, CUIT, domicilio, contacto) y `logo` (el de la empresa, listo para jsPDF, o `null`: va el nombre en texto); `SGTLEmpresa.medidaLogo` lo encaja sin deformarlo. Un documento ya emitido pasa su fecha de emisión; un borrador, `null` |
 | Mostrar un permiso (§3.1) | `SGTLPermisos.texto(nombre)` (`assets/static/js/permisos-menu.js`): el texto de su opción del menú; `lista.sort(SGTLPermisos.comparar)` los ordena como el menú |
+| Tableros del dashboard y de Tableros (§13) | `SGTLTableros` (`assets/static/js/tableros-catalogo.js`): el catálogo (`CATALOGO`, `TEMAS`), la tarjeta (`tarjeta(t, { estrella })`) y los favoritos (`leerFavoritos`, `guardarFavoritos`, `restablecer`); los datos los dibuja `dashboard.js`; estilos en `assets/static/css/tableros.css` |
 | Escapar texto en HTML | `SGTL.escapar` |
 
 ---
@@ -248,6 +249,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Sección | Opciones |
 |---|---|
 | Dashboard | (ítem principal) |
+| Tableros | (ítem principal, nuevo 24/10: todos los tableros por tema; permiso de grupo propio, como el Dashboard; §13) |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
@@ -258,7 +260,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Auditoría | (ítem principal) |
 | Documentación | Consultar manual de usuario · Consultar informe de versión |
 
-- **Ítems principales:** "Dashboard" y "Auditoría" quedan sin verbo.
+- **Ítems principales:** "Dashboard", "Tableros" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
 - **Los permisos se ven con el texto de su opción del menú** y en el mismo orden (23/10), en Gestionar grupos y
@@ -683,6 +685,38 @@ No cambia ningún color de acción (§1, §11) ni de estado (§4.3): cambia el p
   días del calendario y rango en el azul de las acciones).
 - **Pantalla nueva:** no lleva estilos propios de botones, avisos, pestañas ni tablas; usa las clases
   de Bootstrap/Mazer de siempre y `sgtl.css` les da este aspecto.
+
+---
+
+## 13. Tableros y gráficos (24/10)
+
+Decidido por Rocío con la maqueta del 24/10. Lo usan el dashboard y la pantalla Tableros; el catálogo es uno solo
+(`SGTLTableros`, tabla de funciones) y los estilos están en `assets/static/css/tableros.css`.
+
+- **Pantalla Tableros:** todos los tableros en **pestañas por tema** (Viajes · Flota · Choferes · Facturación), con el
+  mismo período que el dashboard. En cada pestaña, los indicadores en una fila y debajo el resto. Un tablero nuevo se
+  agrega al catálogo, con su tema; no se arma una tarjeta suelta en una pantalla.
+- **Estrella de favorito** (`.dash-estrella`): a la derecha del título de la tarjeta, después de "Hoy"/"Histórico".
+  Llena y amarilla = está en el dashboard del usuario; vacía y gris = no. Tooltip "Agregar a mi dashboard" / "Quitar de
+  mi dashboard". Se guarda al tocarla (toast con el nombre del tablero). En el dashboard se ve solo en Personalizar.
+- **Dashboard:** muestra los favoritos del usuario; Personalizar los mueve, los agranda y los saca (la estrella), y
+  "Agregar tableros" lleva a Tableros (deshabilitado con el motivo si no tiene el permiso). Quien todavía no eligió ve
+  el dashboard de siempre; Restablecer vuelve a ese. Favoritos y lugar se guardan en la base, por usuario.
+- **Alcance:** un tablero que no sigue el período lo dice en el título ("Hoy", "Histórico"), como desde el 21/10.
+- **Comparar tres datos, nunca en 3D.** Dos formas:
+  - **Mapa de calor** (dos categorías y un valor: km por camión y por mes, facturación por cliente y por mes): una tabla
+    con el número en cada celda y el fondo en **un solo tono del azul de las acciones, de claro (poco) a oscuro (mucho)**
+    (ocho pasos, `RAMPA_CALOR` en `dashboard.js`); sin dato, gris claro con "—". Última fila y última columna con los
+    totales, y debajo la escala ("Menos … Más (hasta …)"). El número va en azul oscuro sobre los pasos claros y en
+    blanco sobre los oscuros. Más de 8 filas: las 7 primeras y "Otros". En celular el nombre queda fijo y las celdas se
+    desplazan.
+  - **Gráficos chicos con la misma escala** (una categoría, el tiempo y un estado: viajes por cliente, mes y
+    resultado): un gráfico por cliente con las barras apiladas en los colores del §4 (verde entregado, amarillo parcial,
+    rojo con rechazo, gris pendiente), la leyenda arriba y, abajo, qué valor tiene la barra más alta. Los 6 primeros y
+    "Otros clientes (n)".
+  - Cada celda o barra tiene su globito con el detalle completo ("AB123CD · Agosto 2026: 7.559 km en 18 viajes").
+- **Montos en un mapa de calor:** en la celda, abreviados ("$ 1,2 M", "$ 850 mil"); en el globito y en los totales,
+  enteros con `SGTL.monto(valor, { sinDecimales: true })` (§7.3, excepción de los tableros).
 
 ---
 

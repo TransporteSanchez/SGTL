@@ -1,0 +1,123 @@
+/* Tableros: las tarjetas del dashboard (index.html) y de la pantalla Tableros (tableros.html), que se arman con el mismo
+   catálogo (tableros-catalogo.js) y se dibujan con dashboard.js. Va después de sgtl.css.
+   Colores de los gráficos: los de §4 del design system; el azul de los mapas de calor es una escala de un solo tono
+   del azul de las acciones (#435ebe), de claro a oscuro (§13). */
+
+/* ---------------------------------------------------------------- Tarjeta */
+
+.dash-tarjeta { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
+.dash-tarjeta > .card-header { flex: 0 0 auto; display: flex; align-items: center; gap: .5rem; padding: 1rem 1.25rem .5rem; }
+.dash-tarjeta > .card-header > h5,
+.dash-tarjeta > .card-header > h6 { margin: 0; }
+.dash-tarjeta > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .5rem 1.25rem 1rem; }
+
+/* "Hoy", "Histórico": las tarjetas que no siguen el período lo dicen. */
+.dash-alcance { margin-left: auto; padding-left: .25rem; font-size: .75rem; font-weight: 600; color: #6c757d; white-space: nowrap; }
+
+/* Estrella de favorito (§13): llena y amarilla = está en tu dashboard. En el dashboard se ve solo en Personalizar. */
+body .btn.dash-estrella {
+    flex: 0 0 auto; width: 2rem; height: 2rem; min-height: 2rem; padding: 0; margin-left: auto;
+    display: inline-flex; align-items: center; justify-content: center;
+    border: 0; border-radius: .5rem; background: transparent; box-shadow: none; color: #a3aab1; font-size: 1.05rem;
+}
+body .btn.dash-estrella > .bi { display: inline-flex; width: 1em; height: 1em; line-height: 1; }
+body .btn.dash-estrella > .bi::before { vertical-align: 0; line-height: 1; }
+body .btn.dash-estrella:hover,
+body .btn.dash-estrella:focus-visible { background: #f1f3f8; color: #6c757d; }
+body .btn.dash-estrella[aria-pressed="true"] { color: #e6a700; }
+body .btn.dash-estrella:disabled { opacity: .55; }
+body .dash-alcance + .btn.dash-estrella { margin-left: 0; }
+.grid-stack:not(.editando) .dash-estrella { display: none; }
+
+/* Mientras llegan los datos del período nuevo, se ve el anterior atenuado (sin parpadeo). */
+.dash-periodo { transition: opacity .15s ease; }
+.dash-actualizando .dash-periodo { opacity: .55; }
+
+/* ---------------------------------------------------------------- Indicadores */
+
+.dash-kpi > .card-header { padding: .75rem 1rem .125rem; }
+.dash-kpi > .card-body { padding: .125rem 1rem .75rem; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
+.dash-kpi > .card-header > h6 { font-size: .9rem; font-weight: 600; color: #6c757d; }
+.dash-kpi-valor { font-size: 1.6rem; font-weight: 700; line-height: 1.2; color: #25396f; }
+.dash-kpi-detalle { display: block; font-size: .8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6c757d; }
+.dash-kpi .progress { height: 6px; margin-top: .375rem; }
+
+/* ---------------------------------------------------------------- Gráficos, tablas y listas */
+
+/* Gráficos de ApexCharts: se ajustan al alto de la tarjeta; lo que asoma son los cartelitos flotantes. */
+.dash-grafico > .card-body { overflow: hidden; padding-top: .25rem; }
+.dash-grafico .apexcharts-tooltip { font-family: Nunito, sans-serif; }
+
+.dash-tabla { margin-bottom: 0; font-size: .875rem; }
+.dash-tabla thead th { position: sticky; top: 0; z-index: 1; background-color: #fff; font-size: .8125rem; color: #6c757d; font-weight: 600; white-space: nowrap; }
+.dash-celda-texto { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-viaje { padding: .625rem 1.25rem; }
+.dash-viaje .badge { flex-shrink: 0; }
+.dash-motivo + .dash-motivo { margin-top: .25rem; }
+#itv-camiones .list-group-item { padding: .625rem 1.25rem; }
+.dash-mensaje { color: #6c757d; text-align: center; padding: 1.5rem .5rem; margin: 0; }
+
+/* Calendario: cada viaje con el color de su estado (§4 del design system). */
+#calendarioViajes .fc-event.dash-evento { border: 0; border-radius: .25rem; padding: 0 .25rem; font-size: .78rem; font-weight: 600; cursor: pointer; }
+#calendarioViajes .fc-event.dash-evento-gris { background-color: #eef0f2; color: #5c636a; }
+#calendarioViajes .fc-event.dash-evento-azul { background-color: #e8ecf9; color: #435ebe; }
+#calendarioViajes .fc-event.dash-evento-amarillo { background-color: #fff3cd; color: #a36a00; }
+#calendarioViajes .fc-event.dash-evento-verde { background-color: #e8f6ef; color: #198754; }
+#calendarioViajes .fc-event.dash-evento-rojo { background-color: #fcebed; color: #dc3545; }
+
+/* ---------------------------------------------------------------- Mapa de calor (§13) */
+
+/* Una tabla: cada celda lleva su número (el color solo ayuda a ver dónde hay más), y la última fila y la última columna
+   son los totales. Si no entra a lo ancho, se desplaza dentro de la tarjeta. */
+.dash-calor-marco { overflow-x: auto; }
+.dash-calor { border-collapse: separate; border-spacing: 2px; width: 100%; font-size: .75rem; }
+.dash-calor th { font-weight: 600; color: #6c757d; white-space: nowrap; }
+.dash-calor thead th { text-align: center; padding: 0 .25rem .25rem; }
+.dash-calor tbody th { text-align: left; color: #52514e; padding: 0 .75rem 0 0; line-height: 1.15; }
+.dash-calor tbody th small { display: block; font-weight: 400; color: #8a94a6; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+.dash-calor td { height: 2.125rem; min-width: 3.25rem; padding: 0 .375rem; border-radius: 4px; text-align: center; font-weight: 700; white-space: nowrap; }
+.dash-calor td.dash-calor-vacio { background-color: #f1f3f6; color: #a3aab1; font-weight: 600; }
+.dash-calor td.dash-calor-tinta { color: #25396f; }
+.dash-calor td.dash-calor-blanco { color: #fff; }
+.dash-calor td:not(.dash-calor-total):hover { box-shadow: inset 0 0 0 2px #25396f; }
+.dash-calor .dash-calor-total { background: transparent; color: #25396f; text-align: right; padding: 0 0 0 .5rem; }
+.dash-calor tfoot th, .dash-calor tfoot td { padding-top: .25rem; color: #25396f; font-weight: 700; }
+.dash-calor thead th.dash-calor-total { text-align: right; }
+/* El nombre y el total, del ancho de su texto: el lugar que sobra va a las celdas. */
+.dash-calor thead th:first-child, .dash-calor tbody th, .dash-calor tfoot th, .dash-calor .dash-calor-total { width: 1%; }
+/* En celular, el nombre queda fijo a la izquierda mientras las celdas se desplazan, y el detalle se acorta. */
+@media (max-width: 575.98px) {
+    .dash-calor thead th:first-child, .dash-calor tbody th, .dash-calor tfoot th { position: sticky; left: 0; z-index: 1; background-color: #fff; }
+    .dash-calor tbody th { max-width: 7.5rem; overflow: hidden; text-overflow: ellipsis; }
+    .dash-calor tbody th small { max-width: 7rem; }
+}
+
+.dash-escala { display: flex; flex-wrap: wrap; align-items: center; gap: .375rem; margin-top: .625rem; font-size: .75rem; color: #6c757d; }
+.dash-escala .dash-escala-paso { display: inline-block; width: 1.25rem; height: .625rem; border-radius: 3px; }
+
+/* ---------------------------------------------------------------- Gráficos chicos por cliente (§13) */
+
+.dash-leyenda { display: flex; flex-wrap: wrap; gap: .25rem 1rem; margin-bottom: .75rem; font-size: .8125rem; color: #52514e; }
+.dash-leyenda-punto { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: .375rem; vertical-align: -1px; }
+
+.dash-multiples { display: grid; grid-template-columns: repeat(auto-fill, minmax(11.5rem, 1fr)); gap: 1rem 1.5rem; }
+.dash-mini-titulo { margin: 0; font-size: .8125rem; font-weight: 700; color: #25396f; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-mini-detalle { margin-bottom: .375rem; font-size: .75rem; color: #6c757d; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-mini-grafico { display: flex; align-items: flex-end; justify-content: space-around; gap: 4px; height: 5.5rem; padding: 0 2px; border-bottom: 1px solid #ced4da; }
+.dash-mini-columna { flex: 1 1 0; max-width: 22px; height: 100%; display: flex; flex-direction: column-reverse; gap: 2px; cursor: default; }
+.dash-mini-columna:hover { opacity: .85; }
+.dash-mini-columna > span { display: block; flex: 0 0 auto; }
+.dash-mini-columna > span:last-child { border-radius: 4px 4px 0 0; }
+.dash-mini-ejes { display: flex; justify-content: space-around; gap: 4px; padding: .125rem 2px 0; font-size: .6875rem; color: #8a94a6; }
+.dash-mini-ejes > span { flex: 1 1 0; max-width: 22px; text-align: center; white-space: nowrap; overflow: visible; }
+
+/* ---------------------------------------------------------------- Pantalla Tableros */
+
+/* Sin la grilla del dashboard: los gráficos y las listas tienen el alto que tendrían ahí (lo pone el catálogo); los
+   indicadores, los mapas de calor y el calendario toman el que necesitan. */
+.tableros-grilla .dash-tarjeta { height: auto; }
+.tableros-grilla .tablero-alto-fijo > .dash-tarjeta { height: var(--alto-tablero, 360px); }
+.tableros-grilla .dash-kpi { height: 100%; min-height: 7rem; }
+/* Las pestañas de los temas no se parten en dos renglones: en celular se desplazan de costado. */
+.tableros-pestanas { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+.tableros-pestanas .nav-link { white-space: nowrap; }

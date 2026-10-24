@@ -25,20 +25,15 @@
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="./assets/extensions/flatpickr/flatpickr.min.css">
     <link rel="stylesheet" href="./assets/static/css/sgtl.css">
+    <link rel="stylesheet" href="./assets/static/css/tableros.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
     <style>
+        /* Las tarjetas son las de tableros.css; acá, solo la grilla de Personalizar y el encabezado. */
         .grid-stack { background: transparent; }
         .grid-stack-item-content { inset: 0; display: flex; }
-        .grid-stack-item-content > .card { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
-        .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; padding: 1rem 1.25rem .5rem; }
-        .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .5rem 1.25rem 1rem; }
         .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(67,94,190,.55); outline-offset: -2px; }
         .grid-stack.editando .card-header { cursor: move; }
-        #widgetsChecklist .form-check-input { cursor: pointer; }
-        /* La lista de widgets cuelga del encabezado fijo: si es más larga que lo que se ve, se desplaza ella
-           (no la pantalla de atrás). El alto máximo lo pone ajustarAltoWidgets() al abrirla. */
-        #widgetsPanel { overflow-y: auto; overscroll-behavior: contain; }
         /* Fila de "¡Bienvenido!" fija debajo de la barra de arriba: al bajar, las tarjetas pasan por detrás.
            El alto de la barra y el relleno de la página los completa fijarEncabezadoTablero(). */
         #encabezadoTablero {
@@ -58,39 +53,6 @@
         #periodoRango + .form-control, #periodoRango { width: 13.5rem; background-color: #fff; }
         /* El título queda a la altura de la fila de botones (40 px), con el texto del período debajo de ellos. */
         #encabezadoTablero > h3 { line-height: 40px; }
-
-        /* Indicadores: título, número y una línea de detalle en dos filas de la grilla. */
-        .grid-stack-item-content > .card.dash-kpi > .card-header { padding: .75rem 1rem .125rem; }
-        .grid-stack-item-content > .card.dash-kpi > .card-body { padding: .125rem 1rem .75rem; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-        .dash-kpi .card-header h6 { margin: 0; font-size: .9rem; font-weight: 600; color: #6c757d; }
-        .dash-kpi-valor { font-size: 1.6rem; font-weight: 700; line-height: 1.2; color: #25396f; }
-        .dash-kpi-detalle { display: block; font-size: .8125rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #6c757d; }
-        .dash-kpi .progress { height: 6px; margin-top: .375rem; }
-        /* "Hoy", "Desde hoy", "Histórico": las tarjetas que no siguen el período lo dicen. */
-        .dash-alcance { margin-left: auto; padding-left: .5rem; font-size: .75rem; font-weight: 600; color: #6c757d; white-space: nowrap; }
-        /* Mientras llegan los datos del período nuevo, se ve el anterior atenuado (sin parpadeo). */
-        .grid-stack .dash-periodo { transition: opacity .15s ease; }
-        .grid-stack.dash-actualizando .dash-periodo { opacity: .55; }
-
-        /* Gráficos: se ajustan al alto de la tarjeta; lo que asoma son los cartelitos flotantes de ApexCharts. */
-        .grid-stack-item-content > .card.dash-grafico > .card-body { overflow: hidden; padding-top: .25rem; }
-        .dash-grafico .apexcharts-tooltip { font-family: Nunito, sans-serif; }
-
-        .dash-tabla { margin-bottom: 0; font-size: .875rem; }
-        .dash-tabla thead th { position: sticky; top: 0; z-index: 1; background-color: #fff; font-size: .8125rem; color: #6c757d; font-weight: 600; white-space: nowrap; }
-        .dash-celda-texto { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .dash-viaje { padding: .625rem 1.25rem; }
-        .dash-motivo + .dash-motivo { margin-top: .25rem; }
-        #itv-camiones .list-group-item { padding: .625rem 1.25rem; }
-        .dash-viaje .badge { flex-shrink: 0; }
-
-        /* Calendario: cada viaje con el color de su estado (§4 del design system). */
-        #calendarioViajes .fc-event.dash-evento { border: 0; border-radius: .25rem; padding: 0 .25rem; font-size: .78rem; font-weight: 600; cursor: pointer; }
-        #calendarioViajes .fc-event.dash-evento-gris { background-color: #eef0f2; color: #5c636a; }
-        #calendarioViajes .fc-event.dash-evento-azul { background-color: #e8ecf9; color: #435ebe; }
-        #calendarioViajes .fc-event.dash-evento-amarillo { background-color: #fff3cd; color: #a36a00; }
-        #calendarioViajes .fc-event.dash-evento-verde { background-color: #e8f6ef; color: #198754; }
-        #calendarioViajes .fc-event.dash-evento-rojo { background-color: #fcebed; color: #dc3545; }
     </style>
 </head>
 
@@ -132,333 +94,29 @@
                             <button type="button" class="btn btn-sm" data-periodo="anio" aria-pressed="false">Año</button>
                         </div>
                         <input type="text" class="form-control form-control-sm" id="periodoRango" placeholder="Desde y hasta" aria-label="Desde y hasta">
-                        <div class="position-relative" id="widgetsMenu" style="display:none;">
-                            <button class="btn btn-light-secondary" id="btnWidgets" type="button"><i class="bi bi-eye me-1"></i>Widgets</button>
-                            <div class="card shadow-sm position-absolute end-0 mt-1 p-2" id="widgetsPanel" style="display:none; z-index:1050; min-width:230px;">
-                                <div id="widgetsChecklist"></div>
-                            </div>
-                        </div>
-                        <button class="btn btn-outline-secondary" id="btnResetLayout" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1"></i>Restablecer</button>
+                        <!-- Personalizar (24/10): los tableros se suman con la estrella en Tableros; acá se acomodan y se sacan. -->
+                        <span id="agregarTablerosEnvoltura" style="display:none;"><a href="tableros.html" class="btn btn-light-secondary" id="btnAgregarTableros"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar tableros</a></span>
+                        <button class="btn btn-outline-secondary" id="btnResetLayout" style="display:none;"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer</button>
                         <button class="btn btn-light-secondary" id="btnCancelarLayout" style="display:none;">Cancelar</button>
-                        <button class="btn btn-primary" id="btnGuardarLayout" style="display:none;"><i class="bi bi-check-lg me-1"></i>Guardar</button>
-                        <button class="btn btn-primary" id="btnPersonalizar"><i class="bi bi-sliders me-1"></i>Personalizar</button>
+                        <button class="btn btn-primary" id="btnGuardarLayout" style="display:none;"><i class="bi bi-check-lg me-1" aria-hidden="true"></i>Guardar</button>
+                        <button class="btn btn-primary" id="btnPersonalizar"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Personalizar</button>
                     </div>
                     <p class="text-muted small mb-0 text-md-end" id="periodoTexto">&nbsp;</p>
                     </div>
                 </div>
 
                 <div class="page-content">
-                <div class="grid-stack">
-                <!-- Indicadores del período -->
-                <div class="grid-stack-item" gs-id="kpiviajes" gs-x="0" gs-y="0" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-signpost-split me-2 text-primary" aria-hidden="true"></i>
-                                <h6>Viajes</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="kpi-viajes">—</span>
-                                <small class="dash-kpi-detalle" id="kpi-viajes-detalle">&nbsp;</small>
-                            </div>
+                    <!-- Sin favoritos: el usuario sacó todos los tableros de su dashboard. -->
+                    <div class="card rounded" id="dashVacio" style="display:none;">
+                        <div class="card-body text-center py-5">
+                            <i class="bi bi-star fs-2 text-muted" aria-hidden="true"></i>
+                            <h5 class="mt-2 mb-1">Tu dashboard no tiene tableros</h5>
+                            <p class="text-muted mb-3">Marcá con la estrella los que quieras ver acá en Tableros, o volvé al dashboard de siempre.</p>
+                            <div class="d-flex justify-content-center flex-wrap gap-2" id="dashVacioAcciones"></div>
                         </div>
                     </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kpientregados" gs-x="3" gs-y="0" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-check2-circle me-2 text-success" aria-hidden="true"></i>
-                                <h6>Entregados</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="kpi-entregados">—</span>
-                                <small class="dash-kpi-detalle" id="kpi-entregados-detalle">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kpipendientes" gs-x="6" gs-y="0" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-hourglass-split me-2 text-secondary" aria-hidden="true"></i>
-                                <h6>Pendientes de entrega</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="kpi-pendientes">—</span>
-                                <small class="dash-kpi-detalle" id="kpi-pendientes-detalle">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kpirechazo" gs-x="9" gs-y="0" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-x-octagon me-2 text-danger" aria-hidden="true"></i>
-                                <h6>Entregados con rechazo</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="kpi-rechazo">—</span>
-                                <small class="dash-kpi-detalle" id="kpi-rechazo-detalle">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kpikm" gs-x="0" gs-y="2" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-speedometer2 me-2 text-primary" aria-hidden="true"></i>
-                                <h6>Km recorridos</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="kpi-km">—</span>
-                                <small class="dash-kpi-detalle" id="kpi-km-detalle">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="costo" gs-x="3" gs-y="2" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi dash-periodo">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-currency-dollar me-2 text-info" aria-hidden="true"></i>
-                                <h6>Costo por viaje</h6>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="costo-promedio-texto">—</span>
-                                <small class="dash-kpi-detalle" id="costo-detalle">&nbsp;</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Flota: lo que hay hoy, no depende del período -->
-                <div class="grid-stack-item" gs-id="choferes" gs-x="6" gs-y="2" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-people me-2 text-primary" aria-hidden="true"></i>
-                                <h6>Choferes activos</h6>
-                                <span class="dash-alcance">Hoy</span>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="choferes-activos-texto">—</span>
-                                <div class="progress" role="progressbar" aria-label="Choferes activos" aria-valuemin="0">
-                                    <div class="progress-bar bg-primary" id="choferes-activos-bar" style="width: 0%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="camiones" gs-x="9" gs-y="2" gs-w="3" gs-h="2" gs-min-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-kpi">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-truck me-2 text-success" aria-hidden="true"></i>
-                                <h6>Camiones activos</h6>
-                                <span class="dash-alcance">Hoy</span>
-                            </div>
-                            <div class="card-body">
-                                <span class="dash-kpi-valor" id="camiones-activos-texto">—</span>
-                                <div class="progress" role="progressbar" aria-label="Camiones activos" aria-valuemin="0">
-                                    <div class="progress-bar bg-success" id="camiones-activos-bar" style="width: 0%;"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Avisos: lo que hay que resolver hoy, no depende del período -->
-                <div class="grid-stack-item" gs-id="revisar" gs-x="0" gs-y="4" gs-w="8" gs-h="5" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-exclamation-circle me-2 text-warning" aria-hidden="true"></i>
-                                <h5 class="mb-0">Para revisar</h5>
-                                <span class="dash-alcance" id="revisar-cantidad">Hoy</span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div class="small text-muted px-3 py-2 d-none" id="revisar-resumen"></div>
-                                <table class="table table-striped table-hover dash-tabla">
-                                    <thead>
-                                        <tr>
-                                            <th>Motivo</th>
-                                            <th class="d-none d-md-table-cell">Viaje</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="revisar-viajes">
-                                        <tr><td colspan="3" class="text-center text-muted py-4">Cargando…</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="itv" gs-x="8" gs-y="4" gs-w="4" gs-h="5" gs-min-h="3">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                            <div class="card-header d-flex align-items-center">
-                                <i class="bi bi-clipboard-check me-2 text-primary" aria-hidden="true"></i>
-                                <h5 class="mb-0">ITV de camiones</h5>
-                                <span class="dash-alcance" id="itv-cantidad">Hoy</span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div id="itv-camiones" class="list-group list-group-flush">
-                                    <div class="text-muted text-center py-4">Cargando…</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Gráficos y listas -->
-                <div class="grid-stack-item" gs-id="viajesmes" gs-x="0" gs-y="9" gs-w="8" gs-h="6" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-grafico dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0" id="titulo-grafico-viajes">Viajes por mes</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="grafico-viajes"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="proximos" gs-x="8" gs-y="9" gs-w="4" gs-h="6" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                            <div class="card-header d-flex align-items-center">
-                                <h5 class="mb-0">Próximos viajes</h5>
-                                <span class="dash-alcance" id="proximos-cantidad"></span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div id="proximos-viajes" class="list-group list-group-flush">
-                                    <div class="text-muted text-center py-4">Cargando…</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kmmes" gs-x="0" gs-y="15" gs-w="6" gs-h="5" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-grafico dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0" id="titulo-grafico-km">Km por mes</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="grafico-km"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kmcamion" gs-x="6" gs-y="15" gs-w="6" gs-h="5" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-grafico dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0">Km por camión</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="grafico-camiones"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="kmchofer" gs-x="0" gs-y="20" gs-w="6" gs-h="5" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-grafico dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0">Km por chofer</h5>
-                            </div>
-                            <div class="card-body">
-                                <div id="grafico-choferes"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="ultimos" gs-x="0" gs-y="25" gs-w="12" gs-h="6" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0">Últimos viajes</h5>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-striped table-hover dash-tabla">
-                                    <thead>
-                                        <tr>
-                                            <th class="text-center">Fecha</th>
-                                            <th>Recorrido y cliente</th>
-                                            <th class="text-end">Km</th>
-                                            <th class="text-center">Estado</th>
-                                            <th class="text-center">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="ultimos-viajes">
-                                        <tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="topclientes" gs-x="6" gs-y="20" gs-w="6" gs-h="5" gs-min-h="3">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                            <div class="card-header d-flex align-items-center">
-                                <h5 class="mb-0">Top clientes en facturación</h5>
-                                <span class="dash-alcance">Histórico</span>
-                            </div>
-                            <div class="card-body p-0">
-                                <div id="top-clientes-list" class="list-group list-group-flush">
-                                    <div class="text-muted text-center py-4">Cargando…</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="comparativa" gs-x="0" gs-y="31" gs-w="12" gs-h="6" gs-min-h="4">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100 dash-periodo">
-                            <div class="card-header">
-                                <h5 class="mb-0" id="titulo-comparativa">Comparativa por mes</h5>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-striped table-hover dash-tabla">
-                                    <thead>
-                                        <tr>
-                                            <th id="comparativa-columna">Mes</th>
-                                            <th class="text-end">Viajes</th>
-                                            <th class="text-end">Variación</th>
-                                            <th class="text-end">Entregados</th>
-                                            <th class="text-end">Parciales</th>
-                                            <th class="text-end">Con rechazo</th>
-                                            <th class="text-end">Pendientes</th>
-                                            <th class="text-end">Km</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="comparativa-meses">
-                                        <tr><td colspan="8" class="text-center text-muted py-4">Cargando…</td></tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="37" gs-w="12" gs-h="6" gs-min-h="5">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                            <div class="card-header">
-                                <h5 class="mb-0">Calendario de viajes</h5>
-                            </div>
-                            <div class="card-body p-2">
-                                <div id="calendarioViajes"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                </div>
+                    <!-- Los tableros favoritos del usuario: los arma tableros-catalogo.js y los dibuja dashboard.js. -->
+                    <div class="grid-stack"></div>
                 </div>
 
                 <footer>
@@ -486,6 +144,7 @@
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/viaje-detalle.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/tableros-catalogo.js"></script>
     <script src="assets/static/js/dashboard.js"></script>
 
     <script>
@@ -503,13 +162,16 @@
                 }
                 await loadSettings();
                 adjustVisibilityBasedOnRole();
+                // Primero las tarjetas de los favoritos (de la API); después se dibujan sus datos.
+                await window.armarTablero();
                 window.SGTLDashboard.iniciar();
-
-                if (typeof window.initDashboardGrid === 'function') { window.initDashboardGrid(); }
+                if (window.iniciarGrillaTablero) window.iniciarGrillaTablero();
 
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
                 if (window.fijarEncabezadoTablero) window.fijarEncabezadoTablero();
+                // Con la pantalla a la vista: el calendario y los gráficos que esperaban poder medirse.
+                window.SGTLDashboard.alMostrar();
             } catch (error) {
                 console.error('Error al cargar el header, footer o los datos:', error);
                 loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
@@ -560,67 +222,64 @@
     <!-- ================= Dashboard personalizable (Gridstack) ================= -->
     <script>
         (function () {
-            var API_DL = 'http://localhost:50222/api';
             var GRID = null;
             var enEdicion = false;
-
-            var WIDGETS = [
-                { id: 'kpiviajes', label: 'Viajes' },
-                { id: 'kpientregados', label: 'Entregados' },
-                { id: 'kpipendientes', label: 'Pendientes de entrega' },
-                { id: 'kpirechazo', label: 'Entregados con rechazo' },
-                { id: 'kpikm', label: 'Km recorridos' },
-                { id: 'costo', label: 'Costo por viaje' },
-                { id: 'choferes', label: 'Choferes activos' },
-                { id: 'camiones', label: 'Camiones activos' },
-                { id: 'revisar', label: 'Para revisar' },
-                { id: 'itv', label: 'ITV de camiones' },
-                { id: 'viajesmes', label: 'Viajes por mes' },
-                { id: 'proximos', label: 'Próximos viajes' },
-                { id: 'kmmes', label: 'Km por mes' },
-                { id: 'kmcamion', label: 'Km por camión' },
-                { id: 'kmchofer', label: 'Km por chofer' },
-                { id: 'ultimos', label: 'Últimos viajes' },
-                { id: 'topclientes', label: 'Top clientes en facturación' },
-                { id: 'comparativa', label: 'Comparativa por mes' },
-                { id: 'calendario', label: 'Calendario de viajes' }
-            ];
-            var LAYOUT_DEFAULT = [
-                { id: 'kpiviajes', x: 0, y: 0, w: 3, h: 2 },
-                { id: 'kpientregados', x: 3, y: 0, w: 3, h: 2 },
-                { id: 'kpipendientes', x: 6, y: 0, w: 3, h: 2 },
-                { id: 'kpirechazo', x: 9, y: 0, w: 3, h: 2 },
-                { id: 'kpikm', x: 0, y: 2, w: 3, h: 2 },
-                { id: 'costo', x: 3, y: 2, w: 3, h: 2 },
-                { id: 'choferes', x: 6, y: 2, w: 3, h: 2 },
-                { id: 'camiones', x: 9, y: 2, w: 3, h: 2 },
-                { id: 'revisar', x: 0, y: 4, w: 8, h: 5 },
-                { id: 'itv', x: 8, y: 4, w: 4, h: 5 },
-                { id: 'viajesmes', x: 0, y: 9, w: 8, h: 6 },
-                { id: 'proximos', x: 8, y: 9, w: 4, h: 6 },
-                { id: 'kmmes', x: 0, y: 15, w: 6, h: 5 },
-                { id: 'kmcamion', x: 6, y: 15, w: 6, h: 5 },
-                { id: 'kmchofer', x: 0, y: 20, w: 6, h: 5 },
-                { id: 'topclientes', x: 6, y: 20, w: 6, h: 5 },
-                { id: 'ultimos', x: 0, y: 25, w: 12, h: 6 },
-                { id: 'comparativa', x: 0, y: 31, w: 12, h: 6 },
-                { id: 'calendario', x: 0, y: 37, w: 12, h: 6 }
-            ];
-            // Alto mínimo de cada tarjeta (en filas): por debajo de esto se esconde contenido.
-            var ALTO_MINIMO = {
-                kpiviajes: 2, kpientregados: 2, kpipendientes: 2, kpirechazo: 2, kpikm: 2, costo: 2, choferes: 2, camiones: 2,
-                revisar: 4, itv: 3, viajesmes: 4, proximos: 4, kmmes: 4, kmcamion: 4, kmchofer: 4, ultimos: 4, topclientes: 3, comparativa: 4, calendario: 5
-            };
+            var favoritos = [];   // lo guardado: [{ id, x, y, w, h }]
+            var quitados = [];    // sacados con la estrella en Personalizar, todavía sin guardar
 
             function el(id) { return document.getElementById(id); }
-            // makeWidget sobre una tarjeta que ya está en la grilla le crea un segundo nodo: al agrandarla o
-            // esconderla se tocaba ese y se guardaba el otro. Solo se agrega si todavía no está.
-            function agregarAlGrid(e) {
-                if (e.gridstackNode && GRID.engine.nodes.indexOf(e.gridstackNode) !== -1) return;
-                try { GRID.makeWidget(e); } catch (x) { }
-            }
             function itemEl(id) { return document.querySelector('.grid-stack-item[gs-id="' + id + '"]'); }
-            function usuario() { try { return localStorage.getItem('username'); } catch (e) { return null; } }
+            function altoMinimo(id) { var t = SGTLTableros.tablero(id); return t ? t.minH : 2; }
+
+            // Los tableros sin lugar guardado (los que se suman con la estrella en Tableros) van al final, uno por fila,
+            // con el tamaño que tienen en el catálogo.
+            function conLugar(lista) {
+                var fondo = lista.reduce(function (m, it) {
+                    return typeof it.y === 'number' && typeof it.h === 'number' ? Math.max(m, it.y + it.h) : m;
+                }, 0);
+                return lista.map(function (it) {
+                    if ([it.x, it.y, it.w, it.h].every(function (v) { return typeof v === 'number'; })) return it;
+                    var t = SGTLTableros.tablero(it.id);
+                    var nuevo = { id: it.id, x: 0, y: fondo, w: t.w, h: t.h };
+                    fondo += t.h;
+                    return nuevo;
+                });
+            }
+
+            function armarTarjetas(lista) {
+                document.querySelector('.grid-stack').innerHTML = lista.map(function (it) {
+                    var t = SGTLTableros.tablero(it.id);
+                    return t ? '<div class="grid-stack-item" gs-id="' + t.id + '"><div class="grid-stack-item-content">' +
+                        SGTLTableros.tarjeta(t, { estrella: true }) + '</div></div>' : '';
+                }).join('');
+            }
+
+            // "Agregar tableros" lleva a Tableros; sin el permiso queda deshabilitado con el motivo (§1.4).
+            function botonAgregar(id) {
+                var puede = !window.sgtlPuedeEntrar || window.sgtlPuedeEntrar('tableros.html');
+                var boton = '<a href="tableros.html" class="btn btn-light-secondary' + (puede ? '' : ' disabled') + '"' + (id ? ' id="' + id + '"' : '') +
+                    (puede ? '' : ' aria-disabled="true" tabindex="-1"') + '><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar tableros</a>';
+                return puede ? boton : '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="No se puede abrir Tableros: no tenés permiso">' + boton + '</span>';
+            }
+
+            function mostrarVacio(vacio) {
+                el('dashVacio').style.display = vacio ? '' : 'none';
+                el('btnPersonalizar').style.display = vacio ? 'none' : '';
+                if (vacio) {
+                    el('dashVacioAcciones').innerHTML = botonAgregar() +
+                        '<button type="button" class="btn btn-outline-secondary" id="btnVacioRestablecer"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restablecer</button>';
+                    el('btnVacioRestablecer').addEventListener('click', restablecerLayout);
+                }
+            }
+
+            // Lee los favoritos (o el diseño por defecto) y arma sus tarjetas, antes de que dashboard.js las llene.
+            window.armarTablero = function () {
+                return SGTLTableros.leerFavoritos().then(function (r) {
+                    favoritos = conLugar(r.lista);
+                    armarTarjetas(favoritos);
+                    mostrarVacio(!favoritos.length);
+                });
+            };
 
             var ALTO_FILA = 62, MARGEN = 8;
 
@@ -665,7 +324,14 @@
             window.addEventListener('resize', fijarEncabezadoTablero);
             window.fijarEncabezadoTablero = fijarEncabezadoTablero;
 
-            window.initDashboardGrid = function () {
+            // makeWidget sobre una tarjeta que ya está en la grilla le crea un segundo nodo: al agrandarla o
+            // esconderla se tocaba ese y se guardaba el otro. Solo se agrega si todavía no está.
+            function agregarAlGrid(e) {
+                if (e.gridstackNode && GRID.engine.nodes.indexOf(e.gridstackNode) !== -1) return;
+                try { GRID.makeWidget(e); } catch (x) { }
+            }
+
+            window.iniciarGrillaTablero = function () {
                 if (typeof GridStack === 'undefined') { return; } // si el CDN no cargó, el dashboard sigue estático
                 GRID = GridStack.init({
                     column: 12,
@@ -677,63 +343,21 @@
                     columnOpts: { breakpointForWindow: true, breakpoints: [{ w: 768, c: 1 }] }
                 });
                 GRID.on('resizestop change', function () { refrescarVivos(); });
-                construirChecklist();
                 wireToolbar();
-                cargarLayout();
+                aplicarLayout(favoritos);
             };
 
-            // La API todavía no tiene /DashboardLayout (responde 404): mientras tanto el diseño se guarda
-            // en el navegador, por usuario. Si la API lo devuelve, tiene prioridad.
-            // v2 (21/10): tablero con indicadores por período; los diseños guardados antes no aplican.
-            function claveLocal(u) { return 'sgtl-dashboard-v2-' + u; }
-            function leerLocal(u) {
-                try { return JSON.parse(localStorage.getItem(claveLocal(u)) || 'null'); } catch (e) { return null; }
-            }
-            function guardarLocal(u, layout) {
-                try { localStorage.setItem(claveLocal(u), JSON.stringify(layout)); return true; } catch (e) { return false; }
-            }
-            function borrarLocal(u) {
-                try { localStorage.removeItem(claveLocal(u)); } catch (e) { }
-            }
-
-            function cargarLayout() {
-                var u = usuario();
-                if (!u) { aplicarLayout(LAYOUT_DEFAULT, []); return; }
-                function aplicar(parsed) {
-                    parsed = parsed || leerLocal(u);
-                    if (parsed && parsed.items && parsed.items.length) aplicarLayout(parsed.items, parsed.hidden || []);
-                    else aplicarLayout(LAYOUT_DEFAULT, []);
-                }
-                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u))
-                    .then(function (r) { return r.ok ? r.json() : null; })
-                    .then(function (data) {
-                        var parsed = null;
-                        if (data && data.Layout) { try { parsed = JSON.parse(data.Layout); } catch (e) { } }
-                        aplicar(parsed);
-                    })
-                    .catch(function () { aplicar(null); });
-            }
-
-            function aplicarLayout(items, hidden) {
-                hidden = hidden || [];
+            function aplicarLayout(items) {
                 if (!GRID) return;
-                // Tarjetas agregadas después de que el usuario guardó su diseño: van al final, no encima de otras.
-                var guardadas = items.map(function (it) { return it.id; });
-                var fondo = items.reduce(function (m, it) { return Math.max(m, (it.y || 0) + (it.h || 1)); }, 0);
-                items = items.concat(LAYOUT_DEFAULT.filter(function (d) {
-                    return guardadas.indexOf(d.id) === -1 && hidden.indexOf(d.id) === -1;
-                }).map(function (d) { return Object.assign({}, d, { y: fondo + d.y }); }));
                 GRID.batchUpdate();
-                // asegurar que todos estén visibles y en el grid
-                WIDGETS.forEach(function (w) {
-                    var e = itemEl(w.id);
+                items.forEach(function (it) {
+                    var e = itemEl(it.id);
                     if (!e) return;
                     e.style.display = '';
                     agregarAlGrid(e);
                 });
-                // aplicar posiciones de los visibles
-                var visibles = items.filter(function (it) { return hidden.indexOf(it.id) === -1; }).map(function (it) {
-                    var minimo = ALTO_MINIMO[it.id] || 1;
+                var visibles = items.filter(function (it) { return itemEl(it.id); }).map(function (it) {
+                    var minimo = altoMinimo(it.id);
                     return Object.assign({}, it, { h: Math.max(it.h || minimo, minimo), minH: minimo });
                 });
                 // En celular (1 columna) gridstack apila mal un diseño de 12 columnas: dos tarjetas de la misma
@@ -742,133 +366,81 @@
                 if (columnas !== 12) GRID.column(12, 'none');
                 GRID.load(visibles, false);
                 if (columnas !== 12) GRID.column(columnas, 'list');
-                // ocultar los marcados
-                hidden.forEach(function (id) {
-                    var e = itemEl(id);
-                    if (!e) return;
-                    try { GRID.removeWidget(e, false); } catch (x) { }
-                    e.style.display = 'none';
-                });
                 GRID.commit();
-                actualizarChecklist(hidden);
                 setTimeout(refrescarVivos, 80);
             }
 
-            function mostrarWidget(id) {
-                var e = itemEl(id); if (!e || !GRID) return;
-                e.style.display = '';
-                agregarAlGrid(e);
-                setTimeout(refrescarVivos, 60);
-            }
-            function ocultarWidget(id) {
-                var e = itemEl(id); if (!e || !GRID) return;
+            // Estrella en Personalizar: la tarjeta sale del dashboard (queda en Tableros). Se guarda con Guardar.
+            function quitarTablero(id) {
+                var e = itemEl(id);
+                if (!e || !GRID) return;
                 try { GRID.removeWidget(e, false); } catch (x) { }
                 e.style.display = 'none';
+                if (quitados.indexOf(id) === -1) quitados.push(id);
             }
 
-            function construirChecklist() {
-                var cont = el('widgetsChecklist'); if (!cont) return;
-                cont.innerHTML = '';
-                WIDGETS.forEach(function (w) {
-                    var lbl = document.createElement('label');
-                    lbl.className = 'd-flex align-items-center gap-2 py-1 mb-0';
-                    lbl.style.cursor = 'pointer';
-                    lbl.innerHTML = '<input type="checkbox" class="form-check-input mt-0" data-wid="' + w.id + '" checked> <span>' + w.label + '</span>';
-                    cont.appendChild(lbl);
+            function mostrarEdicion(editando) {
+                enEdicion = editando;
+                if (GRID) GRID.setStatic(!editando);
+                document.querySelector('.grid-stack').classList.toggle('editando', editando);
+                el('btnPersonalizar').style.display = editando ? 'none' : '';
+                ['btnGuardarLayout', 'btnCancelarLayout', 'btnResetLayout', 'agregarTablerosEnvoltura'].forEach(function (id) {
+                    el(id).style.display = editando ? '' : 'none';
                 });
-                cont.addEventListener('change', function (e) {
-                    var cb = e.target.closest('input[data-wid]'); if (!cb) return;
-                    var id = cb.getAttribute('data-wid');
-                    if (cb.checked) mostrarWidget(id); else ocultarWidget(id);
-                });
-            }
-            function actualizarChecklist(hidden) {
-                var cont = el('widgetsChecklist'); if (!cont) return;
-                Array.prototype.forEach.call(cont.querySelectorAll('input[data-wid]'), function (cb) {
-                    cb.checked = hidden.indexOf(cb.getAttribute('data-wid')) === -1;
-                });
+                if (editando) el('agregarTablerosEnvoltura').innerHTML = botonAgregar('btnAgregarTableros');
             }
 
-            function entrarEdicion() {
-                enEdicion = true;
-                if (GRID) GRID.setStatic(false);
-                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.add('editando');
-                el('btnPersonalizar').style.display = 'none';
-                el('btnGuardarLayout').style.display = '';
-                el('btnCancelarLayout').style.display = '';
-                el('btnResetLayout').style.display = '';
-                el('widgetsMenu').style.display = '';
-            }
-            function salirEdicion() {
-                enEdicion = false;
-                if (GRID) GRID.setStatic(true);
-                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.remove('editando');
-                el('btnPersonalizar').style.display = '';
-                el('btnGuardarLayout').style.display = 'none';
-                el('btnCancelarLayout').style.display = 'none';
-                el('btnResetLayout').style.display = 'none';
-                el('widgetsMenu').style.display = 'none';
-                el('widgetsPanel').style.display = 'none';
+            // Lo que quedó en la grilla, en el orden en que se lee (de arriba abajo y de izquierda a derecha).
+            // A mano y no con GRID.save(): gridstack omite el alto de algunas tarjetas y al volver quedaban con el mínimo.
+            function disenoActual() {
+                return GRID.engine.nodes.map(function (n) {
+                    return { id: n.id || (n.el && n.el.getAttribute('gs-id')), x: n.x, y: n.y, w: n.w, h: n.h };
+                }).filter(function (it) { return it.id; }).sort(function (a, b) { return a.y - b.y || a.x - b.x; });
             }
 
             function guardarLayout() {
-                var u = usuario();
-                if (!u || !GRID) { salirEdicion(); return; }
-                var hidden = [];
-                Array.prototype.forEach.call(el('widgetsChecklist').querySelectorAll('input[data-wid]'), function (cb) {
-                    if (!cb.checked) hidden.push(cb.getAttribute('data-wid'));
+                if (!GRID) { mostrarEdicion(false); return; }
+                var items = disenoActual();
+                var listo = SGTL.procesando(el('btnGuardarLayout'), 'Guardando…');
+                SGTLTableros.guardarFavoritos(items, 'No se pudo guardar tu dashboard. Probá de nuevo.').then(function () {
+                    listo();
+                    quitados.forEach(function (id) { var e = itemEl(id); if (e) e.parentNode.removeChild(e); });
+                    quitados = [];
+                    favoritos = items;
+                    mostrarEdicion(false);
+                    mostrarVacio(!favoritos.length);
+                    refrescarVivos();
+                    SGTL.toastExito('Dashboard guardado.');
+                }, function (error) {
+                    listo();
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo guardar tu dashboard. Probá de nuevo.');
                 });
-                // A mano y no con GRID.save(): gridstack omite el alto de algunas tarjetas y al volver quedaban con el mínimo.
-                var items = GRID.engine.nodes.map(function (n) {
-                    return { id: n.id || (n.el && n.el.getAttribute('gs-id')), x: n.x, y: n.y, w: n.w, h: n.h };
-                });
-                var layout = { items: items, hidden: hidden };
-                guardarLocal(u, layout);
-                var payload = { Nombre_Usuario: u, Layout: JSON.stringify(layout) };
-                fetch(API_DL + '/DashboardLayout', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).then(function () { }).catch(function () { })
-                    .then(function () { salirEdicion(); refrescarVivos(); });
             }
 
-            function cancelarEdicion() { salirEdicion(); cargarLayout(); }
+            function cancelarEdicion() {
+                quitados = [];
+                aplicarLayout(favoritos);
+                mostrarEdicion(false);
+            }
 
+            // Vuelve al dashboard de siempre: borra los favoritos guardados y recarga (las tarjetas cambian).
             function restablecerLayout() {
-                var u = usuario();
-                function aplicarDefault() {
-                    aplicarLayout(LAYOUT_DEFAULT, []);
-                    salirEdicion();
-                }
-                if (!u) { aplicarDefault(); return; }
-                borrarLocal(u);
-                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u), { method: 'DELETE' })
-                    .then(aplicarDefault).catch(aplicarDefault);
-            }
-
-            // La lista ocupa como mucho el alto que queda visible debajo del botón; lo que sobra se desplaza adentro.
-            function ajustarAltoWidgets() {
-                var p = el('widgetsPanel');
-                if (!p || p.style.display === 'none') return;
-                var abajo = el('btnWidgets').getBoundingClientRect().bottom;
-                p.style.maxHeight = Math.max(160, window.innerHeight - abajo - 16) + 'px';
+                SGTLTableros.restablecer('No se pudo restablecer tu dashboard. Probá de nuevo.').then(function () {
+                    window.location.reload();
+                }, function (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo restablecer tu dashboard. Probá de nuevo.');
+                });
             }
 
             function wireToolbar() {
-                el('btnPersonalizar').addEventListener('click', entrarEdicion);
+                el('btnPersonalizar').addEventListener('click', function () { mostrarEdicion(true); });
                 el('btnGuardarLayout').addEventListener('click', guardarLayout);
                 el('btnCancelarLayout').addEventListener('click', cancelarEdicion);
                 el('btnResetLayout').addEventListener('click', restablecerLayout);
-                el('btnWidgets').addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    var p = el('widgetsPanel');
-                    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
-                    ajustarAltoWidgets();
-                });
-                window.addEventListener('resize', ajustarAltoWidgets);
-                document.addEventListener('click', function (e) {
-                    if (!e.target.closest('#widgetsMenu')) { el('widgetsPanel').style.display = 'none'; }
+                document.querySelector('.grid-stack').addEventListener('click', function (e) {
+                    var estrella = e.target.closest('.dash-estrella');
+                    if (!estrella || !enEdicion) return;
+                    quitarTablero(estrella.getAttribute('data-tablero'));
                 });
             }
         })();
