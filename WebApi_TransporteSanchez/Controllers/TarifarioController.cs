@@ -114,8 +114,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "SELECT tc.Tarifario_ID, c.Cliente_ID, ISNULL(c.Razon_Social, '') AS Razon_Social FROM dbo.TARIFARIO_CLIENTES tc " +
             "JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID ";
 
-        // GET api/Tarifario: las tablas, la más nueva primero, con para quién es cada una. La general dice además qué
-        // clientes tienen tabla propia (para ellos no vale).
+        // GET api/Tarifario: las tablas, la más nueva primero, con para quién es cada una.
         [HttpGet]
         [Route("api/Tarifario")]
         public IHttpActionResult Listar()
@@ -126,14 +125,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var tablas = db.Database.SqlQuery<ListaRow>(SELECT_LISTA + "ORDER BY t.Vigente_Desde DESC, t.Para_Todos").ToList();
                     var clientes = db.Database.SqlQuery<ClienteTablaRow>(SELECT_CLIENTES).ToList();
-                    var conTablaPropia = clientes.GroupBy(c => c.Cliente_ID).Select(g => g.First().Razon_Social).OrderBy(n => n).ToList();
                     return Ok(tablas.Select(t => new
                     {
                         t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Vigente_Hasta, t.Para_Todos, t.Viajes, t.Presupuestos, t.Unica_General,
                         t.Fecha_Modi, t.Usu_Modi,
                         Clientes = clientes.Where(c => c.Tarifario_ID == t.Tarifario_ID).OrderBy(c => c.Razon_Social)
-                            .Select(c => new { c.Cliente_ID, c.Razon_Social }).ToList(),
-                        Clientes_Con_Tabla_Propia = t.Para_Todos ? conTablaPropia : new List<string>()
+                            .Select(c => new { c.Cliente_ID, c.Razon_Social }).ToList()
                     }).ToList());
                 }
             }

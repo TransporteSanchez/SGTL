@@ -465,17 +465,15 @@
             return SGTL.estado('Anterior', 'Anterior', 'gris');
         }
 
-        // Para quién es: "Todos los clientes" (y, si hay, los que tienen tabla propia) o los clientes de la tabla propia.
+        // Para quién es (Rocío, 25/10): "Todos los clientes", sin más (quién tiene tabla propia se ve en la fila de esa tabla);
+        // el cliente, si es uno; o "3 clientes" con el globito que dice cuáles.
         function textoClientes(t) {
-            const nombres = function (lista) {
-                return lista.length <= 3 ? lista.join(', ') : lista.slice(0, 3).join(', ') + ' y ' + (lista.length - 3) + ' más';
-            };
-            if (t.Para_Todos) {
-                const propios = t.Clientes_Con_Tabla_Propia || [];
-                return 'Todos los clientes' + (propios.length ? '<div class="small text-muted">Salvo ' + SGTL.escapar(nombres(propios))
-                    + (propios.length === 1 ? ', que tiene tabla propia' : ', que tienen tabla propia') + '</div>' : '');
-            }
-            return SGTL.escapar(nombres((t.Clientes || []).map(function (c) { return c.Razon_Social; })));
+            if (t.Para_Todos) return 'Todos los clientes';
+            const nombres = (t.Clientes || []).map(function (c) { return c.Razon_Social; });
+            if (nombres.length <= 1) return SGTL.escapar(nombres[0] || '—');
+            return '<span class="d-inline-flex align-items-center gap-1 text-nowrap">' + nombres.length + ' clientes'
+                + SGTL.botonInfo('info', nombres.map(function (n) { return '<div>' + SGTL.escapar(n) + '</div>'; }).join(''),
+                    'Ver los clientes de ' + t.Nombre) + '</span>';
         }
 
         function filaTarifario(t) {

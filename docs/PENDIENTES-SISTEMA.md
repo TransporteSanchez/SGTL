@@ -2921,7 +2921,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos, "Todos los clientes"
   elegido. Fecha 01/08/2026 → "Ya hay una tabla para todos los clientes vigente desde el 01/08/2026…". Elegir "Solo algunos
   clientes" sin tildar ninguno → "Elegí al menos un cliente.". Tildar un cliente de prueba, cambiar un valor y Guardar: en
-  la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
+  la lista, la propia con ese cliente (si son varios, "N clientes" y el ícono que dice cuáles) y la general con "Todos los
+  clientes", sin más (25/10). Un viaje de ese cliente sale con
   la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia: la confirmación dice "Sus clientes vuelven a la tabla para todos los clientes.".
   Eliminar la de agosto: deshabilitado ("la usan N viajes"). Registrar una general desde el 01/12/2026 y eliminarla:
   "Tarifas a agosto 2026" queda como la tabla vigente hasta que se cargue la próxima.

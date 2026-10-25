@@ -310,6 +310,10 @@ function probarCambiarClientes() {
         'la pantalla pasa el detalle del error al aviso');
     assert.ok(/id="trAlcanceFijo"/.test(pantalla) && /unicaGeneral = !!\(fila && fila\.Unica_General\)/.test(pantalla), 'la única para todos muestra los clientes como texto');
     assert.ok(/Los demás clientes vuelven a "/.test(pantalla), 'la ayuda dice a qué tabla vuelven los demás clientes');
+    // En la lista (25/10): la general dice "Todos los clientes" sin más; la de varios clientes, "N clientes" con el globito.
+    assert.ok(/if \(t\.Para_Todos\) return 'Todos los clientes';/.test(pantalla) && /nombres\.length \+ ' clientes'/.test(pantalla)
+        && /'Ver los clientes de ' \+ t\.Nombre/.test(pantalla), 'la columna Clientes: todos, el cliente o "N clientes" con el globito');
+    assert.ok(!/Clientes_Con_Tabla_Propia/.test(api + pantalla), 'la lista ya no dice qué clientes tienen tabla propia en la fila de la general');
 }
 
 function probarProyecto() {
