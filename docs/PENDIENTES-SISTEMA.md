@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 24/10/2026.**
+**Última actualización de este documento: 25/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -57,6 +57,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
+| 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": rehacer `database/tarifas/04_…` (todos los viajes con la tabla, sin leyendas, con una tabla anterior para los viajes viejos), limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Anotado (25/10).** El `04` se rehace antes del jueves; la limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | — | **No correr el `04` actual** (ver §38) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2758,7 +2759,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
   la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia.
 - [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
-- [ ] 4b. Rocío corre `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: revisar qué pasa con cada viaje
+- [ ] 4b. **No correr el `04` actual: se rehace (§38).** Cuando esté rehecho, Rocío corre
+  `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: revisar qué pasa con cada viaje
   (conserva o se recalcula, con el importe de hoy y el nuevo), que la columna "Falta" esté vacía, los importes nuevos de la
   demo de Rukas y los presupuestos con tarifa vieja. Con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final,
   "Viajes con tarifa vieja" tiene que dar 0).
@@ -3132,3 +3134,80 @@ del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); 
 - **Adicionales que se pueden facturar al cliente** (Rocío, 24/10): algo nuevo aparte.
 - Que la oficina pueda cargar o corregir un gasto (hoy los carga el chofer desde la hoja de ruta).
 - Cuando el sistema se publique, sumar el dominio a la clave de Google Maps (hoy acepta solo `localhost:5502`).
+
+---
+
+## 38. Documentos de prueba y tabla de tarifas "como si siempre hubiera estado" — ANOTADO (25/10); LA LIMPIEZA, DESPUÉS DEL CAMBIO DE FACU
+
+**Pedido de Rocío (25/10):** el sistema tiene que verse y funcionar como si siempre hubiera tenido la tabla de tarifas
+(§34): sin leyendas ni rastros de las tarifas de antes (fija por cliente y recorrido, y bandas por km, que eran de
+prueba), con todos los viajes calculados con la tabla, también los ya incluidos en documentos. Para que viajes y documentos
+coincidan, los documentos de prueba se borran y se vuelven a generar desde el sistema.
+
+**Cambio de Facu antes de la limpieza:** la profe pidió que en el sistema **no se use la palabra "factura"**: solo
+"comprobante". Facu cambia los textos y la nomenclatura (hoy `FAC`). La limpieza y la regeneración de documentos se hacen
+**después** de que Facu suba ese cambio y se pase a `rocionuvoli`, porque tocan los mismos comprobantes, tipos y
+numeración. Lo de tarifas también se alinea: "facturado" en los textos del script `04`, en los nombres de los grupos y en
+este relevamiento.
+
+**Relevamiento del 25/10** (`database/limpieza/02_documentos_afectados_por_tarifas.sql`, solo lectura, corrido por
+Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en total: 10 proformas y 10 comprobantes**:
+
+| Grupo | Proformas | Comprobantes | Qué son |
+|---|---|---|---|
+| Con comprobante y cobradas | PF-00000001, PF-00000002, PF-00000004, PF-00000012 | FAC-00000001, FAC-00000006, FAC-00000012, FAC-00000015 · REC-00000001, REC-00000003 | Proformas propias con 15 viajes; los dos recibos cancelan solo esos comprobantes |
+| Aceptada sin comprobante | PF-00000006 | — | Viajes 10, 13, 14 y 15 |
+| Historia de la demo de Rukas | PF-00000008 a PF-00000011 (anuladas) | FAC-00000009 y FAC-00000010, cada uno con su nota de crédito (NC-00000002 y NC-00000003) | Pruebas de generar y anular con los viajes 25 y 26 |
+| Borrador | #52 | — | Borrador de Rukas con el viaje 25 |
+
+- **Presupuestos:** 8 (5 aceptados, los 5 con viaje generado, y 3 pendientes). También se recalculan con la tabla.
+- **Comprobantes sin viajes:** 24 (9 FAC, 1 NC, 1 ND y 13 REC). No cambian con la tabla, pero son de prueba (textos como
+  "asd asd").
+- **Dato raro:** los viajes 3, 4, 6, 7 y 8 están en dos proformas con comprobante (PF-00000001 y PF-00000002), de antes de
+  la regla "un viaje en una sola proforma". Al regenerar, cada viaje va en una sola.
+
+**Opciones (Rocío decide; Claude recomienda la B para la defensa):**
+- **A. Lo mínimo:** borrar y regenerar desde el sistema la cadena de las proformas con comprobante (4 proformas, 4
+  comprobantes y 2 recibos) y la aceptada; borrar la historia de la demo de Rukas (4 proformas anuladas, 2 comprobantes y
+  2 NC) y el borrador #52. Quedan huecos en la numeración (los nuevos toman PF-00000013, …) y siguen los 24 comprobantes
+  de prueba sin viajes.
+- **B. Limpieza completa de la facturación de prueba:** borrar todas las proformas y los 34 comprobantes de prueba,
+  reiniciar la numeración y generar desde el sistema un juego de demo coherente (por ejemplo, una proforma propia con su
+  comprobante y su recibo, una de Rukas y una nota de crédito). Todo arranca en 1, sin huecos, sin textos de prueba y con
+  los importes de la tabla.
+
+**Antes del jueves 29/10** (no depende de Facu):
+1. **Tabla anterior** para los viajes de antes del 01/08/2026 (hoy quedarían sin tabla): por ejemplo, "Tarifas a enero
+   2026", desde el mes del primer viaje hasta el 31/07/2026. Los precios de antes no se pueden copiar (eran por recorrido o
+   por km, sin tipo ni modelo de camión): Claude propone los de agosto con un 15 % menos, como si en agosto hubiera habido
+   un aumento. **A confirmar.**
+2. **Rehacer `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql`:** todos los viajes recalculados con la tabla de su
+   fecha, sin grupos que conservan el importe y **sin leyendas** ("Importe facturado", "Importe anterior a la tabla de
+   tarifas"). Los presupuestos también se recalculan (aceptados y pendientes) para que coincidan con sus viajes. Hasta la
+   limpieza, los comprobantes de prueba no coinciden con sus viajes (se borran después). Mientras no se corra, los viajes
+   viejos no se pueden editar con la API nueva (no tienen tabla).
+3. Correr `02`, `03`, elegir el tipo de los camiones y correr el `04` rehecho; probar con los pasos de la §34.
+
+**Después del cambio de Facu:**
+4. Pasar el cambio de Facu a `rocionuvoli` (conflictos de a uno con Rocío).
+5. Ajustar `02_documentos_afectados_por_tarifas.sql` a los tipos y nombres nuevos y volver a relevar.
+6. **Script de limpieza** (lo arma Claude, lo corre Rocío con `BEGIN TRAN`): borra las proformas y los comprobantes
+   elegidos con todo lo que depende de ellos (detalle, cuenta corriente, aplicaciones, vínculos con los viajes y con las
+   proformas); los viajes que quedaron sin documento vuelven a Listo para facturar (con plataforma) o Entregado
+   (directos); con la opción B, reinicia la numeración. Primero un diagnóstico de solo lectura.
+7. **Generar desde las pantallas** los documentos de la demo, con los importes de la tabla; cada viaje en una sola
+   proforma.
+8. **Demo de Rukas:** regenerar los Excel de `docs/pruebas/datos/` con los importes nuevos de los viajes 25 y 26 (990001 y
+   990002).
+9. **Tesis:** pasar al modelo de la tabla de tarifas el RF12 (`01-analisis-organizacional.md`), el anteproyecto
+   (`02-anteproyecto.md`), la arquitectura (`04-arquitectura-y-diseno.md`) y el CP11 (`05-pruebas-e-implementacion.md`, hoy
+   "tarifa por km #5, $ 14.790"), con la palabra "comprobante". La HU26 de la tabla de sprints (`03-metodologia-y-sprints.md`,
+   "Tarifas fijas y por km"): a decidir; Claude recomienda dejarla, porque cuenta lo que se hizo en ese sprint, y sumar el
+   cambio como una mejora posterior.
+10. Probar en la VM: la demo completa (viaje → proforma → comprobante → recibo, y Rukas).
+
+**Decisiones pendientes:**
+- [ ] Tabla anterior: los valores de agosto con un 15 % menos, otro porcentaje o los mismos.
+- [ ] Opción A o B, y qué casos de la demo se regeneran.
+- [ ] Módulos de estadía: proponerlos con el inicio y el fin del viaje, o a mano (§34).
+- [ ] Tesis: la HU26.
