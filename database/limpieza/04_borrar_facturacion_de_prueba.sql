@@ -31,6 +31,7 @@ SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
 DECLARE @Aplicar bit = 0;                -- 0 = solo mostrar · 1 = borrar y dejar la transacción abierta
+DECLARE @OtraVez bit = 0;                -- 1 = limpiar aunque ya se haya limpiado antes (borra también la demo generada)
 DECLARE @Usuario nvarchar(20) = N'RNUVOLI';  -- quién queda en Auditoría
 
 IF DB_NAME() <> N'Transporte_Sanchez'
@@ -81,6 +82,10 @@ UNION ALL
 SELECT N'Numerador anterior ' + CONVERT(nvarchar(10), Tipo), UltimoNumero, 0 FROM dbo.COMPROBANTES_NUMERADORES;
 
 /* ---------------------------------------------------------------- Aplicar */
+
+-- Freno: la limpieza ya se hizo el 25/10 y después se genera la demo. Volver a correrla sin querer borraría la demo.
+IF @Aplicar = 1 AND @OtraVez = 0 AND EXISTS (SELECT 1 FROM dbo.AUDITORIA WHERE Clave = N'Limpieza de prueba')
+    THROW 54811, 'La facturación de prueba ya se limpió (está en Auditoría). Para limpiar otra vez, y borrar también la demo generada, poné @OtraVez = 1.', 1;
 
 IF @Aplicar = 1
 BEGIN
