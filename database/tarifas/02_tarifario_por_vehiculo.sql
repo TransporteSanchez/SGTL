@@ -33,8 +33,8 @@
    (TARIFAS_FIJAS y TARIFAS_KM, de prueba) se dejan de usar: 04_viajes_con_la_tabla_de_tarifas.sql pasa los viajes y
    presupuestos a esta tabla y borra sus filas.
 
-   Este script no carga datos. Los valores de agosto 2026, el tipo de los camiones y el importe de los viajes que ya
-   existen van en 03_cargar_tarifario_agosto_2026.sql.
+   Este script no carga datos. Las tablas de enero y agosto 2026 y el tipo de los camiones van en
+   03_cargar_tablas_de_tarifas_2026.sql; el importe de los viajes y presupuestos que ya existen, en 04.
 
    Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo). Es idempotente: lo que ya existe no lo
    toca. Correrlo ANTES de recompilar la API: sin estas columnas, la API nueva no puede leer ni guardar viajes.

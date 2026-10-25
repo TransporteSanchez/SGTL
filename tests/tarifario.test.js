@@ -34,12 +34,18 @@ function probarTiposIguales() {
         'Gestionar tarifas arma la grilla con los mismos tipos');
 }
 
-function probarValoresDeAgosto() {
-    const script = leer('database/tarifas/03_cargar_tarifario_agosto_2026.sql');
+function filasDe(script, variable) {
     const filas = [];
-    script.replace(/\(@Id, ([01]), N'([^']+)',\s+(\d+), (\d+), (\d+), (\d+), (\d+)\)/g, function (_, nuevo, tipo, a, b, c, d, e) {
+    const patron = new RegExp('\\(' + variable + ", ([01]), N'([^']+)',\\s+(\\d+), (\\d+), (\\d+), (\\d+), (\\d+)\\)", 'g');
+    script.replace(patron, function (_, nuevo, tipo, a, b, c, d, e) {
         filas.push({ nuevo: nuevo === '1', tipo: tipo, valores: [a, b, c, d, e].map(Number) });
     });
+    return filas;
+}
+
+function probarValoresDeAgosto() {
+    const script = leer('database/tarifas/03_cargar_tablas_de_tarifas_2026.sql');
+    const filas = filasDe(script, '@Agosto');
     assert.strictEqual(filas.length, 8, 'la tabla de agosto 2026 tiene 8 filas: 4 tipos por 2 antigüedades');
     const balancinNuevo = filas.filter(function (f) { return f.nuevo && f.tipo === 'Balancín (3 ejes)'; })[0];
     assert.deepStrictEqual(balancinNuevo.valores, [581492, 407089, 631568, 663370, 2594], 'Balancín 2019 en adelante, como el PDF');
@@ -56,6 +62,24 @@ function probarValoresDeAgosto() {
     });
     assert.ok(/'2026-08-01', 1, 2019, 130, 190, 250, 96577, 6, 12, 18, 60/.test(script),
         'vigente desde el 01/08/2026 para todos los clientes, corte 2019, bandas 130/190/250, estadía 96.577 por 6 hs, 12 y 18 hs, falso flete 60 %');
+}
+
+// La de enero 2026 (decisión de Rocío, 25/10): para los viajes de enero a julio, los valores de agosto con un 15 % menos,
+// redondeados a pesos, y lo demás igual.
+function probarValoresDeEnero() {
+    const script = leer('database/tarifas/03_cargar_tablas_de_tarifas_2026.sql');
+    const agosto = filasDe(script, '@Agosto');
+    const enero = filasDe(script, '@Enero');
+    assert.strictEqual(enero.length, 8, 'la tabla de enero 2026 tiene 8 filas');
+    enero.forEach(function (f, i) {
+        assert.strictEqual(f.tipo, agosto[i].tipo, 'enero y agosto en el mismo orden');
+        assert.strictEqual(f.nuevo, agosto[i].nuevo, 'enero y agosto en el mismo orden');
+        assert.deepStrictEqual(f.valores, agosto[i].valores.map(function (v) { return Math.round(v * 0.85); }),
+            f.tipo + (f.nuevo ? ' 2019 en adelante' : ' 2018 o anterior') + ': agosto con un 15 % menos');
+    });
+    assert.ok(/'2026-01-01', 1, 2019, 130, 190, 250, 82090, 6, 12, 18, 60/.test(script),
+        'vigente desde el 01/01/2026 para todos los clientes, estadía 96.577 con un 15 % menos y lo demás como agosto');
+    assert.ok(!/Fecha_Modi = @Ahora, Usu_Modi = @Usuario\s+FROM dbo\.CAMIONES/.test(script), '03 no cambia quién modificó el camión');
 }
 
 function probarViajeGuardaImporte() {
@@ -132,10 +156,16 @@ function probarSinTarifasViejas() {
     ['gestion-viajes.html', 'assets/static/js/viaje-detalle.js', 'assets/static/js/presupuestos.js'].forEach(function (archivo) {
         assert.ok(!/\/Tarifas\/(Fijas|Km)|TarifasFijas|TarifasKm|TarifaFijaID|TarifaKmID|tarifaId\b/.test(leer(archivo)), archivo + ' no usa las tarifas viejas');
     });
+    // Como si siempre hubiera estado la tabla (decisión de Rocío, 25/10): todos los viajes y presupuestos con la tabla de
+    // su fecha, sin textos sobre las tarifas de antes y sin cambiar quién los modificó.
     const migracion = leer('database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql');
     assert.ok(/DELETE FROM dbo\.TARIFAS_FIJAS;/.test(migracion) && /DELETE FROM dbo\.TARIFAS_KM;/.test(migracion), '04 borra las tarifas viejas');
     assert.ok(/TarifaFijaID = NULL, TarifaKmID = NULL/.test(migracion), '04 saca la tarifa vieja de los viajes');
-    assert.ok(/N'Conserva: facturado o en una proforma emitida'/.test(migracion), 'los viajes facturados conservan el importe facturado');
+    assert.ok(/FROM dbo\.PRESUPUESTOS ps JOIN #Plan p ON p\.Clase = N'Presupuesto'/.test(migracion), '04 recalcula los presupuestos');
+    ['Importe facturado', 'Importe anterior', 'Conserva', 'Tarifa fija #', 'Tarifa por km #'].forEach(function (texto) {
+        assert.ok(migracion.indexOf(texto) === -1, '04 no deja textos sobre las tarifas de antes: ' + texto);
+    });
+    assert.ok(!/Usu_Modi|Fecha_Modi|FechaModificacion/.test(migracion), '04 no cambia la fecha ni el usuario de la última modificación');
 }
 
 function probarProyecto() {
@@ -151,9 +181,10 @@ function probarProyecto() {
 
 probarTiposIguales();
 probarValoresDeAgosto();
+probarValoresDeEnero();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();
 probarSinTarifasViejas();
 probarProyecto();
-console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de agosto 2026 y el importe guardado del viaje');
+console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de enero y agosto 2026 y el importe guardado del viaje');

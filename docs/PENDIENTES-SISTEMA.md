@@ -53,11 +53,11 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
-| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío y Claudia | Commits del 24/10, **sin push** | **Correr antes `database/tarifas/02_…` y `03_…`**, recompilar y probar (ver §34) |
+| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | Pusheado el 24 y 25/10; la tabla de enero y el `04` rehecho, **sin push** | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
-| 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": rehacer `database/tarifas/04_…` (todos los viajes con la tabla, sin leyendas, con una tabla anterior para los viajes viejos), limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Anotado (25/10).** El `04` se rehace antes del jueves; la limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | — | **No correr el `04` actual** (ver §38) |
+| 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | Tabla de enero y `04`, **sin push** | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2679,11 +2679,13 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   una tabla propia), y en `VIAJES` las columnas `TarifarioID`, `Tarifa_Modo`
   (`Fija` o `Km`), `Vuelta`, `Estadia_Modulos`, `Falso_Flete`, `Importe_Base`, `Tarifa_Detalle`, `Importe` e
   `Importe_Detalle` (con default o vacías: el código viejo sigue andando).
-- `database/tarifas/03_cargar_tarifario_agosto_2026.sql`: primero muestra; con `@Aplicar = 1` (transacción abierta para
-  COMMIT o ROLLBACK) carga la tabla de agosto 2026, pasa al nombre de la tabla el tipo de los camiones que se puede
-  deducir del texto ("furgón", "balancín", "chasis", "liviano"; los demás se eligen en Gestionar camiones) y les guarda a
-  los viajes que ya existen **el mismo importe que muestran hoy**. Ningún monto cambia: la demo de Rukas sigue en
-  $ 14.790 en los viajes 25 y 26 mientras no se editen.
+- `database/tarifas/03_cargar_tablas_de_tarifas_2026.sql`: primero muestra; con `@Aplicar = 1` (transacción abierta para
+  COMMIT o ROLLBACK) carga las dos tablas generales de 2026 y pasa al nombre de la tabla el tipo de los camiones que se
+  puede deducir del texto ("furgón", "balancín", "chasis", "liviano"; los demás se eligen en Gestionar camiones), sin
+  cambiar quién modificó el camión. **"Tarifas a enero 2026"** (desde el 01/01/2026, para los viajes de enero a julio):
+  los valores de agosto con un 15 % menos, redondeados a pesos (estadía $ 82.090), y lo demás igual (decisión de Rocío,
+  25/10). **"Tarifas a agosto 2026"** (desde el 01/08/2026): la del PDF. También muestra si hay viajes de antes del
+  01/01/2026 (no tendrían tabla).
 - API: `Tarifas/TarifarioCalculo.cs` (nuevo, un solo cálculo para viajes, presupuestos y la tabla) y
   `TarifarioController.cs` (nuevo: listar, ver, registrar, editar, eliminar si ningún viaje la usa, la vigente y
   `Calcular` con `tarifa=fija|km`), los dos en el `.csproj`. `ViajesController`: calcula el importe al guardar (no toma
@@ -2691,8 +2693,7 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   inicio o la vuelta; falso flete y estadía se cargan en cualquier estado antes de facturar.
   `ProformasController.ImporteViaje` ("Traer viajes" y el control de Rukas) y el costo del dashboard leen primero el
   importe guardado. `CamionesController` rechaza un tipo que no es de la tabla. `PresupuestosController` (Facu): el viaje
-  que genera un presupuesto nuevo queda con la tabla, su modo, la vuelta y el importe del presupuesto (los presupuestos de
-  antes siguen funcionando con su tarifa).
+  que genera un presupuesto queda con la tabla, su modo, la vuelta y el importe del presupuesto.
 - `gestion-tarifas.html`: solo la tabla de tarifas (ya no hay pestañas de fijas por recorrido ni de bandas por km): la
   lista de tablas (para qué clientes —"Todos los clientes, salvo …, que tienen tabla propia" o los de la propia—,
   vigencia y estado: Vigente, Anterior o Próxima) y el formulario como el PDF, con los bloques Datos, Clientes (todos o
@@ -2701,9 +2702,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
   hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con
-  plataforma: los adicionales vienen de Rukas). La línea del importe muestra la cuenta. Un viaje de antes conserva su
-  tarifa vieja (lo dice debajo) hasta que se cambie el camión, los km o el inicio, o se elija Fija o Por km. En un viaje
-  que ya salió, la tarifa queda fija y se pueden cargar falso flete y estadía. `viaje-detalle.js`: el importe guardado.
+  plataforma: los adicionales vienen de Rukas). La línea del importe muestra la cuenta. En un viaje que ya salió, la
+  tarifa queda fija y se pueden cargar falso flete y estadía. `viaje-detalle.js`: el importe guardado.
 - `presupuestos.html` y `presupuestos.js` (Facu): el tipo de tarifa (fija o por km) calcula con la tabla, con el camión;
   aparece "Vuelta del día" cuando corresponde y se recalcula al cambiar el camión.
 - `gestion-camiones.html`: el tipo es una lista con los cuatro de la tabla; un camión con un tipo escrito antes pide
@@ -2714,8 +2714,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   guarde el importe. Los tests de `tests/` dan OK (con el Node de Cursor).
 - Probado en la Mac con una API simulada con la misma lógica (Balancín 2019): fija 100 km → $ 581.492 (1ª) y $ 407.089
   (2ª, propuesta); 200 km → $ 663.370; 600 km → $ 1.571.270; por km 600 km → $ 1.556.400 y 100 km → $ 259.400 (sin
-  vuelta); falso flete y estadía; un viaje de antes guardado sin cambios sigue en $ 220.000 y al cambiarle el camión pasa
-  a la tabla; presupuestos con fija (2ª vuelta propuesta) y por km; camión sin tipo de la tabla → aviso con el enlace.
+  vuelta); falso flete y estadía; presupuestos con fija (2ª vuelta propuesta) y por km; camión sin tipo de la tabla →
+  aviso con el enlace.
 
 **Para tener en cuenta:**
 - **El orden importa:** correr `02` antes de recompilar la API. Sin las columnas nuevas, la API nueva no puede listar ni
@@ -2731,15 +2731,21 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - **Como si siempre hubiera estado la tabla (decisión de Rocío, 25/10):** las tarifas de antes eran de prueba. Se sacaron
   `TarifasController`, `TarifasFijasController` y `TarifasKmController` (y del `.csproj`), y todo lo que las leía
   (viajes, Ver detalle, proformas, el control de Rukas, el dashboard, presupuestos y `TarifarioCalculo`). Ahora el importe
-  sale solo de lo que el viaje guardó con la tabla. `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` deja los
-  datos igual:
-  - Los viajes facturados o en una proforma emitida conservan el importe facturado ("Importe facturado").
-  - Los generados desde un presupuesto conservan el del presupuesto.
-  - Los de antes del 01/08/2026 (no hay tabla) conservan el suyo ("Importe anterior a la tabla de tarifas").
-  - El resto se recalcula con la tabla, con fija o por km según lo que tenía y la vuelta según el camión ese día.
-  - Todos quedan con la tabla y sin `TarifaFijaID` ni `TarifaKmID`. Los presupuestos pasan a la tabla general y
-    conservan su importe. Se borran las filas de `TARIFAS_FIJAS` y `TARIFAS_KM`; las tablas quedan vacías porque el EDMX
-    las incluye y no se regenera.
+  sale solo de lo que el viaje guardó con la tabla. `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` (rehecho el
+  25/10, §38) deja los datos igual, **sin ningún texto sobre las tarifas de antes**:
+  - **Todos** los viajes y presupuestos se calculan con la tabla vigente en su inicio (enero o agosto 2026), con la misma
+    cuenta que la API, también los facturados.
+  - Presupuestos: con su tarifa (fija o por km), su camión, sus km y su vuelta (si no tiene, 2ª si el camión ya tiene un
+    viaje antes ese día).
+  - Viajes generados desde un presupuesto aceptado: el importe recalculado del presupuesto ("Presupuesto #N", como
+    cualquier viaje de un presupuesto).
+  - El resto: por km si tenían una tarifa por km; si no, fija, con la vuelta según el camión ese día. Falso flete y
+    estadía, si los tienen, se suman.
+  - Todos quedan con la tabla y sin `TarifaFijaID` ni `TarifaKmID`, sin cambiar la fecha ni el usuario de la última
+    modificación (se ven en Ver detalle). Se borran las filas de `TARIFAS_FIJAS` y `TARIFAS_KM`; las tablas quedan vacías
+    porque el EDMX las incluye y no se regenera.
+  - Hasta la limpieza de la §38, las proformas y comprobantes de prueba guardan los importes de antes y no coinciden con
+    sus viajes.
 - **Demo de Rukas:** los viajes 25 y 26 (990001 y 990002) se recalculan con la tabla y dejan de dar $ 14.790. El script
   muestra sus importes nuevos: con esos importes hay que regenerar los Excel de `docs/pruebas/datos/` (pasárselos a
   Claude).
@@ -2747,31 +2753,34 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 
 **Probar en la VM** (con C#):
 - [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK"). Después
-  `03_cargar_tarifario_agosto_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y los
-  viajes que guardan importe; con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT`.
+  `03_cargar_tablas_de_tarifas_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y que
+  "Viajes antes del 01/01/2026" dé 0 (si no, avisar a Claude); con `@Aplicar = 1`, si las cantidades coinciden (2 tablas,
+  16 filas de valores), `COMMIT`.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista los viajes (hasta correr `04`, los de antes no se
-  pueden editar: no tienen tabla).
-- [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026", desde el 01/08/2026, Vigente. Editar:
-  los valores iguales al PDF (fijas por modelo y por km). Cancelar.
+  pueden editar y no muestran importe).
+- [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
+  "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de agosto: los valores iguales al PDF (fijas por
+  modelo y por km). Cancelar.
 - [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos, "Todos los clientes"
   elegido. Fecha 01/08/2026 → "Ya hay una tabla para todos los clientes vigente desde el 01/08/2026…". Elegir "Solo algunos
   clientes" sin tildar ninguno → "Elegí al menos un cliente.". Tildar un cliente de prueba, cambiar un valor y Guardar: en
   la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
   la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia.
 - [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
-- [ ] 4b. **No correr el `04` actual: se rehace (§38).** Cuando esté rehecho, Rocío corre
-  `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: revisar qué pasa con cada viaje
-  (conserva o se recalcula, con el importe de hoy y el nuevo), que la columna "Falta" esté vacía, los importes nuevos de la
-  demo de Rukas y los presupuestos con tarifa vieja. Con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final,
-  "Viajes con tarifa vieja" tiene que dar 0).
+- [ ] 4b. Rocío corre `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` (el rehecho del 25/10) tal cual: revisar
+  el resumen (cuántos viajes y presupuestos, el total de hoy y el nuevo), cada viaje y cada presupuesto con su importe de
+  hoy y el nuevo, que la columna "Falta" esté vacía y los importes nuevos de la demo de Rukas (pasárselos a Claude). Con
+  `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final, "Viajes sin la tabla" tiene que dar 0).
 - [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Fija viene elegida; comparar con el
   PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el
   excedente). Por km: todo el viaje. Falso flete → 60 %; 1 módulo de estadía → + $ 96.577. Guardar y volver a abrir:
   el mismo importe.
-- [ ] 6. Abrir un viaje facturado: el importe facturado, con "Importe facturado". Uno recalculado: el importe de la tabla,
-  con su detalle. Guardar sin cambios no cambia el importe. Ver detalle igual.
-- [ ] 7. Presupuestos: Registrar presupuesto con fija y con por km: el mismo importe que el viaje. Aceptarlo y generar el
-  viaje: el viaje tiene el importe del presupuesto.
+- [ ] 6. Abrir un viaje de marzo: el importe de "Tarifas a enero 2026", con su detalle; uno de agosto en adelante, el de
+  "Tarifas a agosto 2026". Ninguno dice nada de tarifas de antes. Guardar sin cambios no cambia el importe. Ver detalle
+  igual, con la misma última modificación que tenía.
+- [ ] 7. Presupuestos: los de antes muestran el importe de la tabla de su fecha y su viaje generado, el mismo. Registrar
+  presupuesto con fija y con por km: el mismo importe que el viaje. Aceptarlo y generar el viaje: el viaje tiene el
+  importe del presupuesto.
 - [ ] 8. Proformas: "Traer viajes" trae el importe guardado de cada viaje; con los Excel regenerados, el caso 1 de Rukas
   (`docs/pruebas/datos/`) da "Coincide".
 - [ ] 9. Dashboard: "Costo por viaje" suma los importes guardados (cambia por los viajes recalculados).
@@ -3137,7 +3146,7 @@ del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); 
 
 ---
 
-## 38. Documentos de prueba y tabla de tarifas "como si siempre hubiera estado" — ANOTADO (25/10); LA LIMPIEZA, DESPUÉS DEL CAMBIO DE FACU
+## 38. Documentos de prueba y tabla de tarifas "como si siempre hubiera estado" — TABLA DE ENERO Y `04` HECHOS EN LA MAC (25/10), SIN PUSH; LA LIMPIEZA, DESPUÉS DEL CAMBIO DE FACU
 
 **Pedido de Rocío (25/10):** el sistema tiene que verse y funcionar como si siempre hubiera tenido la tabla de tarifas
 (§34): sin leyendas ni rastros de las tarifas de antes (fija por cliente y recorrido, y bandas por km, que eran de
@@ -3147,8 +3156,7 @@ coincidan, los documentos de prueba se borran y se vuelven a generar desde el si
 **Cambio de Facu antes de la limpieza:** la profe pidió que en el sistema **no se use la palabra "factura"**: solo
 "comprobante". Facu cambia los textos y la nomenclatura (hoy `FAC`). La limpieza y la regeneración de documentos se hacen
 **después** de que Facu suba ese cambio y se pase a `rocionuvoli`, porque tocan los mismos comprobantes, tipos y
-numeración. Lo de tarifas también se alinea: "facturado" en los textos del script `04`, en los nombres de los grupos y en
-este relevamiento.
+numeración. Lo de tarifas también se alinea: "facturado" en este relevamiento y en los comentarios de los scripts.
 
 **Relevamiento del 25/10** (`database/limpieza/02_documentos_afectados_por_tarifas.sql`, solo lectura, corrido por
 Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en total: 10 proformas y 10 comprobantes**:
@@ -3177,16 +3185,20 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
   los importes de la tabla.
 
 **Antes del jueves 29/10** (no depende de Facu):
-1. **Tabla anterior** para los viajes de antes del 01/08/2026 (hoy quedarían sin tabla): por ejemplo, "Tarifas a enero
-   2026", desde el mes del primer viaje hasta el 31/07/2026. Los precios de antes no se pueden copiar (eran por recorrido o
-   por km, sin tipo ni modelo de camión): Claude propone los de agosto con un 15 % menos, como si en agosto hubiera habido
-   un aumento. **A confirmar.**
-2. **Rehacer `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql`:** todos los viajes recalculados con la tabla de su
-   fecha, sin grupos que conservan el importe y **sin leyendas** ("Importe facturado", "Importe anterior a la tabla de
-   tarifas"). Los presupuestos también se recalculan (aceptados y pendientes) para que coincidan con sus viajes. Hasta la
-   limpieza, los comprobantes de prueba no coinciden con sus viajes (se borran después). Mientras no se corra, los viajes
-   viejos no se pueden editar con la API nueva (no tienen tabla).
-3. Correr `02`, `03`, elegir el tipo de los camiones y correr el `04` rehecho; probar con los pasos de la §34.
+1. **Hecho: tabla anterior** para los viajes de antes del 01/08/2026: "Tarifas a enero 2026", desde el 01/01/2026 (hasta que
+   empieza la de agosto), para todos los clientes. Los precios de antes no se podían copiar (eran por recorrido o por km,
+   sin tipo ni modelo de camión): son los de agosto con un 15 % menos, redondeados a pesos, como si en agosto hubiera
+   habido un aumento (decisión de Rocío, 25/10). Va en `database/tarifas/03_cargar_tablas_de_tarifas_2026.sql` (antes
+   `03_cargar_tarifario_agosto_2026.sql`, sin correr), que ya no les guarda a los viajes el importe de antes y no cambia
+   quién modificó los camiones.
+2. **Hecho: `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` rehecho:** todos los viajes y presupuestos (aceptados,
+   pendientes y rechazados) con la tabla de su fecha, también los facturados, sin grupos que conservan el importe y **sin
+   leyendas**. Los viajes de un presupuesto toman el importe recalculado del presupuesto. No cambia la fecha ni el usuario
+   de la última modificación. Hasta la limpieza, los comprobantes de prueba no coinciden con sus viajes (se borran
+   después). Mientras no se corra, los viajes viejos no se pueden editar con la API nueva (no tienen tabla).
+3. Correr `02`, `03`, elegir el tipo de los camiones y correr el `04`; probar con los pasos de la §34. Si la demo de Rukas
+   se muestra el jueves, pasarle a Claude los importes nuevos de los viajes 25 y 26 (los muestra el `04`) para regenerar
+   los Excel antes (paso 8).
 
 **Después del cambio de Facu:**
 4. Pasar el cambio de Facu a `rocionuvoli` (conflictos de a uno con Rocío).
@@ -3207,7 +3219,7 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
 10. Probar en la VM: la demo completa (viaje → proforma → comprobante → recibo, y Rukas).
 
 **Decisiones pendientes:**
-- [ ] Tabla anterior: los valores de agosto con un 15 % menos, otro porcentaje o los mismos.
+- [x] Tabla anterior: los valores de agosto con un 15 % menos (Rocío, 25/10).
 - [ ] Opción A o B, y qué casos de la demo se regeneran.
 - [ ] Módulos de estadía: proponerlos con el inicio y el fin del viaje, o a mano (§34).
 - [ ] Tesis: la HU26.

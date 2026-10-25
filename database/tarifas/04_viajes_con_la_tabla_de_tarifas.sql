@@ -2,40 +2,37 @@
    Deja los viajes y los presupuestos como si siempre hubiera estado la tabla de tarifas, y saca las tarifas de antes
    (fijas por cliente y recorrido, y bandas por km, que eran de prueba). Decisión de Rocío, 25/10/2026.
 
-   Correr DESPUÉS de 02_tarifario_por_vehiculo.sql y 03_cargar_tarifario_agosto_2026.sql, con la API nueva compilada y
-   después de elegir en Gestionar camiones el tipo de los camiones que 03 no pudo deducir (sin tipo, sus viajes no se
-   pueden calcular y el script no aplica nada).
+   Correr DESPUÉS de 02_tarifario_por_vehiculo.sql y 03_cargar_tablas_de_tarifas_2026.sql, y después de elegir en
+   Gestionar camiones el tipo de los camiones que 03 no pudo deducir (sin tipo, sus viajes no se pueden calcular y el
+   script no aplica nada).
 
-   Qué pasa con cada viaje:
-     - Facturado o en una proforma generada, aceptada o facturada: conserva el importe que tiene, que es el facturado.
-     - Generado desde un presupuesto aceptado: conserva el importe del presupuesto (el que aceptó el cliente).
-     - De antes del 01/08/2026 (no hay tabla para esa fecha): conserva su importe.
-     - El resto se recalcula con la tabla vigente en su inicio (la propia de su cliente o la general), igual que un viaje
-       que se carga desde ahora: tarifa por km si tenía una por km; si no, tarifa fija (con 1ª o 2ª vuelta según si el
-       camión tiene otro viaje antes ese día; más de 250 km, la fija de 250 más el excedente por km). Si ya tenía falso
-       flete o estadía, se suman igual que en la pantalla.
-     - Todos quedan con la tabla de tarifas (TarifarioID y fija o por km) y dejan de apuntar a las tarifas viejas
-       (TarifaFijaID y TarifaKmID en NULL). Los que conservan su importe lo dicen en el detalle ("Importe facturado",
-       "Presupuesto #N", "Importe anterior a la tabla de tarifas").
-   Presupuestos: los que usaban una tarifa vieja pasan a la tabla general (tarifarioId) y conservan su importe, que ya se
-   le ofreció al cliente.
-   Tarifas viejas: se borran las filas de TARIFAS_FIJAS y TARIFAS_KM. Las tablas quedan creadas y vacías porque el modelo de
-   Entity Framework (EDMX) las incluye y no se regenera.
+   Todos los viajes y todos los presupuestos se calculan con la tabla vigente en su inicio (la propia de su cliente o la
+   general: enero 2026 hasta el 31/07, agosto 2026 desde el 01/08), con la misma cuenta que la API
+   (WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs):
+     - Presupuestos: con su tarifa (fija o por km), su camión y sus km. La vuelta: la que tienen; si no, 2ª si el camión ya
+       tiene un viaje que empieza antes ese día.
+     - Viajes generados desde un presupuesto aceptado: el importe del presupuesto (ya recalculado), su tarifa y su vuelta.
+     - El resto de los viajes: por km si tenían una tarifa por km; si no, fija (la vuelta que tienen o, si no tienen, 2ª si
+       el camión tiene otro viaje antes ese día; más de 250 km, la fija de 250 más el excedente por km).
+     - Falso flete y estadía, si los tienen, se suman igual que en la pantalla.
+   Quedan con la tabla (TarifarioID, fija o por km, la vuelta, el importe y su detalle), sin TarifaFijaID ni TarifaKmID y
+   sin ningún texto sobre las tarifas de antes. No cambia la fecha ni el usuario de la última modificación (se ven en Ver
+   detalle). Se borran las filas de TARIFAS_FIJAS y TARIFAS_KM; las tablas quedan vacías porque el modelo de Entity
+   Framework (EDMX) las incluye y no se regenera.
 
-   Las proformas y facturas ya emitidas no cambian (guardan sus propios importes). Los borradores de proformas propias
-   conservan los precios que trajeron; en un borrador de Rukas, "Volver a controlar" compara con el importe nuevo.
+   También se recalculan los viajes facturados: sus proformas y comprobantes de prueba guardan los importes de antes y no
+   coinciden hasta que se borren y se generen de nuevo (§38 de docs/PENDIENTES-SISTEMA.md, después del cambio de Facu).
 
    Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo):
-     1. Ejecutar tal cual (@Aplicar = 0): muestra qué pasa con cada viaje, los importes nuevos y lo que falta.
-     2. Si está bien, poner @Aplicar = 1 y ejecutar de nuevo. Revisar las cantidades y ejecutar COMMIT; o ROLLBACK;.
-        Se puede volver a correr: lo ya pasado a la tabla no se recalcula.
+     1. Ejecutar tal cual (@Aplicar = 0): muestra cada viaje y cada presupuesto con el importe de hoy, el nuevo y lo que
+        falta para calcularlo.
+     2. Si la columna Falta está vacía, poner @Aplicar = 1 y ejecutar de nuevo. Revisar las cantidades y ejecutar COMMIT;
+        o ROLLBACK;. Si se vuelve a correr, da lo mismo mientras no cambien las tablas de tarifas.
 */
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
 
 DECLARE @Aplicar bit = 0;   -- 0 = solo diagnóstico · 1 = aplicar y dejar la transacción abierta
-DECLARE @Usuario nvarchar(20) = N'script tarifario 04';
-DECLARE @Ahora datetime = CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Argentina Standard Time' AS datetime);
 
 IF DB_NAME() <> N'Transporte_Sanchez'
     THROW 54620, 'Conectarse a la base Transporte_Sanchez antes de ejecutar.', 1;
@@ -44,103 +41,164 @@ IF OBJECT_ID(N'dbo.TARIFARIO_CLIENTES', N'U') IS NULL OR COL_LENGTH('dbo.VIAJES'
     THROW 54621, 'Primero correr database/tarifas/02_tarifario_por_vehiculo.sql.', 1;
 
 IF NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS WHERE Para_Todos = 1)
-    THROW 54622, 'Primero correr database/tarifas/03_cargar_tarifario_agosto_2026.sql (carga la tabla general).', 1;
+    THROW 54622, 'Primero correr database/tarifas/03_cargar_tablas_de_tarifas_2026.sql (carga las tablas de 2026).', 1;
 
-DECLARE @General int = (SELECT TOP (1) Tarifario_ID FROM dbo.TARIFARIOS WHERE Para_Todos = 1 ORDER BY Vigente_Desde);
+/* ---------------------------------------------------------------- Lo que define la tarifa de cada uno */
 
-/* ---------------------------------------------------------------- Plan de cada viaje */
+IF OBJECT_ID('tempdb..#Pedidos') IS NOT NULL DROP TABLE #Pedidos;
+
+SELECT N'Presupuesto' AS Clase, ps.Presupuesto_ID AS ID, ps.Estado,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.clienteId') AS int) AS ClienteID,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.camionId') AS int) AS CamionID,
+       TRY_CAST(REPLACE(JSON_VALUE(ps.Datos, '$.fechaInicio'), 'T', ' ') AS datetime2(3)) AS Inicio,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.distancia') AS decimal(18, 2)) AS Km,
+       CAST(CASE JSON_VALUE(ps.Datos, '$.tipoTarifa') WHEN 'km' THEN 'Km' WHEN 'fija' THEN 'Fija' END AS varchar(4)) AS Modo,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.vuelta') AS int) AS Vuelta_Guardada,
+       CAST(NULL AS int) AS Presupuesto_ID, CAST(0 AS bit) AS Falso_Flete, 0 AS Estadia_Modulos,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.importe') AS decimal(18, 2)) AS Importe_Hoy
+INTO #Pedidos
+FROM dbo.PRESUPUESTOS ps
+WHERE ISJSON(ps.Datos) = 1
+UNION ALL
+SELECT N'Viaje', v.Viaje_ID, v.Estado, v.ClienteID, v.CamionID, CAST(v.Fecha_Inicio AS datetime2(3)), k.Km,
+       CASE WHEN v.TarifaKmID IS NOT NULL OR v.Tarifa_Modo = 'Km' THEN 'Km' ELSE 'Fija' END,
+       v.Vuelta, p.Presupuesto_ID, ISNULL(v.Falso_Flete, 0), ISNULL(v.Estadia_Modulos, 0),
+       -- El que muestra hoy: el guardado o, en un viaje de antes, el de su tarifa vieja.
+       COALESCE(v.Importe, CASE WHEN p.Presupuesto_ID IS NOT NULL THEN p.Importe
+                                WHEN tf.TarifaFija_ID IS NOT NULL THEN tf.ValorFijoNeto
+                                WHEN tk.TarifaKm_ID IS NOT NULL THEN ROUND(tk.ValorKm * k.Km, 2) END)
+FROM dbo.VIAJES v
+LEFT JOIN dbo.TARIFAS_FIJAS tf ON tf.TarifaFija_ID = v.TarifaFijaID
+LEFT JOIN dbo.TARIFAS_KM tk ON tk.TarifaKm_ID = v.TarifaKmID
+CROSS APPLY (SELECT TRY_CAST(REPLACE(RTRIM(v.Distancia_KM), ',', '.') AS decimal(18, 2)) AS Km) k
+OUTER APPLY (SELECT TOP (1) ps.Presupuesto_ID,
+                    TRY_CAST(CASE WHEN ISJSON(ps.Datos) = 1 THEN JSON_VALUE(ps.Datos, '$.importe') END AS decimal(18, 2)) AS Importe
+             FROM dbo.PRESUPUESTOS ps
+             WHERE ps.ViajeID = v.Viaje_ID AND ps.Estado = 'Aceptado'
+             ORDER BY ps.Presupuesto_ID DESC) p;
+
+/* ---------------------------------------------------------------- Cálculo con la tabla */
+
+IF OBJECT_ID('tempdb..#Calculo') IS NOT NULL DROP TABLE #Calculo;
+
+;WITH ConTabla AS (
+    SELECT p.*, RTRIM(c.Dominio) AS Dominio, ISNULL(RTRIM(c.Tipo), N'') AS Tipo, TRY_CAST(c.AñoModelo AS int) AS Anio,
+           t.Tarifario_ID, t.Nombre AS Tabla, t.Anio_Corte, t.Km_Banda1, t.Km_Banda2, t.Km_Banda3, t.Estadia_Modulo,
+           t.Falso_Flete_Porcentaje
+    FROM #Pedidos p
+    LEFT JOIN dbo.CAMIONES c ON c.Camion_ID = p.CamionID
+    -- La tabla: la propia de su cliente vigente en el inicio o, si no tiene, la general (como TarifarioCalculo.Vigente).
+    OUTER APPLY (SELECT TOP (1) x.* FROM dbo.TARIFARIOS x
+                 WHERE x.Vigente_Desde <= CAST(p.Inicio AS date)
+                   AND (x.Para_Todos = 1 OR EXISTS (SELECT 1 FROM dbo.TARIFARIO_CLIENTES tc
+                                                    WHERE tc.Tarifario_ID = x.Tarifario_ID AND tc.ClienteID = p.ClienteID))
+                 ORDER BY x.Para_Todos, x.Vigente_Desde DESC) t
+),
+ConValores AS (
+    SELECT b.*, tv.Valor_Banda1_Vuelta1, tv.Valor_Banda1_Vuelta2, tv.Valor_Banda2, tv.Valor_Banda3, tv.Valor_Km,
+           CASE WHEN b.Anio >= b.Anio_Corte THEN 1 ELSE 0 END AS Modelo_Nuevo,
+           -- 1ª o 2ª vuelta: solo con fija y hasta la primera banda. Si no la tiene, 2ª si el camión ya tiene un viaje que
+           -- empieza antes ese día (como TarifarioCalculo.ViajeAnteriorDelDia).
+           CASE WHEN b.Modo = 'Fija' AND b.Km <= b.Km_Banda1 THEN
+                CASE WHEN b.Vuelta_Guardada IN (1, 2) THEN b.Vuelta_Guardada
+                     WHEN EXISTS (SELECT 1 FROM dbo.VIAJES o
+                                  WHERE o.CamionID = b.CamionID AND (b.Clase = N'Presupuesto' OR o.Viaje_ID <> b.ID)
+                                    AND CAST(o.Fecha_Inicio AS date) = CAST(b.Inicio AS date) AND o.Fecha_Inicio < b.Inicio)
+                     THEN 2 ELSE 1 END END AS Vuelta
+    FROM ConTabla b
+    OUTER APPLY (SELECT TOP (1) x.* FROM dbo.TARIFARIO_VALORES x
+                 WHERE x.Tarifario_ID = b.Tarifario_ID AND x.Tipo_Vehiculo = b.Tipo
+                   AND x.Modelo_Nuevo = CASE WHEN b.Anio >= b.Anio_Corte THEN 1 ELSE 0 END) tv
+)
+SELECT k.*,
+       CASE WHEN k.Inicio IS NULL THEN N'No tiene fecha de inicio.'
+            WHEN k.Tarifario_ID IS NULL THEN N'No hay una tabla de tarifas vigente el ' + FORMAT(k.Inicio, 'dd/MM/yyyy') + N'.'
+            WHEN k.Clase = N'Viaje' AND k.Presupuesto_ID IS NOT NULL THEN NULL   -- toma el importe de su presupuesto
+            WHEN k.Modo IS NULL THEN N'No tiene tipo de tarifa (fija o por km).'
+            WHEN k.Dominio IS NULL THEN N'No tiene camión.'
+            WHEN k.Valor_Km IS NULL THEN N'El camión ' + k.Dominio + N' no tiene un tipo de la tabla: elegilo en Gestionar camiones.'
+            WHEN ISNULL(k.Km, 0) <= 0 THEN N'No tiene km.' END AS Falta_Tabla,
+       CAST(CASE WHEN k.Modo = 'Km' THEN ROUND(k.Valor_Km * k.Km, 2)
+                 WHEN k.Km <= k.Km_Banda1 THEN CASE WHEN k.Vuelta = 2 THEN k.Valor_Banda1_Vuelta2 ELSE k.Valor_Banda1_Vuelta1 END
+                 WHEN k.Km <= k.Km_Banda2 THEN k.Valor_Banda2
+                 WHEN k.Km <= k.Km_Banda3 THEN k.Valor_Banda3
+                 ELSE k.Valor_Banda3 + ROUND(k.Valor_Km * (k.Km - k.Km_Banda3), 2) END AS decimal(18, 2)) AS Base_Tabla,
+       -- El mismo texto que TarifarioCalculo.TarifaDetalle.
+       k.Tabla + N' · ' + k.Tipo + N', '
+         + CASE WHEN k.Modelo_Nuevo = 1 THEN N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte) + N' en adelante'
+                ELSE N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte - 1) + N' o anterior' END + N' · '
+         + CASE WHEN k.Modo = 'Km' THEN N'tarifa por km: ' + FORMAT(k.Km, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR')
+                WHEN k.Km <= k.Km_Banda1 THEN N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' km, ' + CONVERT(nvarchar(1), k.Vuelta) + N'ª vuelta'
+                WHEN k.Km <= k.Km_Banda2 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' km'
+                WHEN k.Km <= k.Km_Banda3 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km'
+                ELSE N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km ($ ' + FORMAT(k.Valor_Banda3, 'N2', 'es-AR') + N') + '
+                     + FORMAT(k.Km - k.Km_Banda3, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR') END AS Detalle_Tabla
+INTO #Calculo
+FROM ConValores k;
+
+/* ---------------------------------------------------------------- Importe de cada uno */
 
 IF OBJECT_ID('tempdb..#Plan') IS NOT NULL DROP TABLE #Plan;
 
 ;WITH Base AS (
-    SELECT v.Viaje_ID, v.ClienteID, v.CamionID, v.Fecha_Inicio, v.Estado, v.Importe, v.Falso_Flete, v.Estadia_Modulos,
-           TRY_CAST(REPLACE(RTRIM(v.Distancia_KM), ',', '.') AS decimal(18, 2)) AS Km,
-           CASE WHEN v.TarifaKmID IS NOT NULL OR v.Tarifa_Modo = 'Km' THEN 'Km' ELSE 'Fija' END AS Modo,
-           (SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps
-            WHERE ps.ViajeID = v.Viaje_ID AND ps.Estado = 'Aceptado' ORDER BY ps.Presupuesto_ID DESC) AS Presupuesto_ID,
-           CASE WHEN v.Estado = 'Facturado' OR EXISTS (
-                    SELECT 1 FROM dbo.PROFORMAS p
-                    WHERE p.Estado IN ('Generada', 'Aceptada', 'Facturada') AND (
-                          EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID = p.Proforma_ID AND pv.ViajeID = v.Viaje_ID)
-                       OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID = p.Proforma_ID
-                                  AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo, '')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID))))
-                THEN 1 ELSE 0 END AS Emitido,
-           ISNULL(RTRIM(c.Tipo), N'') AS Tipo, TRY_CAST(c.AñoModelo AS int) AS Anio, RTRIM(c.Dominio) AS Dominio,
-           t.Tarifario_ID, t.Nombre, t.Anio_Corte, t.Km_Banda1, t.Km_Banda2, t.Km_Banda3, t.Estadia_Modulo, t.Falso_Flete_Porcentaje
-    FROM dbo.VIAJES v
-    LEFT JOIN dbo.CAMIONES c ON c.Camion_ID = v.CamionID
-    -- La tabla del viaje: la propia de su cliente vigente en el inicio o, si no tiene, la general (como la API).
-    OUTER APPLY (SELECT TOP (1) x.* FROM dbo.TARIFARIOS x
-                 WHERE x.Vigente_Desde <= CAST(v.Fecha_Inicio AS date)
-                   AND (x.Para_Todos = 1 OR EXISTS (SELECT 1 FROM dbo.TARIFARIO_CLIENTES tc
-                                                    WHERE tc.Tarifario_ID = x.Tarifario_ID AND tc.ClienteID = v.ClienteID))
-                 ORDER BY x.Para_Todos, x.Vigente_Desde DESC) t
-    -- Lo ya pasado a la tabla por este script (o cargado con la API nueva) no se toca.
-    WHERE v.TarifaFijaID IS NOT NULL OR v.TarifaKmID IS NOT NULL OR v.TarifarioID IS NULL
+    SELECT c.Clase, c.ID, c.Estado, c.Inicio, c.Dominio, c.Tipo, c.Anio, c.Km, c.Tarifario_ID, c.Tabla, c.Falso_Flete,
+           c.Estadia_Modulos, c.Estadia_Modulo, c.Falso_Flete_Porcentaje, c.Importe_Hoy, c.Presupuesto_ID,
+           -- Un viaje de un presupuesto aceptado toma el importe, la tarifa y la vuelta del presupuesto (como la API).
+           CASE WHEN c.Presupuesto_ID IS NOT NULL THEN p.Modo ELSE c.Modo END AS Modo,
+           CASE WHEN c.Presupuesto_ID IS NOT NULL THEN p.Vuelta ELSE c.Vuelta END AS Vuelta,
+           CASE WHEN c.Presupuesto_ID IS NOT NULL THEN p.Base_Tabla ELSE c.Base_Tabla END AS Base,
+           CASE WHEN c.Presupuesto_ID IS NOT NULL THEN N'Presupuesto #' + CONVERT(nvarchar(11), c.Presupuesto_ID)
+                ELSE c.Detalle_Tabla END AS Detalle,
+           CASE WHEN c.Falta_Tabla IS NOT NULL THEN c.Falta_Tabla
+                WHEN c.Presupuesto_ID IS NOT NULL AND p.ID IS NULL
+                     THEN N'Presupuesto #' + CONVERT(nvarchar(11), c.Presupuesto_ID) + N': no tiene datos válidos.'
+                WHEN c.Presupuesto_ID IS NOT NULL
+                     THEN N'Presupuesto #' + CONVERT(nvarchar(11), c.Presupuesto_ID) + N': ' + p.Falta_Tabla END AS Falta
+    FROM #Calculo c
+    LEFT JOIN #Calculo p ON p.Clase = N'Presupuesto' AND p.ID = c.Presupuesto_ID
 ),
-Clasificado AS (
+Adicionales AS (
     SELECT b.*,
-           CASE WHEN b.Emitido = 1 THEN N'Conserva: facturado o en una proforma emitida'
-                WHEN b.Presupuesto_ID IS NOT NULL THEN N'Conserva: importe del presupuesto'
-                WHEN b.Tarifario_ID IS NULL THEN N'Conserva: anterior a la tabla de tarifas'
-                ELSE N'Se recalcula con la tabla' END AS Que_pasa,
-           tv.Valor_Banda1_Vuelta1, tv.Valor_Banda1_Vuelta2, tv.Valor_Banda2, tv.Valor_Banda3, tv.Valor_Km,
-           CASE WHEN b.Modo = 'Fija' AND b.Km <= b.Km_Banda1 THEN
-                CASE WHEN EXISTS (SELECT 1 FROM dbo.VIAJES o WHERE o.CamionID = b.CamionID AND o.Viaje_ID <> b.Viaje_ID
-                                  AND CAST(o.Fecha_Inicio AS date) = CAST(b.Fecha_Inicio AS date) AND o.Fecha_Inicio < b.Fecha_Inicio)
-                     THEN 2 ELSE 1 END END AS Vuelta
+           CAST(CASE WHEN b.Falso_Flete = 1 THEN ROUND(b.Base * b.Falso_Flete_Porcentaje / 100, 2) END AS decimal(18, 2)) AS Con_Falso_Flete,
+           CAST(CASE WHEN b.Estadia_Modulos > 0 THEN ROUND(b.Estadia_Modulo * b.Estadia_Modulos, 2) END AS decimal(18, 2)) AS Estadia
     FROM Base b
-    OUTER APPLY (SELECT TOP (1) * FROM dbo.TARIFARIO_VALORES x
-                 WHERE x.Tarifario_ID = b.Tarifario_ID AND x.Tipo_Vehiculo = b.Tipo
-                   AND x.Modelo_Nuevo = CASE WHEN b.Anio >= b.Anio_Corte THEN 1 ELSE 0 END) tv
-),
-Calculado AS (
-    SELECT k.*,
-           CASE WHEN k.Que_pasa <> N'Se recalcula con la tabla' THEN NULL
-                WHEN k.Valor_Km IS NULL THEN N'El camión ' + ISNULL(k.Dominio, N'?') + N' no tiene un tipo de la tabla: elegilo en Gestionar camiones.'
-                WHEN ISNULL(k.Km, 0) <= 0 THEN N'El viaje no tiene km.' END AS Falta,
-           CASE WHEN k.Modo = 'Km' THEN ROUND(k.Valor_Km * k.Km, 2)
-                WHEN k.Km <= k.Km_Banda1 THEN CASE WHEN k.Vuelta = 2 THEN k.Valor_Banda1_Vuelta2 ELSE k.Valor_Banda1_Vuelta1 END
-                WHEN k.Km <= k.Km_Banda2 THEN k.Valor_Banda2
-                WHEN k.Km <= k.Km_Banda3 THEN k.Valor_Banda3
-                ELSE k.Valor_Banda3 + ROUND(k.Valor_Km * (k.Km - k.Km_Banda3), 2) END AS Base_Nueva,
-           k.Nombre + N' · ' + k.Tipo + N', '
-             + CASE WHEN k.Anio >= k.Anio_Corte THEN N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte) + N' en adelante'
-                    ELSE N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte - 1) + N' o anterior' END + N' · '
-             + CASE WHEN k.Modo = 'Km' THEN N'tarifa por km: ' + FORMAT(k.Km, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR')
-                    WHEN k.Km <= k.Km_Banda1 THEN N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' km, ' + CONVERT(nvarchar(1), k.Vuelta) + N'ª vuelta'
-                    WHEN k.Km <= k.Km_Banda2 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' km'
-                    WHEN k.Km <= k.Km_Banda3 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km'
-                    ELSE N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km ($ ' + FORMAT(k.Valor_Banda3, 'N2', 'es-AR') + N') + '
-                         + FORMAT(k.Km - k.Km_Banda3, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR') END AS Detalle_Nuevo
-    FROM Clasificado k
 )
-SELECT c.*,
-       CASE WHEN c.Falso_Flete = 1 THEN ROUND(c.Base_Nueva * c.Falso_Flete_Porcentaje / 100, 2) ELSE c.Base_Nueva END
-         + c.Estadia_Modulos * ISNULL(c.Estadia_Modulo, 0) AS Importe_Nuevo
+SELECT a.*,
+       ISNULL(a.Con_Falso_Flete, a.Base) + ISNULL(a.Estadia, 0) AS Importe_Nuevo,
+       -- El mismo texto que TarifarioCalculo.Completar.
+       a.Detalle + N' · $ ' + FORMAT(a.Base, 'N2', 'es-AR')
+         + ISNULL(N' · falso flete ' + FORMAT(a.Falso_Flete_Porcentaje, '0.##', 'es-AR') + N' %: $ ' + FORMAT(a.Con_Falso_Flete, 'N2', 'es-AR'), N'')
+         + ISNULL(N' · ' + CONVERT(nvarchar(3), a.Estadia_Modulos) + CASE WHEN a.Estadia_Modulos = 1 THEN N' módulo' ELSE N' módulos' END
+                  + N' de estadía: $ ' + FORMAT(a.Estadia, 'N2', 'es-AR'), N'') AS Importe_Detalle
 INTO #Plan
-FROM Calculado c;
+FROM Adicionales a;
 
--- Qué pasa con cada viaje (resumen y detalle).
-SELECT Que_pasa, COUNT(*) AS Viajes FROM #Plan GROUP BY Que_pasa ORDER BY Que_pasa;
+/* ---------------------------------------------------------------- Diagnóstico */
 
-SELECT Viaje_ID, Estado, CONVERT(char(10), Fecha_Inicio, 103) AS Inicio, Dominio, Tipo, Anio, Km, Modo, Vuelta, Que_pasa,
-       Importe AS Importe_Hoy, CASE WHEN Que_pasa = N'Se recalcula con la tabla' THEN Importe_Nuevo END AS Importe_Nuevo,
-       CASE WHEN Que_pasa = N'Se recalcula con la tabla' THEN Detalle_Nuevo END AS Detalle_Nuevo, Falta
-FROM #Plan
-ORDER BY CASE WHEN Falta IS NOT NULL THEN 0 ELSE 1 END, Viaje_ID;
+-- Resumen: cuántos, el total de hoy y el nuevo, y cuántos no se pueden calcular (tiene que dar 0).
+SELECT Clase, Estado, COUNT(*) AS Cantidad, SUM(Importe_Hoy) AS Total_hoy,
+       SUM(CASE WHEN Falta IS NULL THEN Importe_Nuevo END) AS Total_nuevo,
+       SUM(CASE WHEN Falta IS NOT NULL THEN 1 ELSE 0 END) AS No_se_pueden_calcular
+FROM #Plan GROUP BY Clase, Estado ORDER BY Clase DESC, Estado;
+
+-- Viajes: primero los que no se pueden calcular.
+SELECT ID AS Viaje_ID, Estado, CONVERT(char(10), Inicio, 103) AS Inicio, Dominio, Tipo, Anio, Km, Modo, Vuelta,
+       Falso_Flete, Estadia_Modulos, Tabla, Importe_Hoy, CASE WHEN Falta IS NULL THEN Importe_Nuevo END AS Importe_Nuevo,
+       CASE WHEN Falta IS NULL THEN Importe_Detalle END AS Detalle_Nuevo, Falta
+FROM #Plan WHERE Clase = N'Viaje'
+ORDER BY CASE WHEN Falta IS NOT NULL THEN 0 ELSE 1 END, ID;
+
+-- Presupuestos.
+SELECT ID AS Presupuesto_ID, Estado, CONVERT(char(10), Inicio, 103) AS Inicio, Dominio, Tipo, Anio, Km, Modo, Vuelta, Tabla,
+       Importe_Hoy, CASE WHEN Falta IS NULL THEN Base END AS Importe_Nuevo,
+       CASE WHEN Falta IS NULL THEN Detalle END AS Detalle_Nuevo, Falta
+FROM #Plan WHERE Clase = N'Presupuesto'
+ORDER BY CASE WHEN Falta IS NOT NULL THEN 0 ELSE 1 END, ID;
 
 -- Los de la demo de Rukas (N° de transporte 990001 y 990002): sus importes nuevos van en los Excel de docs/pruebas/datos.
-SELECT p.Viaje_ID, RTRIM(v.Num_Transporte) AS Num_Transporte, p.Que_pasa, p.Importe AS Importe_Hoy, p.Importe_Nuevo
-FROM #Plan p JOIN dbo.VIAJES v ON v.Viaje_ID = p.Viaje_ID
-WHERE RTRIM(ISNULL(v.Num_Transporte, '')) IN ('990001', '990002');
-
--- Presupuestos con una tarifa vieja: pasan a la tabla general y conservan el importe.
-SELECT Presupuesto_ID, Estado, JSON_VALUE(Datos, '$.tipoTarifa') AS Tipo_Tarifa, JSON_VALUE(Datos, '$.tarifaId') AS Tarifa_Vieja,
-       JSON_VALUE(Datos, '$.importe') AS Importe
-FROM dbo.PRESUPUESTOS
-WHERE ISJSON(Datos) = 1 AND JSON_VALUE(Datos, '$.tarifaId') IS NOT NULL AND JSON_VALUE(Datos, '$.tarifarioId') IS NULL
-ORDER BY Presupuesto_ID;
+SELECT p.ID AS Viaje_ID, RTRIM(v.Num_Transporte) AS Num_Transporte, p.Importe_Hoy, p.Importe_Nuevo, p.Importe_Detalle
+FROM #Plan p JOIN dbo.VIAJES v ON v.Viaje_ID = p.ID
+WHERE p.Clase = N'Viaje' AND RTRIM(ISNULL(v.Num_Transporte, '')) IN ('990001', '990002');
 
 SELECT (SELECT COUNT(*) FROM dbo.TARIFAS_FIJAS) AS Tarifas_fijas_viejas, (SELECT COUNT(*) FROM dbo.TARIFAS_KM) AS Tarifas_por_km_viejas;
 
@@ -149,51 +207,40 @@ SELECT (SELECT COUNT(*) FROM dbo.TARIFAS_FIJAS) AS Tarifas_fijas_viejas, (SELECT
 IF @Aplicar = 1
 BEGIN
     IF EXISTS (SELECT 1 FROM #Plan WHERE Falta IS NOT NULL)
-        THROW 54623, 'Hay viajes que no se pueden calcular (columna Falta): resolvelo y volvé a correr el script.', 1;
+        THROW 54623, 'Hay viajes o presupuestos que no se pueden calcular (columna Falta): resolvelo y volvé a correr el script.', 1;
 
     BEGIN TRANSACTION;
 
-    DECLARE @Recalculados int = 0, @Conservados int = 0, @Presupuestos int = 0, @Viejas int = 0;
+    DECLARE @Presupuestos int = 0, @Viajes int = 0, @Viejas int = 0;
+
+    -- Los mismos datos que guarda la pantalla de presupuestos (importe en texto con punto decimal).
+    UPDATE ps
+    SET Datos = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(ps.Datos,
+                    '$.importe', CONVERT(nvarchar(30), p.Base)),
+                    '$.tarifarioId', p.Tarifario_ID),
+                    '$.vuelta', p.Vuelta),
+                    '$.tarifaDetalle', p.Detalle),
+                    '$.tarifaId', NULL),
+                    '$.valorKm', NULL)
+    FROM dbo.PRESUPUESTOS ps JOIN #Plan p ON p.Clase = N'Presupuesto' AND p.ID = ps.Presupuesto_ID;
+    SET @Presupuestos = @@ROWCOUNT;
 
     UPDATE v
     SET TarifarioID = p.Tarifario_ID, Tarifa_Modo = p.Modo, Vuelta = p.Vuelta,
-        Importe_Base = p.Base_Nueva, Tarifa_Detalle = p.Detalle_Nuevo, Importe = p.Importe_Nuevo,
-        Importe_Detalle = p.Detalle_Nuevo + N' · $ ' + FORMAT(p.Base_Nueva, 'N2', 'es-AR')
-            + CASE WHEN p.Falso_Flete = 1 THEN N' · falso flete ' + FORMAT(p.Falso_Flete_Porcentaje, '0.##', 'es-AR') + N' %: $ '
-                   + FORMAT(ROUND(p.Base_Nueva * p.Falso_Flete_Porcentaje / 100, 2), 'N2', 'es-AR') ELSE N'' END
-            + CASE WHEN p.Estadia_Modulos > 0 THEN N' · ' + CONVERT(nvarchar(3), p.Estadia_Modulos)
-                   + CASE WHEN p.Estadia_Modulos = 1 THEN N' módulo' ELSE N' módulos' END + N' de estadía: $ '
-                   + FORMAT(p.Estadia_Modulos * p.Estadia_Modulo, 'N2', 'es-AR') ELSE N'' END,
-        TarifaFijaID = NULL, TarifaKmID = NULL, Fecha_Modi = @Ahora, Usu_Modi = @Usuario
-    FROM dbo.VIAJES v JOIN #Plan p ON p.Viaje_ID = v.Viaje_ID
-    WHERE p.Que_pasa = N'Se recalcula con la tabla';
-    SET @Recalculados = @@ROWCOUNT;
-
-    -- Conservan su importe: quedan con la tabla (la de su fecha o, antes de agosto, la general) y un detalle que lo explica.
-    UPDATE v
-    SET TarifarioID = ISNULL(p.Tarifario_ID, @General), Tarifa_Modo = p.Modo, Vuelta = NULL,
-        Tarifa_Detalle = x.Texto, Importe_Detalle = x.Texto + ISNULL(N' · $ ' + FORMAT(v.Importe, 'N2', 'es-AR'), N''),
-        TarifaFijaID = NULL, TarifaKmID = NULL, Fecha_Modi = @Ahora, Usu_Modi = @Usuario
-    FROM dbo.VIAJES v JOIN #Plan p ON p.Viaje_ID = v.Viaje_ID
-    CROSS APPLY (SELECT CASE WHEN p.Emitido = 1 THEN N'Importe facturado'
-                             WHEN p.Presupuesto_ID IS NOT NULL THEN N'Presupuesto #' + CONVERT(nvarchar(11), p.Presupuesto_ID)
-                             ELSE N'Importe anterior a la tabla de tarifas' END AS Texto) x
-    WHERE p.Que_pasa <> N'Se recalcula con la tabla';
-    SET @Conservados = @@ROWCOUNT;
-
-    UPDATE dbo.PRESUPUESTOS
-    SET Datos = JSON_MODIFY(JSON_MODIFY(JSON_MODIFY(Datos, '$.tarifarioId', @General), '$.tarifaId', NULL), '$.valorKm', NULL)
-    WHERE ISJSON(Datos) = 1 AND JSON_VALUE(Datos, '$.tarifaId') IS NOT NULL AND JSON_VALUE(Datos, '$.tarifarioId') IS NULL;
-    SET @Presupuestos = @@ROWCOUNT;
+        Importe_Base = p.Base, Tarifa_Detalle = LEFT(p.Detalle, 300),
+        Importe = p.Importe_Nuevo, Importe_Detalle = LEFT(p.Importe_Detalle, 500),
+        TarifaFijaID = NULL, TarifaKmID = NULL
+    FROM dbo.VIAJES v JOIN #Plan p ON p.Clase = N'Viaje' AND p.ID = v.Viaje_ID;
+    SET @Viajes = @@ROWCOUNT;
 
     DELETE FROM dbo.TARIFAS_FIJAS;
     SET @Viejas = @@ROWCOUNT;
     DELETE FROM dbo.TARIFAS_KM;
     SET @Viejas = @Viejas + @@ROWCOUNT;
 
-    SELECT @Recalculados AS Viajes_recalculados, @Conservados AS Viajes_que_conservan_el_importe,
-           @Presupuestos AS Presupuestos_pasados_a_la_tabla, @Viejas AS Tarifas_viejas_borradas,
-           (SELECT COUNT(*) FROM dbo.VIAJES WHERE TarifaFijaID IS NOT NULL OR TarifaKmID IS NOT NULL) AS Viajes_con_tarifa_vieja_tiene_que_dar_0,
+    SELECT @Viajes AS Viajes_calculados, @Presupuestos AS Presupuestos_calculados, @Viejas AS Tarifas_viejas_borradas,
+           (SELECT COUNT(*) FROM dbo.VIAJES WHERE TarifaFijaID IS NOT NULL OR TarifaKmID IS NOT NULL OR TarifarioID IS NULL
+                                               OR Importe IS NULL) AS Viajes_sin_la_tabla_tiene_que_dar_0,
            N'Si coincide con el diagnóstico: COMMIT;  si no: ROLLBACK;' AS Siguiente_paso;
     -- COMMIT;  o  ROLLBACK;
 END;
