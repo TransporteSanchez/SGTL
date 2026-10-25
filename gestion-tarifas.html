@@ -144,7 +144,9 @@
                             <!-- General o propia (24/10): la propia reemplaza a la general para sus clientes. -->
                             <div class="sgtl-bloque-titulo" id="trClientesTitulo">Clientes</div>
                             <div class="mb-4">
-                                <div class="d-flex flex-wrap gap-3" role="radiogroup" aria-labelledby="trClientesTitulo">
+                                <!-- La única tabla para todos no puede pasar a algunos clientes (como al eliminar): se ve como texto. -->
+                                <div class="sgtl-dato-fijo d-none" id="trAlcanceFijo">Todos los clientes</div>
+                                <div class="d-flex flex-wrap gap-3" role="radiogroup" aria-labelledby="trClientesTitulo" id="trAlcanceOpciones">
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="trAlcance" id="trParaTodos" value="todos" checked>
                                         <label class="form-check-label" for="trParaTodos">Todos los clientes</label>
@@ -333,6 +335,8 @@
         const CAMPOS_VALOR = CAMPOS_FIJA.concat([CAMPO_KM]);
         let tarifarios = [];
         let tarifarioEnEdicion = null;
+        let eraGeneral = false;       // la tabla en edición era para todos los clientes
+        let unicaGeneral = false;     // y es la única para todos
         let formularioTarifario = null;
         // Clientes para las tablas propias: [{ Cliente_ID, Razon_Social, Tipo_Cliente }].
         let clientesTabla = [];
@@ -542,10 +546,28 @@
         }
         function mostrarAlcance() {
             const todos = paraTodos();
+            $('#trAlcanceFijo').toggleClass('d-none', !unicaGeneral);
+            $('#trAlcanceOpciones').toggleClass('d-none', unicaGeneral);
             $('#trClientesCaja').toggleClass('d-none', todos);
-            $('#trAlcanceAyuda').text(todos ? 'Vale para todos los clientes, también los que se carguen después, salvo los que tienen una tabla propia.'
-                : 'Para estos clientes, esta tabla reemplaza a la de todos los clientes.');
+            $('#trAlcanceAyuda').text(unicaGeneral ? 'Es la única tabla para todos los clientes, así que no puede pasar a solo algunos.'
+                : todos ? 'Vale para todos los clientes, también los que se carguen después, salvo los que tienen una tabla propia.'
+                : 'Para estos clientes, esta tabla reemplaza a la de todos los clientes.' + queTablaQuedaAlResto());
             if (todos) limpiarErrorClientes();
+        }
+        // Al pasar a algunos clientes una tabla que era para todos, los demás clientes toman la general anterior (o, si no hay,
+        // no tienen tabla hasta la siguiente general).
+        function queTablaQuedaAlResto() {
+            const desde = fechaISO('trDesde');
+            if (!eraGeneral || !desde) return '';
+            const generales = tarifarios.filter(function (t) { return t.Tarifario_ID !== tarifarioEnEdicion && t.Para_Todos !== false; });
+            const anterior = generales.filter(function (t) { return dia(t.Vigente_Desde) < desde; })
+                .sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? 1 : -1; })[0];
+            if (anterior) return ' Los demás clientes vuelven a "' + anterior.Nombre + '".';
+            const siguiente = generales.filter(function (t) { return dia(t.Vigente_Desde) > desde; })
+                .sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? -1 : 1; })[0];
+            if (!siguiente) return '';
+            const partes = dia(siguiente.Vigente_Desde).split('-').map(Number);
+            return ' Los demás clientes no tienen tabla hasta el ' + SGTL.fecha(new Date(partes[0], partes[1] - 1, partes[2] - 1)) + '.';
         }
         function validarClientes() {
             if (paraTodos() || clientesElegidos().length) { limpiarErrorClientes(); return; }
@@ -610,6 +632,7 @@
             $('#trNombre').val(conDatos ? t.Nombre : '');
             ponerFecha('trDesde', conDatos ? t.Vigente_Desde : null);
             const propios = conDatos && t.Para_Todos === false;
+            eraGeneral = conDatos && !propios;
             $(propios ? '#trParaAlgunos' : '#trParaTodos').prop('checked', true);
             dibujarClientes(propios ? (t.Clientes || []).map(function (c) { return c.Cliente_ID; }) : []);
             mostrarAlcance();
@@ -635,6 +658,9 @@
         // Registrar viene con los valores de la tabla más nueva: cuando llega la actualizada, se cambian los que subieron.
         function abrirTarifario(id) {
             tarifarioEnEdicion = id || null;
+            const fila = id ? tarifarios.find(function (t) { return t.Tarifario_ID === id; }) : null;
+            eraGeneral = false;
+            unicaGeneral = !!(fila && fila.Unica_General);
             SGTL.reiniciarFormulario('#formTarifario', '#avisoTarifario');
             formularioTarifario.reiniciar();
             ponerFecha('trDesde', null);
@@ -862,7 +888,7 @@
                 $('#' + par[0]).on('change', function () { if ($('#' + par[1]).val().trim()) formularioTarifario.validar(par[1]); });
             });
             $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
-            $('#trDesde').on('change', actualizarHasta);
+            $('#trDesde').on('change', function () { actualizarHasta(); if (!paraTodos()) mostrarAlcance(); });
             $('#trClientesBuscar').on('input', filtrarClientes);
             $('#trClientesLista').on('change', 'input', function () { contarClientes(); actualizarHasta(); });
             $('#btnRegistrarTarifario').on('click', function () { abrirTarifario(null); });

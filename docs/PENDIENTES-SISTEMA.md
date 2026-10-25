@@ -2688,6 +2688,14 @@ lo pendiente) y la parte del comprobante es de su módulo.
   revisar (proformas, comprobantes y presupuestos) desaparece de la tarjeta y de los avisos, porque el documento ya tiene
   el importe de la tabla; en la base queda resuelto con "La tarifa volvió al importe…". Si en vez de volver se corrige a
   otro importe, queda uno solo para revisar con el importe de antes del primer cambio, sin repetirse.
+- [ ] 6. Cambiar para quién es (§34, 25/10), **sin guardar**: Editar "Tarifas a agosto 2026" → "Solo algunos clientes" →
+  elegir uno. La ayuda dice 'Los demás clientes vuelven a "Tarifas a enero 2026".'. Guardar: en la confirmación, los viajes
+  y presupuestos de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero 2026".' con el importe de enero (los
+  de proformas enviadas o comprobantes, en "quedan para revisar"). **Cancelar** (si se guarda, se recalculan de verdad).
+- [ ] 7. Editar "Tarifas a enero 2026" y poner "Vigente desde" 31/07/2026 → Guardar: no se abre la confirmación y arriba
+  dice "No se puede guardar la tabla de tarifas: el viaje #N de … del dd/mm/aaaa y N más quedarían sin tabla de tarifas."
+  Cerrar sin guardar. (Si no hay ningún viaje ni presupuesto de enero a julio, guarda directo: volver a poner 01/01/2026.) (Lo de "la única para todos" no se ve con la base actual, que tiene dos generales: se probó con la
+  API simulada.)
 
 **Paso 2 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA COMPILAR Y PROBAR EN VM:**
 - `Tarifas/TarifarioRevisar.cs` (nuevo, en el `.csproj`): lo pendiente con el cambio que lo causó y qué hacer ("Reenviáselo
@@ -2783,6 +2791,14 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   vigentes al mismo tiempo, cada una con sus versiones. Para un viaje vale la propia de su cliente vigente en el inicio; si
   no tiene (o empieza después), la general. Falta saber si el PDF es de Marfrig ("ZQPA" parece un código de SAP): si lo
   es, se carga como general o como propia de Marfrig, sin cambiar nada del sistema.
+- **Cambiar para quién es una tabla ya cargada (Rocío, 25/10):** se puede (de todos a algunos clientes, sacar o agregar
+  clientes, o de algunos a todos). Cada viaje y presupuesto toma la tabla que le queda con la regla de arriba: si agosto
+  pasa a ser solo de un cliente, los demás vuelven a "Tarifas a enero 2026" (la general anterior), y la confirmación lo dice
+  en cada fila ('Pasa a "Tarifas a enero 2026".'), con el importe nuevo. Dos límites, como al eliminar: la única tabla para
+  todos los clientes no puede pasar a algunos (en el formulario se ve "Todos los clientes" como texto, con el porqué), y no
+  se guarda un cambio (de clientes o de fecha) que deje un viaje o un presupuesto sin tabla: "No se puede guardar la tabla
+  de tarifas: el viaje #N de … del dd/mm/aaaa y N más quedarían sin tabla de tarifas." Al elegir "Solo algunos clientes" en
+  una tabla que era para todos, la ayuda dice a qué tabla vuelven los demás.
 
 **Qué se hizo:**
 - `database/tarifas/02_tarifario_por_vehiculo.sql` (idempotente): tablas `TARIFARIOS` (una fila por tabla: nombre,

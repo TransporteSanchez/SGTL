@@ -57,6 +57,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             internal int? Comprobante_ID;
             internal bool ActualizaLinea;                   // la línea del borrador propio tiene el precio del viaje
             internal string Datos;                          // JSON del presupuesto
+            internal DateTime? SinTablaEl;                  // con el cambio, ese día no le queda ninguna tabla
         }
 
         public class Resultado
@@ -73,6 +74,10 @@ namespace WebApi_TransporteSanchez.Tarifas
             // Viajes en una proforma enviada o en un comprobante que tenían algo para revisar y con este cambio la tarifa
             // vuelve al importe del documento: lo pendiente se resuelve solo.
             internal List<int> VuelvenAlDocumento = new List<int>();
+
+            // Viajes y presupuestos que con el cambio se quedan sin tabla (la tabla pasa a solo algunos clientes o empieza
+            // más tarde): no se puede guardar así.
+            internal List<Item> SinTabla { get { return Items.Where(i => i.SinTablaEl.HasValue).OrderBy(i => i.SinTablaEl).ToList(); } }
         }
 
         public class Aplicado
@@ -398,6 +403,7 @@ WHERE v.TarifarioID IS NOT NULL";
             {
                 item.Grupo = NoSePuede;
                 item.Que_Pasa = "No queda una tabla vigente el " + v.Fecha_Inicio.ToString("dd/MM/yyyy") + ".";
+                item.SinTablaEl = v.Fecha_Inicio;
                 res.Items.Add(item);
                 return;
             }
@@ -470,7 +476,16 @@ WHERE v.TarifarioID IS NOT NULL";
                 item.Grupo = Recalcula;
                 item.Que_Pasa = "";
             }
+            if (item.Grupo == Recalcula) item.Que_Pasa = PasaA(v.TarifarioID, despues, item.Que_Pasa);
             res.Items.Add(item);
+        }
+
+        // Si cambia de tabla (la tabla pasó a solo algunos clientes, se sacó o se agregó un cliente, o cambió la fecha), con
+        // cuál queda. En una tabla nueva no hace falta: el mensaje de la confirmación ya lo dice.
+        private static string PasaA(int? antes, Tabla despues, string queHacer)
+        {
+            if (antes == despues.Datos.Tarifario_ID || despues.Datos.Tarifario_ID == TablaNueva) return queHacer;
+            return ("Pasa a \"" + despues.Datos.Nombre + "\". " + queHacer).Trim();
         }
 
         private static void AgregarPresupuesto(Resultado res, int presupuestoId, string datos, List<Tabla> tablas, int editadaId,
@@ -512,6 +527,7 @@ WHERE v.TarifarioID IS NOT NULL";
             {
                 item.Grupo = NoSePuede;
                 item.Que_Pasa = "No queda una tabla vigente el " + inicio.ToString("dd/MM/yyyy") + ".";
+                item.SinTablaEl = inicio;
                 res.Items.Add(item);
                 return;
             }
@@ -542,7 +558,7 @@ WHERE v.TarifarioID IS NOT NULL";
 
             item.Grupo = Recalcula;
             item.TipoRevisar = "Presupuesto";
-            item.Que_Pasa = "Reenviáselo si ya se lo mandaste.";
+            item.Que_Pasa = PasaA(tarifarioId, despues, "Reenviáselo si ya se lo mandaste.");
             res.Items.Add(item);
         }
 

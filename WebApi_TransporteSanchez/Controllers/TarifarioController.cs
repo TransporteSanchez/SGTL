@@ -262,7 +262,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var cn = new SqlConnection(CnSql()))
                 {
                     cn.Open();
-                    return Ok(TarifarioImpacto.Calcular(cn, null, id, Editada(dto)));
+                    var conflicto = ErroresDeAlcance(cn, null, id, dto);
+                    if (conflicto.Any()) return Content(HttpStatusCode.BadRequest, conflicto);
+                    var impacto = TarifarioImpacto.Calcular(cn, null, id, Editada(dto));
+                    var sinTabla = ErroresSinTabla(impacto, dto.Para_Todos != false);
+                    if (sinTabla.Any()) return Content(HttpStatusCode.BadRequest, sinTabla);
+                    return Ok(impacto);
                 }
             }
             catch (Exception ex) { return InternalServerError(ex); }
@@ -336,36 +341,15 @@ namespace WebApi_TransporteSanchez.Controllers
                         if (id > 0 && Escalar(cn, tx, "SELECT COUNT(*) FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id", P("@id", id)) == 0)
                             return NotFound();
 
-                        // No puede haber dos tablas del mismo alcance que empiecen el mismo día: dos generales, o dos propias de
-                        // un mismo cliente.
                         bool paraTodos = dto.Para_Todos != false;
                         var clientes = paraTodos ? new List<int>() : dto.Clientes.Where(c => c > 0).Distinct().ToList();
-                        string fecha = dto.Vigente_Desde.Value.ToString("dd/MM/yyyy");
-                        if (paraTodos)
-                        {
-                            var otra = Texto(cn, tx, "SELECT TOP (1) Nombre FROM dbo.TARIFARIOS WHERE Para_Todos=1 AND Vigente_Desde=@d AND Tarifario_ID<>@id",
-                                P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
-                            if (otra != null)
-                                return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Vigente_Desde",
-                                    ErrorMessage = "Ya hay una tabla para todos los clientes vigente desde el " + fecha + " (\"" + otra + "\"). Elegí otra fecha o editá esa tabla." } });
-                        }
-                        else
-                        {
-                            foreach (var cliente in clientes)
-                            {
-                                var otra = Texto(cn, tx,
-                                    "SELECT TOP (1) ISNULL(c.Razon_Social, 'El cliente') + ' ya tiene la tabla \"' + t.Nombre + '\"' FROM dbo.TARIFARIOS t " +
-                                    "JOIN dbo.TARIFARIO_CLIENTES tc ON tc.Tarifario_ID = t.Tarifario_ID JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID " +
-                                    "WHERE t.Para_Todos=0 AND tc.ClienteID=@c AND t.Vigente_Desde=@d AND t.Tarifario_ID<>@id",
-                                    P("@c", cliente), P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
-                                if (otra != null)
-                                    return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Clientes",
-                                        ErrorMessage = otra + " desde el " + fecha + ". Elegí otra fecha o editá esa tabla." } });
-                            }
-                        }
+                        var conflicto = ErroresDeAlcance(cn, tx, id, dto);
+                        if (conflicto.Any()) return Content(HttpStatusCode.BadRequest, conflicto);
 
                         // Qué pasa con los viajes y presupuestos, con las tablas como quedan (antes de escribir nada).
                         var impacto = TarifarioImpacto.Calcular(cn, tx, id, Editada(dto));
+                        var sinTabla = ErroresSinTabla(impacto, paraTodos);
+                        if (sinTabla.Any()) return Content(HttpStatusCode.BadRequest, sinTabla);
                         string motivo = (dto.Motivo ?? "").Trim();
                         if (impacto.HayCambios && motivo.Length == 0)
                             return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Motivo", ErrorMessage = "Completá el motivo del cambio." } });
@@ -692,6 +676,64 @@ namespace WebApi_TransporteSanchez.Controllers
             string texto = partes.Count == 0 ? "" : " Se " + (a.ViajesRecalculados + a.PresupuestosRecalculados == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
             if (a.ParaRevisar > 0) texto += " " + (a.ParaRevisar == 1 ? "Queda 1 para revisar." : "Quedan " + a.ParaRevisar + " para revisar.");
             return texto;
+        }
+
+        // Lo que no deja guardar según las otras tablas (se controla antes de mostrar la confirmación y otra vez al guardar):
+        // dos tablas del mismo alcance que empiecen el mismo día (dos generales, o dos propias de un mismo cliente), y pasar
+        // a solo algunos clientes la única para todos (sin ella, los demás clientes no tendrían tarifa; como al eliminar).
+        private static List<object> ErroresDeAlcance(SqlConnection cn, SqlTransaction tx, int id, TarifarioDto dto)
+        {
+            var errores = new List<object>();
+            bool paraTodos = dto.Para_Todos != false;
+            string fecha = dto.Vigente_Desde.Value.ToString("dd/MM/yyyy");
+            if (paraTodos)
+            {
+                var otra = Texto(cn, tx, "SELECT TOP (1) Nombre FROM dbo.TARIFARIOS WHERE Para_Todos=1 AND Vigente_Desde=@d AND Tarifario_ID<>@id",
+                    P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
+                if (otra != null)
+                    errores.Add(new { PropertyName = "Vigente_Desde",
+                        ErrorMessage = "Ya hay una tabla para todos los clientes vigente desde el " + fecha + " (\"" + otra + "\"). Elegí otra fecha o editá esa tabla." });
+                return errores;
+            }
+
+            if (id > 0 && Escalar(cn, tx,
+                    "SELECT COUNT(*) FROM dbo.TARIFARIOS t WHERE t.Tarifario_ID=@id AND t.Para_Todos=1 " +
+                    "AND NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS o WHERE o.Para_Todos=1 AND o.Tarifario_ID<>@id)", P("@id", id)) > 0)
+            {
+                errores.Add(new { PropertyName = "Clientes",
+                    ErrorMessage = "No se puede pasar a solo algunos clientes: es la única tabla para todos los clientes." });
+                return errores;
+            }
+
+            foreach (var cliente in dto.Clientes.Where(c => c > 0).Distinct())
+            {
+                var otra = Texto(cn, tx,
+                    "SELECT TOP (1) ISNULL(c.Razon_Social, 'El cliente') + ' ya tiene la tabla \"' + t.Nombre + '\"' FROM dbo.TARIFARIOS t " +
+                    "JOIN dbo.TARIFARIO_CLIENTES tc ON tc.Tarifario_ID = t.Tarifario_ID JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID " +
+                    "WHERE t.Para_Todos=0 AND tc.ClienteID=@c AND t.Vigente_Desde=@d AND t.Tarifario_ID<>@id",
+                    P("@c", cliente), P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
+                if (otra != null)
+                {
+                    errores.Add(new { PropertyName = "Clientes", ErrorMessage = otra + " desde el " + fecha + ". Elegí otra fecha o editá esa tabla." });
+                    return errores;
+                }
+            }
+            return errores;
+        }
+
+        // Si con el cambio algún viaje o presupuesto se queda sin tabla (la tabla pasa a solo algunos clientes y antes no hay
+        // otra para todos, o empieza más tarde), no se guarda: el viaje quedaría con una tabla que ya no le corresponde.
+        private static List<object> ErroresSinTabla(TarifarioImpacto.Resultado impacto, bool paraTodos)
+        {
+            var sinTabla = impacto.SinTabla;
+            if (!sinTabla.Any()) return new List<object>();
+            var primero = sinTabla[0];
+            string cual = (primero.Clase == "Viaje" ? "el viaje #" : "el presupuesto #") + primero.Id
+                + (string.IsNullOrWhiteSpace(primero.Cliente) ? "" : " de " + primero.Cliente.Trim())
+                + " del " + primero.SinTablaEl.Value.ToString("dd/MM/yyyy");
+            string cuantos = sinTabla.Count == 1 ? " quedaría" : " y " + (sinTabla.Count - 1) + " más quedarían";
+            return new List<object> { new { PropertyName = paraTodos ? "Vigente_Desde" : "Clientes",
+                ErrorMessage = "No se puede guardar la tabla de tarifas: " + cual + cuantos + " sin tabla de tarifas." } };
         }
 
         private static int Escalar(SqlConnection cn, SqlTransaction tx, string sql, params SqlParameter[] ps)

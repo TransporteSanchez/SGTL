@@ -287,6 +287,24 @@ function probarEliminar() {
     assert.ok(/'No se puede deshacer\.' \+ queQuedaAlEliminar\(t\)/.test(pantalla), 'la confirmación dice qué tabla vale en su lugar');
 }
 
+// Cambiar para quién es una tabla (§34, Rocío 25/10): los clientes que salen toman la tabla que les queda y la confirmación
+// lo dice; la única para todos no pasa a algunos (como al eliminar) y no se guarda si un viaje o presupuesto se queda sin tabla.
+function probarCambiarClientes() {
+    const impacto = leer('WebApi_TransporteSanchez/Tarifas/TarifarioImpacto.cs');
+    assert.ok(/private static string PasaA\(/.test(impacto) && /"Pasa a \\""/.test(impacto), 'la confirmación dice a qué tabla pasa el viaje');
+    assert.ok(/item\.SinTablaEl = v\.Fecha_Inicio;/.test(impacto) && /item\.SinTablaEl = inicio;/.test(impacto), 'marca los viajes y presupuestos que se quedan sin tabla');
+    const api = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
+    assert.ok(/No se puede pasar a solo algunos clientes: es la única tabla para todos los clientes\./.test(api), 'la única para todos no pasa a algunos');
+    const enImpacto = api.slice(api.indexOf('public IHttpActionResult Impacto('), api.indexOf('private static TarifarioImpacto.TablaEditada Editada('));
+    const enGuardar = api.slice(api.indexOf('private IHttpActionResult Guardar('), api.indexOf('Qué pasa con los viajes y presupuestos') + 400);
+    [enImpacto, enGuardar].forEach(function (bloque) {
+        assert.ok(/ErroresDeAlcance\(cn, /.test(bloque) && /ErroresSinTabla\(impacto, /.test(bloque), 'Impacto y Guardar controlan lo mismo antes de la confirmación');
+    });
+    const pantalla = leer('gestion-tarifas.html');
+    assert.ok(/id="trAlcanceFijo"/.test(pantalla) && /unicaGeneral = !!\(fila && fila\.Unica_General\)/.test(pantalla), 'la única para todos muestra los clientes como texto');
+    assert.ok(/Los demás clientes vuelven a "/.test(pantalla), 'la ayuda dice a qué tabla vuelven los demás clientes');
+}
+
 function probarProyecto() {
     const csproj = leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj');
     ['Controllers\\TarifarioController.cs', 'Tarifas\\TarifarioCalculo.cs'].forEach(function (archivo) {
@@ -309,5 +327,6 @@ probarFijaConExcedente();
 probarTablasPorCliente();
 probarSinTarifasViejas();
 probarEliminar();
+probarCambiarClientes();
 probarProyecto();
 console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de enero y agosto 2026 y el importe guardado del viaje');
