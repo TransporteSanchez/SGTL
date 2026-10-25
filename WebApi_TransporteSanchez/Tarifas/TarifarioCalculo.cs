@@ -116,7 +116,13 @@ namespace WebApi_TransporteSanchez.Tarifas
 
         public static string Antiguedad(Tarifario t, bool modeloNuevo)
         {
-            return modeloNuevo ? "modelo " + t.Anio_Corte + " en adelante" : "modelo " + (t.Anio_Corte - 1) + " o anterior";
+            return "modelo " + Modelos(t, modeloNuevo);
+        }
+
+        // "2019 en adelante" o "2018 o anterior".
+        public static string Modelos(Tarifario t, bool modeloNuevo)
+        {
+            return modeloNuevo ? t.Anio_Corte + " en adelante" : (t.Anio_Corte - 1) + " o anterior";
         }
 
         private const string COLUMNAS_TARIFARIO =
@@ -216,7 +222,7 @@ namespace WebApi_TransporteSanchez.Tarifas
 
             if (porKm)
             {
-                r.Banda = "tarifa por km: " + Km(km) + " km × " + Pesos(v.Valor_Km);
+                r.Banda = "por km (" + Km(km) + " km × " + Pesos(v.Valor_Km) + ")";
                 r.ImporteBase = Redondear(v.Valor_Km * km);
             }
             else if (km <= t.Km_Banda1)
@@ -224,28 +230,29 @@ namespace WebApi_TransporteSanchez.Tarifas
                 int numero = vuelta == 2 ? 2 : 1;
                 r.AplicaVuelta = true;
                 r.Vuelta = numero;
-                r.Banda = "tarifa fija hasta " + t.Km_Banda1 + " km, " + numero + "ª vuelta";
+                r.Banda = "fija hasta " + t.Km_Banda1 + " km, " + numero + "ª vuelta";
                 r.ImporteBase = numero == 2 ? v.Valor_Banda1_Vuelta2 : v.Valor_Banda1_Vuelta1;
             }
             else if (km <= t.Km_Banda2)
             {
-                r.Banda = "tarifa fija de más de " + t.Km_Banda1 + " y hasta " + t.Km_Banda2 + " km";
+                r.Banda = "fija de más de " + t.Km_Banda1 + " y hasta " + t.Km_Banda2 + " km";
                 r.ImporteBase = v.Valor_Banda2;
             }
             else if (km <= t.Km_Banda3)
             {
-                r.Banda = "tarifa fija de más de " + t.Km_Banda2 + " y hasta " + t.Km_Banda3 + " km";
+                r.Banda = "fija de más de " + t.Km_Banda2 + " y hasta " + t.Km_Banda3 + " km";
                 r.ImporteBase = v.Valor_Banda3;
             }
             else
             {
                 // La fija de la última banda y los km que pasan, al precio por km (como lo calcula la empresa).
                 decimal excedente = km - t.Km_Banda3;
-                r.Banda = "tarifa fija hasta " + t.Km_Banda3 + " km (" + Pesos(v.Valor_Banda3) + ") + " + Km(excedente) + " km × " + Pesos(v.Valor_Km);
+                r.Banda = "fija hasta " + t.Km_Banda3 + " km (" + Pesos(v.Valor_Banda3) + ") + " + Km(excedente) + " km × " + Pesos(v.Valor_Km);
                 r.ImporteBase = v.Valor_Banda3 + Redondear(v.Valor_Km * excedente);
             }
 
-            r.TarifaDetalle = t.Nombre + " · " + tipo + ", " + Antiguedad(t, nuevo) + " · " + r.Banda;
+            // "Tarifas a agosto 2026 · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta" (M15 de la prueba en la VM del 25/10).
+            r.TarifaDetalle = t.Nombre + " · " + tipo + " " + Modelos(t, nuevo) + ", " + r.Banda;
             return r;
         }
 
@@ -273,7 +280,8 @@ namespace WebApi_TransporteSanchez.Tarifas
             r.Estadia = 0;
             r.FalsoFletePorcentaje = null;
             r.EstadiaModulo = null;
-            var detalle = r.TarifaDetalle + " · " + Pesos(r.ImporteBase);
+            // "…, 1ª vuelta: $ 645.535,00 · falso flete (60 %): $ 387.321,00 · estadía (1 módulo): $ 96.577,00" (M15, 25/10).
+            var detalle = r.TarifaDetalle + ": " + Pesos(r.ImporteBase);
             decimal importe = r.ImporteBase;
 
             if (t != null && falsoFlete)
@@ -282,14 +290,14 @@ namespace WebApi_TransporteSanchez.Tarifas
                 r.FalsoFletePorcentaje = t.Falso_Flete_Porcentaje;
                 r.FalsoFlete = conFalso - r.ImporteBase;
                 importe = conFalso;
-                detalle += " · falso flete " + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %: " + Pesos(conFalso);
+                detalle += " · falso flete (" + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %): " + Pesos(conFalso);
             }
             if (t != null && estadiaModulos > 0)
             {
                 r.EstadiaModulo = t.Estadia_Modulo;
                 r.Estadia = Redondear(t.Estadia_Modulo * estadiaModulos);
                 importe += r.Estadia;
-                detalle += " · " + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + " de estadía: " + Pesos(r.Estadia);
+                detalle += " · estadía (" + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + "): " + Pesos(r.Estadia);
             }
 
             r.Importe = importe;

@@ -861,6 +861,7 @@
   function avisoFormulario(objetivo, texto, detalle) {
     var aviso = elemento(objetivo);
     if (!aviso) return;
+    if (texto === REVISA_CAMPOS) seVaSinCamposMarcados(aviso);
     aviso.textContent = texto || '';
     if (texto && detalle && detalle.length) {
       var lista = document.createElement('ul');
@@ -878,10 +879,26 @@
 
   // Después de validar: si hay campos marcados, muestra "Revisá los campos marcados." y lleva el
   // cursor al primero. Devuelve true si el formulario está bien.
+  // "Revisá los campos marcados." se va solo cuando ya no queda ningún campo marcado en el modal o el formulario del aviso
+  // (M10 de la prueba en la VM del 25/10), lo haya puesto la validación o un error de la API.
+  var REVISA_CAMPOS = 'Revisá los campos marcados.';
+  function seVaSinCamposMarcados(aviso) {
+    var contenedor = aviso.closest('.modal-content, form, .card') || aviso.parentElement;
+    if (!contenedor || aviso.dataset.sgtlSeVa) return;
+    aviso.dataset.sgtlSeVa = '1';
+    var siYaNoHay = function () {
+      // Después de que cada campo se valide con lo que se escribió.
+      setTimeout(function () {
+        if (aviso.textContent === REVISA_CAMPOS && !contenedor.querySelector('.is-invalid')) avisoFormulario(aviso, '');
+      }, 0);
+    };
+    ['input', 'change', 'focusout'].forEach(function (evento) { contenedor.addEventListener(evento, siYaNoHay); });
+  }
+
   function revisarFormulario(form, aviso) {
     var contenedor = elemento(form);
     var primero = contenedor ? contenedor.querySelector('.is-invalid') : null;
-    avisoFormulario(aviso, primero ? 'Revisá los campos marcados.' : '');
+    avisoFormulario(aviso, primero ? REVISA_CAMPOS : '');
     if (primero) primero.focus();
     return !primero;
   }

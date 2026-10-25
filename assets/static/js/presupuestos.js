@@ -4,7 +4,7 @@
     // Lo que quedó para reenviar por un cambio de tarifa (§33 de PENDIENTES): ícono en la fila y aviso en Ver PDF y Editar.
     var cambiosTarifa = [];
     function cambiosDe(p) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Presupuesto_ID', p.id) : []; }
-    function avisoCambio(p) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDe(p)) : ''; }
+    function avisoCambio(p, opciones) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDe(p), opciones) : ''; }
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     // Vuelta del día (tabla de tarifas, 24/10): la eligió la persona; si no, se propone la 2ª si el camión ya tiene otro viaje.
     var vueltaManual = false;
@@ -343,7 +343,7 @@
             el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.';
         }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
-        el('cambioTarifaPresupuesto').innerHTML = avisoCambio(p);
+        el('cambioTarifaPresupuesto').innerHTML = avisoCambio(p, { enEditar: true });
         modal.show();
     }
     function eliminar(p) {

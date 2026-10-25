@@ -125,15 +125,16 @@ SELECT k.*,
                  WHEN k.Km <= k.Km_Banda2 THEN k.Valor_Banda2
                  WHEN k.Km <= k.Km_Banda3 THEN k.Valor_Banda3
                  ELSE k.Valor_Banda3 + ROUND(k.Valor_Km * (k.Km - k.Km_Banda3), 2) END AS decimal(18, 2)) AS Base_Tabla,
-       -- El mismo texto que TarifarioCalculo.TarifaDetalle.
-       k.Tabla + N' · ' + k.Tipo + N', '
-         + CASE WHEN k.Modelo_Nuevo = 1 THEN N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte) + N' en adelante'
-                ELSE N'modelo ' + CONVERT(nvarchar(4), k.Anio_Corte - 1) + N' o anterior' END + N' · '
-         + CASE WHEN k.Modo = 'Km' THEN N'tarifa por km: ' + FORMAT(k.Km, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR')
-                WHEN k.Km <= k.Km_Banda1 THEN N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' km, ' + CONVERT(nvarchar(1), k.Vuelta) + N'ª vuelta'
-                WHEN k.Km <= k.Km_Banda2 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' km'
-                WHEN k.Km <= k.Km_Banda3 THEN N'tarifa fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km'
-                ELSE N'tarifa fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km ($ ' + FORMAT(k.Valor_Banda3, 'N2', 'es-AR') + N') + '
+       -- El mismo texto que TarifarioCalculo.TarifaDetalle ("Tarifas a agosto 2026 · Furgón 2019 en adelante, fija hasta 130 km,
+       -- 1ª vuelta"; desde el 25/10, M15 de la prueba en la VM).
+       k.Tabla + N' · ' + k.Tipo + N' '
+         + CASE WHEN k.Modelo_Nuevo = 1 THEN CONVERT(nvarchar(4), k.Anio_Corte) + N' en adelante'
+                ELSE CONVERT(nvarchar(4), k.Anio_Corte - 1) + N' o anterior' END + N', '
+         + CASE WHEN k.Modo = 'Km' THEN N'por km (' + FORMAT(k.Km, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR') + N')'
+                WHEN k.Km <= k.Km_Banda1 THEN N'fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' km, ' + CONVERT(nvarchar(1), k.Vuelta) + N'ª vuelta'
+                WHEN k.Km <= k.Km_Banda2 THEN N'fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda1) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' km'
+                WHEN k.Km <= k.Km_Banda3 THEN N'fija de más de ' + CONVERT(nvarchar(10), k.Km_Banda2) + N' y hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km'
+                ELSE N'fija hasta ' + CONVERT(nvarchar(10), k.Km_Banda3) + N' km ($ ' + FORMAT(k.Valor_Banda3, 'N2', 'es-AR') + N') + '
                      + FORMAT(k.Km - k.Km_Banda3, '0.#', 'es-AR') + N' km × $ ' + FORMAT(k.Valor_Km, 'N2', 'es-AR') END AS Detalle_Tabla
 INTO #Calculo
 FROM ConValores k;
@@ -167,11 +168,11 @@ Adicionales AS (
 )
 SELECT a.*,
        ISNULL(a.Con_Falso_Flete, a.Base) + ISNULL(a.Estadia, 0) AS Importe_Nuevo,
-       -- El mismo texto que TarifarioCalculo.Completar.
-       a.Detalle + N' · $ ' + FORMAT(a.Base, 'N2', 'es-AR')
-         + ISNULL(N' · falso flete ' + FORMAT(a.Falso_Flete_Porcentaje, '0.##', 'es-AR') + N' %: $ ' + FORMAT(a.Con_Falso_Flete, 'N2', 'es-AR'), N'')
-         + ISNULL(N' · ' + CONVERT(nvarchar(3), a.Estadia_Modulos) + CASE WHEN a.Estadia_Modulos = 1 THEN N' módulo' ELSE N' módulos' END
-                  + N' de estadía: $ ' + FORMAT(a.Estadia, 'N2', 'es-AR'), N'') AS Importe_Detalle
+       -- El mismo texto que TarifarioCalculo.SumarAdicionales.
+       a.Detalle + N': $ ' + FORMAT(a.Base, 'N2', 'es-AR')
+         + ISNULL(N' · falso flete (' + FORMAT(a.Falso_Flete_Porcentaje, '0.##', 'es-AR') + N' %): $ ' + FORMAT(a.Con_Falso_Flete, 'N2', 'es-AR'), N'')
+         + ISNULL(N' · estadía (' + CONVERT(nvarchar(3), a.Estadia_Modulos) + CASE WHEN a.Estadia_Modulos = 1 THEN N' módulo' ELSE N' módulos' END
+                  + N'): $ ' + FORMAT(a.Estadia, 'N2', 'es-AR'), N'') AS Importe_Detalle
 INTO #Plan
 FROM Adicionales a;
 

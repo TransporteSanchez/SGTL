@@ -225,11 +225,15 @@
                 if (!abierta) renderizar(campo.value);
                 resaltar(activa < 0 ? 0 : activa + (evento.key === 'ArrowDown' ? 1 : -1));
             }
-            // Enter con una opción resaltada la elige; si no, sigue de largo (en los filtros, busca).
-            if (evento.key === 'Enter' && abierta && activa >= 0) {
+            // Enter con una opción resaltada la elige. Sin resaltar, si lo escrito deja una sola coincidencia, elige esa (M19 de la
+            // prueba en la VM del 25/10: "Alimentos" + Enter decía "Elegí un cliente de la lista."). Si no, sigue de largo (en
+            // los filtros, busca).
+            var opcionesVisibles = abierta ? botones() : [];
+            var elegida = activa >= 0 ? opcionesVisibles[activa]
+                : (campo.value.trim() !== '' && opcionesVisibles.length === 1 ? opcionesVisibles[0] : null);
+            if (evento.key === 'Enter' && elegida) {
                 evento.preventDefault();
-                var elegida = botones()[activa];
-                if (elegida) elegida.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+                elegida.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
             }
         });
         document.addEventListener('mousedown', function (evento) {

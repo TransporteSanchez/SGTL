@@ -947,16 +947,18 @@
                 var total = Number(base.importe), partes = [];
                 if (falso) {
                     var conFalso = redondear(base.importe * t.Falso_Flete_Porcentaje / 100);
-                    partes.push('falso flete ' + porcentaje(t.Falso_Flete_Porcentaje) + ': ' + SGTL.monto(conFalso));
+                    partes.push('falso flete (' + porcentaje(t.Falso_Flete_Porcentaje) + '): ' + SGTL.monto(conFalso));
                     total = conFalso;
                 }
                 if (modulos > 0) {
                     var estadia = redondear(t.Estadia_Modulo * modulos);
-                    partes.push(modulos + (modulos === 1 ? ' módulo' : ' módulos') + ' de estadía: ' + SGTL.monto(estadia));
+                    partes.push('estadía (' + modulos + (modulos === 1 ? ' módulo' : ' módulos') + '): ' + SGTL.monto(estadia));
                     total = redondear(total + estadia);
                 }
-                var html = '<strong>' + SGTL.monto(total) + '</strong><span>neto · ' + SGTL.escapar(base.detalle)
-                    + (partes.length ? ' · ' + SGTL.monto(base.importe) + ' · ' + SGTL.escapar(partes.join(' · ')) : '') + '</span>';
+                // "$ 483.898,00 sin IVA · Tarifas … · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ 645.535,00 · falso flete
+                // (60 %): …" (M15 de la prueba en la VM del 25/10).
+                var html = '<strong>' + SGTL.monto(total) + '</strong><span>sin IVA · ' + SGTL.escapar(base.detalle)
+                    + (partes.length ? ': ' + SGTL.monto(base.importe) + ' · ' + SGTL.escapar(partes.join(' · ')) : '') + '</span>';
                 if (rutaFija()) $('#fijoTarifa').html(html); else setTarifaInfo(html, 'ok');
             };
             if (!falso && !modulos) { pintar(null); return; }
@@ -1391,8 +1393,9 @@
             if (viajeBloqueado) {
                 var plataforma = clienteConPlataforma();
                 if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
+                // También se cargan el falso flete y la estadía (§34; M16 de la prueba en la VM del 25/10).
                 else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
-                    + ': solo se ' + (plataforma ? 'completan los números de referencia.' : 'completa el número de remito.')
+                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ', el falso flete y la estadía.'
                     + (estado === 'En_viaje' ? ' Si cambia el recorrido, registrá otro viaje.' : '');
             } else if (presupuestoDelViaje) {
                 tipo = 'info';

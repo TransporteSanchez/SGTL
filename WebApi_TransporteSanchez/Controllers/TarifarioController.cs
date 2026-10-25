@@ -262,7 +262,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var conflicto = ErroresDeAlcance(cn, null, id, dto);
                     if (conflicto.Any()) return Content(HttpStatusCode.BadRequest, conflicto);
                     var impacto = TarifarioImpacto.Calcular(cn, null, id, Editada(dto));
-                    var sinTabla = ErroresSinTabla(impacto, dto.Para_Todos != false);
+                    var sinTabla = ErroresSinTabla(impacto, dto);
                     if (sinTabla.Any()) return Content(HttpStatusCode.BadRequest, sinTabla);
                     return Ok(impacto);
                 }
@@ -345,7 +345,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         // Qué pasa con los viajes y presupuestos, con las tablas como quedan (antes de escribir nada).
                         var impacto = TarifarioImpacto.Calcular(cn, tx, id, Editada(dto));
-                        var sinTabla = ErroresSinTabla(impacto, paraTodos);
+                        var sinTabla = ErroresSinTabla(impacto, dto);
                         if (sinTabla.Any()) return Content(HttpStatusCode.BadRequest, sinTabla);
                         string motivo = (dto.Motivo ?? "").Trim();
                         if (impacto.HayCambios && motivo.Length == 0)
@@ -363,6 +363,10 @@ namespace WebApi_TransporteSanchez.Controllers
                             P("@desdeHorasLarga", dto.Estadia_Desde_Horas_Larga), P("@falso", dto.Falso_Flete_Porcentaje),
                             P("@ahora", ahora), P("@usuario", usuario), P("@id", id)
                         };
+
+                        // Lo que tenía, para que Auditoría diga qué cambió; y los nombres de los clientes (M7, 25/10).
+                        var guardada = alta ? null : LeerGuardada(cn, tx, id);
+                        var nombres = NombresClientes(cn, tx, clientes.Concat(guardada == null ? new List<int>() : guardada.Clientes));
 
                         if (id == 0)
                         {
@@ -399,11 +403,13 @@ namespace WebApi_TransporteSanchez.Controllers
                         tx.Commit();
 
                         string usuarioAuditoria = usuario.Length > 20 ? usuario.Substring(0, 20) : usuario;
+                        var cambios = guardada == null ? new List<string>() : Cambios(guardada, dto, nombres);
                         SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, alta ? "INSERT" : "UPDATE", "TARIFARIOS", "Tarifario_ID=" + id,
-                            Resumen(dto) + (motivo.Length > 0 ? " Motivo: " + motivo + "." : "")
-                            + (aplicado.CambioID > 0 ? " Recalculados: " + aplicado.ViajesRecalculados + " viajes y " + aplicado.PresupuestosRecalculados
-                                + " presupuestos; para revisar: " + aplicado.ParaRevisar + "; cambiaron de tabla con el mismo importe: "
-                                + aplicado.CambiaronDeTabla.Count + "." : ""));
+                            (cambios.Any() ? "Cambió: " + string.Join("; ", cambios) + ". " : "")
+                            + (motivo.Length > 0 ? "Motivo: " + motivo + ". " : "")
+                            + (aplicado.CambioID > 0 ? "Se recalcularon: " + CantidadOCero(aplicado.ViajesRecalculados, aplicado.PresupuestosRecalculados)
+                                + "; para revisar: " + aplicado.ParaRevisar + "; cambiaron de tabla con el mismo importe: " + aplicado.CambiaronDeTabla.Count + ". " : "")
+                            + "Queda así: " + Resumen(dto, nombres));
                         string causa = (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\". Motivo: " + motivo;
                         foreach (var item in aplicado.Recalculados)
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
@@ -657,17 +663,129 @@ namespace WebApi_TransporteSanchez.Controllers
             return e;
         }
 
-        private static string Resumen(TarifarioDto d)
+        // La tabla como queda, para Auditoría (M7 de la prueba en la VM del 25/10): los clientes por su nombre y cada fila con su
+        // modelo ("2018 o anterior · Furgón"), en el orden de la grilla.
+        private static string Resumen(TarifarioDto d, Dictionary<int, string> nombres)
         {
             var es = new CultureInfo("es-AR");
             return d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy")
-                + (d.Para_Todos == false ? ", para los clientes " + string.Join(", ", d.Clientes.Distinct()) : ", para todos los clientes")
-                + ". Corte " + d.Anio_Corte
-                + "; bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
-                + " por módulo; falso flete " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. "
-                + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).Select(v => (v.Modelo_Nuevo ? "Nuevo " : "Anterior ") + v.Tipo_Vehiculo.Trim() + ": "
+                + (d.Para_Todos == false ? ", para " + string.Join(", ", d.Clientes.Distinct().Select(c => Nombre(nombres, c))) : ", para todos los clientes")
+                + ". Bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
+                + " por módulo; falso flete " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. Valores (hasta " + d.Km_Banda1 + " km 1ª y 2ª vuelta, hasta "
+                + d.Km_Banda2 + ", hasta " + d.Km_Banda3 + " y por km): "
+                + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).ThenBy(v => Array.IndexOf(TarifarioCalculo.TiposVehiculo, v.Tipo_Vehiculo.Trim()))
+                    .Select(v => Modelo(d.Anio_Corte, v.Modelo_Nuevo) + " · " + v.Tipo_Vehiculo.Trim() + ": "
                     + v.Valor_Banda1_Vuelta1.ToString("N0", es) + " / " + v.Valor_Banda1_Vuelta2.ToString("N0", es) + " / " + v.Valor_Banda2.ToString("N0", es)
-                    + " / " + v.Valor_Banda3.ToString("N0", es) + " / " + v.Valor_Km.ToString("N0", es) + " por km"));
+                    + " / " + v.Valor_Banda3.ToString("N0", es) + " / " + v.Valor_Km.ToString("N0", es))) + ".";
+        }
+
+        private static string Modelo(int corte, bool nuevo) { return nuevo ? corte + " en adelante" : (corte - 1) + " o anterior"; }
+        private static string Nombre(Dictionary<int, string> nombres, int cliente) { string n; return nombres.TryGetValue(cliente, out n) ? n : "el cliente #" + cliente; }
+
+        // Lo que tenía la tabla antes de guardar.
+        private class TablaGuardada
+        {
+            public TarifarioCalculo.Tarifario Datos;
+            public List<TarifarioCalculo.Valores> Valores = new List<TarifarioCalculo.Valores>();
+            public List<int> Clientes = new List<int>();
+        }
+
+        private static TablaGuardada LeerGuardada(SqlConnection cn, SqlTransaction tx, int id)
+        {
+            var g = new TablaGuardada();
+            using (var cmd = new SqlCommand("SELECT Nombre, Vigente_Desde, Para_Todos, Anio_Corte, Km_Banda1, Km_Banda2, Km_Banda3, Estadia_Modulo, " +
+                "Falso_Flete_Porcentaje FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id; " +
+                "SELECT Modelo_Nuevo, Tipo_Vehiculo, Valor_Banda1_Vuelta1, Valor_Banda1_Vuelta2, Valor_Banda2, Valor_Banda3, Valor_Km " +
+                "FROM dbo.TARIFARIO_VALORES WHERE Tarifario_ID=@id; " +
+                "SELECT ClienteID FROM dbo.TARIFARIO_CLIENTES WHERE Tarifario_ID=@id", cn, tx))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                using (var r = cmd.ExecuteReader())
+                {
+                    if (r.Read())
+                        g.Datos = new TarifarioCalculo.Tarifario
+                        {
+                            Nombre = Convert.ToString(r["Nombre"]), Vigente_Desde = Convert.ToDateTime(r["Vigente_Desde"]),
+                            Para_Todos = Convert.ToBoolean(r["Para_Todos"]), Anio_Corte = Convert.ToInt32(r["Anio_Corte"]),
+                            Km_Banda1 = Convert.ToInt32(r["Km_Banda1"]), Km_Banda2 = Convert.ToInt32(r["Km_Banda2"]), Km_Banda3 = Convert.ToInt32(r["Km_Banda3"]),
+                            Estadia_Modulo = Convert.ToDecimal(r["Estadia_Modulo"]), Falso_Flete_Porcentaje = Convert.ToDecimal(r["Falso_Flete_Porcentaje"])
+                        };
+                    r.NextResult();
+                    while (r.Read())
+                        g.Valores.Add(new TarifarioCalculo.Valores
+                        {
+                            Modelo_Nuevo = Convert.ToBoolean(r["Modelo_Nuevo"]), Tipo_Vehiculo = Convert.ToString(r["Tipo_Vehiculo"]).Trim(),
+                            Valor_Banda1_Vuelta1 = Convert.ToDecimal(r["Valor_Banda1_Vuelta1"]), Valor_Banda1_Vuelta2 = Convert.ToDecimal(r["Valor_Banda1_Vuelta2"]),
+                            Valor_Banda2 = Convert.ToDecimal(r["Valor_Banda2"]), Valor_Banda3 = Convert.ToDecimal(r["Valor_Banda3"]),
+                            Valor_Km = Convert.ToDecimal(r["Valor_Km"])
+                        });
+                    r.NextResult();
+                    while (r.Read()) g.Clientes.Add(Convert.ToInt32(r["ClienteID"]));
+                }
+            }
+            return g.Datos == null ? null : g;
+        }
+
+        private static Dictionary<int, string> NombresClientes(SqlConnection cn, SqlTransaction tx, IEnumerable<int> ids)
+        {
+            var lista = ids.Where(c => c > 0).Distinct().ToList();
+            var nombres = new Dictionary<int, string>();
+            if (!lista.Any()) return nombres;
+            using (var cmd = new SqlCommand("SELECT Cliente_ID, ISNULL(Razon_Social, '') AS Razon_Social FROM dbo.CLIENTES WHERE Cliente_ID IN (" +
+                string.Join(", ", lista.Select((c, i) => "@c" + i)) + ")", cn, tx))
+            {
+                for (int i = 0; i < lista.Count; i++) cmd.Parameters.AddWithValue("@c" + i, lista[i]);
+                using (var r = cmd.ExecuteReader())
+                    while (r.Read()) nombres[Convert.ToInt32(r["Cliente_ID"])] = Convert.ToString(r["Razon_Social"]).Trim();
+            }
+            return nombres;
+        }
+
+        // Qué cambió, en palabras: "Balancín (3 ejes), 2019 en adelante, hasta 130 km, 1ª vuelta: $ 600.000,00 → $ 620.000,00".
+        private static List<string> Cambios(TablaGuardada a, TarifarioDto d, Dictionary<int, string> nombres)
+        {
+            var es = new CultureInfo("es-AR");
+            var c = new List<string>();
+            if (a.Datos.Nombre.Trim() != d.Nombre.Trim()) c.Add("el nombre: \"" + a.Datos.Nombre.Trim() + "\" → \"" + d.Nombre.Trim() + "\"");
+            if (a.Datos.Vigente_Desde.Date != d.Vigente_Desde.Value.Date)
+                c.Add("vigente desde: " + a.Datos.Vigente_Desde.ToString("dd/MM/yyyy") + " → " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy"));
+            bool todos = d.Para_Todos != false;
+            var nuevos = todos ? new List<int>() : d.Clientes.Where(x => x > 0).Distinct().ToList();
+            if (a.Datos.Para_Todos != todos)
+                c.Add(todos ? "pasa a ser para todos los clientes" : "pasa a ser solo para " + string.Join(", ", nuevos.Select(x => Nombre(nombres, x))));
+            else if (!todos)
+            {
+                var suma = nuevos.Except(a.Clientes).ToList();
+                var saca = a.Clientes.Except(nuevos).ToList();
+                if (suma.Any()) c.Add("se agrega " + string.Join(", ", suma.Select(x => Nombre(nombres, x))));
+                if (saca.Any()) c.Add("se saca " + string.Join(", ", saca.Select(x => Nombre(nombres, x))));
+            }
+            if (a.Datos.Km_Banda1 != d.Km_Banda1 || a.Datos.Km_Banda2 != d.Km_Banda2 || a.Datos.Km_Banda3 != d.Km_Banda3)
+                c.Add("las bandas: " + a.Datos.Km_Banda1 + " / " + a.Datos.Km_Banda2 + " / " + a.Datos.Km_Banda3 + " km → "
+                    + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km");
+            if (a.Datos.Estadia_Modulo != d.Estadia_Modulo)
+                c.Add("el módulo de estadía: " + TarifarioCalculo.Pesos(a.Datos.Estadia_Modulo) + " → " + TarifarioCalculo.Pesos(d.Estadia_Modulo));
+            if (a.Datos.Falso_Flete_Porcentaje != d.Falso_Flete_Porcentaje)
+                c.Add("el falso flete: " + a.Datos.Falso_Flete_Porcentaje.ToString("0.##", es) + " % → " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %");
+            foreach (var v in d.Valores)
+            {
+                var antes = a.Valores.FirstOrDefault(x => x.Modelo_Nuevo == v.Modelo_Nuevo && x.Tipo_Vehiculo == v.Tipo_Vehiculo.Trim());
+                if (antes == null) continue;
+                string fila = v.Tipo_Vehiculo.Trim() + ", " + Modelo(d.Anio_Corte, v.Modelo_Nuevo) + ", ";
+                Action<string, decimal, decimal> valor = (campo, x, y) => { if (x != y) c.Add(fila + campo + ": " + TarifarioCalculo.Pesos(x) + " → " + TarifarioCalculo.Pesos(y)); };
+                valor("hasta " + d.Km_Banda1 + " km, 1ª vuelta", antes.Valor_Banda1_Vuelta1, v.Valor_Banda1_Vuelta1);
+                valor("hasta " + d.Km_Banda1 + " km, 2ª vuelta", antes.Valor_Banda1_Vuelta2, v.Valor_Banda1_Vuelta2);
+                valor("hasta " + d.Km_Banda2 + " km", antes.Valor_Banda2, v.Valor_Banda2);
+                valor("hasta " + d.Km_Banda3 + " km", antes.Valor_Banda3, v.Valor_Banda3);
+                valor("por km", antes.Valor_Km, v.Valor_Km);
+            }
+            return c;
+        }
+
+        // "1 viaje y 1 presupuesto", o "0" si no hay ninguno.
+        private static string CantidadOCero(int viajes, int presupuestos)
+        {
+            return viajes + presupuestos == 0 ? "0" : Cantidad(viajes, presupuestos);
         }
 
         // " Se recalcularon 6 viajes y 1 presupuesto. Quedan 3 para revisar." (o nada).
@@ -677,7 +795,13 @@ namespace WebApi_TransporteSanchez.Controllers
             if (a.ViajesRecalculados > 0) partes.Add(a.ViajesRecalculados == 1 ? "1 viaje" : a.ViajesRecalculados + " viajes");
             if (a.PresupuestosRecalculados > 0) partes.Add(a.PresupuestosRecalculados == 1 ? "1 presupuesto" : a.PresupuestosRecalculados + " presupuestos");
             string texto = partes.Count == 0 ? "" : " Se " + (a.ViajesRecalculados + a.PresupuestosRecalculados == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
-            if (a.ParaRevisar > 0) texto += " " + (a.ParaRevisar == 1 ? "Queda 1 para revisar." : "Quedan " + a.ParaRevisar + " para revisar.");
+            // Qué quedó para revisar, con qué es (M2 de la prueba en la VM del 25/10).
+            var reenviar = a.Revisados.Where(i => i.Clase == "Presupuesto").ToList();
+            int enviados = a.Revisados.Count - reenviar.Count;
+            if (reenviar.Count == 1) texto += " El presupuesto #" + reenviar[0].Id + " queda para reenviar.";
+            else if (reenviar.Count > 1) texto += " " + reenviar.Count + " presupuestos quedan para reenviar.";
+            if (enviados == 1) texto += " 1 viaje que ya vio el cliente queda para revisar.";
+            else if (enviados > 1) texto += " " + enviados + " viajes que ya vio el cliente quedan para revisar.";
             int viajes = a.CambiaronDeTabla.Count(i => i.Clase == "Viaje"), presupuestos = a.CambiaronDeTabla.Count - viajes;
             if (viajes + presupuestos > 0)
                 texto += " " + Cantidad(viajes, presupuestos) + (viajes + presupuestos == 1 ? " pasó" : " pasaron") + " a otra tabla con el mismo importe.";
@@ -731,7 +855,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // otra para todos, o empieza más tarde), no se guarda: el viaje quedaría con una tabla que ya no le corresponde. El
         // detalle va por cliente, con cuántos y de qué fechas: así se ve qué cliente quedó afuera o qué fechas quedan sin tabla
         // (Rocío, 25/10). Hasta 5 clientes, los que más tienen primero.
-        private static List<object> ErroresSinTabla(TarifarioImpacto.Resultado impacto, bool paraTodos)
+        private static List<object> ErroresSinTabla(TarifarioImpacto.Resultado impacto, TarifarioDto dto)
         {
             var sinTabla = impacto.SinTabla;
             if (!sinTabla.Any()) return new List<object>();
@@ -752,10 +876,19 @@ namespace WebApi_TransporteSanchez.Controllers
             if (porCliente.Count > 5) detalle.Add("y " + (porCliente.Count - 5) + (porCliente.Count == 6 ? " cliente más" : " clientes más"));
 
             int viajes = sinTabla.Count(i => i.Clase == "Viaje");
-            return new List<object> { new { PropertyName = paraTodos ? "Vigente_Desde" : "Clientes",
+            var errores = new List<object> { new { PropertyName = "",
                 ErrorMessage = "No se puede guardar la tabla de tarifas: " + Cantidad(viajes, sinTabla.Count - viajes)
                     + (sinTabla.Count == 1 ? " quedaría" : " quedarían") + " sin tabla.",
                 Detalle = detalle } };
+            // Qué cambiar, debajo del campo (M8 de la prueba en la VM del 25/10): los anteriores a la fecha nueva quedan afuera por la
+            // fecha; los demás, por los clientes.
+            var porFecha = sinTabla.Where(i => i.SinTablaEl.Value.Date < dto.Vigente_Desde.Value.Date).ToList();
+            if (porFecha.Any())
+                errores.Add(new { PropertyName = "Vigente_Desde",
+                    ErrorMessage = "Para que no queden sin tabla, tiene que empezar el " + porFecha.Min(i => i.SinTablaEl.Value).ToString("dd/MM/yyyy") + " o antes." });
+            if (porFecha.Count < sinTabla.Count)
+                errores.Add(new { PropertyName = "Clientes", ErrorMessage = "Para que no queden sin tabla, volvé a elegir esos clientes." });
+            return errores;
         }
 
         // "3 viajes y 1 presupuesto".

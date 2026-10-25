@@ -94,6 +94,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int ParaRevisar { get; set; }
             public List<Item> Recalculados { get; set; }
             public List<Item> CambiaronDeTabla { get; set; }
+            public List<Item> Revisados { get; set; }        // lo que quedó para revisar con este cambio
         }
 
         // ------------------------------------------------------------ Lectura
@@ -261,6 +262,8 @@ WHERE v.TarifarioID IS NOT NULL";
             internal Dictionary<int, string> Clientes = new Dictionary<int, string>();
             // Viajes que ya quedaron para revisar por un cambio anterior, con el importe corregido de entonces.
             internal Dictionary<int, decimal?> Pendientes = new Dictionary<int, decimal?>();
+            // Presupuestos que quedaron para reenviar, con el importe que tenían antes del primer cambio.
+            internal Dictionary<int, decimal?> PresupuestosPendientes = new Dictionary<int, decimal?>();
         }
 
         // Qué pasaría al guardar la tabla (id = 0 si es nueva). No escribe nada.
@@ -284,7 +287,12 @@ WHERE v.TarifarioID IS NOT NULL";
                     "SELECT Viaje_ID, Importe_Nuevo FROM dbo.TARIFARIO_REVISAR WHERE Resuelto_Fecha IS NULL AND Viaje_ID IS NOT NULL " +
                     "AND Tipo IN (N'Proforma', N'Comprobante') ORDER BY Revisar_ID",
                     r => new KeyValuePair<int, decimal?>(Int(r, "Viaje_ID"), DecN(r, "Importe_Nuevo")))
-                    .GroupBy(x => x.Key).ToDictionary(g => g.Key, g => g.Last().Value)
+                    .GroupBy(x => x.Key).ToDictionary(g => g.Key, g => g.Last().Value),
+                PresupuestosPendientes = Leer(cn, tx,
+                    "SELECT Presupuesto_ID, Importe_Anterior FROM dbo.TARIFARIO_REVISAR WHERE Resuelto_Fecha IS NULL AND Presupuesto_ID IS NOT NULL " +
+                    "AND Tipo = N'Presupuesto' ORDER BY Revisar_ID",
+                    r => new KeyValuePair<int, decimal?>(Int(r, "Presupuesto_ID"), DecN(r, "Importe_Anterior")))
+                    .GroupBy(x => x.Key).ToDictionary(g => g.Key, g => g.First().Value)
             };
             return Calcular(d, id, editada);
         }
@@ -307,7 +315,7 @@ WHERE v.TarifarioID IS NOT NULL";
             foreach (var v in d.Viajes)
                 AgregarViaje(resultado, v, tablas, editadaId, d.Camiones, d.Salidas, d.Pendientes);
             foreach (var p in d.Presupuestos)
-                AgregarPresupuesto(resultado, p.Key, p.Value, tablas, editadaId, d.Camiones, d.Salidas, d.Clientes);
+                AgregarPresupuesto(resultado, p.Key, p.Value, tablas, editadaId, d.Camiones, d.Salidas, d.Clientes, d.PresupuestosPendientes);
 
             resultado.Items = resultado.Items
                 .OrderBy(i => OrdenGrupo(i.Grupo)).ThenBy(i => i.Clase == "Viaje" ? 0 : 1).ThenBy(i => i.Id).ToList();
@@ -399,6 +407,9 @@ WHERE v.TarifarioID IS NOT NULL";
 
             if (v.Presupuesto_ID.HasValue)
             {
+                // Tiene el precio aceptado: solo se nombra si con el cambio le correspondería otra tabla (M26 de la prueba en la
+                // VM del 25/10: lo que no cambia nada no se lista).
+                if (idDespues == v.TarifarioID) return;
                 item.Grupo = Conserva;
                 item.Que_Pasa = "Precio aceptado en el presupuesto #" + v.Presupuesto_ID + ".";
                 item.Importe_Nuevo = v.Importe;
@@ -505,7 +516,7 @@ WHERE v.TarifarioID IS NOT NULL";
         }
 
         private static void AgregarPresupuesto(Resultado res, int presupuestoId, string datos, List<Tabla> tablas, int editadaId,
-            Dictionary<int, Camion> camiones, List<Salida> salidas, Dictionary<int, string> clientes)
+            Dictionary<int, Camion> camiones, List<Salida> salidas, Dictionary<int, string> clientes, Dictionary<int, decimal?> pendientes)
         {
             JObject json;
             try { json = Json(datos); }
@@ -581,7 +592,10 @@ WHERE v.TarifarioID IS NOT NULL";
 
             item.Grupo = Recalcula;
             item.TipoRevisar = "Presupuesto";
-            item.Que_Pasa = PasaA(tarifarioId, despues, "Reenviáselo si ya se lo mandaste.");
+            // Si quedaba para reenviar y con este cambio vuelve al importe que tenía, ya no hay que reenviarlo (M3, en parte).
+            decimal? antes;
+            bool vuelve = pendientes.TryGetValue(presupuestoId, out antes) && antes == calculo.ImporteBase;
+            item.Que_Pasa = PasaA(tarifarioId, despues, vuelve ? "Vuelve al importe que tenía." : "Reenviáselo si ya se lo mandaste.");
             res.Items.Add(item);
         }
 
@@ -592,7 +606,7 @@ WHERE v.TarifarioID IS NOT NULL";
         public static Aplicado Aplicar(SqlConnection cn, SqlTransaction tx, Resultado r, int tarifarioId, string tabla, bool alta,
             string motivo, string usuario, DateTime ahora)
         {
-            var aplicado = new Aplicado { Recalculados = new List<Item>(), CambiaronDeTabla = new List<Item>() };
+            var aplicado = new Aplicado { Recalculados = new List<Item>(), CambiaronDeTabla = new List<Item>(), Revisados = new List<Item>() };
 
             foreach (var item in r.SoloDetalle)
                 GuardarTablaYDetalle(cn, tx, item, tarifarioId);
@@ -643,7 +657,10 @@ WHERE v.TarifarioID IS NOT NULL";
                 }
 
                 if (item.TipoRevisar != null && RegistrarRevisar(cn, tx, aplicado.CambioID, item, ahora, usuario))
+                {
                     aplicado.ParaRevisar++;
+                    aplicado.Revisados.Add(item);
+                }
             }
 
             foreach (var item in r.Items.Where(i => i.Grupo == CambiaTabla))

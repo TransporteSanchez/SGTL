@@ -384,6 +384,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   probá de nuevo."
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
   **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
+- **"Revisá los campos marcados." se va solo** cuando ya no queda ningún campo en rojo (25/10, `SGTL.avisoFormulario`).
+  Un error de la API que es de un campo va debajo de ese campo, no arriba (por ejemplo, una fecha repetida).
 - **Error que alcanza a varias cosas** (25/10, tarifas): una línea general con el total y, debajo, la lista agrupada por lo
   que sirve para corregirlo (`SGTL.avisoFormulario(aviso, texto, detalle)`), no "el primero y N más" ni una fila por cada
   cosa. Por ejemplo, al guardar una tabla de tarifas que dejaría viajes sin tabla: "No se puede guardar la tabla de
@@ -495,7 +497,8 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   - el cursor va al primer campo con error.
 - **Cada campo se valida al salir de él**, no en cada tecla, y el rojo se va apenas se corrige.
 - **Opción vacía de los desplegables:** "Seleccioná un cliente" (voseo).
-- **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros.
+- **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros. Enter
+  elige la opción resaltada o, si lo escrito deja una sola, esa (25/10).
   Al hacer clic muestra la lista completa, que se recorre con la rueda o las flechas (Enter elige); escribir
   filtra por cualquier parte del texto (nombre, apellido o DNI). No hace falta saberse el dato de memoria (22/10).
   Una etiqueta de la opción ("Rukas") se ve en la lista y, elegida, adentro del mismo campo, no debajo.

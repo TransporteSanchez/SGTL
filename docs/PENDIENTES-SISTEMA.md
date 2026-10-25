@@ -3456,6 +3456,38 @@ mejoras para que decida Rocío.
   tabla de prueba primera en la lista ("Viene con los valores de "Tarifas a agosto 2026"…"); agosto → "Solo algunos
   clientes" sin guardar: los viajes 25 y 26 ya no dicen "Nota de crédito sobre FAC-00000010.".
 
+**Mejoras de la tanda 1 hechas en la Mac (25/10, "sí a lo recomendado"), sin probar en la VM:**
+- Gestionar tarifas: encabezado en una línea con "Registrar tabla de tarifas" a la derecha (M14); Vigencia centrada (M27);
+  Registrar dice 'Viene con los valores de "…", la última para todos los clientes: cambiá los que subieron.' (M4); "1
+  cliente elegido: Alimentos La Serena S.A." (o los primeros y "y N más"), sin "Todavía no elegiste…", y el rojo en la
+  lista (M11); al pasar una general a algunos: 'Vale solo para los clientes que elijas. Los demás clientes pasan a "…", la
+  anterior: sus viajes desde el … se calculan con esos valores.' (M12); eliminar una propia: '… vuelve a "Tarifas a agosto
+  2026".' con los nombres (M13); "Revisá estos valores" con una frase por regla ("la 2ª vuelta hasta 130 km (…) es más
+  cara que la 1ª (…)") y las dos celdas con borde amarillo (M17).
+- Errores al guardar: la fecha repetida va debajo de "Vigente desde" y se va al cambiar la fecha o los clientes (M9); los
+  viajes sin tabla siguen arriba con la lista y, debajo del campo, qué cambiar ("Para que no queden sin tabla, tiene que
+  empezar el dd/mm/aaaa o antes." o "volvé a elegir esos clientes.") (M8).
+- "Revisá los campos marcados." se va solo cuando ya no queda ningún campo en rojo, en todas las pantallas (M10,
+  `SGTL.avisoFormulario`).
+- Confirmación: un viaje de presupuesto aceptado solo aparece si con el cambio le correspondería otra tabla (M26); un
+  presupuesto que vuelve al importe que tenía dice "Vuelve al importe que tenía." (M3, en parte; saber si se envió queda
+  para después). Aviso al guardar: "El presupuesto #10 queda para reenviar." / "N viajes que ya vio el cliente quedan para
+  revisar." (M2).
+- Auditoría de la tabla: "Cambió: …" con cada valor en palabras ("Balancín (3 ejes), 2019 en adelante, hasta 130 km, 1ª
+  vuelta: $ 600.000,00 → $ 620.000,00"), los clientes por su nombre y las filas como "2018 o anterior · Furgón" (M7).
+- Tarjeta: 'Corrección de "Tarifas a agosto 2026" del …: motivo.', "Pendiente · 1" / "Pendientes · N" en lugar de "Hoy", y
+  vacía, la frase sola, sin los títulos (M5). Editar presupuesto: "Reenviáselo desde Ver PDF → Enviar por e-mail." (M6).
+- Viajes: la línea del importe dice "sin IVA" y "Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ … · falso
+  flete (60 %): $ … · estadía (1 módulo): $ …" (M15; el mismo texto en la API, en la pantalla y en el `04`); el aviso de un
+  viaje que ya salió: "Ya salió: se completan el remito, el falso flete y la estadía. Si cambia el recorrido, registrá otro
+  viaje." (M16); en los buscadores de cliente y chofer, Enter elige la única coincidencia (M19, en todas las pantallas).
+- **Para que los viajes ya guardados muestren el texto nuevo (M15):** Rocío vuelve a correr
+  `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` (tal cual: "Falta" vacía y los importes nuevos iguales a los de
+  hoy; después `@Aplicar = 1` y `COMMIT;`). Solo cambia el texto del detalle: los importes quedan iguales.
+- Quedan para después: M24 (buscador de clientes en Gestionar orígenes y destinos) y M25 (la hora del recálculo en UTC,
+  con la §2).
+- **Probar en la VM:** lo de arriba, pantalla por pantalla, con la misma mirada de usabilidad.
+
 **F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
 por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
 VM en los dos puertos** (Rocío quiere que funcione en los dos): reiniciar el servidor después del `pull`, registrar un

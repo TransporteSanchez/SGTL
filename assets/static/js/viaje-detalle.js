@@ -108,7 +108,7 @@
     var asignacion = par(dato('Inicio', texto(SGTL.fecha(v.Fecha_Inicio, { hora: true }))), dato('Fin', texto(SGTL.fecha(v.Fecha_Fin, { hora: true })))) +
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
-    var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">neto · ' + esc(imp.detalle) + '</span>'
+    var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">sin IVA · ' + esc(imp.detalle) + '</span>'
       : 'Sin tarifa asignada.');
 
     var entregado = !!(v.Resultado_Entrega || v.Fecha_Entrega);

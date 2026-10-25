@@ -43,7 +43,8 @@
   // De dónde salió, corto (para el tablero): "Corrección del 25/10/2026: el valor … estaba mal cargado."
   function causa(r) {
     var motivo = (r.Motivo || '').trim().replace(/\.$/, '');
-    return (r.Tipo_Cambio === 'Tabla nueva' ? 'Tabla nueva "' + r.Tabla + '"' : 'Corrección') + ' del ' + window.SGTL.fecha(r.Fecha) +
+    // La tabla siempre nombrada (M5 de la prueba en la VM del 25/10): 'Corrección de "Tarifas a agosto 2026" del 25/10/2026: …'.
+    return (r.Tipo_Cambio === 'Tabla nueva' ? 'Tabla nueva "' + r.Tabla + '"' : 'Corrección de "' + r.Tabla + '"') + ' del ' + window.SGTL.fecha(r.Fecha) +
       (motivo ? ': ' + motivo : '') + '.';
   }
 
@@ -65,7 +66,8 @@
     } else {
       titulo = 'Cambió la tarifa' + (opciones.enLaProforma && r.Viaje_ID ? ' del viaje #' + r.Viaje_ID : '') + ': ' + cambio(r);
     }
-    if (r.Tipo === 'Presupuesto') queHacer = 'Reenviáselo al cliente con "Enviar por e-mail".';
+    // opciones.enEditar: en Editar presupuesto no está "Enviar por e-mail" (M6, 25/10).
+    if (r.Tipo === 'Presupuesto') queHacer = opciones.enEditar ? 'Reenviáselo desde Ver PDF → Enviar por e-mail.' : 'Reenviáselo al cliente con "Enviar por e-mail".';
     else if (r.Tipo === 'Proforma') queHacer = opciones.enLaProforma ? 'Para corregirla, anulala y generala de nuevo.'
       : 'Para corregir la proforma ' + (r.Documento || '') + ', anulala y generala de nuevo.';
     else {
@@ -132,7 +134,9 @@
     var cuerpo = contenedor.querySelector('tbody');
     var cantidad = contenedor.querySelector('[data-sgtl="cantidad"]');
     cargar().then(function (filas) {
-      cantidad.textContent = filas.length ? 'Hoy · ' + filas.length + ' para revisar' : 'Hoy';
+      // "Pendiente · 1" (con "Hoy" parecía que era solo lo de hoy) y, vacía, la frase sola, sin los títulos (M5, 25/10).
+      cantidad.textContent = filas.length ? (filas.length === 1 ? 'Pendiente · 1' : 'Pendientes · ' + filas.length) : '';
+      contenedor.querySelector('thead').hidden = !filas.length;
       cuerpo.innerHTML = filas.length ? filas.map(filaTarjeta).join('')
         : '<tr><td colspan="4" class="text-center text-muted py-4"><i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>' +
           'No hay nada para revisar por cambios de tarifa.</td></tr>';
@@ -189,7 +193,7 @@
         : '';
       contenedor.innerHTML = '<div class="card rounded custom-card dash-tarjeta sgtl-cambios-tarifa" data-tablero="cambiostarifa">' +
         '<div class="card-header"><i class="bi bi-exclamation-circle text-danger" aria-hidden="true"></i><h5>Cambios de tarifa para revisar</h5>' +
-        '<span class="dash-alcance" data-sgtl="cantidad">Hoy</span>' + estrella + '</div>' +
+        '<span class="dash-alcance" data-sgtl="cantidad"></span>' + estrella + '</div>' +
         '<div class="card-body p-0"><table class="table table-striped table-hover dash-tabla mb-0"><thead><tr><th>Documento</th>' +
         '<th class="text-end">Importe</th><th class="d-none d-md-table-cell">Qué hacer</th><th class="text-center">Acciones</th></tr></thead>' +
         '<tbody><tr><td colspan="4" class="text-center text-muted py-4">Cargando…</td></tr></tbody></table></div></div>';

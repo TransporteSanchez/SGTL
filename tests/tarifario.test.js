@@ -105,7 +105,9 @@ function probarGrillaComoElPdf() {
     assert.ok(tarifas.indexOf('id="trCorte"') === -1 && /<div class="sgtl-dato-fijo" id="trModelos"/.test(tarifas), 'el año de los modelos se ve como texto');
     assert.ok(/Anio_Corte: anioCorte,/.test(tarifas), 'el año de corte se guarda con la tabla');
     // Aviso que no impide guardar (Rocío, 25/10): la 2ª vuelta no más cara que la 1ª y cada banda no más barata que la anterior.
-    assert.ok(/\[\['v2', 'v1', 'más cara'\], \['b2', 'v1', 'más barata'\], \['b3', 'b2', 'más barata'\]\]/.test(tarifas)
+    // Con una frase por regla y las dos celdas marcadas en amarillo (M17 de la prueba en la VM del 25/10).
+    assert.ok(/\['v2', 'v1', 'más cara', function/.test(tarifas) && /\['b2', 'v1', 'más barata', function/.test(tarifas)
+        && /\['b3', 'b2', 'más barata', function/.test(tarifas) && /addClass\('border-warning'\)/.test(tarifas)
         && tarifas.indexOf('Si están bien, se puede guardar igual.') !== -1, 'avisa si los valores no suben como en el PDF');
     assert.ok(!/revisarValores\(\)[^;]*return false/.test(tarifas) && !/avisoValoresTarifario[\s\S]{0,200}revisarFormulario/.test(tarifas),
         'el aviso no bloquea el guardado');
@@ -158,8 +160,9 @@ function probarParaRevisar() {
 
     const presupuestos = leer('assets/static/js/presupuestos.js');
     assert.ok(presupuestos.indexOf("'Cambió la tarifa: revisalo en Ver PDF.'") !== -1, 'Presupuestos: el ícono manda a Ver PDF');
-    assert.ok(/el\('vistaPresupuestoCambio'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos),
-        'Presupuestos: el aviso en Ver PDF y en Editar');
+    assert.ok(/el\('vistaPresupuestoCambio'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p, \{ enEditar: true \}\)/.test(presupuestos)
+        && modulo.indexOf("'Reenviáselo desde Ver PDF → Enviar por e-mail.'") !== -1,
+        'Presupuestos: el aviso en Ver PDF y en Editar (en Editar, dice que se reenvía desde Ver PDF)');
     assert.ok(/SGTLCambiosTarifa\.presupuestoEnviado\(enviadoId\)/.test(presupuestos) && /\/Tarifario\/Revisar\/Presupuesto\/' \+ encodeURIComponent\(id\) \+ '\/Enviado'/.test(modulo),
         'Presupuestos: enviarlo por e-mail lo resuelve');
     assert.ok(/<script src="assets\/static\/js\/cambios-tarifa\.js"><\/script><script src="assets\/static\/js\/presupuestos\.js">/.test(leer('presupuestos.html')),
@@ -310,10 +313,11 @@ function probarCambiarClientes() {
     assert.ok(/function avisoFormulario\(objetivo, texto, detalle\)/.test(ui) && /lista\.className = 'sgtl-aviso-lista'/.test(ui),
         'el aviso del formulario muestra el detalle como lista');
     const pantalla = leer('gestion-tarifas.html');
-    assert.ok(/mensajeTarifa\(error, 'No se pudo guardar la tabla de tarifas\. Probá de nuevo\.'\), detalleTarifa\(error\)\)/.test(pantalla),
-        'la pantalla pasa el detalle del error al aviso');
+    assert.ok(/mostrarErrorTarifa\(error, 'No se pudo guardar la tabla de tarifas\. Probá de nuevo\.'\);/.test(pantalla)
+        && /SGTL\.avisoFormulario\('#avisoTarifario', arriba \|\| \(enCampo \? 'Revisá los campos marcados\.' : porDefecto\), detalle\);/.test(pantalla),
+        'la pantalla pone el detalle del error arriba y lo de la fecha o los clientes debajo del campo');
     assert.ok(/id="trAlcanceFijo"/.test(pantalla) && /unicaGeneral = !!\(fila && fila\.Unica_General\)/.test(pantalla), 'la única para todos muestra los clientes como texto');
-    assert.ok(/Los demás clientes vuelven a "/.test(pantalla), 'la ayuda dice a qué tabla vuelven los demás clientes');
+    assert.ok(/Los demás clientes pasan a "/.test(pantalla), 'la ayuda dice a qué tabla pasan los demás clientes (M12)');
     // En la lista (25/10): la general dice "Todos los clientes" sin más; la de varios clientes, "N clientes" con el globito.
     assert.ok(/if \(t\.Para_Todos\) return 'Todos los clientes';/.test(pantalla) && /nombres\.length \+ ' clientes'/.test(pantalla)
         && /'Ver los clientes de ' \+ t\.Nombre/.test(pantalla), 'la columna Clientes: todos, el cliente o "N clientes" con el globito');
