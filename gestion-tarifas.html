@@ -479,11 +479,21 @@
                 <td class="text-end">${viajes}</td>
                 <td class="text-center">${SGTL.accionesFila([
                     SGTL.botonFila('editar', { id: t.Tarifario_ID }),
-                    SGTL.botonFila('eliminar', viajes > 0
-                        ? { id: t.Tarifario_ID, deshabilitado: true, motivo: 'No se puede eliminar la tabla de tarifas: la ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') }
+                    SGTL.botonFila('eliminar', motivoNoEliminar(t)
+                        ? { id: t.Tarifario_ID, deshabilitado: true, motivo: motivoNoEliminar(t) }
                         : { id: t.Tarifario_ID })
                 ])}</td>
             </tr>`;
+        }
+
+        // Por qué no se puede eliminar (las mismas reglas que la API): la usan viajes o presupuestos pendientes o aceptados, o es
+        // la única para todos los clientes. Si se puede, la anterior vuelve a valer hasta la siguiente.
+        function motivoNoEliminar(t) {
+            const viajes = Number(t.Viajes) || 0, presupuestos = Number(t.Presupuestos) || 0;
+            if (viajes > 0) return 'No se puede eliminar la tabla de tarifas: la ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes');
+            if (presupuestos > 0) return 'No se puede eliminar la tabla de tarifas: la ' + (presupuestos === 1 ? 'usa 1 presupuesto' : 'usan ' + presupuestos + ' presupuestos');
+            if (t.Unica_General) return 'No se puede eliminar la tabla de tarifas: es la única para todos los clientes';
+            return '';
         }
 
         function listarTarifario() {
@@ -780,11 +790,27 @@
             return html + '</table></div>';
         }
 
+        // Qué tabla vale en su lugar: la anterior del mismo alcance, hasta donde llegaba la que se elimina (o sin fecha de fin).
+        // En una propia sin anterior, sus clientes vuelven a la tabla para todos.
+        function queQuedaAlEliminar(t) {
+            if (!t) return '';
+            const mismoAlcance = function (x) {
+                if (t.Para_Todos !== false) return x.Para_Todos !== false;
+                const propios = (t.Clientes || []).map(function (c) { return c.Cliente_ID; });
+                return x.Para_Todos === false && (x.Clientes || []).some(function (c) { return propios.indexOf(c.Cliente_ID) !== -1; });
+            };
+            const anterior = tarifarios.filter(function (x) {
+                return x.Tarifario_ID !== t.Tarifario_ID && mismoAlcance(x) && dia(x.Vigente_Desde) < dia(t.Vigente_Desde);
+            }).sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? 1 : -1; })[0];
+            if (anterior) return ' "' + anterior.Nombre + '" vuelve a valer' + (t.Vigente_Hasta ? ' hasta el ' + SGTL.fecha(t.Vigente_Hasta) + '.' : ', sin fecha de fin.');
+            return t.Para_Todos === false ? ' Sus clientes vuelven a la tabla para todos los clientes.' : '';
+        }
+
         function eliminarTarifario(id) {
             const t = tarifarios.filter(function (x) { return x.Tarifario_ID === id; })[0];
             SGTL.confirmar({
                 titulo: '¿Eliminar la tabla de tarifas "' + (t ? t.Nombre : '#' + id) + '"?',
-                mensaje: 'No se puede deshacer.',
+                mensaje: 'No se puede deshacer.' + queQuedaAlEliminar(t),
                 verbo: 'Eliminar',
                 peligro: true,
                 accion: function () {

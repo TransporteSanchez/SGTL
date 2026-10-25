@@ -66,6 +66,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool Para_Todos { get; set; }
             public DateTime? Vigente_Hasta { get; set; }
             public int Viajes { get; set; }
+            public int Presupuestos { get; set; }       // pendientes o aceptados sin viaje que la usan
+            public bool Unica_General { get; set; }     // la única para todos los clientes
             public DateTime Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
         }
@@ -101,7 +103,11 @@ namespace WebApi_TransporteSanchez.Controllers
             " AND ((t.Para_Todos = 1 AND s.Para_Todos = 1) OR (t.Para_Todos = 0 AND s.Para_Todos = 0 AND EXISTS (" +
             "  SELECT 1 FROM dbo.TARIFARIO_CLIENTES a JOIN dbo.TARIFARIO_CLIENTES b ON b.ClienteID = a.ClienteID " +
             "  WHERE a.Tarifario_ID = t.Tarifario_ID AND b.Tarifario_ID = s.Tarifario_ID)))) AS Vigente_Hasta, " +
-            "(SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifarioID = t.Tarifario_ID) AS Viajes, t.Fecha_Modi, t.Usu_Modi " +
+            "(SELECT COUNT(*) FROM dbo.VIAJES v WHERE v.TarifarioID = t.Tarifario_ID) AS Viajes, " +
+            "(SELECT COUNT(*) FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID IS NULL AND ps.Estado IN ('Pendiente', 'Aceptado') AND ISJSON(ps.Datos) = 1 " +
+            " AND TRY_CAST(JSON_VALUE(ps.Datos, '$.tarifarioId') AS int) = t.Tarifario_ID) AS Presupuestos, " +
+            "CAST(CASE WHEN t.Para_Todos = 1 AND NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS o WHERE o.Para_Todos = 1 AND o.Tarifario_ID <> t.Tarifario_ID) " +
+            " THEN 1 ELSE 0 END AS bit) AS Unica_General, t.Fecha_Modi, t.Usu_Modi " +
             "FROM dbo.TARIFARIOS t ";
 
         private const string SELECT_CLIENTES =
@@ -123,7 +129,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     var conTablaPropia = clientes.GroupBy(c => c.Cliente_ID).Select(g => g.First().Razon_Social).OrderBy(n => n).ToList();
                     return Ok(tablas.Select(t => new
                     {
-                        t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Vigente_Hasta, t.Para_Todos, t.Viajes, t.Fecha_Modi, t.Usu_Modi,
+                        t.Tarifario_ID, t.Nombre, t.Vigente_Desde, t.Vigente_Hasta, t.Para_Todos, t.Viajes, t.Presupuestos, t.Unica_General,
+                        t.Fecha_Modi, t.Usu_Modi,
                         Clientes = clientes.Where(c => c.Tarifario_ID == t.Tarifario_ID).OrderBy(c => c.Razon_Social)
                             .Select(c => new { c.Cliente_ID, c.Razon_Social }).ToList(),
                         Clientes_Con_Tabla_Propia = t.Para_Todos ? conTablaPropia : new List<string>()
@@ -597,7 +604,9 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        // DELETE api/Tarifario/{id}: solo si ningún viaje lo usa.
+        // DELETE api/Tarifario/{id}: solo si no la usa ningún viaje ni un presupuesto pendiente o aceptado (sin la tabla no se
+        // podría generar su viaje), y si no es la única para todos los clientes (sin ella no quedaría tarifa). Al eliminarla,
+        // la anterior vuelve a valer hasta la siguiente: el "hasta" se calcula, no se guarda.
         [HttpDelete]
         [Route("api/Tarifario/{id:int}")]
         public IHttpActionResult Eliminar(int id, string usuario = null)
@@ -609,7 +618,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     var t = db.Database.SqlQuery<ListaRow>(SELECT_LISTA + "WHERE t.Tarifario_ID=@id", P("@id", id)).FirstOrDefault();
                     if (t == null) return NotFound();
                     if (t.Viajes > 0)
-                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar la tabla de tarifas: la usan " + t.Viajes + (t.Viajes == 1 ? " viaje." : " viajes.") });
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar la tabla de tarifas: la " + (t.Viajes == 1 ? "usa 1 viaje." : "usan " + t.Viajes + " viajes.") });
+                    if (t.Presupuestos > 0)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar la tabla de tarifas: la " + (t.Presupuestos == 1 ? "usa 1 presupuesto." : "usan " + t.Presupuestos + " presupuestos.") });
+                    if (t.Unica_General)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar la tabla de tarifas: es la única para todos los clientes." });
                     db.Database.ExecuteSqlCommand("DELETE FROM dbo.TARIFARIOS WHERE Tarifario_ID=@id", P("@id", id));
                     var u = Usuario(usuario);
                     SGTLAuditContext.RegistrarEvento(Cn(), u.Length > 20 ? u.Substring(0, 20) : u, "DELETE", "TARIFARIOS", "Tarifario_ID=" + id,

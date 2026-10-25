@@ -2814,7 +2814,11 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   no deja dos generales que empiecen el mismo día, ni dos propias de un mismo cliente. **Vigente hasta** (Rocío, 25/10):
   no se carga ni se guarda; es el día antes de la tabla siguiente del mismo alcance, así nunca queda un día sin tabla ni
   se desacomoda si la siguiente cambia de fecha. El formulario lo muestra como texto al lado de "Vigente desde" ("30/09/2026
-  · Después: Tarifas a octubre 2026" o "Sin fecha de fin · Hasta que se cargue la próxima"). "Registrar tabla de tarifas" viene
+  · Después: Tarifas a octubre 2026" o "Sin fecha de fin · Hasta que se cargue la próxima"). **Eliminar** (Rocío, 25/10):
+  solo si no la usa ningún viaje ni un presupuesto pendiente o aceptado sin viaje (sin la tabla no se podría generar el
+  viaje), y si no es la única para todos los clientes; si no, el botón queda deshabilitado con el motivo. Al eliminarla,
+  la anterior vuelve a valer ("No se puede deshacer. "Tarifas a octubre 2026" vuelve a valer, sin fecha de fin."): nunca
+  queda un día sin tabla. "Registrar tabla de tarifas" viene
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
   hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con

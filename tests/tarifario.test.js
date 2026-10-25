@@ -276,6 +276,17 @@ function probarSinTarifasViejas() {
     assert.ok(!/Usu_Modi|Fecha_Modi|FechaModificacion/.test(migracion), '04 no cambia la fecha ni el usuario de la última modificación');
 }
 
+// Eliminar una tabla (Rocío, 25/10): no si la usan viajes o presupuestos pendientes o aceptados, ni si es la única para
+// todos los clientes; la anterior vuelve a valer (el "hasta" se calcula).
+function probarEliminar() {
+    const api = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
+    assert.ok(/if \(t\.Presupuestos > 0\)/.test(api) && /if \(t\.Unica_General\)/.test(api), 'la API no deja eliminar una tabla que usan presupuestos ni la única general');
+    const pantalla = leer('gestion-tarifas.html');
+    assert.ok(/function motivoNoEliminar\(t\)/.test(pantalla) && /deshabilitado: true, motivo: motivoNoEliminar\(t\)/.test(pantalla),
+        'el botón Eliminar queda deshabilitado con el motivo');
+    assert.ok(/'No se puede deshacer\.' \+ queQuedaAlEliminar\(t\)/.test(pantalla), 'la confirmación dice qué tabla vale en su lugar');
+}
+
 function probarProyecto() {
     const csproj = leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj');
     ['Controllers\\TarifarioController.cs', 'Tarifas\\TarifarioCalculo.cs'].forEach(function (archivo) {
@@ -297,5 +308,6 @@ probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();
 probarSinTarifasViejas();
+probarEliminar();
 probarProyecto();
 console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de enero y agosto 2026 y el importe guardado del viaje');
