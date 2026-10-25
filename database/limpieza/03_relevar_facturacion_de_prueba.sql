@@ -44,9 +44,10 @@ ORDER BY Tipo, Estado;
 
 PRINT '--- 2. Tablas que dependen (por clave foránea)';
 IF OBJECT_ID('tempdb..#Dependencias') IS NOT NULL DROP TABLE #Dependencias;
--- Con la intercalación de la base: la de tempdb (SQL_Latin1_General_CP1_CI_AS) no se puede comparar con la de la base
--- (Modern_Spanish_CI_AS).
-CREATE TABLE #Dependencias (Nivel int, Tabla sysname COLLATE DATABASE_DEFAULT, Columnas nvarchar(400) COLLATE DATABASE_DEFAULT, Apunta_a sysname COLLATE DATABASE_DEFAULT, Clave sysname COLLATE DATABASE_DEFAULT, Filas int NULL);
+-- Las tablas se comparan por su número (object_id), no por el nombre: en Azure, los nombres del catálogo
+-- (SQL_Latin1_General_CP1_CI_AS) y los de la base (Modern_Spanish_CI_AS) no se pueden comparar.
+CREATE TABLE #Dependencias (Nivel int, TablaID int, Tabla nvarchar(128) COLLATE DATABASE_DEFAULT, Columnas nvarchar(400) COLLATE DATABASE_DEFAULT,
+    Apunta_a nvarchar(128) COLLATE DATABASE_DEFAULT, Clave nvarchar(128) COLLATE DATABASE_DEFAULT, Filas int NULL);
 
 ;WITH Base AS (
     SELECT OBJECT_ID(N'dbo.PROFORMAS') AS Objeto
@@ -61,8 +62,8 @@ Arbol AS (
     FROM sys.foreign_keys fk JOIN Arbol a ON fk.referenced_object_id = a.Hija
     WHERE fk.parent_object_id <> fk.referenced_object_id AND a.Nivel < 4
 )
-INSERT INTO #Dependencias (Nivel, Tabla, Columnas, Apunta_a, Clave)
-SELECT MIN(a.Nivel), OBJECT_NAME(a.Hija),
+INSERT INTO #Dependencias (Nivel, TablaID, Tabla, Columnas, Apunta_a, Clave)
+SELECT MIN(a.Nivel), a.Hija, OBJECT_NAME(a.Hija),
        (SELECT STRING_AGG(COL_NAME(fc.parent_object_id, fc.parent_column_id), N', ')
         FROM sys.foreign_key_columns fc WHERE fc.constraint_object_id = a.Clave),
        OBJECT_NAME(a.Madre), OBJECT_NAME(a.Clave)
@@ -70,24 +71,24 @@ FROM Arbol a
 GROUP BY a.Hija, a.Madre, a.Clave;
 
 -- Las que apuntan a sí mismas (una nota de crédito a su comprobante, un movimiento a otro), para tenerlas en cuenta.
-INSERT INTO #Dependencias (Nivel, Tabla, Columnas, Apunta_a, Clave)
-SELECT 0, OBJECT_NAME(fk.parent_object_id),
+INSERT INTO #Dependencias (Nivel, TablaID, Tabla, Columnas, Apunta_a, Clave)
+SELECT 0, fk.parent_object_id, OBJECT_NAME(fk.parent_object_id),
        (SELECT STRING_AGG(COL_NAME(fc.parent_object_id, fc.parent_column_id), N', ')
         FROM sys.foreign_key_columns fc WHERE fc.constraint_object_id = fk.object_id),
        OBJECT_NAME(fk.referenced_object_id), fk.name
 FROM sys.foreign_keys fk
 WHERE fk.parent_object_id = fk.referenced_object_id
-  AND OBJECT_NAME(fk.parent_object_id) IN (SELECT Tabla FROM #Dependencias UNION SELECT N'PROFORMAS' UNION SELECT N'COMPROBANTES');
+  AND fk.parent_object_id IN (SELECT TablaID FROM #Dependencias UNION SELECT OBJECT_ID(N'dbo.PROFORMAS') UNION SELECT OBJECT_ID(N'dbo.COMPROBANTES'));
 
-DECLARE @tabla sysname, @sql nvarchar(max);
-DECLARE tablas CURSOR LOCAL FAST_FORWARD FOR SELECT DISTINCT Tabla FROM #Dependencias;
+DECLARE @tablaID int, @tabla sysname, @sql nvarchar(max);
+DECLARE tablas CURSOR LOCAL FAST_FORWARD FOR SELECT DISTINCT TablaID FROM #Dependencias;
 OPEN tablas;
-FETCH NEXT FROM tablas INTO @tabla;
+FETCH NEXT FROM tablas INTO @tablaID;
 WHILE @@FETCH_STATUS = 0
 BEGIN
-    SET @sql = N'UPDATE #Dependencias SET Filas = (SELECT COUNT(*) FROM dbo.' + QUOTENAME(@tabla) + N') WHERE Tabla = @t;';
-    EXEC sp_executesql @sql, N'@t sysname', @t = @tabla;
-    FETCH NEXT FROM tablas INTO @tabla;
+    SET @sql = N'UPDATE #Dependencias SET Filas = (SELECT COUNT(*) FROM dbo.' + QUOTENAME(OBJECT_NAME(@tablaID)) + N') WHERE TablaID = @id;';
+    EXEC sp_executesql @sql, N'@id int', @id = @tablaID;
+    FETCH NEXT FROM tablas INTO @tablaID;
 END;
 CLOSE tablas;
 DEALLOCATE tablas;
@@ -98,30 +99,29 @@ SELECT Nivel, Tabla, Columnas, Apunta_a, Clave, Filas FROM #Dependencias ORDER B
 
 PRINT '--- 3. Columnas que guardan una proforma o un comprobante sin clave foránea';
 IF OBJECT_ID('tempdb..#Sueltas') IS NOT NULL DROP TABLE #Sueltas;
-CREATE TABLE #Sueltas (Tabla sysname COLLATE DATABASE_DEFAULT, Columna sysname COLLATE DATABASE_DEFAULT, Filas_con_dato int NULL);
+CREATE TABLE #Sueltas (Fila int IDENTITY(1, 1), Tabla nvarchar(128) COLLATE DATABASE_DEFAULT, Columna nvarchar(128) COLLATE DATABASE_DEFAULT, Filas_con_dato int NULL);
 
+-- Por número de tabla y de columna (sin comparar nombres entre intercalaciones distintas). 56 = int, 127 = bigint.
 INSERT INTO #Sueltas (Tabla, Columna)
-SELECT c.TABLE_NAME, c.COLUMN_NAME
-FROM INFORMATION_SCHEMA.COLUMNS c
-JOIN INFORMATION_SCHEMA.TABLES t ON t.TABLE_SCHEMA = c.TABLE_SCHEMA AND t.TABLE_NAME = c.TABLE_NAME AND t.TABLE_TYPE = 'BASE TABLE'
-WHERE c.TABLE_SCHEMA = 'dbo'
-  AND (c.COLUMN_NAME LIKE N'%Proforma%' OR c.COLUMN_NAME LIKE N'%Comprobante%' OR c.COLUMN_NAME LIKE N'%Factura%' OR c.COLUMN_NAME LIKE N'%Recibo%')
-  AND c.DATA_TYPE IN ('int', 'bigint')
-  AND c.TABLE_NAME NOT IN (N'PROFORMAS', N'COMPROBANTES')
+SELECT t.name, c.name
+FROM sys.columns c
+JOIN sys.tables t ON t.object_id = c.object_id AND t.schema_id = SCHEMA_ID(N'dbo')
+WHERE (c.name LIKE N'%Proforma%' OR c.name LIKE N'%Comprobante%' OR c.name LIKE N'%Factura%' OR c.name LIKE N'%Recibo%')
+  AND c.system_type_id IN (56, 127)
+  AND t.object_id NOT IN (OBJECT_ID(N'dbo.PROFORMAS'), OBJECT_ID(N'dbo.COMPROBANTES'))
   AND NOT EXISTS (SELECT 1 FROM sys.foreign_key_columns fc
-                  WHERE fc.parent_object_id = OBJECT_ID(N'dbo.' + QUOTENAME(c.TABLE_NAME))
-                    AND COL_NAME(fc.parent_object_id, fc.parent_column_id) = c.COLUMN_NAME);
+                  WHERE fc.parent_object_id = c.object_id AND fc.parent_column_id = c.column_id);
 
-DECLARE @columna sysname;
-DECLARE sueltas CURSOR LOCAL FAST_FORWARD FOR SELECT Tabla, Columna FROM #Sueltas;
+DECLARE @fila int, @columna sysname;
+DECLARE sueltas CURSOR LOCAL FAST_FORWARD FOR SELECT Fila, Tabla, Columna FROM #Sueltas;
 OPEN sueltas;
-FETCH NEXT FROM sueltas INTO @tabla, @columna;
+FETCH NEXT FROM sueltas INTO @fila, @tabla, @columna;
 WHILE @@FETCH_STATUS = 0
 BEGIN
     SET @sql = N'UPDATE #Sueltas SET Filas_con_dato = (SELECT COUNT(*) FROM dbo.' + QUOTENAME(@tabla) + N' WHERE ' + QUOTENAME(@columna)
-             + N' IS NOT NULL) WHERE Tabla = @t AND Columna = @c;';
-    EXEC sp_executesql @sql, N'@t sysname, @c sysname', @t = @tabla, @c = @columna;
-    FETCH NEXT FROM sueltas INTO @tabla, @columna;
+             + N' IS NOT NULL) WHERE Fila = @f;';
+    EXEC sp_executesql @sql, N'@f int', @f = @fila;
+    FETCH NEXT FROM sueltas INTO @fila, @tabla, @columna;
 END;
 CLOSE sueltas;
 DEALLOCATE sueltas;
@@ -170,7 +170,8 @@ PRINT '--- 6. Disparadores';
 SELECT OBJECT_NAME(tr.parent_id) AS Tabla, tr.name AS Disparador, tr.is_disabled AS Deshabilitado
 FROM sys.triggers tr
 WHERE tr.parent_class = 1
-  AND (OBJECT_NAME(tr.parent_id) IN (N'PROFORMAS', N'COMPROBANTES', N'VIAJES') OR OBJECT_NAME(tr.parent_id) IN (SELECT Tabla FROM #Dependencias))
+  AND (tr.parent_id IN (OBJECT_ID(N'dbo.PROFORMAS'), OBJECT_ID(N'dbo.COMPROBANTES'), OBJECT_ID(N'dbo.VIAJES'))
+       OR tr.parent_id IN (SELECT TablaID FROM #Dependencias))
 ORDER BY Tabla;
 
 /* ---------------------------------------------------------------- 7. Auditoría de estos documentos */
