@@ -2623,10 +2623,11 @@ un documento. Antes de guardar, la pantalla muestra qué cambia y qué no.**
     corto: "Cambió la tarifa: revisalo en Ver PDF." (presupuesto), "Cambió la tarifa de 2 viajes: revisá el detalle de
     la proforma.", "Cambió la tarifa: revisá el detalle del viaje.". Si la fila ya tiene un ícono, queda uno solo, el
     rojo, con los dos textos.
-  - **Adentro, en todos los lugares donde se abre el documento** (detalle y edición), un aviso amarillo arriba con qué
-    cambió (tabla, fecha y motivo), el importe anterior y el nuevo, y qué hacer: presupuesto → en Ver PDF (su pie ya tiene
-    "Enviar por e-mail") y en Editar; proforma → en Ver detalle, con cada viaje y su diferencia y "Anulala y generala de
-    nuevo"; viaje → en Ver detalle.
+  - **Adentro, en todos los lugares donde se abre el documento** (detalle y edición), un aviso amarillo arriba, **corto**
+    (Rocío, 25/10: el largo se perdía): el importe de antes y el de ahora, y qué hacer ("Cambió la tarifa: $ 905.000,00 →
+    $ 1.493.616,40" / "Para corregirla, anulala y generala de nuevo."). De dónde salió (tabla, fecha y motivo) va en el
+    tablero y en la auditoría. Presupuesto → en Ver PDF (su pie ya tiene "Enviar por e-mail") y en Editar; proforma → en
+    Ver detalle, con cada viaje; viaje → en Ver detalle.
   - **Viaje facturado:** el aviso principal va en el comprobante (Facturación / cuenta corriente: ícono y detalle con
     "Corresponde una nota de crédito por $ X"), y en el viaje una referencia al comprobante. El comprobante es módulo de
     Facu: se hace después de su cambio de "comprobante" (§38) o lo hace él.

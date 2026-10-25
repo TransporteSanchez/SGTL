@@ -153,7 +153,7 @@ function probarParaRevisar() {
         'presupuestos.html carga el módulo antes de presupuestos.js');
 
     const proformas = leer('gestion-facturacion.html');
-    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\)\)/.test(proformas),
+    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\), \{ enLaProforma: true \}\)/.test(proformas),
         'Proformas: ícono en la fila y aviso en el detalle');
 
     const viajes = leer('gestion-viajes.html');

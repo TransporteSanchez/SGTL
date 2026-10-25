@@ -31,36 +31,41 @@
     return window.SGTL.botonInfo('urgente', '<div>' + window.SGTL.escapar(texto) + '</div>', etiqueta || 'Ver qué cambió');
   }
 
-  // "la corrección de la tabla "Tarifas a agosto 2026" del 26/10/2026 (motivo: …)"
+  // De dónde salió, corto (para el tablero): "Corrección del 25/10/2026: el valor … estaba mal cargado."
   function causa(r) {
-    return (r.Tipo_Cambio === 'Tabla nueva' ? 'la tabla de tarifas nueva "' : 'la corrección de la tabla "') + r.Tabla + '" del ' +
-      window.SGTL.fecha(r.Fecha) + (r.Motivo ? ' (motivo: ' + r.Motivo.replace(/\.$/, '') + ')' : '');
+    var motivo = (r.Motivo || '').trim().replace(/\.$/, '');
+    return (r.Tipo_Cambio === 'Tabla nueva' ? 'Tabla nueva "' + r.Tabla + '"' : 'Corrección') + ' del ' + window.SGTL.fecha(r.Fecha) +
+      (motivo ? ': ' + motivo : '') + '.';
   }
 
   function monto(v) { return window.SGTL.monto(v == null ? 0 : v); }
+  function cambio(r) { return monto(r.Importe_Anterior) + ' → ' + monto(r.Importe_Nuevo); }
 
-  function aviso(filas) {
+  // El aviso de adentro, corto (pedido de Rocío, 25/10): el importe de antes y el de ahora, y qué hacer. De dónde salió el
+  // cambio (tabla, fecha y motivo) está en el tablero y en la auditoría. enLaProforma: se muestra en el detalle de la
+  // proforma (ahí "anulala" ya se entiende).
+  function aviso(filas, opciones) {
     if (!filas || !filas.length) return '';
+    opciones = opciones || {};
     var esc = window.SGTL.escapar;
     var r = filas[0];
-    var cuerpo;
-    if (r.Tipo === 'Presupuesto') {
-      cuerpo = '<div>El importe pasó de ' + esc(monto(r.Importe_Anterior)) + ' a ' + esc(monto(r.Importe_Nuevo)) + ' por ' + esc(causa(r)) + '.</div>';
-    } else if (filas.length === 1) {
-      cuerpo = '<div>Con ' + esc(causa(r)) + ', el viaje #' + esc(r.Viaje_ID) + ' vale ' + esc(monto(r.Importe_Nuevo)) + '; en ' +
-        (r.Tipo === 'Proforma' ? 'la proforma' : 'el comprobante') + (r.Documento ? ' ' + esc(r.Documento) : '') + ' figura ' + esc(monto(r.Importe_Anterior)) + '.</div>';
+    var titulo, lista = '', queHacer;
+    if (filas.length > 1) {
+      titulo = 'Cambió la tarifa de ' + filas.length + ' viajes';
+      lista = '<ul class="mb-0 ps-3">' + filas.map(function (f) { return '<li>Viaje #' + esc(f.Viaje_ID) + ': ' + esc(cambio(f)) + '</li>'; }).join('') + '</ul>';
     } else {
-      // Varios viajes de una misma proforma: cada uno con su importe.
-      cuerpo = '<div>Con ' + esc(causa(r)) + ', cambia el importe de ' + filas.length + ' viajes (en la proforma → con la tabla corregida):</div>' +
-        '<ul class="mb-0 ps-3">' + filas.map(function (f) {
-          return '<li>Viaje #' + esc(f.Viaje_ID) + ': ' + esc(monto(f.Importe_Anterior)) + ' → ' + esc(monto(f.Importe_Nuevo)) + '</li>';
-        }).join('') + '</ul>';
+      titulo = 'Cambió la tarifa' + (opciones.enLaProforma && r.Viaje_ID ? ' del viaje #' + r.Viaje_ID : '') + ': ' + cambio(r);
     }
-    var queHacer = r.Tipo === 'Proforma' && filas.length > 1
-      ? 'Anulá la proforma ' + (r.Documento || '') + ' y generala de nuevo: al anularla, sus viajes se recalculan.'
-      : r.Que_Hacer;
-    return '<div class="alert alert-warning" role="status"><div class="fw-bold mb-1">Cambió la tarifa</div>' + cuerpo +
-      (queHacer ? '<div class="mt-1">' + esc(queHacer) + '</div>' : '') + '</div>';
+    if (r.Tipo === 'Presupuesto') queHacer = 'Reenviáselo al cliente con "Enviar por e-mail".';
+    else if (r.Tipo === 'Proforma') queHacer = opciones.enLaProforma ? 'Para corregirla, anulala y generala de nuevo.'
+      : 'Para corregir la proforma ' + (r.Documento || '') + ', anulala y generala de nuevo.';
+    else {
+      var diferencia = (r.Importe_Nuevo || 0) - (r.Importe_Anterior || 0);
+      queHacer = 'Corresponde una nota de ' + (diferencia < 0 ? 'crédito' : 'débito') + ' por ' + monto(Math.abs(diferencia)) +
+        (r.Documento ? ' sobre ' + r.Documento : '') + '.';
+    }
+    return '<div class="alert alert-warning" role="status"><div class="fw-bold">' + esc(titulo) + '</div>' + lista +
+      '<div class="mt-1">' + esc(queHacer) + '</div></div>';
   }
 
   window.SGTLCambiosTarifa = { cargar: cargar, de: de, icono: icono, aviso: aviso, causa: causa };

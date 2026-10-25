@@ -825,7 +825,7 @@
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
                 ponerBadgeEstado('badgeEstadoModal', estadoActual);
-                document.getElementById('cambioTarifaProforma').innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID)) : '';
+                document.getElementById('cambioTarifaProforma').innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID), { enLaProforma: true }) : '';
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
                 if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID, soloLectura);

@@ -1157,7 +1157,7 @@
         '<td class="text-end text-nowrap">' + esc(SGTL.monto(r.Importe_Nuevo || 0)) +
         '<small class="d-block text-muted">antes ' + esc(SGTL.monto(r.Importe_Anterior || 0)) + '</small></td>' +
         '<td class="dash-celda-texto d-none d-md-table-cell">' + esc(r.Que_Hacer) +
-        '<small class="d-block text-muted">Por ' + esc(causa) + '.</small></td>' +
+        '<small class="d-block text-muted">' + esc(causa) + '</small></td>' +
         '<td class="text-center">' + SGTL.accionesFila(acciones) + '</td>' +
         '</tr>';
     }).join(''));

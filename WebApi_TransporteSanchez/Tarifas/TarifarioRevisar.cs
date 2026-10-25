@@ -83,15 +83,16 @@ namespace WebApi_TransporteSanchez.Tarifas
             return filas;
         }
 
+        // Qué hacer, corto (lo muestra el tablero).
         public static string QueHacer(Fila f)
         {
             if (f.Tipo == "Presupuesto")
-                return "Reenviáselo al cliente con \"Enviar por e-mail\", en el pie de Ver PDF.";
+                return "Reenviáselo al cliente desde Ver PDF.";
             if (f.Tipo == "Proforma")
-                return "Anulá la proforma " + (f.Documento ?? "") + " y generala de nuevo: al anularla, " + (f.Viaje_ID.HasValue ? "el viaje #" + f.Viaje_ID + " se recalcula." : "sus viajes se recalculan.");
+                return "Anulá la proforma " + (f.Documento ?? "") + " y generala de nuevo.";
             decimal diferencia = (f.Importe_Nuevo ?? 0) - (f.Importe_Anterior ?? 0);
             return "Corresponde una nota de " + (diferencia < 0 ? "crédito" : "débito") + " por " + TarifarioCalculo.Pesos(Math.Abs(diferencia))
-                + (string.IsNullOrEmpty(f.Documento) ? "" : " sobre el comprobante " + f.Documento) + ".";
+                + (string.IsNullOrEmpty(f.Documento) ? "" : " sobre " + f.Documento) + ".";
         }
 
         // Marca como resuelto lo indicado (uno por id, o todo lo de un presupuesto). Devuelve cuántos.
