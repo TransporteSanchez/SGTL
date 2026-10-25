@@ -3429,6 +3429,15 @@ la Mac sin frenar los demás. Las tandas van en orden de prioridad para el jueve
 | 5 | Control interno de los viajes (§37) | Todos | El galpón cargado |
 | 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
 
+**Tanda 1 — hecha en la VM (25/10, sobre `19804b4`):** `docs/pruebas/2026-10-25-tarifas-tanda-1.md`. 43 pruebas: 32 OK, 6 OK
+con observaciones, 2 fallas (las dos por F1) y 3 no probadas (e-mail de la VM, Excel de Rukas sin regenerar en ese commit,
+parte C). Los importes cuadran en todos los casos. Fallas: **F1** (alta: cambiar clientes o fecha mueve viajes de tabla
+sin confirmar ni registrar), F2 (Registrar copia una tabla propia), F4 (viajes con la factura ya compensada por una nota de
+crédito se tratan como facturados), F8 (guardar tarda 10 a 20 s); fuera de tarifas: F3 (Five Server recarga la pantalla
+de viajes), F5 (la máscara de montos borra lo escrito), F6 (Gestionar clientes se traba si falla la apariencia), F7 (sesión
+vencida sin aviso), F9 (la API responde sin token), F10 (nombres técnicos en el filtro de Auditoría). Además, 7 dudas y 27
+mejoras para que decida Rocío.
+
 **Al terminar cada tanda:** la VM muestra el reporte, Rocío lo pasa a la Mac, Claude lo guarda en
 `docs/pruebas/2026-10-AA-<tema>.md`, corrige lo que haga falta y lo pushea antes de la tanda siguiente (o al final, si no
 bloquea).
