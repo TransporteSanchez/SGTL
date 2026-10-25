@@ -649,9 +649,11 @@
   function enlazarMascaraMonto(objetivo) {
     var input = elemento(objetivo);
     if (!input || typeof input.addEventListener !== 'function') return null;
+    // Si no se puede leer ("12x"), queda lo escrito: la validación del formulario dice cómo escribirlo, en vez de borrarlo
+    // y pedir que se complete (F5 de la prueba en la VM del 25/10).
     input.addEventListener('blur', function () {
       var valor = montoCentavos(input.value);
-      input.value = valor == null ? '' : formatearMontoCentavos(valor);
+      if (valor != null) input.value = formatearMontoCentavos(valor);
     });
     return input;
   }

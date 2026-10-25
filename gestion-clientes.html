@@ -180,7 +180,7 @@
                 if (typeof window.loadSidebar === 'function') {
                     await window.loadSidebar();
                 }
-                await loadSettings();
+                await loadSettings().catch(function (error) { console.warn('Sin la apariencia (logo y colores):', error); });  // F6, VM 25/10: la pantalla se usa igual
                 adjustVisibilityBasedOnRole();
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';

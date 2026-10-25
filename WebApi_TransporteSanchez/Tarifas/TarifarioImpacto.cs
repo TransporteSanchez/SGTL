@@ -440,11 +440,29 @@ WHERE v.TarifarioID IS NOT NULL";
 
             item.Calculo = calculo;
             item.Importe_Nuevo = calculo.Importe;
+            // La tabla que le queda, si cambia (para la auditoría: M-e de la reprueba en la VM, 25/10).
+            if (v.TarifarioID != idDespues) item.NombreTabla = despues.Datos.Nombre;
+
+            // En un comprobante: el viaje está facturado. Si su factura ya se compensó con una nota de crédito, vuelve a Listo para
+            // facturar y no cuenta, aunque la factura vieja todavía lo nombre (F4 de la prueba en la VM del 25/10).
+            bool enComprobante = v.Estado == "Facturado" || v.Proforma_Estado == "Facturada";
+            bool enProformaEnviada = v.Proforma_Estado == "Generada" || v.Proforma_Estado == "Aceptada";
+
             if (v.Importe.HasValue && v.Importe.Value == calculo.Importe)
             {
                 // El documento ya tiene el importe correcto: si quedaba algo para revisar, se resuelve.
                 if (pendientes.ContainsKey(v.Viaje_ID)) res.VuelvenAlDocumento.Add(v.Viaje_ID);
-                if (v.TarifarioID != idDespues)
+                if (v.TarifarioID != idDespues && (enComprobante || enProformaEnviada))
+                {
+                    // Lo que ya vio el cliente no se toca, ni el importe ni la tabla (D3 de la reprueba en la VM, 25/10): queda con
+                    // la tabla con la que se facturó o se mandó, como el viaje de un presupuesto aceptado.
+                    item.Grupo = Conserva;
+                    item.NombreTabla = null;
+                    item.Que_Pasa = "Ya está en " + (enComprobante ? (v.Comprobante_Numero ?? "un comprobante") : (v.Proforma_Numero ?? "una proforma enviada"))
+                        + ": queda con su tabla.";
+                    res.Items.Add(item);
+                }
+                else if (v.TarifarioID != idDespues)
                 {
                     item.Grupo = CambiaTabla;
                     item.NombreTabla = despues.Datos.Nombre;
@@ -456,11 +474,6 @@ WHERE v.TarifarioID IS NOT NULL";
                     res.SoloDetalle.Add(item);
                 return;
             }
-
-            // En un comprobante: el viaje está facturado. Si su factura ya se compensó con una nota de crédito, vuelve a Listo para
-            // facturar y no cuenta, aunque la factura vieja todavía lo nombre (F4 de la prueba en la VM del 25/10).
-            bool enComprobante = v.Estado == "Facturado" || v.Proforma_Estado == "Facturada";
-            bool enProformaEnviada = v.Proforma_Estado == "Generada" || v.Proforma_Estado == "Aceptada";
             // Ya quedó para revisar con este mismo importe por un cambio anterior: no es algo nuevo de este cambio.
             decimal? pendiente;
             if ((enComprobante || enProformaEnviada) && pendientes.TryGetValue(v.Viaje_ID, out pendiente) && pendiente == calculo.Importe)
@@ -576,6 +589,7 @@ WHERE v.TarifarioID IS NOT NULL";
 
             item.Calculo = calculo;
             item.Importe_Nuevo = calculo.ImporteBase;
+            if (tarifarioId != idDespues) item.NombreTabla = despues.Datos.Nombre;
             if (tieneImporte && importe == calculo.ImporteBase)
             {
                 if (tarifarioId != idDespues)

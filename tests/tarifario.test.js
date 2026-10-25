@@ -327,7 +327,10 @@ function probarCambiarClientes() {
         && /HayCambios \{ get \{ return Items\.Any\(i => i\.Grupo == Recalcula \|\| i\.Grupo == Revisar \|\| i\.Grupo == CambiaTabla\); \} \}/.test(impacto),
         'cambiar de tabla con el mismo importe pide confirmación');
     assert.ok(/clave: 'tabla', titulo: 'Cambian de tabla, mismo importe'/.test(pantalla), 'la confirmación tiene el grupo de los que cambian de tabla');
-    assert.ok(/foreach \(var item in aplicado\.CambiaronDeTabla\)/.test(api) && /"Pasa a la tabla de tarifas \\""/.test(api), 'queda en la auditoría por viaje');
+    assert.ok(/foreach \(var item in aplicado\.CambiaronDeTabla\)/.test(api) && /"Pasa a \\"" \+ item\.NombreTabla \+ "\\" con el mismo importe \("/.test(api),
+        'queda en la auditoría por viaje');
+    // D3 de la reprueba (25/10): lo que ya vio el cliente no cambia de tabla.
+    assert.ok(/": queda con su tabla\."/.test(impacto), 'un viaje facturado o en una proforma enviada queda con su tabla');
     // F2: una tabla nueva copia la última para todos. F4: en un comprobante, solo si el viaje está facturado.
     assert.ok(/const ultimaGeneral = tarifarios\.filter\(function \(t\) \{ return t\.Para_Todos !== false; \}\)\[0\];/.test(pantalla), 'Registrar copia la última general');
     assert.ok(/bool enComprobante = v\.Estado == "Facturado" \|\| v\.Proforma_Estado == "Facturada";/.test(impacto), 'una factura compensada no cuenta');

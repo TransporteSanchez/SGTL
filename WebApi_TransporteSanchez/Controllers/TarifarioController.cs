@@ -386,17 +386,23 @@ namespace WebApi_TransporteSanchez.Controllers
                             Ejecutar(cn, tx, "DELETE FROM dbo.TARIFARIO_CLIENTES WHERE Tarifario_ID=@id", P("@id", id));
                         }
 
-                        foreach (var cliente in clientes)
-                            Ejecutar(cn, tx, "INSERT INTO dbo.TARIFARIO_CLIENTES (Tarifario_ID, ClienteID) VALUES (@id, @c)", P("@id", id), P("@c", cliente));
-
-                        foreach (var v in dto.Valores)
+                        // Los clientes y las 8 filas de valores, cada uno en una sola ida a la base (registrar tardaba 8 a 9 s en la VM:
+                        // M-h de la reprueba del 25/10).
+                        if (clientes.Any())
+                            Ejecutar(cn, tx, "INSERT INTO dbo.TARIFARIO_CLIENTES (Tarifario_ID, ClienteID) VALUES " +
+                                string.Join(", ", clientes.Select((c, i) => "(@id, @c" + i + ")")),
+                                new[] { P("@id", id) }.Concat(clientes.Select((c, i) => P("@c" + i, c))).ToArray());
+                        var valoresSql = dto.Valores.Select((v, i) => "(@id, @nuevo" + i + ", @tipo" + i + ", @v1_" + i + ", @v2_" + i + ", @b2_" + i + ", @b3_" + i + ", @km" + i + ")");
+                        var valoresParametros = new List<SqlParameter> { P("@id", id) };
+                        for (int i = 0; i < dto.Valores.Count; i++)
                         {
-                            Ejecutar(cn, tx,
-                                "INSERT INTO dbo.TARIFARIO_VALORES (Tarifario_ID, Modelo_Nuevo, Tipo_Vehiculo, Valor_Banda1_Vuelta1, Valor_Banda1_Vuelta2, " +
-                                "Valor_Banda2, Valor_Banda3, Valor_Km) VALUES (@id, @nuevo, @tipo, @v1, @v2, @b2, @b3, @km)",
-                                P("@id", id), P("@nuevo", v.Modelo_Nuevo), P("@tipo", v.Tipo_Vehiculo.Trim()), P("@v1", v.Valor_Banda1_Vuelta1),
-                                P("@v2", v.Valor_Banda1_Vuelta2), P("@b2", v.Valor_Banda2), P("@b3", v.Valor_Banda3), P("@km", v.Valor_Km));
+                            var v = dto.Valores[i];
+                            valoresParametros.AddRange(new[] { P("@nuevo" + i, v.Modelo_Nuevo), P("@tipo" + i, v.Tipo_Vehiculo.Trim()), P("@v1_" + i, v.Valor_Banda1_Vuelta1),
+                                P("@v2_" + i, v.Valor_Banda1_Vuelta2), P("@b2_" + i, v.Valor_Banda2), P("@b3_" + i, v.Valor_Banda3), P("@km" + i, v.Valor_Km) });
                         }
+                        Ejecutar(cn, tx,
+                            "INSERT INTO dbo.TARIFARIO_VALORES (Tarifario_ID, Modelo_Nuevo, Tipo_Vehiculo, Valor_Banda1_Vuelta1, Valor_Banda1_Vuelta2, " +
+                            "Valor_Banda2, Valor_Banda3, Valor_Km) VALUES " + string.Join(", ", valoresSql), valoresParametros.ToArray());
 
                         var aplicado = TarifarioImpacto.Aplicar(cn, tx, impacto, id, dto.Nombre.Trim(), alta, motivo, usuario, ahora);
 
@@ -406,20 +412,21 @@ namespace WebApi_TransporteSanchez.Controllers
                         var cambios = guardada == null ? new List<string>() : Cambios(guardada, dto, nombres);
                         SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, alta ? "INSERT" : "UPDATE", "TARIFARIOS", "Tarifario_ID=" + id,
                             (cambios.Any() ? "Cambió: " + string.Join("; ", cambios) + ". " : "")
-                            + (motivo.Length > 0 ? "Motivo: " + motivo + ". " : "")
-                            + (aplicado.CambioID > 0 ? "Se recalcularon: " + CantidadOCero(aplicado.ViajesRecalculados, aplicado.PresupuestosRecalculados)
-                                + "; para revisar: " + aplicado.ParaRevisar + "; cambiaron de tabla con el mismo importe: " + aplicado.CambiaronDeTabla.Count + ". " : "")
+                            + (motivo.Length > 0 ? "Motivo: " + ConPunto(motivo) + " " : "")
+                            + Cuentas(aplicado)
                             + "Queda así: " + Resumen(dto, nombres));
-                        string causa = (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\". Motivo: " + motivo;
+                        // Cada viaje y presupuesto: qué le pasó, por qué tabla y el motivo aparte (M-e de la reprueba en la VM, 25/10).
+                        string causa = ", por " + (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\"."
+                            + (motivo.Length > 0 ? " Motivo: " + ConPunto(motivo) : "");
                         foreach (var item in aplicado.Recalculados)
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
                                 (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
-                                "Importe recalculado por " + causa + ": " + TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ".");
+                                (item.NombreTabla != null ? "Pasa a \"" + item.NombreTabla + "\": " : "Importe recalculado: ")
+                                + TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo) + causa);
                         foreach (var item in aplicado.CambiaronDeTabla)
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
                                 (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
-                                "Pasa a la tabla de tarifas \"" + item.NombreTabla + "\" con el mismo importe (" + TarifarioImpacto.Pesos(item.Importe_Nuevo)
-                                + ") por " + causa + ".");
+                                "Pasa a \"" + item.NombreTabla + "\" con el mismo importe (" + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ")" + causa);
 
                         return Ok(new
                         {
@@ -668,9 +675,9 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string Resumen(TarifarioDto d, Dictionary<int, string> nombres)
         {
             var es = new CultureInfo("es-AR");
-            return d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy")
-                + (d.Para_Todos == false ? ", para " + string.Join(", ", d.Clientes.Distinct().Select(c => Nombre(nombres, c))) : ", para todos los clientes")
-                + ". Bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
+            return ConPunto(d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy")
+                + (d.Para_Todos == false ? ", para " + string.Join(", ", d.Clientes.Distinct().Select(c => Nombre(nombres, c))) : ", para todos los clientes"))
+                + " Bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
                 + " por módulo; falso flete " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. Valores (hasta " + d.Km_Banda1 + " km 1ª y 2ª vuelta, hasta "
                 + d.Km_Banda2 + ", hasta " + d.Km_Banda3 + " y por km): "
                 + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).ThenBy(v => Array.IndexOf(TarifarioCalculo.TiposVehiculo, v.Tipo_Vehiculo.Trim()))
@@ -782,10 +789,27 @@ namespace WebApi_TransporteSanchez.Controllers
             return c;
         }
 
-        // "1 viaje y 1 presupuesto", o "0" si no hay ninguno.
-        private static string CantidadOCero(int viajes, int presupuestos)
+        // Lo que movió el cambio, sin los que dan 0: "Se recalcularon 1 viaje y 1 presupuesto; 1 para revisar. ".
+        private static string Cuentas(TarifarioImpacto.Aplicado a)
         {
-            return viajes + presupuestos == 0 ? "0" : Cantidad(viajes, presupuestos);
+            if (a.CambioID == 0) return "";
+            var partes = new List<string>();
+            if (a.ViajesRecalculados + a.PresupuestosRecalculados > 0)
+                partes.Add("se recalcularon " + Cantidad(a.ViajesRecalculados, a.PresupuestosRecalculados));
+            if (a.ParaRevisar > 0) partes.Add(a.ParaRevisar + " para revisar");
+            int viajes = a.CambiaronDeTabla.Count(i => i.Clase == "Viaje");
+            if (a.CambiaronDeTabla.Count > 0)
+                partes.Add(Cantidad(viajes, a.CambiaronDeTabla.Count - viajes) + " con el mismo importe en otra tabla");
+            if (!partes.Any()) return "";
+            string texto = string.Join("; ", partes);
+            return char.ToUpper(texto[0]) + texto.Substring(1) + ". ";
+        }
+
+        // Termina en punto, sin repetirlo ("… S.A." no queda "S.A..").
+        private static string ConPunto(string texto)
+        {
+            texto = (texto ?? "").Trim();
+            return texto.Length == 0 || ".!?".IndexOf(texto[texto.Length - 1]) >= 0 ? texto : texto + ".";
         }
 
         // " Se recalcularon 6 viajes y 1 presupuesto. Quedan 3 para revisar." (o nada).
@@ -794,7 +818,10 @@ namespace WebApi_TransporteSanchez.Controllers
             var partes = new List<string>();
             if (a.ViajesRecalculados > 0) partes.Add(a.ViajesRecalculados == 1 ? "1 viaje" : a.ViajesRecalculados + " viajes");
             if (a.PresupuestosRecalculados > 0) partes.Add(a.PresupuestosRecalculados == 1 ? "1 presupuesto" : a.PresupuestosRecalculados + " presupuestos");
-            string texto = partes.Count == 0 ? "" : " Se " + (a.ViajesRecalculados + a.PresupuestosRecalculados == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
+            // El verbo concuerda con lo primero que se nombra: "Se recalculó 1 viaje y 1 presupuesto.", "Se recalcularon 2 viajes…"
+            // (M-d de la reprueba en la VM, 25/10).
+            int primero = a.ViajesRecalculados > 0 ? a.ViajesRecalculados : a.PresupuestosRecalculados;
+            string texto = partes.Count == 0 ? "" : " Se " + (primero == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
             // Qué quedó para revisar, con qué es (M2 de la prueba en la VM del 25/10).
             var reenviar = a.Revisados.Where(i => i.Clase == "Presupuesto").ToList();
             int enviados = a.Revisados.Count - reenviar.Count;

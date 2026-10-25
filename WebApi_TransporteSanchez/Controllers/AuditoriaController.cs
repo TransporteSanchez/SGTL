@@ -28,6 +28,12 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Origen { get; set; }
         }
 
+        // La entidad sin el sufijo que le pone Entity Framework a sus clases proxy ("TARIFAS_KM_5551…ACA" → "TARIFAS_KM"):
+        // quedan registros viejos así (F10 de la prueba en la VM del 25/10; los nuevos ya se guardan sin el sufijo, §1.2).
+        private const string SUFIJO_PROXY = "'[_]' + REPLICATE('[0-9A-F]', 64)";
+        private const string ENTIDAD_LIMPIA =
+            "CASE WHEN Entidad LIKE '%' + " + SUFIJO_PROXY + " THEN LEFT(Entidad, LEN(Entidad) - 65) ELSE Entidad END";
+
         private static string Cn()
         {
             return ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -52,7 +58,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             if (!string.IsNullOrWhiteSpace(entidad))
             {
-                where.Append(" AND Entidad = @entidad ");
+                where.Append(" AND (Entidad = @entidad OR Entidad LIKE @entidad + " + SUFIJO_PROXY + ") ");
                 parametros.Add(new SqlParameter("@entidad", entidad.Trim()));
             }
             if (!string.IsNullOrWhiteSpace(accion))
@@ -99,7 +105,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     pPage.Add(new SqlParameter("@limit", pageSize));
 
                     string sql =
-                        "SELECT Auditoria_ID, Fecha, Usuario, Accion, Entidad, Clave, " +
+                        "SELECT Auditoria_ID, Fecha, Usuario, Accion, " + ENTIDAD_LIMPIA + " AS Entidad, Clave, " +
                         "Valores_Anteriores, Valores_Nuevos, Origen " +
                         "FROM AUDITORIA" + where +
                         " ORDER BY Fecha DESC, Auditoria_ID DESC " +
@@ -134,7 +140,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(Cn()))
                 {
                     var lista = db.Database.SqlQuery<string>(
-                        "SELECT DISTINCT Entidad FROM AUDITORIA WHERE Entidad IS NOT NULL ORDER BY Entidad").ToList();
+                        "SELECT Entidad FROM (SELECT DISTINCT " + ENTIDAD_LIMPIA + " AS Entidad FROM AUDITORIA WHERE Entidad IS NOT NULL) e " +
+                        "ORDER BY Entidad").ToList();
                     return Ok(lista);
                 }
             }

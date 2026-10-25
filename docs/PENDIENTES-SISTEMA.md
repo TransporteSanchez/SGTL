@@ -3495,6 +3495,25 @@ parte C). **Sin fallas: F1, F2, F3 (en el 5500) y F4 resueltas**, y las mejoras 
 de proformas) para decidir. D1 (instructivo) y D2 (en la VM el front es Five Server en el 5500; el 5502 de Live Server
 ya quedó probado con 1.4) corregidos.
 
+**Arreglos de la reprueba hechos en la Mac (25/10, "hacé todo como recomendás"), sin probar en la VM:**
+- Tarifas: el error de fecha repetida y el de viajes sin tabla se van al cambiar la fecha, los clientes o "Todos / Solo
+  algunos" (M-a, M-b); "Antes de guardar vas a ver qué pasa con cada uno." (M-c); "Se recalculó 1 viaje y 1 presupuesto." /
+  "Se recalcularon 2 viajes…" (M-d); con cuatro clientes se nombran los cuatro (M-g); registrar guarda los valores y los
+  clientes de una sola vez (M-h).
+- Auditoría: sin "S.A..", sin contadores en 0, y en el viaje 'Pasa a "…": $ antes → $ ahora, por la corrección de la
+  tabla de tarifas "…". Motivo: ….' (M-e); el filtro y la lista muestran la entidad sin el sufijo técnico de Entity
+  Framework ("TARIFAS_KM", F10).
+- D3: un viaje en una proforma enviada o en un comprobante que cambiaría de tabla con el mismo importe queda con su tabla,
+  en "No cambian", con "Ya está en FAC-…: queda con su tabla.".
+- D4: el aviso "Tenés cambios sin guardar" dentro del modal queda como patrón del design system (§6.2).
+- Viajes: el título de un viaje que ya salió es "Completar el viaje #46" (M-f; también el globito del botón de la fila).
+- F5: un monto mal escrito ("12x") ya no se borra: queda para que la validación diga "Escribí el importe como 1.234,56."
+  (en todas las pantallas). F6: si falla la carga de la apariencia (logo y colores), la pantalla se usa igual (las 18
+  pantallas que la cargaban así).
+- **Probar en la VM:** B4 y B5 (los errores se van al cambiar), B6 con un viaje facturado del cliente de prueba si hay
+  (si no, con la parte C), el aviso al guardar, Auditoría (un cambio de tabla y su filtro "Entidad"), un viaje En viaje
+  (título), "12x" en un monto de tarifas y de cuenta corriente, y registrar una tabla (tiempo).
+
 **F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
 por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
 VM en los dos puertos** (Rocío quiere que funcione en los dos): reiniciar el servidor después del `pull`, registrar un

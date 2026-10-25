@@ -260,7 +260,7 @@
                 if (typeof window.loadSidebar === 'function') {
                     await window.loadSidebar();
                 }
-                await loadSettings();
+                await loadSettings().catch(function (error) { console.warn('Sin la apariencia (logo y colores):', error); });  // F6, VM 25/10: la pantalla se usa igual
                 adjustVisibilityBasedOnRole();
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
@@ -355,6 +355,14 @@
         // Los errores de la API al guardar: lo que es de la fecha o de los clientes va debajo de ese campo, y se va al cambiarlo
         // (M9 de la prueba en la VM del 25/10); lo que alcanza a varias cosas, arriba con su lista (§5.1), por ejemplo los
         // clientes cuyos viajes quedarían sin tabla, con la indicación de qué cambiar debajo del campo (M8).
+        // Lo que devolvió la API depende de la fecha y de los clientes: al cambiar cualquiera de los dos (o si es para todos), se
+        // va, arriba y debajo de los campos; al guardar se vuelve a controlar (M-a y M-b de la reprueba en la VM, 25/10).
+        function limpiarErrorDeGuardado() {
+            SGTL.limpiarError('#trDesde');
+            limpiarErrorClientes();
+            if (/^No se puede guardar la tabla de tarifas|^Revisá los campos marcados/.test($('#avisoTarifario').text())) SGTL.avisoFormulario('#avisoTarifario', '');
+        }
+
         function mostrarErrorTarifa(error, porDefecto) {
             const datos = error && error.xhr && error.xhr.responseJSON;
             if (!Array.isArray(datos) || !datos.length) { SGTL.avisoFormulario('#avisoTarifario', mensajeTarifa(error, porDefecto)); return; }
@@ -718,7 +726,7 @@
                 ponerTarifario(t, !!id);
                 const viajes = Number(t.Viajes) || 0;
                 const info = id
-                    ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + '. Antes de guardar vas a ver qué importes cambian. Si es un aumento, registrá una tabla nueva.' : '')
+                    ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + '. Antes de guardar vas a ver qué pasa con cada uno. Si es un aumento, registrá una tabla nueva.' : '')
                     : 'Viene con los valores de "' + t.Nombre + '", la última para todos los clientes: cambiá los que subieron.';
                 $('#infoTarifario').toggleClass('d-none', !info).text(info);
                 guardar.disabled = false;
@@ -874,9 +882,9 @@
             return ' ' + listaNombres(clientes) + (clientes.length === 1 ? ' vuelve' : ' vuelven') + ' a "' + general.Nombre + '".';
         }
 
-        // "A", "A y B", "A, B y C", "A, B, C y 2 más".
+        // "A", "A y B", "A, B y C", "A, B, C y D", "A, B, C y 2 más" (con uno solo de más, se nombra: M-g, 25/10).
         function listaNombres(nombres) {
-            if (nombres.length > 3) return nombres.slice(0, 3).join(', ') + ' y ' + (nombres.length - 3) + ' más';
+            if (nombres.length > 4) return nombres.slice(0, 3).join(', ') + ' y ' + (nombres.length - 3) + ' más';
             return nombres.length > 1 ? nombres.slice(0, -1).join(', ') + ' y ' + nombres[nombres.length - 1] : (nombres[0] || '');
         }
 
@@ -934,10 +942,10 @@
             [['trBanda1', 'trBanda2'], ['trBanda2', 'trBanda3']].forEach(function (par) {
                 $('#' + par[0]).on('change', function () { if ($('#' + par[1]).val().trim()) formularioTarifario.validar(par[1]); });
             });
-            $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
-            $('#trDesde').on('change', function () { actualizarHasta(); limpiarErrorClientes(); if (!paraTodos()) mostrarAlcance(); });
+            $('input[name="trAlcance"]').on('change', function () { limpiarErrorDeGuardado(); mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
+            $('#trDesde').on('change', function () { actualizarHasta(); limpiarErrorDeGuardado(); if (!paraTodos()) mostrarAlcance(); });
             $('#trClientesBuscar').on('input', filtrarClientes);
-            $('#trClientesLista').on('change', 'input', function () { contarClientes(); limpiarErrorClientes(); SGTL.limpiarError('#trDesde'); actualizarHasta(); });
+            $('#trClientesLista').on('change', 'input', function () { contarClientes(); limpiarErrorDeGuardado(); actualizarHasta(); });
             $('#btnRegistrarTarifario').on('click', function () { abrirTarifario(null); });
             $('#btnGuardarTarifario').on('click', guardarTarifario);
             $('#tablaTarifario')

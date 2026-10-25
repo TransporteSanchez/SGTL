@@ -461,6 +461,11 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   `span.sgtl-envoltura-deshabilitado`. Nada de notas grises en el pie explicándolo. Un botón
   que en ese paso no hace nada distinto de otro no se muestra ("Guardar borrador" mientras elegir el Excel ya lo
   guarda).
+- **Cerrar un formulario con cambios sin guardar** (25/10, decisión de Rocío sobre Gestionar proformas): no se cierra de
+  una. Arriba del formulario, dentro del mismo modal, un aviso amarillo "Tenés cambios sin guardar. Si cerrás, se pierden."
+  con "Seguir editando" (gris) y "Descartar cambios" (rojo). No se abre otra ventana encima: es como la confirmación de
+  "Generar" de la proforma de Rukas, que también va dentro del modal. Hoy está en Gestionar proformas
+  (`#avisoDescartarProforma`); si se suma a otra pantalla, conviene pasarlo a una función de `sgtl-ui.js`.
 - **Detalle:** solo "Cerrar" en el pie, además de la cruz.
 - **Cómo se arma un Ver detalle** (22/10, opción B de Rocío): con los mismos bloques que su formulario
   (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en filas de a dos bloques que empiezan a la misma altura

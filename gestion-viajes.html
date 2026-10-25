@@ -560,7 +560,9 @@
 
         var viajesPagina = {};
         // En un viaje que ya salió solo se completan los números: el botón de la fila y el título del modal dicen esto (§3.1).
-        var TITULO_COMPLETAR_NUMEROS = 'Completar números de remito y entrega';
+        // Un viaje que ya salió se completa: remito, números de referencia, falso flete y estadía (M-f de la reprueba en la VM,
+        // 25/10: antes decía "Completar números de remito y entrega").
+        var TITULO_COMPLETAR_NUMEROS = 'Completar el viaje';
 
         function filtrosViajes() {
             const idViaje = $('#idviajeinput').val().trim();
@@ -1328,7 +1330,7 @@
         function viajeRegistrado(estado) { return !estado || estado === 'Registrado'; }
         // El título del modal dice lo mismo que el botón de la fila (§3.1).
         function tituloEdicionViaje(estado, id) {
-            return (viajeRegistrado(estado) ? 'Editar viaje #' : TITULO_COMPLETAR_NUMEROS + ' del viaje #') + id;
+            return (viajeRegistrado(estado) ? 'Editar viaje #' : TITULO_COMPLETAR_NUMEROS + ' #') + id;
         }
 
         function etiquetaInformativa(texto) { return '<span class="badge rounded-pill bg-white text-dark border">' + SGTL.escapar(texto) + '</span>'; }

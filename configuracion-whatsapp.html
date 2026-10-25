@@ -209,7 +209,7 @@
                     if (window.loadHeader) window.loadHeader();
                     if (window.loadFooter) window.loadFooter();
                     if (window.loadSidebar) await window.loadSidebar();
-                    await loadSettings();
+                    await loadSettings().catch(function (error) { console.warn('Sin la apariencia (logo y colores):', error); });  // F6, VM 25/10: la pantalla se usa igual
                     if (window.adjustVisibilityBasedOnRole) window.adjustVisibilityBasedOnRole();
                 } catch (error) {
                     console.error('No se pudo cargar la estructura o el diseño de Gestionar integración de WhatsApp.', error);
