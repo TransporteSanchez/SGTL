@@ -2727,14 +2727,29 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - No hay un "Recalcular" de varios viajes juntos: cada viaje se recalcula al editarlo cambiando su tarifa (ver §33).
 - El importe del viaje se guarda por SQL directo: la auditoría del viaje no lo muestra. La de la tabla sí (entidad
   `TARIFARIOS`, con un resumen de los valores). Las dos usan `GETDATE()` (UTC, §2).
-- Las tarifas de antes (`TARIFAS_FIJAS`, `TARIFAS_KM` y sus endpoints) quedan en la base y en la API para los viajes y
-  presupuestos que ya las usan; ninguna pantalla las carga. Los "valores más reales" de la §31 ya no hacen falta.
+- **Como si siempre hubiera estado la tabla (decisión de Rocío, 25/10):** las tarifas de antes eran de prueba. Se sacaron
+  `TarifasController`, `TarifasFijasController` y `TarifasKmController` (y del `.csproj`), y todo lo que las leía
+  (viajes, Ver detalle, proformas, el control de Rukas, el dashboard, presupuestos y `TarifarioCalculo`). Ahora el importe
+  sale solo de lo que el viaje guardó con la tabla. `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` deja los
+  datos igual:
+  - Los viajes facturados o en una proforma emitida conservan el importe facturado ("Importe facturado").
+  - Los generados desde un presupuesto conservan el del presupuesto.
+  - Los de antes del 01/08/2026 (no hay tabla) conservan el suyo ("Importe anterior a la tabla de tarifas").
+  - El resto se recalcula con la tabla, con fija o por km según lo que tenía y la vuelta según el camión ese día.
+  - Todos quedan con la tabla y sin `TarifaFijaID` ni `TarifaKmID`. Los presupuestos pasan a la tabla general y
+    conservan su importe. Se borran las filas de `TARIFAS_FIJAS` y `TARIFAS_KM`; las tablas quedan vacías porque el EDMX
+    las incluye y no se regenera.
+- **Demo de Rukas:** los viajes 25 y 26 (990001 y 990002) se recalculan con la tabla y dejan de dar $ 14.790. El script
+  muestra sus importes nuevos: con esos importes hay que regenerar los Excel de `docs/pruebas/datos/` (pasárselos a
+  Claude).
+- Los "valores más reales" de la §31 ya no hacen falta.
 
 **Probar en la VM** (con C#):
 - [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK"). Después
   `03_cargar_tarifario_agosto_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y los
   viajes que guardan importe; con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT`.
-- [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista y abre viajes como antes.
+- [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista los viajes (hasta correr `04`, los de antes no se
+  pueden editar: no tienen tabla).
 - [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026", desde el 01/08/2026, Vigente. Editar:
   los valores iguales al PDF (fijas por modelo y por km). Cancelar.
 - [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos, "Todos los clientes"
@@ -2743,17 +2758,21 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
   la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia.
 - [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
+- [ ] 4b. Rocío corre `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: revisar qué pasa con cada viaje
+  (conserva o se recalcula, con el importe de hoy y el nuevo), que la columna "Falta" esté vacía, los importes nuevos de la
+  demo de Rukas y los presupuestos con tarifa vieja. Con `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final,
+  "Viajes con tarifa vieja" tiene que dar 0).
 - [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Fija viene elegida; comparar con el
   PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el
   excedente). Por km: todo el viaje. Falso flete → 60 %; 1 módulo de estadía → + $ 96.577. Guardar y volver a abrir:
   el mismo importe.
-- [ ] 6. Abrir un viaje de antes: el mismo importe que tenía, con el aviso de la tarifa de antes; Guardar sin cambios no
-  cambia el importe. Ver detalle igual.
+- [ ] 6. Abrir un viaje facturado: el importe facturado, con "Importe facturado". Uno recalculado: el importe de la tabla,
+  con su detalle. Guardar sin cambios no cambia el importe. Ver detalle igual.
 - [ ] 7. Presupuestos: Registrar presupuesto con fija y con por km: el mismo importe que el viaje. Aceptarlo y generar el
   viaje: el viaje tiene el importe del presupuesto.
-- [ ] 8. Proformas: "Traer viajes" trae los mismos importes de antes; el caso 1 de Rukas (`docs/pruebas/datos/`) da
-  "Coincide" con $ 14.790.
-- [ ] 9. Dashboard: "Costo por viaje" del mismo período, igual que antes de los scripts.
+- [ ] 8. Proformas: "Traer viajes" trae el importe guardado de cada viaje; con los Excel regenerados, el caso 1 de Rukas
+  (`docs/pruebas/datos/`) da "Coincide".
+- [ ] 9. Dashboard: "Costo por viaje" suma los importes guardados (cambia por los viajes recalculados).
 - [ ] 10. Un viaje en viaje: cargarle 1 módulo de estadía y guardar: se suma, la tarifa no cambia.
 
 ---

@@ -67,24 +67,19 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int AñoModelo { get; set; }
         }
 
-        // Lo que define la tarifa del viaje: la tabla de tarifas (fija o por km) o, en un viaje de antes del 24/10, la
-        // tarifa fija por recorrido o la tarifa por km que ya tenía (TarifaFijaID / TarifaKmID).
+        // Lo que define la tarifa del viaje con la tabla de tarifas: fija o por km, cliente, camión, km, inicio y vuelta.
         public class Pedido
         {
             public int ViajeId { get; set; }            // 0 en un viaje nuevo
             public int ClienteID { get; set; }          // define si vale una tabla propia del cliente o la general
-            public bool UsaTarifario { get; set; }
-            public bool PorKm { get; set; }             // con la tabla: true = tarifa por km; false = tarifa fija
-            public int? TarifaFijaID { get; set; }
-            public int? TarifaKmID { get; set; }
+            public bool UsaTarifario { get; set; }      // false: el viaje no tiene tarifa
+            public bool PorKm { get; set; }             // true = tarifa por km; false = tarifa fija
             public DateTime FechaInicio { get; set; }
             public int CamionID { get; set; }
             public decimal? Km { get; set; }
             public int? Vuelta { get; set; }
             public bool FalsoFlete { get; set; }
             public int EstadiaModulos { get; set; }
-            public string Origen { get; set; }
-            public string Destino { get; set; }
         }
 
         public class Resultado
@@ -175,29 +170,6 @@ namespace WebApi_TransporteSanchez.Tarifas
 
             if (p.UsaTarifario)
                 return CalcularTarifario(db, p);
-
-            if ((p.TarifaFijaID ?? 0) > 0)
-            {
-                var valor = db.Database.SqlQuery<decimal>("SELECT ValorFijoNeto FROM dbo.TARIFAS_FIJAS WHERE TarifaFija_ID=@id",
-                    P("@id", p.TarifaFijaID.Value)).ToList();
-                if (valor.Count == 0) return Falla("La tarifa fija #" + p.TarifaFijaID.Value + " ya no existe. Elegí otra.");
-                r.Ok = true;
-                r.ImporteBase = valor[0];
-                r.TarifaDetalle = "Tarifa fija #" + p.TarifaFijaID.Value + " · " + (p.Origen ?? "") + " → " + (p.Destino ?? "");
-                return r;
-            }
-
-            if ((p.TarifaKmID ?? 0) > 0)
-            {
-                var valorKm = db.Database.SqlQuery<decimal>("SELECT ValorKm FROM dbo.TARIFAS_KM WHERE TarifaKm_ID=@id",
-                    P("@id", p.TarifaKmID.Value)).ToList();
-                if (valorKm.Count == 0) return Falla("La tarifa por km #" + p.TarifaKmID.Value + " ya no existe. Elegí otra.");
-                if (!p.Km.HasValue || p.Km.Value <= 0) return Falla("Cargá la distancia para calcular la tarifa por km.");
-                r.Ok = true;
-                r.ImporteBase = Redondear(valorKm[0] * p.Km.Value);
-                r.TarifaDetalle = "Tarifa por km #" + p.TarifaKmID.Value + " · " + Pesos(valorKm[0]) + " por km × " + Km(p.Km.Value) + " km";
-                return r;
-            }
 
             return Falla("Asigná una tarifa al viaje.");
         }

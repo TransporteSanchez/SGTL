@@ -30,7 +30,8 @@
    Desde ahora el viaje GUARDA su importe (§33 de docs/PENDIENTES-SISTEMA.md): cambiar la tabla de tarifas no cambia
    los viajes ya calculados. El importe se vuelve a calcular al editar un viaje cambiando lo que define su tarifa
    (fija o por km, camión, km, inicio o vuelta). Las tarifas fijas por cliente y recorrido y las tarifas por km de antes
-   (TARIFAS_FIJAS y TARIFAS_KM) quedan en la base para los viajes que ya las usan; la pantalla ya no las ofrece.
+   (TARIFAS_FIJAS y TARIFAS_KM, de prueba) se dejan de usar: 04_viajes_con_la_tabla_de_tarifas.sql pasa los viajes y
+   presupuestos a esta tabla y borra sus filas.
 
    Este script no carga datos. Los valores de agosto 2026, el tipo de los camiones y el importe de los viajes que ya
    existen van en 03_cargar_tarifario_agosto_2026.sql.

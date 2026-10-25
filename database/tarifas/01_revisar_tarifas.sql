@@ -1,4 +1,7 @@
 /*
+   HISTÓRICO: ya se corrió el 23/10/2026. Desde el 25/10 las tarifas salen de la tabla de tarifas (02 a 04 de esta
+   carpeta) y 04 borra las filas de TARIFAS_FIJAS y TARIFAS_KM: no hace falta volver a correrlo.
+
    TARIFAS_FIJAS y TARIFAS_KM: dejar los datos cargados con las reglas nuevas (decisiones de Rocío, 23/10/2026).
 
    Reglas nuevas (las aplica la API al guardar desde Gestionar tarifas):

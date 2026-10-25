@@ -405,7 +405,6 @@
     <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
-    <Compile Include="Controllers\TarifasController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
     <Compile Include="Controllers\ProformasPlataformaController.cs" />
     <Compile Include="Plataformas\LectoresPlataforma.cs" />
@@ -439,8 +438,6 @@
     <Compile Include="Security\ContrasenasSeguras.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
-    <Compile Include="Controllers\TarifasFijasController.cs" />
-    <Compile Include="Controllers\TarifasKmController.cs" />
     <Compile Include="Controllers\TarifarioController.cs" />
     <Compile Include="Tarifas\TarifarioCalculo.cs" />
     <Compile Include="Services\WhatsApp\GoogleMapsLinkBuilder.cs" />

@@ -94,19 +94,16 @@ namespace WebApi_TransporteSanchez.Controllers
         public class CambioEstadoDto { public string Estado { get; set; } public string Usuario { get; set; } }
         public class UsuarioDto { public string Usuario { get; set; } }
         // ======================= Importe de SGTL de un viaje =======================
-        // Un solo cálculo para "Traer viajes" (PrellenarViajes) y el control de la proforma de plataforma
-        // (ProformasPlataformaController), para que den lo mismo: el importe que guardó el viaje (desde el 24/10, con el
-        // tarifario y los adicionales); si no lo tiene, presupuesto aceptado; si no, tarifa fija; si no, tarifa por km × km.
+        // Un solo criterio para "Traer viajes" (PrellenarViajes) y el control de la proforma de plataforma
+        // (ProformasPlataformaController), para que den lo mismo: el importe que guardó el viaje al calcular su tarifa con
+        // la tabla de tarifas (con los adicionales). Si no lo tiene, el del presupuesto aceptado que lo generó.
 
-        private class TarifaValor { public int Id { get; set; } public decimal Valor { get; set; } }
         private class PresupuestoViaje { public int ViajeID { get; set; } public int Presupuesto_ID { get; set; } public string Datos { get; set; } }
         internal class ImporteGuardado { public int Viaje_ID { get; set; } public decimal Importe { get; set; } public string Importe_Detalle { get; set; } }
 
         internal class TarifasViaje
         {
             internal Dictionary<int, ImporteGuardado> Guardados;
-            internal Dictionary<int, decimal> Fijas;
-            internal Dictionary<int, decimal> Kms;
             internal Dictionary<int, int> PresupuestoId;
             internal Dictionary<int, string> PresupuestoDatos;
         }
@@ -127,10 +124,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 Guardados = db.Database.SqlQuery<ImporteGuardado>(
                     "SELECT Viaje_ID, Importe, ISNULL(Importe_Detalle,'') AS Importe_Detalle FROM dbo.VIAJES WHERE Importe IS NOT NULL")
                     .ToList().ToDictionary(x => x.Viaje_ID),
-                Fijas = db.Database.SqlQuery<TarifaValor>("SELECT TarifaFija_ID AS Id, ValorFijoNeto AS Valor FROM dbo.TARIFAS_FIJAS")
-                    .ToList().ToDictionary(t => t.Id, t => t.Valor),
-                Kms = db.Database.SqlQuery<TarifaValor>("SELECT TarifaKm_ID AS Id, ValorKm AS Valor FROM dbo.TARIFAS_KM")
-                    .ToList().ToDictionary(t => t.Id, t => t.Valor),
                 PresupuestoId = presupuestos.ToDictionary(x => x.ViajeID, x => x.Presupuesto_ID),
                 PresupuestoDatos = presupuestos.ToDictionary(x => x.ViajeID, x => x.Datos)
             };
@@ -139,8 +132,7 @@ namespace WebApi_TransporteSanchez.Controllers
         private static readonly CultureInfo EsAr = new CultureInfo("es-AR");
         private static string Pesos(decimal v) { return "$" + v.ToString("N0", EsAr); }
 
-        internal static ImporteViajeResultado ImporteViaje(TarifasViaje t, int viajeId, int? tarifaFijaId, int? tarifaKmId,
-            string distanciaKm, string origen, string destino)
+        internal static ImporteViajeResultado ImporteViaje(TarifasViaje t, int viajeId)
         {
             var r = new ImporteViajeResultado();
             ImporteGuardado guardado;
@@ -167,21 +159,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 catch { }
                 r.PresupuestoInvalido = true;
                 r.TarifaUsada = "Presupuesto #" + presupuestoId + " sin importe válido";
-                return r;
-            }
-            if (tarifaFijaId.HasValue && tarifaFijaId.Value > 0 && t.Fijas.ContainsKey(tarifaFijaId.Value))
-            {
-                var valor = t.Fijas[tarifaFijaId.Value];
-                r.Importe = valor;
-                r.TarifaUsada = "Tarifa fija #" + tarifaFijaId.Value + " · " + origen + " → " + destino + " · " + Pesos(valor);
-                return r;
-            }
-            if (tarifaKmId.HasValue && tarifaKmId.Value > 0 && t.Kms.ContainsKey(tarifaKmId.Value))
-            {
-                decimal km = ParseDec(distanciaKm);
-                var valorKm = t.Kms[tarifaKmId.Value];
-                r.Importe = valorKm * km;
-                r.TarifaUsada = "Tarifa por km #" + tarifaKmId.Value + " · " + km.ToString("0.#", EsAr) + " km × " + Pesos(valorKm);
                 return r;
             }
             r.TarifaUsada = "Sin tarifa";
@@ -1042,8 +1019,6 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
             public string Num_de_Carga { get; set; }
             public string Num_Transporte { get; set; }
             public string Distancia_KM { get; set; }
-            public int? TarifaFijaID { get; set; }
-            public int? TarifaKmID { get; set; }
             public string Estado { get; set; }
             public bool Tiene_Evidencia { get; set; }
         }
@@ -1071,7 +1046,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     var filas = db.Database.SqlQuery<ViajePrellenado>(
                         "SELECT v.Viaje_ID, v.Fecha_Inicio, ISNULL(o.Descripcion,'') AS Origen, ISNULL(de.Descripcion,'') AS Destino, " +
                         "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
-                        "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.TarifaFijaID, v.TarifaKmID, v.Estado, " +
+                        "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Estado, " +
                         "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
                         "FROM VIAJES v LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN DESTINO de ON de.Destino_ID = v.DestinoID " +
                         "WHERE v.ClienteID=@cli AND v.Fecha_Inicio >= @d1 AND v.Fecha_Inicio < @d2 ORDER BY v.Fecha_Inicio",
@@ -1093,7 +1068,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                         if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }
                         if (!conPlataforma && f.Estado != "Entregado") { noEntregados.Add(f.Viaje_ID); continue; }
 
-                        var calculo = ImporteViaje(tarifas, f.Viaje_ID, f.TarifaFijaID, f.TarifaKmID, f.Distancia_KM, f.Origen, f.Destino);
+                        var calculo = ImporteViaje(tarifas, f.Viaje_ID);
                         if (calculo.PresupuestoInvalido)
                             throw new InvalidOperationException("El presupuesto del viaje #" + f.Viaje_ID + " no tiene un importe válido.");
                         decimal importe = calculo.Importe ?? 0;
@@ -1145,13 +1120,6 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
         {
             u = string.IsNullOrWhiteSpace(u) ? "sistema" : u.Trim();
             return u.Length > 20 ? u.Substring(0, 20) : u;
-        }
-
-        private static decimal ParseDec(string raw)
-        {
-            if (string.IsNullOrWhiteSpace(raw)) return 0;
-            decimal v;
-            return decimal.TryParse(raw.Trim().Replace(',', '.'), NumberStyles.Any, CultureInfo.InvariantCulture, out v) ? v : 0;
         }
     }
 

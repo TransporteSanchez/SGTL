@@ -62,7 +62,7 @@ function probarViajeGuardaImporte() {
     const viajes = leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs');
     assert.ok(/GuardarImporte\(db, viaje\.Viaje_ID, viajeDto, calculo\)/.test(viajes), 'el alta del viaje guarda el importe calculado por la API');
     assert.ok(/if \(calculo\.Ok\) GuardarImporte\(db, id,/.test(viajes), 'la edición del viaje guarda el importe');
-    assert.ok(/WHEN v\.Importe IS NOT NULL THEN v\.Importe/.test(viajes), 'el costo del dashboard usa el importe guardado');
+    assert.ok(/" SELECT v\.Importe FROM VIAJES v"/.test(viajes), 'el costo del dashboard usa el importe guardado');
 
     const proformas = leer('WebApi_TransporteSanchez/Controllers/ProformasController.cs');
     const guardado = proformas.indexOf('t.Guardados.TryGetValue(viajeId');
@@ -82,8 +82,8 @@ function probarViajeGuardaImporte() {
     assert.ok(presupuestos.indexOf("/Tarifario/Calcular?") !== -1, 'presupuestos calcula con la tabla de tarifas, como los viajes');
     assert.ok(presupuestos.indexOf('TarifasFijas/PorRuta') === -1 && presupuestos.indexOf('TarifasKm/Calcular') === -1,
         'presupuestos ya no usa las tarifas de antes');
-    assert.ok(/conTabla \? \(object\)tarifario/.test(leer('WebApi_TransporteSanchez/Controllers/PresupuestosController.cs')),
-        'el viaje que genera un presupuesto nuevo queda con la tabla de tarifas');
+    assert.ok(/crear\.Parameters\.AddWithValue\("@tarifario", tarifario\)/.test(leer('WebApi_TransporteSanchez/Controllers/PresupuestosController.cs')),
+        'el viaje que genera un presupuesto queda con la tabla de tarifas');
 
     const tarifas = leer('gestion-tarifas.html');
     assert.ok(tarifas.indexOf('tablaFijas') === -1 && tarifas.indexOf('tablaKm') === -1,
@@ -116,6 +116,28 @@ function probarTablasPorCliente() {
         'Gestionar tarifas elige si la tabla es para todos o para algunos clientes');
 }
 
+// Como si siempre hubiera estado la tabla de tarifas (25/10): sin las tarifas fijas por recorrido ni las bandas por km de
+// antes, ni sus endpoints; 04 pasa los viajes y presupuestos a la tabla y borra los datos viejos.
+function probarSinTarifasViejas() {
+    const csproj = leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj');
+    ['TarifasController', 'TarifasFijasController', 'TarifasKmController'].forEach(function (c) {
+        assert.ok(csproj.indexOf('Controllers\\' + c + '.cs') === -1, c + ' ya no está en el .csproj');
+        assert.ok(!fs.existsSync(path.join(raiz, 'WebApi_TransporteSanchez/Controllers/' + c + '.cs')), c + ' ya no existe');
+    });
+    ['WebApi_TransporteSanchez/Controllers/ViajesController.cs', 'WebApi_TransporteSanchez/Controllers/ProformasController.cs',
+        'WebApi_TransporteSanchez/Controllers/ProformasPlataformaController.cs', 'WebApi_TransporteSanchez/Controllers/PresupuestosController.cs',
+        'WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs'].forEach(function (archivo) {
+        assert.ok(!/TARIFAS_FIJAS|TARIFAS_KM/.test(leer(archivo)), archivo + ' no lee las tarifas viejas');
+    });
+    ['gestion-viajes.html', 'assets/static/js/viaje-detalle.js', 'assets/static/js/presupuestos.js'].forEach(function (archivo) {
+        assert.ok(!/\/Tarifas\/(Fijas|Km)|TarifasFijas|TarifasKm|TarifaFijaID|TarifaKmID|tarifaId\b/.test(leer(archivo)), archivo + ' no usa las tarifas viejas');
+    });
+    const migracion = leer('database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql');
+    assert.ok(/DELETE FROM dbo\.TARIFAS_FIJAS;/.test(migracion) && /DELETE FROM dbo\.TARIFAS_KM;/.test(migracion), '04 borra las tarifas viejas');
+    assert.ok(/TarifaFijaID = NULL, TarifaKmID = NULL/.test(migracion), '04 saca la tarifa vieja de los viajes');
+    assert.ok(/N'Conserva: facturado o en una proforma emitida'/.test(migracion), 'los viajes facturados conservan el importe facturado');
+}
+
 function probarProyecto() {
     const csproj = leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj');
     ['Controllers\\TarifarioController.cs', 'Tarifas\\TarifarioCalculo.cs'].forEach(function (archivo) {
@@ -132,5 +154,6 @@ probarValoresDeAgosto();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();
+probarSinTarifasViejas();
 probarProyecto();
 console.log('OK: la tabla de tarifas (fija con excedente y por km, general o propia de algunos clientes), sus valores de agosto 2026 y el importe guardado del viaje');

@@ -233,9 +233,8 @@
         var d = Object.assign({}, base || {}); campos.forEach(function (k) { d[k] = el(k).value; });
         d.clienteId = el('cliente').value; d.cliente = nombre('cliente'); d.origenId = el('origenId').value; d.origen = nombre('origenId'); d.destinoId = el('destinoId').value; d.destino = nombre('destinoId');
         d.camion = nombre('camionId'); d.chofer = nombre('choferId'); d.importe = tarifa.importe;
-        // Con la tabla de tarifas (tarifarioId); un presupuesto de antes que no se recalculó conserva su tarifa (tarifaId).
-        if (tarifa.tarifarioId) { d.tarifarioId = tarifa.tarifarioId; d.vuelta = tarifa.vuelta; d.tarifaDetalle = tarifa.detalle; delete d.tarifaId; delete d.valorKm; }
-        else { d.tarifaId = tarifa.id; d.valorKm = tarifa.valorKm; }
+        // Con la tabla de tarifas: cuál (tarifarioId), la vuelta y de dónde sale el importe.
+        d.tarifarioId = tarifa.tarifarioId; d.vuelta = tarifa.vuelta; d.tarifaDetalle = tarifa.detalle;
         if (!d.fecha) d.fecha = new Date().toLocaleDateString('en-CA'); return d;
     }
     function listar() {
@@ -319,9 +318,8 @@
         conservarOpcion('cliente', p.clienteId, p.cliente); opcionesRuta(p.origenId, p.destinoId);
         conservarOpcion('origenId', p.origenId, p.origen); conservarOpcion('destinoId', p.destinoId, p.destino); conservarOpcion('camionId', p.camionId, p.camion); conservarOpcion('choferId', p.choferId, p.chofer);
         base = Object.assign({}, p); actual = Object.assign({}, p);
-        if ((p.tarifarioId || p.tarifaId) && p.tipoTarifa && p.importe !== undefined) {
-            tarifa = p.tarifarioId ? {tipo: p.tipoTarifa, tarifarioId: p.tarifarioId, vuelta: p.vuelta || null, importe: String(p.importe), detalle: p.tarifaDetalle}
-                : {tipo: p.tipoTarifa, id: p.tarifaId, valorKm: p.valorKm, importe: String(p.importe)};
+        if (p.tarifarioId && p.tipoTarifa && p.importe !== undefined) {
+            tarifa = {tipo: p.tipoTarifa, tarifarioId: p.tarifarioId, vuelta: p.vuelta || null, importe: String(p.importe), detalle: p.tarifaDetalle};
             if (p.vuelta) { el('vueltaPresupuesto').value = String(p.vuelta); vueltaManual = true; mostrarVuelta({ AplicaVuelta: true }); el('vueltaPresupuestoAyuda').textContent = ''; }
             el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.';
         }

@@ -46,36 +46,13 @@
     return listas;
   }
 
-  // Importe del viaje: el que guardó al calcular su tarifa (desde el 24/10, con el tarifario, el falso flete y la
-  // estadía). Si es de antes y no lo tiene: el del presupuesto aceptado si viene de uno; si no, la tarifa fija o la
-  // tarifa por km × km (el mismo orden que usa la proforma).
+  // Importe del viaje: el que guardó al calcular su tarifa con la tabla de tarifas (con el falso flete y la estadía).
   function importe(v) {
-    if (v.Importe != null) {
-      var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0;
-      return Promise.resolve({ importe: v.Importe, detalle: (conAdicionales ? v.Importe_Detalle : v.Tarifa_Detalle) || 'tarifa guardada' });
-    }
-    var km = kmNumero(v.Distancia_KM);
-    var porTarifa = function () {
-      if (v.TarifaFijaID > 0) {
-        return pedir('/Tarifas/Fijas/' + v.TarifaFijaID).then(function (t) {
-          return t ? { importe: t.ValorFijoNeto, detalle: 'tarifa fija de la ruta' } : null;
-        });
-      }
-      if (v.TarifaKmID > 0) {
-        return pedir('/Tarifas/Km/' + v.TarifaKmID).then(function (t) {
-          if (!t) return null;
-          return { importe: Math.round(Number(t.ValorKm) * (km || 0) * 100) / 100, detalle: SGTL.monto(t.ValorKm) + ' por km' };
-        });
-      }
-      return Promise.resolve(null);
-    };
-    if (!v.Presupuesto_ID) return porTarifa();
-    return pedir('/Presupuestos').then(function (lista) {
-      var p = (lista || []).filter(function (x) { return x.id === v.Presupuesto_ID; })[0];
-      var valor = p && String(p.importe == null ? '' : p.importe).trim() !== '' ? Number(String(p.importe).replace(',', '.')) : NaN;
-      return isFinite(valor) ? { importe: valor, detalle: 'la del presupuesto #' + v.Presupuesto_ID } : porTarifa();
-    });
+    if (v.Importe == null) return Promise.resolve(null);
+    var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0;
+    return Promise.resolve({ importe: v.Importe, detalle: (conAdicionales ? v.Importe_Detalle : v.Tarifa_Detalle) || 'tarifa guardada' });
   }
+
 
   function direccion(o) {
     if (!o) return '';
@@ -132,7 +109,7 @@
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
     var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">neto · ' + esc(imp.detalle) + '</span>'
-      : (v.TarifaFijaID > 0 || v.TarifaKmID > 0 || v.TarifarioID > 0 ? 'No se pudo leer el importe de la tarifa.' : 'Sin tarifa asignada.'));
+      : 'Sin tarifa asignada.');
 
     var entregado = !!(v.Resultado_Entrega || v.Fecha_Entrega);
     var evidencia = v.Tiene_Evidencia

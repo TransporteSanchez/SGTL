@@ -180,8 +180,6 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Num_Remito { get; set; }
             public string Num_de_Carga { get; set; }
             public string Estado { get; set; }
-            public int? TarifaFijaID { get; set; }
-            public int? TarifaKmID { get; set; }
             public string Distancia_KM { get; set; }
             public DateTime Fecha_Inicio { get; set; }
             public string Origen { get; set; }
@@ -354,7 +352,7 @@ VALUES (@id,'Archivo',@nombre,@tipo,@archivo,@u);",
             var viajes = db.Database.SqlQuery<ViajeRow>(
                 "SELECT v.Viaje_ID, RTRIM(ISNULL(v." + columna + ",'')) AS Referencia, " +
                 "RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, " +
-                "RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado, v.TarifaFijaID, v.TarifaKmID, " +
+                "RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado, " +
                 "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Fecha_Inicio, " +
                 "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino " +
                 "FROM dbo.VIAJES v LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID " +
@@ -412,7 +410,7 @@ SELECT DISTINCT r.ViajeID FROM (
                     else
                     {
                         reservar.Add(v.Viaje_ID);
-                        var calculo = ProformasController.ImporteViaje(tarifas, v.Viaje_ID, v.TarifaFijaID, v.TarifaKmID, v.Distancia_KM, v.Origen, v.Destino);
+                        var calculo = ProformasController.ImporteViaje(tarifas, v.Viaje_ID);
                         importeSgtl = calculo.Importe;
                         tarifa = calculo.TarifaUsada;
                         var faltan = NumerosFaltantes(v, lector);
@@ -507,7 +505,7 @@ WHERE Proforma_ID=@id;",
             var filas = db.Database.SqlQuery<ViajeRow>(
                 "SELECT v.Viaje_ID, RTRIM(ISNULL(v." + columna + ",'')) AS Referencia, " +
                 "RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, " +
-                "RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado, v.TarifaFijaID, v.TarifaKmID, " +
+                "RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, v.Estado, " +
                 "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Fecha_Inicio, " +
                 "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino " +
                 "FROM dbo.VIAJES v LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID " +

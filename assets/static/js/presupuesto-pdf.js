@@ -62,7 +62,7 @@
         espacio(22); escribir('Datos del servicio', margen, y, 12, true, azul); y += 8;
         detalle('Inicio', p.fechaInicio ? fecha(p.fechaInicio) : ''); detalle('Fin', p.fechaFin ? fecha(p.fechaFin) : '');
         detalle('Camión', p.camion); detalle('Chofer', p.chofer);
-        detalle('Tarifa', p.tipoTarifa === 'km' ? 'Por km' + (p.valorKm != null && p.valorKm !== '' ? ' · ' + dinero(p.valorKm) + ' por km' : '') : p.tipoTarifa === 'fija' ? 'Fija' : '');
+        detalle('Tarifa', p.tipoTarifa === 'km' ? 'Por km' : p.tipoTarifa === 'fija' ? 'Fija' : '');
         if (p.pago || p.tiempo || p.condiciones) {
             y += 6; espacio(16); escribir('Condiciones y observaciones', margen, y, 12, true, azul); y += 8;
             detalle('Forma y plazo de pago', p.pago); detalle('Tiempo estimado', p.tiempo); detalle('Observaciones', p.condiciones);
