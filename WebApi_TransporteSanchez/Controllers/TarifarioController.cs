@@ -632,8 +632,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 error("Clientes", "Elegí al menos un cliente.");
             if (d.Anio_Corte < 1990 || d.Anio_Corte > 2100) error("Anio_Corte", "Completá el año del modelo desde el que valen los valores nuevos.");
             if (d.Km_Banda1 <= 0) error("Km_Banda1", "Tiene que ser mayor que cero.");
-            if (d.Km_Banda2 <= d.Km_Banda1) error("Km_Banda2", "Tiene que ser mayor que " + d.Km_Banda1 + ".");
-            if (d.Km_Banda3 <= d.Km_Banda2) error("Km_Banda3", "Tiene que ser mayor que " + d.Km_Banda2 + ".");
+            if (d.Km_Banda2 <= d.Km_Banda1) error("Km_Banda2", "Tiene que ser mayor que " + d.Km_Banda1 + " km.");
+            if (d.Km_Banda3 <= d.Km_Banda2) error("Km_Banda3", "Tiene que ser mayor que " + d.Km_Banda2 + " km.");
             if (d.Estadia_Modulo < 0) error("Estadia_Modulo", "No puede ser negativo.");
             if (d.Estadia_Horas_Modulo <= 0) error("Estadia_Horas_Modulo", "Tiene que ser mayor que cero.");
             if (d.Estadia_Desde_Horas < 0) error("Estadia_Desde_Horas", "No puede ser negativo.");

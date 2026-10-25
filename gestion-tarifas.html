@@ -798,6 +798,11 @@
             });
             formularioTarifario = SGTL.validador(reglas);
             $('#trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
+            // Cada banda tiene que ser mayor que la anterior: si cambia una, se vuelve a revisar la siguiente (si ya tiene
+            // valor), así el error aparece o se va enseguida y no recién al guardar.
+            [['trBanda1', 'trBanda2'], ['trBanda2', 'trBanda3']].forEach(function (par) {
+                $('#' + par[0]).on('change', function () { if ($('#' + par[1]).val().trim()) formularioTarifario.validar(par[1]); });
+            });
             $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
             $('#trDesde').on('change', actualizarHasta);
             $('#trClientesBuscar').on('input', filtrarClientes);
