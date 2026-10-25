@@ -156,7 +156,7 @@ FROM sys.sequences WHERE name LIKE N'SEQ[_]%';
 
 IF OBJECT_ID(N'dbo.FACTURACION_NUMERADORES', N'U') IS NOT NULL
     SELECT n.Numerador_ID, n.Nombre, n.UltimoNumero, n.Activo,
-           (SELECT STRING_AGG(ft.Tipo, N', ') FROM dbo.FACTURACION_TIPOS_COMPROBANTE ft WHERE ft.NumeradorID = n.Numerador_ID) AS Tipos_que_lo_usan
+           (SELECT STRING_AGG(CONVERT(nvarchar(10), ft.Tipo), N', ') FROM dbo.FACTURACION_TIPOS_COMPROBANTE ft WHERE ft.NumeradorID = n.Numerador_ID) AS Tipos_que_lo_usan
     FROM dbo.FACTURACION_NUMERADORES n ORDER BY n.Numerador_ID;
 
 IF OBJECT_ID(N'dbo.COMPROBANTES_NUMERADORES', N'U') IS NOT NULL
