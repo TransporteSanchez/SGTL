@@ -270,6 +270,10 @@ function probarSinTarifasViejas() {
     assert.ok(/DELETE FROM dbo\.TARIFAS_FIJAS;/.test(migracion) && /DELETE FROM dbo\.TARIFAS_KM;/.test(migracion), '04 borra las tarifas viejas');
     assert.ok(/TarifaFijaID = NULL, TarifaKmID = NULL/.test(migracion), '04 saca la tarifa vieja de los viajes');
     assert.ok(/FROM dbo\.PRESUPUESTOS ps JOIN #Plan p ON p\.Clase = N'Presupuesto'/.test(migracion), '04 recalcula los presupuestos');
+    // Los viajes que todavía no tienen la tabla pasan a la tarifa fija por banda (Rocío, 25/10); los que ya la tienen conservan
+    // la que eligieron.
+    assert.ok(migracion.indexOf("CASE WHEN v.TarifarioID IS NOT NULL AND v.Tarifa_Modo IN ('Fija', 'Km') THEN v.Tarifa_Modo ELSE 'Fija' END") !== -1
+        && !/v\.TarifaKmID IS NOT NULL OR v\.Tarifa_Modo = 'Km'/.test(migracion), '04 pasa a fija los viajes que no tienen la tabla');
     ['Importe facturado', 'Importe anterior', 'Conserva', 'Tarifa fija #', 'Tarifa por km #'].forEach(function (texto) {
         assert.ok(migracion.indexOf(texto) === -1, '04 no deja textos sobre las tarifas de antes: ' + texto);
     });

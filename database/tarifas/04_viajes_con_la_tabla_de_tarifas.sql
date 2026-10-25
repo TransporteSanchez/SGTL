@@ -12,8 +12,10 @@
      - Presupuestos: con su tarifa (fija o por km), su camión y sus km. La vuelta: la que tienen; si no, 2ª si el camión ya
        tiene un viaje que empieza antes ese día.
      - Viajes generados desde un presupuesto aceptado: el importe del presupuesto (ya recalculado), su tarifa y su vuelta.
-     - El resto de los viajes: por km si tenían una tarifa por km; si no, fija (la vuelta que tienen o, si no tienen, 2ª si
-       el camión tiene otro viaje antes ese día; más de 250 km, la fija de 250 más el excedente por km).
+     - El resto de los viajes, con la tarifa fija por banda de km, aunque antes tuvieran una tarifa por km (Rocío, 25/10:
+       la fija es la principal del PDF y las tarifas por km de antes eran de prueba). La vuelta que tienen o, si no tienen,
+       2ª si el camión tiene otro viaje antes ese día; más de 250 km, la fija de 250 más el excedente por km. Los que ya
+       tienen la tabla (cargados con la pantalla nueva o por una corrida anterior de este script) conservan fija o por km.
      - Falso flete y estadía, si los tienen, se suman igual que en la pantalla.
    Quedan con la tabla (TarifarioID, fija o por km, la vuelta, el importe y su detalle), sin TarifaFijaID ni TarifaKmID y
    sin ningún texto sobre las tarifas de antes. No cambia la fecha ni el usuario de la última modificación (se ven en Ver
@@ -61,7 +63,7 @@ FROM dbo.PRESUPUESTOS ps
 WHERE ISJSON(ps.Datos) = 1
 UNION ALL
 SELECT N'Viaje', v.Viaje_ID, v.Estado, v.ClienteID, v.CamionID, CAST(v.Fecha_Inicio AS datetime2(3)), k.Km,
-       CASE WHEN v.TarifaKmID IS NOT NULL OR v.Tarifa_Modo = 'Km' THEN 'Km' ELSE 'Fija' END,
+       CASE WHEN v.TarifarioID IS NOT NULL AND v.Tarifa_Modo IN ('Fija', 'Km') THEN v.Tarifa_Modo ELSE 'Fija' END,
        v.Vuelta, p.Presupuesto_ID, ISNULL(v.Falso_Flete, 0), ISNULL(v.Estadia_Modulos, 0),
        -- El que muestra hoy: el guardado o, en un viaje de antes, el de su tarifa vieja.
        COALESCE(v.Importe, CASE WHEN p.Presupuesto_ID IS NOT NULL THEN p.Importe

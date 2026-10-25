@@ -2879,7 +2879,9 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
     viaje antes ese día).
   - Viajes generados desde un presupuesto aceptado: el importe recalculado del presupuesto ("Presupuesto #N", como
     cualquier viaje de un presupuesto).
-  - El resto: por km si tenían una tarifa por km; si no, fija, con la vuelta según el camión ese día. Falso flete y
+  - El resto: con la tarifa fija por banda, aunque antes tuvieran una por km (Rocío, 25/10, al ver el diagnóstico: la fija
+    es la principal del PDF y las de km de antes eran de prueba), con la vuelta según el camión ese día; los que ya tienen
+    la tabla conservan fija o por km. Falso flete y
     estadía, si los tienen, se suman.
   - Todos quedan con la tabla y sin `TarifaFijaID` ni `TarifaKmID`, sin cambiar la fecha ni el usuario de la última
     modificación (se ven en Ver detalle). Se borran las filas de `TARIFAS_FIJAS` y `TARIFAS_KM`; las tablas quedan vacías
@@ -2930,7 +2932,9 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - [ ] 4b. Rocío corre `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` (el rehecho del 25/10) tal cual: revisar
   el resumen (cuántos viajes y presupuestos, el total de hoy y el nuevo), cada viaje y cada presupuesto con su importe de
   hoy y el nuevo, que la columna "Falta" esté vacía y los importes nuevos de la demo de Rukas (pasárselos a Claude). Con
-  `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final, "Viajes sin la tabla" tiene que dar 0).
+  `@Aplicar = 1`, si las cantidades coinciden, `COMMIT` (al final, "Viajes sin la tabla" tiene que dar 0). Después, en
+  Gestionar viajes, volver a poner 990002 como N° de transporte SAP del viaje 26 (quedó en 990020 de la prueba del caso 3
+  de Rukas).
 - [ ] 5. Registrar viaje de un cliente directo con un camión de tipo y año conocidos: Fija viene elegida; comparar con el
   PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el
   excedente). Por km: todo el viaje. Falso flete → 60 %; 1 módulo de estadía → + $ 96.577. Guardar y volver a abrir:
