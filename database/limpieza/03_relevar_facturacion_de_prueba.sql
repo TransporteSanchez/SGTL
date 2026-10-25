@@ -20,6 +20,12 @@
 
    Cómo correrlo: SSMS, base Transporte_Sanchez, tal cual. Pasarle a Claude el resultado de las siete partes.
 */
+-- Si se corre otra vez en la misma pestaña, primero se borran las tablas temporales de la corrida anterior, en un lote
+-- aparte: SQL Server revisa el lote entero antes de ejecutarlo y fallaría con las columnas viejas.
+DROP TABLE IF EXISTS #Dependencias;
+DROP TABLE IF EXISTS #Sueltas;
+GO
+
 SET NOCOUNT ON;
 
 IF DB_NAME() <> N'Transporte_Sanchez'
