@@ -3350,8 +3350,14 @@ sale con `FAC` y los textos de hoy. Pasos:
 1. Rocío corre `database/limpieza/03_relevar_facturacion_de_prueba.sql` (solo lectura) y le pasa a Claude las siete
    partes: documentos, tablas que dependen, referencias sin clave foránea, viajes en documentos y libres, numeración
    (`SEQ_PROFORMA` y `FACTURACION_NUMERADORES`), disparadores y auditoría.
-2. Claude arma `database/limpieza/04_…` (con `BEGIN TRAN`, diagnóstico y verificación) y el guion de demo para la VM;
-   Facu revisa el script.
+2. Claude arma `database/limpieza/04_borrar_facturacion_de_prueba.sql` y el guion de demo para la VM; Facu revisa el
+   script. **Relevamiento del 25/10 a la noche:** 18 proformas (propias y de Rukas, ids 8 a 55) y 34 comprobantes (15 FAC,
+   3 NC, 1 ND, 15 REC). Dependen: detalle, vínculo con proformas, movimientos y aplicaciones de cuenta corriente, formas
+   de pago de recibos e historial de e-mails (de los comprobantes); detalle, viajes, Excel adjuntos y líneas de Rukas (de
+   las proformas). Sin disparadores ni referencias sueltas. Viajes facturados que vuelven: 3, 4, 6, 7, 8, 9, 11 y 12 (con
+   plataforma → Listo para facturar) y 5 y 38 (directos → Entregado). Numeración: `SEQ_PROFORMA` en 12 y
+   `FACTURACION_NUMERADORES` FAC 15, NC 3, ND 1, REC 15. Los números internos (el "#" del borrador) no se reinician, para
+   no mezclar la historia de Auditoría.
 3. Con Facu y Fede avisados, Rocío lo corre y hace `COMMIT`; la VM genera el juego de demo desde las pantallas (proforma
    propia completa con comprobante y recibo, una aceptada sin comprobante, la de Rukas con su comprobante, una nota de
    crédito y viajes entregados libres para registrar una proforma en vivo).
