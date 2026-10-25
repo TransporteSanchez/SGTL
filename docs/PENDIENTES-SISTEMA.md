@@ -3342,6 +3342,20 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
 - **Dato raro:** los viajes 3, 4, 6, 7 y 8 están en dos proformas con comprobante (PF-00000001 y PF-00000002), de antes de
   la regla "un viaje en una sola proforma". Al regenerar, cada viaje va en una sola.
 
+**Decisión de Rocío (25/10, a la noche): opción B y antes del cambio de Facu**, porque él todavía no empezó y así la demo
+del jueves tiene documentos que coinciden con sus viajes. Condiciones: el OK de Facu (son datos de su módulo; revisa el
+script antes de que se corra), que nadie esté probando con esos documentos mientras se corre, y que su cambio a
+"comprobante" convierta los comprobantes que existan (lo necesita igual). La limpieza es solo de datos: lo que se genere
+sale con `FAC` y los textos de hoy. Pasos:
+1. Rocío corre `database/limpieza/03_relevar_facturacion_de_prueba.sql` (solo lectura) y le pasa a Claude las siete
+   partes: documentos, tablas que dependen, referencias sin clave foránea, viajes en documentos y libres, numeración
+   (`SEQ_PROFORMA` y `FACTURACION_NUMERADORES`), disparadores y auditoría.
+2. Claude arma `database/limpieza/04_…` (con `BEGIN TRAN`, diagnóstico y verificación) y el guion de demo para la VM;
+   Facu revisa el script.
+3. Con Facu y Fede avisados, Rocío lo corre y hace `COMMIT`; la VM genera el juego de demo desde las pantallas (proforma
+   propia completa con comprobante y recibo, una aceptada sin comprobante, la de Rukas con su comprobante, una nota de
+   crédito y viajes entregados libres para registrar una proforma en vivo).
+
 **Opciones (Rocío decide; Claude recomienda la B para la defensa):**
 - **A. Lo mínimo:** borrar y regenerar desde el sistema la cadena de las proformas con comprobante (4 proformas, 4
   comprobantes y 2 recibos) y la aceptada; borrar la historia de la demo de Rukas (4 proformas anuladas, 2 comprobantes y
