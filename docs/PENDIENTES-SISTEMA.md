@@ -58,6 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto y texto de la plantilla de WhatsApp | Anotado | — | Ver §40 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3438,6 +3439,44 @@ de viajes), F5 (la máscara de montos borra lo escrito), F6 (Gestionar clientes 
 vencida sin aviso), F9 (la API responde sin token), F10 (nombres técnicos en el filtro de Auditoría). Además, 7 dudas y 27
 mejoras para que decida Rocío.
 
+**F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
+por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
+VM en los dos puertos** (Rocío quiere que funcione en los dos): reiniciar el servidor después del `pull`, registrar un
+viaje con chofer y Guardar: la pantalla no se recarga y el aviso del WhatsApp queda a la vista.
+
 **Al terminar cada tanda:** la VM muestra el reporte, Rocío lo pasa a la Mac, Claude lo guarda en
 `docs/pruebas/2026-10-AA-<tema>.md`, corrige lo que haga falta y lo pushea antes de la tanda siguiente (o al final, si no
 bloquea).
+
+---
+
+## 40. Después de la ronda de pruebas, con prioridad — ANOTADO (25/10)
+
+Decisiones de Rocío al leer el reporte de la tanda 1 (`docs/pruebas/2026-10-25-tarifas-tanda-1.md`). **Se ven apenas
+cierren las pruebas de la §39**, antes que lo demás.
+
+- [ ] **1. Seguridad de la API y del JWT (F9 de la tanda 1; sigue a F1b de la §8).** Sin token responden 200, entre otros,
+  `GET api/Tarifario`, `api/Tarifario/{id}`, `api/Tarifario/Vigente`, `api/Viajes`, `api/Clientes` (con CUIT, teléfono y
+  e-mail) y `api/Camiones`; `api/Tarifario/Revisar` sí da 401. Hay que revisar, además:
+  - un solo control del token para toda la API (hoy cada controller lo valida a su manera: `UsuarioDelToken` en Tableros,
+    `AlcanceDelToken` en Tarifario, facturación y e-mail por su lado) y que el front mande `Authorization` siempre;
+  - dónde vive la clave con la que se firma el JWT (hoy en el código, `JwtConfig.cs`): pasarla fuera de git, como la cadena
+    de conexión, y cambiarla;
+  - cuánto dura la sesión (en la VM venció a la hora) y que al vencer el login diga "Tu sesión venció. Volvé a iniciar
+    sesión." (F7 de la tanda 1);
+  - que un error 500 no devuelva la excepción completa (F6 de la tanda 1: se ve en la red).
+  Toca los controllers de todos: **coordinar con Facu y Fede** antes de cambiarlos.
+- [ ] **2. E-mail desde la VM (D5 de la tanda 1; F1 del 23/10).** En la VM, enviar un presupuesto dice "No se pudo leer la
+  contraseña del perfil SMTP. Volvé a guardarla en Configuración > Gestionar e-mail.". Causa conocida: la API cifra la
+  contraseña con la clave de la PC que la guardó (`MachineKey`) y la base es compartida. Rocío pide **resolverlo o
+  investigarlo de nuestro lado** para que funcione en cualquier PC del equipo (una clave común fuera de git, o la que
+  proponga Facu, que es el módulo de e-mail). Sin esto no se puede probar que reenviar un presupuesto resuelva lo
+  pendiente por un cambio de tarifa (B3 de la tanda 1).
+- [ ] **3. Generar un viaje desde un presupuesto le manda la hoja de ruta al chofer (D6 de la tanda 1).** Hoy no la manda
+  ni la ventana "Generar viaje" avisa nada; registrar el viaje desde Gestionar viajes sí. Decisión de Rocío: tiene que
+  ser igual que registrarlo a mano, con el aviso azul "Al guardar, … recibe la hoja de ruta por WhatsApp." (§5.1 del
+  design system) y el toast de si salió o no. Es el módulo de presupuestos (Facu) y el envío es de WhatsApp (Fede).
+- [ ] **4. Pedido a Fede: texto en la plantilla de WhatsApp de viajes.** Sumarle al mensaje que recibe el chofer que puede
+  gestionar todo lo del viaje (iniciarlo, registrar la entrega con la evidencia, cargar los gastos) entrando a su Hoja de
+  ruta en el sistema. Es una plantilla de Meta: el cambio la tiene que volver a aprobar Meta.
+
