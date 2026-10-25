@@ -3364,6 +3364,9 @@ sale con `FAC` y los textos de hoy. Pasos:
    caso 1 (viajes 25 y 26), PF-00000003 y FAC-00000002 sin cobrar; una nota de crédito parcial sobre FAC-00000002 si la
    pantalla lo permite; y el viaje 5 libre para registrar una proforma en vivo. El diagnóstico del `04` coincidió con el
    relevamiento (18 proformas, 34 comprobantes, 10 viajes que vuelven).
+   **Limpieza aplicada por Rocío el 25/10 a la noche, con `COMMIT`:** 18 proformas y 34 comprobantes borrados con todo lo
+   que dependía de ellos, 10 viajes facturados de vuelta a Listo para facturar o Entregado, numeración en 0 y un registro
+   en Auditoría; sin transacciones abiertas. Falta generar el juego de demo (la VM, con el instructivo).
    **Antes de la presentación:** el cliente "distribuidora-powerful S.A." (viaje 5 y otros) tiene un nombre que no parece
    real; cambiarlo en Gestionar clientes por uno creíble (el relevamiento de textos de prueba no lo detecta).
 
