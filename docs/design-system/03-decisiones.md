@@ -410,10 +410,12 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   - si la acción cambia otras cosas (guardar una tabla de tarifas recalcula viajes y presupuestos, §33 de PENDIENTES), el
     mensaje es **una sola línea que presenta la lista** ("Al guardar, pasa esto con los viajes y presupuestos de esta
     tabla.") y **la lista va dentro de la misma confirmación** (`detalle`, con `ancho: 'lg'`): una tabla con grupos (§2.1)
-    según qué pasa con cada una ("Se recalculan · 5", "No cambian: quedan para revisar · 2"), sin repetir en el mensaje
+    según qué pasa con cada una ("Se recalculan · 5", "No cambian: quedan para revisar · 2", "Cambian de tabla, mismo
+    importe · 3" con 'Pasa a "…"'), sin repetir en el mensaje
     las cantidades de los títulos. Cada fila: el dato principal con el segundo en gris debajo y, en "Qué hacer", solo lo
     que hay que saber o hacer, corto ("Anulá PF-00000006 y generala de nuevo.", "—" si no hay nada). La tabla se desplaza
-    si es larga (`.sgtl-confirmar-lista`). Si no cambia nada más, no se pide confirmación.
+    si es larga (`.sgtl-confirmar-lista`). Si no cambia nada más (ni un importe ni la tabla de un viaje o presupuesto: solo
+    el nombre, por ejemplo), no se pide confirmación.
 - **Qué pide confirmación:** solo lo que no se puede deshacer o tiene efectos afuera del
   sistema: eliminar, anular, generar proforma (consume un número), emitir factura, enviar por
   mail o WhatsApp.

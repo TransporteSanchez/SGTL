@@ -402,12 +402,18 @@ namespace WebApi_TransporteSanchez.Controllers
                         SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, alta ? "INSERT" : "UPDATE", "TARIFARIOS", "Tarifario_ID=" + id,
                             Resumen(dto) + (motivo.Length > 0 ? " Motivo: " + motivo + "." : "")
                             + (aplicado.CambioID > 0 ? " Recalculados: " + aplicado.ViajesRecalculados + " viajes y " + aplicado.PresupuestosRecalculados
-                                + " presupuestos; para revisar: " + aplicado.ParaRevisar + "." : ""));
+                                + " presupuestos; para revisar: " + aplicado.ParaRevisar + "; cambiaron de tabla con el mismo importe: "
+                                + aplicado.CambiaronDeTabla.Count + "." : ""));
                         string causa = (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\". Motivo: " + motivo;
                         foreach (var item in aplicado.Recalculados)
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
                                 (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
                                 "Importe recalculado por " + causa + ": " + TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ".");
+                        foreach (var item in aplicado.CambiaronDeTabla)
+                            SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
+                                (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
+                                "Pasa a la tabla de tarifas \"" + item.NombreTabla + "\" con el mismo importe (" + TarifarioImpacto.Pesos(item.Importe_Nuevo)
+                                + ") por " + causa + ".");
 
                         return Ok(new
                         {
@@ -672,6 +678,9 @@ namespace WebApi_TransporteSanchez.Controllers
             if (a.PresupuestosRecalculados > 0) partes.Add(a.PresupuestosRecalculados == 1 ? "1 presupuesto" : a.PresupuestosRecalculados + " presupuestos");
             string texto = partes.Count == 0 ? "" : " Se " + (a.ViajesRecalculados + a.PresupuestosRecalculados == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
             if (a.ParaRevisar > 0) texto += " " + (a.ParaRevisar == 1 ? "Queda 1 para revisar." : "Quedan " + a.ParaRevisar + " para revisar.");
+            int viajes = a.CambiaronDeTabla.Count(i => i.Clase == "Viaje"), presupuestos = a.CambiaronDeTabla.Count - viajes;
+            if (viajes + presupuestos > 0)
+                texto += " " + Cantidad(viajes, presupuestos) + (viajes + presupuestos == 1 ? " pasó" : " pasaron") + " a otra tabla con el mismo importe.";
             return texto;
         }
 

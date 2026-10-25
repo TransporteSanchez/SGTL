@@ -23,6 +23,9 @@ namespace WebApi_TransporteSanchez.Tarifas
         public const string Revisar = "revisar";
         public const string Conserva = "conserva";
         public const string NoSePuede = "error";
+        // Pasa a otra tabla con el mismo importe (cambiaron los clientes o la fecha de la tabla): se confirma y queda registrado
+        // como lo que se recalcula (F1 de la prueba en la VM del 25/10).
+        public const string CambiaTabla = "tabla";
 
         // Id de una tabla nueva mientras no se guarda.
         public const int TablaNueva = -1;
@@ -58,6 +61,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             internal bool ActualizaLinea;                   // la línea del borrador propio tiene el precio del viaje
             internal string Datos;                          // JSON del presupuesto
             internal DateTime? SinTablaEl;                  // con el cambio, ese día no le queda ninguna tabla
+            internal string NombreTabla;                    // la tabla que le queda (si cambia de tabla)
         }
 
         public class Resultado
@@ -65,10 +69,12 @@ namespace WebApi_TransporteSanchez.Tarifas
             public List<Item> Items { get; set; }
             public int Recalculan { get { return Items.Count(i => i.Grupo == Recalcula); } }
             public int ParaRevisar { get { return Items.Count(i => i.Grupo == Revisar || (i.Grupo == Recalcula && i.TipoRevisar != null)); } }
-            // Hay algo que pide confirmación y motivo: importes que cambian.
-            public bool HayCambios { get { return Items.Any(i => i.Grupo == Recalcula || i.Grupo == Revisar); } }
+            public int CambianDeTabla { get { return Items.Count(i => i.Grupo == CambiaTabla); } }
+            // Hay algo que pide confirmación y motivo: importes que cambian o viajes y presupuestos que pasan a otra tabla.
+            public bool HayCambios { get { return Items.Any(i => i.Grupo == Recalcula || i.Grupo == Revisar || i.Grupo == CambiaTabla); } }
 
-            // Pasan a otra tabla o cambia el texto del detalle, sin cambiar el importe: se actualizan sin preguntar.
+            // Con la misma tabla y el mismo importe, solo cambia el texto del detalle (otro nombre de la tabla): se actualizan
+            // sin preguntar.
             internal List<Item> SoloDetalle = new List<Item>();
 
             // Viajes en una proforma enviada o en un comprobante que tenían algo para revisar y con este cambio la tarifa
@@ -87,6 +93,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int PresupuestosRecalculados { get; set; }
             public int ParaRevisar { get; set; }
             public List<Item> Recalculados { get; set; }
+            public List<Item> CambiaronDeTabla { get; set; }
         }
 
         // ------------------------------------------------------------ Lectura
@@ -339,7 +346,7 @@ WHERE v.TarifarioID IS NOT NULL";
 
         private static int OrdenGrupo(string g)
         {
-            return g == Recalcula ? 0 : g == Revisar ? 1 : g == NoSePuede ? 2 : 3;
+            return g == Recalcula ? 0 : g == Revisar ? 1 : g == CambiaTabla ? 2 : g == NoSePuede ? 3 : 4;
         }
 
         private static decimal? Km(string km)
@@ -426,13 +433,22 @@ WHERE v.TarifarioID IS NOT NULL";
             {
                 // El documento ya tiene el importe correcto: si quedaba algo para revisar, se resuelve.
                 if (pendientes.ContainsKey(v.Viaje_ID)) res.VuelvenAlDocumento.Add(v.Viaje_ID);
-                // Mismo importe: si cambió la tabla o el texto del detalle (otro nombre), se actualiza sin preguntar.
-                if (v.TarifarioID != idDespues || v.Tarifa_Detalle != calculo.TarifaDetalle || v.Importe_Detalle != calculo.ImporteDetalle)
+                if (v.TarifarioID != idDespues)
+                {
+                    item.Grupo = CambiaTabla;
+                    item.NombreTabla = despues.Datos.Nombre;
+                    item.Que_Pasa = PasaA(v.TarifarioID, despues, "");
+                    res.Items.Add(item);
+                }
+                // Misma tabla y mismo importe: si cambió el texto del detalle (otro nombre), se actualiza sin preguntar.
+                else if (v.Tarifa_Detalle != calculo.TarifaDetalle || v.Importe_Detalle != calculo.ImporteDetalle)
                     res.SoloDetalle.Add(item);
                 return;
             }
 
-            bool enComprobante = v.Comprobante_ID.HasValue || v.Proforma_Estado == "Facturada" || v.Estado == "Facturado";
+            // En un comprobante: el viaje está facturado. Si su factura ya se compensó con una nota de crédito, vuelve a Listo para
+            // facturar y no cuenta, aunque la factura vieja todavía lo nombre (F4 de la prueba en la VM del 25/10).
+            bool enComprobante = v.Estado == "Facturado" || v.Proforma_Estado == "Facturada";
             bool enProformaEnviada = v.Proforma_Estado == "Generada" || v.Proforma_Estado == "Aceptada";
             // Ya quedó para revisar con este mismo importe por un cambio anterior: no es algo nuevo de este cambio.
             decimal? pendiente;
@@ -551,7 +567,14 @@ WHERE v.TarifarioID IS NOT NULL";
             item.Importe_Nuevo = calculo.ImporteBase;
             if (tieneImporte && importe == calculo.ImporteBase)
             {
-                if (tarifarioId != idDespues || (string)json["tarifaDetalle"] != calculo.TarifaDetalle)
+                if (tarifarioId != idDespues)
+                {
+                    item.Grupo = CambiaTabla;
+                    item.NombreTabla = despues.Datos.Nombre;
+                    item.Que_Pasa = PasaA(tarifarioId, despues, "");
+                    res.Items.Add(item);
+                }
+                else if ((string)json["tarifaDetalle"] != calculo.TarifaDetalle)
                     res.SoloDetalle.Add(item);
                 return;
             }
@@ -569,17 +592,10 @@ WHERE v.TarifarioID IS NOT NULL";
         public static Aplicado Aplicar(SqlConnection cn, SqlTransaction tx, Resultado r, int tarifarioId, string tabla, bool alta,
             string motivo, string usuario, DateTime ahora)
         {
-            var aplicado = new Aplicado { Recalculados = new List<Item>() };
+            var aplicado = new Aplicado { Recalculados = new List<Item>(), CambiaronDeTabla = new List<Item>() };
 
             foreach (var item in r.SoloDetalle)
-            {
-                if (item.Clase == "Viaje")
-                    Ejecutar(cn, tx, "UPDATE dbo.VIAJES SET TarifarioID=@t, Tarifa_Detalle=@tdet, Importe_Detalle=@idet WHERE Viaje_ID=@id",
-                        P("@t", item.Calculo.TarifarioID == TablaNueva ? tarifarioId : item.Calculo.TarifarioID),
-                        P("@tdet", item.Calculo.TarifaDetalle), P("@idet", item.Calculo.ImporteDetalle), P("@id", item.Id));
-                else
-                    GuardarPresupuesto(cn, tx, item, tarifarioId);
-            }
+                GuardarTablaYDetalle(cn, tx, item, tarifarioId);
 
             foreach (var viaje in r.VuelvenAlDocumento)
                 Ejecutar(cn, tx,
@@ -630,12 +646,29 @@ WHERE v.TarifarioID IS NOT NULL";
                     aplicado.ParaRevisar++;
             }
 
+            foreach (var item in r.Items.Where(i => i.Grupo == CambiaTabla))
+            {
+                GuardarTablaYDetalle(cn, tx, item, tarifarioId);
+                aplicado.CambiaronDeTabla.Add(item);
+            }
+
             foreach (var proforma in borradores)
                 RecalcularTotales(cn, tx, proforma);
 
             Ejecutar(cn, tx, "UPDATE dbo.TARIFARIO_CAMBIOS SET Viajes_Recalculados=@v, Presupuestos_Recalculados=@p WHERE Cambio_ID=@c",
                 P("@v", aplicado.ViajesRecalculados), P("@p", aplicado.PresupuestosRecalculados), P("@c", aplicado.CambioID));
             return aplicado;
+        }
+
+        // Mismo importe: la tabla y el texto del detalle (otra tabla u otro nombre).
+        private static void GuardarTablaYDetalle(SqlConnection cn, SqlTransaction tx, Item item, int tarifarioId)
+        {
+            if (item.Clase == "Viaje")
+                Ejecutar(cn, tx, "UPDATE dbo.VIAJES SET TarifarioID=@t, Tarifa_Detalle=@tdet, Importe_Detalle=@idet WHERE Viaje_ID=@id",
+                    P("@t", item.Calculo.TarifarioID == TablaNueva ? tarifarioId : item.Calculo.TarifarioID),
+                    P("@tdet", item.Calculo.TarifaDetalle), P("@idet", item.Calculo.ImporteDetalle), P("@id", item.Id));
+            else
+                GuardarPresupuesto(cn, tx, item, tarifarioId);
         }
 
         // Lo mismo que guarda la pantalla de presupuestos: el importe en texto con punto decimal, la tabla, la vuelta y el

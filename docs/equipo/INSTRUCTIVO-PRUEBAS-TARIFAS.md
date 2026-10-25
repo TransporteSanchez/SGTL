@@ -91,7 +91,7 @@ mandar un WhatsApp). Registrá viajes en octubre y revisá el importe y su detal
 - Más de 250 km: la tarifa hasta 250 km más los km de más por el precio por km.
 - Tarifa por km: todos los km por el precio por km.
 - Un camión modelo 2018 o anterior y uno 2019 en adelante: cada uno con su fila.
-- Falso flete y estadía (módulos): se suman al importe.
+- Falso flete y estadía (módulos): el falso flete reemplaza la tarifa por su porcentaje (60 %) y la estadía se suma.
 - Un viaje del cliente de prueba con fecha de septiembre: sale con "Tarifas a agosto 2026" (la propia empieza en octubre).
 - Un viaje de otro cliente en octubre: sale con "Tarifas a agosto 2026".
 - Hacé la cuenta a mano con los valores de la tabla y compará.
@@ -100,7 +100,8 @@ mandar un WhatsApp). Registrá viajes en octubre y revisá el importe y su detal
 Dejalo pendiente (lo usa la parte B). Ver PDF sin enviar.
 
 **A7. Proforma propia en borrador** con dos viajes del cliente de prueba: "Traer viajes" trae el importe guardado de cada
-uno. **No la generes** (consume un número). Dejala en borrador (la usa la parte B).
+uno. Para que los traiga, esos dos viajes tienen que estar en Entregado (con la evidencia, que es obligatoria). **No la
+generes** (consume un número). Dejala en borrador (la usa la parte B).
 
 **A8. Eliminar.**
 - "Tarifas a agosto 2026": Eliminar deshabilitado con "No se puede eliminar la tabla de tarifas: la usan N viajes".
@@ -134,8 +135,10 @@ a ponerle el nombre.
   envío falla por la configuración de e-mail de la VM, anotalo y seguí.
 
 **B4. Cambiar para quién es (sin guardar).**
-- Editar la tabla de prueba y tildar también un cliente real que tenga viajes en octubre → Guardar: en la confirmación,
-  sus viajes dicen 'Pasa a "…"' con el nombre de la tabla de prueba. **Cancelar.**
+- Editar la tabla de prueba y tildar también un cliente real que tenga viajes en octubre → Guardar: **siempre** aparece la
+  confirmación, aunque ningún importe cambie. Todos sus viajes de octubre están en la lista con 'Pasa a "…"' y el nombre
+  de la tabla de prueba: los de importe igual, en "Cambian de tabla, mismo importe", y los demás donde corresponda.
+  **Cancelar.**
 - Editar "Tarifas a agosto 2026" → "Solo algunos clientes" → elegir uno: la ayuda dice 'Los demás clientes vuelven a
   "Tarifas a enero 2026".'. Guardar: los viajes de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero
   2026".' con el importe de enero. **Cancelar** (si se guarda, se recalculan viajes reales).
@@ -145,9 +148,11 @@ abre la confirmación y arriba dice "No se puede guardar la tabla de tarifas: N 
 por cliente (cuántos y de qué fechas, hasta 5 clientes). Cerrar sin guardar. Si no aparece el error (no hay viajes de
 enero a julio), guarda directo: volvé a poner 01/01/2026 y anotalo.
 
-**B6. Cambiar la fecha de la tabla de prueba.** "Vigente desde" 15/10/2026 → Guardar: los viajes del cliente de prueba
-del 1 al 14/10 dicen 'Pasa a "Tarifas a agosto 2026".'. Guardar con motivo y revisar uno. Después volver al 01/10/2026: los
-mismos viajes vuelven a la tabla de prueba.
+**B6. Cambiar la fecha de la tabla de prueba.** "Vigente desde" 15/10/2026 → Guardar: **todos** los viajes del cliente de
+prueba del 1 al 14/10 están en la confirmación con 'Pasa a "Tarifas a agosto 2026".' (los de importe igual, en "Cambian
+de tabla, mismo importe"). Guardar con motivo: el aviso dice cuántos pasaron a otra tabla con el mismo importe, y
+Auditoría tiene un registro por cada uno ("Pasa a la tabla de tarifas … con el mismo importe … por …"). Después volver al
+01/10/2026: los mismos viajes vuelven a la tabla de prueba, también con confirmación.
 
 **B7. Deshacer.** Volver a poner el valor de A4 que tenía antes de B2: los viajes, el borrador y el presupuesto vuelven a
 los importes que anotaste.

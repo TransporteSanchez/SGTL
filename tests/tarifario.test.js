@@ -318,6 +318,15 @@ function probarCambiarClientes() {
     assert.ok(/if \(t\.Para_Todos\) return 'Todos los clientes';/.test(pantalla) && /nombres\.length \+ ' clientes'/.test(pantalla)
         && /'Ver los clientes de ' \+ t\.Nombre/.test(pantalla), 'la columna Clientes: todos, el cliente o "N clientes" con el globito');
     assert.ok(!/Clientes_Con_Tabla_Propia/.test(api + pantalla), 'la lista ya no dice qué clientes tienen tabla propia en la fila de la general');
+    // Prueba en la VM del 25/10. F1: lo que pasa a otra tabla con el mismo importe se confirma, con motivo y auditoría.
+    assert.ok(/public const string CambiaTabla = "tabla";/.test(impacto)
+        && /HayCambios \{ get \{ return Items\.Any\(i => i\.Grupo == Recalcula \|\| i\.Grupo == Revisar \|\| i\.Grupo == CambiaTabla\); \} \}/.test(impacto),
+        'cambiar de tabla con el mismo importe pide confirmación');
+    assert.ok(/clave: 'tabla', titulo: 'Cambian de tabla, mismo importe'/.test(pantalla), 'la confirmación tiene el grupo de los que cambian de tabla');
+    assert.ok(/foreach \(var item in aplicado\.CambiaronDeTabla\)/.test(api) && /"Pasa a la tabla de tarifas \\""/.test(api), 'queda en la auditoría por viaje');
+    // F2: una tabla nueva copia la última para todos. F4: en un comprobante, solo si el viaje está facturado.
+    assert.ok(/const ultimaGeneral = tarifarios\.filter\(function \(t\) \{ return t\.Para_Todos !== false; \}\)\[0\];/.test(pantalla), 'Registrar copia la última general');
+    assert.ok(/bool enComprobante = v\.Estado == "Facturado" \|\| v\.Proforma_Estado == "Facturada";/.test(impacto), 'una factura compensada no cuenta');
 }
 
 function probarProyecto() {

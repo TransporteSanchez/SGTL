@@ -659,7 +659,8 @@
             revisarValores();
         }
 
-        // Registrar viene con los valores de la tabla más nueva: cuando llega la actualizada, se cambian los que subieron.
+        // Registrar viene con los valores de la tabla más nueva para todos los clientes: cuando llega la actualizada, se cambian
+        // los que subieron.
         function abrirTarifario(id) {
             tarifarioEnEdicion = id || null;
             const fila = id ? tarifarios.find(function (t) { return t.Tarifario_ID === id; }) : null;
@@ -679,7 +680,9 @@
             actualizarHasta();
             revisarValores();
             const guardar = document.getElementById('btnGuardarTarifario');
-            const base = id || (tarifarios[0] && tarifarios[0].Tarifario_ID);
+            // Una tabla nueva viene con los valores de la última para todos los clientes, nunca de una propia (F2 de la VM, 25/10).
+            const ultimaGeneral = tarifarios.filter(function (t) { return t.Para_Todos !== false; })[0];
+            const base = id || (ultimaGeneral && ultimaGeneral.Tarifario_ID);
             guardar.disabled = !!base;
             SGTL.modal('#modalTarifario', 'show');
             if (!base) return;
@@ -791,6 +794,8 @@
         const GRUPOS_IMPACTO = [
             { clave: 'recalcula', titulo: 'Se recalculan', color: 'azul' },
             { clave: 'revisar', titulo: 'No cambian: quedan para revisar', color: 'amarillo' },
+            // Pasan a otra tabla con el mismo importe (cambiaron los clientes o la fecha): se ven y se confirman (F1, 25/10).
+            { clave: 'tabla', titulo: 'Cambian de tabla, mismo importe', color: 'gris' },
             { clave: 'error', titulo: 'No se pueden recalcular', color: 'rojo' },
             { clave: 'conserva', titulo: 'No cambian', color: 'gris' }
         ];

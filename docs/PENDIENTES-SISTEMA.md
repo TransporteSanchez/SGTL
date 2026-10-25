@@ -2721,7 +2721,8 @@ lo pendiente) y la parte del comprobante es de su módulo.
 **Probar en la VM (paso 2), después del paso 1:**
 - [ ] 1. Con un cambio guardado que dejó cosas para revisar: Gestionar presupuestos → el presupuesto pendiente recalculado
   tiene el ícono rojo; el globito dice "Cambió la tarifa: revisalo en Ver PDF.". Ver PDF y Editar: el aviso amarillo con
-  el importe anterior, el nuevo, la tabla, la fecha y el motivo.
+  "Cambió la tarifa: $ antes → $ nuevo" y qué hacer (el aviso corto del 25/10; la tabla, la fecha y el motivo están en la
+  tarjeta y en Auditoría).
 - [ ] 2. Enviarlo por e-mail desde Ver PDF: después del envío, el ícono ya no está.
 - [ ] 3. Gestionar proformas → la proforma generada o aceptada con un viaje para revisar tiene el ícono rojo; Ver detalle:
   el aviso con el viaje y los dos importes. Anular la proforma: el aviso del éxito dice que se recalculó el viaje; Ver
@@ -2941,7 +2942,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   PDF a 100 km (1ª vuelta; 2ª si el camión ya tiene un viaje antes ese día), 200 km y más de 250 km (la de 250 más el
   excedente). Por km: todo el viaje. Falso flete → 60 %; 1 módulo de estadía → + $ 96.577. Guardar y volver a abrir:
   el mismo importe.
-- [ ] 6. Abrir un viaje de marzo: el importe de "Tarifas a enero 2026", con su detalle; uno de agosto en adelante, el de
+- [ ] 6. Abrir un viaje de julio (los de "Tarifas a enero 2026" son del 21 al 27/07): el importe de esa tabla, con su
+  detalle; uno de agosto en adelante, el de
   "Tarifas a agosto 2026". Ninguno dice nada de tarifas de antes. Guardar sin cambios no cambia el importe. Ver detalle
   igual, con la misma última modificación que tenía.
 - [ ] 7. Presupuestos: los de antes muestran el importe de la tabla de su fecha y su viaje generado, el mismo. Registrar
@@ -3438,6 +3440,21 @@ crédito se tratan como facturados), F8 (guardar tarda 10 a 20 s); fuera de tari
 de viajes), F5 (la máscara de montos borra lo escrito), F6 (Gestionar clientes se traba si falla la apariencia), F7 (sesión
 vencida sin aviso), F9 (la API responde sin token), F10 (nombres técnicos en el filtro de Auditoría). Además, 7 dudas y 27
 mejoras para que decida Rocío.
+
+**Arreglos de la tanda 1 hechos en la Mac (25/10), sin probar en la VM:**
+- **F1:** lo que pasa a otra tabla con el mismo importe (al cambiar los clientes o la fecha, o con una tabla nueva igual a
+  la anterior) ya no se guarda sin preguntar: la confirmación tiene el grupo gris "Cambian de tabla, mismo importe · N"
+  con 'Pasa a "…"' en cada fila, pide el motivo, el aviso dice cuántos "pasaron a otra tabla con el mismo importe" y
+  Auditoría tiene un registro por viaje y presupuesto ("Pasa a la tabla de tarifas "…" con el mismo importe ($ …) por …").
+  Cambiar solo el nombre sigue guardando directo. Compilado y probado en la Mac (arnés y API simulada).
+- **F2:** Registrar tabla de tarifas copia la última tabla para todos los clientes, aunque la más nueva sea una propia.
+- **F4:** un viaje cuenta como "en un comprobante" solo si está Facturado (o su proforma, Facturada): los de una factura ya
+  compensada con una nota de crédito vuelven a Listo para facturar y se recalculan como cualquiera.
+- **D1 a D4:** corregidos el instructivo (falso flete, viajes en Entregado para "Traer viajes", B4 y B6 con el grupo nuevo)
+  y la §33 y la §34 (el aviso corto del presupuesto; viaje de julio en vez de marzo).
+- **Probar en la VM:** B4 y B6 del instructivo (siempre con confirmación, todos los viajes en la lista); Registrar con la
+  tabla de prueba primera en la lista ("Viene con los valores de "Tarifas a agosto 2026"…"); agosto → "Solo algunos
+  clientes" sin guardar: los viajes 25 y 26 ya no dicen "Nota de crédito sobre FAC-00000010.".
 
 **F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
 por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
