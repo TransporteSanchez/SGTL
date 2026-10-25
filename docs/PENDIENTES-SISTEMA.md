@@ -3358,9 +3358,14 @@ sale con `FAC` y los textos de hoy. Pasos:
    plataforma → Listo para facturar) y 5 y 38 (directos → Entregado). Numeración: `SEQ_PROFORMA` en 12 y
    `FACTURACION_NUMERADORES` FAC 15, NC 3, ND 1, REC 15. Los números internos (el "#" del borrador) no se reinician, para
    no mezclar la historia de Auditoría.
-3. Con Facu y Fede avisados, Rocío lo corre y hace `COMMIT`; la VM genera el juego de demo desde las pantallas (proforma
-   propia completa con comprobante y recibo, una aceptada sin comprobante, la de Rukas con su comprobante, una nota de
-   crédito y viajes entregados libres para registrar una proforma en vivo).
+3. Con Facu y Fede avisados, Rocío lo corre y hace `COMMIT`; la VM genera el juego de demo desde las pantallas con
+   `docs/equipo/INSTRUCTIVO-DEMO-FACTURACION.md`: Alimentos La Serena (viajes 43 y 44) con PF-00000001, FAC-00000001 y
+   REC-00000001; Servicios Ambientales (viaje 38) con PF-00000002 aceptada sin comprobante; QUICKFOOD con el Excel del
+   caso 1 (viajes 25 y 26), PF-00000003 y FAC-00000002 sin cobrar; una nota de crédito parcial sobre FAC-00000002 si la
+   pantalla lo permite; y el viaje 5 libre para registrar una proforma en vivo. El diagnóstico del `04` coincidió con el
+   relevamiento (18 proformas, 34 comprobantes, 10 viajes que vuelven).
+   **Antes de la presentación:** el cliente "distribuidora-powerful S.A." (viaje 5 y otros) tiene un nombre que no parece
+   real; cambiarlo en Gestionar clientes por uno creíble (el relevamiento de textos de prueba no lo detecta).
 
 **Opciones (Rocío decide; Claude recomienda la B para la defensa):**
 - **A. Lo mínimo:** borrar y regenerar desde el sistema la cadena de las proformas con comprobante (4 proformas, 4
