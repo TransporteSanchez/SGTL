@@ -389,6 +389,7 @@
     <script src="assets/static/js/alta-rapida-ubicacion.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/cambios-tarifa.js"></script>
     <script src="assets/static/js/viaje-detalle.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
@@ -578,8 +579,13 @@
         // Lo que acompaña al estado (en qué proforma está, de qué presupuesto viene) va en el ícono de información
         // al lado del estado, que abre un globito (§4.3), no en más etiquetas. Solo dice qué pasa: qué hacer para
         // editar o eliminar lo dice el globito del botón bloqueado (pedido de Rocío, 22/10).
+        // Si cambió la tarifa y el viaje quedó para revisar (en una proforma enviada o en un comprobante), el ícono pasa
+        // a rojo y suma "Cambió la tarifa…" a lo demás (§33): queda uno solo, el más urgente (§4.3).
+        var cambiosTarifa = [];
         function infoViaje(viaje) {
             var partes = [];
+            var cambio = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Viaje_ID', viaje.Viaje_ID) : [];
+            if (cambio.length) partes.push('<div>Cambió la tarifa: revisá el detalle del viaje.</div>');
             if (viaje.EnProforma_ID) {
                 var estadoPf = String(viaje.EnProforma_Estado || '');
                 partes.push(estadoPf === 'Borrador'
@@ -588,7 +594,7 @@
                         (estadoPf ? ', ' + escHtml(estadoPf.toLowerCase()) : '') + '.</div>');
             }
             if (viaje.Presupuesto_ID) partes.push('<div>Generado desde el <strong>presupuesto #' + escHtml(viaje.Presupuesto_ID) + '</strong>.</div>');
-            return partes.length ? SGTL.botonInfo('info', partes.join('<div class="mt-1"></div>'), 'Ver más información del viaje #' + viaje.Viaje_ID) : '';
+            return partes.length ? SGTL.botonInfo(cambio.length ? 'urgente' : 'info', partes.join('<div class="mt-1"></div>'), 'Ver más información del viaje #' + viaje.Viaje_ID) : '';
         }
 
         function accionesViaje(viaje) {
@@ -633,12 +639,15 @@
             currentPage = page;
             const requestData = Object.assign(filtrosViajes(), { page, pageSize });
             SGTL.tabla.cargando('#tablaViajes tbody', 10);
+            // Junto con lo que quedó para revisar por un cambio de tarifa (§33 de PENDIENTES).
+            const cambiosPromesa = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar() : Promise.resolve([]);
 
             $.ajax({
                 url: 'http://localhost:50222/api/Viajes/Buscar',
                 type: 'GET',
                 data: requestData,
-                success: function (data) {
+                success: async function (data) {
+                    cambiosTarifa = await cambiosPromesa;
                     const tbody = $('#tablaViajes tbody');
                     tbody.empty();
                     viajesPagina = {};

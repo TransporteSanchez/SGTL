@@ -1,6 +1,10 @@
 (function () {
     'use strict';
     var api = 'http://localhost:50222/api', clientes = [], origenes = [], destinos = [], registros = [], choferes = [];
+    // Lo que quedó para reenviar por un cambio de tarifa (§33 de PENDIENTES): ícono en la fila y aviso en Ver PDF y Editar.
+    var cambiosTarifa = [];
+    function cambiosDe(p) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Presupuesto_ID', p.id) : []; }
+    function avisoCambio(p) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDe(p)) : ''; }
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
     // Vuelta del día (tabla de tarifas, 24/10): la eligió la persona; si no, se propone la 2ª si el camión ya tiene otro viaje.
     var vueltaManual = false;
@@ -176,6 +180,7 @@
         secuencia++; clearTimeout(timer); SGTL.reiniciarFormulario('#formulario', '#mensajeForm'); formulario.reiniciar();
         ponerFechaHora('fechaInicio', ''); ponerFechaHora('fechaFin', ''); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
         opcionesRuta(); limpiarRutaPresupuesto(); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
+        el('cambioTarifaPresupuesto').innerHTML = '';
         vueltaManual = false; el('vueltaPresupuesto').value = '1'; mostrarVuelta(null);
     }
     // Con tarifa fija y hasta el primer límite de km hay 1ª y 2ª vuelta del día (la 2ª, más barata).
@@ -238,7 +243,9 @@
         if (!d.fecha) d.fecha = new Date().toLocaleDateString('en-CA'); return d;
     }
     function listar() {
-        pedir(api + '/Presupuestos').then(function (items) { registros = items || []; dibujar(); }).catch(function () {
+        Promise.all([pedir(api + '/Presupuestos'), window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar({}) : []]).then(function (r) {
+            registros = r[0] || []; cambiosTarifa = r[1] || []; dibujar();
+        }).catch(function () {
             SGTL.tabla.vacia('#lista', 8, 'No se pudieron cargar los presupuestos.');
             aviso('mensaje', 'No se pudieron cargar los presupuestos. Probá de nuevo.', true);
         });
@@ -286,7 +293,10 @@
             // El viaje generado va en el ícono de información al lado del estado, como en Gestionar viajes (§4.3,
             // pedido de Rocío del 22/10); el estado queda alineado en todas las filas, tengan ícono o no.
             estadoCelda.className = 'text-center text-nowrap';
-            estadoCelda.innerHTML = SGTL.conInfo(etiquetaEstado(p), p.viajeId
+            // Si cambió la tarifa y hay que reenviarlo, el ícono rojo manda a mirar Ver PDF (§33).
+            estadoCelda.innerHTML = SGTL.conInfo(etiquetaEstado(p), cambiosDe(p).length
+                ? SGTLCambiosTarifa.icono(cambiosDe(p), 'Cambió la tarifa: revisalo en Ver PDF.', 'Ver qué cambió en el presupuesto #' + p.id)
+                : p.viajeId
                 ? SGTL.botonInfo('info', '<div>Generó el <strong>viaje #' + Number(p.viajeId) + '</strong>.</div>', 'Ver qué viaje generó el presupuesto #' + p.id)
                 : '');
             // Botones de la fila (§1.4), en el orden del circuito: editar, PDF (con imprimir y e-mail adentro),
@@ -324,6 +334,7 @@
             el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.';
         }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
+        el('cambioTarifaPresupuesto').innerHTML = avisoCambio(p);
         modal.show();
     }
     function eliminar(p) {
@@ -420,8 +431,14 @@
             var pdf = doc.output('datauristring').split(',')[1];
             return pedir(api + '/Presupuestos/' + encodeURIComponent(envioActual.Presupuesto.id) + '/email', { method: 'POST', headers: encabezadosEnvio(), body: JSON.stringify({ Destinatario: el('envioPresupuestoDestino').value.trim(), PdfBase64: pdf, Version: envioActual.Version }) });
         }).then(function (r) {
+            var enviadoId = envioActual.Presupuesto.id;
             enviando = false; listo(); envioActual = null;
             modalEnvio.hide(); SGTL.toastExito(r.mensaje || 'Presupuesto enviado.');
+            // Si estaba para reenviar por un cambio de tarifa, queda resuelto (§33).
+            if (cambiosTarifa.some(function (c) { return c.Presupuesto_ID === Number(enviadoId); })) {
+                pedir(api + '/Tarifario/Revisar/Presupuesto/' + encodeURIComponent(enviadoId) + '/Enviado', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ Usuario: localStorage.getItem('username') || '' }) }).catch(function () { }).then(listar);
+            }
         }).catch(function (error) {
             enviando = false; listo();
             aviso('envioPresupuestoFeedback', textoError(error, 'No se pudo enviar el presupuesto. Probá de nuevo.'), true);
@@ -506,6 +523,7 @@
         descarga.removeAttribute('href'); descarga.classList.add('disabled'); descarga.setAttribute('aria-disabled', 'true');
         el('imprimirVistaPresupuesto').disabled = true;
         el('tituloVistaPresupuesto').textContent = 'Ver PDF del presupuesto #' + p.id;
+        el('vistaPresupuestoCambio').innerHTML = avisoCambio(p);
         el('vistaPresupuestoFeedback').className = 'text-center text-muted py-4'; el('vistaPresupuestoFeedback').textContent = 'Preparando el PDF…';
         modalVista.show();
         window.PresupuestoPDF.preparar(p, clientePresupuesto(p)).then(function (doc) {

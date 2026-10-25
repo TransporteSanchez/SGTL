@@ -956,9 +956,13 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     db.Database.ExecuteSqlCommand("DELETE FROM PROFORMAS_VIAJES WHERE ProformaID=@id", P("@id", id));
                     db.Database.ExecuteSqlCommand("UPDATE PROFORMAS SET Estado='Anulada', Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Proforma_ID=@id",
                         P("@u", usu), P("@id", id));
+                    // Sus viajes que quedaron para revisar por un cambio de tarifa se recalculan (§33 de PENDIENTES).
+                    var recalculados = Tarifas.TarifarioRevisar.AlAnularProforma(db, id, usu);
                     Auditar(db, usu, "ANULAR", id, "Estado=" + est, "Estado=Anulada; viajes liberados");
                     transaction.Commit();
-                    return Ok(new { Message = "Proforma anulada. Sus viajes quedaron disponibles para otra proforma." });
+                    return Ok(new { Message = "Proforma anulada. Sus viajes quedaron disponibles para otra proforma."
+                        + (recalculados.Count == 0 ? "" : recalculados.Count == 1 ? " Se recalculó 1 viaje con la tarifa corregida."
+                            : " Se recalcularon " + recalculados.Count + " viajes con la tarifa corregida.") });
                 }
             }
             catch (Exception ex)

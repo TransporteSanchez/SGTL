@@ -116,6 +116,7 @@
                 </div>
                 <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger" style="display: none;" role="alert"></div>
+                    <div id="cambioTarifaProforma"></div>
                     <div id="avisoDescartarProforma" class="alert alert-light-warning color-warning d-none" role="alert">
                         <div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>
                         <button type="button" class="btn btn-sm btn-light-secondary" onclick="seguirEditandoProforma()">Seguir editando</button>
@@ -249,6 +250,7 @@
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/clientes.js"></script>
     <script src="assets/static/js/cliente-editar.js"></script>
+    <script src="assets/static/js/cambios-tarifa.js"></script>
     <script src="assets/static/js/proformas-plataforma.js"></script>
     <script src="assets/static/js/anulacion-factura-proforma.js"></script>
 
@@ -540,9 +542,13 @@
             var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
             SGTL.tabla.cargando(cuerpo, 7);
-            fetch(API_FAC + '/Proformas?' + p.toString())
-                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-                .then(function (res) {
+            // Junto con lo que quedó para revisar por un cambio de tarifa (§33 de PENDIENTES): ícono en la fila y aviso en el detalle.
+            Promise.all([fetch(API_FAC + '/Proformas?' + p.toString())
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }),
+                window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar() : []])
+                .then(function (r) {
+                    var res = r[0];
+                    cambiosTarifa = r[1] || [];
                     if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
@@ -614,6 +620,14 @@
                 })
                 .finally(restaurarBotonesReporte);
         }
+        var cambiosTarifa = [];
+        function cambiosDeProforma(id) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Proforma_ID', id) : []; }
+        // Una proforma generada o aceptada con viajes cuya tarifa cambió: el ícono rojo manda a mirar el detalle (§33).
+        function iconoCambioTarifa(x) {
+            var filas = cambiosDeProforma(x.Proforma_ID);
+            return filas.length ? SGTLCambiosTarifa.icono(filas, 'Cambió la tarifa de ' + (filas.length === 1 ? '1 viaje' : filas.length + ' viajes') +
+                ': revisá el detalle de la proforma.', 'Ver qué cambió en ' + nombreProforma(x)) : '';
+        }
         function renderGrid(data) {
             var cuerpo = document.getElementById('cuerpoProformas');
             var items = (data && data.items) || [];
@@ -628,7 +642,7 @@
                     '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '') + '</td>' +
+                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), iconoCambioTarifa(x) || (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '')) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
                     '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
             }).join(''));
@@ -749,6 +763,7 @@
         // ---------- Form: abrir / leer ----------
         function limpiarForm() {
             if (window.ProformaPlataforma) ProformaPlataforma.reiniciar();
+            document.getElementById('cambioTarifaProforma').innerHTML = '';
             ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_fdesde', 'p_fhasta', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_tel', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
             setVal('p_cliente', ''); SelectClientePredictivo.sincronizar('p_cliente'); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
             actualizarVisibilidadNumero(false);
@@ -810,6 +825,7 @@
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
                 ponerBadgeEstado('badgeEstadoModal', estadoActual);
+                document.getElementById('cambioTarifaProforma').innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID)) : '';
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
                 if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID, soloLectura);

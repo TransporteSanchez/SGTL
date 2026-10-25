@@ -2684,6 +2684,37 @@ lo pendiente) y la parte del comprobante es de su módulo.
 - [ ] 5. Volver a poner el valor original (mismo motivo): los viajes vuelven a su importe. Los que quedaron para revisar
   no se repiten si el importe corregido es el mismo.
 
+**Paso 2 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA COMPILAR Y PROBAR EN VM:**
+- `Tarifas/TarifarioRevisar.cs` (nuevo, en el `.csproj`): lo pendiente con el cambio que lo causó y qué hacer ("Reenviáselo
+  al cliente…", "Anulá la proforma … y generala de nuevo…", "Corresponde una nota de crédito por $ X sobre el comprobante
+  …"); marcarlo como resuelto; y al anular una proforma, recalcular sus viajes pendientes con la tabla vigente (con su
+  registro en la auditoría) y darlos por resueltos. Si el script 05 no se corrió, no hace nada.
+- API: `GET api/Tarifario/Revisar` (todo, o `?presupuestoId=`, `?proformaId=`, `?viajeId=`),
+  `POST api/Tarifario/Revisar/{id}/Resolver` y `POST api/Tarifario/Revisar/Presupuesto/{id}/Enviado`.
+- `ProformasController.Anular` (una línea): llama al recálculo y el mensaje suma "Se recalculó 1 viaje con la tarifa
+  corregida." **Toca proformas: contarle a Facu.**
+- `assets/static/js/cambios-tarifa.js` (nuevo, `SGTLCambiosTarifa`, con `fetch` porque Presupuestos no carga jQuery).
+- **Presupuestos** (módulo de Facu): ícono rojo "Cambió la tarifa: revisalo en Ver PDF." al lado del estado; el aviso en
+  Ver PDF (arriba del documento, no adentro) y en Editar; al enviarlo por e-mail, queda resuelto.
+- **Proformas**: ícono rojo "Cambió la tarifa de N viajes: revisá el detalle de la proforma." y el aviso en el detalle,
+  con cada viaje (en la proforma → con la tabla corregida).
+- **Viajes**: el ícono de la fila pasa a rojo y suma "Cambió la tarifa: revisá el detalle del viaje."; Ver detalle (todas
+  las pantallas que lo usan) muestra el aviso arriba, con el comprobante y la nota que corresponde. Listar viajes muestra
+  el aviso en Ver detalle, pero no el ícono en la fila.
+- Probado en el navegador con la API simulada: guardar un cambio deja un presupuesto, un viaje en proforma y uno en un
+  comprobante para revisar; cada pantalla muestra su ícono y su aviso.
+
+**Probar en la VM (paso 2), después del paso 1:**
+- [ ] 1. Con un cambio guardado que dejó cosas para revisar: Gestionar presupuestos → el presupuesto pendiente recalculado
+  tiene el ícono rojo; el globito dice "Cambió la tarifa: revisalo en Ver PDF.". Ver PDF y Editar: el aviso amarillo con
+  el importe anterior, el nuevo, la tabla, la fecha y el motivo.
+- [ ] 2. Enviarlo por e-mail desde Ver PDF: después del envío, el ícono ya no está.
+- [ ] 3. Gestionar proformas → la proforma generada o aceptada con un viaje para revisar tiene el ícono rojo; Ver detalle:
+  el aviso con el viaje y los dos importes. Anular la proforma: el aviso del éxito dice que se recalculó el viaje; Ver
+  detalle del viaje: el importe nuevo. Generar otra proforma con ese viaje: trae el importe nuevo.
+- [ ] 4. Gestionar viajes → un viaje en un comprobante para revisar: ícono rojo; Ver detalle: el aviso con el comprobante
+  y "Corresponde una nota de crédito (o de débito) por $ X". (Se marca como resuelto desde el tablero, paso 3.)
+
 ## 34. Tabla de tarifas por tipo de camión (agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío (24/10), para la presentación del jueves 29/10: adaptar las tarifas a la tabla que dio la empresa

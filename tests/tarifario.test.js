@@ -126,6 +126,42 @@ function probarImpactoAlGuardar() {
     assert.ok(/data-sgtl="detalle"/.test(leer('assets/static/js/sgtl-ui.js')), 'SGTL.confirmar puede mostrar una lista');
 }
 
+// Lo que queda para revisar (§33): ícono rojo en la fila y aviso adentro en presupuestos, proformas y viajes; se resuelve
+// solo al reenviar el presupuesto o al anular la proforma (sus viajes se recalculan).
+function probarParaRevisar() {
+    const api = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
+    assert.ok(/\[Route\("api\/Tarifario\/Revisar"\)\]/.test(api), 'la API lista lo que queda para revisar');
+    assert.ok(/\[Route\("api\/Tarifario\/Revisar\/\{id:int\}\/Resolver"\)\]/.test(api), 'se puede marcar como resuelto');
+    assert.ok(/\[Route\("api\/Tarifario\/Revisar\/Presupuesto\/\{id:int\}\/Enviado"\)\]/.test(api), 'reenviar el presupuesto lo resuelve');
+    assert.ok(/Tarifas\.TarifarioRevisar\.AlAnularProforma\(db, id, usu\)/.test(leer('WebApi_TransporteSanchez/Controllers/ProformasController.cs')),
+        'al anular una proforma, sus viajes para revisar se recalculan');
+    assert.ok(/OBJECT_ID\(N'dbo\.TARIFARIO_REVISAR', N'U'\)/.test(leer('WebApi_TransporteSanchez/Tarifas/TarifarioRevisar.cs')),
+        'sin el script 05, anular una proforma sigue funcionando');
+    assert.ok(/<Compile Include="Tarifas\\TarifarioRevisar\.cs" \/>/.test(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj')),
+        'TarifarioRevisar.cs está en el .csproj');
+
+    const modulo = leer('assets/static/js/cambios-tarifa.js');
+    assert.ok(/botonInfo\('urgente'/.test(modulo) && /alert alert-warning/.test(modulo), 'ícono rojo en la fila y aviso amarillo adentro');
+    assert.ok(!/SGTL\.ajax\(/.test(modulo), 'cambios-tarifa.js usa fetch: Presupuestos no carga jQuery');
+
+    const presupuestos = leer('assets/static/js/presupuestos.js');
+    assert.ok(presupuestos.indexOf("'Cambió la tarifa: revisalo en Ver PDF.'") !== -1, 'Presupuestos: el ícono manda a Ver PDF');
+    assert.ok(/el\('vistaPresupuestoCambio'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos),
+        'Presupuestos: el aviso en Ver PDF y en Editar');
+    assert.ok(/\/Tarifario\/Revisar\/Presupuesto\/' \+ encodeURIComponent\(enviadoId\) \+ '\/Enviado'/.test(presupuestos), 'Presupuestos: enviarlo por e-mail lo resuelve');
+    assert.ok(/<script src="assets\/static\/js\/cambios-tarifa\.js"><\/script><script src="assets\/static\/js\/presupuestos\.js">/.test(leer('presupuestos.html')),
+        'presupuestos.html carga el módulo antes de presupuestos.js');
+
+    const proformas = leer('gestion-facturacion.html');
+    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\)\)/.test(proformas),
+        'Proformas: ícono en la fila y aviso en el detalle');
+
+    const viajes = leer('gestion-viajes.html');
+    assert.ok(viajes.indexOf("'<div>Cambió la tarifa: revisá el detalle del viaje.</div>'") !== -1 && /botonInfo\(cambio\.length \? 'urgente' : 'info'/.test(viajes),
+        'Viajes: el ícono pasa a rojo y suma el texto');
+    assert.ok(/mostrarCambioTarifa\(viaje, numero\)/.test(leer('assets/static/js/viaje-detalle.js')), 'Ver detalle del viaje muestra el aviso');
+}
+
 function probarViajeGuardaImporte() {
     const viajes = leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs');
     assert.ok(/GuardarImporte\(db, viaje\.Viaje_ID, viajeDto, calculo\)/.test(viajes), 'el alta del viaje guarda el importe calculado por la API');
@@ -228,6 +264,7 @@ probarValoresDeAgosto();
 probarValoresDeEnero();
 probarGrillaComoElPdf();
 probarImpactoAlGuardar();
+probarParaRevisar();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();

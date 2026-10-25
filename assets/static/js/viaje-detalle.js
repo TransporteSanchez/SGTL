@@ -159,6 +159,17 @@
       }, function () { /* sin los módulos, el detalle se ve igual, sin el costo */ });
   }
 
+  // Si el viaje quedó para revisar por un cambio de tarifa (§33 de PENDIENTES), el aviso va arriba del detalle. El módulo
+  // se carga solo, como el del costo.
+  function mostrarCambioTarifa(viaje, numero) {
+    cargarScript('assets/static/js/cambios-tarifa.js', function () { return !!window.SGTLCambiosTarifa; })
+      .then(function () { return window.SGTLCambiosTarifa.cargar({ viajeId: viaje.Viaje_ID }); })
+      .then(function (filas) {
+        if (numero !== apertura || !filas.length) return;
+        document.getElementById('verViajeCuerpo').insertAdjacentHTML('afterbegin', window.SGTLCambiosTarifa.aviso(filas));
+      }, function () { /* sin el módulo, el detalle se ve igual */ });
+  }
+
   function abrir(viaje, opciones) {
     if (!viaje) return;
     opciones = opciones || {};
@@ -171,6 +182,7 @@
       if (numero !== apertura) return;
       document.getElementById('verViajeCuerpo').innerHTML = cuerpo(viaje, r[0], r[1], r[2], opciones);
       mostrarCosto(viaje, numero);
+      mostrarCambioTarifa(viaje, numero);
     });
   }
 

@@ -431,6 +431,65 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
+        public class ResolverDto
+        {
+            public string Usuario { get; set; }
+            public string Como { get; set; }
+        }
+
+        // GET api/Tarifario/Revisar: lo que quedó para revisar por un cambio de tarifa (§33), el más nuevo primero. Con
+        // presupuestoId, proformaId o viajeId, solo lo de ese documento (el aviso de su detalle).
+        [HttpGet]
+        [Route("api/Tarifario/Revisar")]
+        public IHttpActionResult Revisar(int presupuestoId = 0, int proformaId = 0, int viajeId = 0)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                    return Ok(TarifarioRevisar.Pendientes(db, presupuestoId, proformaId, viajeId));
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // POST api/Tarifario/Revisar/{id}/Resolver: marcar como resuelto lo que se resolvió por fuera del sistema (por
+        // ejemplo, la nota de crédito de un viaje que ya estaba en un comprobante).
+        [HttpPost]
+        [Route("api/Tarifario/Revisar/{id:int}/Resolver")]
+        public IHttpActionResult ResolverRevisar(int id, [FromBody] ResolverDto dto)
+        {
+            string usuario = Usuario(dto == null ? null : dto.Usuario);
+            string como = (dto == null || string.IsNullOrWhiteSpace(dto.Como)) ? "Marcado como resuelto." : dto.Como.Trim();
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    if (TarifarioRevisar.Resolver(db, usuario, como, revisarId: id) == 0)
+                        return Content(HttpStatusCode.NotFound, new { Mensaje = "Ya estaba resuelto." });
+                    SGTLAuditContext.RegistrarEvento(Cn(), usuario.Length > 20 ? usuario.Substring(0, 20) : usuario, "UPDATE", "TARIFARIO_REVISAR",
+                        "Revisar_ID=" + id, "Marcado como resuelto: " + como);
+                    return Ok(new { Message = "Marcado como resuelto." });
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // POST api/Tarifario/Revisar/Presupuesto/{id}/Enviado: la pantalla de presupuestos lo llama después de enviarlo por
+        // e-mail; si estaba para reenviar por un cambio de tarifa, queda resuelto.
+        [HttpPost]
+        [Route("api/Tarifario/Revisar/Presupuesto/{id:int}/Enviado")]
+        public IHttpActionResult PresupuestoEnviado(int id, [FromBody] ResolverDto dto)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    int resueltos = TarifarioRevisar.Resolver(db, Usuario(dto == null ? null : dto.Usuario), "Reenviado por e-mail.", presupuestoId: id);
+                    return Ok(new { Resueltos = resueltos });
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
         // DELETE api/Tarifario/{id}: solo si ningún viaje lo usa.
         [HttpDelete]
         [Route("api/Tarifario/{id:int}")]
