@@ -52,12 +52,12 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
-| 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Tarjeta fija en el dashboard, por permisos y con acceso directo a corregir. Falta la parte del comprobante (módulo de Facu, después de su cambio) | Sin push | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
-| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | Pusheado el 24 y 25/10; la tabla de enero y el `04` rehecho, **sin push** | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
+| 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Tarjeta fija en el dashboard, por permisos y con acceso directo a corregir. Falta la parte del comprobante (módulo de Facu, después de su cambio) | **Pusheado** (25/10) | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
+| 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | **Pusheado** (24 y 25/10) | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
-| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
-| 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | Commit del 24/10, **sin push** | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
-| 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | Tabla de enero y `04`, **sin push** | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
+| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
+| 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
+| 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2586,7 +2586,7 @@ empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Saliero
 
 ---
 
-## 33. Editar una tabla de tarifas que ya usan viajes — HECHO EN LA MAC (25/10), SIN PUSH; FALTA CORRER EL SCRIPT 05, COMPILAR Y PROBAR EN VM
+## 33. Editar una tabla de tarifas que ya usan viajes — PUSHEADO (25/10); FALTA CORRER EL SCRIPT 05, COMPILAR Y PROBAR EN VM
 
 Lo planteó Facu (23/10): "no debería dejarte editar tarifas que estén en curso, porque ya hay viajes que las usan;
 debería pedirte que cierres esa vigencia y generes una nueva con el nuevo valor, y ahí recalcular todo". Con el §34 el
@@ -2750,7 +2750,7 @@ lo pendiente) y la parte del comprobante es de su módulo.
 - [ ] 5. Viaje en un comprobante: Ver detalle (con el aviso) y Marcar como resuelto sin escribir cómo: "Completá el
   motivo."; con el texto: sale de la tarjeta.
 
-## 34. Tabla de tarifas por tipo de camión (agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
+## 34. Tabla de tarifas por tipo de camión (agosto 2026) — PUSHEADO (24 y 25/10); FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío (24/10), para la presentación del jueves 29/10: adaptar las tarifas a la tabla que dio la empresa
 ("Tarifas a agosto 2026", PDF), que usan siempre para calcular cuánto cobrar un viaje. El precio sale del **tipo de
@@ -3041,7 +3041,7 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
 
 ---
 
-## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — PUSHEADO (24/10), AJUSTES DEL 24/10 SIN PUSH; FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+## 36. Hoja de ruta del chofer: el chofer usa el sistema desde el celular — PUSHEADO (24/10, con los ajustes); FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
 
 Pedido de Rocío para el jueves 29/10 (presentación ante el segundo profesor). Antes el chofer no usaba el sistema:
 solo recibía la hoja de ruta por WhatsApp. **Decisiones de Rocío (24/10):** alcance completo (ver, iniciar el viaje,
@@ -3207,7 +3207,7 @@ publicado; hoy el front y la API corren en `localhost`.
 
 ---
 
-## 37. Control interno de los viajes: recorrido completo, kilometraje, combustible estimado y gastos del chofer — HECHO EN LA MAC (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+## 37. Control interno de los viajes: recorrido completo, kilometraje, combustible estimado y gastos del chofer — PUSHEADO (24/10); FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
 
 Idea de Rocío (24/10) para tener control interno de cada viaje. El viaje real no es solo de A a B: el camión sale del
 galpón, va vacío al origen a buscar la carga, la lleva al destino y vuelve vacío al galpón. Ese recorrido no estaba en
@@ -3285,7 +3285,7 @@ del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); 
 
 ---
 
-## 38. Documentos de prueba y tabla de tarifas "como si siempre hubiera estado" — TABLA DE ENERO Y `04` HECHOS EN LA MAC (25/10), SIN PUSH; LA LIMPIEZA, DESPUÉS DEL CAMBIO DE FACU
+## 38. Documentos de prueba y tabla de tarifas "como si siempre hubiera estado" — TABLA DE ENERO Y `04` PUSHEADOS (25/10); LA LIMPIEZA, DESPUÉS DEL CAMBIO DE FACU
 
 **Pedido de Rocío (25/10):** el sistema tiene que verse y funcionar como si siempre hubiera tenido la tabla de tarifas
 (§34): sin leyendas ni rastros de las tarifas de antes (fija por cliente y recorrido, y bandas por km, que eran de
@@ -3369,3 +3369,40 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
 - [ ] Opción A o B, y qué casos de la demo se regeneran.
 - [ ] Módulos de estadía: proponerlos con el inicio y el fin del viaje, o a mano (§34).
 - [ ] Tesis: la HU26.
+
+---
+
+## 39. Ronda de pruebas en la VM de lo subido el 24 y 25/10 — PLANIFICADA (25/10)
+
+Todo lo de §33 a §37 está pusheado (`rocionuvoli` @ `a3fb22c` o posterior) y no tiene reporte de prueba. La API nueva
+necesita las columnas y tablas de los scripts, así que **la preparación se hace una sola vez y al principio**; las pruebas
+van **por tandas**, una por tema y con su propio reporte en `docs/pruebas/`, para que una falla de un tema se corrija en
+la Mac sin frenar los demás. Las tandas van en orden de prioridad para el jueves 29/10.
+
+**Preparación (Rocío; base compartida: avisar al equipo antes):**
+1. SSMS, base `Transporte_Sanchez`, en este orden (cada uno es idempotente y termina con su verificación "OK"):
+   `database/tarifas/02_tarifario_por_vehiculo.sql` → `database/tarifas/05_cambios_de_tarifa.sql` →
+   `database/tableros/01_crear_tableros_favoritos.sql` → `database/hoja-de-ruta/01_usuario_chofer.sql` →
+   `database/costos/01_galpon_kilometraje_y_gastos.sql`.
+2. `database/tarifas/03_cargar_tablas_de_tarifas_2026.sql` tal cual: revisar los camiones "Elegir en Gestionar camiones"
+   y que "Viajes antes del 01/01/2026" dé 0 (si no, avisar a Claude en la Mac). Después `@Aplicar = 1` y `COMMIT`.
+3. VM: `git pull` en `rocionuvoli` (anotar el commit), recompilar la API en Visual Studio, Live Server y Ctrl+F5.
+4. Gestionar camiones: elegir el tipo de los camiones que el `03` no pudo deducir.
+5. `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: la columna "Falta" vacía, revisar el resumen y
+   anotar los importes nuevos de la demo de Rukas (viajes 25 y 26: pasárselos a Claude para los Excel). Después
+   `@Aplicar = 1` y `COMMIT`.
+
+**Tandas (cada una con la sesión de Claude de la VM, según `docs/equipo/PRUEBAS-VM-CLAUDE.md`):**
+
+| Tanda | Qué | Pasos | Antes de probar |
+|---|---|---|---|
+| 1 | Tabla de tarifas (§34) | 1 a 10 (el 0 y el 4b son la preparación) | Preparación hecha |
+| 2 | Editar una tabla y lo que queda para revisar (§33) | Pasos 1, 2 y 3 | Tanda 1 OK. Usuarios: admin, uno solo con "Presupuestos" y uno solo con facturación |
+| 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | Un usuario chofer; preguntar antes de lo que manda WhatsApp |
+| 4 | Tableros (§35) | Todos | — |
+| 5 | Control interno de los viajes (§37) | Todos | El galpón cargado |
+| 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
+
+**Al terminar cada tanda:** la VM muestra el reporte, Rocío lo pasa a la Mac, Claude lo guarda en
+`docs/pruebas/2026-10-AA-<tema>.md`, corrige lo que haga falta y lo pushea antes de la tanda siguiente (o al final, si no
+bloquea).
