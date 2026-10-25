@@ -29,7 +29,7 @@ Al final hay un **guion para la presentación** con el orden sugerido y qué con
 | Qué | Dónde | Para qué |
 |---|---|---|
 | **QUICKFOOD** | Cliente **con plataforma** (Rukas) | Viajes y proformas de Rukas |
-| **Viajes 25 y 26** de QUICKFOOD | N° de transporte SAP **990001** y **990002**, con remito y N° de entrega, en **Listo para facturar**. Cada uno da **$14.790** en SGTL (tarifa por km #5: 17,4 km × $850) | Los usan todos los Excel de prueba |
+| **Viajes 25 y 26** de QUICKFOOD | N° de transporte SAP **990001** y **990002**, con remito y N° de entrega, en **Listo para facturar**. En SGTL, con la tabla de agosto 2026 (Liviano 2016, tarifa fija hasta 130 km), el 25 da **$429.101** (1ª vuelta) y el 26 **$278.028** (2ª vuelta: mismo camión, mismo día, más tarde) | Los usan todos los Excel de prueba |
 | Clientes **directos** | Por ejemplo, distribuidora-powerful y Servicios Ambientales | Viajes y proformas propias |
 | **Excel de Rukas** | `docs/pruebas/datos/` (ver su `README.md`) | Un archivo por caso |
 
@@ -111,16 +111,16 @@ Misma pantalla: **Gestionar proformas**. Para un cliente con plataforma, el moda
 
 ### 3.2 Caso 1 — todo coincide
 
-1. Elegí `proforma-rukas-caso1-todo-ok (PROFORMA NRO 990110).xlsx`: vista previa "2 transportes · Total Rukas $44.580" y N° 990110.
+1. Elegí `proforma-rukas-caso1-todo-ok (PROFORMA NRO 990110).xlsx`: vista previa "2 transportes · Total Rukas $722.129" y N° 990110.
 2. Al elegirlo se guarda el borrador (toast) y aparece el **control**: arriba "● Lista para generar: los 2 transportes coinciden" y las 2 filas con "Coincide" en gris, con el importe de Rukas y el de SGTL.
-3. Totales: neto $44.580 (viajes $29.580 + adicional $15.000), IVA $9.361,80, total **$53.941,80**.
-4. "Generar proforma" está en verde. Si querés probar el circuito completo: Generar → confirmación dentro del modal → queda **Aceptada** con N° PF y la etiqueta "Rukas 990110" en el listado → "Emitir factura" por $53.941,80 → viajes 25 y 26 en Facturado. **Esto consume un N° PF y una factura**: después, nota de crédito para liberar los viajes.
+3. Totales: neto $722.129 (viajes $707.129 + adicional $15.000), IVA $151.647,09, total **$873.776,09**.
+4. "Generar proforma" está en verde. Si querés probar el circuito completo: Generar → confirmación dentro del modal → queda **Aceptada** con N° PF y la etiqueta "Rukas 990110" en el listado → "Emitir factura" por $873.776,09 → viajes 25 y 26 en Facturado. **Esto consume un N° PF y una factura**: después, nota de crédito para liberar los viajes.
 5. Si no generás: eliminá el borrador.
 
 ### 3.3 Caso 2 — Rukas está mal: reclamo
 
 1. Elegí `proforma-rukas-caso2-reclamo-a-rukas (PROFORMA NRO 990120).xlsx` → Guardar borrador.
-2. El 990002 está en el grupo **"Para revisar"** con "Importe distinto": Rukas $12.500, SGTL $14.790 y, en gris debajo del importe de SGTL, la tarifa usada ("17,4 km × $ 850"). "Generar proforma" queda deshabilitado; su globito dice "Para generar, resolvé la diferencia".
+2. El 990002 está en el grupo **"Para revisar"** con "Importe distinto": Rukas $250.000, SGTL $278.028 y, en gris debajo del importe de SGTL, la tarifa usada (la fija hasta 130 km, 2ª vuelta). "Generar proforma" queda deshabilitado; su globito dice "Para generar, resolvé la diferencia".
 3. La tarifa del viaje está bien, así que el error es de Rukas: **"Registrar reclamo"** → fecha (hoy) y motivo → Guardar. La fila pasa al grupo **"Esperando a Rukas"**, que dice "Reclamado el …" con "Ver reclamo".
 4. Cerrá el modal. En el listado, junto al estado, aparece el **ícono de admiración** con el tooltip "Reclamo pendiente en Rukas desde el…". El filtro **Tipo → "Con reclamo pendiente"** la muestra.
 5. Marfrig corrige: abrí el borrador (lápiz) → **"Reemplazar Excel"** → `proforma-rukas-caso2-reclamo-a-rukas-corregido (PROFORMA NRO 990120).xlsx`. El reclamo **se cierra solo**, los 2 "Coincide" y "Generar" se pone verde.
@@ -180,7 +180,7 @@ Unos 10 a 15 minutos. Antes de empezar: datos como en 3.8, sesión iniciada, Ges
 | 5 | Registrar proforma → QUICKFOOD → la guía (3.1) | Es la lista para tildar en Rukas y evitar diferencias |
 | 6 | **Caso 3** (3.4): importar, "Sin viaje relacionado", corregir el viaje, Volver a controlar | Cuando el error es nuestro, se corrige en SGTL sin perder el borrador. Eliminar el borrador al terminar |
 | 7 | **Caso 2** (3.3): importar, "Importe distinto" con la tarifa usada, Registrar reclamo, ícono en el listado, Reemplazar Excel | Cuando el error es de Rukas, se reclama y queda marcado; con la corrección se reemplaza y vuelve a controlar solo |
-| 8 | Generar → Aceptada → Emitir factura ($53.941,80) | Solo se genera con todo OK; nace Aceptada porque Marfrig ya la aceptó en Rukas; la factura es la de siempre |
+| 8 | Generar → Aceptada → Emitir factura ($873.776,09) | Solo se genera con todo OK; nace Aceptada porque Marfrig ya la aceptó en Rukas; la factura es la de siempre |
 | 9 | PDF de la proforma y listado con el filtro Tipo | La proforma de Rukas se distingue en el listado, en el PDF y al exportar |
 | 10 | (Si preguntan) Nota de crédito (3.7) y diagrama de correcciones (§5) | Cada error tiene su salida: borrador se edita, aceptada se anula, facturada con nota de crédito |
 

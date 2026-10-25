@@ -2888,9 +2888,10 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
     porque el EDMX las incluye y no se regenera.
   - Hasta la limpieza de la §38, las proformas y comprobantes de prueba guardan los importes de antes y no coinciden con
     sus viajes.
-- **Demo de Rukas:** los viajes 25 y 26 (990001 y 990002) se recalculan con la tabla y dejan de dar $ 14.790. El script
-  muestra sus importes nuevos: con esos importes hay que regenerar los Excel de `docs/pruebas/datos/` (pasárselos a
-  Claude).
+- **Demo de Rukas:** los viajes 25 y 26 (990001 y 990002) se recalculan con la tabla y dejan de dar $ 14.790: con la
+  tarifa fija, $ 429.101 (1ª vuelta) y $ 278.028 (2ª vuelta). **Hecho (25/10):** `04` aplicado por Rocío y los Excel de
+  `docs/pruebas/datos/` y el instructivo de viajes y proformas actualizados con esos importes (en el caso 2, Rukas paga
+  $ 250.000 el 990002).
 - Los "valores más reales" de la §31 ya no hacen falta.
 - **Modelos (Rocío, 25/10):** la empresa separa siempre "2018 o anterior" y "2019 en adelante" por su flota, así que el año
   no se edita: Gestionar tarifas lo muestra como texto en "Bandas de km y modelos" y cada tabla lo guarda (`Anio_Corte`,
