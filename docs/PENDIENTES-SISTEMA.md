@@ -2884,7 +2884,10 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
   "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de enero: "Vigente hasta" dice 31/07/2026 y "Después:
   Tarifas a agosto 2026" (no se carga: es el día antes de la siguiente); en la de agosto, "Sin fecha de fin". En Registrar,
-  al elegir "Vigente desde" se actualiza solo. Editar la de agosto: las tarifas fijas se ven como el PDF
+  al elegir "Vigente desde" se actualiza solo. Bandas: tercera igual a la segunda → "Tiene que ser mayor que 190 km."; si
+  se cambia una banda, la siguiente se revisa enseguida. Poner "hasta 190 km" más barata que "hasta 130 km" (o la 2ª
+  vuelta más cara que la 1ª): arriba de las grillas, "Revisá estos valores" con el tipo y el modelo; se puede guardar
+  igual. Editar la de agosto: las tarifas fijas se ven como el PDF
   (distancia en las filas, tipos en las columnas, 1ª y 2ª vuelta solo hasta 130 km) y con sus mismos valores; abajo, la
   tarifa por km aparte, con la ayuda de los dos casos. Ningún importe cortado y sin barra hacia el costado en una
   pantalla de 1366 px. Borrar un valor y Guardar: "Revisá los campos marcados." y "Completá el valor." debajo de ese

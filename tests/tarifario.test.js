@@ -104,6 +104,11 @@ function probarGrillaComoElPdf() {
     // Modelos (Rocío, 25/10): el año de corte no se edita; se muestra como texto y viaja con la tabla.
     assert.ok(tarifas.indexOf('id="trCorte"') === -1 && /<div class="sgtl-dato-fijo" id="trModelos"/.test(tarifas), 'el año de los modelos se ve como texto');
     assert.ok(/Anio_Corte: anioCorte,/.test(tarifas), 'el año de corte se guarda con la tabla');
+    // Aviso que no impide guardar (Rocío, 25/10): la 2ª vuelta no más cara que la 1ª y cada banda no más barata que la anterior.
+    assert.ok(/\[\['v2', 'v1', 'más cara'\], \['b2', 'v1', 'más barata'\], \['b3', 'b2', 'más barata'\]\]/.test(tarifas)
+        && tarifas.indexOf('Si están bien, se puede guardar igual.') !== -1, 'avisa si los valores no suben como en el PDF');
+    assert.ok(!/revisarValores\(\)[^;]*return false/.test(tarifas) && !/avisoValoresTarifario[\s\S]{0,200}revisarFormulario/.test(tarifas),
+        'el aviso no bloquea el guardado');
 }
 
 // Editar o registrar una tabla (§33, decisión de Rocío del 25/10): antes de guardar, la API calcula qué viajes y

@@ -379,7 +379,7 @@
         // su propio bloque, con los dos casos en que se usa. Los ids de los campos no cambian (idValor).
         function armarGrillasTarifario() {
             const tipos = TIPOS_VEHICULO.map(function (tipo) { return SGTL.escapar(tipo); });
-            let html = '';
+            let html = '<div id="avisoValoresTarifario"></div>';
             [false, true].forEach(function (nuevo) {
                 const banda = function (campo) {
                     return TIPOS_VEHICULO.map(function (_, i) { return celda(idValor(nuevo, i, campo), 2); }).join('');
@@ -549,6 +549,31 @@
             }, function () { clientesTabla = []; });
         }
 
+        // Aviso (no impide guardar, Rocío 25/10): valores que no suben como en el PDF. Para cada tipo y modelo, la 2ª vuelta no
+        // es más cara que la 1ª, y cada banda no es más barata que la anterior (hasta 130 km, 1ª vuelta → hasta 190 → hasta 250).
+        function revisarValores() {
+            const b1 = entero('trBanda1') || '…', b2 = entero('trBanda2') || '…', b3 = entero('trBanda3') || '…';
+            const nombres = { v1: 'hasta ' + b1 + ' km, 1ª vuelta', v2: 'hasta ' + b1 + ' km, 2ª vuelta', b2: 'hasta ' + b2 + ' km', b3: 'hasta ' + b3 + ' km' };
+            const reglas = [['v2', 'v1', 'más cara'], ['b2', 'v1', 'más barata'], ['b3', 'b2', 'más barata']];
+            const avisos = [];
+            [false, true].forEach(function (nuevo) {
+                TIPOS_VEHICULO.forEach(function (tipo, i) {
+                    reglas.forEach(function (r) {
+                        const a = centavosCampo(idValor(nuevo, i, r[0])), b = centavosCampo(idValor(nuevo, i, r[1]));
+                        if (a == null || b == null || !a || !b) return;
+                        if (r[2] === 'más cara' ? a > b : a < b) {
+                            avisos.push(tipo + ', ' + (nuevo ? 'modelo ' + anioCorte + ' en adelante' : 'modelo ' + (anioCorte - 1) + ' o anterior') + ': ' +
+                                nombres[r[0]] + ' (' + SGTL.monto(a / 100) + ') es ' + r[2] + ' que ' + nombres[r[1]] + ' (' + SGTL.monto(b / 100) + ').');
+                        }
+                    });
+                });
+            });
+            $('#avisoValoresTarifario').html(avisos.length
+                ? '<div class="alert alert-warning mb-4" role="status"><div class="fw-bold mb-1">Revisá estos valores</div><ul class="mb-1 ps-3">' +
+                  avisos.map(function (t) { return '<li>' + SGTL.escapar(t) + '</li>'; }).join('') + '</ul><div>Si están bien, se puede guardar igual.</div></div>'
+                : '');
+        }
+
         // "Vigente hasta": el día antes de la tabla siguiente del mismo alcance (la general siguiente, o la propia siguiente de
         // alguno de los clientes elegidos), como lo calcula la API para la lista. Sin siguiente: sin fecha de fin.
         function actualizarHasta() {
@@ -594,6 +619,7 @@
             });
             actualizarEncabezados();
             actualizarHasta();
+            revisarValores();
         }
 
         // Registrar viene con los valores de la tabla más nueva: cuando llega la actualizada, se cambian los que subieron.
@@ -611,6 +637,7 @@
             mostrarAlcance();
             actualizarEncabezados();
             actualizarHasta();
+            revisarValores();
             const guardar = document.getElementById('btnGuardarTarifario');
             const base = id || (tarifarios[0] && tarifarios[0].Tarifario_ID);
             guardar.disabled = !!base;
@@ -797,7 +824,8 @@
                 reglas.push({ id: this.id, requerido: 'Completá el valor.', validar: montoMayorQueCero });
             });
             formularioTarifario = SGTL.validador(reglas);
-            $('#trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
+            $('#trBanda1, #trBanda2, #trBanda3').on('input', function () { actualizarEncabezados(); revisarValores(); });
+            $('#grillasTarifario').on('input change', 'input', revisarValores);
             // Cada banda tiene que ser mayor que la anterior: si cambia una, se vuelve a revisar la siguiente (si ya tiene
             // valor), así el error aparece o se va enseguida y no recién al guardar.
             [['trBanda1', 'trBanda2'], ['trBanda2', 'trBanda3']].forEach(function (par) {
