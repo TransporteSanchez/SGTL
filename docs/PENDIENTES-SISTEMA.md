@@ -2795,7 +2795,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   clientes, o de algunos a todos). Cada viaje y presupuesto toma la tabla que le queda con la regla de arriba: si agosto
   pasa a ser solo de un cliente, los demás vuelven a "Tarifas a enero 2026" (la general anterior), y la confirmación lo dice
   en cada fila ('Pasa a "Tarifas a enero 2026".'), con el importe nuevo. Dos límites, como al eliminar: la única tabla para
-  todos los clientes no puede pasar a algunos (en el formulario se ve "Todos los clientes" como texto, con el porqué), y no
+  todos los clientes no puede pasar a algunos (en el formulario se ve "Todos los clientes" como texto y la ayuda dice qué hacer: "Para que algunos clientes tengan
+  otros valores, registrá una tabla solo para ellos."), y no
   se guarda un cambio (de clientes o de fecha) que deje un viaje o un presupuesto sin tabla: "No se puede guardar la tabla
   de tarifas: 4 viajes quedarían sin tabla." y debajo, por cliente, cuántos y de qué fechas ("Distribuidora del Litoral
   S.A.: 3 viajes, del 20/10/2026 al 23/10/2026"; hasta 5 clientes, §5.1 del design system). Al elegir "Solo algunos

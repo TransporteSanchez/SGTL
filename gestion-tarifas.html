@@ -555,7 +555,7 @@
             $('#trAlcanceFijo').toggleClass('d-none', !unicaGeneral);
             $('#trAlcanceOpciones').toggleClass('d-none', unicaGeneral);
             $('#trClientesCaja').toggleClass('d-none', todos);
-            $('#trAlcanceAyuda').text(unicaGeneral ? 'Es la única tabla para todos los clientes, así que no puede pasar a solo algunos.'
+            $('#trAlcanceAyuda').text(unicaGeneral ? 'Es la única tabla para todos los clientes. Para que algunos clientes tengan otros valores, registrá una tabla solo para ellos.'
                 : todos ? 'Vale para todos los clientes, también los que se carguen después, salvo los que tienen una tabla propia.'
                 : 'Para estos clientes, esta tabla reemplaza a la de todos los clientes.' + queTablaQuedaAlResto());
             if (todos) limpiarErrorClientes();
