@@ -178,7 +178,7 @@
                                     <label for="trBanda3" class="form-label">Tercera, hasta <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda3" maxlength="4" placeholder="250" autocomplete="off"><span class="input-group-text">km</span></div>
                                     <div class="invalid-feedback"></div>
-                                    <div class="form-text">Más lejos, con Fija: la de esta banda más los km que pasan × el precio por km</div>
+                                    <div class="form-text">Más lejos, con tarifa fija: la de esta banda más los km que pasan × el precio por km</div>
                                 </div>
                             </div>
                             <div id="grillasTarifario"></div>
@@ -357,65 +357,82 @@
         function idValor(nuevo, i, campo) { return 'tv' + (nuevo ? 1 : 0) + '_' + i + '_' + campo; }
         function entero(id) { const n = parseInt($('#' + id).val(), 10); return isNaN(n) ? null : n; }
         function decimal(id) { const t = String($('#' + id).val() || '').trim().replace(',', '.'); return t === '' || isNaN(Number(t)) ? null : Number(t); }
-        function celda(id, campo) {
-            return `<td style="min-width: 8.5rem"><input type="text" inputmode="decimal" class="form-control text-end" id="${id}"
-                autocomplete="off" data-campo="${campo}"><div class="invalid-feedback"></div></td>`;
+        function celda(id, columnas) {
+            return `<td${columnas ? ' colspan="' + columnas + '"' : ''}><input type="text" inputmode="decimal" class="form-control text-end"
+                id="${id}" autocomplete="off"><div class="invalid-feedback"></div></td>`;
         }
 
-        // Tarifas fijas: una grilla por antigüedad (tipos × bandas). Tarifas por km: una grilla (tipos × antigüedad).
+        // Tarifas fijas como el PDF de la empresa (decisión de Rocío, 25/10): una tabla por modelo, con la distancia en las
+        // filas y el tipo de camión en las columnas; 1ª y 2ª vuelta solo en la primera banda. La tarifa por km va aparte, en
+        // su propio bloque, con los dos casos en que se usa. Los ids de los campos no cambian (idValor).
         function armarGrillasTarifario() {
+            const tipos = TIPOS_VEHICULO.map(function (tipo) { return SGTL.escapar(tipo); });
             let html = '';
             [false, true].forEach(function (nuevo) {
+                const banda = function (campo) {
+                    return TIPOS_VEHICULO.map(function (_, i) { return celda(idValor(nuevo, i, campo), 2); }).join('');
+                };
                 html += `<div class="sgtl-bloque-titulo" id="tituloGrilla${nuevo ? 1 : 0}"></div>
-                    <div class="table-responsive mb-4"><table class="table align-middle mb-0">
-                    <thead><tr><th>Tipo de camión</th>
-                        <th class="text-end" data-encabezado="v1"></th><th class="text-end">2ª vuelta</th>
-                        <th class="text-end" data-encabezado="b2"></th><th class="text-end" data-encabezado="b3"></th></tr></thead><tbody>`;
-                TIPOS_VEHICULO.forEach(function (tipo, i) {
-                    html += `<tr><th scope="row" class="fw-normal text-nowrap">${SGTL.escapar(tipo)}</th>`;
-                    CAMPOS_FIJA.forEach(function (c) { html += celda(idValor(nuevo, i, c.id), c.id); });
-                    html += '</tr>';
-                });
-                html += '</tbody></table></div>';
+                    <div class="table-responsive mb-4"><table class="table table-bordered align-middle mb-0 sgtl-grilla" style="--sgtl-grilla-columnas: 8">
+                    <colgroup><col class="sgtl-grilla-fila">${'<col>'.repeat(8)}</colgroup>
+                    <thead><tr><th scope="col" rowspan="2">Distancia</th>${tipos.map(function (t) { return '<th scope="col" colspan="2">' + t + '</th>'; }).join('')}</tr>
+                    <tr>${tipos.map(function () { return '<th scope="col" class="text-end">1ª vuelta</th><th scope="col" class="text-end">2ª vuelta</th>'; }).join('')}</tr></thead>
+                    <tbody><tr><th scope="row" class="fw-normal text-nowrap" data-encabezado="b1"></th>${TIPOS_VEHICULO.map(function (_, i) {
+                        return celda(idValor(nuevo, i, 'v1')) + celda(idValor(nuevo, i, 'v2'));
+                    }).join('')}</tr>
+                    <tr><th scope="row" class="fw-normal text-nowrap" data-encabezado="b2"></th>${banda('b2')}</tr>
+                    <tr><th scope="row" class="fw-normal text-nowrap" data-encabezado="b3"></th>${banda('b3')}</tr></tbody></table></div>`;
             });
             html += `<div class="sgtl-bloque-titulo">Tarifas por km</div>
-                <p class="form-text mt-0">Para cobrar todo el viaje por km, o los km que pasan de la última banda con la tarifa fija.</p>
-                <div class="table-responsive mb-4"><table class="table align-middle mb-0">
-                <thead><tr><th>Tipo de camión</th><th class="text-end" data-encabezado="km0"></th><th class="text-end" data-encabezado="km1"></th></tr></thead><tbody>`;
-            TIPOS_VEHICULO.forEach(function (tipo, i) {
-                html += `<tr><th scope="row" class="fw-normal text-nowrap">${SGTL.escapar(tipo)}</th>`
-                    + celda(idValor(false, i, 'km'), 'km0') + celda(idValor(true, i, 'km'), 'km1') + '</tr>';
+                <p class="form-text mt-0 mb-1">El precio por km se usa en dos casos:</p>
+                <ul class="form-text mt-0 mb-3 ps-3">
+                    <li>Viaje con tarifa por km: se cobran todos los km del viaje a este precio.</li>
+                    <li id="trAyudaExcedente"></li>
+                </ul>
+                <div class="table-responsive mb-4"><table class="table table-bordered align-middle mb-0 sgtl-grilla" style="--sgtl-grilla-columnas: 4">
+                <colgroup><col class="sgtl-grilla-fila">${'<col>'.repeat(4)}</colgroup>
+                <thead><tr><th scope="col">Modelo</th>${tipos.map(function (t) { return '<th scope="col" class="text-end">' + t + '</th>'; }).join('')}</tr></thead><tbody>`;
+            [false, true].forEach(function (nuevo) {
+                html += `<tr><th scope="row" class="fw-normal text-nowrap" data-encabezado="km${nuevo ? 1 : 0}"></th>`
+                    + TIPOS_VEHICULO.map(function (_, i) { return celda(idValor(nuevo, i, 'km')); }).join('') + '</tr>';
             });
             html += '</tbody></table></div>';
             $('#grillasTarifario').html(html);
             $('#grillasTarifario input').each(function () { SGTL.enlazarMascaraMonto(this); });
         }
 
-        // Los títulos y las columnas dicen el año de corte y los km de cada banda que se están cargando.
+        // Los títulos, las filas y la ayuda dicen el año de corte y los km de cada banda que se están cargando.
         function actualizarEncabezados() {
             const corte = entero('trCorte'), b1 = entero('trBanda1'), b2 = entero('trBanda2'), b3 = entero('trBanda3');
             const anterior = corte ? 'modelo ' + (corte - 1) + ' o anterior' : 'modelos anteriores al año de corte';
             const nuevo = corte ? 'modelo ' + corte + ' en adelante' : 'modelos desde el año de corte';
+            const km = function (b) { return (b || '…') + ' km'; };
             $('#tituloGrilla0').text('Tarifas fijas · ' + anterior);
             $('#tituloGrilla1').text('Tarifas fijas · ' + nuevo);
-            const textos = {
-                v1: 'Hasta ' + (b1 || '…') + ' km, 1ª vuelta',
-                v2: 'hasta ' + (b1 || '…') + ' km, 2ª vuelta',
-                b2: 'Hasta ' + (b2 || '…') + ' km',
-                b3: 'Hasta ' + (b3 || '…') + ' km',
-                km0: anterior,
-                km1: nuevo
+            const filas = {
+                b1: 'Hasta ' + km(b1),
+                b2: 'Hasta ' + km(b2),
+                b3: 'Hasta ' + km(b3),
+                km0: corte ? (corte - 1) + ' o anterior' : 'Anteriores al año de corte',
+                km1: corte ? corte + ' en adelante' : 'Desde el año de corte'
             };
-            $('#grillasTarifario [data-encabezado]').each(function () {
-                const t = textos[$(this).data('encabezado')];
-                $(this).text(t.charAt(0).toUpperCase() + t.slice(1));
-            });
+            $('#grillasTarifario [data-encabezado]').each(function () { $(this).text(filas[$(this).data('encabezado')]); });
+            $('#trAyudaExcedente').text('Viaje con tarifa fija de más de ' + km(b3) + ': se cobra la tarifa fija hasta ' + km(b3)
+                + ' y, además, los km que pasan de ' + (b3 || '…') + ' a este precio.');
+            // Cada campo dice qué valor es: "Furgón, modelo 2018 o anterior, hasta 130 km, 1ª vuelta".
+            const campos = {
+                v1: 'hasta ' + km(b1) + ', 1ª vuelta',
+                v2: 'hasta ' + km(b1) + ', 2ª vuelta',
+                b2: 'hasta ' + km(b2),
+                b3: 'hasta ' + km(b3),
+                km: 'precio por km'
+            };
             $('#grillasTarifario input').each(function () {
-                const fila = $(this).closest('tr').find('th').text();
-                const campo = $(this).data('campo');
-                $(this).attr('aria-label', fila + ', ' + (campo === 'km0' || campo === 'km1' ? 'por km, ' : '') + textos[campo].toLowerCase());
+                const partes = /^tv([01])_(\d+)_(\w+)$/.exec(this.id);
+                if (!partes) return;
+                $(this).attr('aria-label', TIPOS_VEHICULO[Number(partes[2])] + ', ' + (partes[1] === '1' ? nuevo : anterior) + ', ' + campos[partes[3]]);
             });
-            $('#trEstadiaDesdeAyuda').text('De iniciado el servicio, hasta ' + (b3 || '…') + ' km');
+            $('#trEstadiaDesdeAyuda').text('De iniciado el servicio, hasta ' + km(b3));
         }
 
         function estadoTarifario(t) {

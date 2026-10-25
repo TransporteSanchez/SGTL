@@ -62,8 +62,8 @@ AGENTS.md"):
    que no se puede editar se ve como texto (`.sgtl-dato-fijo`), nunca como campo deshabilitado. (§6.3)
 8. **Textos:** voseo ("Completá", "Seleccioná", "Probá de nuevo"), **mayúscula solo al principio** (también
    "la factura", "el recibo", "la nota de crédito", "la proforma" dentro de un texto), títulos y botones sin
-   punto, mensajes con punto, sin inglés a la vista. **Nunca un error técnico** en pantalla ni en los mensajes de
-   la API. (§9)
+   punto, mensajes con punto, sin inglés a la vista, "km" en minúscula y sin "s" ("130 km", §7.3). **Nunca un error
+   técnico** en pantalla ni en los mensajes de la API. (§9)
 9. **Estados con `SGTL.estado`** (etiqueta de color según su significado); no inventes colores. Lo que acompaña al
    estado en una tabla (en qué proforma está, qué falta resolver) va en el ícono que abre un globito
    (`SGTL.botonInfo`), no en más etiquetas. (§4)

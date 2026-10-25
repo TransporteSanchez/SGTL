@@ -89,6 +89,39 @@ table.table.sgtl-tabla-compacta tr th {
     text-align: left;
 }
 
+/* Grilla de valores que se cargan (la tabla de tarifas, como el PDF de la empresa; 25/10): columnas parejas y la
+   primera, con el nombre de cada fila, más ancha. Entra en un .modal-xl desde 1200 px; más angosta, se desplaza hacia el
+   costado en lugar de cortar los importes. --sgtl-grilla-columnas: cuántas columnas de valores tiene. */
+table.table.sgtl-grilla {
+    table-layout: fixed;
+    min-width: calc(10.5rem + var(--sgtl-grilla-columnas, 4) * 6.75rem);
+}
+
+.sgtl-grilla .sgtl-grilla-fila {
+    width: 10.5rem;
+}
+
+table.table.sgtl-grilla > :not(caption) > tr > * {
+    padding: .375rem .25rem;
+}
+
+table.table.sgtl-grilla > tbody > tr > th,
+table.table.sgtl-grilla > thead > tr:first-child > th:first-child {
+    padding-left: .75rem;
+}
+
+/* El título que agrupa dos columnas (el tipo de camión sobre la 1ª y la 2ª vuelta) va centrado. */
+table.table.sgtl-grilla > thead th[colspan] {
+    text-align: center;
+}
+
+.sgtl-grilla .form-control {
+    min-width: 0;
+    padding-left: .375rem;
+    padding-right: .375rem;
+    font-size: .875rem;
+}
+
 /* Tabla del control de la proforma de Rukas: con aire entre columnas (pedido de Rocío, 22/10). Desde 1200 px, más
    espacio y la ruta en un renglón; entre 992 y 1199 px, menos, para que entre sin desplazarse (a 1100 px sobraban
    16 px con .65rem; reporte de la VM del 23/10). */

@@ -53,7 +53,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   Con el texto a la vista no lleva tooltip.
 - **Arriba a la derecha, en la misma línea que el título de la pantalla.** Es el último botón de
   esa línea (el de más a la derecha).
-- **Excepción, pantallas con pestañas** (tarifas, orígenes y destinos, grupos y permisos): el
+- **Excepción, pantallas con pestañas** (orígenes y destinos, grupos y permisos): el
   botón va dentro de cada pestaña, arriba a la derecha de su tabla, porque cada pestaña crea
   algo distinto.
 
@@ -214,7 +214,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
     si no hay nada para resolver, "● **Lista para generar**: los 12 transportes coinciden". A la derecha, solo la
     acción que sigue (por ejemplo, "Registrar reclamo").
   - Un dato que solo sirve en un caso va solo en ese caso: la tarifa con que se calculó el importe de SGTL aparece en
-    gris debajo del importe únicamente cuando no coincide ("602,8 km × $ 850", "tarifa fija de la ruta").
+    gris debajo del importe únicamente cuando no coincide ("tarifa por km: 602,8 km × $ 2.594,00", "tarifa fija hasta
+    130 km, 1ª vuelta").
 - **Tablas anchas** (gestión de viajes): la columna de acciones queda **fija a la derecha** y
   siempre visible; lo que se desplaza hacia el costado son los datos. Fechas, números y estados
   no se parten en dos renglones (`text-nowrap`).
@@ -224,7 +225,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Sin resultados, solo dos textos:**
   - pantallas con filtros: "No hay resultados para los filtros elegidos.";
   - pantallas sin filtros: "Todavía no hay … cargados." con lo que corresponda ("Todavía no hay
-    tarifas fijas cargadas.").
+    camiones cargados.").
   - Sin resultados, la paginación no se muestra.
 - **Mientras busca:** una fila "Cargando…" centrada en gris dentro de la tabla, en todas las
   pantallas. Reemplaza lo que había hasta que llega la respuesta.
@@ -307,7 +308,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Listar y Gestionar de lo mismo tienen los mismos filtros** (choferes, camiones, clientes,
   viajes, usuarios, proformas). Los textos de ejemplo de cada campo son un dato posible ("jperez",
   "PF-00000010"), no el nombre del campo.
-- **Pantallas con pestañas** (orígenes y destinos, tarifas, grupos y permisos): cada pestaña tiene
+- **Pantallas con pestañas** (orígenes y destinos, grupos y permisos): cada pestaña tiene
   sus filtros arriba de su tabla, y su botón de alta va al lado de "Buscar", a la derecha.
 - **Estado como desplegable** "Activo / Inactivo / Todos", con Activo elegido al entrar. La cruz
   lo pasa a "Todos" (§1.3). Reemplaza las dos casillas Activo / Inactivo.
@@ -416,7 +417,7 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 
 | Dónde | Texto |
 |---|---|
-| Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tarifa fija" / "Registrar tarifa por km", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
+| Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tabla de tarifas", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
 | Editar (tooltip y título del modal) | "Editar camión" |
 | Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión"; en un documento, "Ver factura FAC-00000012" (§1.4) |
 | Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir factura directa", "Emitir factura desde proforma", "Emitir nota de crédito", "Emitir nota de débito"; el título de la ventana es la opción elegida; el pie, "Emitir factura" / "Emitir nota de crédito" |
@@ -494,6 +495,15 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   y destinos, e-mail y auditoría) **ni un título de sección con estilo propio** (proformas y cuenta corriente tenían su
   copia). Si el subtítulo no va dentro de un `.sgtl-bloque`, el espacio de arriba lo da `mt-4` (o `mt-3` dentro de
   una columna, después de una tabla).
+- **Grilla de valores** (la tabla de tarifas, 25/10): cuando los valores vienen de un documento (el PDF de tarifas de la
+  empresa), la grilla tiene **la misma forma que el documento**, para cargarlos copiando fila por fila. Tarifas fijas: una
+  tabla por modelo, la distancia en las filas y el tipo de camión en las columnas, con 1ª y 2ª vuelta solo en la primera
+  banda. Lo que se usa distinto va en su propio bloque con una ayuda que dice cuándo se usa (las tarifas por km: "El
+  precio por km se usa en dos casos: …"). Clase `.sgtl-grilla` (`table table-bordered align-middle`, la primera columna
+  con `<col class="sgtl-grilla-fila">` y `--sgtl-grilla-columnas` con cuántas columnas de valores hay): columnas parejas
+  que entran en un `.modal-xl`; más angosto, la grilla se desplaza hacia el costado en lugar de cortar los importes. El
+  título que agrupa dos columnas va centrado; los demás, como su contenido (§2.1). Cada campo lleva un `aria-label` que
+  dice qué valor es ("Furgón, modelo 2018 o anterior, hasta 130 km, 1ª vuelta").
 - **Lo que no se puede editar** (22/10, primero en viajes): **nunca un campo deshabilitado**; se ve como texto.
   Una caja blanca con borde se edita; un texto, no.
   - Si es un bloque entero (el recorrido de un viaje que ya salió), un recuadro gris con el resumen en texto en el
@@ -554,6 +564,9 @@ Esto define solo cómo se muestran y cómo se cargan.
   tablas (§2.1).
 - **Excepción:** los indicadores del tablero se redondean a pesos ("$ 133.103").
 - **Km con coma decimal y un decimal:** "17,4".
+- **"km", en minúscula y sin "s"**, también en plural: "130 km", "17,4 km" (es el símbolo del kilómetro: no lleva
+  plural ni punto). Nunca "Kms", "KM" ni "Km." en medio de un texto. Al principio de un título o etiqueta, con mayúscula
+  como cualquier palabra (§9): "Km por mes", "Km recorridos" (Rocío, 25/10).
 - **Montos que se escriben** (importes de recibos, notas, comprobantes): `type="text" inputmode="decimal"`, nunca
   `type="number"`. Se escriben con coma o punto decimal y al salir del campo se acomodan a "1.234,56"
   (`SGTL.enlazarMascaraMonto`); se leen en centavos enteros con `SGTL.montoCentavos` para no perder centavos
@@ -584,9 +597,8 @@ Esto define solo cómo se muestran y cómo se cargan.
   factura", "el recibo", "la nota de crédito", "la proforma", "el presupuesto" (no "la Factura" ni "la Nota de
   Crédito").
 - **Títulos, botones y etiquetas sin punto final; los mensajes, con punto.**
-- **Sin inglés a la vista:** "KM mínimo / KM máximo" (no "Min KM / Max KM"), "Alta" (no
-  "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp: "Token de acceso" e "ID del
-  número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la
+- **Sin inglés a la vista:** "Alta" (no "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp:
+  "Token de acceso" e "ID del número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la
   ayuda de abajo para poder encontrarlo. **Excepción:** "Dashboard" queda.
 - **Nunca mostrar un error técnico** (excepciones, códigos como "IDX10223…"). El mensaje dice qué
   pasó y qué hacer. **Vale también para los mensajes de la API** que llegan a la pantalla: voseo, sin nombres

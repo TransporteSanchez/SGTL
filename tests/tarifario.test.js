@@ -82,6 +82,23 @@ function probarValoresDeEnero() {
     assert.ok(!/Fecha_Modi = @Ahora, Usu_Modi = @Usuario\s+FROM dbo\.CAMIONES/.test(script), '03 no cambia quién modificó el camión');
 }
 
+// La grilla de Gestionar tarifas tiene la forma del PDF (decisión de Rocío, 25/10): tarifas fijas con la distancia en las
+// filas y el tipo de camión en las columnas (1ª y 2ª vuelta solo en la primera banda), y la tarifa por km aparte, con
+// cuándo se usa.
+function probarGrillaComoElPdf() {
+    const tarifas = leer('gestion-tarifas.html');
+    assert.ok(/<th scope="col" rowspan="2">Distancia<\/th>/.test(tarifas), 'las tarifas fijas tienen la distancia en las filas');
+    assert.ok(/'<th scope="col" colspan="2">' \+ t \+ '<\/th>'/.test(tarifas), 'cada tipo de camión es una columna con 1ª y 2ª vuelta');
+    assert.ok(/celda\(idValor\(nuevo, i, 'v1'\)\) \+ celda\(idValor\(nuevo, i, 'v2'\)\)/.test(tarifas), 'la 1ª y 2ª vuelta van en la primera banda');
+    assert.ok(/banda\('b2'\)/.test(tarifas) && /banda\('b3'\)/.test(tarifas), 'las otras bandas tienen un valor por tipo');
+    assert.ok(tarifas.indexOf('El precio por km se usa en dos casos:') !== -1, 'la tarifa por km va aparte y dice cuándo se usa');
+    assert.ok(tarifas.indexOf('Viaje con tarifa por km: se cobran todos los km del viaje a este precio.') !== -1, 'primer caso de la tarifa por km');
+    assert.ok(/'Viaje con tarifa fija de más de ' \+ km\(b3\)/.test(tarifas), 'el segundo caso usa la última banda cargada');
+    const sinComentarios = tarifas.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
+    assert.ok(sinComentarios.indexOf('PDF') === -1, 'la pantalla no nombra el PDF (solo los comentarios del código)');
+    assert.ok(/table\.table\.sgtl-grilla \{/.test(leer('assets/static/css/sgtl.css')), 'la grilla usa la clase compartida de sgtl.css');
+}
+
 function probarViajeGuardaImporte() {
     const viajes = leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs');
     assert.ok(/GuardarImporte\(db, viaje\.Viaje_ID, viajeDto, calculo\)/.test(viajes), 'el alta del viaje guarda el importe calculado por la API');
@@ -182,6 +199,7 @@ function probarProyecto() {
 probarTiposIguales();
 probarValoresDeAgosto();
 probarValoresDeEnero();
+probarGrillaComoElPdf();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();

@@ -2694,10 +2694,13 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   `ProformasController.ImporteViaje` ("Traer viajes" y el control de Rukas) y el costo del dashboard leen primero el
   importe guardado. `CamionesController` rechaza un tipo que no es de la tabla. `PresupuestosController` (Facu): el viaje
   que genera un presupuesto queda con la tabla, su modo, la vuelta y el importe del presupuesto.
-- `gestion-tarifas.html`: solo la tabla de tarifas (ya no hay pestañas de fijas por recorrido ni de bandas por km): la
-  lista de tablas (para qué clientes —"Todos los clientes, salvo …, que tienen tabla propia" o los de la propia—,
-  vigencia y estado: Vigente, Anterior o Próxima) y el formulario como el PDF, con los bloques Datos, Clientes (todos o
-  solo algunos, con buscador), Bandas de km, Tarifas fijas (una grilla por modelo), Tarifas por km y Adicionales. La API
+- `gestion-tarifas.html`: la lista de tablas (para qué clientes —"Todos los clientes, salvo …, que tienen tabla
+  propia" o los de la propia—, vigencia y estado: Vigente, Anterior o Próxima) y el formulario, con los bloques Datos,
+  Clientes (todos o solo algunos, con buscador), Bandas de km, Tarifas fijas, Tarifas por km y Adicionales. **Grilla
+  como el PDF (25/10, decisión de Rocío con la maqueta):** las tarifas fijas, una tabla por modelo con la distancia en
+  las filas y el tipo de camión en las columnas (1ª y 2ª vuelta solo en "Hasta 130 km"); la tarifa por km, aparte, con
+  los modelos en las filas y la ayuda "El precio por km se usa en dos casos" (todo el viaje con tarifa por km; los km que
+  pasan de la última banda con tarifa fija). Clase compartida `.sgtl-grilla` en `sgtl.css` (design system §6.3). La API
   no deja dos generales que empiecen el mismo día, ni dos propias de un mismo cliente. "Registrar tabla de tarifas" viene
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
@@ -2759,8 +2762,11 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista los viajes (hasta correr `04`, los de antes no se
   pueden editar y no muestran importe).
 - [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
-  "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de agosto: los valores iguales al PDF (fijas por
-  modelo y por km). Cancelar.
+  "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de agosto: las tarifas fijas se ven como el PDF
+  (distancia en las filas, tipos en las columnas, 1ª y 2ª vuelta solo hasta 130 km) y con sus mismos valores; abajo, la
+  tarifa por km aparte, con la ayuda de los dos casos. Ningún importe cortado y sin barra hacia el costado en una
+  pantalla de 1366 px. Borrar un valor y Guardar: "Revisá los campos marcados." y "Completá el valor." debajo de ese
+  campo. Cancelar.
 - [ ] 3. Registrar tabla de tarifas: viene con los valores de agosto y el nombre y la fecha vacíos, "Todos los clientes"
   elegido. Fecha 01/08/2026 → "Ya hay una tabla para todos los clientes vigente desde el 01/08/2026…". Elegir "Solo algunos
   clientes" sin tildar ninguno → "Elegí al menos un cliente.". Tildar un cliente de prueba, cambiar un valor y Guardar: en
