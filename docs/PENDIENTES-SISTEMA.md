@@ -3366,7 +3366,11 @@ sale con `FAC` y los textos de hoy. Pasos:
    relevamiento (18 proformas, 34 comprobantes, 10 viajes que vuelven).
    **Limpieza aplicada por Rocío el 25/10 a la noche, con `COMMIT`:** 18 proformas y 34 comprobantes borrados con todo lo
    que dependía de ellos, 10 viajes facturados de vuelta a Listo para facturar o Entregado, numeración en 0 y un registro
-   en Auditoría; sin transacciones abiertas. Falta generar el juego de demo (la VM, con el instructivo).
+   en Auditoría; sin transacciones abiertas.
+   **Juego de demo generado por la VM el 25/10** (`docs/pruebas/2026-10-25-demo-facturacion.md`): PF-00000001 a 00000003,
+   FAC-00000001 y 00000002, REC-00000001 y NC-00000001, todos con el importe esperado y coincidiendo con sus viajes;
+   Tableros cuadra. Una falla (el enlace "Ver la cuenta corriente del cliente" no filtra por el cliente) y 15 mejoras;
+   las de presupuestos, proformas propias, comprobantes y cuenta corriente van a la lista de Facu (§40, punto 5).
    **Antes de la presentación:** el cliente "distribuidora-powerful S.A." (viaje 5 y otros) tiene un nombre que no parece
    real; cambiarlo en Gestionar clientes por uno creíble (el relevamiento de textos de prueba no lo detecta).
 
@@ -3602,6 +3606,14 @@ cierren las pruebas de la §39**, antes que lo demás.
     calculado (ARS)", solo choferes activos (como en Generar viaje) y una ayuda del importe más corta.
   - M22, Gestionar proformas: "Total general" (no en mayúsculas, §9) y "→" en lugar de "->" en el concepto del viaje.
   - D6 (punto 3 de esta lista): generar un viaje desde un presupuesto manda la hoja de ruta.
+  - Del juego de demo (25/10, `docs/pruebas/2026-10-25-demo-facturacion.md`): F1, "Ver la cuenta corriente del cliente"
+    (`?clienteId=`) no filtra por el cliente ni lo elige en Registrar recibo; confirmación con `SGTL.confirmar` al generar
+    una proforma propia (la de Rukas ya la tiene); la nota de crédito, que se pueda escribir el neto; "Factura emitida:
+    FAC-…" arriba y el modal de emitir con `data-bs-backdrop="static"`, "Cancelar" + "Emitir factura" y lo fijo como texto;
+    el aviso de "Traer viajes" con el éxito aparte y la lista ordenada; en cuenta corriente, "—" en el saldo de las filas
+    aplicadas; "Ver" de los comprobantes como detalle (§6.2); campos fijos como texto en recibo y nota de crédito (§6.3);
+    sin `type="number"` en el detalle de la proforma (§7.3); el CUIT del selector de clientes con el mismo formato en
+    proformas y cuenta corriente; "→" en el concepto de los viajes.
 - [ ] **6. Limpieza de textos de prueba de rondas viejas (M23 de la tanda 1).** Los presupuestos #4 y #5 muestran el cliente
   "PRUEBA-CLAUDE 17/10 S.A." y el recorrido "PRUEBA-CLAUDE 18/10 → PRUEBA-CLAUDE 18/10", que quedaron copiados en el
   presupuesto. Tienen viaje (#29 y #31), así que no se borran: se corrigen los datos copiados con el nombre actual del
