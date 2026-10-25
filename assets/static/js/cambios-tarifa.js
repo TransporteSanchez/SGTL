@@ -97,7 +97,8 @@
 
   // ---------------------------------------------------------------- Tarjeta fija del dashboard
 
-  // No se saca ni se elige con la estrella (Rocío, 25/10): la ve siempre quien puede resolver algo. Cada fila lleva a donde
+  // No se saca ni se elige con la estrella (Rocío, 25/10): la ve siempre quien puede resolver algo, arriba del dashboard y
+  // primera en Tableros → Facturación (con la estrella fija). Cada fila lleva a donde
   // se corrige: el presupuesto (Ver PDF, para reenviarlo; al enviarlo queda resuelto), la proforma (su detalle, para
   // anularla; al anularla queda resuelto) o el viaje que está en un comprobante (Ver detalle). La nota de crédito o de
   // débito se emite en cuenta corriente: eso se marca como resuelto a mano, con cómo se resolvió.
@@ -170,13 +171,25 @@
     });
   }
 
-  function tarjetaFija(contenedor) {
-    if (!contenedor) return;
-    alcance().then(function (a) {
-      if (!a.Presupuestos && !a.Facturacion) { contenedor.innerHTML = ''; return; }
-      contenedor.innerHTML = '<div class="card rounded custom-card dash-tarjeta sgtl-cambios-tarifa">' +
+  // En Tableros va con la estrella marcada y deshabilitada, con el motivo (§1.4: lo que no se puede hacer no se esconde).
+  var ESTRELLA_FIJA = 'No se puede quitar del dashboard: está fijo para quien resuelve cambios de tarifa';
+
+  // opciones.estrellaFija: true en Tableros. Devuelve una promesa: true si la tarjeta se muestra (el usuario puede
+  // resolver algo), false si no.
+  function tarjetaFija(contenedor, opciones) {
+    if (!contenedor) return Promise.resolve(false);
+    opciones = opciones || {};
+    return alcance().then(function (a) {
+      if (!a.Presupuestos && !a.Facturacion) { contenedor.innerHTML = ''; contenedor.hidden = true; return false; }
+      contenedor.hidden = false;
+      var estrella = opciones.estrellaFija
+        ? '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="' + ESTRELLA_FIJA + '">' +
+          '<button type="button" class="btn btn-sm dash-estrella" disabled aria-pressed="true" aria-label="' + ESTRELLA_FIJA + '">' +
+          '<i class="bi bi-star-fill" aria-hidden="true"></i></button></span>'
+        : '';
+      contenedor.innerHTML = '<div class="card rounded custom-card dash-tarjeta sgtl-cambios-tarifa" data-tablero="cambiostarifa">' +
         '<div class="card-header"><i class="bi bi-exclamation-circle text-danger" aria-hidden="true"></i><h5>Cambios de tarifa para revisar</h5>' +
-        '<span class="dash-alcance" data-sgtl="cantidad">Hoy</span></div>' +
+        '<span class="dash-alcance" data-sgtl="cantidad">Hoy</span>' + estrella + '</div>' +
         '<div class="card-body p-0"><table class="table table-striped table-hover dash-tabla mb-0"><thead><tr><th>Documento</th>' +
         '<th class="text-end">Importe</th><th class="d-none d-md-table-cell">Qué hacer</th><th class="text-center">Acciones</th></tr></thead>' +
         '<tbody><tr><td colspan="4" class="text-center text-muted py-4">Cargando…</td></tr></tbody></table></div></div>';
@@ -188,6 +201,7 @@
         else resolver(contenedor, boton.dataset.resolver);
       };
       dibujarTarjeta(contenedor);
+      return true;
     });
   }
 

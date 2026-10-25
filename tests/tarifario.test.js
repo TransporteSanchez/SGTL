@@ -170,6 +170,10 @@ function probarParaRevisar() {
     assert.ok(/Authorization: 'Bearer '/.test(modulo), 'cambios-tarifa.js manda el token');
     assert.ok(leer('assets/static/js/tableros-catalogo.js').indexOf("id: 'cambiostarifa'") === -1, 'no está en el catálogo de favoritos');
     assert.ok(/SGTLCambiosTarifa\.tarjetaFija\(document\.getElementById\('cambiosTarifaFija'\)\)/.test(leer('index.html')), 'el dashboard la muestra fija');
+    assert.ok(/SGTLCambiosTarifa\.tarjetaFija\(document\.getElementById\('cambiosTarifaTableros'\), \{ estrellaFija: true \}\)/.test(leer('tableros.html')),
+        'en Tableros está en Facturación, con la estrella fija');
+    assert.ok(/'No se puede quitar del dashboard: está fijo para quien resuelve cambios de tarifa'/.test(modulo) && /disabled aria-pressed="true"/.test(modulo),
+        'la estrella fija está deshabilitada con el motivo (§1.4)');
     assert.ok(/get\('presupuesto'\)/.test(presupuestos) && /get\('proforma'\)/.test(proformas), 'cada fila lleva a donde se corrige');
     assert.ok(/texto: 'Anular proforma'/.test(proformas), 'el aviso de la proforma trae "Anular proforma"');
 }

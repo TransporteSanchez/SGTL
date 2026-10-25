@@ -2717,9 +2717,11 @@ lo pendiente) y la parte del comprobante es de su módulo.
   y "Corresponde una nota de crédito (o de débito) por $ X". (Se marca como resuelto desde el tablero, paso 3.)
 
 **Paso 3 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA PROBAR EN VM:**
-- **Tarjeta fija "Cambios de tarifa para revisar" arriba del dashboard** (decisión de Rocío, 25/10): no está en el catálogo
-  de Tableros, no lleva estrella y no se saca. La ve siempre quien puede resolver algo; si no hay nada, dice "No hay nada
-  para revisar por cambios de tarifa.". La arma `cambios-tarifa.js` (`tarjetaFija`); `index.html` la llama.
+- **Tarjeta fija "Cambios de tarifa para revisar"** (decisión de Rocío, 25/10): arriba del dashboard, sin estrella y sin
+  poder sacarla; y en Tableros → Facturación, primera, con la estrella marcada y deshabilitada ("No se puede quitar del
+  dashboard: está fijo para quien resuelve cambios de tarifa"). No está en el catálogo de favoritos. La ve siempre quien
+  puede resolver algo (la pestaña la cuenta solo entonces); si no hay nada, dice "No hay nada para revisar por cambios de
+  tarifa.". La arma `cambios-tarifa.js` (`tarjetaFija`); la llaman `index.html` y `tableros.html`.
 - **Cada uno ve lo suyo** (también en los íconos y avisos de las pantallas): la API toma el usuario del token y devuelve los
   presupuestos a quien tiene el permiso "Presupuestos", y las proformas y los comprobantes a quien tiene "Gestión de
   proformas", "Gestión de facturas" o "Cuenta Corriente"; los administradores, todo. `GET api/Tarifario/Revisar/Alcance`
@@ -2733,7 +2735,8 @@ lo pendiente) y la parte del comprobante es de su módulo.
 
 **Probar en la VM (paso 3):**
 - [ ] 1. Entrar como administrador: arriba del dashboard, "Cambios de tarifa para revisar" con lo que quedó del paso 1, sin
-  estrella. En Personalizar no se puede mover ni sacar. En Tableros no aparece.
+  estrella. En Personalizar no se puede mover ni sacar. En Tableros → Facturación es la primera, la pestaña la cuenta y la
+  estrella está marcada y deshabilitada: al pasar el mouse, "No se puede quitar del dashboard: …".
 - [ ] 2. Con un usuario que solo tiene "Presupuestos": la tarjeta muestra solo los presupuestos; en Gestionar viajes, los
   viajes para revisar no tienen el ícono rojo. Con uno que solo tiene "Gestión de proformas" o "Cuenta Corriente": solo
   las proformas y los comprobantes. Con uno sin esos permisos: no hay tarjeta.

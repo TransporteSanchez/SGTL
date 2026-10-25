@@ -117,6 +117,7 @@
     <script src="assets/static/js/viaje-detalle.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/tableros-catalogo.js"></script>
+    <script src="assets/static/js/cambios-tarifa.js"></script>
     <script src="assets/static/js/dashboard.js"></script>
 
     <script>
@@ -185,8 +186,16 @@
                 var resto = delTema.filter(function (t) { return t.tipo !== 'kpi'; });
                 return '<div class="tab-pane fade' + (i === 0 ? ' show active' : '') + '" id="pane-' + tema.id + '" role="tabpanel" aria-labelledby="tab-' + tema.id + '">' +
                     (indicadores.length ? '<div class="row g-3 mb-3 tableros-grilla">' + indicadores.map(columnaTablero).join('') + '</div>' : '') +
+                    // Cambios de tarifa para revisar (§33): primera de Facturación, fija (no está en el catálogo de favoritos).
+                    (tema.id === 'facturacion' ? '<div id="cambiosTarifaTableros" class="mb-3" hidden></div>' : '') +
                     '<div class="row g-3 align-items-start tableros-grilla">' + resto.map(columnaTablero).join('') + '</div></div>';
             }).join('');
+            // Si el usuario la ve, la pestaña la cuenta.
+            if (window.SGTLCambiosTarifa) SGTLCambiosTarifa.tarjetaFija(document.getElementById('cambiosTarifaTableros'), { estrellaFija: true }).then(function (visible) {
+                if (!visible) return;
+                var cantidad = document.querySelector('#tab-facturacion .text-muted');
+                if (cantidad) cantidad.textContent = '· ' + (SGTLTableros.CATALOGO.filter(function (t) { return t.tema === 'facturacion'; }).length + 1);
+            });
 
             pestanas.addEventListener('shown.bs.tab', function (e) {
                 try { localStorage.setItem(CLAVE_PESTANA, e.target.getAttribute('data-tema')); } catch (x) { }
