@@ -99,6 +99,33 @@ function probarGrillaComoElPdf() {
     assert.ok(/table\.table\.sgtl-grilla \{/.test(leer('assets/static/css/sgtl.css')), 'la grilla usa la clase compartida de sgtl.css');
 }
 
+// Editar o registrar una tabla (§33, decisión de Rocío del 25/10): antes de guardar, la API calcula qué viajes y
+// presupuestos cambian; si algo cambia, la pantalla lo confirma con la lista y el motivo, que es obligatorio.
+function probarImpactoAlGuardar() {
+    const api = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
+    assert.ok(/\[Route\("api\/Tarifario\/Impacto"\)\]/.test(api), 'la API calcula el impacto sin guardar');
+    assert.ok(/impacto\.HayCambios && motivo\.Length == 0/.test(api), 'la API pide el motivo si algún importe cambia');
+    assert.ok(/TarifarioImpacto\.Aplicar\(cn, tx, impacto/.test(api), 'el guardado aplica el recálculo en la misma transacción');
+
+    const impacto = leer('WebApi_TransporteSanchez/Tarifas/TarifarioImpacto.cs');
+    ['"Generada"', '"Aceptada"', '"Borrador"', '"Facturada"', 'Presupuesto_ID.HasValue'].forEach(function (t) {
+        assert.ok(impacto.indexOf(t) !== -1, 'TarifarioImpacto separa los viajes según su documento: ' + t);
+    });
+    assert.ok(/TarifarioCalculo\.BaseConTabla\(/.test(impacto) && /TarifarioCalculo\.SumarAdicionales\(/.test(impacto),
+        'el recálculo usa la misma cuenta que un viaje nuevo');
+    assert.ok(/<Compile Include="Tarifas\\TarifarioImpacto\.cs" \/>/.test(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj')),
+        'TarifarioImpacto.cs está en el .csproj');
+
+    const script = leer('database/tarifas/05_cambios_de_tarifa.sql');
+    assert.ok(/CREATE TABLE dbo\.TARIFARIO_CAMBIOS/.test(script) && /CREATE TABLE dbo\.TARIFARIO_REVISAR/.test(script), '05 crea los cambios y lo que queda para revisar');
+
+    const pantalla = leer('gestion-tarifas.html');
+    assert.ok(pantalla.indexOf("'/Tarifario/Impacto?id='") !== -1, 'Gestionar tarifas pide el impacto antes de guardar');
+    assert.ok(/motivo: \{ etiqueta: 'Motivo del cambio', obligatorio: true \}/.test(pantalla), 'la confirmación pide el motivo');
+    assert.ok(/detalle: htmlImpacto\(/.test(pantalla), 'la confirmación muestra la lista de lo que cambia');
+    assert.ok(/data-sgtl="detalle"/.test(leer('assets/static/js/sgtl-ui.js')), 'SGTL.confirmar puede mostrar una lista');
+}
+
 function probarViajeGuardaImporte() {
     const viajes = leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs');
     assert.ok(/GuardarImporte\(db, viaje\.Viaje_ID, viajeDto, calculo\)/.test(viajes), 'el alta del viaje guarda el importe calculado por la API');
@@ -135,7 +162,7 @@ function probarFijaConExcedente() {
     const calculo = leer('WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs');
     assert.ok(/decimal excedente = km - t\.Km_Banda3;/.test(calculo) && /v\.Valor_Banda3 \+ Redondear\(v\.Valor_Km \* excedente\)/.test(calculo),
         'con tarifa fija, más de 250 km es la fija de 250 más el excedente por km');
-    assert.ok(/if \(p\.PorKm\)[\s\S]{0,200}Redondear\(v\.Valor_Km \* km\)/.test(calculo), 'con tarifa por km, todo el viaje por km');
+    assert.ok(/if \(porKm\)[\s\S]{0,200}Redondear\(v\.Valor_Km \* km\)/.test(calculo), 'con tarifa por km, todo el viaje por km');
     // 600 km en un Balancín 2019 en adelante: fija 663.370 + 350 × 2.594 = 1.571.270; por km, 600 × 2.594 = 1.556.400.
     assert.strictEqual(663370 + 350 * 2594, 1571270);
     assert.strictEqual(600 * 2594, 1556400);
@@ -200,6 +227,7 @@ probarTiposIguales();
 probarValoresDeAgosto();
 probarValoresDeEnero();
 probarGrillaComoElPdf();
+probarImpactoAlGuardar();
 probarViajeGuardaImporte();
 probarFijaConExcedente();
 probarTablasPorCliente();

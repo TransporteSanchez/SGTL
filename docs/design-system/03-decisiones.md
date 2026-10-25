@@ -18,7 +18,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Avisos (§5.1) | `SGTL.toastExito(texto)`, `SGTL.toastError(texto)`; error dentro de un modal: `SGTL.avisoFormulario(aviso, texto)` |
 | Texto de un error de la API (§9) | `SGTL.mensajeError(xhr, porDefecto)`; `$.ajax` como promesa: `SGTL.ajax(opciones, porDefecto)` |
-| Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, accion })` |
+| Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, detalle, ancho, accion })` |
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
@@ -400,7 +400,12 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   - una línea con la consecuencia: "No se puede deshacer.";
   - botones "Cancelar" (gris) y **el verbo de la acción** ("Eliminar", "Anular", "Generar",
     "Enviar"), en rojo si destruye o anula;
-  - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal.
+  - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal;
+  - si la acción cambia otras cosas (guardar una tabla de tarifas recalcula viajes y presupuestos, §33 de PENDIENTES), el
+    mensaje dice cuántas en una o dos oraciones y **la lista va dentro de la misma confirmación** (`detalle`, con
+    `ancho: 'lg'`): una tabla con grupos (§2.1) según qué pasa con cada una ("Se recalculan", "No cambian: quedan para
+    revisar"), el dato principal con el segundo en gris debajo y la tabla se desplaza si es larga
+    (`.sgtl-confirmar-lista`). Si no cambia nada más, no se pide confirmación.
 - **Qué pide confirmación:** solo lo que no se puede deshacer o tiene efectos afuera del
   sistema: eliminar, anular, generar proforma (consume un número), emitir factura, enviar por
   mail o WhatsApp.

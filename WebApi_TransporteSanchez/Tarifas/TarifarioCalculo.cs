@@ -198,28 +198,34 @@ namespace WebApi_TransporteSanchez.Tarifas
             if (v == null)
                 return Falla("La tabla \"" + t.Nombre + "\" no tiene valores para " + camion.Tipo.Trim() + ", " + Antiguedad(t, nuevo) + ". Completala en Gestionar tarifas.");
 
-            decimal km = p.Km.Value;
+            return BaseConTabla(t, v, camion.Tipo.Trim(), nuevo, p.PorKm, p.Km.Value, p.Vuelta);
+        }
+
+        // La base con una tabla y su fila de valores ya elegidas, sin leer la base de datos. La usan el cálculo de un viaje o
+        // presupuesto (CalcularTarifario) y el recálculo al editar una tabla (TarifarioImpacto), para que den lo mismo.
+        public static Resultado BaseConTabla(Tarifario t, Valores v, string tipo, bool nuevo, bool porKm, decimal km, int? vuelta)
+        {
             var r = new Resultado
             {
                 Ok = true,
                 TarifarioID = t.Tarifario_ID,
                 Tarifario = t.Nombre,
-                TipoVehiculo = camion.Tipo.Trim(),
+                TipoVehiculo = tipo,
                 ModeloNuevo = nuevo
             };
 
-            if (p.PorKm)
+            if (porKm)
             {
                 r.Banda = "tarifa por km: " + Km(km) + " km × " + Pesos(v.Valor_Km);
                 r.ImporteBase = Redondear(v.Valor_Km * km);
             }
             else if (km <= t.Km_Banda1)
             {
-                int vuelta = p.Vuelta == 2 ? 2 : 1;
+                int numero = vuelta == 2 ? 2 : 1;
                 r.AplicaVuelta = true;
-                r.Vuelta = vuelta;
-                r.Banda = "tarifa fija hasta " + t.Km_Banda1 + " km, " + vuelta + "ª vuelta";
-                r.ImporteBase = vuelta == 2 ? v.Valor_Banda1_Vuelta2 : v.Valor_Banda1_Vuelta1;
+                r.Vuelta = numero;
+                r.Banda = "tarifa fija hasta " + t.Km_Banda1 + " km, " + numero + "ª vuelta";
+                r.ImporteBase = numero == 2 ? v.Valor_Banda1_Vuelta2 : v.Valor_Banda1_Vuelta1;
             }
             else if (km <= t.Km_Banda2)
             {
@@ -239,7 +245,7 @@ namespace WebApi_TransporteSanchez.Tarifas
                 r.ImporteBase = v.Valor_Banda3 + Redondear(v.Valor_Km * excedente);
             }
 
-            r.TarifaDetalle = t.Nombre + " · " + r.TipoVehiculo + ", " + Antiguedad(t, nuevo) + " · " + r.Banda;
+            r.TarifaDetalle = t.Nombre + " · " + tipo + ", " + Antiguedad(t, nuevo) + " · " + r.Banda;
             return r;
         }
 
@@ -250,6 +256,19 @@ namespace WebApi_TransporteSanchez.Tarifas
             if (p.EstadiaModulos < 0 || p.EstadiaModulos > MaxEstadiaModulos)
                 return Falla("Los módulos de estadía tienen que ser entre 0 y " + MaxEstadiaModulos + ".");
 
+            Tarifario t = null;
+            if (p.FalsoFlete || p.EstadiaModulos > 0)
+            {
+                t = Vigente(db, p.FechaInicio, p.ClienteID);
+                if (t == null)
+                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargala en Gestionar tarifas.");
+            }
+            return SumarAdicionales(r, t, p.FalsoFlete, p.EstadiaModulos);
+        }
+
+        // Falso flete y estadía con la tabla t (la vigente para el viaje; null si no tiene adicionales), sin leer la base.
+        public static Resultado SumarAdicionales(Resultado r, Tarifario t, bool falsoFlete, int estadiaModulos)
+        {
             r.FalsoFlete = 0;
             r.Estadia = 0;
             r.FalsoFletePorcentaje = null;
@@ -257,27 +276,20 @@ namespace WebApi_TransporteSanchez.Tarifas
             var detalle = r.TarifaDetalle + " · " + Pesos(r.ImporteBase);
             decimal importe = r.ImporteBase;
 
-            if (p.FalsoFlete || p.EstadiaModulos > 0)
+            if (t != null && falsoFlete)
             {
-                var t = Vigente(db, p.FechaInicio, p.ClienteID);
-                if (t == null)
-                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargala en Gestionar tarifas.");
-
-                if (p.FalsoFlete)
-                {
-                    decimal conFalso = Redondear(r.ImporteBase * t.Falso_Flete_Porcentaje / 100m);
-                    r.FalsoFletePorcentaje = t.Falso_Flete_Porcentaje;
-                    r.FalsoFlete = conFalso - r.ImporteBase;
-                    importe = conFalso;
-                    detalle += " · falso flete " + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %: " + Pesos(conFalso);
-                }
-                if (p.EstadiaModulos > 0)
-                {
-                    r.EstadiaModulo = t.Estadia_Modulo;
-                    r.Estadia = Redondear(t.Estadia_Modulo * p.EstadiaModulos);
-                    importe += r.Estadia;
-                    detalle += " · " + p.EstadiaModulos + (p.EstadiaModulos == 1 ? " módulo" : " módulos") + " de estadía: " + Pesos(r.Estadia);
-                }
+                decimal conFalso = Redondear(r.ImporteBase * t.Falso_Flete_Porcentaje / 100m);
+                r.FalsoFletePorcentaje = t.Falso_Flete_Porcentaje;
+                r.FalsoFlete = conFalso - r.ImporteBase;
+                importe = conFalso;
+                detalle += " · falso flete " + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %: " + Pesos(conFalso);
+            }
+            if (t != null && estadiaModulos > 0)
+            {
+                r.EstadiaModulo = t.Estadia_Modulo;
+                r.Estadia = Redondear(t.Estadia_Modulo * estadiaModulos);
+                importe += r.Estadia;
+                detalle += " · " + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + " de estadía: " + Pesos(r.Estadia);
             }
 
             r.Importe = importe;

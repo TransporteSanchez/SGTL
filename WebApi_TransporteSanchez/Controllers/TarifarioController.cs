@@ -14,7 +14,8 @@ namespace WebApi_TransporteSanchez.Controllers
     /// <summary>
     /// Tabla de tarifas por tipo de camión (tablas TARIFARIOS y TARIFARIO_VALORES, database/tarifas/02 y 03; fuera del
     /// EDMX): las tarifas fijas por banda de km y las tarifas por km. Cada versión (un PDF de la empresa) vale desde
-    /// Vigente_Desde hasta la siguiente. El viaje guarda su importe: editar una versión no cambia los viajes ya calculados.
+    /// Vigente_Desde hasta la siguiente. El viaje guarda su importe; al guardar una tabla, se recalcula lo que el cliente
+    /// todavía no vio y lo demás queda para revisar (TarifarioImpacto, §33 de PENDIENTES).
     /// Cada tabla es general (para todos los clientes) o propia de algunos clientes (TARIFARIO_CLIENTES): para esos
     /// clientes reemplaza a la general. Una general y una propia pueden estar vigentes al mismo tiempo.
     /// </summary>
@@ -49,6 +50,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Falso_Flete_Porcentaje { get; set; }
             public List<ValoresDto> Valores { get; set; }
             public string Usuario { get; set; }
+            // Obligatorio si el cambio recalcula importes o deja algo para revisar (§33): queda en la auditoría.
+            public string Motivo { get; set; }
         }
 
         private class ListaRow
@@ -234,6 +237,61 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
+        // POST api/Tarifario/Impacto?id=N: qué pasaría con los viajes y presupuestos al guardar la tabla (id = 0 si es nueva),
+        // sin guardar nada. La pantalla lo muestra en la confirmación antes de guardar.
+        [HttpPost]
+        [Route("api/Tarifario/Impacto")]
+        public IHttpActionResult Impacto([FromBody] TarifarioDto dto, int id = 0)
+        {
+            if (dto == null) return BadRequest("No se recibieron los datos de la tabla de tarifas.");
+            var errores = Validar(dto);
+            if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
+            try
+            {
+                using (var cn = new SqlConnection(CnSql()))
+                {
+                    cn.Open();
+                    return Ok(TarifarioImpacto.Calcular(cn, null, id, Editada(dto)));
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // La tabla como queda al guardar, para calcular el impacto.
+        private static TarifarioImpacto.TablaEditada Editada(TarifarioDto dto)
+        {
+            bool paraTodos = dto.Para_Todos != false;
+            return new TarifarioImpacto.TablaEditada
+            {
+                Datos = new TarifarioCalculo.Tarifario
+                {
+                    Nombre = dto.Nombre.Trim(),
+                    Vigente_Desde = dto.Vigente_Desde.Value.Date,
+                    Para_Todos = paraTodos,
+                    Anio_Corte = dto.Anio_Corte,
+                    Km_Banda1 = dto.Km_Banda1,
+                    Km_Banda2 = dto.Km_Banda2,
+                    Km_Banda3 = dto.Km_Banda3,
+                    Estadia_Modulo = dto.Estadia_Modulo,
+                    Estadia_Horas_Modulo = dto.Estadia_Horas_Modulo,
+                    Estadia_Desde_Horas = dto.Estadia_Desde_Horas,
+                    Estadia_Desde_Horas_Larga = dto.Estadia_Desde_Horas_Larga,
+                    Falso_Flete_Porcentaje = dto.Falso_Flete_Porcentaje
+                },
+                Valores = dto.Valores.Select(v => new TarifarioCalculo.Valores
+                {
+                    Modelo_Nuevo = v.Modelo_Nuevo,
+                    Tipo_Vehiculo = (v.Tipo_Vehiculo ?? "").Trim(),
+                    Valor_Banda1_Vuelta1 = v.Valor_Banda1_Vuelta1,
+                    Valor_Banda1_Vuelta2 = v.Valor_Banda1_Vuelta2,
+                    Valor_Banda2 = v.Valor_Banda2,
+                    Valor_Banda3 = v.Valor_Banda3,
+                    Valor_Km = v.Valor_Km
+                }).ToList(),
+                Clientes = paraTodos ? new List<int>() : dto.Clientes.Where(c => c > 0).Distinct().ToList()
+            };
+        }
+
         // POST api/Tarifario: tabla nueva (cuando la empresa manda la actualizada).
         [HttpPost]
         [Route("api/Tarifario")]
@@ -242,7 +300,7 @@ namespace WebApi_TransporteSanchez.Controllers
             return Guardar(0, dto);
         }
 
-        // PUT api/Tarifario/{id}: corregir una tabla. Los viajes ya calculados conservan su importe.
+        // PUT api/Tarifario/{id}: corregir una tabla. Se recalcula lo que el cliente todavía no vio (TarifarioImpacto).
         [HttpPut]
         [Route("api/Tarifario/{id:int}")]
         public IHttpActionResult Editar(int id, [FromBody] TarifarioDto dto)
@@ -295,6 +353,14 @@ namespace WebApi_TransporteSanchez.Controllers
                             }
                         }
 
+                        // Qué pasa con los viajes y presupuestos, con las tablas como quedan (antes de escribir nada).
+                        var impacto = TarifarioImpacto.Calcular(cn, tx, id, Editada(dto));
+                        string motivo = (dto.Motivo ?? "").Trim();
+                        if (impacto.HayCambios && motivo.Length == 0)
+                            return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Motivo", ErrorMessage = "Completá el motivo del cambio." } });
+                        if (motivo.Length > 500)
+                            return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Motivo", ErrorMessage = "El motivo puede tener hasta 500 caracteres." } });
+
                         var ahora = AhoraArgentina();
                         var usuario = Usuario(dto.Usuario);
                         var cabecera = new[]
@@ -336,11 +402,29 @@ namespace WebApi_TransporteSanchez.Controllers
                                 P("@v2", v.Valor_Banda1_Vuelta2), P("@b2", v.Valor_Banda2), P("@b3", v.Valor_Banda3), P("@km", v.Valor_Km));
                         }
 
+                        var aplicado = TarifarioImpacto.Aplicar(cn, tx, impacto, id, dto.Nombre.Trim(), alta, motivo, usuario, ahora);
+
                         tx.Commit();
 
-                        SGTLAuditContext.RegistrarEvento(Cn(), usuario.Length > 20 ? usuario.Substring(0, 20) : usuario, alta ? "INSERT" : "UPDATE",
-                            "TARIFARIOS", "Tarifario_ID=" + id, Resumen(dto));
-                        return Ok(new { Tarifario_ID = id, Message = alta ? "Tabla de tarifas registrada." : "Tabla de tarifas guardada." });
+                        string usuarioAuditoria = usuario.Length > 20 ? usuario.Substring(0, 20) : usuario;
+                        SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, alta ? "INSERT" : "UPDATE", "TARIFARIOS", "Tarifario_ID=" + id,
+                            Resumen(dto) + (motivo.Length > 0 ? " Motivo: " + motivo + "." : "")
+                            + (aplicado.CambioID > 0 ? " Recalculados: " + aplicado.ViajesRecalculados + " viajes y " + aplicado.PresupuestosRecalculados
+                                + " presupuestos; para revisar: " + aplicado.ParaRevisar + "." : ""));
+                        string causa = (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\". Motivo: " + motivo;
+                        foreach (var item in aplicado.Recalculados)
+                            SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
+                                (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
+                                "Importe recalculado por " + causa + ": " + TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ".");
+
+                        return Ok(new
+                        {
+                            Tarifario_ID = id,
+                            aplicado.ViajesRecalculados,
+                            aplicado.PresupuestosRecalculados,
+                            aplicado.ParaRevisar,
+                            Message = (alta ? "Tabla de tarifas registrada." : "Tabla de tarifas guardada.") + Recalculado(aplicado)
+                        });
                     }
                 }
             }
@@ -418,6 +502,17 @@ namespace WebApi_TransporteSanchez.Controllers
                 + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).Select(v => (v.Modelo_Nuevo ? "Nuevo " : "Anterior ") + v.Tipo_Vehiculo.Trim() + ": "
                     + v.Valor_Banda1_Vuelta1.ToString("N0", es) + " / " + v.Valor_Banda1_Vuelta2.ToString("N0", es) + " / " + v.Valor_Banda2.ToString("N0", es)
                     + " / " + v.Valor_Banda3.ToString("N0", es) + " / " + v.Valor_Km.ToString("N0", es) + " por km"));
+        }
+
+        // " Se recalcularon 6 viajes y 1 presupuesto. Quedan 3 para revisar." (o nada).
+        private static string Recalculado(TarifarioImpacto.Aplicado a)
+        {
+            var partes = new List<string>();
+            if (a.ViajesRecalculados > 0) partes.Add(a.ViajesRecalculados == 1 ? "1 viaje" : a.ViajesRecalculados + " viajes");
+            if (a.PresupuestosRecalculados > 0) partes.Add(a.PresupuestosRecalculados == 1 ? "1 presupuesto" : a.PresupuestosRecalculados + " presupuestos");
+            string texto = partes.Count == 0 ? "" : " Se " + (a.ViajesRecalculados + a.PresupuestosRecalculados == 1 ? "recalculó " : "recalcularon ") + string.Join(" y ", partes) + ".";
+            if (a.ParaRevisar > 0) texto += " " + (a.ParaRevisar == 1 ? "Queda 1 para revisar." : "Quedan " + a.ParaRevisar + " para revisar.");
+            return texto;
         }
 
         private static int Escalar(SqlConnection cn, SqlTransaction tx, string sql, params SqlParameter[] ps)

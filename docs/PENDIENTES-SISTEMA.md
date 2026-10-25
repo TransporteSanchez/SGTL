@@ -52,7 +52,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
-| 33 | Editar una tarifa que ya usan viajes: cuándo se puede, qué se recalcula y a quién se avisa (lo planteó Facu) | **En parte resuelto con el §34 (24/10):** el viaje guarda su importe, así que editar una tarifa ya no cambia los viajes calculados. Queda para charlar con Facu el "Recalcular" de varios viajes y el aviso al cliente | — | Con el §34 |
+| 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Decidido (25/10), en curso:** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y un tablero | — | Ver §33 |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | Pusheado el 24 y 25/10; la tabla de enero y el `04` rehecho, **sin push** | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
@@ -2586,59 +2586,103 @@ empresa, los PDF, CABA, permisos y recibos). Sin datos de prueba nuevos. Saliero
 
 ---
 
-## 33. Editar una tarifa que ya usan viajes — PARA CHARLAR CON FACU (23/10)
+## 33. Editar una tabla de tarifas que ya usan viajes — DECIDIDO (25/10), EN CURSO
 
 Lo planteó Facu (23/10): "no debería dejarte editar tarifas que estén en curso, porque ya hay viajes que las usan;
-debería pedirte que cierres esa vigencia y generes una nueva con el nuevo valor, y ahí recalcular todo". Rocío: hay que
-armar bien el flujo, porque no es tan simple como permitir o no permitir. Puede hacer falta editar justamente para
-corregir un error (lo que se decidió para Rukas). No se decidió ni se cambió nada.
+debería pedirte que cierres esa vigencia y generes una nueva con el nuevo valor, y ahí recalcular todo". Con el §34 el
+viaje guarda su importe y editar una tabla dejó de cambiar los viajes calculados, pero corregir un valor mal cargado
+dejaba esos viajes con el error. Rocío (25/10): es algo que el profesor puede preguntar; editar una tarifa tiene que
+impactar en los viajes, con un orden claro de qué se toca, qué no y a quién se avisa.
 
-**Cómo funciona hoy:**
-- Gestionar tarifas deja **editar todo** de una tarifa en cualquier momento: valores, vigencia, cliente y recorrido.
-  Desde el 23/10 controla que no se superponga con otra (§31). **Eliminar** sí se rechaza si algún viaje la usa.
-- **El viaje no guarda su importe:** guarda qué tarifa usa (`TarifaFijaID` o `TarifaKmID`) y el importe se calcula cada
-  vez (fija: el neto; por km: valor por km × km). Editar el valor de una tarifa cambia el importe de **todos** sus
-  viajes en el detalle del viaje, en el dashboard y en "Traer viajes".
-- Lo que ya se emitió **no cambia**: las líneas de una proforma propia guardan su precio al traer los viajes, y las
-  facturas, sus importes. En un borrador de Rukas, "Volver a controlar" toma el importe nuevo y puede aparecer
-  "Importe distinto".
-- Cambiarle la vigencia, el cliente o el recorrido a una tarifa en uso deja viajes con una tarifa que ya no les
-  corresponde (el viaje conserva el ID).
-- Lo decidido para Rukas (`docs/negocio/PROFORMA-CLIENTES-RUKAS.md`, "SGTL está mal"): si **el valor estaba mal
-  cargado**, se edita la tarifa y se arreglan todos los viajes que la usan, "que es lo correcto porque estaba mal"; si
-  **al viaje le asignaron otra tarifa**, se cambia la del viaje, no la de la tabla.
+**Decisión de Rocío (25/10). Principio: se recalcula solo lo que el cliente todavía no vio; lo que ya vio se corrige con
+un documento. Antes de guardar, la pantalla muestra qué cambia y qué no.**
 
-**Dos casos distintos, que el flujo tiene que separar:**
-1. **Cambio de precio** (aumento, nueva negociación): no tiene que tocar lo hecho. Se cierra la vigencia de la tarifa
-   (hasta el día anterior) y se carga otra desde el día del cambio (la propuesta de Facu). Los viajes viejos siguen con
-   la anterior y los nuevos toman la nueva por su fecha de inicio (§31).
-2. **Corrección de un error** (el valor se cargó mal): sí tiene que arreglar los viajes que la usan, salvo lo ya
-   emitido.
+- **Dos motivos, dos botones:** un aumento es "Registrar tabla de tarifas" desde la fecha en que empieza (queda la
+  historia); corregir un error es "Editar" la misma tabla. Los dos impactan igual.
+- **Qué pasa con cada cosa** (viajes y presupuestos de esa tabla, o que pasan a esa tabla o salen de ella):
 
-**24/10: en parte resuelto con el §34.** Rocío eligió la "opción de fondo" de abajo: el viaje guarda su importe al calcular
-su tarifa (columnas `Importe_Base` e `Importe` en `VIAJES`). Editar una tarifa fija, por km o del tarifario ya no cambia
-los viajes calculados; un viaje toma el valor nuevo cuando se edita cambiando lo que define su tarifa (tipo de tarifa,
-camión, km, inicio o vuelta). Quedan para charlar con Facu: el "Recalcular" de varios viajes juntos cuando una tarifa
-estaba mal cargada, y si hay que avisarle al cliente.
+  | Qué | Qué pasa | Por qué |
+  |---|---|---|
+  | Viajes sin proforma (Registrado, En viaje, Entregado, Listo para facturar) | Se recalculan | El cliente todavía no vio el importe |
+  | Viajes en un borrador de proforma | Se recalculan y su línea del borrador propio se actualiza (si el precio de la línea es el del viaje); en un borrador de Rukas, "Volver a controlar" ya toma el importe nuevo | El borrador no se mandó |
+  | Viajes en una proforma generada o aceptada | No cambian: quedan para revisar. Al anular la proforma, sus viajes se recalculan | El cliente ya la recibió: se anula y se genera de nuevo |
+  | Viajes facturados | No cambian: quedan para revisar | La diferencia va con una nota de crédito o de débito (módulo de Facu) |
+  | Viajes de un presupuesto aceptado | No cambian | El precio lo aceptó el cliente |
+  | Presupuestos pendientes | Se recalculan y quedan para reenviar | Si ya se le mandó, hay que reenviárselo |
+  | Presupuestos aceptados o rechazados | No cambian | Ya tienen respuesta del cliente |
 
-**Para decidir:**
-- [ ] ¿Se bloquea editar el valor, la vigencia, el cliente o el recorrido de una tarifa con viajes, y se ofrece
-  "Cerrar vigencia y registrar una nueva"? ¿O se deja editar con una confirmación que diga a qué viajes afecta: N sin
-  proforma (cambian su importe), M en borrador (se recalculan) y K en una proforma generada o facturados (no cambian;
-  la diferencia iría con una nota de crédito o de débito)? ¿Se pide el motivo y queda en la auditoría?
-- [ ] "Recalcular todo" al cerrar una vigencia: ¿qué viajes pasan a la tarifa nueva? Propuesta: los que empiezan desde
-  la fecha nueva y no están en una proforma generada ni facturados. ¿Automático o con un botón que muestre la lista?
-- [ ] "Tarifa en curso": ¿vigente hoy, o con viajes en un estado determinado (por ejemplo, En viaje)?
-- [ ] ¿Hay que avisarle al cliente cuando cambia una tarifa o se corrige un viaje ya informado? ¿Desde el sistema
-  (e-mail) o por fuera?
-- [ ] Opción de fondo: que el viaje **guarde su importe** al asignarle la tarifa (como las líneas de proforma). Editar una
-  tarifa dejaría de cambiar los viajes hechos, y corregir un error sería un "Recalcular" explícito sobre los viajes
-  elegidos. Es más cambio (columna nueva en `VIAJES` con script, y que viajes, dashboard, "Traer viajes" y el control
-  de Rukas lean el importe guardado), pero hace el resto más simple y predecible.
-- Depende de esto la forma de cargar los valores reales de las tarifas (§31, "valores más reales"): pisar los valores o
-  cerrar las vigencias y cargar nuevas.
+- **Qué cambio dispara qué:** valores, bandas, año de corte, falso flete o estadía → los viajes de esa tabla; vigencia o
+  clientes → también los que pasan a otra tabla o vienen de otra; solo el nombre → nada; registrar una tabla nueva → los
+  viajes ya cargados que empiezan desde su fecha (por ejemplo, los programados).
+- **Al guardar:** si algo cambia, una confirmación con el resumen ("Se recalculan 6 viajes y 1 presupuesto pendiente. No
+  cambian: 2 viajes facturados y 1 en la proforma PF-00000006…"), la lista y el **motivo, obligatorio**, que queda en la
+  auditoría (de la tabla y de cada viaje recalculado). Después, el aviso con lo que se recalculó y lo que queda para
+  revisar.
+- **Cómo se avisa lo que queda para revisar:**
+  - **En la fila**, al lado del estado, el ícono rojo de "falta resolver algo" (§4.3 del design system) con un texto
+    corto: "Cambió la tarifa: revisalo en Ver PDF." (presupuesto), "Cambió la tarifa de 2 viajes: revisá el detalle de
+    la proforma.", "Cambió la tarifa: revisá el detalle del viaje.". Si la fila ya tiene un ícono, queda uno solo, el
+    rojo, con los dos textos.
+  - **Adentro, en todos los lugares donde se abre el documento** (detalle y edición), un aviso amarillo arriba con qué
+    cambió (tabla, fecha y motivo), el importe anterior y el nuevo, y qué hacer: presupuesto → en Ver PDF (su pie ya tiene
+    "Enviar por e-mail") y en Editar; proforma → en Ver detalle, con cada viaje y su diferencia y "Anulala y generala de
+    nuevo"; viaje → en Ver detalle.
+  - **Viaje facturado:** el aviso principal va en el comprobante (Facturación / cuenta corriente: ícono y detalle con
+    "Corresponde una nota de crédito por $ X"), y en el viaje una referencia al comprobante. El comprobante es módulo de
+    Facu: se hace después de su cambio de "comprobante" (§38) o lo hace él.
+  - **Tablero "Cambios de tarifa para revisar"** (Tableros → Facturación, se puede marcar como favorito): cada documento
+    con su cliente, la diferencia, qué hacer y el cambio que lo causó; "Marcar como resuelto" para lo resuelto por fuera.
+  - **Se resuelve solo:** el presupuesto, al enviarlo por e-mail; la proforma, al anularla. El viaje facturado, a mano
+    (la nota la emite el módulo de Facu).
+  - Al cliente no se le manda nada solo: el aviso es el documento (presupuesto reenviado, proforma nueva, nota de crédito
+    o de débito). Lo que se recalcula solo es lo que el cliente todavía no vio.
 
----
+**Orden de trabajo (antes del jueves, en este orden para que quede andando lo más importante):**
+1. Confirmación con el impacto, recálculo y motivo (Gestionar tarifas y API).
+2. Registro de lo que queda para revisar, íconos en las filas y avisos adentro (presupuestos, proformas, viajes) y el
+   recálculo al anular una proforma.
+3. El tablero.
+
+**Para contarle a Facu:** responde a su planteo; toca Presupuestos (el ícono, el aviso y que el envío por e-mail resuelva
+lo pendiente) y la parte del comprobante es de su módulo.
+
+**Paso 1 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM:**
+- `database/tarifas/05_cambios_de_tarifa.sql` (idempotente): `TARIFARIO_CAMBIOS` (cada guardado que cambió algo: tabla,
+  tipo, motivo, fecha, usuario y cuántos viajes y presupuestos se recalcularon) y `TARIFARIO_REVISAR` (lo que quedó para
+  revisar, con el importe anterior y el nuevo, y cuándo, quién y cómo se resolvió). **Correrlo antes de compilar.**
+- `Tarifas/TarifarioImpacto.cs` (nuevo, en el `.csproj`): calcula con las tablas como quedan al guardar qué pasa con cada
+  viaje y presupuesto (la tabla de arriba) y lo aplica en la misma transacción: actualiza los viajes, la línea del borrador
+  propio (si tiene el precio del viaje) y sus totales, y los presupuestos pendientes; registra el cambio y lo que queda
+  para revisar. Si un viaje ya estaba para revisar con el mismo importe corregido, no se repite. Un cambio que no mueve
+  importes (solo el nombre) actualiza el detalle sin preguntar.
+- `TarifarioCalculo`: la cuenta de la base y de los adicionales quedó en `BaseConTabla` y `SumarAdicionales`, sin leer la
+  base; la usan el viaje, el presupuesto y el recálculo (los mismos importes: probado con los casos de la §34).
+- `TarifarioController`: `POST api/Tarifario/Impacto?id=N` (qué pasaría, sin guardar) y el guardado pide `Motivo` si algún
+  importe cambia; la auditoría registra la tabla con el motivo y cada viaje y presupuesto recalculado ("Importe
+  recalculado por la corrección de la tabla …: $ a → $ b").
+- `gestion-tarifas.html`: al guardar pide el impacto; si algo cambia, la confirmación (§5.2) con el resumen, la lista
+  agrupada (Se recalculan / No cambian: quedan para revisar / No se pueden recalcular / No cambian) y el motivo; si no,
+  guarda directo. El aviso dice qué se recalculó y cuántos quedan para revisar. El texto de arriba del formulario ahora
+  dice que antes de guardar se ve qué se recalcula, y que un aumento va como tabla nueva. `SGTL.confirmar` acepta
+  `detalle` y `ancho`.
+- Compilado en la Mac con un proyecto de prueba (C# 7.3, como la VM) y probado sin base con casos armados: viaje sin
+  proforma, en borrador propio y de Rukas, en proforma generada, en comprobante, de presupuesto aceptado, camión sin tipo,
+  presupuesto pendiente, solo el nombre y tabla nueva desde octubre. En el navegador, con la API simulada.
+
+**Probar en la VM (paso 1):**
+- [ ] 0. Correr `database/tarifas/05_cambios_de_tarifa.sql` (al final, "OK" y "OK"). `pull`, recompilar, Ctrl+F5.
+- [ ] 1. Gestionar tarifas → Editar la tabla de agosto: arriba dice cuántos viajes la usan y que antes de guardar se ve qué
+  se recalcula. Cambiar solo el nombre y Guardar: guarda directo, sin confirmación. Volver a ponerle el nombre.
+- [ ] 2. Cambiar un valor que usen viajes (por ejemplo, el de su tipo y modelo hasta 130 km, 1ª vuelta) y Guardar: aparece
+  "¿Guardar los cambios de …?" con el resumen y la lista. Revisar que cada viaje esté en su grupo según su documento
+  (sin proforma o en borrador: se recalcula; en una proforma generada o aceptada, o en un comprobante: para revisar; de un
+  presupuesto aceptado: no cambia). Guardar sin motivo: "Completá el motivo.". Con motivo: el aviso dice cuántos se
+  recalcularon y cuántos quedan para revisar.
+- [ ] 3. Abrir un viaje recalculado: el importe nuevo con su detalle. Uno para revisar: el importe de antes. En un borrador
+  de proforma propia, la línea del viaje y el total con el importe nuevo.
+- [ ] 4. Auditoría: el cambio de la tabla con el motivo y un registro por cada viaje recalculado.
+- [ ] 5. Volver a poner el valor original (mismo motivo): los viajes vuelven a su importe. Los que quedaron para revisar
+  no se repiten si el importe corregido es el mismo.
 
 ## 34. Tabla de tarifas por tipo de camión (agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
 
@@ -2755,7 +2799,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - Los "valores más reales" de la §31 ya no hacen falta.
 
 **Probar en la VM** (con C#):
-- [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK"). Después
+- [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK") y
+  `05_cambios_de_tarifa.sql` (§33; "OK" y "OK"). Después
   `03_cargar_tablas_de_tarifas_2026.sql` tal cual: revisar la lista de camiones (los "Elegir en Gestionar camiones") y que
   "Viajes antes del 01/01/2026" dé 0 (si no, avisar a Claude); con `@Aplicar = 1`, si las cantidades coinciden (2 tablas,
   16 filas de valores), `COMMIT`.

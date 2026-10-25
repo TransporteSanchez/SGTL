@@ -77,6 +77,13 @@ table.table.sgtl-tabla-compacta tr th {
     margin-bottom: 0;
 }
 
+/* Lista dentro de la confirmación (qué cambia al guardar una tabla de tarifas, §5.2): se desplaza si es larga, sin
+   empujar el motivo ni los botones fuera de la ventana. */
+.sgtl-confirmar-lista {
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
 /* Columna de texto largo (ruta, concepto) que no tiene que quedar en una tira finita. */
 .sgtl-col-texto {
     min-width: 12rem;

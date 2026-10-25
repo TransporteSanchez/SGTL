@@ -295,6 +295,7 @@
       '<div class="modal-body">' +
       '<div class="alert alert-light-danger color-danger d-none" role="alert" data-sgtl="error"></div>' +
       '<p class="mb-0" data-sgtl="mensaje"></p>' +
+      '<div class="mt-3 d-none" data-sgtl="detalle"></div>' +
       '<div class="mt-3 d-none" data-sgtl="motivo">' +
       '<label for="sgtlConfirmarMotivo" class="form-label" data-sgtl="motivo-etiqueta"></label>' +
       '<textarea id="sgtlConfirmarMotivo" class="form-control" rows="2"></textarea>' +
@@ -312,7 +313,8 @@
   }
 
   // opciones: titulo ("¿Eliminar el chofer Juan Pérez?"), mensaje ("No se puede deshacer."),
-  // verbo ("Eliminar"), peligro (botón rojo), motivo ({ etiqueta, obligatorio }) y accion(motivo):
+  // verbo ("Eliminar"), peligro (botón rojo), motivo ({ etiqueta, obligatorio }), detalle (HTML ya escapado que va
+  // debajo del mensaje: la lista de lo que cambia), ancho ('lg' para una ventana más ancha) y accion(motivo):
   // función que hace el trabajo y devuelve una promesa. Si la promesa falla, el error queda dentro
   // del modal (con error.mensajeUsuario, si viene). Devuelve una promesa: true si se hizo, false si se canceló.
   function confirmar(opciones) {
@@ -327,6 +329,10 @@
 
     div.querySelector('#sgtlConfirmarTitulo').textContent = opciones.titulo || '';
     div.querySelector('[data-sgtl="mensaje"]').textContent = opciones.mensaje || '';
+    var detalle = div.querySelector('[data-sgtl="detalle"]');
+    detalle.innerHTML = opciones.detalle || '';
+    detalle.classList.toggle('d-none', !opciones.detalle);
+    div.querySelector('.modal-dialog').classList.toggle('modal-lg', opciones.ancho === 'lg');
     error.classList.add('d-none');
     error.textContent = '';
     aceptar.className = 'btn ' + (opciones.peligro ? 'btn-danger' : 'btn-primary');
