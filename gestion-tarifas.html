@@ -685,7 +685,7 @@
                 ponerTarifario(t, !!id);
                 const viajes = Number(t.Viajes) || 0;
                 const info = id
-                    ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + '. Si cambiás algo que cambie importes, antes de guardar vas a ver qué se recalcula y qué no. Si es un aumento, registrá una tabla nueva desde la fecha en que empieza.' : '')
+                    ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + '. Antes de guardar vas a ver qué importes cambian. Si es un aumento, registrá una tabla nueva.' : '')
                     : 'Viene con los valores de "' + t.Nombre + '": cambiá los que se actualizaron y elegí para qué clientes es.';
                 $('#infoTarifario').toggleClass('d-none', !info).text(info);
                 guardar.disabled = false;
