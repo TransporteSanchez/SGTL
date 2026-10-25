@@ -3417,8 +3417,8 @@ la Mac sin frenar los demás. Las tandas van en orden de prioridad para el jueve
 
 | Tanda | Qué | Pasos | Antes de probar |
 |---|---|---|---|
-| 1 | Tabla de tarifas (§34) | 1 a 10 (el 0 y el 4b son la preparación) | Preparación hecha |
-| 2 | Editar una tabla y lo que queda para revisar (§33) | Pasos 1, 2 y 3 | Tanda 1 OK. Usuarios: admin, uno solo con "Presupuestos" y uno solo con facturación |
+| 1 | Tabla de tarifas y sus cambios con datos de prueba (§34 y §33) | Partes A y B de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (todas las variantes y la mirada de usabilidad) | Preparación hecha |
+| 2 | Lo que ya vio el cliente: proformas enviadas y comprobantes (§33) | Parte C del mismo instructivo (cambia un valor de agosto y lo deshace) | Tanda 1 OK y el OK de Rocío. Usuarios: admin, uno solo con presupuestos y uno solo con facturación |
 | 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | Un usuario chofer; preguntar antes de lo que manda WhatsApp |
 | 4 | Tableros (§35) | Todos | — |
 | 5 | Control interno de los viajes (§37) | Todos | El galpón cargado |
