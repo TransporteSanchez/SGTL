@@ -45,7 +45,10 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
 ## 3. Datos de prueba
 
 - **Usá datos verosímiles, no marcas de prueba.** El sistema se muestra en la tesis, así que
-  nada de `PRUEBA`, `CLAUDE`, `test` ni `asdf` en lo que se ve en pantalla. Ejemplos:
+  nada de `PRUEBA`, `CLAUDE`, `PRUEBA-CLAUDE`, `test` ni `asdf` en lo que se ve en pantalla, ni en lo que una pantalla
+  copia adentro de otro registro (un presupuesto guarda el nombre del cliente y el recorrido). **Esta regla manda sobre
+  cualquier documento más viejo** (secciones de `docs/PENDIENTES-SISTEMA.md` o instructivos) que diga de usar `PRUEBA`
+  o `PRUEBA-CLAUDE` (pedido de Rocío, 25/10). Ejemplos:
   - Clientes: empresas inventadas con forma de reales ("Logística Pampeana S.R.L.",
     "Alimentos La Serena S.A."). Nunca el nombre de una empresa real ni de un cliente que ya
     esté en la base (QUICKFOOD, MARFRIG, Rukas).
@@ -61,6 +64,8 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
   pusiste, qué cambiaste). El SQL de limpieza busca por ID **y** por ese nombre, para no
   borrar nada que no sea tuyo.
 - No modifiques ni borres registros que no hayas creado vos en esta sesión.
+- Si ves datos con marcas de prueba de rondas anteriores (por ejemplo, "PRUEBA-CLAUDE 17/10"), no los corrijas:
+  anotalos en el reporte (pantalla, tabla, ID y texto) para la limpieza.
 - **Antes de estas acciones, preguntale a Rocío**, porque tienen efectos fuera de la prueba:
   - Asignar chofer a un viaje o cambiarle el estado: puede **mandar un WhatsApp real** al
     celular del chofer.

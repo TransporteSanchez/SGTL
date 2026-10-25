@@ -58,7 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
-| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto y texto de la plantilla de WhatsApp | Anotado | — | Ver §40 |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3384,8 +3384,8 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
    (directos); con la opción B, reinicia la numeración. Primero un diagnóstico de solo lectura.
 7. **Generar desde las pantallas** los documentos de la demo, con los importes de la tabla; cada viaje en una sola
    proforma.
-8. **Demo de Rukas:** regenerar los Excel de `docs/pruebas/datos/` con los importes nuevos de los viajes 25 y 26 (990001 y
-   990002).
+8. **Demo de Rukas — hecho (25/10):** los Excel de `docs/pruebas/datos/` con los importes de la tabla (990001 $ 429.101,
+   990002 $ 278.028), la fecha (16/10), la ruta de los viajes ("SEDE QUILMES - SEDE BANFIELD") y sin "PRUEBA TRANSPORTE".
 9. **Tesis:** pasar al modelo de la tabla de tarifas el RF12 (`01-analisis-organizacional.md`), el anteproyecto
    (`02-anteproyecto.md`), la arquitectura (`04-arquitectura-y-diseno.md`) y el CP11 (`05-pruebas-e-implementacion.md`, hoy
    "tarifa por km #5, $ 14.790"), con la palabra "comprobante". La HU26 de la tabla de sprints (`03-metodologia-y-sprints.md`,
@@ -3496,4 +3496,18 @@ cierren las pruebas de la §39**, antes que lo demás.
 - [ ] **4. Pedido a Fede: texto en la plantilla de WhatsApp de viajes.** Sumarle al mensaje que recibe el chofer que puede
   gestionar todo lo del viaje (iniciarlo, registrar la entrega con la evidencia, cargar los gastos) entrando a su Hoja de
   ruta en el sistema. Es una plantilla de Meta: el cambio la tiene que volver a aprobar Meta.
+- [ ] **5. Cuando Facu suba lo nuevo de presupuestos y proformas (mejoras de la tanda 1, para no olvidarlas):**
+  - M20, Traer viajes: "Se agregaron 2 viajes. No se trajeron 6 que todavía no están entregados: #45, #46, #47, #48, #49 y
+    #50." (sin "Atención:", sin mayúscula en el medio y los números en orden).
+  - M21, Presupuestos: en el PDF, "41,4 km" con coma, el CUIT del cliente con guiones, "E-mail", sin espacios al final de
+    los datos y el importe "sin IVA"; en el formulario, la distancia con coma (§7.3), "Importe" en lugar de "Importe
+    calculado (ARS)", solo choferes activos (como en Generar viaje) y una ayuda del importe más corta.
+  - M22, Gestionar proformas: "Total general" (no en mayúsculas, §9) y "→" en lugar de "->" en el concepto del viaje.
+  - D6 (punto 3 de esta lista): generar un viaje desde un presupuesto manda la hoja de ruta.
+- [ ] **6. Limpieza de textos de prueba de rondas viejas (M23 de la tanda 1).** Los presupuestos #4 y #5 muestran el cliente
+  "PRUEBA-CLAUDE 17/10 S.A." y el recorrido "PRUEBA-CLAUDE 18/10 → PRUEBA-CLAUDE 18/10", que quedaron copiados en el
+  presupuesto. Tienen viaje (#29 y #31), así que no se borran: se corrigen los datos copiados con el nombre actual del
+  cliente y del recorrido (SQL con `BEGIN TRAN`, lo corre Rocío). Antes de la presentación, volver a correr
+  `database/limpieza/01_relevar_datos_de_prueba.sql` (solo lectura) y corregir todo lo que salga. Desde el 25/10, la VM
+  usa solo datos con forma de reales (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`, que manda sobre los documentos viejos).
 

@@ -19,7 +19,9 @@ Al final hay un **guion para la presentación** con el orden sugerido y qué con
 
 ### Reglas para no romper datos (la base es compartida)
 
-- Lo que crees, nombralo con **PRUEBA** y tu nombre (por ejemplo, observaciones "PRUEBA-FACU").
+- Lo que crees, con datos que parezcan reales, sin "PRUEBA" ni tu nombre (por ejemplo, el cliente "Alimentos La Serena
+  S.A." o el remito "0001-00045101"): el sistema se muestra en la tesis. Anotá qué creaste para poder limpiarlo
+  (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`).
 - No modifiques ni elimines datos que no creaste.
 - **WhatsApp:** al registrar un viaje con chofer asignado, se le manda la hoja de ruta por WhatsApp al teléfono del chofer. Usá un chofer de prueba con **tu** número, o un viaje de cliente Rukas sin chofer (ahí es opcional).
 - Generar una proforma consume un número PF y emitir una factura queda en cuenta corriente: hacelo solo cuando la prueba lo pide, y anotá qué números usaste.
