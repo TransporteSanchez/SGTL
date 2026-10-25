@@ -185,9 +185,10 @@
                 var indicadores = delTema.filter(function (t) { return t.tipo === 'kpi'; });
                 var resto = delTema.filter(function (t) { return t.tipo !== 'kpi'; });
                 return '<div class="tab-pane fade' + (i === 0 ? ' show active' : '') + '" id="pane-' + tema.id + '" role="tabpanel" aria-labelledby="tab-' + tema.id + '">' +
-                    (indicadores.length ? '<div class="row g-3 mb-3 tableros-grilla">' + indicadores.map(columnaTablero).join('') + '</div>' : '') +
-                    // Cambios de tarifa para revisar (§33): primera de Facturación, fija (no está en el catálogo de favoritos).
+                    // Cambios de tarifa para revisar (§33): la primera de Facturación, arriba de los indicadores, fija (no está en
+                    // el catálogo de favoritos).
                     (tema.id === 'facturacion' ? '<div id="cambiosTarifaTableros" class="mb-3" hidden></div>' : '') +
+                    (indicadores.length ? '<div class="row g-3 mb-3 tableros-grilla">' + indicadores.map(columnaTablero).join('') + '</div>' : '') +
                     '<div class="row g-3 align-items-start tableros-grilla">' + resto.map(columnaTablero).join('') + '</div></div>';
             }).join('');
             // Si el usuario la ve, la pestaña la cuenta.
