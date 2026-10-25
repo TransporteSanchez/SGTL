@@ -352,6 +352,12 @@
             return (error && error.mensajeUsuario) || porDefecto;
         }
 
+        // El detalle de un error de la API (por ejemplo, los clientes cuyos viajes quedarían sin tabla), para el aviso.
+        function detalleTarifa(error) {
+            const datos = error && error.xhr && error.xhr.responseJSON;
+            return Array.isArray(datos) ? datos.reduce(function (lista, e) { return lista.concat(e.Detalle || []); }, []) : [];
+        }
+
         function dia(valor) { return valor ? String(valor).substring(0, 10) : ''; }
         function hoyISO() { return SGTL.fechaISO(new Date()); }
         function fechaValida(valor) { return SGTL.leerFecha(valor) ? '' : 'Escribí la fecha como DD/MM/AAAA.'; }
@@ -752,7 +758,7 @@
                 }, textoError);
                 if (!impacto.HayCambios) respuesta = await guardar('');
             } catch (error) {
-                SGTL.avisoFormulario('#avisoTarifario', mensajeTarifa(error, 'No se pudo guardar la tabla de tarifas. Probá de nuevo.'));
+                SGTL.avisoFormulario('#avisoTarifario', mensajeTarifa(error, 'No se pudo guardar la tabla de tarifas. Probá de nuevo.'), detalleTarifa(error));
                 return;
             } finally {
                 listo();

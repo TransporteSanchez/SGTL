@@ -16,7 +16,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 
 | Para | Función |
 |---|---|
-| Avisos (§5.1) | `SGTL.toastExito(texto)`, `SGTL.toastError(texto)`; error dentro de un modal: `SGTL.avisoFormulario(aviso, texto)` |
+| Avisos (§5.1) | `SGTL.toastExito(texto)`, `SGTL.toastError(texto)`; error dentro de un modal: `SGTL.avisoFormulario(aviso, texto, detalle)` (`detalle`: lista opcional) |
 | Texto de un error de la API (§9) | `SGTL.mensajeError(xhr, porDefecto)`; `$.ajax` como promesa: `SGTL.ajax(opciones, porDefecto)` |
 | Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, detalle, ancho, accion })` |
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
@@ -384,6 +384,11 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   probá de nuevo."
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
   **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
+- **Error que alcanza a varias cosas** (25/10, tarifas): una línea general con el total y, debajo, la lista agrupada por lo
+  que sirve para corregirlo (`SGTL.avisoFormulario(aviso, texto, detalle)`), no "el primero y N más" ni una fila por cada
+  cosa. Por ejemplo, al guardar una tabla de tarifas que dejaría viajes sin tabla: "No se puede guardar la tabla de
+  tarifas: 4 viajes quedarían sin tabla." y, por cliente, "Distribuidora del Litoral S.A.: 3 viajes, del 20/10/2026 al
+  23/10/2026". Hasta 5 renglones, los que más tienen primero, y al final "y N clientes más". Los renglones van sin punto.
 - **Nunca `alert()`.**
 - **Lo que se manda afuera al guardar se avisa antes, a la vista** (22/10, viajes): un aviso azul
   (`alert alert-info sgtl-aviso-whatsapp`, con el ícono de WhatsApp) junto al dato que lo dispara, con el nombre de

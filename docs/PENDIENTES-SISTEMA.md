@@ -2693,8 +2693,8 @@ lo pendiente) y la parte del comprobante es de su módulo.
   y presupuestos de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero 2026".' con el importe de enero (los
   de proformas enviadas o comprobantes, en "quedan para revisar"). **Cancelar** (si se guarda, se recalculan de verdad).
 - [ ] 7. Editar "Tarifas a enero 2026" y poner "Vigente desde" 31/07/2026 → Guardar: no se abre la confirmación y arriba
-  dice "No se puede guardar la tabla de tarifas: el viaje #N de … del dd/mm/aaaa y N más quedarían sin tabla de tarifas."
-  Cerrar sin guardar. (Si no hay ningún viaje ni presupuesto de enero a julio, guarda directo: volver a poner 01/01/2026.) (Lo de "la única para todos" no se ve con la base actual, que tiene dos generales: se probó con la
+  dice "No se puede guardar la tabla de tarifas: N viajes quedarían sin tabla." con la lista por cliente (cuántos y de qué
+  fechas; hasta 5 clientes y "y N clientes más"). Cerrar sin guardar. (Si no hay ningún viaje ni presupuesto de enero a julio, guarda directo: volver a poner 01/01/2026.) (Lo de "la única para todos" no se ve con la base actual, que tiene dos generales: se probó con la
   API simulada.)
 
 **Paso 2 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA COMPILAR Y PROBAR EN VM:**
@@ -2797,8 +2797,9 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   en cada fila ('Pasa a "Tarifas a enero 2026".'), con el importe nuevo. Dos límites, como al eliminar: la única tabla para
   todos los clientes no puede pasar a algunos (en el formulario se ve "Todos los clientes" como texto, con el porqué), y no
   se guarda un cambio (de clientes o de fecha) que deje un viaje o un presupuesto sin tabla: "No se puede guardar la tabla
-  de tarifas: el viaje #N de … del dd/mm/aaaa y N más quedarían sin tabla de tarifas." Al elegir "Solo algunos clientes" en
-  una tabla que era para todos, la ayuda dice a qué tabla vuelven los demás.
+  de tarifas: 4 viajes quedarían sin tabla." y debajo, por cliente, cuántos y de qué fechas ("Distribuidora del Litoral
+  S.A.: 3 viajes, del 20/10/2026 al 23/10/2026"; hasta 5 clientes, §5.1 del design system). Al elegir "Solo algunos
+  clientes" en una tabla que era para todos, la ayuda dice a qué tabla vuelven los demás.
 
 **Qué se hizo:**
 - `database/tarifas/02_tarifario_por_vehiculo.sql` (idempotente): tablas `TARIFARIOS` (una fila por tabla: nombre,

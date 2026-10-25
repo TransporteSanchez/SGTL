@@ -817,6 +817,8 @@ body .alert.alert-danger,
 body .alert.alert-light-danger { border-color: #f7d4d8; background-color: #fdf1f2; color: #b42318 !important; }
 body .alert.alert-danger::before,
 body .alert.alert-light-danger::before { content: "\f332"; color: #dc3545; }
+/* El detalle de un error que alcanza a varias cosas (SGTL.avisoFormulario con detalle, §5.1). */
+body .alert .sgtl-aviso-lista { margin: .35rem 0 0; padding-left: 1.1rem; }
 body .alert.alert-light { padding-left: 1rem; border-color: var(--sgtl-borde); background-color: #f8f9fb; color: #344054; }
 
 /* Modales y confirmación: más redondeados, sin líneas entre título, cuerpo y pie. */

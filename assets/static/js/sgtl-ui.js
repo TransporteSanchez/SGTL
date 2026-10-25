@@ -856,11 +856,22 @@
     if (siguiente && siguiente.classList.contains('invalid-feedback')) siguiente.textContent = '';
   }
 
-  // Aviso arriba del formulario. Sin texto, lo oculta.
-  function avisoFormulario(objetivo, texto) {
+  // Aviso arriba del formulario. Sin texto, lo oculta. Con detalle (una lista de textos), los muestra debajo, uno por
+  // renglón: un error que alcanza a varias cosas, agrupadas (§5.1).
+  function avisoFormulario(objetivo, texto, detalle) {
     var aviso = elemento(objetivo);
     if (!aviso) return;
     aviso.textContent = texto || '';
+    if (texto && detalle && detalle.length) {
+      var lista = document.createElement('ul');
+      lista.className = 'sgtl-aviso-lista';
+      detalle.forEach(function (linea) {
+        var item = document.createElement('li');
+        item.textContent = linea;
+        lista.appendChild(item);
+      });
+      aviso.appendChild(lista);
+    }
     aviso.style.display = texto ? '' : 'none';
     aviso.classList.toggle('d-none', !texto);
   }

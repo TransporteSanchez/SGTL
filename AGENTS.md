@@ -54,7 +54,8 @@ AGENTS.md"):
    "Confirmar".** Los formularios llevan `data-bs-backdrop="static"`; los de detalle, solo "Cerrar", armados con los
    bloques de su formulario (`.sgtl-dato`, estado en el título). (§6.2)
 5. **Avisos con `SGTL.toastExito` / `SGTL.toastError`**; el error de un modal abierto, dentro del modal con
-   `SGTL.avisoFormulario`. **Nunca `alert()`.** (§5.1)
+   `SGTL.avisoFormulario` (si alcanza a varias cosas, una línea con el total y la lista agrupada como `detalle`, no "el
+   primero y N más"). **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)
 7. **Formularios con `SGTL.validador`:** asterisco rojo en lo obligatorio, `form-label` con `for`, el error
    debajo de cada campo y "Revisá los campos marcados." arriba. Los largos, en bloques con `.sgtl-bloque-titulo`

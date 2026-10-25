@@ -722,18 +722,43 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // Si con el cambio algún viaje o presupuesto se queda sin tabla (la tabla pasa a solo algunos clientes y antes no hay
-        // otra para todos, o empieza más tarde), no se guarda: el viaje quedaría con una tabla que ya no le corresponde.
+        // otra para todos, o empieza más tarde), no se guarda: el viaje quedaría con una tabla que ya no le corresponde. El
+        // detalle va por cliente, con cuántos y de qué fechas: así se ve qué cliente quedó afuera o qué fechas quedan sin tabla
+        // (Rocío, 25/10). Hasta 5 clientes, los que más tienen primero.
         private static List<object> ErroresSinTabla(TarifarioImpacto.Resultado impacto, bool paraTodos)
         {
             var sinTabla = impacto.SinTabla;
             if (!sinTabla.Any()) return new List<object>();
-            var primero = sinTabla[0];
-            string cual = (primero.Clase == "Viaje" ? "el viaje #" : "el presupuesto #") + primero.Id
-                + (string.IsNullOrWhiteSpace(primero.Cliente) ? "" : " de " + primero.Cliente.Trim())
-                + " del " + primero.SinTablaEl.Value.ToString("dd/MM/yyyy");
-            string cuantos = sinTabla.Count == 1 ? " quedaría" : " y " + (sinTabla.Count - 1) + " más quedarían";
+            var porCliente = sinTabla
+                .GroupBy(i => string.IsNullOrWhiteSpace(i.Cliente) ? "Cliente sin nombre" : i.Cliente.Trim())
+                .Select(g => new
+                {
+                    Cliente = g.Key,
+                    Viajes = g.Count(i => i.Clase == "Viaje"),
+                    Presupuestos = g.Count(i => i.Clase != "Viaje"),
+                    Desde = g.Min(i => i.SinTablaEl.Value).Date,
+                    Hasta = g.Max(i => i.SinTablaEl.Value).Date
+                })
+                .OrderByDescending(g => g.Viajes + g.Presupuestos).ThenBy(g => g.Cliente).ToList();
+            var detalle = porCliente.Take(5).Select(g => g.Cliente + ": " + Cantidad(g.Viajes, g.Presupuestos)
+                + (g.Desde == g.Hasta ? ", el " + g.Desde.ToString("dd/MM/yyyy")
+                    : ", del " + g.Desde.ToString("dd/MM/yyyy") + " al " + g.Hasta.ToString("dd/MM/yyyy"))).ToList();
+            if (porCliente.Count > 5) detalle.Add("y " + (porCliente.Count - 5) + (porCliente.Count == 6 ? " cliente más" : " clientes más"));
+
+            int viajes = sinTabla.Count(i => i.Clase == "Viaje");
             return new List<object> { new { PropertyName = paraTodos ? "Vigente_Desde" : "Clientes",
-                ErrorMessage = "No se puede guardar la tabla de tarifas: " + cual + cuantos + " sin tabla de tarifas." } };
+                ErrorMessage = "No se puede guardar la tabla de tarifas: " + Cantidad(viajes, sinTabla.Count - viajes)
+                    + (sinTabla.Count == 1 ? " quedaría" : " quedarían") + " sin tabla.",
+                Detalle = detalle } };
+        }
+
+        // "3 viajes y 1 presupuesto".
+        private static string Cantidad(int viajes, int presupuestos)
+        {
+            var partes = new List<string>();
+            if (viajes > 0) partes.Add(viajes + (viajes == 1 ? " viaje" : " viajes"));
+            if (presupuestos > 0) partes.Add(presupuestos + (presupuestos == 1 ? " presupuesto" : " presupuestos"));
+            return string.Join(" y ", partes);
         }
 
         private static int Escalar(SqlConnection cn, SqlTransaction tx, string sql, params SqlParameter[] ps)

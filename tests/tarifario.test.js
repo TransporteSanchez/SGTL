@@ -300,7 +300,14 @@ function probarCambiarClientes() {
     [enImpacto, enGuardar].forEach(function (bloque) {
         assert.ok(/ErroresDeAlcance\(cn, /.test(bloque) && /ErroresSinTabla\(impacto, /.test(bloque), 'Impacto y Guardar controlan lo mismo antes de la confirmación');
     });
+    assert.ok(/ErrorMessage = "No se puede guardar la tabla de tarifas: " \+ Cantidad\(/.test(api) && /Detalle = detalle/.test(api),
+        'sin tabla: una línea general y el detalle por cliente');
+    const ui = leer('assets/static/js/sgtl-ui.js');
+    assert.ok(/function avisoFormulario\(objetivo, texto, detalle\)/.test(ui) && /lista\.className = 'sgtl-aviso-lista'/.test(ui),
+        'el aviso del formulario muestra el detalle como lista');
     const pantalla = leer('gestion-tarifas.html');
+    assert.ok(/mensajeTarifa\(error, 'No se pudo guardar la tabla de tarifas\. Probá de nuevo\.'\), detalleTarifa\(error\)\)/.test(pantalla),
+        'la pantalla pasa el detalle del error al aviso');
     assert.ok(/id="trAlcanceFijo"/.test(pantalla) && /unicaGeneral = !!\(fila && fila\.Unica_General\)/.test(pantalla), 'la única para todos muestra los clientes como texto');
     assert.ok(/Los demás clientes vuelven a "/.test(pantalla), 'la ayuda dice a qué tabla vuelven los demás clientes');
 }
