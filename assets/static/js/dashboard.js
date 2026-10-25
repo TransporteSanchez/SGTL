@@ -1117,6 +1117,71 @@
     });
   }
 
+  // ---------------------------------------------------------------- Cambios de tarifa para revisar (§33 de PENDIENTES)
+
+  // Lo que quedó para revisar al corregir una tabla de tarifas o registrar una nueva: el documento, el importe (el nuevo y
+  // el de antes), qué hacer y el cambio que lo causó. Los viajes se abren con Ver detalle; lo resuelto por fuera del
+  // sistema se marca a mano, con cómo se resolvió (queda en la auditoría).
+  var DOCUMENTO_REVISAR = { Presupuesto: 'presupuestos.html', Proforma: 'gestion-facturacion.html', Comprobante: 'gestion-facturacion.html' };
+
+  function cargarCambiosTarifa() {
+    if (!hay('cambios-tarifa')) return;
+    $.ajax({ url: API + '/Tarifario/Revisar', type: 'GET' }).done(function (datos) {
+      mostrarCambiosTarifa(Array.isArray(datos) ? datos : []);
+    }).fail(function () {
+      poner('cambios-tarifa-cantidad', 'Hoy');
+      ponerHtml('cambios-tarifa', '<tr><td colspan="4" class="text-center text-muted py-4">No se pudieron cargar los cambios de tarifa.</td></tr>');
+    });
+  }
+
+  function mostrarCambiosTarifa(filas) {
+    var cuerpo = el('cambios-tarifa');
+    poner('cambios-tarifa-cantidad', filas.length ? 'Hoy · ' + filas.length + ' para revisar' : 'Hoy');
+    if (!filas.length) {
+      cuerpo.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">' +
+        '<i class="bi bi-check2-circle text-success me-1" aria-hidden="true"></i>No hay nada para revisar por cambios de tarifa.</td></tr>';
+      return;
+    }
+    SGTL.tabla.llenar(cuerpo, filas.map(function (r) {
+      var documento = r.Tipo === 'Presupuesto' ? (r.Documento || 'Presupuesto #' + r.Presupuesto_ID)
+        : (r.Documento || '') + (r.Viaje_ID ? ' · viaje #' + r.Viaje_ID : '');
+      var causa = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.causa(r) : r.Tabla;
+      var acciones = [];
+      if (r.Viaje_ID) acciones.push(SGTL.botonFila('ver', { id: r.Viaje_ID }));
+      acciones.push(SGTL.botonFila('siguiente', { texto: 'Marcar como resuelto', icono: 'bi-check2-circle', datos: { resolver: r.Revisar_ID } }));
+      return '<tr>' +
+        '<td><a href="' + DOCUMENTO_REVISAR[r.Tipo] + '">' + esc(documento) + '</a>' +
+        '<small class="d-block text-muted">' + esc(r.Cliente || '—') + '</small>' +
+        // En pantallas chicas, qué hacer va debajo del documento (la columna no entra).
+        '<small class="d-block d-md-none mt-1">' + esc(r.Que_Hacer) + '</small></td>' +
+        '<td class="text-end text-nowrap">' + esc(SGTL.monto(r.Importe_Nuevo || 0)) +
+        '<small class="d-block text-muted">antes ' + esc(SGTL.monto(r.Importe_Anterior || 0)) + '</small></td>' +
+        '<td class="dash-celda-texto d-none d-md-table-cell">' + esc(r.Que_Hacer) +
+        '<small class="d-block text-muted">Por ' + esc(causa) + '.</small></td>' +
+        '<td class="text-center">' + SGTL.accionesFila(acciones) + '</td>' +
+        '</tr>';
+    }).join(''));
+  }
+
+  function resolverCambioTarifa(id) {
+    SGTL.confirmar({
+      titulo: '¿Marcar como resuelto?',
+      mensaje: 'Deja de aparecer en la lista y en el documento. Contá cómo se resolvió.',
+      verbo: 'Marcar como resuelto',
+      motivo: { etiqueta: 'Cómo se resolvió', obligatorio: true },
+      accion: function (como) {
+        return SGTL.ajax({
+          url: API + '/Tarifario/Revisar/' + encodeURIComponent(id) + '/Resolver', type: 'POST', contentType: 'application/json',
+          data: JSON.stringify({ Usuario: localStorage.getItem('username') || '', Como: como })
+        }, 'No se pudo marcar como resuelto. Probá de nuevo.');
+      }
+    }).then(function (hecho) {
+      if (!hecho) return;
+      SGTL.toastExito('Marcado como resuelto.');
+      cargarCambiosTarifa();
+    });
+  }
+
   // Lo vencido de cada cliente (de mayor a menor) y lo que vence más adelante.
   function mostrarDeudaVencida(filas) {
     var cuerpo = el('deuda-clientes');
@@ -1533,12 +1598,14 @@
     $(document).on('click', '.dash-tarjeta [data-accion="ver"], .dash-tarjeta .dash-viaje', function () {
       mostrarDetalle($(this).data('id') || $(this).data('viaje'));
     });
+    $(document).on('click', '.dash-tarjeta [data-resolver]', function () { resolverCambioTarifa($(this).data('resolver')); });
 
     elegirPeriodo(leerPeriodoGuardado());
     cargarRevisar();
     cargarProximos();
     cargarTopClientes();
     cargarDeuda();
+    cargarCambiosTarifa();
     iniciarCalendario();
   }
 

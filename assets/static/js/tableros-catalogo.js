@@ -100,7 +100,13 @@
     },
     { id: 'facturacionmes', tema: 'facturacion', titulo: 'Facturación por cliente y por mes', tituloId: 'titulo-facturacionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-facturacion"><p class="dash-mensaje">Cargando…</p></div>' },
     // Nuevo (24/10, segunda tanda): cliente × antigüedad de lo vencido × monto.
-    { id: 'deudaantiguedad', tema: 'facturacion', titulo: 'Antigüedad de la deuda', alcance: 'Hoy', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-deuda"><p class="dash-mensaje">Cargando…</p></div>' }
+    { id: 'deudaantiguedad', tema: 'facturacion', titulo: 'Antigüedad de la deuda', alcance: 'Hoy', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-deuda"><p class="dash-mensaje">Cargando…</p></div>' },
+    // Nuevo (25/10, §33 de PENDIENTES): lo que quedó para revisar por un cambio de tarifa, para controlarlo.
+    {
+      id: 'cambiostarifa', tema: 'facturacion', titulo: 'Cambios de tarifa para revisar', icono: 'bi-exclamation-circle text-danger',
+      alcance: { id: 'cambios-tarifa-cantidad', texto: 'Hoy' }, tipo: 'lista', w: 12, h: 6, minH: 4, sinRelleno: true,
+      cuerpo: cargandoTabla('cambios-tarifa', 4, '<th>Documento</th><th class="text-end">Importe</th><th class="d-none d-md-table-cell">Qué hacer</th><th class="text-center">Acciones</th>')
+    }
   ];
 
   var POR_ID = {};
