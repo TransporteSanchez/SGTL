@@ -2684,8 +2684,10 @@ lo pendiente) y la parte del comprobante es de su módulo.
 - [ ] 3. Abrir un viaje recalculado: el importe nuevo con su detalle. Uno para revisar: el importe de antes. En un borrador
   de proforma propia, la línea del viaje y el total con el importe nuevo.
 - [ ] 4. Auditoría: el cambio de la tabla con el motivo y un registro por cada viaje recalculado.
-- [ ] 5. Volver a poner el valor original (mismo motivo): los viajes vuelven a su importe. Los que quedaron para revisar
-  no se repiten si el importe corregido es el mismo.
+- [ ] 5. Volver a poner el valor original (mismo motivo): los viajes vuelven a su importe. Lo que había quedado para
+  revisar (proformas, comprobantes y presupuestos) desaparece de la tarjeta y de los avisos, porque el documento ya tiene
+  el importe de la tabla; en la base queda resuelto con "La tarifa volvió al importe…". Si en vez de volver se corrige a
+  otro importe, queda uno solo para revisar con el importe de antes del primer cambio, sin repetirse.
 
 **Paso 2 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA COMPILAR Y PROBAR EN VM:**
 - `Tarifas/TarifarioRevisar.cs` (nuevo, en el `.csproj`): lo pendiente con el cambio que lo causó y qué hacer ("Reenviáselo

@@ -69,6 +69,10 @@ namespace WebApi_TransporteSanchez.Tarifas
 
             // Pasan a otra tabla o cambia el texto del detalle, sin cambiar el importe: se actualizan sin preguntar.
             internal List<Item> SoloDetalle = new List<Item>();
+
+            // Viajes en una proforma enviada o en un comprobante que tenían algo para revisar y con este cambio la tarifa
+            // vuelve al importe del documento: lo pendiente se resuelve solo.
+            internal List<int> VuelvenAlDocumento = new List<int>();
         }
 
         public class Aplicado
@@ -414,6 +418,8 @@ WHERE v.TarifarioID IS NOT NULL";
             item.Importe_Nuevo = calculo.Importe;
             if (v.Importe.HasValue && v.Importe.Value == calculo.Importe)
             {
+                // El documento ya tiene el importe correcto: si quedaba algo para revisar, se resuelve.
+                if (pendientes.ContainsKey(v.Viaje_ID)) res.VuelvenAlDocumento.Add(v.Viaje_ID);
                 // Mismo importe: si cambió la tabla o el texto del detalle (otro nombre), se actualiza sin preguntar.
                 if (v.TarifarioID != idDespues || v.Tarifa_Detalle != calculo.TarifaDetalle || v.Importe_Detalle != calculo.ImporteDetalle)
                     res.SoloDetalle.Add(item);
@@ -559,6 +565,12 @@ WHERE v.TarifarioID IS NOT NULL";
                     GuardarPresupuesto(cn, tx, item, tarifarioId);
             }
 
+            foreach (var viaje in r.VuelvenAlDocumento)
+                Ejecutar(cn, tx,
+                    "UPDATE dbo.TARIFARIO_REVISAR SET Resuelto_Fecha=@f, Resuelto_Usuario=@u, Resuelto_Como=N'La tarifa volvió al importe del documento.' " +
+                    "WHERE Viaje_ID=@v AND Tipo IN (N'Proforma', N'Comprobante') AND Resuelto_Fecha IS NULL",
+                    P("@f", ahora), P("@u", Recortar(usuario, 50)), P("@v", viaje));
+
             if (!r.HayCambios) return aplicado;
 
             aplicado.CambioID = Escalar(cn, tx,
@@ -598,11 +610,8 @@ WHERE v.TarifarioID IS NOT NULL";
                     aplicado.Recalculados.Add(item);
                 }
 
-                if (item.TipoRevisar != null)
-                {
-                    RegistrarRevisar(cn, tx, aplicado.CambioID, item, ahora, usuario);
+                if (item.TipoRevisar != null && RegistrarRevisar(cn, tx, aplicado.CambioID, item, ahora, usuario))
                     aplicado.ParaRevisar++;
-                }
             }
 
             foreach (var proforma in borradores)
@@ -630,24 +639,31 @@ WHERE v.TarifarioID IS NOT NULL";
         }
 
         // Si el documento ya tenía algo para revisar sin resolver, el importe anterior es el de entonces (el que vio el
-        // cliente) y lo viejo queda resuelto por este cambio.
-        private static void RegistrarRevisar(SqlConnection cn, SqlTransaction tx, int cambioId, Item item, DateTime ahora, string usuario)
+        // cliente) y lo viejo queda resuelto por este cambio. Si con este cambio vuelve a ese importe (por ejemplo, se deshizo
+        // una corrección), no queda nada para revisar: devuelve false.
+        private static bool RegistrarRevisar(SqlConnection cn, SqlTransaction tx, int cambioId, Item item, DateTime ahora, string usuario)
         {
             string filtro = item.TipoRevisar == "Presupuesto" ? "Presupuesto_ID=@doc" : "Viaje_ID=@doc";
             var anterior = Leer(cn, tx,
                 "SELECT TOP (1) Importe_Anterior FROM dbo.TARIFARIO_REVISAR WHERE Tipo=@tipo AND " + filtro + " AND Resuelto_Fecha IS NULL " +
                 "ORDER BY Revisar_ID", r => DecN(r, "Importe_Anterior"), P("@tipo", item.TipoRevisar), P("@doc", item.Id)).FirstOrDefault();
+            decimal? antes = anterior ?? item.Importe_Anterior;
+            bool vuelve = antes.HasValue && item.Importe_Nuevo.HasValue && antes.Value == item.Importe_Nuevo.Value;
             Ejecutar(cn, tx,
-                "UPDATE dbo.TARIFARIO_REVISAR SET Resuelto_Fecha=@f, Resuelto_Usuario=@u, Resuelto_Como=N'Reemplazado por un cambio de tarifa posterior.' " +
+                "UPDATE dbo.TARIFARIO_REVISAR SET Resuelto_Fecha=@f, Resuelto_Usuario=@u, Resuelto_Como=@como " +
                 "WHERE Tipo=@tipo AND " + filtro + " AND Resuelto_Fecha IS NULL",
-                P("@f", ahora), P("@u", Recortar(usuario, 50)), P("@tipo", item.TipoRevisar), P("@doc", item.Id));
+                P("@f", ahora), P("@u", Recortar(usuario, 50)),
+                P("@como", vuelve ? "La tarifa volvió al importe que ya tenía." : "Reemplazado por un cambio de tarifa posterior."),
+                P("@tipo", item.TipoRevisar), P("@doc", item.Id));
+            if (vuelve) return false;
             Ejecutar(cn, tx,
                 "INSERT INTO dbo.TARIFARIO_REVISAR (Cambio_ID, Tipo, Presupuesto_ID, Viaje_ID, Proforma_ID, Comprobante_ID, ClienteID, Documento, " +
                 "Importe_Anterior, Importe_Nuevo) VALUES (@c, @tipo, @presupuesto, @viaje, @proforma, @comprobante, @cliente, @documento, @antes, @despues)",
                 P("@c", cambioId), P("@tipo", item.TipoRevisar),
                 P("@presupuesto", item.Clase == "Presupuesto" ? item.Id : (int?)null), P("@viaje", item.Clase == "Viaje" ? item.Id : (int?)null),
                 P("@proforma", item.Proforma_ID), P("@comprobante", item.Comprobante_ID), P("@cliente", item.ClienteID),
-                P("@documento", Recortar(item.Documento, 30)), P("@antes", anterior ?? item.Importe_Anterior), P("@despues", item.Importe_Nuevo));
+                P("@documento", Recortar(item.Documento, 30)), P("@antes", antes), P("@despues", item.Importe_Nuevo));
+            return true;
         }
 
         // Los mismos totales que ProformasController.ComputarTotales.
