@@ -4,9 +4,13 @@ using System.Data.Entity;
 using System.Data.Entity.Core.EntityClient;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Net;
+using System.Security.Claims;
+using System.Text;
 using System.Web.Http;
+using Microsoft.IdentityModel.Tokens;
 using WebApi_TransporteSanchez.Tarifas;
 
 namespace WebApi_TransporteSanchez.Controllers
@@ -431,40 +435,143 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        public class ResolverDto
+        // ---------------------------------------------------------------- Para revisar (§33)
+        // Cada uno ve lo que puede resolver (Rocío, 25/10): los presupuestos, quien tiene permiso de presupuestos; las
+        // proformas y los comprobantes, quien gestiona proformas o cuenta corriente. Los administradores, todo. El
+        // usuario sale del token, como en TablerosController.
+
+        private static readonly string[] PermisosPresupuestos = { "Presupuestos", "Gestionar presupuestos" };
+        private static readonly string[] PermisosFacturacion =
+        {
+            "Gestión de proformas", "Gestión de facturas", "Cuenta Corriente", "Cuenta corriente de clientes"
+        };
+
+        private class Alcance
         {
             public string Usuario { get; set; }
+            public bool Presupuestos { get; set; }
+            public bool Facturacion { get; set; }
+            public bool Ve(string tipo) { return tipo == "Presupuesto" ? Presupuestos : Facturacion; }
+        }
+
+        // Sin token válido o con el usuario inactivo: null (la acción responde 401).
+        private Alcance AlcanceDelToken()
+        {
+            var authorization = Request == null ? null : Request.Headers.Authorization;
+            if (authorization == null || !string.Equals(authorization.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(authorization.Parameter)) return null;
+            ClaimsPrincipal principal;
+            try
+            {
+                SecurityToken validado;
+                principal = new JwtSecurityTokenHandler().ValidateToken(authorization.Parameter, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true, IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey)),
+                    ValidateIssuer = true, ValidIssuer = JwtConfig.Issuer, ValidateAudience = true, ValidAudience = JwtConfig.Audience,
+                    ValidateLifetime = true, ClockSkew = TimeSpan.FromMinutes(1)
+                }, out validado);
+            }
+            catch (SecurityTokenException) { return null; }
+            catch (ArgumentException) { return null; }
+            var claim = principal.FindFirst(ClaimTypes.NameIdentifier);
+            if (claim == null || string.IsNullOrWhiteSpace(claim.Value)) return null;
+
+            using (var cn = new SqlConnection(CnSql()))
+            {
+                cn.Open();
+                int id;
+                bool admin;
+                using (var cmd = new SqlCommand(
+                    "SELECT TOP (1) Usuario_ID, CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(Rol,''))))='admin' THEN 1 ELSE 0 END AS EsAdmin " +
+                    "FROM dbo.USUARIOS WHERE Nombre_Usuario=@u AND EstadoUsuario='Activo'", cn))
+                {
+                    cmd.Parameters.AddWithValue("@u", claim.Value);
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        if (!r.Read()) return null;
+                        id = Convert.ToInt32(r["Usuario_ID"]);
+                        admin = Convert.ToInt32(r["EsAdmin"]) == 1;
+                    }
+                }
+                return new Alcance
+                {
+                    Usuario = claim.Value,
+                    Presupuestos = admin || TienePermiso(cn, id, PermisosPresupuestos),
+                    Facturacion = admin || TienePermiso(cn, id, PermisosFacturacion)
+                };
+            }
+        }
+
+        // Algún grupo del usuario tiene alguno de esos permisos (sin distinguir mayúsculas ni tildes).
+        private static bool TienePermiso(SqlConnection cn, int usuarioId, string[] permisos)
+        {
+            var nombres = string.Join(", ", permisos.Select((p, i) => "@p" + i));
+            using (var cmd = new SqlCommand(
+                "SELECT COUNT(*) FROM dbo.GRUPOS_USUARIOS gu JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID " +
+                "JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID WHERE gu.UsuarioID = @usuario " +
+                "AND LTRIM(RTRIM(m.Menu_Nombre)) COLLATE Latin1_General_CI_AI IN (" + nombres + ")", cn))
+            {
+                cmd.Parameters.AddWithValue("@usuario", usuarioId);
+                for (int i = 0; i < permisos.Length; i++) cmd.Parameters.AddWithValue("@p" + i, permisos[i]);
+                return Convert.ToInt32(cmd.ExecuteScalar()) > 0;
+            }
+        }
+
+        public class ResolverDto
+        {
             public string Como { get; set; }
         }
 
-        // GET api/Tarifario/Revisar: lo que quedó para revisar por un cambio de tarifa (§33), el más nuevo primero. Con
-        // presupuestoId, proformaId o viajeId, solo lo de ese documento (el aviso de su detalle).
+        // GET api/Tarifario/Revisar/Alcance: qué puede ver el usuario (la tarjeta fija del dashboard aparece si ve algo).
+        [HttpGet]
+        [Route("api/Tarifario/Revisar/Alcance")]
+        public IHttpActionResult AlcanceRevisar()
+        {
+            try
+            {
+                var alcance = AlcanceDelToken();
+                if (alcance == null) return Unauthorized();
+                return Ok(new { alcance.Presupuestos, alcance.Facturacion });
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // GET api/Tarifario/Revisar: lo que quedó para revisar por un cambio de tarifa y el usuario puede resolver, el más
+        // nuevo primero. Con presupuestoId, proformaId o viajeId, solo lo de ese documento (el aviso de su detalle).
         [HttpGet]
         [Route("api/Tarifario/Revisar")]
         public IHttpActionResult Revisar(int presupuestoId = 0, int proformaId = 0, int viajeId = 0)
         {
             try
             {
+                var alcance = AlcanceDelToken();
+                if (alcance == null) return Unauthorized();
                 using (var db = new DbContext(Cn()))
-                    return Ok(TarifarioRevisar.Pendientes(db, presupuestoId, proformaId, viajeId));
+                    return Ok(TarifarioRevisar.Pendientes(db, presupuestoId, proformaId, viajeId).Where(f => alcance.Ve(f.Tipo)).ToList());
             }
             catch (Exception ex) { return InternalServerError(ex); }
         }
 
-        // POST api/Tarifario/Revisar/{id}/Resolver: marcar como resuelto lo que se resolvió por fuera del sistema (por
-        // ejemplo, la nota de crédito de un viaje que ya estaba en un comprobante).
+        // POST api/Tarifario/Revisar/{id}/Resolver: marcar como resuelto lo que se resolvió por fuera del sistema (la nota
+        // de crédito o de débito de un viaje que ya estaba en un comprobante). Pide cómo se resolvió.
         [HttpPost]
         [Route("api/Tarifario/Revisar/{id:int}/Resolver")]
         public IHttpActionResult ResolverRevisar(int id, [FromBody] ResolverDto dto)
         {
-            string usuario = Usuario(dto == null ? null : dto.Usuario);
-            string como = (dto == null || string.IsNullOrWhiteSpace(dto.Como)) ? "Marcado como resuelto." : dto.Como.Trim();
+            string como = dto == null ? "" : (dto.Como ?? "").Trim();
+            if (como.Length == 0)
+                return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Como", ErrorMessage = "Completá cómo se resolvió." } });
             try
             {
+                var alcance = AlcanceDelToken();
+                if (alcance == null) return Unauthorized();
                 using (var db = new DbContext(Cn()))
                 {
-                    if (TarifarioRevisar.Resolver(db, usuario, como, revisarId: id) == 0)
-                        return Content(HttpStatusCode.NotFound, new { Mensaje = "Ya estaba resuelto." });
+                    var tipo = TarifarioRevisar.TipoPendiente(db, id);
+                    if (tipo == null) return Content(HttpStatusCode.NotFound, new { Mensaje = "Ya estaba resuelto." });
+                    if (!alcance.Ve(tipo)) return Content(HttpStatusCode.Forbidden, new { Mensaje = "No tenés permiso para resolverlo." });
+                    string usuario = Usuario(alcance.Usuario);
+                    TarifarioRevisar.Resolver(db, usuario, como, revisarId: id);
                     SGTLAuditContext.RegistrarEvento(Cn(), usuario.Length > 20 ? usuario.Substring(0, 20) : usuario, "UPDATE", "TARIFARIO_REVISAR",
                         "Revisar_ID=" + id, "Marcado como resuelto: " + como);
                     return Ok(new { Message = "Marcado como resuelto." });
@@ -477,15 +584,15 @@ namespace WebApi_TransporteSanchez.Controllers
         // e-mail; si estaba para reenviar por un cambio de tarifa, queda resuelto.
         [HttpPost]
         [Route("api/Tarifario/Revisar/Presupuesto/{id:int}/Enviado")]
-        public IHttpActionResult PresupuestoEnviado(int id, [FromBody] ResolverDto dto)
+        public IHttpActionResult PresupuestoEnviado(int id)
         {
             try
             {
+                var alcance = AlcanceDelToken();
+                if (alcance == null) return Unauthorized();
+                if (!alcance.Presupuestos) return Content(HttpStatusCode.Forbidden, new { Mensaje = "No tenés permiso para resolverlo." });
                 using (var db = new DbContext(Cn()))
-                {
-                    int resueltos = TarifarioRevisar.Resolver(db, Usuario(dto == null ? null : dto.Usuario), "Reenviado por e-mail.", presupuestoId: id);
-                    return Ok(new { Resueltos = resueltos });
-                }
+                    return Ok(new { Resueltos = TarifarioRevisar.Resolver(db, Usuario(alcance.Usuario), "Reenviado por e-mail.", presupuestoId: id) });
             }
             catch (Exception ex) { return InternalServerError(ex); }
         }

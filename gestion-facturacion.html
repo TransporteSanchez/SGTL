@@ -549,6 +549,7 @@
                 .then(function (r) {
                     var res = r[0];
                     cambiosTarifa = r[1] || [];
+                    cambiosTarifaCargados = true;
                     if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
@@ -621,6 +622,7 @@
                 .finally(restaurarBotonesReporte);
         }
         var cambiosTarifa = [];
+        var cambiosTarifaCargados = false;
         function cambiosDeProforma(id) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Proforma_ID', id) : []; }
         // Una proforma generada o aceptada con viajes cuya tarifa cambió: el ícono rojo manda a mirar el detalle (§33).
         function iconoCambioTarifa(x) {
@@ -825,7 +827,15 @@
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
                 ponerBadgeEstado('badgeEstadoModal', estadoActual);
-                document.getElementById('cambioTarifaProforma').innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID), { enLaProforma: true }) : '';
+                // Si cambió la tarifa de sus viajes, el aviso trae "Anular proforma" para corregirla desde acá (§33).
+                var cambioTarifa = document.getElementById('cambioTarifaProforma');
+                var anulable = estadoActual === 'Generada' || estadoActual === 'Aceptada';
+                cambioTarifa.innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID),
+                    { enLaProforma: true, boton: anulable && !p.FacturaID ? { texto: 'Anular proforma', clase: 'btn-outline-danger' } : null }) : '';
+                var corregir = cambioTarifa.querySelector('[data-sgtl-corregir]');
+                if (corregir) corregir.onclick = function () {
+                    $('#modalProforma').one('hidden.bs.modal', function () { anular(p.Proforma_ID); }).modal('hide');
+                };
                 // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
                 if (p.Tipo_Proforma === 'Plataforma' && window.ProformaPlataforma) ProformaPlataforma.abrir(p.Proforma_ID, soloLectura);
@@ -1025,6 +1035,15 @@
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
             cargarClientes();
             buscarProformas(1);
+            // gestion-facturacion.html?proforma=N abre su detalle (desde la tarjeta "Cambios de tarifa para revisar" del
+            // dashboard). Se usa una vez: el parámetro se saca de la dirección.
+            var proformaUrl = parseInt(new URLSearchParams(window.location.search).get('proforma'), 10);
+            if (proformaUrl > 0) {
+                window.history.replaceState(null, '', window.location.pathname);
+                var esperar = setInterval(function () {
+                    if (!window.SGTLCambiosTarifa || cambiosTarifaCargados) { clearInterval(esperar); verProforma(proformaUrl); }
+                }, 150);
+            }
             ['p_fdesde', 'p_fhasta', 'p_fcarga', 'p_fentrega'].forEach(function (id) {
                 SGTL.selectorFecha('#' + id, { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y' });
             });

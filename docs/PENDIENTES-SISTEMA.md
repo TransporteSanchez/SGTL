@@ -52,7 +52,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 30 | Gestionar empresa (nueva): datos y logo de la empresa que salen en los PDF, con versiones por fecha; Gestionar contenido queda con la apariencia sola (logo del sistema) | Hecho en la Mac (23/10) con API simulada, con el diseño y las decisiones de Rocío | **Pusheado** (`cdbcd76`, `16b05c4`; 23/10) | **Correr antes `database/empresa/01_crear_empresa.sql`**, recompilar la API y probar (ver §30) |
 | 31 | Tarifas: no se superponen (fijas y por km), el neto es ruta + vuelta vacío, el viaje toma la tarifa de su fecha de inicio, orígenes del cliente (lo encontró Facu) | Hecho en la Mac (23/10) con API simulada, con las decisiones de Rocío; datos de la base revisados y corregidos (23/10) | **Pusheado** (`1ca5d87` a `4ee7ef3`; 23/10) | **OK en VM (23/10)** (ver §32) |
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
-| 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Falta la parte del comprobante (módulo de Facu, después de su cambio) | Sin push | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
+| 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Tarjeta fija en el dashboard, por permisos y con acceso directo a corregir. Falta la parte del comprobante (módulo de Facu, después de su cambio) | Sin push | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | Pusheado el 24 y 25/10; la tabla de enero y el `04` rehecho, **sin push** | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c`; 24/10, junto con los tableros); los ajustes del 24/10 (menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año), commiteados **sin push** | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
@@ -2717,19 +2717,31 @@ lo pendiente) y la parte del comprobante es de su módulo.
   y "Corresponde una nota de crédito (o de débito) por $ X". (Se marca como resuelto desde el tablero, paso 3.)
 
 **Paso 3 — HECHO EN LA MAC (25/10), SIN PUSH; FALTA PROBAR EN VM:**
-- Tablero **"Cambios de tarifa para revisar"** (`tableros-catalogo.js`, tema Facturación; los datos, `dashboard.js`): cada
-  documento con su cliente, el importe nuevo y el de antes, qué hacer y el cambio que lo causó (tabla, fecha y motivo);
-  "Ver detalle" en los viajes y "Marcar como resuelto", que pide cómo se resolvió (queda en la auditoría). El enlace del
-  documento lleva a su pantalla. Arriba a la derecha, "Hoy · N para revisar". Se puede marcar con la estrella para verlo
-  en el dashboard (no está en el diseño por defecto). `index.html` y `tableros.html` cargan `cambios-tarifa.js`.
-- Probado en el navegador con la API simulada: la lista, Ver detalle del viaje y Marcar como resuelto.
+- **Tarjeta fija "Cambios de tarifa para revisar" arriba del dashboard** (decisión de Rocío, 25/10): no está en el catálogo
+  de Tableros, no lleva estrella y no se saca. La ve siempre quien puede resolver algo; si no hay nada, dice "No hay nada
+  para revisar por cambios de tarifa.". La arma `cambios-tarifa.js` (`tarjetaFija`); `index.html` la llama.
+- **Cada uno ve lo suyo** (también en los íconos y avisos de las pantallas): la API toma el usuario del token y devuelve los
+  presupuestos a quien tiene el permiso "Presupuestos", y las proformas y los comprobantes a quien tiene "Gestión de
+  proformas", "Gestión de facturas" o "Cuenta Corriente"; los administradores, todo. `GET api/Tarifario/Revisar/Alcance`
+  dice qué ve. Resolver controla el mismo permiso.
+- **Cada fila lleva a donde se corrige:** presupuesto → `presupuestos.html?presupuesto=N` abre su Ver PDF (con "Enviar por
+  e-mail"; al enviarlo, queda resuelto); proforma → `gestion-facturacion.html?proforma=N` abre su detalle, y el aviso trae
+  **"Anular proforma"** (al anularla, sus viajes se recalculan y queda resuelto); viaje en un comprobante → Ver detalle
+  del viaje y **"Marcar como resuelto"** (con cómo se resolvió), porque la nota de crédito o de débito se emite en cuenta
+  corriente y todavía no avisa sola (§38).
+- Probado en el navegador con la API simulada: la tarjeta, los tres enlaces, "Anular proforma" y Marcar como resuelto.
 
 **Probar en la VM (paso 3):**
-- [ ] 1. Tableros → Facturación: "Cambios de tarifa para revisar" con lo que quedó del paso 1 (y nada de lo resuelto en
-  el paso 2). Ver detalle de un viaje: su detalle con el aviso.
-- [ ] 2. Marcar como resuelto el viaje que está en un comprobante, sin escribir cómo: "Completá el motivo."; con el
-  texto: "Marcado como resuelto." y sale de la lista; en Gestionar viajes ya no tiene el ícono rojo.
-- [ ] 3. Marcarlo con la estrella y verlo en el dashboard.
+- [ ] 1. Entrar como administrador: arriba del dashboard, "Cambios de tarifa para revisar" con lo que quedó del paso 1, sin
+  estrella. En Personalizar no se puede mover ni sacar. En Tableros no aparece.
+- [ ] 2. Con un usuario que solo tiene "Presupuestos": la tarjeta muestra solo los presupuestos; en Gestionar viajes, los
+  viajes para revisar no tienen el ícono rojo. Con uno que solo tiene "Gestión de proformas" o "Cuenta Corriente": solo
+  las proformas y los comprobantes. Con uno sin esos permisos: no hay tarjeta.
+- [ ] 3. Presupuesto: Ver PDF para reenviarlo → abre Gestionar presupuestos con su Ver PDF; enviarlo → sale de la tarjeta.
+- [ ] 4. Proforma: Ver la proforma → abre su detalle con el aviso y "Anular proforma" → la confirmación de anular. Anularla:
+  sale de la tarjeta y el viaje queda con el importe nuevo.
+- [ ] 5. Viaje en un comprobante: Ver detalle (con el aviso) y Marcar como resuelto sin escribir cómo: "Completá el
+  motivo."; con el texto: sale de la tarjeta.
 
 ## 34. Tabla de tarifas por tipo de camión (agosto 2026) — HECHO EN LA MAC (24/10), FALTA CORRER LOS SCRIPTS, COMPILAR Y PROBAR EN VM
 
@@ -3304,7 +3316,10 @@ Rocío). Documentos que incluyen viajes y cambiarían con la tabla, **20 en tota
    `Tarifas/TarifarioImpacto.cs` (§33): busca el comprobante de un viaje con `Tipo = 'FAC'` y arma el número con el tipo
    ("FAC-00000015").
 5b. **Aviso en el comprobante (§33):** el ícono rojo en su fila y el aviso en su detalle con los viajes y "Corresponde
-   una nota de crédito por $ X" (módulo de Facu: lo hace él o se coordina). Hoy el aviso está en el viaje y en el tablero.
+   una nota de crédito por $ X" (módulo de Facu: lo hace él o se coordina). Hoy el aviso está en el viaje y en la tarjeta
+   del dashboard. Y que **emitir la nota de crédito o de débito sobre ese comprobante lo resuelva solo** (como reenviar
+   el presupuesto o anular la proforma), con un enlace directo desde la tarjeta: así "Marcar como resuelto" deja de hacer
+   falta.
 6. **Script de limpieza** (lo arma Claude, lo corre Rocío con `BEGIN TRAN`): borra las proformas y los comprobantes
    elegidos con todo lo que depende de ellos (detalle, cuenta corriente, aplicaciones, vínculos con los viajes y con las
    proformas); los viajes que quedaron sin documento vuelven a Listo para facturar (con plataforma) o Entregado

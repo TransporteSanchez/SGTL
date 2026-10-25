@@ -84,6 +84,13 @@ table.table.sgtl-tabla-compacta tr th {
     overflow-y: auto;
 }
 
+/* Tarjeta fija "Cambios de tarifa para revisar" del dashboard (cambios-tarifa.js): fuera de la grilla de favoritos, con
+   la lista que se desplaza si es larga. */
+.sgtl-cambios-tarifa .card-body {
+    max-height: 20rem;
+    overflow-y: auto;
+}
+
 /* Columna de texto largo (ruta, concepto) que no tiene que quedar en una tira finita. */
 .sgtl-col-texto {
     min-width: 12rem;

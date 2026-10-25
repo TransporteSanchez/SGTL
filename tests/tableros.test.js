@@ -39,8 +39,8 @@ T.DISENO_POR_DEFECTO.forEach(function (it) {
     assert.ok(it.x >= 0 && it.x + it.w <= 12, '"' + it.id + '" se sale de las 12 columnas');
 });
 
-// Los gráficos de tres datos pedidos por Rocío (24/10, en dos tandas) y los cambios de tarifa para revisar (25/10) están en el catálogo.
-['kmcamionmes', 'clientesmes', 'facturacionmes', 'deudavencida', 'ingresoscamionmes', 'recorridos', 'rechazos', 'deudaantiguedad', 'cambiostarifa'].forEach(function (id) {
+// Los gráficos de tres datos pedidos por Rocío (24/10, en dos tandas) están en el catálogo.
+['kmcamionmes', 'clientesmes', 'facturacionmes', 'deudavencida', 'ingresoscamionmes', 'recorridos', 'rechazos', 'deudaantiguedad'].forEach(function (id) {
     assert.ok(claves.has(id), 'falta el tablero "' + id + '"');
 });
 

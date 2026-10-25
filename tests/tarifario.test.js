@@ -148,18 +148,30 @@ function probarParaRevisar() {
     assert.ok(presupuestos.indexOf("'Cambió la tarifa: revisalo en Ver PDF.'") !== -1, 'Presupuestos: el ícono manda a Ver PDF');
     assert.ok(/el\('vistaPresupuestoCambio'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos),
         'Presupuestos: el aviso en Ver PDF y en Editar');
-    assert.ok(/\/Tarifario\/Revisar\/Presupuesto\/' \+ encodeURIComponent\(enviadoId\) \+ '\/Enviado'/.test(presupuestos), 'Presupuestos: enviarlo por e-mail lo resuelve');
+    assert.ok(/SGTLCambiosTarifa\.presupuestoEnviado\(enviadoId\)/.test(presupuestos) && /\/Tarifario\/Revisar\/Presupuesto\/' \+ encodeURIComponent\(id\) \+ '\/Enviado'/.test(modulo),
+        'Presupuestos: enviarlo por e-mail lo resuelve');
     assert.ok(/<script src="assets\/static\/js\/cambios-tarifa\.js"><\/script><script src="assets\/static\/js\/presupuestos\.js">/.test(leer('presupuestos.html')),
         'presupuestos.html carga el módulo antes de presupuestos.js');
 
     const proformas = leer('gestion-facturacion.html');
-    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\), \{ enLaProforma: true \}\)/.test(proformas),
+    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\),\s+\{ enLaProforma: true/.test(proformas),
         'Proformas: ícono en la fila y aviso en el detalle');
 
     const viajes = leer('gestion-viajes.html');
     assert.ok(viajes.indexOf("'<div>Cambió la tarifa: revisá el detalle del viaje.</div>'") !== -1 && /botonInfo\(cambio\.length \? 'urgente' : 'info'/.test(viajes),
         'Viajes: el ícono pasa a rojo y suma el texto');
     assert.ok(/mostrarCambioTarifa\(viaje, numero\)/.test(leer('assets/static/js/viaje-detalle.js')), 'Ver detalle del viaje muestra el aviso');
+
+    // Rocío, 25/10: cada uno ve lo que puede resolver, y la tarjeta es fija en el dashboard (sin estrella).
+    const api2 = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
+    assert.ok(/\.Where\(f => alcance\.Ve\(f\.Tipo\)\)/.test(api2), 'la API devuelve solo lo que el usuario puede resolver');
+    assert.ok(/PermisosPresupuestos = \{ "Presupuestos"/.test(api2) && /"Gestión de proformas"/.test(api2) && /"Cuenta Corriente"/.test(api2),
+        'presupuestos con su permiso; proformas y comprobantes con los de facturación');
+    assert.ok(/Authorization: 'Bearer '/.test(modulo), 'cambios-tarifa.js manda el token');
+    assert.ok(leer('assets/static/js/tableros-catalogo.js').indexOf("id: 'cambiostarifa'") === -1, 'no está en el catálogo de favoritos');
+    assert.ok(/SGTLCambiosTarifa\.tarjetaFija\(document\.getElementById\('cambiosTarifaFija'\)\)/.test(leer('index.html')), 'el dashboard la muestra fija');
+    assert.ok(/get\('presupuesto'\)/.test(presupuestos) && /get\('proforma'\)/.test(proformas), 'cada fila lleva a donde se corrige');
+    assert.ok(/texto: 'Anular proforma'/.test(proformas), 'el aviso de la proforma trae "Anular proforma"');
 }
 
 function probarViajeGuardaImporte() {

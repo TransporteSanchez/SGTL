@@ -244,11 +244,20 @@
     }
     function listar() {
         Promise.all([pedir(api + '/Presupuestos'), window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar({}) : []]).then(function (r) {
-            registros = r[0] || []; cambiosTarifa = r[1] || []; dibujar();
+            registros = r[0] || []; cambiosTarifa = r[1] || []; dibujar(); abrirDesdeEnlace();
         }).catch(function () {
             SGTL.tabla.vacia('#lista', 8, 'No se pudieron cargar los presupuestos.');
             aviso('mensaje', 'No se pudieron cargar los presupuestos. Probá de nuevo.', true);
         });
+    }
+    // presupuestos.html?presupuesto=N abre su Ver PDF (desde la tarjeta "Cambios de tarifa para revisar" del dashboard,
+    // para reenviarlo). Se usa una vez: el parámetro se saca de la dirección.
+    function abrirDesdeEnlace() {
+        var id = parseInt(new URLSearchParams(window.location.search).get('presupuesto'), 10);
+        if (!(id > 0)) return;
+        window.history.replaceState(null, '', window.location.pathname);
+        var p = registros.filter(function (x) { return Number(x.id) === id; })[0];
+        if (p) imprimirPresupuesto(p);
     }
     function sinTildes(texto) { return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase(); }
     function cumpleFiltros(p) {
@@ -435,10 +444,7 @@
             enviando = false; listo(); envioActual = null;
             modalEnvio.hide(); SGTL.toastExito(r.mensaje || 'Presupuesto enviado.');
             // Si estaba para reenviar por un cambio de tarifa, queda resuelto (§33).
-            if (cambiosTarifa.some(function (c) { return c.Presupuesto_ID === Number(enviadoId); })) {
-                pedir(api + '/Tarifario/Revisar/Presupuesto/' + encodeURIComponent(enviadoId) + '/Enviado', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ Usuario: localStorage.getItem('username') || '' }) }).catch(function () { }).then(listar);
-            }
+            if (cambiosTarifa.some(function (c) { return c.Presupuesto_ID === Number(enviadoId); })) SGTLCambiosTarifa.presupuestoEnviado(enviadoId).then(listar);
         }).catch(function (error) {
             enviando = false; listo();
             aviso('envioPresupuestoFeedback', textoError(error, 'No se pudo enviar el presupuesto. Probá de nuevo.'), true);

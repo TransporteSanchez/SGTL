@@ -95,6 +95,14 @@ namespace WebApi_TransporteSanchez.Tarifas
                 + (string.IsNullOrEmpty(f.Documento) ? "" : " sobre " + f.Documento) + ".";
         }
 
+        // El tipo de algo pendiente (Presupuesto, Proforma o Comprobante); null si no existe o ya se resolvió.
+        public static string TipoPendiente(DbContext db, int revisarId)
+        {
+            if (!Existe(db)) return null;
+            return db.Database.SqlQuery<string>("SELECT Tipo FROM dbo.TARIFARIO_REVISAR WHERE Revisar_ID = @id AND Resuelto_Fecha IS NULL",
+                P("@id", revisarId)).FirstOrDefault();
+        }
+
         // Marca como resuelto lo indicado (uno por id, o todo lo de un presupuesto). Devuelve cuántos.
         public static int Resolver(DbContext db, string usuario, string como, int revisarId = 0, int presupuestoId = 0)
         {
