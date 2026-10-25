@@ -2817,8 +2817,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   · Después: Tarifas a octubre 2026" o "Sin fecha de fin · Hasta que se cargue la próxima"). **Eliminar** (Rocío, 25/10):
   solo si no la usa ningún viaje ni un presupuesto pendiente o aceptado sin viaje (sin la tabla no se podría generar el
   viaje), y si no es la única para todos los clientes; si no, el botón queda deshabilitado con el motivo. Al eliminarla,
-  la anterior vuelve a valer ("No se puede deshacer. "Tarifas a octubre 2026" vuelve a valer, sin fecha de fin."): nunca
-  queda un día sin tabla. "Registrar tabla de tarifas" viene
+  la anterior ocupa su lugar ("No se puede deshacer. "Tarifas a octubre 2026" queda como la tabla vigente hasta que se
+  cargue la próxima." o, si había una siguiente, "… se extiende hasta el 30/11/2026."): nunca queda un día sin tabla. "Registrar tabla de tarifas" viene
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
   hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con
@@ -2904,7 +2904,7 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   la lista, la propia con ese cliente y la general con "Salvo …, que tiene tabla propia". Un viaje de ese cliente sale con
   la propia (el detalle del importe la nombra) y uno de otro cliente, con la general. Después, eliminar la propia: la confirmación dice "Sus clientes vuelven a la tabla para todos los clientes.".
   Eliminar la de agosto: deshabilitado ("la usan N viajes"). Registrar una general desde el 01/12/2026 y eliminarla:
-  "Tarifas a agosto 2026" vuelve a valer, sin fecha de fin.
+  "Tarifas a agosto 2026" queda como la tabla vigente hasta que se cargue la próxima.
 - [ ] 4. Gestionar camiones: a los camiones que el script no pudo deducir, elegirles el tipo.
 - [ ] 4b. Rocío corre `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` (el rehecho del 25/10) tal cual: revisar
   el resumen (cuántos viajes y presupuestos, el total de hoy y el nuevo), cada viaje y cada presupuesto con su importe de

@@ -802,7 +802,8 @@
             const anterior = tarifarios.filter(function (x) {
                 return x.Tarifario_ID !== t.Tarifario_ID && mismoAlcance(x) && dia(x.Vigente_Desde) < dia(t.Vigente_Desde);
             }).sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? 1 : -1; })[0];
-            if (anterior) return ' "' + anterior.Nombre + '" vuelve a valer' + (t.Vigente_Hasta ? ' hasta el ' + SGTL.fecha(t.Vigente_Hasta) + '.' : ', sin fecha de fin.');
+            if (anterior) return ' "' + anterior.Nombre + '"' + (t.Vigente_Hasta ? ' se extiende hasta el ' + SGTL.fecha(t.Vigente_Hasta) + '.'
+                : ' queda como la tabla vigente hasta que se cargue la próxima.');
             return t.Para_Todos === false ? ' Sus clientes vuelven a la tabla para todos los clientes.' : '';
         }
 
