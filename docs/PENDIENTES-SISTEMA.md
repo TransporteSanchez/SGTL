@@ -2864,6 +2864,13 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   muestra sus importes nuevos: con esos importes hay que regenerar los Excel de `docs/pruebas/datos/` (pasárselos a
   Claude).
 - Los "valores más reales" de la §31 ya no hacen falta.
+- **Modelos (Rocío, 25/10):** la empresa separa siempre "2018 o anterior" y "2019 en adelante" por su flota, así que el año
+  no se edita: Gestionar tarifas lo muestra como texto en "Bandas de km y modelos" y cada tabla lo guarda (`Anio_Corte`,
+  Registrar lo copia de la anterior). **Mejora futura, si aparece un tercer grupo** (por ejemplo, otro precio para camiones
+  2026 en adelante): cambiar la marca de sí o no de `TARIFARIO_VALORES` (`Modelo_Nuevo`) por "desde qué año de modelo"
+  vale cada fila y elegir el grupo del año más alto que no supere el modelo del camión; toca `TarifarioCalculo`,
+  `TarifarioImpacto`, los scripts `02`, `03` y `04`, la grilla (una por grupo, con agregar y quitar) y el texto del detalle.
+  Los viajes ya calculados no cambian (guardan su importe) y el grupo nuevo entraría en una tabla nueva.
 
 **Probar en la VM** (con C#):
 - [ ] 0. Rocío corre `database/tarifas/02_tarifario_por_vehiculo.sql` (al final, todo "OK") y
@@ -2873,7 +2880,8 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   16 filas de valores), `COMMIT`.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista los viajes (hasta correr `04`, los de antes no se
   pueden editar y no muestran importe).
-- [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
+- [ ] 2. Gestionar tarifas (en "Bandas de km y modelos", "Modelos: 2018 o anterior · 2019 en adelante" como texto): solo
+  la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
   "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de enero: "Vigente hasta" dice 31/07/2026 y "Después:
   Tarifas a agosto 2026" (no se carga: es el día antes de la siguiente); en la de agosto, "Sin fecha de fin". En Registrar,
   al elegir "Vigente desde" se actualiza solo. Editar la de agosto: las tarifas fijas se ven como el PDF

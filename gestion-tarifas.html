@@ -140,11 +140,6 @@
                                     <div class="form-label" id="trHastaEtiqueta">Vigente hasta</div>
                                     <div class="sgtl-dato-fijo" id="trHasta" aria-labelledby="trHastaEtiqueta"></div>
                                 </div>
-                                <div class="col-12 col-md-3">
-                                    <label for="trCorte" class="form-label">Valores nuevos desde el modelo <span class="text-danger">*</span></label>
-                                    <input type="text" inputmode="numeric" class="form-control" id="trCorte" maxlength="4" placeholder="2019" autocomplete="off">
-                                    <div class="invalid-feedback"></div>
-                                </div>
                             </div>
                             <!-- General o propia (24/10): la propia reemplaza a la general para sus clientes. -->
                             <div class="sgtl-bloque-titulo" id="trClientesTitulo">Clientes</div>
@@ -167,7 +162,7 @@
                                     <div class="form-text" id="trClientesCuenta"></div>
                                 </div>
                             </div>
-                            <div class="sgtl-bloque-titulo">Bandas de km</div>
+                            <div class="sgtl-bloque-titulo">Bandas de km y modelos</div>
                             <div class="row g-3 mb-4">
                                 <div class="col-12 col-md-3">
                                     <label for="trBanda1" class="form-label">Primera, hasta <span class="text-danger">*</span></label>
@@ -185,6 +180,14 @@
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda3" maxlength="4" placeholder="250" autocomplete="off"><span class="input-group-text">km</span></div>
                                     <div class="invalid-feedback"></div>
                                     <div class="form-text">Más lejos, con tarifa fija: la de esta banda más los km que pasan × el precio por km</div>
+                                </div>
+                                <!-- Modelos (25/10): el año que separa las dos grillas, como el PDF ("modelo 2018 o anterior" / "2019 en
+                                     adelante"). No se edita: la empresa no lo cambia (decisión de Rocío). Es un dato de cada tabla
+                                     (Anio_Corte) que Registrar copia de la anterior; un tercer grupo de modelos sería un cambio de
+                                     estructura (PENDIENTES §34). -->
+                                <div class="col-12 col-md-3">
+                                    <div class="form-label" id="trModelosEtiqueta">Modelos</div>
+                                    <div class="sgtl-dato-fijo" id="trModelos" aria-labelledby="trModelosEtiqueta"></div>
                                 </div>
                             </div>
                             <div id="grillasTarifario"></div>
@@ -324,6 +327,9 @@
             { clave: 'Valor_Banda2', id: 'b2' }, { clave: 'Valor_Banda3', id: 'b3' }
         ];
         const CAMPO_KM = { clave: 'Valor_Km', id: 'km' };
+        // El año que separa las dos grillas (no se edita: lo trae la tabla; una tabla sin anterior arranca en 2019).
+        const ANIO_CORTE = 2019;
+        let anioCorte = ANIO_CORTE;
         const CAMPOS_VALOR = CAMPOS_FIJA.concat([CAMPO_KM]);
         let tarifarios = [];
         let tarifarioEnEdicion = null;
@@ -409,10 +415,11 @@
 
         // Los títulos, las filas y la ayuda dicen el año de corte y los km de cada banda que se están cargando.
         function actualizarEncabezados() {
-            const corte = entero('trCorte'), b1 = entero('trBanda1'), b2 = entero('trBanda2'), b3 = entero('trBanda3');
+            const corte = anioCorte, b1 = entero('trBanda1'), b2 = entero('trBanda2'), b3 = entero('trBanda3');
             const anterior = corte ? 'modelo ' + (corte - 1) + ' o anterior' : 'modelos anteriores al año de corte';
             const nuevo = corte ? 'modelo ' + corte + ' en adelante' : 'modelos desde el año de corte';
             const km = function (b) { return (b || '…') + ' km'; };
+            $('#trModelos').html('<div>' + (corte - 1) + ' o anterior</div><div>' + corte + ' en adelante</div>');
             $('#tituloGrilla0').text('Tarifas fijas · ' + anterior);
             $('#tituloGrilla1').text('Tarifas fijas · ' + nuevo);
             const filas = {
@@ -571,7 +578,7 @@
             $(propios ? '#trParaAlgunos' : '#trParaTodos').prop('checked', true);
             dibujarClientes(propios ? (t.Clientes || []).map(function (c) { return c.Cliente_ID; }) : []);
             mostrarAlcance();
-            $('#trCorte').val(t.Anio_Corte);
+            anioCorte = t.Anio_Corte || ANIO_CORTE;
             $('#trBanda1').val(t.Km_Banda1);
             $('#trBanda2').val(t.Km_Banda2);
             $('#trBanda3').val(t.Km_Banda3);
@@ -598,6 +605,7 @@
             $('#tituloTarifario').text(id ? 'Editar tabla de tarifas' : 'Registrar tabla de tarifas');
             $('#infoTarifario').addClass('d-none').text('');
             $('#trParaTodos').prop('checked', true);
+            anioCorte = ANIO_CORTE;
             $('#trClientesBuscar').val('');
             dibujarClientes([]);
             mostrarAlcance();
@@ -642,7 +650,7 @@
                 Vigente_Desde: fechaISO('trDesde'),
                 Para_Todos: paraTodos(),
                 Clientes: paraTodos() ? [] : clientesElegidos(),
-                Anio_Corte: entero('trCorte'),
+                Anio_Corte: anioCorte,
                 Km_Banda1: entero('trBanda1'),
                 Km_Banda2: entero('trBanda2'),
                 Km_Banda3: entero('trBanda3'),
@@ -773,7 +781,6 @@
             const reglas = [
                 { id: 'trNombre', requerido: 'Completá el nombre.', max: 100 },
                 { id: 'trDesde', requerido: 'Completá desde cuándo vale.', validar: fechaValida },
-                { id: 'trCorte', requerido: 'Completá el año del modelo.', soloNumeros: true, max: 4, validar: enteroEntre(1990, 2100, 'Escribí un año, por ejemplo 2019.') },
                 { id: 'trBanda1', requerido: 'Completá los km.', soloNumeros: true, max: 4, validar: enteroEntre(1, 9999, 'Tiene que ser mayor que cero.') },
                 { id: 'trBanda2', requerido: 'Completá los km.', soloNumeros: true, max: 4,
                     validar: function (valor) { const b1 = entero('trBanda1'); return b1 != null && Number(valor) <= b1 ? 'Tiene que ser mayor que ' + b1 + ' km.' : ''; } },
@@ -790,7 +797,7 @@
                 reglas.push({ id: this.id, requerido: 'Completá el valor.', validar: montoMayorQueCero });
             });
             formularioTarifario = SGTL.validador(reglas);
-            $('#trCorte, #trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
+            $('#trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
             $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
             $('#trDesde').on('change', actualizarHasta);
             $('#trClientesBuscar').on('input', filtrarClientes);

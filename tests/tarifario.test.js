@@ -101,6 +101,9 @@ function probarGrillaComoElPdf() {
     assert.ok(/<div class="sgtl-dato-fijo" id="trHasta"/.test(tarifas) && tarifas.indexOf("'<div>Sin fecha de fin</div>") !== -1,
         'el formulario muestra hasta cuándo vale la tabla, como texto');
     assert.ok(tarifas.indexOf('id="trHasta"') !== -1 && !/<input[^>]+id="trHasta"/.test(tarifas), 'el hasta no es un campo para cargar');
+    // Modelos (Rocío, 25/10): el año de corte no se edita; se muestra como texto y viaja con la tabla.
+    assert.ok(tarifas.indexOf('id="trCorte"') === -1 && /<div class="sgtl-dato-fijo" id="trModelos"/.test(tarifas), 'el año de los modelos se ve como texto');
+    assert.ok(/Anio_Corte: anioCorte,/.test(tarifas), 'el año de corte se guarda con la tabla');
 }
 
 // Editar o registrar una tabla (§33, decisión de Rocío del 25/10): antes de guardar, la API calcula qué viajes y
