@@ -44,7 +44,9 @@ ORDER BY Tipo, Estado;
 
 PRINT '--- 2. Tablas que dependen (por clave foránea)';
 IF OBJECT_ID('tempdb..#Dependencias') IS NOT NULL DROP TABLE #Dependencias;
-CREATE TABLE #Dependencias (Nivel int, Tabla sysname, Columnas nvarchar(400), Apunta_a sysname, Clave sysname, Filas int NULL);
+-- Con la intercalación de la base: la de tempdb (SQL_Latin1_General_CP1_CI_AS) no se puede comparar con la de la base
+-- (Modern_Spanish_CI_AS).
+CREATE TABLE #Dependencias (Nivel int, Tabla sysname COLLATE DATABASE_DEFAULT, Columnas nvarchar(400) COLLATE DATABASE_DEFAULT, Apunta_a sysname COLLATE DATABASE_DEFAULT, Clave sysname COLLATE DATABASE_DEFAULT, Filas int NULL);
 
 ;WITH Base AS (
     SELECT OBJECT_ID(N'dbo.PROFORMAS') AS Objeto
@@ -96,7 +98,7 @@ SELECT Nivel, Tabla, Columnas, Apunta_a, Clave, Filas FROM #Dependencias ORDER B
 
 PRINT '--- 3. Columnas que guardan una proforma o un comprobante sin clave foránea';
 IF OBJECT_ID('tempdb..#Sueltas') IS NOT NULL DROP TABLE #Sueltas;
-CREATE TABLE #Sueltas (Tabla sysname, Columna sysname, Filas_con_dato int NULL);
+CREATE TABLE #Sueltas (Tabla sysname COLLATE DATABASE_DEFAULT, Columna sysname COLLATE DATABASE_DEFAULT, Filas_con_dato int NULL);
 
 INSERT INTO #Sueltas (Tabla, Columna)
 SELECT c.TABLE_NAME, c.COLUMN_NAME
