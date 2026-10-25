@@ -97,6 +97,10 @@ function probarGrillaComoElPdf() {
     const sinComentarios = tarifas.replace(/<!--[\s\S]*?-->/g, '').replace(/^\s*\/\/.*$/gm, '');
     assert.ok(sinComentarios.indexOf('PDF') === -1, 'la pantalla no nombra el PDF (solo los comentarios del código)');
     assert.ok(/table\.table\.sgtl-grilla \{/.test(leer('assets/static/css/sgtl.css')), 'la grilla usa la clase compartida de sgtl.css');
+    // Vigente hasta (Rocío, 25/10): no se carga; es el día antes de la tabla siguiente del mismo alcance, o sin fecha de fin.
+    assert.ok(/<div class="sgtl-dato-fijo" id="trHasta"/.test(tarifas) && tarifas.indexOf("'<div>Sin fecha de fin</div>") !== -1,
+        'el formulario muestra hasta cuándo vale la tabla, como texto');
+    assert.ok(tarifas.indexOf('id="trHasta"') !== -1 && !/<input[^>]+id="trHasta"/.test(tarifas), 'el hasta no es un campo para cargar');
 }
 
 // Editar o registrar una tabla (§33, decisión de Rocío del 25/10): antes de guardar, la API calcula qué viajes y

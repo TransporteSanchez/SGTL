@@ -134,6 +134,12 @@
                                     <input type="text" class="form-control" id="trDesde" placeholder="DD/MM/AAAA" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
+                                <!-- Vigente hasta (25/10): no se carga. Es el día antes de la tabla siguiente del mismo alcance; si no hay,
+                                     vale hasta que se cargue la próxima (se ve como texto, §6.3). -->
+                                <div class="col-12 col-md-3">
+                                    <div class="form-label" id="trHastaEtiqueta">Vigente hasta</div>
+                                    <div class="sgtl-dato-fijo" id="trHasta" aria-labelledby="trHastaEtiqueta"></div>
+                                </div>
                                 <div class="col-12 col-md-3">
                                     <label for="trCorte" class="form-label">Valores nuevos desde el modelo <span class="text-danger">*</span></label>
                                     <input type="text" inputmode="numeric" class="form-control" id="trCorte" maxlength="4" placeholder="2019" autocomplete="off">
@@ -536,6 +542,28 @@
             }, function () { clientesTabla = []; });
         }
 
+        // "Vigente hasta": el día antes de la tabla siguiente del mismo alcance (la general siguiente, o la propia siguiente de
+        // alguno de los clientes elegidos), como lo calcula la API para la lista. Sin siguiente: sin fecha de fin.
+        function actualizarHasta() {
+            const desde = fechaISO('trDesde');
+            const todos = paraTodos();
+            const elegidos = todos ? [] : clientesElegidos();
+            const siguiente = !desde ? null : tarifarios.filter(function (t) {
+                if (t.Tarifario_ID === tarifarioEnEdicion || dia(t.Vigente_Desde) <= desde) return false;
+                return todos ? t.Para_Todos !== false
+                    : t.Para_Todos === false && (t.Clientes || []).some(function (c) { return elegidos.indexOf(c.Cliente_ID) !== -1; });
+            }).sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? -1 : 1; })[0];
+            let html;
+            if (siguiente) {
+                const partes = dia(siguiente.Vigente_Desde).split('-').map(Number);
+                const hasta = new Date(partes[0], partes[1] - 1, partes[2] - 1);
+                html = '<div>' + SGTL.fecha(hasta) + '</div><div class="suave">Después: ' + SGTL.escapar(siguiente.Nombre) + '</div>';
+            } else {
+                html = '<div>Sin fecha de fin</div><div class="suave">Hasta que se cargue la próxima</div>';
+            }
+            document.getElementById('trHasta').innerHTML = html;
+        }
+
         function ponerTarifario(t, conDatos) {
             $('#trNombre').val(conDatos ? t.Nombre : '');
             ponerFecha('trDesde', conDatos ? t.Vigente_Desde : null);
@@ -558,6 +586,7 @@
                 CAMPOS_VALOR.forEach(function (c) { ponerMonto(idValor(v.Modelo_Nuevo, i, c.id), v[c.clave]); });
             });
             actualizarEncabezados();
+            actualizarHasta();
         }
 
         // Registrar viene con los valores de la tabla más nueva: cuando llega la actualizada, se cambian los que subieron.
@@ -573,6 +602,7 @@
             dibujarClientes([]);
             mostrarAlcance();
             actualizarEncabezados();
+            actualizarHasta();
             const guardar = document.getElementById('btnGuardarTarifario');
             const base = id || (tarifarios[0] && tarifarios[0].Tarifario_ID);
             guardar.disabled = !!base;
@@ -761,9 +791,10 @@
             });
             formularioTarifario = SGTL.validador(reglas);
             $('#trCorte, #trBanda1, #trBanda2, #trBanda3').on('input', actualizarEncabezados);
-            $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
+            $('input[name="trAlcance"]').on('change', function () { mostrarAlcance(); actualizarHasta(); if (!paraTodos()) cargarClientesTabla().then(function () { if (!$('#trClientesLista input').length) dibujarClientes([]); }); });
+            $('#trDesde').on('change', actualizarHasta);
             $('#trClientesBuscar').on('input', filtrarClientes);
-            $('#trClientesLista').on('change', 'input', contarClientes);
+            $('#trClientesLista').on('change', 'input', function () { contarClientes(); actualizarHasta(); });
             $('#btnRegistrarTarifario').on('click', function () { abrirTarifario(null); });
             $('#btnGuardarTarifario').on('click', guardarTarifario);
             $('#tablaTarifario')

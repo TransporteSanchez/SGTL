@@ -2809,7 +2809,10 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   las filas y el tipo de camión en las columnas (1ª y 2ª vuelta solo en "Hasta 130 km"); la tarifa por km, aparte, con
   los modelos en las filas y la ayuda "El precio por km se usa en dos casos" (todo el viaje con tarifa por km; los km que
   pasan de la última banda con tarifa fija). Clase compartida `.sgtl-grilla` en `sgtl.css` (design system §6.3). La API
-  no deja dos generales que empiecen el mismo día, ni dos propias de un mismo cliente. "Registrar tabla de tarifas" viene
+  no deja dos generales que empiecen el mismo día, ni dos propias de un mismo cliente. **Vigente hasta** (Rocío, 25/10):
+  no se carga ni se guarda; es el día antes de la tabla siguiente del mismo alcance, así nunca queda un día sin tabla ni
+  se desacomoda si la siguiente cambia de fecha. El formulario lo muestra como texto al lado de "Vigente desde" ("30/09/2026
+  · Después: Tarifas a octubre 2026" o "Sin fecha de fin · Hasta que se cargue la próxima"). "Registrar tabla de tarifas" viene
   con los valores de la más nueva, para cambiar solo los que subieron.
 - `gestion-viajes.html`: Tarifa con **Fija** (elegida de entrada) y **Por km**, las dos de la tabla. Vuelta (con fija y
   hasta 130 km, con la propuesta y por qué), falso flete y módulos de estadía (la estadía no aparece en clientes con
@@ -2871,7 +2874,9 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 - [ ] 1. `pull`, recompilar la API y Ctrl+F5. Gestionar viajes lista los viajes (hasta correr `04`, los de antes no se
   pueden editar y no muestran importe).
 - [ ] 2. Gestionar tarifas: solo la lista de tablas, con "Tarifas a agosto 2026" (desde el 01/08/2026, Vigente) y
-  "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de agosto: las tarifas fijas se ven como el PDF
+  "Tarifas a enero 2026" (desde el 01/01/2026, Anterior). Editar la de enero: "Vigente hasta" dice 31/07/2026 y "Después:
+  Tarifas a agosto 2026" (no se carga: es el día antes de la siguiente); en la de agosto, "Sin fecha de fin". En Registrar,
+  al elegir "Vigente desde" se actualiza solo. Editar la de agosto: las tarifas fijas se ven como el PDF
   (distancia en las filas, tipos en las columnas, 1ª y 2ª vuelta solo hasta 130 km) y con sus mismos valores; abajo, la
   tarifa por km aparte, con la ayuda de los dos casos. Ningún importe cortado y sin barra hacia el costado en una
   pantalla de 1366 px. Borrar un valor y Guardar: "Revisá los campos marcados." y "Completá el valor." debajo de ese
