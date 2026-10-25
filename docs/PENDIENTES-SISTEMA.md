@@ -3423,14 +3423,20 @@ la Mac sin frenar los demás. Las tandas van en orden de prioridad para el jueve
 
 **Tandas (cada una con la sesión de Claude de la VM, según `docs/equipo/PRUEBAS-VM-CLAUDE.md`):**
 
-| Tanda | Qué | Pasos | Antes de probar |
-|---|---|---|---|
-| 1 | Tabla de tarifas y sus cambios con datos de prueba (§34 y §33) | Partes A y B de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (todas las variantes y la mirada de usabilidad) | Preparación hecha |
-| 2 | Lo que ya vio el cliente: proformas enviadas y comprobantes (§33) | Parte C del mismo instructivo (cambia un valor de agosto y lo deshace) | Tanda 1 OK y el OK de Rocío. Usuarios: admin, uno solo con presupuestos y uno solo con facturación |
-| 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | Un usuario chofer; preguntar antes de lo que manda WhatsApp |
-| 4 | Tableros (§35) | Todos | — |
-| 5 | Control interno de los viajes (§37) | Todos | El galpón cargado |
-| 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
+**Orden (Rocío, 25/10, después de la reprueba de la tanda 1):** la tanda 2 pasa al final. Hoy las proformas y los comprobantes
+de prueba guardan los importes de antes del `04`, así que lo que la parte C prueba (los viajes que ya están en una proforma
+enviada o en un comprobante) se mezclaría con esa diferencia: va después de la limpieza y la regeneración de documentos de la
+§38 (que espera el cambio de Facu). Las tandas 3 a 6 nunca se probaron y van antes. Los arreglos de `d54fe21` se revisan
+en una pasada corta al principio de la tanda siguiente.
+
+| Orden | Tanda | Qué | Pasos | Antes de probar |
+|---|---|---|---|---|
+| 1 | 1 | Tabla de tarifas y sus cambios con datos de prueba (§34 y §33) | Partes A y B de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (todas las variantes y la mirada de usabilidad) | **Hecha y reprobada (25/10)** |
+| 2 | 4 | Tableros (§35), con la pasada corta de los arreglos de `d54fe21` al principio | Del 2 en adelante (el 0 y el 1 ya están hechos) | — |
+| 3 | 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | Grupo "Choferes" con "Hoja de ruta", un usuario chofer vinculado a su chofer y revisar su teléfono (manda WhatsApp); preguntar antes de lo que manda WhatsApp |
+| 4 | 5 | Control interno de los viajes (§37) | Todos | La dirección del galpón en Gestionar empresa → Galpón |
+| 5 | 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
+| 6 | 2 | Lo que ya vio el cliente: proformas enviadas y comprobantes (§33) | Parte C del mismo instructivo (cambia un valor de agosto y lo deshace) | La limpieza y los documentos nuevos de la §38; el OK de Rocío y avisar a Facu y Fede. Usuarios: admin, uno solo con "Gestionar presupuestos" y uno solo con "Gestionar proformas" |
 
 **Tanda 1 — hecha en la VM (25/10, sobre `19804b4`):** `docs/pruebas/2026-10-25-tarifas-tanda-1.md`. 43 pruebas: 32 OK, 6 OK
 con observaciones, 2 fallas (las dos por F1) y 3 no probadas (e-mail de la VM, Excel de Rukas sin regenerar en ese commit,
