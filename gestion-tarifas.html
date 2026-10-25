@@ -725,7 +725,9 @@
             if (!respuesta) {
                 const confirmado = await SGTL.confirmar({
                     titulo: enEdicion ? '¿Guardar los cambios de "' + dto.Nombre + '"?' : '¿Registrar "' + dto.Nombre + '"?',
-                    mensaje: (impacto.Resumen || []).join(' '),
+                    // Una línea que presenta la lista: las cantidades van en el título de cada grupo.
+                    mensaje: enEdicion ? 'Al guardar, pasa esto con los viajes y presupuestos de esta tabla.'
+                        : 'Al guardar, pasa esto con los viajes y presupuestos que toman la tabla nueva.',
                     detalle: htmlImpacto(impacto.Items || []),
                     ancho: 'lg',
                     verbo: 'Guardar',
@@ -755,7 +757,7 @@
 
         function htmlImpacto(items) {
             let html = '<div class="sgtl-tabla-tarjeta sgtl-confirmar-lista"><table class="table table-sm sgtl-tabla-compacta align-middle mb-0">'
-                + '<thead><tr><th>Viaje o presupuesto</th><th class="text-end">Importe</th><th>Qué pasa</th></tr></thead>';
+                + '<thead><tr><th>Viaje o presupuesto</th><th class="text-end">Importe</th><th>Qué hacer</th></tr></thead>';
             GRUPOS_IMPACTO.forEach(function (g) {
                 const filas = items.filter(function (i) { return i.Grupo === g.clave; });
                 if (!filas.length) return;
@@ -770,7 +772,8 @@
                     html += '<tr><td><div class="text-nowrap">' + SGTL.escapar(i.Clase + ' #' + i.Id) + '</div>'
                         + '<div class="small text-muted">' + SGTL.escapar(i.Cliente || '—') + '</div></td>'
                         + '<td class="text-end text-nowrap">' + importe + '</td>'
-                        + '<td>' + SGTL.escapar(i.Que_Pasa || '') + '</td></tr>';
+                        // Los números de documento ("PF-00000006") no se parten en el guion.
+                        + '<td>' + SGTL.escapar(i.Que_Pasa || '—').replace(/\b([A-Z]{2,3}-\d{8})\b/g, '<span class="text-nowrap">$1</span>') + '</td></tr>';
                 });
                 html += '</tbody>';
             });

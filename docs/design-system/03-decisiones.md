@@ -403,10 +403,12 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
     "Enviar"), en rojo si destruye o anula;
   - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal;
   - si la acción cambia otras cosas (guardar una tabla de tarifas recalcula viajes y presupuestos, §33 de PENDIENTES), el
-    mensaje dice cuántas en una o dos oraciones y **la lista va dentro de la misma confirmación** (`detalle`, con
-    `ancho: 'lg'`): una tabla con grupos (§2.1) según qué pasa con cada una ("Se recalculan", "No cambian: quedan para
-    revisar"), el dato principal con el segundo en gris debajo y la tabla se desplaza si es larga
-    (`.sgtl-confirmar-lista`). Si no cambia nada más, no se pide confirmación.
+    mensaje es **una sola línea que presenta la lista** ("Al guardar, pasa esto con los viajes y presupuestos de esta
+    tabla.") y **la lista va dentro de la misma confirmación** (`detalle`, con `ancho: 'lg'`): una tabla con grupos (§2.1)
+    según qué pasa con cada una ("Se recalculan · 5", "No cambian: quedan para revisar · 2"), sin repetir en el mensaje
+    las cantidades de los títulos. Cada fila: el dato principal con el segundo en gris debajo y, en "Qué hacer", solo lo
+    que hay que saber o hacer, corto ("Anulá PF-00000006 y generala de nuevo.", "—" si no hay nada). La tabla se desplaza
+    si es larga (`.sgtl-confirmar-lista`). Si no cambia nada más, no se pide confirmación.
 - **Qué pide confirmación:** solo lo que no se puede deshacer o tiene efectos afuera del
   sistema: eliminar, anular, generar proforma (consume un número), emitir factura, enviar por
   mail o WhatsApp.

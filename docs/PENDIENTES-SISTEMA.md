@@ -2614,10 +2614,11 @@ un documento. Antes de guardar, la pantalla muestra qué cambia y qué no.**
 - **Qué cambio dispara qué:** valores, bandas, año de corte, falso flete o estadía → los viajes de esa tabla; vigencia o
   clientes → también los que pasan a otra tabla o vienen de otra; solo el nombre → nada; registrar una tabla nueva → los
   viajes ya cargados que empiezan desde su fecha (por ejemplo, los programados).
-- **Al guardar:** si algo cambia, una confirmación con el resumen ("Se recalculan 6 viajes y 1 presupuesto pendiente. No
-  cambian: 2 viajes facturados y 1 en la proforma PF-00000006…"), la lista y el **motivo, obligatorio**, que queda en la
-  auditoría (de la tabla y de cada viaje recalculado). Después, el aviso con lo que se recalculó y lo que queda para
-  revisar.
+- **Al guardar:** si algo cambia, una confirmación con una línea ("Al guardar, pasa esto con los viajes y presupuestos de
+  esta tabla."), la lista agrupada con las cantidades en los títulos y, en cada fila, solo qué hacer ("Anulá
+  PF-00000006 y generala de nuevo.", "Nota de débito sobre FAC-00000015.", "—"; Rocío, 25/10: el resumen repetía la
+  tabla), y el **motivo, obligatorio**, que queda en la auditoría (de la tabla y de cada viaje recalculado). Después, el
+  aviso con lo que se recalculó y lo que queda para revisar.
 - **Cómo se avisa lo que queda para revisar:**
   - **En la fila**, al lado del estado, el ícono rojo de "falta resolver algo" (§4.3 del design system) con un texto
     corto: "Cambió la tarifa: revisalo en Ver PDF." (presupuesto), "Cambió la tarifa de 2 viajes: revisá el detalle de
@@ -2661,7 +2662,7 @@ lo pendiente) y la parte del comprobante es de su módulo.
 - `TarifarioController`: `POST api/Tarifario/Impacto?id=N` (qué pasaría, sin guardar) y el guardado pide `Motivo` si algún
   importe cambia; la auditoría registra la tabla con el motivo y cada viaje y presupuesto recalculado ("Importe
   recalculado por la corrección de la tabla …: $ a → $ b").
-- `gestion-tarifas.html`: al guardar pide el impacto; si algo cambia, la confirmación (§5.2) con el resumen, la lista
+- `gestion-tarifas.html`: al guardar pide el impacto; si algo cambia, la confirmación (§5.2) con una línea, la lista
   agrupada (Se recalculan / No cambian: quedan para revisar / No se pueden recalcular / No cambian) y el motivo; si no,
   guarda directo. El aviso dice qué se recalculó y cuántos quedan para revisar. El texto de arriba del formulario ahora
   dice que antes de guardar se ve qué se recalcula, y que un aumento va como tabla nueva. `SGTL.confirmar` acepta
@@ -2675,7 +2676,8 @@ lo pendiente) y la parte del comprobante es de su módulo.
 - [ ] 1. Gestionar tarifas → Editar la tabla de agosto: arriba dice cuántos viajes la usan y que antes de guardar se ve qué
   se recalcula. Cambiar solo el nombre y Guardar: guarda directo, sin confirmación. Volver a ponerle el nombre.
 - [ ] 2. Cambiar un valor que usen viajes (por ejemplo, el de su tipo y modelo hasta 130 km, 1ª vuelta) y Guardar: aparece
-  "¿Guardar los cambios de …?" con el resumen y la lista. Revisar que cada viaje esté en su grupo según su documento
+  "¿Guardar los cambios de …?" con una línea y la lista (las cantidades en los títulos de los grupos; en "Qué hacer", algo
+  corto o "—"). Revisar que cada viaje esté en su grupo según su documento
   (sin proforma o en borrador: se recalcula; en una proforma generada o aceptada, o en un comprobante: para revisar; de un
   presupuesto aceptado: no cambia). Guardar sin motivo: "Completá el motivo.". Con motivo: el aviso dice cuántos se
   recalcularon y cuántos quedan para revisar.

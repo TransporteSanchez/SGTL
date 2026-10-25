@@ -62,7 +62,6 @@ namespace WebApi_TransporteSanchez.Tarifas
         public class Resultado
         {
             public List<Item> Items { get; set; }
-            public List<string> Resumen { get; set; }
             public int Recalculan { get { return Items.Count(i => i.Grupo == Recalcula); } }
             public int ParaRevisar { get { return Items.Count(i => i.Grupo == Revisar || (i.Grupo == Recalcula && i.TipoRevisar != null)); } }
             // Hay algo que pide confirmación y motivo: importes que cambian.
@@ -288,7 +287,7 @@ WHERE v.TarifarioID IS NOT NULL";
                 Clientes = new HashSet<int>(editada.Datos.Para_Todos ? new List<int>() : editada.Clientes)
             });
 
-            var resultado = new Resultado { Items = new List<Item>(), Resumen = new List<string>() };
+            var resultado = new Resultado { Items = new List<Item>() };
             foreach (var v in d.Viajes)
                 AgregarViaje(resultado, v, tablas, editadaId, d.Camiones, d.Salidas, d.Pendientes);
             foreach (var p in d.Presupuestos)
@@ -296,7 +295,6 @@ WHERE v.TarifarioID IS NOT NULL";
 
             resultado.Items = resultado.Items
                 .OrderBy(i => OrdenGrupo(i.Grupo)).ThenBy(i => i.Clase == "Viaje" ? 0 : 1).ThenBy(i => i.Id).ToList();
-            resultado.Resumen = Resumir(resultado);
             return resultado;
         }
 
@@ -386,7 +384,7 @@ WHERE v.TarifarioID IS NOT NULL";
             if (v.Presupuesto_ID.HasValue)
             {
                 item.Grupo = Conserva;
-                item.Que_Pasa = "El precio lo aceptó el cliente (presupuesto #" + v.Presupuesto_ID + ").";
+                item.Que_Pasa = "Precio aceptado en el presupuesto #" + v.Presupuesto_ID + ".";
                 item.Importe_Nuevo = v.Importe;
                 res.Items.Add(item);
                 return;
@@ -395,7 +393,7 @@ WHERE v.TarifarioID IS NOT NULL";
             if (despues == null)
             {
                 item.Grupo = NoSePuede;
-                item.Que_Pasa = "Conserva su importe: no queda una tabla de tarifas vigente el " + v.Fecha_Inicio.ToString("dd/MM/yyyy") + ".";
+                item.Que_Pasa = "No queda una tabla vigente el " + v.Fecha_Inicio.ToString("dd/MM/yyyy") + ".";
                 res.Items.Add(item);
                 return;
             }
@@ -407,7 +405,7 @@ WHERE v.TarifarioID IS NOT NULL";
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;
-                item.Que_Pasa = "Conserva su importe: " + error + ".";
+                item.Que_Pasa = char.ToUpper(error[0]) + error.Substring(1) + ".";
                 res.Items.Add(item);
                 return;
             }
@@ -435,8 +433,8 @@ WHERE v.TarifarioID IS NOT NULL";
                 item.Proforma_ID = v.Proforma_ID;
                 item.Comprobante_ID = v.Comprobante_ID;
                 item.Documento = v.Comprobante_Numero;
-                item.Que_Pasa = "Está en " + (v.Comprobante_Numero != null ? "el comprobante " + v.Comprobante_Numero : "un comprobante")
-                    + ": corresponde una nota de " + (calculo.Importe < v.Importe ? "crédito" : "débito") + ".";
+                item.Que_Pasa = "Nota de " + (calculo.Importe < v.Importe ? "crédito" : "débito")
+                    + (v.Comprobante_Numero != null ? " sobre " + v.Comprobante_Numero : "") + ".";
             }
             else if (enProformaEnviada)
             {
@@ -444,7 +442,7 @@ WHERE v.TarifarioID IS NOT NULL";
                 item.TipoRevisar = "Proforma";
                 item.Proforma_ID = v.Proforma_ID;
                 item.Documento = v.Proforma_Numero;
-                item.Que_Pasa = "Está en la proforma " + v.Proforma_Numero + ", ya enviada: para corregirla, anulala y generala de nuevo.";
+                item.Que_Pasa = "Anulá " + v.Proforma_Numero + " y generala de nuevo.";
             }
             else if (v.Proforma_Estado == "Borrador")
             {
@@ -452,19 +450,19 @@ WHERE v.TarifarioID IS NOT NULL";
                 item.Proforma_ID = v.Proforma_ID;
                 item.Documento = "Borrador #" + v.Proforma_ID;
                 if (v.Tipo_Proforma == "Plataforma")
-                    item.Que_Pasa = "Se recalcula; el borrador de Rukas #" + v.Proforma_ID + " lo toma al volver a controlar.";
+                    item.Que_Pasa = "Borrador de Rukas #" + v.Proforma_ID + ": lo toma al volver a controlar.";
                 else if (v.Precio_Linea.HasValue && v.Importe.HasValue && v.Precio_Linea.Value == Math.Round(v.Importe.Value, 2))
                 {
                     item.ActualizaLinea = true;
-                    item.Que_Pasa = "Se recalcula y se actualiza en el borrador #" + v.Proforma_ID + ".";
+                    item.Que_Pasa = "También en el borrador #" + v.Proforma_ID + ".";
                 }
                 else
-                    item.Que_Pasa = "Se recalcula; en el borrador #" + v.Proforma_ID + " tiene otro precio y no se cambia.";
+                    item.Que_Pasa = "En el borrador #" + v.Proforma_ID + " tiene otro precio: revisalo.";
             }
             else
             {
                 item.Grupo = Recalcula;
-                item.Que_Pasa = "Se recalcula.";
+                item.Que_Pasa = "";
             }
             res.Items.Add(item);
         }
@@ -507,7 +505,7 @@ WHERE v.TarifarioID IS NOT NULL";
             if (despues == null)
             {
                 item.Grupo = NoSePuede;
-                item.Que_Pasa = "Conserva su importe: no queda una tabla de tarifas vigente el " + inicio.ToString("dd/MM/yyyy") + ".";
+                item.Que_Pasa = "No queda una tabla vigente el " + inicio.ToString("dd/MM/yyyy") + ".";
                 res.Items.Add(item);
                 return;
             }
@@ -522,7 +520,7 @@ WHERE v.TarifarioID IS NOT NULL";
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;
-                item.Que_Pasa = "Conserva su importe: " + error + ".";
+                item.Que_Pasa = char.ToUpper(error[0]) + error.Substring(1) + ".";
                 res.Items.Add(item);
                 return;
             }
@@ -538,48 +536,8 @@ WHERE v.TarifarioID IS NOT NULL";
 
             item.Grupo = Recalcula;
             item.TipoRevisar = "Presupuesto";
-            item.Que_Pasa = "Se recalcula. Si ya se lo mandaste, reenviáselo.";
+            item.Que_Pasa = "Reenviáselo si ya se lo mandaste.";
             res.Items.Add(item);
-        }
-
-        private static string Cantidad(int n, string uno, string varios) { return n + " " + (n == 1 ? uno : varios); }
-
-        // "a", "a y b": las partes que tienen algo.
-        private static string Unir(params string[] partes) { return string.Join(" y ", partes.Where(x => x != null)); }
-
-        private static List<string> Resumir(Resultado r)
-        {
-            var lineas = new List<string>();
-            int viajes = r.Items.Count(i => i.Grupo == Recalcula && i.Clase == "Viaje");
-            int presupuestos = r.Items.Count(i => i.Grupo == Recalcula && i.Clase == "Presupuesto");
-            if (viajes + presupuestos > 0)
-                lineas.Add((viajes + presupuestos == 1 ? "Se recalcula " : "Se recalculan ") + Unir(
-                    viajes > 0 ? Cantidad(viajes, "viaje", "viajes") : null,
-                    presupuestos > 0 ? Cantidad(presupuestos, "presupuesto pendiente", "presupuestos pendientes") : null) + ".");
-
-            int enProforma = r.Items.Count(i => i.Grupo == Revisar && i.TipoRevisar == "Proforma");
-            int enComprobante = r.Items.Count(i => i.Grupo == Revisar && i.TipoRevisar == "Comprobante");
-            if (enProforma + enComprobante > 0)
-                lineas.Add((enProforma + enComprobante == 1 ? "Queda para revisar 1 viaje que ya vio el cliente (" : "Quedan para revisar " + (enProforma + enComprobante)
-                    + " viajes que ya vio el cliente (") + Unir(
-                    enProforma > 0 ? (enProforma == 1 ? "1 en una proforma enviada" : enProforma + " en proformas enviadas") : null,
-                    enComprobante > 0 ? (enComprobante == 1 ? "1 en un comprobante" : enComprobante + " en comprobantes") : null) + ").");
-
-            int conservan = r.Items.Count(i => i.Grupo == Conserva);
-            if (conservan > 0)
-                lineas.Add((conservan == 1 ? "No cambia " : "No cambian ") + Cantidad(conservan, "viaje de un presupuesto aceptado", "viajes de presupuestos aceptados") + ".");
-
-            int viajesSin = r.Items.Count(i => i.Grupo == NoSePuede && i.Clase == "Viaje");
-            int presupuestosSin = r.Items.Count(i => i.Grupo == NoSePuede && i.Clase == "Presupuesto");
-            if (viajesSin + presupuestosSin > 0)
-                lineas.Add((viajesSin + presupuestosSin == 1 ? "No se puede recalcular " : "No se pueden recalcular ") + Unir(
-                    viajesSin > 0 ? Cantidad(viajesSin, "viaje", "viajes") : null,
-                    presupuestosSin > 0 ? Cantidad(presupuestosSin, "presupuesto", "presupuestos") : null)
-                    + (viajesSin + presupuestosSin == 1 ? ": conserva su importe" : ": conservan su importe") + " (el motivo está en la lista).");
-            if (presupuestos > 0)
-                lineas.Add(presupuestos == 1 ? "El presupuesto queda marcado para reenviárselo al cliente."
-                    : "Los presupuestos quedan marcados para reenviárselos al cliente.");
-            return lineas;
         }
 
         // ------------------------------------------------------------ Guardado
