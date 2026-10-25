@@ -35,8 +35,8 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
    `git status` (tiene que estar limpio) y `git log --oneline -1` (rama y commit).
 2. Verificá que la API esté levantada: `http://localhost:50222/api` responde.
    Si no, pedile a Rocío que la ejecute desde Visual Studio (no la levantes vos).
-3. Verificá que el front esté levantado con Live Server (puerto `5502`; en esta VM a veces
-   levanta en `5500`, anotá cuál). Abrilo en el navegador integrado.
+3. Verificá que el front esté levantado. En la VM es **Five Server, en el puerto `5500`**, dentro de VS Code (el
+   `5502` de Live Server es el de la Mac; en la VM no existe). Abrilo en el navegador integrado.
 4. **El login lo hace Rocío** en el navegador integrado. No escribas contraseñas.
 5. Recargá sin caché (Ctrl+F5) antes de probar, para no ver JS viejo.
 
@@ -122,7 +122,7 @@ para que Rocío lo copie a la Mac. Formato:
 ## Entorno
 - Rama / commit: rocionuvoli @ <hash> <mensaje>
 - API: http://localhost:50222/api (OK / no responde)
-- Front: Live Server puerto <5502/5500>
+- Front: Five Server puerto 5500
 - Alcance pedido: <lo que pidió Rocío>
 
 ## Resumen

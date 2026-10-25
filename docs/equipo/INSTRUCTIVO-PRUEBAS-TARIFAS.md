@@ -139,8 +139,9 @@ a ponerle el nombre.
   confirmación, aunque ningún importe cambie. Todos sus viajes de octubre están en la lista con 'Pasa a "…"' y el nombre
   de la tabla de prueba: los de importe igual, en "Cambian de tabla, mismo importe", y los demás donde corresponda.
   **Cancelar.**
-- Editar "Tarifas a agosto 2026" → "Solo algunos clientes" → elegir uno: la ayuda dice 'Los demás clientes vuelven a
-  "Tarifas a enero 2026".'. Guardar: los viajes de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero
+- Editar "Tarifas a agosto 2026" → "Solo algunos clientes" → elegir uno: la ayuda dice 'Vale solo para los clientes que
+  elijas. Los demás clientes pasan a "Tarifas a enero 2026", la anterior: sus viajes desde el 01/08/2026 se calculan con
+  esos valores.'. Guardar: los viajes de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero
   2026".' con el importe de enero. **Cancelar** (si se guarda, se recalculan viajes reales).
 
 **B5. Un cambio que deja viajes sin tabla.** Editar "Tarifas a enero 2026", "Vigente desde" 31/07/2026 → Guardar: no se

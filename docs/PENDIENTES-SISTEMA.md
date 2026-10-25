@@ -3488,6 +3488,13 @@ mejoras para que decida Rocío.
   con la §2).
 - **Probar en la VM:** lo de arriba, pantalla por pantalla, con la misma mirada de usabilidad.
 
+**Reprueba de la tanda 1 — hecha en la VM (25/10, sobre `6123630`):** `docs/pruebas/2026-10-25-tarifas-tanda-1-reprueba.md`.
+29 pruebas: 21 OK, 6 OK con observaciones de texto y 2 no probadas (el 5502, que en la VM no existe, y lo que necesita la
+parte C). **Sin fallas: F1, F2, F3 (en el 5500) y F4 resueltas**, y las mejoras se ven como se pidieron. Quedan M-a a M-h
+(textos y errores que no se van solos), D3 (un viaje facturado que cambia de tabla) y D4 (el aviso de cambios sin guardar
+de proformas) para decidir. D1 (instructivo) y D2 (en la VM el front es Five Server en el 5500; el 5502 de Live Server
+ya quedó probado con 1.4) corregidos.
+
 **F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
 por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
 VM en los dos puertos** (Rocío quiere que funcione en los dos): reiniciar el servidor después del `pull`, registrar un
