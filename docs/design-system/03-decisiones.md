@@ -29,7 +29,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
 | Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)`; lo que acompaña al estado: `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))` |
-| Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
+| Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar, paginación y `habilitarOrden`) |
 | Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
@@ -236,6 +236,15 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   orígenes y destinos y grupos. Las tablas de configuración (facturación, e-mail) no se paginan.
 - **Columnas:** si la pantalla filtra por estado, la tabla muestra la columna Estado. La columna
   de acciones siempre se titula "Acciones".
+- **Ordenación de tablas (26/10):** cuando una tabla permite ordenar, se elige con un clic o toque en el botón del
+  encabezado de cada columna ordenable, con el texto de la columna y una flecha de Bootstrap Icons. No se agrega un
+  selector de orden aparte. El primer clic ordena ascendente, el segundo descendente; al elegir otra columna empieza
+  ascendente. `SGTL.tabla.habilitarOrden` actualiza la flecha y deja `aria-sort` solo en el encabezado activo; el
+  `aria-label` del botón indica qué orden aplicará el siguiente clic. El orden se aplica a todos los resultados
+  filtrados antes de paginar y se conserva al filtrar, cambiar de página y exportar. Hasta elegir una columna, se
+  conserva el orden inicial de la pantalla.
+  En Listar y Gestionar choferes se puede ordenar por DNI, apellido y nombre, o fecha de alta; en Listar y Gestionar
+  camiones, por marca o fecha de alta. Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---
 

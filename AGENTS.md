@@ -74,7 +74,9 @@ AGENTS.md"):
     `type="text" inputmode="decimal"` con `SGTL.enlazarMascaraMonto` y se leen con `SGTL.montoCentavos`. Nunca
     `type="number"` para plata. (§7.3)
 12. **Tablas con `SGTL.tabla`:** rayadas, alineadas por tipo de dato, "Cargando…" mientras busca y el texto de
-    sin resultados del sistema. (§2)
+    sin resultados del sistema. Si una tabla permite ordenar, se hace clic en el encabezado con
+    `SGTL.tabla.habilitarOrden`: primer clic ascendente, segundo descendente. El orden se aplica antes de paginar y
+    también al exportar. (§2)
 13. **Filtros:** cada uno con su cruz (`SGTL.filtros`), "Buscar" siempre, Enter busca. (§1.3, §3.3)
 14. **Íconos solo de Bootstrap Icons**, con `aria-hidden="true"`. Sin estilos propios de botones, avisos ni
     tablas en la pantalla. (§11, §12)

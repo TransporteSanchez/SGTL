@@ -576,6 +576,25 @@ body {
     white-space: nowrap;
 }
 
+.table > thead .sgtl-orden-boton {
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.table > thead .sgtl-orden-boton:hover,
+.table > thead .sgtl-orden-boton:focus-visible {
+    color: #435ebe;
+}
+
+.table > thead .sgtl-orden-boton:focus-visible {
+    outline: 2px solid #435ebe;
+    outline-offset: 3px;
+}
+
 .table > tbody td {
     padding: .65rem .75rem;
     border-color: #f0f2f5;

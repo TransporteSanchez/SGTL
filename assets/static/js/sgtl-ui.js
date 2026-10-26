@@ -535,6 +535,45 @@
     cuerpo.innerHTML = '<tr><td colspan="' + columnas + '" class="text-center text-muted py-4">' + escapar(texto) + '</td></tr>';
   }
 
+  // Encabezados ordenables: la pantalla aplica el orden antes de paginar.
+  function habilitarOrden(tablaObjetivo, alCambiar) {
+    var tablaElemento = elemento(tablaObjetivo);
+    var campo = '';
+    var direccion = '';
+    if (!tablaElemento) return { parametros: function () { return {}; } };
+
+    var botones = tablaElemento.querySelectorAll('th button[data-sgtl-orden]');
+    function actualizar() {
+      Array.prototype.forEach.call(botones, function (boton) {
+        var activo = boton.getAttribute('data-sgtl-orden') === campo;
+        var siguiente = activo && direccion === 'asc' ? 'descendente' : 'ascendente';
+        var encabezado = boton.closest('th');
+        if (encabezado) {
+          if (activo) encabezado.setAttribute('aria-sort', direccion === 'asc' ? 'ascending' : 'descending');
+          else encabezado.removeAttribute('aria-sort');
+        }
+        var icono = boton.querySelector('i');
+        if (icono) icono.className = 'bi ' + (activo ? (direccion === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up') + ' ms-1';
+        boton.setAttribute('aria-label', 'Ordenar por ' + boton.textContent.trim() + ' en orden ' + siguiente);
+      });
+    }
+
+    Array.prototype.forEach.call(botones, function (boton) {
+      boton.addEventListener('click', function () {
+        var nuevoCampo = boton.getAttribute('data-sgtl-orden');
+        direccion = nuevoCampo === campo && direccion === 'asc' ? 'desc' : 'asc';
+        campo = nuevoCampo;
+        actualizar();
+        if (typeof alCambiar === 'function') alCambiar();
+      });
+    });
+    actualizar();
+
+    return {
+      parametros: function () { return campo ? { orden: campo, direccion: direccion } : {}; }
+    };
+  }
+
   var tabla = {
     cargando: function (tbody, columnas) { filaMensaje(tbody, columnas, TEXTOS.cargando); },
     vacia: function (tbody, columnas, texto) { filaMensaje(tbody, columnas, texto || TEXTOS.sinResultados); },
@@ -544,6 +583,7 @@
       ocultarTooltips();
       cuerpo.innerHTML = html;
     },
+    habilitarOrden: habilitarOrden,
     // PaginacionSGTL, que no se muestra cuando no hay resultados.
     paginacion: function (contenedor, opciones) {
       var el = elemento(contenedor);
