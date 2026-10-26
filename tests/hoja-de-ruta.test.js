@@ -150,7 +150,7 @@ assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').inclu
 
 // ---------------------------------------------------------------- Login: vuelve solo a una pantalla del sistema
 
-const login = leer('Login.html');
+const login = leer('Login.html').replace(/\r\n/g, '\n');
 const inicio = login.indexOf('function pantallaDeVuelta(');
 const fin = login.indexOf('\n        }\n', inicio);
 assert.ok(inicio !== -1 && fin !== -1, 'debe existir pantallaDeVuelta en el login');
