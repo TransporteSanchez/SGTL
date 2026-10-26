@@ -568,14 +568,14 @@ SELECT CAST(CASE WHEN EXISTS (
         }
 
         // GET: api/Viajes/Buscar
-        // Filtros opcionales + paginacion. Devuelve { TotalRecords, Results = [...] } como lo consume gestion-viajes.html.
+        // Filtros y orden opcionales antes de paginar. Devuelve { TotalRecords, Results = [...] } como lo consume gestion-viajes.html.
         // fechaDesde/fechaHasta filtran por Fecha_Inicio; fechaFinDesde/fechaFinHasta por Fecha_Fin.
         // referencia busca en N° remito, N° transporte SAP y N° entrega Rukas.
         [HttpGet]
         [Route("api/Viajes/Buscar")]
         public IHttpActionResult Buscar(string idViaje = null, string fechaDesde = null, string fechaHasta = null,
             string fechaFinDesde = null, string fechaFinHasta = null, string estado = null, int? clienteId = null,
-            string referencia = null, int page = 1, int pageSize = 6)
+            string referencia = null, int page = 1, int pageSize = 6, string orden = null, string direccion = null)
         {
             if (page < 1) page = 1;
             // pageSize = 0 significa "todos" (selector de paginacion compartido).
@@ -623,7 +623,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     pPage.Add(P("@off", (page - 1) * pageSize));
                     pPage.Add(P("@lim", pageSize));
                     var results = db.Database.SqlQuery<ViajeGrillaDto>(
-                        SELECT_GRILLA + where + " ORDER BY v.Viaje_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY",
+                        SELECT_GRILLA + where + ViajesOrdenSql.Obtener(orden, direccion) + " OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY",
                         pPage.ToArray()).ToList();
 
                     return Ok(new

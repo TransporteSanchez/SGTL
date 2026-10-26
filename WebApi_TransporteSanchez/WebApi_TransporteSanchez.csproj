@@ -437,6 +437,7 @@
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Security\ContrasenasSeguras.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
+    <Compile Include="Controllers\ViajesOrdenSql.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
     <Compile Include="Controllers\TarifarioController.cs" />
     <Compile Include="Tarifas\TarifarioCalculo.cs" />
