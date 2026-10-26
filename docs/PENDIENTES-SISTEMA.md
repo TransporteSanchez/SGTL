@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 25/10/2026.**
+**Última actualización de este documento: 26/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -54,7 +54,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 32 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` antes de la reunión con la profe | **Hecho (23/10)** a pedido de Rocío, avance directo (ninguna tenía nada propio): de `36a92c8` a esta misma versión, las cuatro ramas iguales. `main` pasó sin probar, por decisión de Rocío | **Pusheado** | **OK en VM (23/10)**: compila y 33 de 33 OK; dos fallas fuera de la ronda (ver §32) |
 | 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Tarjeta fija en el dashboard, por permisos y con acceso directo a corregir. Falta la parte del comprobante (módulo de Facu, después de su cambio) | **Pusheado** (25/10) | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | **Pusheado** (24 y 25/10) | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
-| 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
+| 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **OK en VM (25 y 26/10)**, sin fallas; dudas y mejoras para decidir (ver §39) |
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
@@ -2956,7 +2956,7 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
 
 ---
 
-## 35. Tableros: todos los tableros por tema, gráficos de tres datos y favoritos en el dashboard — PUSHEADO (24/10), FALTA CORRER EL SCRIPT, COMPILAR Y PROBAR EN VM
+## 35. Tableros: todos los tableros por tema, gráficos de tres datos y favoritos en el dashboard — PUSHEADO (24/10), OK EN VM (25 Y 26/10)
 
 Pedido de Rocío para el jueves 29/10 (segundo profesor): llevar los tableros del dashboard a una pantalla general
 agrupada por tema, sumar gráficos que comparen tres datos (sin 3D) y que cada usuario marque favoritos que ve en su
@@ -3029,30 +3029,36 @@ de facturación y un usuario sin el permiso Tableros (sin menú, la pantalla man
 deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta con datos reales y el C# compilado.**
 
 **Probar en la VM** (con C#):
-- [ ] 0. Rocío corre `database/tableros/01_crear_tableros_favoritos.sql` (dice qué creó y la verificación da 0 · 0 · 1).
-- [ ] 1. `pull`, **recompilar la API** (hay un controller nuevo) y Ctrl+F5. `node tests/tableros.test.js` → OK.
-- [ ] 2. Dashboard: igual que antes (los mismos tableros y en el mismo lugar) y sin errores nuevos en la consola.
-- [ ] 3. Menú → Tableros (como admin): cuatro pestañas; el período cambia los números y los gráficos de todas.
+- [x] 0. Rocío corre `database/tableros/01_crear_tableros_favoritos.sql` (dice qué creó y la verificación da 0 · 0 · 1).
+- [x] 1. `pull`, **recompilar la API** (hay un controller nuevo) y Ctrl+F5. `node tests/tableros.test.js` → OK.
+- [x] 2. Dashboard: igual que antes (los mismos tableros y en el mismo lugar) y sin errores nuevos en la consola.
+- [x] 3. Menú → Tableros (como admin): cuatro pestañas; el período cambia los números y los gráficos de todas.
   Km por camión y por mes: los totales por camión coinciden con "Km por camión" del mismo período.
-- [ ] 4. Facturación → Facturación por cliente y por mes: el total de un cliente en un mes coincide con sus facturas y
+- [x] 4. Facturación → Facturación por cliente y por mes: el total de un cliente en un mes coincide con sus facturas y
   notas de débito menos notas de crédito de ese mes en Gestionar cuenta corriente. Deuda vencida: lo vencido de un
   cliente coincide con su "Deuda vencida" en cuenta corriente. Antigüedad de la deuda: la suma de los cuatro tramos
   vencidos de un cliente es su "Vencido" de Deuda vencida, y "Al día", su "Por vencer".
-- [ ] 4b. Flota → Ingresos por camión y por mes: el total de un camión en un mes coincide con la suma de los importes de
+- [x] 4b. Flota → Ingresos por camión y por mes: el total de un camión en un mes coincide con la suma de los importes de
   sus viajes en Gestionar viajes (con los scripts de tarifas corridos). Viajes → Recorridos más usados: el total de un
   recorrido coincide con Listar viajes filtrado por ese origen y destino. Rechazos por cliente y destino: abrir una
   celda con rechazo y comparar con los viajes de ese cliente a ese destino.
-- [ ] 5. Tocar la estrella de "Km por camión y por mes": toast y estrella llena. En SSMS, una fila en
+- [x] 5. Tocar la estrella de "Km por camión y por mes": toast y estrella llena. En SSMS, una fila en
   `TABLEROS_USUARIO` y los favoritos en `TABLEROS_FAVORITOS`. Ir al dashboard: la tarjeta está al final.
-- [ ] 6. Personalizar: sacar una tarjeta con la estrella, mover otra, Guardar → "Dashboard guardado.". F5 → quedó así.
+- [x] 6. Personalizar: sacar una tarjeta con la estrella, mover otra, Guardar → "Dashboard guardado.". F5 → quedó así.
   Abrir el sistema en otro navegador con el mismo usuario: el mismo dashboard.
-- [ ] 7. Restablecer → el dashboard de siempre (y las filas del usuario se borran de las dos tablas).
-- [ ] 8. Con un usuario que no es admin: sin el permiso, Tableros no está en el menú y escribir `tableros.html` lleva al
+- [x] 7. Restablecer → el dashboard de siempre (y las filas del usuario se borran de las dos tablas).
+- [x] 8. Con un usuario que no es admin: sin el permiso, Tableros no está en el menú y escribir `tableros.html` lleva al
   inicio; en Personalizar, "Agregar tableros" deshabilitado con "No se puede abrir Tableros: no tenés permiso". Tildarle
   "Tableros" a su grupo en Gestionar grupos y permisos (aparece en General, debajo de Dashboard) → ahora entra. Si el
   grupo no tiene cuenta corriente ni proformas, las tarjetas de facturación dicen que no tiene permiso.
-- [ ] 9. F12 a 390 px: Tableros en una columna, las pestañas se desplazan de costado y el mapa de calor también (con el
+- [x] 9. F12 a 390 px: Tableros en una columna, las pestañas se desplazan de costado y el mapa de calor también (con el
   nombre fijo).
+
+**Probado en la VM (25 y 26/10, sobre `04d0be6` y `d3169f5`):** `docs/pruebas/2026-10-26-tableros.md`. Sin fallas: los
+tableros cuadran con cuenta corriente, los viajes y Listar viajes, y la estrella, Personalizar, Restablecer, los permisos
+y el celular funcionan. Sin probar: una celda con rechazo (no hay ninguno en la base), otro navegador (el diseño sale de
+la base) y el aviso "no tenés permiso" de facturación (no hay un usuario sin cuenta corriente ni proformas). Dudas D1 y D2
+y mejoras M4, M7 a M10, M12 y M13 de Tableros: en la §39, para que decida Rocío.
 
 **Para tener en cuenta:**
 - **Avisarle a Facu:** los dos tableros de facturación leen sus tablas (`COMPROBANTES`, `CUENTA_CORRIENTE_APLICACIONES`)
@@ -3498,7 +3504,7 @@ tableros (§35) se estaba probando. Lo que salga de esas tandas se corrige en `r
 | Orden | Tanda | Qué | Pasos | Antes de probar |
 |---|---|---|---|---|
 | 1 | 1 | Tabla de tarifas y sus cambios con datos de prueba (§34 y §33) | Partes A y B de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (todas las variantes y la mirada de usabilidad) | **Hecha y reprobada (25/10)** |
-| 2 | 4 | Tableros (§35), con la pasada corta de los arreglos de `d54fe21` al principio | Del 2 en adelante (el 0 y el 1 ya están hechos) | — |
+| 2 | 4 | Tableros (§35), con la pasada corta de los arreglos de `d54fe21` al principio | Del 2 en adelante (el 0 y el 1 ya están hechos) | **Hecha (25 y 26/10)** |
 | 3 | 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | El grupo "Choferes" y la cuenta del chofer de prueba, con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md` (su celular es uno del equipo: le llega el WhatsApp); preguntar antes de lo que manda WhatsApp |
 | 4 | 5 | Control interno de los viajes (§37) | Todos | La dirección del galpón en Gestionar empresa → Galpón: **cargada por Rocío (25/10)** |
 | 5 | 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
@@ -3586,6 +3592,43 @@ ya quedó probado con 1.4) corregidos.
   (si no, con la parte C), el aviso al guardar, Auditoría (un cambio de tabla y su filtro "Entidad"), un viaje En viaje
   (título), "12x" en un monto de tarifas y de cuenta corriente, y registrar una tabla (tiempo).
 
+**Tanda 4 (Tableros) — hecha en la VM (25 y 26/10, sobre `04d0be6` y `d3169f5`):** `docs/pruebas/2026-10-26-tableros.md`.
+39 pruebas: 32 OK, 3 OK con observaciones y 4 no probadas; **sin fallas**. La pasada corta de `d54fe21` dio todo como se
+pidió: los errores se van solos, el aviso concuerda en singular y plural, Auditoría dice 'Pasa a "…"' y registrar tarda
+3,3 s con un solo registro. Tableros: ver §35.
+- **Para que decida Rocío:** D1 (Listar viajes no filtra por origen, destino ni camión: ¿se cambia el paso 4b o se suman
+  los filtros?, M8), D2 (la deuda de un cliente con un recibo sin imputar se ve distinta en cuenta corriente y en
+  Tableros; son tablas de Facu) y las mejoras M1 a M16: de tarifas y Auditoría M1 (aviso de cambios sin guardar), M2, M3,
+  M5, M11 y M14; de Tableros M4, M7 a M10, M12 y M13; de cuenta corriente (Facu) M6 y M15; de Listar viajes M16.
+- **D3, antes del 29/10:** el 26/10 la base no tiene ningún comprobante emitido (`api/dashboard/top-clientes-facturacion`
+  cuenta todos los `EMITIDO`, sin filtrar por usuario, y da `[]`), aunque la demo del 25/10 generó FAC-00000001 y
+  00000002, REC-00000001 y NC-00000001 después de la limpieza. El `04` tiene el freno de `abe3398` (no vuelve a borrar sin
+  `@OtraVez = 1`) y ningún commit posterior a la demo cambia esas consultas. Rocío corre este diagnóstico (solo lectura) y
+  le pasa el resultado a Claude; si los documentos no están, preguntarle a Facu si corrió algo en la base con su cambio a
+  "comprobante":
+  ```sql
+  SELECT N'Comprobantes' AS Que, Tipo, Estado, COUNT(*) AS Cantidad,
+         MIN(NumeroCorrelativo) AS Primero, MAX(NumeroCorrelativo) AS Ultimo
+  FROM dbo.COMPROBANTES GROUP BY Tipo, Estado;
+  SELECT N'Proformas' AS Que, Estado, COUNT(*) AS Cantidad FROM dbo.PROFORMAS GROUP BY Estado;
+  SELECT Nombre, UltimoNumero FROM dbo.FACTURACION_NUMERADORES;
+  SELECT Viaje_ID, Estado FROM dbo.VIAJES WHERE Viaje_ID IN (5, 25, 26, 38, 43, 44);
+  SELECT Fecha, Usuario, Accion, Entidad, Clave, LEFT(Valores_Nuevos, 300) AS Detalle, Origen
+  FROM dbo.AUDITORIA
+  WHERE Clave = N'Limpieza de prueba'
+     OR (Fecha >= '2026-10-25T23:00'
+         AND (Entidad LIKE N'COMPROBANTE%' OR Entidad LIKE N'PROFORMA%' OR Entidad LIKE N'CUENTA_CORRIENTE%'))
+  ORDER BY Fecha;
+  ```
+- **Seguridad:** `api/Grupos/{id}/Menus` le responde a un usuario que no es admin (sumado a la §40, punto 1).
+- **Limpieza:** desde las pantallas, destildar Dashboard y Tableros del grupo Facturacion (4) y eliminar "Tarifas
+  Logística Pampeana" (tabla 7, sin viajes), o con el SQL del reporte. **No correr el SQL de limpieza de la tanda 1**: borra
+  el cliente 7 (Alimentos La Serena) con los viajes 43 y 44, que son parte de la demo.
+
+**Tandas 3, 5, 6 y 2 en pausa (Rocío, 26/10):** después de Tableros surgieron cambios y mejoras de tarifas que van
+primero. La hoja de ruta (§36), el control interno (§37) y las dos mejoras de cuenta corriente (§29) ya están en `main`
+sin probar; se retoman después de los cambios de tarifas, antes del 29/10.
+
 **F3 de la tanda 1 (25/10):** `fiveserver.config.js` en la raíz le dice a Five Server (el 5500 de la VM) que no recargue
 por `App_Data`, `bin`, `obj`, `.vs` y `.vscode`, como ya hace Live Server (5502) con `.vscode/settings.json`. **Probar en la
 VM en los dos puertos** (Rocío quiere que funcione en los dos): reiniciar el servidor después del `pull`, registrar un
@@ -3604,7 +3647,8 @@ cierren las pruebas de la §39**, antes que lo demás.
 
 - [ ] **1. Seguridad de la API y del JWT (F9 de la tanda 1; sigue a F1b de la §8).** Sin token responden 200, entre otros,
   `GET api/Tarifario`, `api/Tarifario/{id}`, `api/Tarifario/Vigente`, `api/Viajes`, `api/Clientes` (con CUIT, teléfono y
-  e-mail) y `api/Camiones`; `api/Tarifario/Revisar` sí da 401. Hay que revisar, además:
+  e-mail) y `api/Camiones`; `api/Tarifario/Revisar` sí da 401. Con la sesión de un usuario que no es admin,
+  `api/Grupos/{id}/Menus` le muestra los permisos de cualquier grupo (Tableros, 26/10). Hay que revisar, además:
   - un solo control del token para toda la API (hoy cada controller lo valida a su manera: `UsuarioDelToken` en Tableros,
     `AlcanceDelToken` en Tarifario, facturación y e-mail por su lado) y que el front mande `Authorization` siempre;
   - dónde vive la clave con la que se firma el JWT (hoy en el código, `JwtConfig.cs`): pasarla fuera de git, como la cadena
