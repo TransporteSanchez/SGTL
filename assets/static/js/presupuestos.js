@@ -12,6 +12,7 @@
     var modalVista, urlVista = null, secuenciaVista = 0;
     // Filtros aplicados (§1.3: se aplican con Buscar, Enter o la cruz) y paginación del listado (§2.2).
     var filtrosAplicados = {}, paginaActual = 1, tamanioPagina = 15, presupuestoEstado = null;
+    var ordenPresupuestos = SGTL.tabla.habilitarOrden('#tablaPresupuestos', function () { paginaActual = 1; dibujar(); });
     // Ruta con Google Maps (como en Gestionar viajes): la distancia sale del mapa y sin ella no se guarda.
     var mapaPresupuesto = null, directionsServicePresupuesto = null, directionsRendererPresupuesto = null, mapaPresupuestoListo = null, rutaPresupuestoSeq = 0;
     var campos = ['id', 'email', 'fechaInicio', 'fechaFin', 'camionId', 'distancia', 'choferId', 'tipoTarifa', 'validez', 'pago', 'tiempo', 'condiciones'];
@@ -277,9 +278,26 @@
         var color = estado === 'Rechazado' ? 'rojo' : estado === 'Aceptado' ? (p.viajeId ? 'verde' : 'amarillo') : 'gris';
         return SGTL.estado(estado, estado, color);
     }
+    function ordenarPresupuestos(items, criterio) {
+        var campo = criterio && criterio.orden;
+        if (['numero', 'fecha', 'cliente', 'ruta', 'km', 'importe'].indexOf(campo) === -1) return items;
+        var sentido = criterio.direccion === 'desc' ? -1 : 1;
+        var numericos = { numero: 'id', km: 'distancia', importe: 'importe' };
+        var comparadorTexto = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
+        return items.sort(function (a, b) {
+            if (numericos[campo]) return ((Number(a[numericos[campo]]) || 0) - (Number(b[numericos[campo]]) || 0)) * sentido;
+            if (campo === 'fecha') {
+                var fechaA = String(a.fecha || '').substring(0, 10), fechaB = String(b.fecha || '').substring(0, 10);
+                return (fechaA > fechaB ? 1 : fechaA < fechaB ? -1 : 0) * sentido;
+            }
+            var textoA = campo === 'ruta' ? (a.origen || '—') + ' → ' + (a.destino || '—') : a.cliente || '';
+            var textoB = campo === 'ruta' ? (b.origen || '—') + ' → ' + (b.destino || '—') : b.cliente || '';
+            return comparadorTexto.compare(textoA, textoB) * sentido;
+        });
+    }
     function dibujar() {
         var cuerpo = el('lista');
-        var items = registros.filter(cumpleFiltros);
+        var items = ordenarPresupuestos(registros.filter(cumpleFiltros), ordenPresupuestos.parametros());
         var totalPaginas = tamanioPagina ? Math.max(1, Math.ceil(items.length / tamanioPagina)) : 1;
         if (paginaActual > totalPaginas) paginaActual = totalPaginas;
         SGTL.tabla.paginacion('#paginacion', {

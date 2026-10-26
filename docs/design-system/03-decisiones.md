@@ -245,7 +245,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   conserva el orden inicial de la pantalla.
   En Listar y Gestionar choferes se puede ordenar por DNI, apellido y nombre, o fecha de alta; en Listar y Gestionar
   camiones, por marca o fecha de alta. En Gestionar orígenes y destinos, ambas pestañas permiten ordenar por
-  descripción, cliente, provincia o localidad. Las demás pantallas incorporan columnas ordenables cuando se definan.
+  descripción, cliente, provincia o localidad. En Gestionar presupuestos, por número, fecha, cliente, ruta, km o
+  importe. Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---
 
