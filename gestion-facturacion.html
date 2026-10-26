@@ -88,10 +88,14 @@
                                 </div>
                             </form>
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover tbl-prof">
+                                <table class="table table-striped table-hover tbl-prof" id="tablaProformas">
                                     <thead><tr>
-                                        <th>Número</th><th class="text-center">Fecha</th><th>Cliente</th>
-                                        <th class="text-end">Total</th><th class="text-center">Estado</th><th>Usuario</th><th class="text-center">Acciones</th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="numero">Número<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="cliente">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-end"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="total">Total<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center text-nowrap"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="fecha">Fecha<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="usuario">Usuario<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center">Estado</th><th class="text-center">Acciones</th>
                                     </tr></thead>
                                     <tbody id="cuerpoProformas"><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
@@ -280,6 +284,8 @@
         const IVA_OPCIONES = [0, 10.5, 21];
         var estadoActual = 'Borrador';
         var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
+        var ordenProformas;
+        var ultimaBusquedaProformas = 0;
         var clientesMap = {};
         var proformaIdEliminar = null;
 
@@ -534,10 +540,13 @@
             var rango = SGTL.valorRango('#fFecha');
             if (rango) { p.append('desde', rango.desde); p.append('hasta', rango.hasta); }
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            var orden = ordenProformas ? ordenProformas.parametros() : {};
+            if (orden.orden) { p.append('orden', orden.orden); p.append('direccion', orden.direccion); }
             p.append('page', page || 1); p.append('pageSize', pageSize == null ? profState.pageSize : pageSize);
             return p;
         }
         function buscarProformas(page) {
+            var busqueda = ++ultimaBusquedaProformas;
             profState.page = page || 1;
             var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
@@ -547,13 +556,14 @@
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }),
                 window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar() : []])
                 .then(function (r) {
+                    if (busqueda !== ultimaBusquedaProformas) return;
                     var res = r[0];
                     cambiosTarifa = r[1] || [];
                     cambiosTarifaCargados = true;
                     if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
-                .catch(function () { errorGrilla(); });
+                .catch(function () { if (busqueda === ultimaBusquedaProformas) errorGrilla(); });
         }
         function errorGrilla(mensaje) {
             SGTL.tabla.vacia('#cuerpoProformas', 7, 'No se pudieron cargar las proformas.');
@@ -641,11 +651,11 @@
                 proformasPagina[x.Proforma_ID] = x;
                 return '<tr>' +
                     '<td>' + esc(x.Numero || (x.Tipo_Proforma === 'Plataforma' ? '' : '—')) + (window.ProformaPlataforma ? ProformaPlataforma.etiquetaListado(x) : '') + '</td>' +
-                    '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), iconoCambioTarifa(x) || (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '')) + '</td>' +
+                    '<td class="text-center text-nowrap">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), iconoCambioTarifa(x) || (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '')) + '</td>' +
                     '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
             }).join(''));
             renderPag();
@@ -1034,6 +1044,7 @@
             var estadoUrl = new URLSearchParams(window.location.search).get('estado');
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
             cargarClientes();
+            ordenProformas = SGTL.tabla.habilitarOrden('#tablaProformas', function () { buscarProformas(1); });
             buscarProformas(1);
             // gestion-facturacion.html?proforma=N abre su detalle (desde la tarjeta "Cambios de tarifa para revisar" del
             // dashboard). Se usa una vez: el parámetro se saca de la dirección.

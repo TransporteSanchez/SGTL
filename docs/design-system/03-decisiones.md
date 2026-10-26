@@ -252,6 +252,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   descripción, cliente, provincia o localidad. En Gestionar presupuestos, por número, fecha, cliente, ruta, km o
   importe. En Listar y Gestionar viajes, por número de viaje, cliente, fecha de inicio, fecha de fin, origen,
   destino, número de remito o cantidad de km. En Listar y Gestionar clientes, por CUIT, razón social o fecha de alta.
+  En Listar y Gestionar proformas, por número, cliente, total, fecha o usuario; sus columnas se muestran en el orden
+  Número, Cliente, Total, Fecha, Usuario, Estado, Acciones.
   Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---

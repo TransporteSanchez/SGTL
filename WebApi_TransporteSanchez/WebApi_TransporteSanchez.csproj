@@ -406,6 +406,7 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
+    <Compile Include="Controllers\ProformasOrdenSql.cs" />
     <Compile Include="Controllers\ProformasPlataformaController.cs" />
     <Compile Include="Plataformas\LectoresPlataforma.cs" />
     <Compile Include="Controllers\PresupuestosController.cs" />

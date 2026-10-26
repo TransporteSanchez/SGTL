@@ -504,7 +504,8 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
         [Route("")]
         public IHttpActionResult Listar(string numero = null, int? clienteId = null, string estado = null,
             string desde = null, string hasta = null, string usuario = null,
-            bool soloGeneradas = false, string tipo = null, int page = 1, int pageSize = 15)
+            bool soloGeneradas = false, string tipo = null, int page = 1, int pageSize = 15,
+            string orden = null, string direccion = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 0 || pageSize > 200) pageSize = 15;
@@ -542,7 +543,7 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
                         "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
                         ProformasPlataformaController.SqlSituacionBorrador() +
-                        where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
+                        where + ProformasOrdenSql.Obtener(orden, direccion) + " OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
                 }
@@ -556,7 +557,8 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
         [HttpGet]
         [Route("Reporte")]
         public IHttpActionResult Reporte(string numero = null, int? clienteId = null, string estado = null,
-            string desde = null, string hasta = null, string usuario = null, bool soloGeneradas = false, string tipo = null)
+            string desde = null, string hasta = null, string usuario = null, bool soloGeneradas = false, string tipo = null,
+            string orden = null, string direccion = null)
         {
             List<SqlParameter> ps;
             var where = CrearFiltroListado(numero, clienteId, estado, desde, hasta, usuario, soloGeneradas, tipo, out ps);
@@ -580,7 +582,7 @@ SELECT Proforma_ID,
                          WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC')
             THEN 'Facturada' ELSE Estado END AS Estado,
        Usu_Alta AS Usuario
-FROM PROFORMAS " + where + " ORDER BY Proforma_ID DESC";
+FROM PROFORMAS " + where + ProformasOrdenSql.Obtener(orden, direccion);
                     var proformas = db.Database.SqlQuery<ReporteProformaItem>(sqlProformas,
                         ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).ToList();
 
