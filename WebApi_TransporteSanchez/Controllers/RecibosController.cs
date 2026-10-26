@@ -616,6 +616,7 @@ VALUES
                         int clienteId;
                         int numero;
                         string estado;
+                        string tipoDescripcion;
                         DateTime fecha;
                         string letra;
                         string sucursal;
@@ -629,8 +630,10 @@ VALUES
 
                         using (var command = new SqlCommand(@"
 SELECT c.ClienteID,c.NumeroCorrelativo,c.Estado,c.FechaEmision,c.Letra,c.Sucursal,c.NumeroComprobante,c.Total,c.Observaciones,
+        t.Descripcion AS TipoDescripcion,
        c.RazonSocial,c.CUIT,p.Forma,p.Referencia
 FROM dbo.COMPROBANTES c
+LEFT JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
 OUTER APPLY (SELECT TOP (1) Forma,Referencia FROM dbo.RECIBOS_FORMAS_PAGO WHERE ComprobanteID=c.Comprobante_ID ORDER BY FormaPago_ID) p
 WHERE c.Comprobante_ID=@id AND c.Tipo='REC';", connection, transaction))
                         {
@@ -645,6 +648,7 @@ WHERE c.Comprobante_ID=@id AND c.Tipo='REC';", connection, transaction))
                                 clienteId = (int)reader["ClienteID"];
                                 numero = (int)reader["NumeroCorrelativo"];
                                 estado = (string)reader["Estado"];
+                                tipoDescripcion = reader["TipoDescripcion"] as string;
                                 fecha = (DateTime)reader["FechaEmision"];
                                 letra = reader["Letra"] as string;
                                 sucursal = reader["Sucursal"] as string;
@@ -691,6 +695,7 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                             ClienteID = clienteId,
                             Numero = NumeroRecibo(numero),
                             Estado = estado,
+                            TipoDescripcion = tipoDescripcion,
                             Fecha = fecha,
                             Letra = letra,
                             Sucursal = sucursal,

@@ -114,6 +114,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ComprobanteID { get; set; }
             public int ClienteID { get; set; }
             public string Tipo { get; set; }
+            public string TipoDescripcion { get; set; }
             public string Numero { get; set; }
             // Letra y sucursal con que se emitió: las muestra la vista en solo lectura de cuenta corriente.
             public string Letra { get; set; }
@@ -519,7 +520,7 @@ WHERE c.ClaveOperacion=@clave;";
                     ValidarAcceso(connection, null, "CC_CONSULTAR");
                     ComprobanteImpresion comprobante = null;
                     const string sql = @"
-SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,
+SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,t.Descripcion AS TipoDescripcion,
        c.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
        c.Letra,c.Sucursal,
        c.FechaEmision,c.FechaVencimiento,c.Moneda,c.Estado AS EstadoDocumental,
@@ -540,6 +541,7 @@ SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,
         (SELECT r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
          FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID) AS ComprobanteReferenciaNumero
 FROM dbo.COMPROBANTES c
+LEFT JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
 OUTER APPLY (SELECT SUM(ap.Importe) AS ImporteAplicado
              FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
              WHERE ap.ComprobanteDeudaID=c.Comprobante_ID AND ap.Vigente=1) a
@@ -556,6 +558,7 @@ WHERE c.Comprobante_ID=@id;";
                                     ComprobanteID = (int)reader["Comprobante_ID"],
                                     ClienteID = (int)reader["ClienteID"],
                                     Tipo = (string)reader["Tipo"],
+                                    TipoDescripcion = reader["TipoDescripcion"] as string,
                                     Numero = (string)reader["Numero"],
                                     Letra = reader["Letra"] as string,
                                     Sucursal = reader["Sucursal"] as string,

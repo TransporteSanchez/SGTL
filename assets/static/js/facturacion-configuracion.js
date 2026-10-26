@@ -2,8 +2,6 @@
     'use strict';
 
     var API = 'http://localhost:50222/api/facturacion-config';
-    var NOMBRES_TIPO = { FAC: 'Factura', NC: 'Nota de crédito', ND: 'Nota de débito', REC: 'Recibo' };
-
     function token() {
         try { return localStorage.getItem('token') || ''; } catch (e) { return ''; }
     }
@@ -37,12 +35,17 @@
         return fetch(API + '/emision/' + encodeURIComponent(tipo), { headers: encabezados() })
             .then(mensajeError)
             .then(function (datos) {
+                var descripcion = datos && typeof datos.Descripcion === 'string' ? datos.Descripcion.trim() : '';
+                if (!descripcion) throw new Error('No se pudo cargar el tipo de comprobante. Probá de nuevo.');
                 var tipoControl = campo(controles.tipo);
                 var letra = campo(controles.letra);
                 var sucursal = campo(controles.sucursal);
                 var numero = campo(controles.numero);
 
-                if (tipoControl) tipoControl.value = NOMBRES_TIPO[datos.Tipo || tipo] || datos.Descripcion || datos.Tipo || tipo;
+                if (tipoControl) {
+                    if ('value' in tipoControl) tipoControl.value = descripcion;
+                    else tipoControl.textContent = descripcion;
+                }
                 if (letra) {
                     letra.innerHTML = (datos.Letras || ['A', 'B']).map(function (valor) {
                         var seleccionada = valor === datos.LetraPredeterminada ? ' selected' : '';

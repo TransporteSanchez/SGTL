@@ -717,8 +717,7 @@
         window.SelectClientePredictivo.sincronizar(cliente);
         ponerFecha('cmpFechaEmision', String(comprobante.FechaEmision || '').substring(0, 10));
         ponerFecha('cmpFechaVencimiento', String(comprobante.FechaVencimiento || '').substring(0, 10));
-        var nombreTipo = nombreTipoComprobante(tipo);
-        porId('cmpTipoComprobante').value = nombreTipo.charAt(0).toUpperCase() + nombreTipo.slice(1);
+        porId('cmpTipoComprobante').textContent = comprobante.TipoDescripcion || '';
         porId('cmpLetra').innerHTML = '<option value="' + escapar(comprobante.Letra || '') + '">' + escapar(comprobante.Letra || '—') + '</option>';
         porId('cmpLetra').value = comprobante.Letra || '';
         porId('cmpSucursal').innerHTML = '<option value="' + escapar(comprobante.Sucursal || '') + '">' + escapar(comprobante.Sucursal || '—') + '</option>';
@@ -767,7 +766,7 @@
         porId('modalNuevoReciboSubtitulo').classList.add('d-none');
         ponerFecha('reciboFecha', String(recibo.Fecha || '').substring(0, 10));
         seleccionarClienteFormulario('reciboCliente', recibo.ClienteID);
-        porId('reciboTipoComprobante').value = 'Recibo';
+        porId('reciboTipoComprobante').textContent = recibo.TipoDescripcion || '';
         porId('reciboLetra').innerHTML = '<option value="' + escapar(recibo.Letra || '') + '">' + escapar(recibo.Letra || '—') + '</option>';
         porId('reciboSucursal').innerHTML = '<option value="' + escapar(recibo.Sucursal || '') + '">' + escapar(recibo.Sucursal || '—') + '</option>';
         porId('reciboNumeroComprobante').value = recibo.Numero || recibo.NumeroComprobante || '';
@@ -852,7 +851,6 @@
             porId('reciboObservaciones').value = recibo.Observaciones || '';
             window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', true);
             habilitarFecha('reciboFecha', true);
-            porId('reciboTipoComprobante').disabled = true;
             porId('reciboLetra').disabled = true;
             porId('reciboSucursal').disabled = false;
             porId('reciboNumeroComprobante').disabled = false;
@@ -1035,7 +1033,7 @@
         seleccionarClienteFormulario('reciboCliente', cliente && cliente.ClienteID);
         limitarFecha('reciboFecha', 'maxDate', hoyIso());
         ponerFecha('reciboFecha', hoyIso());
-        porId('reciboTipoComprobante').value = 'Recibo';
+        porId('reciboTipoComprobante').textContent = '';
         porId('reciboNumeroComprobante').value = '';
         porId('reciboFormaPago').value = 'Transferencia';
         porId('reciboReferencia').value = '';
@@ -1049,7 +1047,6 @@
         mensaje.textContent = 'Podés escribir el importe o elegir facturas para que se calcule solo.';
         porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', false);
-        porId('reciboTipoComprobante').disabled = true;
         porId('reciboNumeroComprobante').readOnly = true;
         porId('reciboFormaImporte').readOnly = false;
         porId('btnDistribuirRecibo').classList.remove('d-none');
@@ -1383,6 +1380,7 @@
         var hoy = hoyIso();
         var nombreAccion = nombreAccionEmision(tipo);
         porId('cmpTitulo').textContent = nombreAccion;
+        porId('cmpTipoComprobante').textContent = '';
         poblarClientesComprobante(cliente && cliente.ClienteID);
         ponerFecha('cmpFechaEmision', hoy); limitarFecha('cmpFechaEmision', 'maxDate', hoy);
         vencimientoComprobanteEditado = false;
@@ -1409,7 +1407,6 @@
         porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', false);
         porId('cmpIvaImporte').readOnly = true;
-        porId('cmpTipoComprobante').readOnly = true;
         porId('cmpNumeroComprobante').readOnly = true;
         porId('cmpNeto').readOnly = tipo === 'NC';
         porId('cmpOtros').readOnly = tipo === 'NC';

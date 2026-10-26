@@ -1383,6 +1383,9 @@ pudo compilar en la Mac.**
   las filas, también en las aplicaciones desplegadas.
 - [ ] El ojo de una factura, una NC y un recibo → la vista completa en solo lectura ("Ver factura FAC-…"), fechas
   DD/MM/AAAA, solo Cerrar. Después, "Emitir comprobante directo" abre el formulario vacío y editable.
+- [ ] Comparar las descripciones de FAC, NC, ND y REC en Gestionar tipos de comprobante con el campo "Tipo de
+  comprobante" de Emitir comprobante directo, Emitir crédito, Emitir Débito y Registrar recibo. También deben coincidir
+  al ver un comprobante o recibo existente y al editar un recibo con REC activo; no hace falta emitir para comprobarlo.
 - [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; "Enviar por
   e-mail" cierra el PDF y abre el envío.
 - [ ] Editar recibo desde la fila → abre el recibo. Anular → confirmación del sistema con motivo → "Recibo anulado.".
