@@ -59,6 +59,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
+| 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3720,3 +3721,113 @@ cierren las pruebas de la §39**, antes que lo demás.
   - M16, Listar viajes: "Km" en lugar de "Cantidad de KM" (§7.3).
   - De Facu (sumar a su lista del punto 5): M6, el importe mal escrito en Registrar recibo, con "Escribí el importe como
     1.234,56." debajo del campo; M15, un saldo negativo dice "Saldo a favor del cliente" y no "Saldo deudor".
+
+---
+
+## 41. Listado de Rocío del 26/10: tarifas, antes del jueves 29/10 y para después — ANOTADO (26/10)
+
+El jueves 29/10 no es la defensa: es la reunión con el profe para que vea el sistema (si está todo OK, puede servir
+como presentación). Los números son los del listado de Rocío.
+
+### Tarifas (se ven con la ronda de tarifas y la tabla dinámica)
+- [ ] **1. Vuelta vacío en la tarifa por km.** Ya no existe: era de las tarifas de prueba de antes (ruta + vuelta vacío,
+  §31). En la tabla nueva la tarifa por km es km de ida × precio por km (la "larga distancia" del PDF). **Preguntarle a
+  Claudia** si ese precio ya contempla la vuelta; si no, la tabla dinámica puede tener "cobrar la vuelta vacía" por tabla.
+- [ ] **2. Tarjeta "Cambios de tarifa para revisar".** Hoy está siempre en el dashboard (vacía dice "No hay nada para
+  revisar por cambios de tarifa.") y ya se muestra según los permisos. Pedido: que aparezca solo cuando hay algo para
+  revisar, y solo a quien tiene una acción para hacer (los administradores, sí).
+- [ ] **3. 1ª y 2ª vuelta automáticas.** Hoy el sistema propone la 2ª si el camión ya tiene un viaje antes ese día, pero se
+  puede cambiar a mano; y **no hay ningún control de que un camión (o un chofer) no tenga dos viajes al mismo tiempo**.
+  Pedido: la vuelta sale sola y no se edita (se ve como texto, con el viaje anterior del camión); el mismo camión en
+  viajes que se superponen da error al elegirlo y al guardar. Casos borde a decidir: editar la hora o el camión de un
+  viaje cambia la vuelta de otro (recalcularlo si el cliente no lo vio, como con un cambio de tabla); eliminar el primero
+  del día pasa el segundo a 1ª; un viaje sin carga (punto 10) ¿cuenta como vuelta?; el 3º del día ¿cobra como 2ª?; un
+  primer viaje de más de 130 km y uno corto después ¿el corto es 2ª?; viajes que cruzan la medianoche; viajes sin hora
+  de fin (usar la duración de Google, punto 36); presupuestos sin camión o sin fecha.
+- [ ] **9. Importar la tabla desde el Excel del PDF de tarifas.** Se puede (ya se lee el Excel de Rukas): se completa la
+  grilla, la persona la revisa y guarda con las mismas validaciones. Falta el Excel real de la empresa para ver su
+  formato. El aviso de valores que no suben ya existe ("Revisá estos valores": la 2ª vuelta más cara que la 1ª o una
+  banda más barata que la anterior), y no impide guardar (decisión del 25/10).
+- [ ] **10. Falso flete.** Hoy se puede marcar en cualquier estado antes de facturar, desde Gestionar viajes; el importe
+  pasa a ser el 60 % de la tarifa (no se suma: la reemplaza), aunque el detalle se lee como un adicional. Pedido de
+  Rocío: se sabe recién cuando el camión llega al origen y no hay carga, así que se marca solo con el viaje En viaje, lo
+  puede marcar el chofer desde su hoja de ruta (con una observación) o un operador, el viaje se cierra con un estado
+  final (sin remito) y para volver a ir se registra otro viaje. Cambiar la palabra "falso flete" (propuesta de Claude:
+  estado "Sin carga", acción "Registrar sin carga", importe "Viaje sin carga (60 % de la tarifa)"). A decidir: si se
+  factura como un viaje entregado (Traer viajes de proformas es de Facu: avisarle), qué pasa con los clientes con
+  plataforma (¿Rukas lo paga?), los gastos del chofer y el recorrido completo (galpón → origen → galpón).
+- [ ] **11. Los demás adicionales (estadía).** Hoy la estadía se carga a mano en módulos y se suma al importe. Los datos de
+  la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
+  Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos
+  datos de la tabla (el operador los puede corregir).
+- [ ] **12 y 13. Textos de para quién es la tabla.** "Solo algunos clientes" → "Clientes en particular". En lugar de
+  "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los
+  clientes, también a los que se carguen después, salvo los que tienen una tabla propia." y "Se aplica solo a los
+  clientes que elijas, en lugar de la tabla para todos los clientes."
+- [ ] **14. Registrar tabla.** En lugar de "Viene con los valores de…", propuesta: 'Precargada con los valores de
+  "Tarifas a agosto 2026": cambiá los que se actualizaron y elegí a qué clientes se aplica.'
+
+### Antes del jueves 29/10 (pedido de Rocío)
+- [ ] **21 y 34. Datos como reales para el profe.** Limpiar todo lo que esté mal, sin sentido o con datos al azar (se suma
+  a la §40, punto 6, y al cliente "distribuidora-powerful S.A." de la §38) y dejar cerrados los viajes pasados.
+- [ ] **16. Distribuidora del Sur S.A. figura con plataforma (Rukas).** Solo QUICKFOOD tiene que tenerla. Ver qué viajes
+  tiene y si conviene pasarlos a otro cliente o a QUICKFOOD; después, sacar el cliente o dejarlo como cliente común.
+- [ ] **22. Toda la lógica del flujo de viajes, en todos los escenarios:** cambios de estado, edición y el proceso completo
+  hacia adelante y hacia atrás, sin huecos (el profe suele probar casos borde). Las dudas, con Rocío. Incluye los puntos
+  3, 10 y 33.
+- [ ] **23. Dashboard con muchos tableros:** analizar ofrecer, si la persona quiere, dividirlos por tema como en Tableros
+  (todo junto o por pestañas).
+- [ ] **26. Orden de los módulos en el menú,** el que Rocío charló con Facu (el menú está en `sidebar-loader.js`, §3.1 del
+  design system y `permisos-menu.js`).
+
+### Hoja de ruta, choferes y usuarios
+- [ ] **4.** "Hojas de ruta", en plural (puede haber varias). Que la vea solo el chofer asignado o un administrador.
+- [ ] **29.** Ver si "camiones asignados" en choferes funciona y para qué se usa.
+- [ ] **30 y 31.** Cómo se crea el usuario de un chofer: todo chofer necesita usuario para sus viajes; ver si se carga
+  junto con el chofer o desde dónde conviene. Un chofer inactivo no puede iniciar sesión. Sacar de Gestionar usuarios la
+  opción "¿es chofer?": alcanza con el grupo Choferes (si hace falta saber qué chofer es, buscar una forma mejor).
+- [ ] **32.** El chofer marca la entrega y sube el remito en nuestro sistema aunque el viaje sea de Rukas: ver si trae un
+  riesgo (lo que manda es Rukas, que lo maneja un administrador). Poner un tope de días para cargar gastos en un viaje
+  cerrado.
+- [ ] **33.** El chofer no puede iniciar un viaje sin fecha: el botón deshabilitado con un globito que diga que se
+  comunique con administración para corregir la fecha y la hora. Tampoco puede cargar gastos en un viaje que todavía no
+  arrancó (confirmar qué pasa En viaje). Buscar otros casos así.
+- [ ] **35.** El recorrido completo empieza siempre en el galpón, no en la ubicación actual: el viaje se inicia en el
+  galpón.
+
+### Viajes, camiones y control interno
+- [ ] **8. Número de remito.** El formato "0001-00045108" es el de los comprobantes argentinos (punto de venta - número);
+  lo puso Claude como ejemplo (`gestion-viajes.html`, sin validación, hasta 20 caracteres). Ver con Claudia cómo vienen
+  los remitos (4 o 5 dígitos de punto de venta, con letra) y sumar una máscara que complete los ceros.
+- [ ] **28.** Cambiar la dirección del galpón afecta solo a los viajes que todavía no salieron o que se carguen después; o
+  preguntar a cuáles aplicarlo (los registrados que no salieron, o solo los nuevos).
+- [ ] **36.** Mostrar las horas estimadas de Google junto a los km al cargar un viaje o presupuesto: si el destino queda
+  antes de ese tiempo, error o advertencia; si queda mucho después, ver si se pide un motivo. Sirve también para el punto
+  3 (viajes superpuestos).
+- [ ] **37.** Kilometraje, consumo y combustible: hechos en la §37, sin probar en la VM. Faltan los datos: el kilometraje
+  inicial, su fecha y el consumo de los 4 camiones, y el precio del gasoil (Gestionar camiones).
+
+### Pantallas y menú
+- [ ] **6.** Todos los submenús quedan abiertos y con la opción marcada cuando se está en esa pantalla.
+- [ ] **7.** Los archivos HTML siguen con nombres viejos (`gestion-facturacion.html` es Gestionar proformas): renombrarlos
+  con el nombre de la opción. Toca enlaces, menú y permisos de todos: coordinar con Facu y Fede.
+- [ ] **19.** En Gestionar proformas, la etiqueta de Rukas con el número en la columna del número: pasarla al ícono de
+  información junto al estado, y "—" mientras no tenga número.
+- [ ] **24.** Ver si los modales tienen que mostrar todo sin desplazarse, para que no queden campos escondidos abajo.
+- [ ] **27.** Autocompletar direcciones con Google en todas las pantallas que cargan direcciones (sigue a la §5).
+
+### Seguridad, auditoría y equipo
+- [ ] **5.** JWT y seguridad: ya está en la §40, punto 1 (la sesión vence rápido, la API responde sin token, la clave en el
+  código).
+- [ ] **17.** Revisar cómo se ve el detalle de Auditoría en todos los casos y sumar la IP. Lo consulta alguien de sistemas:
+  está bien que muestre los valores de la base (decidir con eso la M5 de Tableros, §40 punto 7).
+- [ ] **18.** En el circuito de unir los desarrollos de Facu y Fede, sumar pruebas después de cada merge con la misma
+  mirada de usabilidad que las de Rocío (que se entienda, que no sea engorroso). Lo que salga, Rocío decide con la
+  recomendación de Claude si lo mejora ella o lo vuelve a ver con ellos.
+
+### Para más adelante
+- [ ] **15.** Ver si los módulos de Facu y Fede explican los campos como viajes (ayudas debajo de los campos, avisos).
+- [ ] **20.** Ver los logs de WhatsApp desde el sistema (en Auditoría o donde corresponda; hoy quedan en `whatsapp.log` de
+  la API).
+- [ ] **25.** Dónde se guarda si un cliente tiene plataforma (hoy solo QUICKFOOD): ver si se configura desde el sistema o
+  está en el código, y si conviene sumarlo.
