@@ -647,7 +647,7 @@ SELECT CAST(CASE WHEN EXISTS (
         }
 
         // GET: api/Viajes/ResumenCosto?fechaDesde=AAAA-MM-DD&fechaHasta=AAAA-MM-DD
-        // Tarjeta "Costo por viaje" del dashboard (index.html). Importe = el que guardó el viaje al calcular su tarifa con
+        // Tarjeta "Importe promedio por viaje" del dashboard (antes "Costo por viaje") (index.html). Importe = el que guardó el viaje al calcular su tarifa con
         // la tabla de tarifas (con los adicionales).
         // Las fechas son opcionales y filtran por Fecha_Inicio, igual que Buscar; sin fechas, todos los viajes.
         [HttpGet]

@@ -2951,7 +2951,7 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   importe del presupuesto.
 - [ ] 8. Proformas: "Traer viajes" trae el importe guardado de cada viaje; con los Excel regenerados, el caso 1 de Rukas
   (`docs/pruebas/datos/`) da "Coincide".
-- [ ] 9. Dashboard: "Costo por viaje" suma los importes guardados (cambia por los viajes recalculados).
+- [ ] 9. Dashboard: "Importe promedio por viaje" (antes "Costo por viaje") suma los importes guardados (cambia por los viajes recalculados).
 - [ ] 10. Un viaje en viaje: cargarle 1 módulo de estadía y guardar: se suma, la tarifa no cambia.
 
 ---
@@ -3371,6 +3371,15 @@ sale con `FAC` y los textos de hoy. Pasos:
    FAC-00000001 y 00000002, REC-00000001 y NC-00000001, todos con el importe esperado y coincidiendo con sus viajes;
    Tableros cuadra. Una falla (el enlace "Ver la cuenta corriente del cliente" no filtra por el cliente) y 15 mejoras;
    las de presupuestos, proformas propias, comprobantes y cuenta corriente van a la lista de Facu (§40, punto 5).
+   **Arreglos de la demo hechos en la Mac (25/10), sin probar en la VM:** la proforma de Rukas pone el adicional en una
+   línea aparte ("Adicional transporte 990002", sin código de viaje) y el transporte con el importe de su viaje; el control
+   de Rukas y sus textos ("Importe distinto…") con centavos ("$ 429.101,00"); en Tableros, los totales y el globito de
+   "Facturación por cliente y por mes" y la deuda por cliente con centavos (las celdas del mapa, compactas); la tarjeta
+   "Costo por viaje" pasa a llamarse "Importe promedio por viaje"; y el instructivo de la VM dice que los viajes de una
+   proforma propia siguen Entregado hasta la factura. PF-00000003 queda como está (decisión de Rocío): el arreglo se ve
+   en la próxima proforma de Rukas. **Probar en la VM:** una proforma de Rukas nueva (por ejemplo, en vivo con el caso 2
+   corregido o el caso 3) con el adicional aparte y el total igual; la factura de esa proforma con las dos líneas;
+   Tableros → Facturación con centavos y el nombre nuevo.
    **Antes de la presentación:** el cliente "distribuidora-powerful S.A." (viaje 5 y otros) tiene un nombre que no parece
    real; cambiarlo en Gestionar clientes por uno creíble (el relevamiento de textos de prueba no lo detecta).
 

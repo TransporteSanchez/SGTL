@@ -1083,10 +1083,12 @@
       mapaCalor(cont, {
         encabezado: 'Cliente', columnas: grupos, filas: filas, sinDato: 'Sin facturar',
         formato: montoCompacto,
-        total: function (v) { return SGTL.monto(v, { sinDecimales: true }); },
+        // Los totales y el globito con centavos, como en Top clientes y en los comprobantes: redondeados parecía que no
+        // cuadraban (mejora 10 del juego de demo en la VM, 25/10). Las celdas, compactas.
+        total: function (v) { return SGTL.monto(v); },
         globo: function (f, i, v) {
           var n = f.extra[i];
-          return f.nombre + ' · ' + grupos[i].largo + ': ' + (n ? SGTL.monto(v, { sinDecimales: true }) + ' en ' + n + (n === 1 ? ' comprobante' : ' comprobantes') : 'sin facturar');
+          return f.nombre + ' · ' + grupos[i].largo + ': ' + (n ? SGTL.monto(v) + ' en ' + n + (n === 1 ? ' comprobante' : ' comprobantes') : 'sin facturar');
         }
       });
     }).fail(function (xhr) {
@@ -1124,7 +1126,7 @@
     var vencida = filas.reduce(function (s, r) { return s + (Number(r.Vencida) || 0); }, 0);
     var porVencer = filas.reduce(function (s, r) { return s + (Number(r.PorVencer) || 0); }, 0);
     poner('deuda-cantidad', conVencida.length ? 'Hoy · ' + conVencida.length + (conVencida.length === 1 ? ' cliente' : ' clientes') : 'Hoy');
-    poner('deuda-resumen', 'Vencido ' + SGTL.monto(vencida, { sinDecimales: true }) + ' · por vencer ' + SGTL.monto(porVencer, { sinDecimales: true }));
+    poner('deuda-resumen', 'Vencido ' + SGTL.monto(vencida) + ' · por vencer ' + SGTL.monto(porVencer));
     var resumen = el('deuda-resumen');
     if (resumen) resumen.classList.toggle('d-none', !filas.length);
     if (!filas.length) {
@@ -1140,8 +1142,8 @@
       var vencidoDesde = desde ? 'Vencido desde el ' + SGTL.fecha(desde) + ' (hace ' + dias + (dias === 1 ? ' día)' : ' días)') : 'Nada vencido';
       return '<tr>' +
         '<td class="dash-celda-texto">' + esc(r.Cliente) + '<small class="d-block text-muted text-truncate">' + esc(vencidoDesde) + '</small></td>' +
-        '<td class="text-end text-nowrap">' + (Number(r.Vencida) > 0 ? esc(SGTL.monto(r.Vencida, { sinDecimales: true })) : '—') + '</td>' +
-        '<td class="text-end text-nowrap">' + (Number(r.PorVencer) > 0 ? esc(SGTL.monto(r.PorVencer, { sinDecimales: true })) : '—') + '</td>' +
+        '<td class="text-end text-nowrap">' + (Number(r.Vencida) > 0 ? esc(SGTL.monto(r.Vencida)) : '—') + '</td>' +
+        '<td class="text-end text-nowrap">' + (Number(r.PorVencer) > 0 ? esc(SGTL.monto(r.PorVencer)) : '—') + '</td>' +
         '</tr>';
     }).join(''));
   }

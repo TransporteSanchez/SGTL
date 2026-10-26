@@ -129,7 +129,7 @@ a ponerle el nombre.
 **B3. El presupuesto para reenviar.**
 - Gestionar presupuestos: el ícono rojo en la fila ("Cambió la tarifa: revisalo en Ver PDF.") y el aviso en Ver PDF.
 - Dashboard (como administrador): arriba de todo, la tarjeta fija "Cambios de tarifa para revisar" con el presupuesto y
-  su acceso directo ("Ver PDF para reenviarlo"). En Tableros → Facturación, la misma tarjeta arriba de "Costo por viaje",
+  su acceso directo ("Ver PDF para reenviarlo"). En Tableros → Facturación, la misma tarjeta arriba de "Importe promedio por viaje",
   con la estrella deshabilitada y su motivo (no se puede quitar).
 - Enviar el presupuesto por e-mail a una dirección `@example.com`: deja de aparecer en la tarjeta y en la fila. Si el
   envío falla por la configuración de e-mail de la VM, anotalo y seguí.

@@ -208,7 +208,8 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
         private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
         private static readonly CultureInfo EsAr = new CultureInfo("es-AR");
-        private static string Pesos(decimal v) { return "$" + v.ToString("N0", EsAr); }
+        // "$ 1.234,56", como SGTL.monto (con centavos: mejora 10 del juego de demo en la VM, 25/10).
+        private static string Pesos(decimal v) { return "$ " + v.ToString("N2", EsAr); }
         private static decimal CalcularIva(decimal neto) { return decimal.Round(neto * IvaPct / 100m, 2, MidpointRounding.AwayFromZero); }
 
         private static string UsuarioCorto(string u)
@@ -958,17 +959,26 @@ WHERE Proforma_ID=@id AND Estado='Borrador';",
                         }
 
                         db.Database.ExecuteSqlCommand("DELETE FROM dbo.PROFORMA_DETALLE WHERE Proforma_ID=@id", P("@id", id));
+                        // Cada transporte con el importe de su viaje y, si Rukas pagó adicionales, una línea aparte con ellos: así el
+                        // cliente ve la tarifa del viaje y el adicional por separado (mejora 1 del juego de demo en la VM, 25/10). La
+                        // línea del adicional va sin código (como una línea cargada a mano): el código "V…" es el que vincula el viaje
+                        // con la proforma y la factura.
+                        int orden = 0;
                         foreach (var l in control.Lineas.OrderBy(x => x.Orden))
                         {
-                            decimal precio = l.ImporteViaje + l.Adicionales;
+                            string descripcion = (l.Fecha.HasValue ? l.Fecha.Value.ToString("dd/MM/yyyy") + " - " : "") + c.Plataforma + " " + c.Plataforma_Numero;
                             db.Database.ExecuteSqlCommand(@"
 INSERT dbo.PROFORMA_DETALLE (Proforma_ID,Orden,Codigo,Concepto,Descripcion,Cantidad,Unidad,PrecioUnitario,DescuentoPct,IvaPct,Subtotal)
 VALUES (@id,@orden,@codigo,@concepto,@desc,1,'Viaje',@precio,0,@iva,@precio);",
-                                P("@id", id), P("@orden", l.Orden), P("@codigo", "V" + l.ViajeID),
+                                P("@id", id), P("@orden", ++orden), P("@codigo", "V" + l.ViajeID),
                                 P("@concepto", "Transporte " + l.Referencia + (string.IsNullOrEmpty(l.Ruta) ? "" : " · " + l.Ruta)),
-                                P("@desc", (l.Fecha.HasValue ? l.Fecha.Value.ToString("dd/MM/yyyy") + " - " : "") + c.Plataforma + " " + c.Plataforma_Numero
-                                    + (l.Adicionales > 0 ? " (incluye adicionales " + Pesos(l.Adicionales) + ")" : "")),
-                                P("@precio", precio), P("@iva", IvaPct));
+                                P("@desc", descripcion), P("@precio", l.ImporteViaje), P("@iva", IvaPct));
+                            if (l.Adicionales > 0)
+                                db.Database.ExecuteSqlCommand(@"
+INSERT dbo.PROFORMA_DETALLE (Proforma_ID,Orden,Codigo,Concepto,Descripcion,Cantidad,Unidad,PrecioUnitario,DescuentoPct,IvaPct,Subtotal)
+VALUES (@id,@orden,'',@concepto,@desc,1,'Adicional',@precio,0,@iva,@precio);",
+                                    P("@id", id), P("@orden", ++orden), P("@concepto", "Adicional transporte " + l.Referencia),
+                                    P("@desc", descripcion), P("@precio", l.Adicionales), P("@iva", IvaPct));
                         }
 
                         // Al generar, la copia de los datos del cliente queda fija con su ficha de este momento.

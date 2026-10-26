@@ -89,7 +89,7 @@
     { id: 'kmchofer', tema: 'choferes', titulo: 'Km por chofer', tipo: 'grafico', w: 6, tw: 12, h: 5, minH: 4, cuerpo: '<div id="grafico-choferes"></div>' },
 
     // ---- Facturación (cuenta corriente, de solo lectura)
-    { id: 'costo', tema: 'facturacion', titulo: 'Costo por viaje', icono: 'bi-currency-dollar text-info', tipo: 'kpi', w: 3, h: 2, minH: 2, cuerpo: kpi('costo-promedio-texto').replace('id="costo-promedio-texto-detalle"', 'id="costo-detalle"') },
+    { id: 'costo', tema: 'facturacion', titulo: 'Importe promedio por viaje', icono: 'bi-currency-dollar text-info', tipo: 'kpi', w: 3, h: 2, minH: 2, cuerpo: kpi('costo-promedio-texto').replace('id="costo-promedio-texto-detalle"', 'id="costo-detalle"') },
     { id: 'topclientes', tema: 'facturacion', titulo: 'Top clientes en facturación', alcance: 'Histórico', tipo: 'lista', w: 6, h: 5, minH: 3, sinRelleno: true, cuerpo: cargandoLista('top-clientes-list') },
     // Nuevos (24/10): deuda vencida por cliente y facturación por cliente y por mes (mapa de calor).
     {

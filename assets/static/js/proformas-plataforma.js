@@ -23,7 +23,8 @@
 
   function $id(id) { return document.getElementById(id); }
   function esc(v) { return window.SGTL ? SGTL.escapar(v) : String(v == null ? '' : v); }
-  function pesos(v) { return window.SGTL ? SGTL.monto(v, { sinDecimales: true }) : String(v); }
+  // Con centavos, como en la proforma y la factura: sin ellos parecía que no cuadraba (mejora 10 del juego de demo, 25/10).
+  function pesos(v) { return window.SGTL ? SGTL.monto(v) : String(v); }
   function monto(v) { return window.SGTL ? SGTL.monto(v) : String(v); }
   function fecha(v, opciones) { return v && window.SGTL ? SGTL.fecha(v, opciones) : ''; }
   function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
