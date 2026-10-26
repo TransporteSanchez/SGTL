@@ -12,7 +12,7 @@
         }
 
         /* Las dos listas de asignación conservan un alto manejable en escritorio y celular. */
-        .lista-usuarios-grupo { max-height: 360px; overflow-y: auto; }
+        .lista-usuarios-grupo { max-height: clamp(150px, 20vh, 200px); overflow-y: auto; }
 
     </style>
 
@@ -140,23 +140,31 @@
                                 </div>
 
                                 <div class="tab-pane fade" id="pane-usuarios" role="tabpanel" aria-labelledby="tab-usuarios">
-                                    <div class="row g-3 align-items-end">
+                                    <div class="row g-2 align-items-end">
                                         <div class="col-12 col-md-6 col-lg-4">
                                             <label for="selectGrupoUsuarios" class="form-label">Grupo</label>
                                             <select id="selectGrupoUsuarios" class="form-select"></select>
                                         </div>
+                                        <div class="col-12 col-md-6 col-lg-8 d-flex flex-wrap justify-content-end align-items-center gap-2">
+                                            <span id="resumenUsuariosGrupo" class="form-text mb-0" aria-live="polite"></span>
+                                            <button type="button" class="btn btn-light-secondary" id="btnDeshacerUsuariosGrupo" disabled>Deshacer cambios</button>
+                                            <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Guardar</button>
+                                        </div>
                                     </div>
-                                    <p class="form-text mt-3 mb-2">Agregá o quitá usuarios del grupo y guardá los cambios. Las acciones para todos se aplican solo a los resultados de la búsqueda de cada lista. Los administradores ya tienen acceso por su rol y no necesitan pertenecer a un grupo.</p>
-                                    <section id="contenedorUsuariosGrupo" class="sgtl-bloque mt-4">
+                                    <p class="form-text mt-2 mb-1">Agregá o quitá usuarios y guardá. Los botones “Todos” afectan solo los resultados de cada búsqueda. Los administradores ya tienen acceso por su rol.</p>
+                                    <section id="contenedorUsuariosGrupo" class="sgtl-bloque mt-2">
                                         <div class="sgtl-bloque-titulo">Asignación de usuarios</div>
                                         <p id="estadoCargaUsuariosGrupo" class="text-muted mb-0" role="status" aria-live="polite">Cargando…</p>
                                         <button type="button" class="btn btn-light mt-2 d-none" id="btnReintentarUsuariosGrupo">Reintentar</button>
                                         <div id="listasUsuariosGrupo" class="d-none">
-                                            <div class="row g-3">
+                                            <div class="row g-2">
                                                 <div class="col-12 col-lg-6">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <span class="form-label d-block">Usuarios disponibles</span>
-                                                        <form id="buscarDisponiblesGrupoForm" class="row g-2 align-items-end mb-3" novalidate>
+                                                    <div class="border rounded p-2 h-100">
+                                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                            <span class="form-label mb-0">Usuarios disponibles</span>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarVisiblesGrupo" disabled>Agregar todos</button>
+                                                        </div>
+                                                        <form id="buscarDisponiblesGrupoForm" class="row g-2 align-items-end mb-2" novalidate>
                                                             <div class="col">
                                                                 <label for="buscarDisponiblesGrupo" class="form-label">Buscar usuario disponible</label>
                                                                 <input id="buscarDisponiblesGrupo" type="text" class="form-control" placeholder="Usuario, nombre o apellido" autocomplete="off">
@@ -168,15 +176,15 @@
                                                         <div class="lista-usuarios-grupo border rounded" role="region" aria-label="Usuarios disponibles">
                                                             <ul id="listaUsuariosDisponiblesGrupo" class="list-group list-group-flush mb-0"></ul>
                                                         </div>
-                                                        <div class="d-flex justify-content-end mt-3">
-                                                            <button type="button" class="btn btn-outline-primary" id="btnAgregarVisiblesGrupo" disabled><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar todos los visibles</button>
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div class="col-12 col-lg-6">
-                                                    <div class="border rounded p-3 h-100">
-                                                        <span class="form-label d-block">Usuarios asignados</span>
-                                                        <form id="buscarAsignadosGrupoForm" class="row g-2 align-items-end mb-3" novalidate>
+                                                    <div class="border rounded p-2 h-100">
+                                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                            <span class="form-label mb-0">Usuarios asignados</span>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnQuitarVisiblesGrupo" disabled>Quitar todos</button>
+                                                        </div>
+                                                        <form id="buscarAsignadosGrupoForm" class="row g-2 align-items-end mb-2" novalidate>
                                                             <div class="col">
                                                                 <label for="buscarAsignadosGrupo" class="form-label">Buscar usuario asignado</label>
                                                                 <input id="buscarAsignadosGrupo" type="text" class="form-control" placeholder="Usuario, nombre o apellido" autocomplete="off">
@@ -188,17 +196,7 @@
                                                         <div class="lista-usuarios-grupo border rounded" role="region" aria-label="Usuarios asignados">
                                                             <ul id="listaUsuariosAsignadosGrupo" class="list-group list-group-flush mb-0"></ul>
                                                         </div>
-                                                        <div class="d-flex justify-content-end mt-3">
-                                                            <button type="button" class="btn btn-outline-danger" id="btnQuitarVisiblesGrupo" disabled><i class="bi bi-dash-lg me-1" aria-hidden="true"></i>Quitar todos los visibles</button>
-                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
-                                                <span id="resumenUsuariosGrupo" class="form-text mb-0" aria-live="polite"></span>
-                                                <div class="d-flex flex-wrap gap-2">
-                                                    <button type="button" class="btn btn-light-secondary" id="btnDeshacerUsuariosGrupo" disabled>Deshacer cambios</button>
-                                                    <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Guardar</button>
                                                 </div>
                                             </div>
                                         </div>

@@ -804,7 +804,7 @@ Tres commits de Facu (`a9a9d4c`, `e64d127`, `e701a4f`) sobre nuestro `ec177a1`. 
 - [ ] Cuenta corriente: emitir un recibo y un comprobante → el modal se cierra y aparece el toast "Se generó el Recibo …" / "Se generó la Factura …".
 - [ ] Cuenta corriente con "Solo pendientes": un recibo sin imputar aparece al final como "Sin imputar"; al abrir una factura, las aplicaciones de recibos y NC se ven en celeste.
 - [ ] Grupos y permisos → Permisos: los permisos salen en tarjetas por menú (General, Choferes, …); la casilla del menú marca y desmarca todo, y queda a medias si hay algunos. Guardar y volver a elegir el grupo.
-- [ ] Grupos y permisos → Usuarios: elegí un grupo, buscá en Disponibles y usá "Agregar todos los visibles"; comprobá que los ocultos por el filtro no se mueven. Repetí con "Quitar todos los visibles" en Asignados. Deshacé y repetí con acciones individuales; Guardar debe conservar los cambios al volver a elegir el grupo. Un usuario cuyo único grupo es el elegido debe mostrar Quitar deshabilitado con el motivo. Los administradores no aparecen en las listas.
+- [ ] Grupos y permisos → Usuarios: elegí un grupo, buscá en Disponibles y usá "Agregar todos"; comprobá que los ocultos por el filtro no se mueven. Repetí con "Quitar todos" en Asignados. Deshacé y repetí con acciones individuales; Guardar debe conservar los cambios al volver a elegir el grupo. Un usuario cuyo único grupo es el elegido debe mostrar Quitar deshabilitado con el motivo. Los administradores no aparecen en las listas.
 - [ ] Un usuario (no admin) de un grupo con Gestión de viajes sigue viendo Presupuestos (después del script).
 - [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada test de `tests/` (tienen que imprimir `OK`).
 
