@@ -108,14 +108,13 @@
                                         <table class="table table-striped table-hover" id="tablaGrupos">
                                             <thead>
                                                 <tr>
-                                                    <th>ID</th>
                                                     <th>Grupo</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="3" class="text-center text-muted py-4">Cargando…</td>
+                                                    <td colspan="2" class="text-center text-muted py-4">Cargando…</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -354,11 +353,10 @@
             currentPage = Math.min(page, paginas);
             const visibles = filas.slice((currentPage - 1) * pageSize, currentPage * pageSize);
             if (!visibles.length) {
-                SGTL.tabla.vacia(tbody, 3, $('#filtroGrupo').val().trim() ? undefined : 'Todavía no hay grupos cargados.');
+                SGTL.tabla.vacia(tbody, 2, $('#filtroGrupo').val().trim() ? undefined : 'Todavía no hay grupos cargados.');
             } else {
                 SGTL.tabla.llenar(tbody, visibles.map(function (g) {
                     return `<tr>
-                        <td>${SGTL.escapar(g.Grupo_ID)}</td>
                         <td>${SGTL.escapar(g.Grupo_Nombre)}</td>
                         <td class="text-center">${SGTL.accionesFila([
                             SGTL.botonFila('editar', { id: g.Grupo_ID }),
@@ -377,14 +375,14 @@
         }
 
         function cargarGrupos() {
-            SGTL.tabla.cargando('#tablaGrupos tbody', 3);
+            SGTL.tabla.cargando('#tablaGrupos tbody', 2);
             return SGTL.ajax({ url: API + '/Grupos', type: 'GET' },
                 'No se pudieron cargar los grupos. Revisá la conexión y probá de nuevo.').then(function (data) {
                     gruposCache = Array.isArray(data) ? data : [];
                     dibujarGrupos(currentPage);
                     cargarCombosGrupos();
                 }, function (error) {
-                    SGTL.tabla.vacia('#tablaGrupos tbody', 3, 'No se pudieron cargar los grupos.');
+                    SGTL.tabla.vacia('#tablaGrupos tbody', 2, 'No se pudieron cargar los grupos.');
                     SGTL.tabla.paginacion('#pagination', { total: 0 });
                     SGTL.toastError(error.mensajeUsuario);
                 });
@@ -528,7 +526,7 @@
         function crearHtmlPermisos(gruposMenu) {
             return '<div class="row g-3">' + gruposMenu.map(function (grupo, indice) {
                 const idGrupo = 'grupo_menu_' + indice;
-                return `<div class="col-12 col-md-6 col-xl-4">
+                return `<div class="col-12 col-md-6 col-xl-3">
                     <div class="card border h-100 mb-0 grupo-permisos">
                         <div class="card-header py-2">
                             <div class="form-check mb-0">
