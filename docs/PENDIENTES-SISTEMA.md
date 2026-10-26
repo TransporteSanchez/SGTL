@@ -3474,7 +3474,8 @@ en una pasada corta al principio de la tanda siguiente.
 (avance directo, sin commits propios de ellos desde el 23/10), sin esperar todas las tandas: la base ya tiene los scripts
 del 24 y 25/10 y el código anterior no funciona contra ella (las tarifas viejas quedaron vacías). Facu (cambiar
 "factura" por "comprobante") y Fede (recupero de clave por WhatsApp y "Reenviar WhatsApp" en viajes) trabajan desde ahí.
-`main` se actualiza cuando terminen las tandas 3 a 5 (a `main` pasa solo lo probado).
+`main` se actualiza cuando terminen las tandas 3 a 5 (a `main` pasa solo lo probado). **Otra vez al día el 25/10 a la
+noche**, con la limpieza de la facturación de prueba, el juego de demo y sus arreglos: desde ahí avanzan los dos.
 
 | Orden | Tanda | Qué | Pasos | Antes de probar |
 |---|---|---|---|---|
