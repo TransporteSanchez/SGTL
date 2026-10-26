@@ -46,7 +46,7 @@ async function ejecutarPrueba() {
     const elementos = {};
     [
         'modalFacturarProforma', 'facProformaNumero', 'facTotal', 'facFechaEmision', 'facFechaVencimiento',
-        'facObservaciones', 'facResultado', 'btnConfirmarFactura', 'facFormulario', 'facTipoComprobante',
+        'facObservaciones', 'facResultado', 'btnConfirmarFactura', 'btnCerrarFacturarProforma', 'facFormulario', 'facTipoComprobante',
         'facNumeroComprobante', 'facLetra', 'facSucursal', 'facMensaje', 'facImprimirFactura', 'facDescargarFactura'
     ].forEach(function (id) { elementos[id] = crearElemento(); });
 
@@ -110,13 +110,20 @@ async function ejecutarPrueba() {
 
     assert.match(modalMarkup, /modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario/,
         'la Factura desde proforma debe usar el mismo tamaño visible que el formulario de Recibo');
-    assert.match(modalMarkup, />Emitir factura<\/h5>/,
-        'la ventana se titula como el botón que la abre en proformas, "Emitir factura" (§6.1)');
+    assert.match(modalMarkup, />Emitir comprobante<\/h5>/,
+        'la ventana se titula como la acción que la abre en proformas, "Emitir comprobante" (§6.1)');
+    assert.match(modalMarkup, /id="btnConfirmarFactura"[^>]*>[\s\S]*?Emitir comprobante<\/button>/,
+        'el botón del formulario debe decir "Emitir comprobante"');
+    assert.match(modalMarkup, /id="btnCerrarFacturarProforma"[^>]*>Cancelar<\/button>/,
+        'antes de emitir, el formulario ofrece Cancelar');
+    assert.strictEqual(elementos.btnCerrarFacturarProforma.textContent, 'Cancelar');
 
     assert.strictEqual(elementos.facFechaVencimiento.value, '2026-10-30',
         'la factura desde proforma debe sugerir vencimiento a los 10 días de la emisión. Mensaje: ' + elementos.facMensaje.textContent);
     elementos.btnConfirmarFactura.listeners.click();
     await esperarMicrotareas();
+    assert.strictEqual(elementos.btnCerrarFacturarProforma.textContent, 'Cerrar',
+        'después de emitir, el formulario de solo lectura ofrece Cerrar');
 
     const emision = solicitudes.filter(function (solicitud) { return solicitud.opciones.method === 'POST'; })[0];
     assert.ok(emision, 'debe enviar la emisión de la factura');
@@ -205,9 +212,32 @@ function probarObservacionesUnificadasEnProforma() {
         'no debe enviar las condiciones particulares retiradas');
 }
 
+function probarAccionEmitirComprobante() {
+    const ui = fs.readFileSync(path.join(__dirname, '..', 'assets', 'static', 'js', 'sgtl-ui.js'), 'utf8');
+    ['gestion-facturacion.html', 'listado-facturas.html'].forEach(function (pantalla) {
+        const fuente = fs.readFileSync(path.join(__dirname, '..', pantalla), 'utf8');
+        const sandbox = { window: {}, document: {
+            addEventListener: function () {},
+            documentElement: { hasAttribute: function () { return false; }, setAttribute: function () {} }
+        } };
+        vm.runInNewContext(ui, sandbox, { filename: 'sgtl-ui.js' });
+        sandbox.SGTL = sandbox.window.SGTL;
+        vm.runInNewContext(extraerFuncion(fuente, 'accionesProforma'), sandbox, { filename: pantalla });
+
+        const habilitada = sandbox.accionesProforma({ Proforma_ID: 7, Estado: 'Aceptada' });
+        assert.match(habilitada, /title="Emitir comprobante" aria-label="Emitir comprobante"/,
+            pantalla + ': el tooltip y el lector de pantalla deben nombrar la acción nueva');
+
+        const terminada = sandbox.accionesProforma({ Proforma_ID: 7, Estado: 'Aceptada', FacturaID: 8, FacturaNumero: 'FAC-00000012' });
+        assert.match(terminada, /title="No se puede emitir el comprobante: ya se emitió FAC-00000012"/,
+            pantalla + ': la acción deshabilitada debe explicar el motivo con el nuevo nombre');
+    });
+}
+
 ejecutarPrueba().then(function () {
     probarConceptoObligatorioEnProforma();
     probarObservacionesUnificadasEnProforma();
+    probarAccionEmitirComprobante();
     console.log('OK: facturación desde proforma');
 }).catch(function (error) {
     console.error(error.stack || error);

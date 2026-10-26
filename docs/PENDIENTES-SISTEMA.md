@@ -965,25 +965,25 @@ funcionando (`sgtl-ui.js`).
 22/10):** Registrar proforma en verde, Exportar solo ícono, filtros en una fila con su cruz y sin Limpiar, un solo
 filtro "Fecha" (Desde y hasta) en lugar de Desde / Hasta en AAAA-MM-DD, sin el contador "N resultados" aparte.
 Acciones de cada fila con los botones del design system, en el mismo orden y deshabilitadas con el motivo cuando
-no aplican: ver, editar, PDF, siguiente paso (Marcar aceptada → Emitir factura) y anular / eliminar. Los 14 + 5
+no aplican: ver, editar, PDF, siguiente paso (Marcar aceptada → Emitir comprobante) y anular / eliminar. Los 14 + 5
 `alert()` / `confirm()` y los modales propios ("Operación realizada", "Confirmar eliminación", "Cambiar estado")
 pasan a los avisos y la confirmación del sistema. Fechas del modal (período, carga, entrega) en DD/MM/AAAA con
-calendario (siguen guardando AAAA-MM-DD). Modales "Emitir factura" y "Anular factura": calendario del sistema,
+calendario (siguen guardando AAAA-MM-DD). Modales "Emitir comprobante" y "Anular factura": calendario del sistema,
 textos con mayúscula solo al principio y con tildes. PDF: errores con el aviso del sistema.
 - [ ] Gestionar proformas: cada fila muestra 5 botones; en un borrador, Editar y Eliminar habilitados y el siguiente
   paso deshabilitado ("Primero generá la proforma"); en una Generada, Marcar aceptada → confirmación → toast.
-- [ ] Una Aceptada → Emitir factura: modal "Emitir factura", fechas DD/MM/AAAA, vencimiento a 10 días. **Solo con
+- [ ] Una Aceptada → Emitir comprobante: modal "Emitir comprobante", fechas DD/MM/AAAA, vencimiento a 10 días. **Solo con
   datos de prueba: consume numeración real.**
 - [ ] Anular una proforma Generada: confirmación con el texto de qué pasa → toast "Proforma anulada.".
 - [ ] Eliminar un borrador: confirmación → toast "Borrador eliminado.".
 - [ ] Registrar proforma: guardar sin cliente → aviso rojo dentro del modal; fechas con calendario.
 - [ ] Proforma de Rukas (cliente con plataforma): el período se ve en DD/MM/AAAA después de importar el Excel.
 - [ ] Filtro Fecha: elegir un rango busca; la cruz lo borra. Exportar (ícono) abre el modal de Excel / PDF.
-- [ ] Listar proformas: ver, PDF y Emitir factura (solo en Aceptadas); el detalle se titula "Ver proforma …".
+- [ ] Listar proformas: ver, PDF y Emitir comprobante (solo en Aceptadas); el detalle se titula "Ver proforma …".
 
 **Cuenta corriente (commit "Cuenta corriente: design system en la pantalla y sus modales", pantalla de Facu, con
-el OK de Rocío del 22/10):** encabezado con Exportar solo ícono, "Emitir comprobante" gris (con "Emitir factura
-directa", "Emitir nota de crédito", etc.) y "Registrar recibo" en verde. Filtros con su cruz y sin Limpiar; un solo
+el OK de Rocío del 22/10):** encabezado con Exportar solo ícono, "Emitir comprobante" gris (con "Emitir comprobante
+directo", "Emitir comprobante desde proforma", "Emitir crédito" y "Emitir Débito") y "Registrar recibo" en verde. Filtros con su cruz y sin Limpiar; un solo
 filtro "Fecha" (Desde y hasta, entra con los últimos 30 días; la cruz lo deja sin límite) en lugar de los dos
 `type="date"`; Buscar gris. Tabla rayada, fechas y estado centrados, estados con las etiquetas del sistema (§4),
 ojo gris de "Ver detalle" y Acciones fija a la derecha. Sin el modo oscuro suelto (§10). Los `prompt()`, `confirm()`
@@ -1007,7 +1007,7 @@ También: el paginador compartido no se ocultaba sin resultados en ninguna panta
 - [ ] Ojo de un recibo emitido → Anular recibo: confirmación encima del detalle con "Motivo de la anulación";
   Anular sin motivo → "Completá el motivo."; con motivo → toast "Recibo anulado." (solo datos de prueba).
 - [ ] Un recibo anulado → Eliminar recibo: confirmación → toast "Recibo eliminado." (solo datos de prueba).
-- [ ] Emitir comprobante → Emitir nota de crédito: título y botón dicen "Emitir nota de crédito"; sin cliente, la
+- [ ] Emitir comprobante → Emitir crédito: título y botón dicen "Emitir crédito"; sin cliente, la
   factura relacionada dice "Seleccioná un cliente primero".
 - [ ] Ojo de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
   y avisa "Comprobante enviado a …" (con un correo de prueba).
@@ -1382,14 +1382,14 @@ pudo compilar en la Mac.**
   motivo; en un recibo emitido, los cuatro activos; en uno anulado, Eliminar en lugar de Anular. Mismo lugar en todas
   las filas, también en las aplicaciones desplegadas.
 - [ ] El ojo de una factura, una NC y un recibo → la vista completa en solo lectura ("Ver factura FAC-…"), fechas
-  DD/MM/AAAA, solo Cerrar. Después, "Emitir factura directa" abre el formulario vacío y editable.
+  DD/MM/AAAA, solo Cerrar. Después, "Emitir comprobante directo" abre el formulario vacío y editable.
 - [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; "Enviar por
   e-mail" cierra el PDF y abre el envío.
 - [ ] Editar recibo desde la fila → abre el recibo. Anular → confirmación del sistema con motivo → "Recibo anulado.".
   Eliminar uno anulado → "Recibo eliminado.".
 - [ ] Registrar recibo de un cliente de prueba con varias facturas: importe 500000 → al salir del campo "500.000,00";
   Distribuir → reparte desde la que vence primero; se puede corregir a mano.
-- [ ] Emitir nota de crédito → grilla de facturas con saldo e importe total; Distribuir y emitir sobre dos facturas → baja
+- [ ] Emitir crédito → grilla de facturas con saldo e importe total; Distribuir y emitir sobre dos facturas → baja
   el saldo de las dos. La NC que anula la factura de una proforma sigue como antes (una factura, por el total).
 - [ ] Menú lateral en Cuenta corriente y Gestionar tipos de comprobante: tocar "Choferes" abre el submenú y otra vez lo
   cierra (es el mismo punto de §20).
@@ -1401,7 +1401,7 @@ pudo compilar en la Mac.**
 - [ ] Proforma propia y de Rukas: Condiciones comerciales con Forma de pago, Plazo, Validez y Observaciones; guardar y
   ver el PDF. Una proforma vieja con observaciones comerciales las muestra en Observaciones.
 - [ ] PDF de una factura de varias proformas: lista las proformas.
-- [ ] Emitir factura desde una proforma: ventana extra grande con el título "Emitir factura".
+- [ ] Emitir comprobante desde una proforma: ventana extra grande con el título "Emitir comprobante".
 - [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada archivo de `tests/` (tienen que imprimir `OK`).
 - [ ] PowerShell: `tests/contrasenas-seguras.test.ps1` (hash y verificación de contraseñas).
 
@@ -3619,7 +3619,7 @@ cierren las pruebas de la §39**, antes que lo demás.
   - Del juego de demo (25/10, `docs/pruebas/2026-10-25-demo-facturacion.md`): F1, "Ver la cuenta corriente del cliente"
     (`?clienteId=`) no filtra por el cliente ni lo elige en Registrar recibo; confirmación con `SGTL.confirmar` al generar
     una proforma propia (la de Rukas ya la tiene); la nota de crédito, que se pueda escribir el neto; "Factura emitida:
-    FAC-…" arriba y el modal de emitir con `data-bs-backdrop="static"`, "Cancelar" + "Emitir factura" y lo fijo como texto;
+    FAC-…" arriba y el modal de emitir con `data-bs-backdrop="static"`, "Cancelar" + "Emitir comprobante" y lo fijo como texto;
     el aviso de "Traer viajes" con el éxito aparte y la lista ordenada; en cuenta corriente, "—" en el saldo de las filas
     aplicadas; "Ver" de los comprobantes como detalle (§6.2); campos fijos como texto en recibo y nota de crédito (§6.3);
     sin `type="number"` en el detalle de la proforma (§7.3); el CUIT del selector de clientes con el mismo formato en

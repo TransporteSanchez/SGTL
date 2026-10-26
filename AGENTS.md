@@ -48,7 +48,7 @@ AGENTS.md"):
    Descargar PDF. "Enviar por e-mail" va ahí, no como botón de la fila. **El ojo** de un documento lo abre
    completo, en solo lectura. (§1.4)
 3. **Verbos en infinitivo:** el botón que abre un modal y el título del modal dicen lo mismo ("Registrar
-   recibo", "Emitir factura directa"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
+   recibo", "Emitir comprobante directo"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
    empiezan con verbo ("Gestionar…", "Listar…") y el título de la pantalla es igual a la opción. (§3.1, §6.1)
 4. **Pie de los modales:** Cancelar + el verbo ("Guardar", "Eliminar", "Emitir recibo"). **Nunca
    "Confirmar".** Los formularios llevan `data-bs-backdrop="static"`; los de detalle, solo "Cerrar", armados con los
@@ -64,7 +64,7 @@ AGENTS.md"):
 8. **Textos:** voseo ("Completá", "Seleccioná", "Probá de nuevo"), **mayúscula solo al principio** (también
    "la factura", "el recibo", "la nota de crédito", "la proforma" dentro de un texto), títulos y botones sin
    punto, mensajes con punto, sin inglés a la vista, "km" en minúscula y sin "s" ("130 km", §7.3). **Nunca un error
-   técnico** en pantalla ni en los mensajes de la API. (§9)
+   técnico** en pantalla ni en los mensajes de la API. Excepción: "Emitir Débito" en Cuenta corriente. (§9)
 9. **Estados con `SGTL.estado`** (etiqueta de color según su significado); no inventes colores. Lo que acompaña al
    estado en una tabla (en qué proforma está, qué falta resolver) va en el ícono que abre un globito
    (`SGTL.botonInfo`), no en más etiquetas. (§4)

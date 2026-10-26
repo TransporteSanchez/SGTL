@@ -652,7 +652,7 @@
         }
         var proformasPagina = {};
         function nombreProforma(x) { return x.Numero ? 'la proforma ' + x.Numero : 'el borrador #' + x.Proforma_ID; }
-        // Orden de §1.4: ver, editar, PDF, siguiente paso (marcar aceptada → emitir factura), anular o eliminar.
+        // Orden de §1.4: ver, editar, PDF, siguiente paso (marcar aceptada → emitir comprobante), anular o eliminar.
         // Deshabilitados con "No se puede {acción}: {qué le pasa a la proforma}" (§1.4).
         function accionesProforma(x) {
             var estado = x.Estado || '';
@@ -663,9 +663,9 @@
                     motivo: 'No se puede editar la proforma: ' + (estado === 'Anulada' ? 'está anulada' : 'ya se generó') }),
                 SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' })
             ];
-            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') }));
+            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir el comprobante: ya se emitió ' + (x.FacturaNumero || '') }));
             else if (estado === 'Generada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Marcar aceptada', icono: 'bi-check2-circle', datos: { paso: 'aceptar' } }));
-            else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
+            else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir comprobante', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
             else botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check2-circle', deshabilitado: true,
                 motivo: 'No se puede marcar como aceptada: la proforma ' + (estado === 'Borrador' ? 'todavía es un borrador' : 'está ' + estado.toLowerCase()) }));
             if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular factura', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));

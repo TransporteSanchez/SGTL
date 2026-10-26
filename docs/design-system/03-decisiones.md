@@ -102,7 +102,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
-| Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
+| Siguiente paso del circuito (Marcar aceptada, Emitir comprobante, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
@@ -124,9 +124,9 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   **"No se puede {acción} {sobre qué}: {qué le pasa a esta fila}"**, por ejemplo "No se puede eliminar el chofer: está activo".
 
   - **"No se puede" va primero:** se entiende de entrada que la acción no se va a poder hacer.
-  - **La acción, con el verbo del botón y su objeto** ("eliminar el chofer", "emitir la factura", "cambiar el
+  - **La acción, con el verbo del botón y su objeto** ("eliminar el chofer", "emitir el comprobante", "cambiar el
     estado"): muchos botones son solo un ícono y la frase tiene que decir qué hacen. En el lugar del siguiente paso,
-    aunque el circuito ya terminó, se nombra la acción de su ícono ("No se puede emitir la factura: ya se emitió
+    aunque el circuito ya terminó, se nombra la acción de su ícono ("No se puede emitir el comprobante: ya se emitió
     FAC-00000012"); nunca un motivo suelto como "Primero generá la proforma" o "Sin pasos pendientes".
   - **El porqué dice qué le pasa a esa fila** (su estado, el documento en el que está, lo que le falta), no la regla
     general: "está activo", no "solo se eliminan los inactivos". Solo cuando el motivo es el tipo de la fila se dice
@@ -144,7 +144,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Choferes, camiones | No se puede eliminar el chofer: está activo |
 | Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado |
-| Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
+| Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir el comprobante: la proforma todavía no está aceptada |
 | Proforma de Rukas (pie) | No se puede generar la proforma: hay 3 diferencias sin resolver |
 | Presupuestos | No se puede generar el viaje: el presupuesto todavía no está aceptado |
 | Cuenta corriente | No se puede editar el recibo: está anulado · No se puede anular la factura: se corrige con una nota de crédito |
@@ -152,7 +152,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Cambiar estado** (banderita, desde el 22/10): **mismo ícono, mismo color, mismo significado en todo el
   sistema.** Es gris porque es una acción de gestión: abre una ventana para elegir entre varios estados (para
   adelante, para atrás o rechazado). El **verde** queda solo para el paso puntual del circuito que se hace con un
-  clic (Marcar aceptada, Emitir factura, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
+  clic (Marcar aceptada, Emitir comprobante, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
   Abre siempre la misma ventana "Cambiar estado del … #N" (`SGTL.opcionesEstado`): resumen, estado actual y
   los estados a los que puede pasar como tarjetas, cada una con su explicación; Cancelar + Guardar; si no se
   elige ninguno, "Elegí el estado nuevo.". Una tarjeta que no se puede elegir aparece gris con el motivo en rojo
@@ -163,7 +163,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   elegir un estado es opcional: volver a tocar la tarjeta elegida la desmarca. Si la fila no admite cambios
   (facturado, en una proforma emitida), la banderita queda deshabilitada con el motivo.
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
-  aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
+  aceptada → Emitir comprobante). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.
 - No se usan: la "i" azul ni "Más detalles" (es el ojo), las flechas, el muñequito amarillo ni "Inactivar"
   con texto (es el interruptor o el siguiente paso, según corresponda).
@@ -450,14 +450,14 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 | Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tabla de tarifas", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
 | Editar (tooltip y título del modal) | "Editar camión" |
 | Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión"; en un documento, "Ver factura FAC-00000012" (§1.4) |
-| Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir factura directa", "Emitir factura desde proforma", "Emitir nota de crédito", "Emitir nota de débito"; el título de la ventana es la opción elegida; el pie, "Emitir factura" / "Emitir nota de crédito" |
+| Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir comprobante directo", "Emitir comprobante desde proforma", "Emitir crédito", "Emitir Débito". Directo, crédito y débito abren formularios con ese mismo título y botón principal; desde proforma lleva a Gestionar proformas, cuya acción y ventana dicen "Emitir comprobante" |
 | Pie de los modales | "Cancelar", "Guardar", "Eliminar", "Generar", "Emitir recibo", "Cerrar" |
-| Acciones de la fila | "Inactivar", "Activar", "Ver PDF", "Editar recibo", "Anular recibo", "Marcar como aceptada", "Emitir factura", "Exportar" |
+| Acciones de la fila | "Inactivar", "Activar", "Ver PDF", "Editar recibo", "Anular recibo", "Marcar como aceptada", "Emitir comprobante", "Exportar" |
 | Confirmación | "¿Eliminar el camión ABC123?" |
 
 - "Registrar proforma" crea el borrador; "Generar" le asigna el número. "Registrar recibo" abre el
-  formulario; el botón del pie es "Emitir recibo". "Emitir factura" (siguiente paso de una proforma) abre la
-  ventana "Emitir factura".
+  formulario; el botón del pie es "Emitir recibo". "Emitir comprobante" (siguiente paso de una proforma) abre la
+  ventana "Emitir comprobante".
 - **Nada de sustantivos solos en botones ni títulos** ("Recibo", "Factura directa", "Tipos de comprobantes") ni
   de "Nuevo…" / "Nueva…".
 
@@ -631,7 +631,8 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Mayúscula solo al principio** ("Cuenta corriente de clientes", "Cambiar contraseña") y con
   tildes ("Razón social", "Sánchez", "Ocurrió"). **Los documentos van en minúscula dentro de un texto:** "la
   factura", "el recibo", "la nota de crédito", "la proforma", "el presupuesto" (no "la Factura" ni "la Nota de
-  Crédito").
+  Crédito"). La acción "Emitir Débito" de Cuenta corriente conserva la mayúscula pedida el 26/10,
+  también en el título y el botón del formulario.
 - **Títulos, botones y etiquetas sin punto final; los mensajes, con punto.**
 - **Sin inglés a la vista:** "Alta" (no "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp:
   "Token de acceso" e "ID del número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la

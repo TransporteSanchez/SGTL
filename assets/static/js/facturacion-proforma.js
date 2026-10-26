@@ -98,9 +98,9 @@
         if (porId('modalFacturarProforma')) return;
         var contenedor = document.createElement('div');
         contenedor.innerHTML =
-            '<div class="modal fade" id="modalFacturarProforma" tabindex="-1" aria-hidden="true">' +
+            '<div class="modal fade" id="modalFacturarProforma" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">' +
                 '<div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario"><div class="modal-content">' +
-                    '<div class="modal-header"><div><h5 class="modal-title mb-0">Emitir factura</h5>' +
+                    '<div class="modal-header"><div><h5 class="modal-title mb-0">Emitir comprobante</h5>' +
                         '<small class="text-muted" id="facProformaNumero">Comprobando disponibilidad…</small></div>' +
                         '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +
                     '<div class="modal-body">' +
@@ -125,9 +125,9 @@
                         '</div>' +
                         '<div id="facResultado" class="alert alert-success mt-3 d-none"></div>' +
                     '</div>' +
-                    '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>' +
+                    '<div class="modal-footer"><button type="button" class="btn btn-light-secondary" id="btnCerrarFacturarProforma" data-bs-dismiss="modal">Cancelar</button>' +
                         '<button type="button" class="btn btn-primary" id="btnConfirmarFactura" disabled>' +
-                            '<i class="bi bi-receipt me-1"></i>Emitir factura</button></div>' +
+                            '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Emitir comprobante</button></div>' +
                 '</div></div>' +
             '</div>';
         document.body.appendChild(contenedor.firstElementChild);
@@ -176,6 +176,7 @@
         porId('facResultado').textContent = '';
         porId('btnConfirmarFactura').disabled = true;
         porId('btnConfirmarFactura').classList.remove('d-none');
+        porId('btnCerrarFacturarProforma').textContent = 'Cancelar';
         porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         porId('facTipoComprobante').readOnly = true;
         porId('facNumeroComprobante').readOnly = true;
@@ -256,7 +257,7 @@
             method: 'POST', headers: encabezados(true), body: JSON.stringify(solicitud)
         }).then(leerRespuesta).then(function (respuesta) {
             estado.enviando = false;
-            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir factura';
+            boton.innerHTML = '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Emitir comprobante';
             if (!respuesta.ok) {
                 boton.disabled = false;
                 mostrarMensaje(mensajeError(respuesta, 'No se pudo emitir la factura.'),
@@ -267,6 +268,7 @@
             mostrarMensaje('Factura emitida.', 'success');
             porId('facFormulario').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = true; });
             boton.classList.add('d-none');
+            porId('btnCerrarFacturarProforma').textContent = 'Cerrar';
             var resultado = porId('facResultado');
             resultado.classList.remove('d-none');
             resultado.innerHTML = '<strong>' + String(factura.Numero || 'Factura emitida') + '</strong> · ' +
@@ -288,7 +290,7 @@
         }).catch(function () {
             estado.enviando = false;
             boton.disabled = false;
-            boton.innerHTML = '<i class="bi bi-receipt me-1"></i>Emitir factura';
+            boton.innerHTML = '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Emitir comprobante';
             mostrarMensaje('No se pudo emitir por un problema de conexión. Podés reintentar: la factura no se duplica.', 'danger');
         });
     }

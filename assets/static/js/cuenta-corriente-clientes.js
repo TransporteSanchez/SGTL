@@ -1163,6 +1163,11 @@
         if (tipo === 'NC') return 'nota de crédito';
         return 'nota de débito';
     }
+    function nombreAccionEmision(tipo) {
+        if (tipo === 'FAC') return 'Emitir comprobante directo';
+        if (tipo === 'NC') return 'Emitir crédito';
+        return 'Emitir Débito';
+    }
     function recalcularComprobante() {
         if (comprobanteTipo === 'NC') return actualizarResumenNotaCredito();
         var neto = centavos(porId('cmpNeto').value);
@@ -1376,7 +1381,8 @@
         comprobanteTipo = tipo;
         comprobanteOperacion = nuevaClave();
         var hoy = hoyIso();
-        porId('cmpTitulo').textContent = tipo === 'FAC' ? 'Emitir factura directa' : 'Emitir ' + nombreTipoComprobante(tipo);
+        var nombreAccion = nombreAccionEmision(tipo);
+        porId('cmpTitulo').textContent = nombreAccion;
         poblarClientesComprobante(cliente && cliente.ClienteID);
         ponerFecha('cmpFechaEmision', hoy); limitarFecha('cmpFechaEmision', 'maxDate', hoy);
         vencimientoComprobanteEditado = false;
@@ -1411,7 +1417,7 @@
         var boton = porId('btnEmitirComprobante');
         boton.classList.remove('d-none'); boton.disabled = true;
         porId('btnCerrarComprobante').textContent = 'Cancelar';
-        boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>Emitir ' + nombreTipoComprobante(tipo);
+        boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>' + nombreAccion;
         recalcularComprobante();
         cargarConfiguracionEmision(tipo, {
             tipo: 'cmpTipoComprobante', letra: 'cmpLetra', sucursal: 'cmpSucursal', numero: 'cmpNumeroComprobante'

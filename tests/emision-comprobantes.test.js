@@ -57,7 +57,6 @@ function probarFlujosYDependencias() {
     const recibo = extraerFuncion('emitirRecibo');
     const comprobante = extraerFuncion('emitirComprobante');
     const altaRecibo = extraerFuncion('abrirNuevoRecibo');
-    const altaComprobante = extraerFuncion('abrirNuevoComprobante');
     assert.match(recibo, /cerrarModalYNotificar\('modalNuevoRecibo'/,
         'al emitir un Recibo debe cerrar su formulario y mostrar el aviso flotante');
     assert.match(recibo, /recibo\.Numero/,
@@ -68,12 +67,55 @@ function probarFlujosYDependencias() {
         'el aviso debe identificar Factura, NC o ND e informar su número generado');
     assert.match(altaRecibo, /modalNuevoReciboTitulo'\)\.textContent = 'Registrar recibo'/,
         'el formulario de recibo se titula igual que su botón (§6.1)');
-    assert.match(altaComprobante, /cmpTitulo'\)\.textContent = tipo === 'FAC' \? 'Emitir factura directa' : 'Emitir ' \+ nombreTipoComprobante\(tipo\)/,
-        'los formularios de factura, NC y ND se titulan igual que su opción del menú (§6.1)');
     assert.match(pagina, /assets\/static\/css\/sgtl\.css/,
         'Cuenta Corriente debe cargar los estilos de los avisos flotantes');
     assert.match(pagina, /assets\/static\/js\/sgtl-ui\.js[\s\S]*assets\/static\/js\/cuenta-corriente-clientes\.js/,
         'Cuenta Corriente debe cargar SGTL antes de usar el aviso flotante');
+}
+
+function probarNombresDeEmision() {
+    const opciones = [...pagina.matchAll(/<button\b[^>]*class="dropdown-item cc-future-action"[^>]*>([\s\S]*?)<\/button>/g)]
+        .map(function (coincidencia) { return coincidencia[1].replace(/<[^>]+>/g, '').trim(); });
+    assert.deepStrictEqual(opciones, [
+        'Emitir comprobante directo',
+        'Emitir comprobante desde proforma',
+        'Emitir crédito',
+        'Emitir Débito'
+    ], 'Cuenta corriente muestra los cuatro nombres elegidos');
+
+    ['FAC', 'NC', 'ND'].forEach(function (tipo, indice) {
+        const campos = {};
+        function campo(id) {
+            if (!campos[id]) campos[id] = {
+                value: '', textContent: '', innerHTML: '', className: '', disabled: false,
+                classList: { add: function () {}, remove: function () {}, toggle: function () {} },
+                querySelectorAll: function () { return []; }
+            };
+            return campos[id];
+        }
+        const sandbox = {
+            porId: campo,
+            clienteActual: function () { return null; },
+            nuevaClave: function () { return 'prueba'; },
+            hoyIso: function () { return '2026-10-26'; },
+            poblarClientesComprobante: function () {},
+            ponerFecha: function () {},
+            limitarFecha: function () {},
+            actualizarVencimientoPredeterminado: function () {},
+            recalcularComprobante: function () {},
+            cargarConfiguracionEmision: function () { return new Promise(function () {}); },
+            window: { SelectClientePredictivo: { establecerDeshabilitado: function () {} } },
+            bootstrap: { Modal: { getOrCreateInstance: function () { return { show: function () {} }; } } },
+            Promise
+        };
+        vm.runInNewContext(extraerFuncion('nombreTipoComprobante') + '\n' + extraerFuncion('nombreAccionEmision') + '\n' + extraerFuncion('abrirNuevoComprobante'),
+            sandbox, { filename: 'cuenta-corriente-clientes.js' });
+        sandbox.abrirNuevoComprobante(tipo);
+        const esperado = ['Emitir comprobante directo', 'Emitir crédito', 'Emitir Débito'][indice];
+        assert.strictEqual(campos.cmpTitulo.textContent, esperado, tipo + ': el título coincide con el menú');
+        assert.strictEqual(campos.btnEmitirComprobante.innerHTML.replace(/<[^>]+>/g, '').trim(), esperado,
+            tipo + ': el botón del formulario coincide con el título');
+    });
 }
 
 function probarAccionesPorTipoDeComprobante() {
@@ -331,6 +373,7 @@ function filaNotaCredito(id, vencimiento, emision, saldoCentavos) {
 
 probarCierreYAviso();
 probarFlujosYDependencias();
+probarNombresDeEmision();
 probarAccionesPorTipoDeComprobante();
 probarFormularioDeFacturaSoloLectura();
 probarDistribucionDeRecibo();
