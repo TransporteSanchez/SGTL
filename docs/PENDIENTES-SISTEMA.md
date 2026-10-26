@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 25/10/2026.**
+**Última actualización de este documento: 26/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -1025,6 +1025,28 @@ cargadas." y errores sin textos técnicos.
   "Sucursal activada.". Igual con un numerador y un tipo de comprobante (con datos de prueba).
 - [ ] Lápiz de un tipo de comprobante: carga el formulario con el código bloqueado; la cruz gris lo limpia.
 - [ ] Guardar con un código repetido: toast rojo con el mensaje de la API.
+
+**Eliminar configuraciones sin relaciones (26/10):** en Gestionar tipos de comprobante, las filas de sucursales,
+numeradores y tipos muestran Eliminar solo cuando la API permite el borrado físico. Inactivar conserva el registro.
+Una sucursal no se borra si está asignada a un tipo o figura por código en un comprobante; un numerador no se borra
+si está asignado a un tipo; un tipo con comprobantes tampoco se borra. La configuración propia del tipo y su
+fila en `COMPROBANTES_NUMERADORES` se eliminan junto con él cuando no tiene comprobantes. La API vuelve a
+comprobar las relaciones al recibir Eliminar; si aparecieron mientras la pantalla estaba abierta, responde con un
+motivo y la lista se actualiza.
+El código de una sucursal que figura en comprobantes ya no se puede cambiar, para conservar esa relación histórica.
+La base actual no guarda el ID del numerador en cada comprobante: una asignación pasada que ya se quitó no se puede
+reconstruir desde esos documentos.
+- [x] Prueba local de la pantalla: visibilidad de Eliminar, Inactivar con PUT y conflicto por relación nueva
+  (`node tests/configuracion-facturacion-eliminar.test.js`).
+- [x] Compilación de la API y 32 pruebas de Node sin errores. El interruptor usa una ruta de estado que no cambia
+  los demás campos: inactivar un numerador no retrocede su último número si hubo una emisión después de cargar la lista.
+- [ ] Probar en VM con registros de prueba: crear una sucursal y un numerador sin uso (ambos muestran Eliminar);
+  crear un tipo que los use (desaparece Eliminar de ambos y aparece en el tipo); eliminar el tipo sin comprobantes
+  (vuelve Eliminar en la sucursal y el numerador); eliminar ambos y comprobar que no reaparezcan al recargar.
+- [ ] Verificar con un tipo que ya tenga comprobantes: no muestra Eliminar. Inactivar y reactivar siguen cambiando
+  solo el estado. Una sucursal que figure en un comprobante no ofrece Eliminar ni permite cambiar su código.
+- [ ] Riesgo anterior, separado de este cambio: al guardar el formulario completo de un numerador abierto antes
+  de una emisión, se puede enviar un `UltimoNumero` viejo. Proteger el correlativo sin impedir su edición deliberada.
 
 **Gestionar e-mail (commit "Configuración: design system en Gestionar e-mail", pantalla de Facu):** "Registrar
 configuración de e-mail" en verde (antes "Nueva configuración"), mismo título en el modal. Filas con lápiz, "Probar

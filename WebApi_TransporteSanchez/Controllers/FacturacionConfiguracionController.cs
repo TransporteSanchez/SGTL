@@ -112,7 +112,9 @@ WHERE Numerador_ID=@id AND Activo=1 AND UltimoNumero<99999999;", connection, tra
     public class FacturacionConfiguracionController : ApiController
     {
         public class SucursalRequest { public string Codigo { get; set; } public string Nombre { get; set; } public bool Activa { get; set; } }
+        public class EstadoSucursalRequest { public bool? Activa { get; set; } }
         public class NumeradorRequest { public string Nombre { get; set; } public int UltimoNumero { get; set; } public bool Activo { get; set; } }
+        public class EstadoActivoRequest { public bool? Activo { get; set; } }
         public class TipoRequest { public string Tipo { get; set; } public string Descripcion { get; set; } public string Impacto { get; set; } public string LetraPredeterminada { get; set; } public int SucursalID { get; set; } public int NumeradorID { get; set; } public bool Activo { get; set; } }
         private class UsuarioSesion { public int UsuarioID { get; set; } public string Nombre { get; set; } public bool EsAdmin { get; set; } }
 
@@ -213,17 +215,21 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
         }
         private static void ValidarDependenciasActivas(SqlConnection connection, SqlTransaction transaction, TipoRequest request)
         {
+            ValidarDependenciasActivas(connection, transaction, request.SucursalID, request.NumeradorID);
+        }
+        private static void ValidarDependenciasActivas(SqlConnection connection, SqlTransaction transaction, int sucursalId, int numeradorId)
+        {
             using (var validar = new SqlCommand("SELECT (SELECT COUNT(*) FROM dbo.FACTURACION_SUCURSALES WHERE Sucursal_ID=@sucursal AND Activa=1) + (SELECT COUNT(*) FROM dbo.FACTURACION_NUMERADORES WHERE Numerador_ID=@numerador AND Activo=1);", connection, transaction))
             {
-                validar.Parameters.AddRange(new[] { P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID) });
+                validar.Parameters.AddRange(new[] { P("@sucursal", sucursalId), P("@numerador", numeradorId) });
                 if (Convert.ToInt32(validar.ExecuteScalar(), CultureInfo.InvariantCulture) != 2)
                     throw new ArgumentException("La sucursal o el numerador seleccionados no están activos.");
             }
         }
-        private static void Auditar(SqlConnection connection, UsuarioSesion usuario, string accion, string clave, string detalle)
+        private static void Auditar(SqlConnection connection, UsuarioSesion usuario, string accion, string clave, string detalle, SqlTransaction transaction = null)
         {
             using (var command = new SqlCommand(@"INSERT dbo.AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
-VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Configuración');", connection))
+VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Configuración');", connection, transaction))
             {
                 command.Parameters.AddRange(new[] { P("@usuario", usuario.Nombre), P("@accion", accion), P("@clave", clave), P("@detalle", detalle) });
                 command.ExecuteNonQuery();
@@ -234,7 +240,11 @@ VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Co
         public IHttpActionResult Sucursales(bool incluirInactivas = false)
         {
             try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false);
-                using (var cmd = new SqlCommand("SELECT Sucursal_ID AS SucursalID,Codigo,Nombre,Activa FROM dbo.FACTURACION_SUCURSALES WHERE (@todos=1 OR Activa=1) ORDER BY Codigo;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivas ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { SucursalID = (int)r["SucursalID"], Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"], Activa = (bool)r["Activa"] }); return Ok(datos); } } } }
+                using (var cmd = new SqlCommand(@"SELECT s.Sucursal_ID AS SucursalID,s.Codigo,s.Nombre,s.Activa,
+CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE t WHERE t.SucursalID=s.Sucursal_ID)
+    OR EXISTS (SELECT 1 FROM dbo.COMPROBANTES c WHERE c.Sucursal=s.Codigo)
+    THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
+FROM dbo.FACTURACION_SUCURSALES s WHERE (@todos=1 OR s.Activa=1) ORDER BY s.Codigo;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivas ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { SucursalID = (int)r["SucursalID"], Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"], Activa = (bool)r["Activa"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -248,21 +258,162 @@ VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Co
         [HttpPut, Route("sucursales/{id:int}")]
         public IHttpActionResult EditarSucursal(int id, [FromBody] SucursalRequest request)
         {
-            try { request.Codigo = CodigoSucursal(request == null ? null : request.Codigo); if (request == null || string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 100) throw new ArgumentException("El nombre de la sucursal es obligatorio."); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Codigo=@codigo,Nombre=@nombre,Activa=@activa WHERE Sucursal_ID=@id;", c)) { cmd.Parameters.AddRange(new[] { P("@codigo", request.Codigo), P("@nombre", request.Nombre.Trim()), P("@activa", request.Activa), P("@id", id) }); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "MODIFICAR", "Sucursal_ID=" + id, "Sucursal " + request.Codigo); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            try
+            {
+                request.Codigo = CodigoSucursal(request == null ? null : request.Codigo);
+                if (string.IsNullOrWhiteSpace(request.Nombre) || request.Nombre.Trim().Length > 100)
+                    throw new ArgumentException("El nombre de la sucursal es obligatorio.");
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            string codigoActual;
+                            bool estabaActiva;
+                            using (var cmd = new SqlCommand("SELECT Codigo,Activa FROM dbo.FACTURACION_SUCURSALES WITH (XLOCK,HOLDLOCK) WHERE Sucursal_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                using (var r = cmd.ExecuteReader())
+                                {
+                                    if (!r.Read()) { codigoActual = null; estabaActiva = false; }
+                                    else { codigoActual = (string)r["Codigo"]; estabaActiva = (bool)r["Activa"]; }
+                                }
+                            }
+                            if (codigoActual == null) { tx.Rollback(); return NotFound(); }
+                            if (codigoActual != request.Codigo)
+                            {
+                                using (var cmd = new SqlCommand("SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Sucursal=@codigo) THEN 1 ELSE 0 END;", c, tx))
+                                {
+                                    cmd.Parameters.Add(P("@codigo", codigoActual));
+                                    if ((int)cmd.ExecuteScalar() != 0)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "No se puede cambiar el código de la sucursal: figura en un comprobante." });
+                                    }
+                                }
+                            }
+                            using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Codigo=@codigo,Nombre=@nombre,Activa=@activa WHERE Sucursal_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.AddRange(new[] { P("@codigo", request.Codigo), P("@nombre", request.Nombre.Trim()), P("@activa", request.Activa), P("@id", id) });
+                                cmd.ExecuteNonQuery();
+                            }
+                            var baja = estabaActiva && !request.Activa;
+                            Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Sucursal_ID=" + id,
+                                baja ? "Sucursal inactivada" : "Sucursal " + request.Codigo, tx);
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+        }
+
+        [HttpPut, Route("sucursales/{id:int}/estado")]
+        public IHttpActionResult CambiarEstadoSucursal(int id, [FromBody] EstadoSucursalRequest request)
+        {
+            try
+            {
+                if (request == null || !request.Activa.HasValue) throw new ArgumentException("Seleccioná el estado de la sucursal.");
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            object anterior;
+                            using (var cmd = new SqlCommand("SELECT Activa FROM dbo.FACTURACION_SUCURSALES WITH (XLOCK,HOLDLOCK) WHERE Sucursal_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                anterior = cmd.ExecuteScalar();
+                            }
+                            if (anterior == null) { tx.Rollback(); return NotFound(); }
+                            if ((bool)anterior != request.Activa.Value)
+                            {
+                                using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Activa=@activa WHERE Sucursal_ID=@id;", c, tx))
+                                {
+                                    cmd.Parameters.AddRange(new[] { P("@activa", request.Activa.Value), P("@id", id) });
+                                    cmd.ExecuteNonQuery();
+                                }
+                                var baja = (bool)anterior && !request.Activa.Value;
+                                Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Sucursal_ID=" + id,
+                                    baja ? "Sucursal inactivada" : "Sucursal activada", tx);
+                            }
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpDelete, Route("sucursales/{id:int}")]
-        public IHttpActionResult DesactivarSucursal(int id)
+        public IHttpActionResult EliminarSucursal(int id)
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_SUCURSALES SET Activa=0 WHERE Sucursal_ID=@id;", c)) { cmd.Parameters.Add(P("@id", id)); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "BAJA", "Sucursal_ID=" + id, "Sucursal desactivada"); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            const string relacion = "No se puede eliminar la sucursal: está relacionada con un tipo de comprobante o con un comprobante.";
+            try
+            {
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            // La emisión bloquea primero la configuración y después la sucursal.
+                            using (var cmd = new SqlCommand("SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE SucursalID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                if (cmd.ExecuteScalar() != null) { tx.Rollback(); return Content(HttpStatusCode.Conflict, new { error = relacion }); }
+                            }
+                            string codigo;
+                            using (var cmd = new SqlCommand("SELECT Codigo FROM dbo.FACTURACION_SUCURSALES WITH (XLOCK,HOLDLOCK) WHERE Sucursal_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                codigo = cmd.ExecuteScalar() as string;
+                            }
+                            if (codigo == null) { tx.Rollback(); return NotFound(); }
+                            using (var cmd = new SqlCommand("SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Sucursal=@codigo;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@codigo", codigo));
+                                if (cmd.ExecuteScalar() != null) { tx.Rollback(); return Content(HttpStatusCode.Conflict, new { error = relacion }); }
+                            }
+                            using (var cmd = new SqlCommand("DELETE FROM dbo.FACTURACION_SUCURSALES WHERE Sucursal_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                cmd.ExecuteNonQuery();
+                            }
+                            Auditar(c, u, "ELIMINAR", "Sucursal_ID=" + id, "Sucursal " + codigo + " eliminada", tx);
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (SqlException ex) { return Content(ex.Number == 547 ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest, new { error = ex.Number == 547 ? relacion : MensajeParaUsuario(ex) }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("numeradores")]
         public IHttpActionResult Numeradores(bool incluirInactivos = false)
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand("SELECT Numerador_ID AS NumeradorID,Nombre,UltimoNumero,Activo FROM dbo.FACTURACION_NUMERADORES WHERE (@todos=1 OR Activo=1) ORDER BY Nombre;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivos ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { NumeradorID = (int)r["NumeradorID"], Nombre = (string)r["Nombre"], UltimoNumero = (int)r["UltimoNumero"], Activo = (bool)r["Activo"] }); return Ok(datos); } } } }
+            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT n.Numerador_ID AS NumeradorID,n.Nombre,n.UltimoNumero,n.Activo,
+CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE t WHERE t.NumeradorID=n.Numerador_ID)
+    THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
+FROM dbo.FACTURACION_NUMERADORES n WHERE (@todos=1 OR n.Activo=1) ORDER BY n.Nombre;", c)) { cmd.Parameters.Add(P("@todos", incluirInactivos ? 1 : 0)); using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { NumeradorID = (int)r["NumeradorID"], Nombre = (string)r["Nombre"], UltimoNumero = (int)r["UltimoNumero"], Activo = (bool)r["Activo"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -276,23 +427,106 @@ VALUES (GETDATE(),@usuario,@accion,'FACTURACION_CONFIG',@clave,NULL,@detalle,'Co
         [HttpPut, Route("numeradores/{id:int}")]
         public IHttpActionResult EditarNumerador(int id, [FromBody] NumeradorRequest request)
         {
-            try { ValidarNumerador(request); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Nombre=@nombre,UltimoNumero=@ultimo,Activo=@activo WHERE Numerador_ID=@id;", c)) { cmd.Parameters.AddRange(new[] { P("@nombre", request.Nombre.Trim()), P("@ultimo", request.UltimoNumero), P("@activo", request.Activo), P("@id", id) }); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "MODIFICAR", "Numerador_ID=" + id, "Numerador " + request.Nombre.Trim()); return Ok(); } } }
+            try { ValidarNumerador(request); using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Nombre=@nombre,UltimoNumero=@ultimo,Activo=@activo OUTPUT DELETED.Activo WHERE Numerador_ID=@id;", c)) { cmd.Parameters.AddRange(new[] { P("@nombre", request.Nombre.Trim()), P("@ultimo", request.UltimoNumero), P("@activo", request.Activo), P("@id", id) }); var activoAnterior = cmd.ExecuteScalar(); if (activoAnterior == null) return NotFound(); var baja = (bool)activoAnterior && !request.Activo; Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Numerador_ID=" + id, baja ? "Numerador inactivado" : "Numerador " + request.Nombre.Trim()); return Ok(); } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
-        [HttpDelete, Route("numeradores/{id:int}")]
-        public IHttpActionResult DesactivarNumerador(int id)
+        [HttpPut, Route("numeradores/{id:int}/estado")]
+        public IHttpActionResult CambiarEstadoNumerador(int id, [FromBody] EstadoActivoRequest request)
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); var u = ValidarUsuario(c, true); using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Activo=0 WHERE Numerador_ID=@id;", c)) { cmd.Parameters.Add(P("@id", id)); if (cmd.ExecuteNonQuery() == 0) return NotFound(); Auditar(c, u, "BAJA", "Numerador_ID=" + id, "Numerador desactivado"); return Ok(); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            try
+            {
+                if (request == null || !request.Activo.HasValue) throw new ArgumentException("Seleccioná el estado del numerador.");
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            object anterior;
+                            using (var cmd = new SqlCommand("SELECT Activo FROM dbo.FACTURACION_NUMERADORES WITH (XLOCK,HOLDLOCK) WHERE Numerador_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                anterior = cmd.ExecuteScalar();
+                            }
+                            if (anterior == null) { tx.Rollback(); return NotFound(); }
+                            if ((bool)anterior != request.Activo.Value)
+                            {
+                                using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_NUMERADORES SET Activo=@activo WHERE Numerador_ID=@id;", c, tx))
+                                {
+                                    cmd.Parameters.AddRange(new[] { P("@activo", request.Activo.Value), P("@id", id) });
+                                    cmd.ExecuteNonQuery();
+                                }
+                                var baja = (bool)anterior && !request.Activo.Value;
+                                Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Numerador_ID=" + id,
+                                    baja ? "Numerador inactivado" : "Numerador activado", tx);
+                            }
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+        }
+
+        [HttpDelete, Route("numeradores/{id:int}")]
+        public IHttpActionResult EliminarNumerador(int id)
+        {
+            const string relacion = "No se puede eliminar el numerador: está asignado a un tipo de comprobante.";
+            try
+            {
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            // La emisión bloquea primero la configuración y después el numerador.
+                            using (var cmd = new SqlCommand("SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE NumeradorID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                if (cmd.ExecuteScalar() != null) { tx.Rollback(); return Content(HttpStatusCode.Conflict, new { error = relacion }); }
+                            }
+                            string nombre;
+                            using (var cmd = new SqlCommand("SELECT Nombre FROM dbo.FACTURACION_NUMERADORES WITH (XLOCK,HOLDLOCK) WHERE Numerador_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                nombre = cmd.ExecuteScalar() as string;
+                            }
+                            if (nombre == null) { tx.Rollback(); return NotFound(); }
+                            using (var cmd = new SqlCommand("DELETE FROM dbo.FACTURACION_NUMERADORES WHERE Numerador_ID=@id;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@id", id));
+                                cmd.ExecuteNonQuery();
+                            }
+                            Auditar(c, u, "ELIMINAR", "Numerador_ID=" + id, "Numerador " + nombre + " eliminado", tx);
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (SqlException ex) { return Content(ex.Number == 547 ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest, new { error = ex.Number == 547 ? relacion : MensajeParaUsuario(ex) }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("tipos-comprobante")]
         public IHttpActionResult Tipos()
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo
+            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo,
+CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES comprobante WHERE comprobante.Tipo=t.Tipo)
+    THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
 FROM dbo.TIPOS_COMPROBANTE t LEFT JOIN dbo.FACTURACION_TIPOS_COMPROBANTE c ON c.Tipo=t.Tipo
-LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = r["Activo"] != DBNull.Value && (bool)r["Activo"] }); return Ok(datos); } } } }
+LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = r["Activo"] != DBNull.Value && (bool)r["Activo"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -311,13 +545,18 @@ LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN d
                     {
                         try
                         {
-                            ValidarDependenciasActivas(c, tx, request);
+                            using (var configuracion = new SqlCommand("SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                configuracion.Parameters.Add(P("@tipo", tipo));
+                                configuracion.ExecuteScalar();
+                            }
                             using (var existe = new SqlCommand("SELECT COUNT(*) FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
                                 existe.Parameters.Add(P("@tipo", tipo));
                                 if (Convert.ToInt32(existe.ExecuteScalar(), CultureInfo.InvariantCulture) != 0)
                                     throw new ArgumentException("Ya existe un tipo de comprobante con ese código.");
                             }
+                            ValidarDependenciasActivas(c, tx, request);
                             using (var cmd = new SqlCommand(@"
 INSERT dbo.TIPOS_COMPROBANTE (Tipo,Descripcion,Impacto) VALUES (@tipo,@descripcion,@impacto);
 INSERT dbo.FACTURACION_TIPOS_COMPROBANTE (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Activo)
@@ -351,7 +590,13 @@ VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
                     {
                         try
                         {
-                            ValidarDependenciasActivas(c, tx, request);
+                            bool activoAnterior;
+                            using (var configuracion = new SqlCommand("SELECT Activo FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                configuracion.Parameters.Add(P("@tipo", tipo));
+                                var valor = configuracion.ExecuteScalar();
+                                activoAnterior = valor != null && (bool)valor;
+                            }
                             string impactoActual;
                             using (var existente = new SqlCommand("SELECT Impacto FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
@@ -359,6 +604,7 @@ VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
                                 impactoActual = existente.ExecuteScalar() as string;
                             }
                             if (impactoActual == null) return NotFound();
+                            if (request.Activo) ValidarDependenciasActivas(c, tx, request);
                             if (!string.Equals(impactoActual.Trim(), request.Impacto, StringComparison.OrdinalIgnoreCase))
                                 throw new ArgumentException("El impacto no se puede modificar una vez creado el tipo de comprobante.");
                             using (var cmd = new SqlCommand(@"
@@ -370,7 +616,10 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                                 cmd.Parameters.AddRange(new[] { P("@descripcion", request.Descripcion.Trim()), P("@tipo", tipo), P("@letra", letra), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
                                 cmd.ExecuteNonQuery();
                             }
-                            tx.Commit(); Auditar(c, u, "MODIFICAR", "Tipo=" + tipo, "Configuración de " + tipo); return Ok();
+                            var baja = activoAnterior && !request.Activo;
+                            Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Tipo=" + tipo,
+                                baja ? "Tipo de comprobante inactivado" : "Configuración de " + tipo, tx);
+                            tx.Commit(); return Ok();
                         }
                         catch { if (tx.Connection != null) tx.Rollback(); throw; }
                     }
@@ -379,24 +628,110 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
-        [HttpDelete, Route("tipos-comprobante/{tipo}")]
-        public IHttpActionResult DesactivarTipo(string tipo)
+        [HttpPut, Route("tipos-comprobante/{tipo}/estado")]
+        public IHttpActionResult CambiarEstadoTipo(string tipo, [FromBody] EstadoActivoRequest request)
         {
+            try
+            {
+                tipo = CodigoTipo(tipo);
+                if (request == null || !request.Activo.HasValue) throw new ArgumentException("Seleccioná el estado del tipo de comprobante.");
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open(); var u = ValidarUsuario(c, true);
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        try
+                        {
+                            bool existe = false, activoAnterior = false;
+                            int sucursalId = 0, numeradorId = 0;
+                            using (var cmd = new SqlCommand("SELECT Activo,SucursalID,NumeradorID FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@tipo", tipo));
+                                using (var r = cmd.ExecuteReader())
+                                {
+                                    if (r.Read())
+                                    {
+                                        existe = true;
+                                        activoAnterior = (bool)r["Activo"];
+                                        sucursalId = (int)r["SucursalID"];
+                                        numeradorId = (int)r["NumeradorID"];
+                                    }
+                                }
+                            }
+                            if (!existe) { tx.Rollback(); return NotFound(); }
+                            if (activoAnterior != request.Activo.Value)
+                            {
+                                if (request.Activo.Value) ValidarDependenciasActivas(c, tx, sucursalId, numeradorId);
+                                using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE SET Activo=@activo,FechaModificacion=SYSUTCDATETIME() WHERE Tipo=@tipo;", c, tx))
+                                {
+                                    cmd.Parameters.AddRange(new[] { P("@activo", request.Activo.Value), P("@tipo", tipo) });
+                                    cmd.ExecuteNonQuery();
+                                }
+                                var baja = activoAnterior && !request.Activo.Value;
+                                Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Tipo=" + tipo,
+                                    baja ? "Tipo de comprobante inactivado" : "Tipo de comprobante activado", tx);
+                            }
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
+                    }
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+        }
+
+        [HttpDelete, Route("tipos-comprobante/{tipo}")]
+        public IHttpActionResult EliminarTipo(string tipo)
+        {
+            const string relacion = "No se puede eliminar el tipo de comprobante: tiene comprobantes asociados.";
             try
             {
                 tipo = CodigoTipo(tipo);
                 using (var c = new SqlConnection(ConnectionString()))
                 {
                     c.Open(); var u = ValidarUsuario(c, true);
-                    using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE SET Activo=0,FechaModificacion=SYSUTCDATETIME() WHERE Tipo=@tipo;", c))
+                    using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
                     {
-                        cmd.Parameters.Add(P("@tipo", tipo));
-                        if (cmd.ExecuteNonQuery() == 0) return NotFound();
+                        try
+                        {
+                            // La emisión toma primero la configuración; conservamos ese orden de bloqueo.
+                            using (var cmd = new SqlCommand("SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@tipo", tipo));
+                                cmd.ExecuteScalar();
+                            }
+                            using (var cmd = new SqlCommand("SELECT Tipo FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@tipo", tipo));
+                                if (cmd.ExecuteScalar() == null) { tx.Rollback(); return NotFound(); }
+                            }
+                            using (var cmd = new SqlCommand("SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo) THEN 1 ELSE 0 END;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@tipo", tipo));
+                                if ((int)cmd.ExecuteScalar() != 0) { tx.Rollback(); return Content(HttpStatusCode.Conflict, new { error = relacion }); }
+                            }
+                            using (var cmd = new SqlCommand(@"DELETE FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE Tipo=@tipo;
+DELETE FROM dbo.COMPROBANTES_NUMERADORES WHERE Tipo=@tipo;
+DELETE FROM dbo.TIPOS_COMPROBANTE WHERE Tipo=@tipo;", c, tx))
+                            {
+                                cmd.Parameters.Add(P("@tipo", tipo));
+                                cmd.ExecuteNonQuery();
+                            }
+                            Auditar(c, u, "ELIMINAR", "Tipo=" + tipo, "Tipo de comprobante " + tipo + " eliminado", tx);
+                            tx.Commit();
+                            return Ok();
+                        }
+                        catch { if (tx.Connection != null) tx.Rollback(); throw; }
                     }
-                    Auditar(c, u, "BAJA", "Tipo=" + tipo, "Tipo de comprobante desactivado"); return Ok();
                 }
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (SqlException ex) { return Content(ex.Number == 547 ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest, new { error = ex.Number == 547 ? relacion : MensajeParaUsuario(ex) }); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpGet, Route("emision/{tipo}")]

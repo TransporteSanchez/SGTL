@@ -24,7 +24,9 @@
                 if (!respuesta.ok) {
                     var mensaje = json.error || ((respuesta.status === 400 || respuesta.status === 409) && json.Message) || porDefecto;
                     if (respuesta.status === 401) mensaje = SGTL.mensajeError({ status: 401 }, porDefecto);
-                    throw new Error(mensaje);
+                    var error = new Error(mensaje);
+                    error.status = respuesta.status;
+                    throw error;
                 }
                 return json;
             }); }, function () {
@@ -39,25 +41,27 @@
             return '<option value="' + Number(valor) + '"' + (Number(valor) === Number(valorSeleccionado) ? ' selected' : '') + '>' + escapar(etiqueta(item)) + '</option>';
         }).join('');
     }
-    // Acciones de cada fila (§1.4): editar y el interruptor activar / inactivar.
-    function acciones(tipo, id, activo) {
-        return SGTL.accionesFila([
+    // La eliminación solo se ofrece cuando la API confirma que no hay relaciones.
+    function acciones(tipo, id, activo, puedeEliminar) {
+        var botones = [
             SGTL.botonFila('editar', { id: id, datos: { tipo: tipo } }),
             SGTL.botonFila(activo ? 'inactivar' : 'activar', { id: id, datos: { tipo: tipo } })
-        ]);
+        ];
+        if (puedeEliminar === true) botones.push(SGTL.botonFila('eliminar', { id: id, datos: { tipo: tipo } }));
+        return SGTL.accionesFila(botones);
     }
     function renderSucursales() {
         if (!datos.sucursales.length) { SGTL.tabla.vacia('#sucursalesBody', 4, 'Todavía no hay sucursales cargadas.'); return; }
         SGTL.tabla.llenar('#sucursalesBody', datos.sucursales.map(function (item) {
             return '<tr><td>' + escapar(item.Codigo) + '</td><td>' + escapar(item.Nombre) + '</td><td class="text-center">' + estado(item.Activa) + '</td>' +
-                '<td class="text-center">' + acciones('sucursal', item.SucursalID, item.Activa) + '</td></tr>';
+                '<td class="text-center">' + acciones('sucursal', item.SucursalID, item.Activa, item.PuedeEliminar) + '</td></tr>';
         }).join(''));
     }
     function renderNumeradores() {
         if (!datos.numeradores.length) { SGTL.tabla.vacia('#numeradoresBody', 4, 'Todavía no hay numeradores cargados.'); return; }
         SGTL.tabla.llenar('#numeradoresBody', datos.numeradores.map(function (item) {
             return '<tr><td>' + escapar(item.Nombre) + '</td><td>' + Number(item.UltimoNumero).toString().padStart(8, '0') + '</td><td class="text-center">' + estado(item.Activo) + '</td>' +
-                '<td class="text-center">' + acciones('numerador', item.NumeradorID, item.Activo) + '</td></tr>';
+                '<td class="text-center">' + acciones('numerador', item.NumeradorID, item.Activo, item.PuedeEliminar) + '</td></tr>';
         }).join(''));
     }
     function renderSelectoresTipo() {
@@ -70,7 +74,7 @@
         SGTL.tabla.llenar('#tiposBody', datos.tipos.map(function (item) {
             return '<tr><td><strong>' + escapar(item.Tipo) + '</strong></td><td>' + escapar(item.Descripcion) + '</td><td>' + impacto(item) + '</td><td>' + escapar(item.LetraPredeterminada || '—') + '</td>' +
                 '<td>' + escapar(item.Sucursal || '—') + '</td><td>' + escapar(item.Numerador || '—') + '</td><td class="text-center">' + estado(item.Activo) + '</td>' +
-                '<td class="text-center">' + acciones('tipo', item.Tipo, item.Activo) + '</td></tr>';
+                '<td class="text-center">' + acciones('tipo', item.Tipo, item.Activo, item.PuedeEliminar) + '</td></tr>';
         }).join(''));
     }
     function render() { renderSucursales(); renderNumeradores(); renderSelectoresTipo(); renderTipos(); }
@@ -92,13 +96,14 @@
         porId('tipoLetra').value = 'A';
         sincronizarLetraTipo();
     }
-    function recargar(mensaje) {
+    function recargar(mensaje, silencioso) {
         return Promise.all([
             solicitud('/sucursales?incluirInactivas=true'), solicitud('/numeradores?incluirInactivos=true'), solicitud('/tipos-comprobante')
         ]).then(function (resultado) {
             datos.sucursales = resultado[0] || []; datos.numeradores = resultado[1] || []; datos.tipos = resultado[2] || [];
             render(); if (mensaje) SGTL.toastExito(mensaje);
         }).catch(function (ex) {
+            if (silencioso) return;
             ['#sucursalesBody', '#numeradoresBody'].forEach(function (cuerpo) { SGTL.tabla.vacia(cuerpo, 4, 'No se pudo cargar la configuración.'); });
             SGTL.tabla.vacia('#tiposBody', 8, 'No se pudo cargar la configuración.');
             SGTL.toastError(ex.message || 'No se pudo cargar la configuración. Probá de nuevo.');
@@ -175,23 +180,22 @@
         sincronizarLetraTipo();
         porId('tipoDescripcion').focus();
     }
-    // Activar e inactivar no piden confirmación (§5.2): se hace y se avisa. Inactivar usa la baja lógica de
-    // la API (DELETE); activar vuelve a guardar el registro con Activo en true.
+    // Activar e inactivar no piden confirmación (§5.2) y conservan el registro.
     var CAMBIOS_ESTADO = {
         sucursal: {
-            ruta: '/sucursales', nombre: 'Sucursal', femenino: true,
+            ruta: '/sucursales', nombre: 'Sucursal', femenino: true, campoEstado: 'Activa',
             buscar: function (id) { return datos.sucursales.filter(function (x) { return Number(x.SucursalID) === Number(id); })[0]; },
-            cuerpo: cuerpoSucursal
+            etiqueta: function (item) { return item.Codigo + ' · ' + item.Nombre; }
         },
         numerador: {
-            ruta: '/numeradores', nombre: 'Numerador',
+            ruta: '/numeradores', nombre: 'Numerador', campoEstado: 'Activo',
             buscar: function (id) { return datos.numeradores.filter(function (x) { return Number(x.NumeradorID) === Number(id); })[0]; },
-            cuerpo: cuerpoNumerador
+            etiqueta: function (item) { return item.Nombre; }
         },
         tipo: {
-            ruta: '/tipos-comprobante', nombre: 'Tipo de comprobante',
+            ruta: '/tipos-comprobante', nombre: 'Tipo de comprobante', campoEstado: 'Activo',
             buscar: function (id) { return datos.tipos.filter(function (x) { return x.Tipo === id; })[0]; },
-            cuerpo: cuerpoTipo
+            etiqueta: function (item) { return item.Tipo + ' · ' + item.Descripcion; }
         }
     };
     function cambiarEstado(boton, tipo, id, activar) {
@@ -199,12 +203,33 @@
         var item = config.buscar(id);
         if (!item) return;
         var listo = SGTL.procesando(boton);
-        var pedido = activar
-            ? solicitud(config.ruta + '/' + encodeURIComponent(id), 'PUT', config.cuerpo(item, true))
-            : solicitud(config.ruta + '/' + encodeURIComponent(id), 'DELETE');
+        var cuerpo = {};
+        cuerpo[config.campoEstado] = activar;
+        var pedido = solicitud(config.ruta + '/' + encodeURIComponent(id) + '/estado', 'PUT', cuerpo);
         var participio = (activar ? 'activad' : 'inactivad') + (config.femenino ? 'a' : 'o');
         pedido.then(function () { listo(); return recargar(config.nombre + ' ' + participio + '.'); })
             .catch(function (ex) { listo(); avisarError(ex); });
+    }
+    function eliminar(tipo, id) {
+        var config = CAMBIOS_ESTADO[tipo];
+        if (!config) return;
+        var item = config.buscar(id);
+        if (!item || item.PuedeEliminar !== true) return;
+        var nombre = (config.femenino ? 'la ' : 'el ') + config.nombre.toLowerCase();
+        SGTL.confirmar({
+            titulo: '¿Eliminar ' + nombre + ' ' + config.etiqueta(item) + '?',
+            mensaje: 'No se puede deshacer.',
+            verbo: 'Eliminar', peligro: true,
+            accion: function () {
+                return solicitud(config.ruta + '/' + encodeURIComponent(id), 'DELETE').catch(function (ex) {
+                    ex.mensajeUsuario = ex.message;
+                    if (ex.status === 409) return recargar(null, true).then(function () { throw ex; });
+                    throw ex;
+                });
+            }
+        }).then(function (eliminado) {
+            if (eliminado) return recargar(config.nombre + (config.femenino ? ' eliminada.' : ' eliminado.'));
+        });
     }
     function alHacerClic(evento) {
         var boton = evento.target.closest('#sucursalesBody [data-accion], #numeradoresBody [data-accion], #tiposBody [data-accion]');
@@ -216,6 +241,8 @@
             else editarTipo(id);
         } else if (accion === 'activar' || accion === 'inactivar') {
             cambiarEstado(boton, tipo, id, accion === 'activar');
+        } else if (accion === 'eliminar') {
+            eliminar(tipo, id);
         }
     }
     function inicializar() {

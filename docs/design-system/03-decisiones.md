@@ -117,6 +117,10 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   Si el módulo no envía por e-mail (proformas, por ahora), el pie es Cerrar · Imprimir · Descargar PDF.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
+- **Excepción en Gestionar tipos de comprobante (26/10):** en las tablas de sucursales,
+  numeradores y tipos de comprobante, **Eliminar** solo aparece si el registro no tiene relaciones
+  que impidan borrarlo. Cuando ya las tiene, el botón se oculta. La API vuelve a comprobar las
+  relaciones al eliminar. Activar/Inactivar sigue siendo una acción distinta.
 - **Cómo se escribe ese motivo** (23/10, Rocío, después de relevar los 28 textos que había, escritos de seis maneras:
   `docs/design-system/05-relevamiento-motivos-deshabilitados.md`). Una sola frase con la misma forma en todo el
   sistema, también en un botón del pie de un modal (§6.2) y en un enlace deshabilitado ("Editar cliente"):
