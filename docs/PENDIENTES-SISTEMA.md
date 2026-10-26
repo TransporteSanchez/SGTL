@@ -58,7 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
-| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3058,7 +3058,7 @@ deshabilitado). `node tests/tableros.test.js` y las demás pruebas: OK. **Falta 
 tableros cuadran con cuenta corriente, los viajes y Listar viajes, y la estrella, Personalizar, Restablecer, los permisos
 y el celular funcionan. Sin probar: una celda con rechazo (no hay ninguno en la base), otro navegador (el diseño sale de
 la base) y el aviso "no tenés permiso" de facturación (no hay un usuario sin cuenta corriente ni proformas). Dudas D1 y D2
-y mejoras M4, M7 a M10, M12 y M13 de Tableros: en la §39, para que decida Rocío.
+y mejoras M4, M7 a M10, M12 y M13 de Tableros: en la §40, punto 7.
 
 **Para tener en cuenta:**
 - **Avisarle a Facu:** los dos tableros de facturación leen sus tablas (`COMPROBANTES`, `CUENTA_CORRIENTE_APLICACIONES`)
@@ -3598,10 +3598,7 @@ ya quedó probado con 1.4) corregidos.
 39 pruebas: 32 OK, 3 OK con observaciones y 4 no probadas; **sin fallas**. La pasada corta de `d54fe21` dio todo como se
 pidió: los errores se van solos, el aviso concuerda en singular y plural, Auditoría dice 'Pasa a "…"' y registrar tarda
 3,3 s con un solo registro. Tableros: ver §35.
-- **Para que decida Rocío:** D1 (Listar viajes no filtra por origen, destino ni camión: ¿se cambia el paso 4b o se suman
-  los filtros?, M8), D2 (la deuda de un cliente con un recibo sin imputar se ve distinta en cuenta corriente y en
-  Tableros; son tablas de Facu) y las mejoras M1 a M16: de tarifas y Auditoría M1 (aviso de cambios sin guardar), M2, M3,
-  M5, M11 y M14; de Tableros M4, M7 a M10, M12 y M13; de cuenta corriente (Facu) M6 y M15; de Listar viajes M16.
+- **Dudas D1 y D2 y mejoras M1 a M16:** anotadas en la §40, punto 7. Rocío las ve después de sus cambios de tarifas.
 - **D3, antes del 29/10:** el 26/10 la base no tiene ningún comprobante emitido (`api/dashboard/top-clientes-facturacion`
   cuenta todos los `EMITIDO`, sin filtrar por usuario, y da `[]`), aunque la demo del 25/10 generó FAC-00000001 y
   00000002, REC-00000001 y NC-00000001 después de la limpieza. **Causa (Rocío, 26/10): Facu borró comprobantes en la base
@@ -3701,4 +3698,25 @@ cierren las pruebas de la §39**, antes que lo demás.
   cliente y del recorrido (SQL con `BEGIN TRAN`, lo corre Rocío). Antes de la presentación, volver a correr
   `database/limpieza/01_relevar_datos_de_prueba.sql` (solo lectura) y corregir todo lo que salga. Desde el 25/10, la VM
   usa solo datos con forma de reales (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`, que manda sobre los documentos viejos).
-
+- [ ] **7. Dudas y mejoras del reporte de Tableros (26/10, `docs/pruebas/2026-10-26-tableros.md`).** Rocío las ve
+  después de cerrar sus cambios de tarifas (decisión del 26/10). Recomendación de Claude entre paréntesis.
+  - D1. El paso 4b de la §35 pide Listar viajes filtrado por origen, destino o camión, y no tiene esos filtros (cambiar el
+    texto del paso; los filtros, con M8).
+  - D2. La deuda de un cliente con un recibo sin imputar se ve distinta en cuenta corriente (saldo negativo) y en Tableros
+    (debe por comprobante). Las dos cuentas están bien (en el globito de Tableros, "Tiene $ … cobrados sin imputar";
+    avisarle a Facu, son sus tablas).
+  - Tarifas y Auditoría (hacerlas juntas, son chicas salvo M5): M1, aviso "Tenés cambios sin guardar" al cerrar Registrar o
+    Editar tabla, como en proformas (§6.2); M2, "Se recalculó 1 viaje. 4 viajes pasaron a otra tabla con el mismo
+    importe." en el registro de la tabla (`TarifarioController.cs`, `Cuentas`, que no concuerda); M3, "Los demás clientes
+    quedan sin tabla del 01/01/2026 al 31/07/2026: sus viajes de esas fechas no se pueden calcular."; M5, nombres para
+    personas en el filtro y las columnas Entidad y Registro de Auditoría ("Configuración de e-mail", "Viaje #52"); M11,
+    'Pasa a "…" por su corrección: $ … → $ ….' cuando es la misma tabla que se corrigió; M14, los tres campos de "Datos" en
+    dos filas por debajo de 992 px.
+  - Tableros (chicas, solo de pantalla): M4, una línea de ayuda en Personalizar ("Arrastrá una tarjeta por el título…");
+    M7, "No hubo entregas con rechazo en el período." en vez de la grilla en 0 %; M9, "Hoy · 2 con deuda vencida"; M10,
+    `SGTL.confirmar` antes de Restablecer y el aviso "Dashboard restablecido."; M12, que el total del mapa de km dé con las
+    celdas; M13, un degradé o una flecha en el riel de pestañas en el celular.
+  - M8, "Ver los viajes" desde la celda del mapa de calor (para después: necesita los filtros nuevos de Listar viajes, D1).
+  - M16, Listar viajes: "Km" en lugar de "Cantidad de KM" (§7.3).
+  - De Facu (sumar a su lista del punto 5): M6, el importe mal escrito en Registrar recibo, con "Escribí el importe como
+    1.234,56." debajo del campo; M15, un saldo negativo dice "Saldo a favor del cliente" y no "Saldo deudor".
