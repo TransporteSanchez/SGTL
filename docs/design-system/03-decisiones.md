@@ -274,8 +274,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Hoja de ruta | (ítem principal, nuevo 24/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
-| Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Clientes | Listar clientes · Gestionar clientes |
+| Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente · Gestionar tipos de comprobante (solo administradores; se mudó desde Configuración el 22/10) |
 | Configuración | Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa (nueva, 23/10) · Gestionar contenido (toda la sección, solo administradores) |
 | Usuarios | Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos |

@@ -68,7 +68,7 @@ const bloque = sandbox.bloqueGrupo({
     Menus: ['Dashboard', 'Gestión de viajes', 'Listado de clientes', 'Listado de viajes', 'Presupuestos']
 });
 const textos = (bloque.match(/<li>[^<]*<\/li>/g) || []).map(function (li) { return li.slice(4, -5); });
-assert.deepStrictEqual(textos, ['Dashboard', 'Listar viajes', 'Gestionar viajes', 'Gestionar presupuestos', 'Listar clientes'],
+assert.deepStrictEqual(textos, ['Dashboard', 'Listar clientes', 'Listar viajes', 'Gestionar viajes', 'Gestionar presupuestos'],
     'Ver detalle del usuario muestra las pantallas con el texto del menú y en su orden');
 
 console.log('OK: los permisos se ven con los textos del menú en Grupos y permisos y en Ver detalle del usuario');

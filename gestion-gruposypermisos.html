@@ -547,7 +547,7 @@
         }
 
         function agruparMenusPorPrincipal(menus) {
-            const orden = ['General', 'Choferes', 'Camiones', 'Viajes', 'Clientes', 'Facturación', 'Configuración', 'Usuarios'];
+            const orden = ['General', 'Choferes', 'Camiones', 'Clientes', 'Viajes', 'Facturación', 'Configuración', 'Usuarios'];
             const grupos = [];
             (menus || []).forEach(function (menu) {
                 const nombre = String(menu.Menu_Principal || 'General').trim() || 'General';
