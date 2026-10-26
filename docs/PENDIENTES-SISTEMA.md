@@ -55,8 +55,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 33 | Editar una tabla de tarifas que ya usan viajes: qué se recalcula, qué no y cómo se avisa (lo planteó Facu) | **Hecho en la Mac (25/10):** se recalcula lo que el cliente no vio, con confirmación y motivo; lo demás queda para revisar con íconos, avisos y el tablero "Cambios de tarifa para revisar". Tarjeta fija en el dashboard, por permisos y con acceso directo a corregir. Falta la parte del comprobante (módulo de Facu, después de su cambio) | **Pusheado** (25/10) | Correr `database/tarifas/05_…`, compilar y probar los pasos 1 a 3 (ver §33) |
 | 34 | Tabla de tarifas por tipo de camión ("Tarifas a agosto 2026" y, para enero a julio, "Tarifas a enero 2026"): tarifa fija por banda de km (con 1ª y 2ª vuelta; más de 250 km, la de 250 más el excedente por km) o tarifa por km, por tipo y modelo de camión; falso flete y estadía; tabla general o propia de algunos clientes; el viaje guarda su importe. Reemplaza las tarifas fijas por recorrido y las bandas por km | Hecho en la Mac (24 y 25/10) con API simulada, con las decisiones de Rocío y Claudia | **Pusheado** (24 y 25/10) | **Correr `database/tarifas/02_…` y `03_…`**, recompilar, elegir el tipo de los camiones, correr `04_…` y probar (ver §34) |
 | 35 | Tableros: pantalla nueva con todos los tableros por tema (Viajes, Flota, Choferes, Facturación), gráficos de tres datos (km e ingresos por camión y mes, viajes por cliente, mes y resultado, recorridos origen × destino, rechazos por cliente y destino, facturación por cliente y mes, antigüedad de la deuda) y deuda vencida; favoritos con estrella que se ven en el dashboard y se acomodan, guardados en la base por usuario | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío; permiso de grupo propio | **Pusheado** (`eb17fb6`, `3b3a65a`, `58a9366`; 24/10) | **Correr antes `database/tableros/01_…`**, recompilar la API y probar (ver §35) |
-| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F) |
-| 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
+| 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
+| 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
 
@@ -3212,6 +3212,17 @@ usuarios: asignar, quitar y el error de un chofer que ya tiene usuario. **La API
   viaje, marcado.
 - [ ] 12. Al terminar, borrar los viajes y el usuario de prueba (por ID y nombre) y quitarle el chofer al usuario.
 
+**Cuentas de los choferes (Rocío, 25/10):** cada chofer necesita su propia cuenta (Gestionar usuarios → Registrar
+usuario, rol user, grupo "Choferes" y su ficha en "Chofer"). No alcanza con sumarlo a un grupo ni se puede hacer por SQL:
+la contraseña la cifra la API.
+- [ ] **Ahora, con Claude de la VM:** `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`: relevamiento de los choferes (cuáles
+  son reales, cuáles de prueba y cuáles ya tienen cuenta), el grupo "Choferes" con solo "Hoja de ruta" (paso 2 de arriba)
+  y un chofer de prueba con su cuenta, que **queda para la demo** (paso 3 de arriba). Sin viajes todavía: esos son la
+  tanda 3.
+- [ ] **26/10: las cuentas de todos los choferes reales**, a partir del relevamiento: una por chofer activo, con su
+  contraseña (cada chofer recibe su usuario y su contraseña). Si son muchos, ver con Claude un atajo para crearlas
+  juntas. Desde el celular del chofer anda recién cuando el sistema esté publicado (hoy todo corre en `localhost`).
+
 **Para coordinar con Fede (WhatsApp, su módulo; no se tocó nada):** Rocío eligió sumarle a la hoja de ruta por
 WhatsApp el enlace al sistema. Haría falta: en la plantilla de Meta, un botón con URL dinámica (o una variable más) que
 termine en `hoja-de-ruta.html?viaje={id}`; en `ViajeWhatsAppDispatcher` mandar el número del viaje (el payload ya lo
@@ -3290,8 +3301,9 @@ del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); 
   `@Aplicar = 1`). El importe del viaje es de `database/tarifas/02_…` (§34): sin ese script el detalle sale sin margen.
 - [ ] 1. `pull`, **recompilar la API** (controller nuevo `CostosController.cs`; cambió `HojaDeRutaController.cs`) y
   Ctrl+F5. `node tests/control-interno.test.js` → OK.
-- [ ] 2. Gestionar empresa → Galpón: la dirección real del galpón → Guardar → "Galpón guardado." y debajo "Calculando
-  los km al galpón… N de M" hasta "Se calcularon los km al galpón de M de M orígenes y destinos.".
+- [x] 2. **Hecho por Rocío (25/10).** Gestionar empresa → Galpón: la dirección real del galpón → Guardar → "Galpón
+  guardado." y debajo "Calculando los km al galpón… N de M" hasta "Se calcularon los km al galpón de M de M orígenes y
+  destinos.".
 - [ ] 3. Gestionar camiones: "Cambiar precio del gasoil" con el precio de hoy. Editar el camión: el kilometraje del
   tablero de hoy, la fecha y el consumo (pedirle a la empresa el consumo real). Sin la fecha → "Completá la fecha del
   kilometraje.".
@@ -3485,8 +3497,8 @@ tableros (§35) se estaba probando. Lo que salga de esas tandas se corrige en `r
 |---|---|---|---|---|
 | 1 | 1 | Tabla de tarifas y sus cambios con datos de prueba (§34 y §33) | Partes A y B de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (todas las variantes y la mirada de usabilidad) | **Hecha y reprobada (25/10)** |
 | 2 | 4 | Tableros (§35), con la pasada corta de los arreglos de `d54fe21` al principio | Del 2 en adelante (el 0 y el 1 ya están hechos) | — |
-| 3 | 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | Grupo "Choferes" con "Hoja de ruta", un usuario chofer vinculado a su chofer y revisar su teléfono (manda WhatsApp); preguntar antes de lo que manda WhatsApp |
-| 4 | 5 | Control interno de los viajes (§37) | Todos | La dirección del galpón en Gestionar empresa → Galpón |
+| 3 | 3 | Hoja de ruta del chofer (§36) | Todos, con los ajustes A a F | El grupo "Choferes" y la cuenta del chofer de prueba, con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md` (su celular es uno del equipo: le llega el WhatsApp); preguntar antes de lo que manda WhatsApp |
+| 4 | 5 | Control interno de los viajes (§37) | Todos | La dirección del galpón en Gestionar empresa → Galpón: **cargada por Rocío (25/10)** |
 | 5 | 6 | Dos mejoras de cuenta corriente (§29) | Las de "cuando Rocío lo pida" | — |
 | 6 | 2 | Lo que ya vio el cliente: proformas enviadas y comprobantes (§33) | Parte C del mismo instructivo (cambia un valor de agosto y lo deshace) | La limpieza y los documentos nuevos de la §38; el OK de Rocío y avisar a Facu y Fede. Usuarios: admin, uno solo con "Gestionar presupuestos" y uno solo con "Gestionar proformas" |
 
