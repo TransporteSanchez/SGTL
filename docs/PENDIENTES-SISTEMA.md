@@ -60,6 +60,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
+| 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), vuelta automática y camión ocupado, para el jueves 29/10 con `main` como plan B | **Propuesta con maqueta (26/10)**, espera el OK de Rocío | — | Ver §42 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3831,3 +3832,43 @@ como presentación). Los números son los del listado de Rocío.
   la API).
 - [ ] **25.** Dónde se guarda si un cliente tiene plataforma (hoy solo QUICKFOOD): ver si se configura desde el sistema o
   está en el código, y si conviene sumarlo.
+
+---
+
+## 42. Tabla de tarifas dinámica, vuelta automática y camión ocupado — PROPUESTA, ESPERA EL OK DE ROCÍO (26/10)
+
+Pedido de Facu (26/10) y decisión de Rocío: cada tabla define su forma, sin tocar código. Va antes del jueves 29/10 junto
+con los textos (§41, puntos 12 a 14), la tarjeta (punto 2) y la vuelta automática con el control de camión ocupado
+(punto 3). El viaje sin carga y la estadía, después. Maqueta: `.claude/maquetas/tarifas/tabla-dinamica.html`.
+
+**Qué cambia en la tabla:**
+- **Tipos de camión:** un catálogo (`TIPOS_CAMION`) que se administra desde Gestionar camiones → "Tipos de camión", con
+  sus mismos permisos (sin pantalla nueva en el menú). Cada tabla elige qué tipos tienen precio. Un tipo en uso se
+  inactiva, no se elimina.
+- **Modelos:** cero o más años de corte por tabla ("Desde 2015", "Desde 2021" → "2014 o anterior · 2015 a 2020 · 2021 en
+  adelante"). Sin años, "Todos los modelos".
+- **Bandas de km:** una o más, cada una "hasta N km" y con 1ª y 2ª vuelta o no. Después de la última, como hoy: la fija
+  de la última banda más los km que pasan × el precio por km. La tarifa por km, igual.
+- La grilla se arma sola (una por grupo de modelo, más la de tarifas por km). Las validaciones y "Revisá estos valores"
+  pasan a valer para cualquier forma.
+
+**Base aditiva (con `main` como plan B):** un script nuevo crea `TIPOS_CAMION`, `TARIFARIO_MODELOS`, `TARIFARIO_BANDAS`,
+`TARIFARIO_TIPOS` y `TARIFARIO_PRECIOS` (un valor por tabla, tipo, modelo desde, banda —0 = por km— y vuelta) y copia ahí
+las tablas que ya existen. No borra ni cambia `TARIFARIO_VALORES` ni las columnas de `TARIFARIOS`: mientras dure el plan
+B, la API nueva también las escribe cuando la tabla tiene la forma de antes (dos grupos de modelo, tres bandas, vueltas
+solo en la primera), así `main` sigue andando. Las tablas con otra forma son solo de prueba hasta el jueves (si se vuelve
+a `main`, se eliminan antes). Después de la presentación, un script saca lo viejo.
+
+**Vuelta automática y camión ocupado (propuesta; los casos a confirmar con Claudia van con un valor por defecto):**
+- La vuelta la calcula la API al guardar: entre los viajes del mismo camión que empiezan ese día, el primero va 1ª y los
+  siguientes 2ª (el 3º también), sin mirar los km del primero; el día es el de la fecha de inicio. Se ve como texto con
+  el viaje anterior del camión.
+- Si guardar, cambiar la hora o el camión, o eliminar un viaje cambia la vuelta de otro viaje del mismo camión, se
+  confirma antes con la lista: el que el cliente no vio se recalcula (con Auditoría); el que está en una proforma enviada
+  o en un comprobante queda como está.
+- El mismo camión, o el mismo chofer, en dos viajes que se superponen (inicio a fin) da error al elegirlo y al guardar.
+- Presupuestos (Facu): "Vuelta del día" pasa a texto y generar el viaje controla el camión ocupado. Avisarle a Facu.
+
+**Decisiones para el OK de Rocío:** dónde se administran los tipos; años de corte en lugar de rangos libres; que el
+chofer ocupado también dé error; la confirmación cuando cambia la vuelta de otro viaje; y que una tabla tenga al menos
+una banda (una tabla solo por km quedaría para después).
