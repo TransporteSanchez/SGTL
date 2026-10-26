@@ -80,6 +80,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ComprobanteID { get; set; }
             public int ClienteID { get; set; }
             public int NumeroCorrelativo { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public DateTime FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
             public string Estado { get; set; }
@@ -107,6 +109,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int FacturaID { get; set; }
             public int ClienteID { get; set; }
             public int NumeroCorrelativo { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public DateTime FechaFactura { get; set; }
             public string EstadoFactura { get; set; }
             public string Cliente { get; set; }
@@ -233,9 +237,9 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        private static string Numero(string tipo, int numero)
+        private static string Numero(string tipo, string letra, string sucursal, int numero)
         {
-            return tipo + "-" + numero.ToString("D8", CultureInfo.InvariantCulture);
+            return tipo + "-" + letra + "-" + sucursal + "-" + numero.ToString("D8", CultureInfo.InvariantCulture);
         }
 
         private string ObtenerNombreUsuarioToken()
@@ -327,14 +331,14 @@ FROM dbo.CLIENTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.Cliente_ID=@id;";
         private static FacturaReferencia LeerFacturaReferencia(SqlConnection connection, SqlTransaction transaction, int id)
         {
             const string sql = @"
-SELECT c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Estado,
+SELECT c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Estado,
        c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK)
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a WITH (UPDLOCK,HOLDLOCK)
        ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE c.Comprobante_ID=@id AND c.Tipo='FAC' AND c.Impacto='D'
-GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Estado,
+GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Estado,
          c.Neto,c.IVA,c.OtrosImpuestos,c.Total;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
@@ -345,7 +349,8 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Fecha
                     return new FacturaReferencia
                     {
                         ComprobanteID = (int)reader["Comprobante_ID"], ClienteID = (int)reader["ClienteID"],
-                        NumeroCorrelativo = (int)reader["NumeroCorrelativo"], FechaEmision = (DateTime)reader["FechaEmision"],
+                        NumeroCorrelativo = (int)reader["NumeroCorrelativo"], Letra = reader["Letra"] as string,
+                        Sucursal = reader["Sucursal"] as string, FechaEmision = (DateTime)reader["FechaEmision"],
                         FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                         Estado = (string)reader["Estado"], Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
                         OtrosImpuestos = (decimal)reader["OtrosImpuestos"], Total = (decimal)reader["Total"],
@@ -459,12 +464,12 @@ WHERE ComprobanteCreditoID=@credito AND Vigente=1;";
                     connection.Open();
                     ValidarAcceso(connection, null, "CC_CONSULTAR");
                     const string sql = @"
-SELECT c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
+SELECT c.Comprobante_ID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE c.ClienteID=@cliente AND c.Tipo='FAC' AND c.Estado='EMITIDO'
-GROUP BY c.Comprobante_ID,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
+GROUP BY c.Comprobante_ID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
 ORDER BY c.FechaVencimiento,c.FechaEmision,c.Comprobante_ID;";
                     var facturas = new List<FacturaReferenciaDto>();
                     using (var command = new SqlCommand(sql, connection))
@@ -489,7 +494,8 @@ ORDER BY c.FechaVencimiento,c.FechaEmision,c.Comprobante_ID;";
                                 facturas.Add(new FacturaReferenciaDto
                                 {
                                     ComprobanteID = (int)reader["Comprobante_ID"],
-                                    Numero = Numero("FAC", (int)reader["NumeroCorrelativo"]),
+                                    Numero = Numero("FAC", reader["Letra"] as string, reader["Sucursal"] as string,
+                                        (int)reader["NumeroCorrelativo"]),
                                     FechaEmision = (DateTime)reader["FechaEmision"],
                                     FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                                     Total = total, ImporteAplicado = aplicado, SaldoPendiente = total - aplicado,
@@ -527,7 +533,7 @@ ORDER BY c.FechaVencimiento,c.FechaEmision,c.Comprobante_ID;";
                     const string sql = @"
 SELECT TOP (1)
        p.Proforma_ID AS ProformaID,p.Numero AS ProformaNumero,
-       c.Comprobante_ID AS FacturaID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision AS FechaFactura,c.Estado AS EstadoFactura,
+       c.Comprobante_ID AS FacturaID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision AS FechaFactura,c.Estado AS EstadoFactura,
        COALESCE(NULLIF(c.RazonSocial,''),p.Cli_RazonSocial) AS Cliente,c.CUIT,
        c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
@@ -536,7 +542,7 @@ JOIN dbo.COMPROBANTES_PROFORMAS cp ON cp.ProformaID=p.Proforma_ID AND cp.Vigente
 JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID AND c.Tipo='FAC'
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE p.Proforma_ID=@proforma
-GROUP BY p.Proforma_ID,p.Numero,c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.FechaEmision,c.Estado,
+GROUP BY p.Proforma_ID,p.Numero,c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.Estado,
          c.RazonSocial,p.Cli_RazonSocial,c.CUIT,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
 ORDER BY c.Comprobante_ID DESC;";
                     FacturaCancelatoriaProforma factura = null;
@@ -551,7 +557,8 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     ProformaID = (int)reader["ProformaID"], ProformaNumero = reader["ProformaNumero"] as string,
                                     FacturaID = (int)reader["FacturaID"], ClienteID = (int)reader["ClienteID"],
-                                    NumeroCorrelativo = (int)reader["NumeroCorrelativo"], FechaFactura = (DateTime)reader["FechaFactura"],
+                                    NumeroCorrelativo = (int)reader["NumeroCorrelativo"], Letra = reader["Letra"] as string,
+                                    Sucursal = reader["Sucursal"] as string, FechaFactura = (DateTime)reader["FechaFactura"],
                                     EstadoFactura = reader["EstadoFactura"] as string, Cliente = reader["Cliente"] as string,
                                     CUIT = reader["CUIT"] as string, Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
                                     OtrosImpuestos = (decimal)reader["OtrosImpuestos"], Total = (decimal)reader["Total"],
@@ -577,7 +584,7 @@ ORDER BY c.Comprobante_ID DESC;";
                         factura.ProformaID,
                         factura.ProformaNumero,
                         factura.FacturaID,
-                        FacturaNumero = Numero("FAC", factura.NumeroCorrelativo),
+                        FacturaNumero = Numero("FAC", factura.Letra, factura.Sucursal, factura.NumeroCorrelativo),
                         factura.ClienteID,
                         factura.Cliente,
                         factura.CUIT,
@@ -678,7 +685,7 @@ ORDER BY c.Comprobante_ID DESC;";
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, permiso);
-                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, request.Tipo);
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, request.Tipo, request.Letra);
                             var letra = request.Letra;
                             var sucursal = request.Sucursal;
                             FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
@@ -701,7 +708,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                 return Ok(new
                                 {
                                     existente.ComprobanteID, existente.ClienteID,
-                                    Numero = Numero(existente.Tipo, existente.NumeroCorrelativo),
+                                    Numero = Numero(existente.Tipo, existente.Letra, existente.Sucursal, existente.NumeroCorrelativo),
                                     existente.Tipo, existente.Total, Estado = "EMITIDO", Reintento = true
                                 });
                             }
@@ -795,7 +802,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                         return Content(HttpStatusCode.Conflict, new
                                         {
                                             error = "El importe aplicado supera el saldo de la factura "
-                                                + Numero("FAC", factura.NumeroCorrelativo) + "."
+                                                + Numero("FAC", factura.Letra, factura.Sucursal, factura.NumeroCorrelativo) + "."
                                         });
                                     }
                                     decimal netoAplicado;
@@ -930,7 +937,7 @@ VALUES
  (GETDATE(),@nombreUsuario,'ANULAR','PROFORMAS',@claveProforma,'Estado=Facturada',@detalleProforma,'Cuenta Corriente');",
                                     connection, transaction))
                                 {
-                                    string motivo = "Nota de Credito " + Numero(request.Tipo, correlativo) + ": " + request.Concepto;
+                                    string motivo = "Nota de crédito " + Numero(request.Tipo, letra, sucursal, correlativo) + ": " + request.Concepto;
                                     command.Parameters.AddRange(new[]
                                     {
                                         P("@usuario", usuario.UsuarioID),P("@motivo", motivo.Length > 500 ? motivo.Substring(0, 500) : motivo),
@@ -952,7 +959,7 @@ VALUES
                                 command.Parameters.AddRange(new[]
                                 {
                                     P("@nombreUsuario", usuario.NombreUsuario),P("@claveAuditoria", "Comprobante_ID=" + comprobanteId),
-                                    P("@detalleAuditoria", Numero(request.Tipo, correlativo) + " por "
+                                    P("@detalleAuditoria", Numero(request.Tipo, letra, sucursal, correlativo) + " por "
                                         + total.ToString("0.00", CultureInfo.InvariantCulture))
                                 });
                                 command.ExecuteNonQuery();
@@ -962,7 +969,7 @@ VALUES
                             return Content(HttpStatusCode.Created, new
                             {
                                 ComprobanteID = comprobanteId, ClienteID = request.ClienteID,
-                                Numero = Numero(request.Tipo, correlativo), request.Tipo, Estado = "EMITIDO",
+                                Numero = Numero(request.Tipo, letra, sucursal, correlativo), request.Tipo, Estado = "EMITIDO",
                                 FechaEmision = emision, FechaVencimiento = vencimiento, Neto = request.Neto,
                                 IVA = iva, OtrosImpuestos = request.OtrosImpuestos, Total = total, Moneda = "ARS",
                                 ComprobanteReferenciaID = request.ComprobanteReferenciaID

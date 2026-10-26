@@ -297,7 +297,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
         {
             const string sql = @"
 SELECT c.Comprobante_ID,c.Tipo,
-       c.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
+       c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
        c.Estado,c.FechaEmision,c.RazonSocial AS Cliente,cl.Email AS EmailCliente
 FROM dbo.COMPROBANTES c
 INNER JOIN dbo.CLIENTES cl ON cl.Cliente_ID=c.ClienteID

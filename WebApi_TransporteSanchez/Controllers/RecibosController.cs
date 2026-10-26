@@ -75,6 +75,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ClienteID { get; set; }
             public string Tipo { get; set; }
             public int NumeroCorrelativo { get; set; }
+            public string Letra { get; set; }
+            public string Sucursal { get; set; }
             public string Estado { get; set; }
             public string Impacto { get; set; }
             public DateTime FechaEmision { get; set; }
@@ -145,9 +147,9 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        private static string NumeroRecibo(int numero)
+        private static string NumeroRecibo(string letra, string sucursal, int numero)
         {
-            return "REC-" + numero.ToString("D8", CultureInfo.InvariantCulture);
+            return "REC-" + letra + "-" + sucursal + "-" + numero.ToString("D8", CultureInfo.InvariantCulture);
         }
 
         private string ObtenerNombreUsuarioToken()
@@ -244,13 +246,13 @@ WHERE c.Cliente_ID=@clienteId;";
         private static DeudaRecibo LeerDeuda(SqlConnection connection, SqlTransaction transaction, int comprobanteId)
         {
             const string sql = @"
-SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Estado,c.Impacto,c.FechaEmision,c.Total,
+SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.Estado,c.Impacto,c.FechaEmision,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK)
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a WITH (UPDLOCK,HOLDLOCK)
        ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE c.Comprobante_ID=@id
-GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Estado,c.Impacto,c.FechaEmision,c.Total;";
+GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.Estado,c.Impacto,c.FechaEmision,c.Total;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(P("@id", comprobanteId));
@@ -263,6 +265,7 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Estado,c.Impa
                         ClienteID = (int)reader["ClienteID"],
                         Tipo = (string)reader["Tipo"],
                         NumeroCorrelativo = (int)reader["NumeroCorrelativo"],
+                        Letra = reader["Letra"] as string, Sucursal = reader["Sucursal"] as string,
                         Estado = (string)reader["Estado"],
                         Impacto = (string)reader["Impacto"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
@@ -396,7 +399,7 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction);
-                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC");
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC", request.Letra);
                             var letra = request.Letra;
                             var sucursal = request.Sucursal;
                             FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
@@ -416,7 +419,7 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                 {
                                     existente.ComprobanteID,
                                     existente.ClienteID,
-                                    Numero = NumeroRecibo(existente.NumeroCorrelativo),
+                                    Numero = NumeroRecibo(existente.Letra, existente.Sucursal, existente.NumeroCorrelativo),
                                     existente.Total,
                                     Estado = "EMITIDO",
                                     Reintento = true
@@ -462,7 +465,8 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                     return Content(HttpStatusCode.Conflict, new
                                     {
                                         error = "El importe aplicado supera el saldo pendiente de "
-                                            + deuda.Tipo + "-" + deuda.NumeroCorrelativo.ToString("D8", CultureInfo.InvariantCulture) + "."
+                                            + deuda.Tipo + "-" + deuda.Letra + "-" + deuda.Sucursal + "-"
+                                            + deuda.NumeroCorrelativo.ToString("D8", CultureInfo.InvariantCulture) + "."
                                     });
                                 }
                             }
@@ -553,7 +557,7 @@ VALUES
                                 command.Parameters.AddRange(new[]
                                 {
                                     P("@nombreUsuario", usuario.NombreUsuario),P("@claveAuditoria", "Comprobante_ID=" + comprobanteId),
-                                    P("@detalleAuditoria", "Recibo " + NumeroRecibo(correlativo) + " por "
+                                    P("@detalleAuditoria", "Recibo " + NumeroRecibo(letra, sucursal, correlativo) + " por "
                                         + request.Total.ToString("0.00", CultureInfo.InvariantCulture))
                                 });
                                 command.ExecuteNonQuery();
@@ -564,7 +568,7 @@ VALUES
                             {
                                 ComprobanteID = comprobanteId,
                                 ClienteID = request.ClienteID,
-                                Numero = NumeroRecibo(correlativo),
+                                Numero = NumeroRecibo(letra, sucursal, correlativo),
                                 Tipo = "REC",
                                 Estado = "EMITIDO",
                                 Fecha = fecha,
@@ -664,7 +668,7 @@ WHERE c.Comprobante_ID=@id AND c.Tipo='REC';", connection, transaction))
 
                         var aplicaciones = new List<object>();
                         using (var command = new SqlCommand(@"
-SELECT a.ComprobanteDeudaID, d.Tipo+'-'+RIGHT(REPLICATE('0',8)+CONVERT(varchar(8),d.NumeroCorrelativo),8) AS Comprobante,
+SELECT a.ComprobanteDeudaID, d.Tipo+'-'+d.Letra+'-'+d.Sucursal+'-'+RIGHT(REPLICATE('0',8)+CONVERT(varchar(8),d.NumeroCorrelativo),8) AS Comprobante,
        d.FechaVencimiento,d.Total AS ImporteOriginal,a.Importe
 FROM dbo.CUENTA_CORRIENTE_APLICACIONES a
 JOIN dbo.COMPROBANTES d ON d.Comprobante_ID=a.ComprobanteDeudaID
@@ -693,7 +697,7 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                         {
                             ComprobanteID = id,
                             ClienteID = clienteId,
-                            Numero = NumeroRecibo(numero),
+                            Numero = NumeroRecibo(letra, sucursal, numero),
                             Estado = estado,
                             TipoDescripcion = tipoDescripcion,
                             Fecha = fecha,
@@ -744,7 +748,7 @@ ORDER BY d.FechaEmision,d.Comprobante_ID;", connection, transaction))
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, "REC_EMITIR");
-                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC");
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "REC", request.Letra);
                             var letra = request.Letra;
                             var sucursal = request.Sucursal;
                             FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
@@ -804,18 +808,23 @@ VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                                     P("@observaciones", observaciones), P("@usuario", usuario.UsuarioID),
                                     P("@forma", forma), P("@referencia", referencia), P("@id", id),
                                     P("@nombre", usuario.NombreUsuario), P("@clave", "Comprobante_ID=" + id),
-                                    P("@detalle", "Recibo " + NumeroRecibo(numero) + " editado")
+                                    P("@detalle", "Recibo " + NumeroRecibo(letra, sucursal, numero) + " editado")
                                 });
                                 command.ExecuteNonQuery();
                             }
                             transaction.Commit();
-                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Fecha = fecha, Estado = "EMITIDO", ClienteID = clienteId });
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(letra, sucursal, numero), Fecha = fecha, Estado = "EMITIDO", ClienteID = clienteId });
                         }
                         catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
                     }
                 }
             }
             catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+            {
+                return Content(HttpStatusCode.Conflict,
+                    new { error = "Ya existe un recibo con la misma letra, sucursal y número." });
+            }
             catch (Exception) { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo editar el recibo. No se guardó ningún cambio." }); }
         }
 
@@ -840,8 +849,10 @@ VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                             int numero;
                             decimal total;
                             string estado;
+                            string letra;
+                            string sucursal;
                             using (var command = new SqlCommand(@"
-SELECT ClienteID,NumeroCorrelativo,Total,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+SELECT ClienteID,NumeroCorrelativo,Letra,Sucursal,Total,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
 WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
                             {
                                 command.Parameters.Add(P("@id", id));
@@ -850,6 +861,8 @@ WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
                                     if (!reader.Read()) { transaction.Rollback(); return NotFound(); }
                                     clienteId = (int)reader["ClienteID"];
                                     numero = (int)reader["NumeroCorrelativo"];
+                                    letra = reader["Letra"] as string;
+                                    sucursal = reader["Sucursal"] as string;
                                     total = (decimal)reader["Total"];
                                     estado = (string)reader["Estado"];
                                 }
@@ -881,14 +894,14 @@ VALUES (GETDATE(),@nombre,'ANULAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                                 command.Parameters.AddRange(new[]
                                 {
                                     P("@usuario", usuario.UsuarioID),P("@motivo", motivo),P("@id", id),P("@cliente", clienteId),
-                                    P("@total", total),P("@fecha", fechaAnulacion),P("@concepto", "Anulación de " + NumeroRecibo(numero)),
+                                    P("@total", total),P("@fecha", fechaAnulacion),P("@concepto", "Anulación de " + NumeroRecibo(letra, sucursal, numero)),
                                     P("@movimiento", movimientoOriginal),P("@nombre", usuario.NombreUsuario),
-                                    P("@clave", "Comprobante_ID=" + id),P("@detalle", "Recibo " + NumeroRecibo(numero) + " anulado: " + motivo)
+                                    P("@clave", "Comprobante_ID=" + id),P("@detalle", "Recibo " + NumeroRecibo(letra, sucursal, numero) + " anulado: " + motivo)
                                 });
                                 command.ExecuteNonQuery();
                             }
                             transaction.Commit();
-                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Estado = "ANULADO" });
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(letra, sucursal, numero), Estado = "ANULADO" });
                         }
                         catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
                     }
@@ -916,8 +929,10 @@ VALUES (GETDATE(),@nombre,'ANULAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta C
                             int numero;
                             string tipo;
                             string estado;
+                            string letra;
+                            string sucursal;
                             using (var command = new SqlCommand(@"
-SELECT Tipo,NumeroCorrelativo,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+SELECT Tipo,NumeroCorrelativo,Letra,Sucursal,Estado FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
 WHERE Comprobante_ID=@id;", connection, transaction))
                             {
                                 command.Parameters.Add(P("@id", id));
@@ -926,6 +941,8 @@ WHERE Comprobante_ID=@id;", connection, transaction))
                                     if (!reader.Read()) { transaction.Rollback(); return NotFound(); }
                                     tipo = (string)reader["Tipo"];
                                     numero = (int)reader["NumeroCorrelativo"];
+                                    letra = reader["Letra"] as string;
+                                    sucursal = reader["Sucursal"] as string;
                                     estado = (string)reader["Estado"];
                                 }
                             }
@@ -944,12 +961,12 @@ VALUES (GETDATE(),@nombre,'ELIMINAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta
                                 command.Parameters.AddRange(new[]
                                 {
                                     P("@id", id),P("@nombre", usuario.NombreUsuario),P("@clave", "Comprobante_ID=" + id),
-                                    P("@detalle", "Recibo " + NumeroRecibo(numero) + " eliminado luego de su anulación")
+                                    P("@detalle", "Recibo " + NumeroRecibo(letra, sucursal, numero) + " eliminado luego de su anulación")
                                 });
                                 command.ExecuteNonQuery();
                             }
                             transaction.Commit();
-                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(numero), Eliminado = true });
+                            return Ok(new { ComprobanteID = id, Numero = NumeroRecibo(letra, sucursal, numero), Eliminado = true });
                         }
                         catch { if (transaction.Connection != null) transaction.Rollback(); throw; }
                     }

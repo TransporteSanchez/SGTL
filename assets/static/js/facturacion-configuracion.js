@@ -2,6 +2,7 @@
     'use strict';
 
     var API = 'http://localhost:50222/api/facturacion-config';
+    var cambiosLetra = new WeakMap();
     function token() {
         try { return localStorage.getItem('token') || ''; } catch (e) { return ''; }
     }
@@ -51,6 +52,7 @@
                         var seleccionada = valor === datos.LetraPredeterminada ? ' selected' : '';
                         return '<option value="' + escapar(valor) + '"' + seleccionada + '>' + escapar(valor) + '</option>';
                     }).join('');
+                    letra.value = datos.LetraPredeterminada || '';
                     letra.disabled = datos.Tipo === 'REC';
                 }
                 if (sucursal) {
@@ -59,10 +61,27 @@
                         return '<option value="' + escapar(item.Codigo) + '"' + seleccionada + '>' +
                             escapar(item.Codigo) + ' · ' + escapar(item.Nombre) + '</option>';
                     }).join('');
+                    sucursal.value = datos.SucursalPredeterminada || '';
                 }
                 if (numero) {
                     numero.value = datos.ProximoNumero || '';
                     numero.readOnly = true;
+                }
+                if (letra) {
+                    var anterior = cambiosLetra.get(letra);
+                    if (anterior) letra.removeEventListener('change', anterior);
+                    cambiosLetra.delete(letra);
+                    if (Array.isArray(datos.Configuraciones) && datos.Configuraciones.length) {
+                        var aplicarLetra = function () {
+                            var configuracion = datos.Configuraciones.filter(function (item) { return item.Letra === letra.value; })[0];
+                            if (!configuracion) return;
+                            if (sucursal) sucursal.value = configuracion.SucursalPredeterminada || '';
+                            if (numero) numero.value = configuracion.ProximoNumero || '';
+                        };
+                        letra.addEventListener('change', aplicarLetra);
+                        cambiosLetra.set(letra, aplicarLetra);
+                        aplicarLetra();
+                    }
                 }
                 return datos;
             });

@@ -74,27 +74,40 @@
         SGTL.tabla.llenar('#tiposBody', datos.tipos.map(function (item) {
             return '<tr><td><strong>' + escapar(item.Tipo) + '</strong></td><td>' + escapar(item.Descripcion) + '</td><td>' + impacto(item) + '</td><td>' + escapar(item.LetraPredeterminada || '—') + '</td>' +
                 '<td>' + escapar(item.Sucursal || '—') + '</td><td>' + escapar(item.Numerador || '—') + '</td><td class="text-center">' + estado(item.Activo) + '</td>' +
-                '<td class="text-center">' + acciones('tipo', item.Tipo, item.Activo, item.PuedeEliminar) + '</td></tr>';
+                '<td class="text-center">' + acciones('tipo', item.FactTipo_ID, item.Activo, item.PuedeEliminar) + '</td></tr>';
         }).join(''));
     }
     function render() { renderSucursales(); renderNumeradores(); renderSelectoresTipo(); renderTipos(); }
     function resetSucursal() { SGTL.reiniciarFormulario('#sucursalForm'); porId('sucursalId').value = ''; porId('sucursalActiva').checked = true; }
     function resetNumerador() { SGTL.reiniciarFormulario('#numeradorForm'); porId('numeradorId').value = ''; porId('numeradorUltimo').value = '0'; porId('numeradorActivo').checked = true; }
-    function sincronizarLetraTipo() {
-        var esRecibo = porId('tipoCodigo').value.trim().toUpperCase() === 'REC';
-        porId('tipoLetra').disabled = esRecibo;
+    function sincronizarTipo() {
+        var codigo = porId('tipoCodigo').value.trim().toUpperCase();
+        var editando = !!porId('tipoId').value;
+        var existente = datos.tipos.filter(function (item) { return item.Tipo === codigo; })[0];
+        if (!editando && existente) {
+            porId('tipoDescripcion').value = existente.Descripcion || '';
+            porId('tipoImpacto').value = existente.Impacto;
+        }
+        var esRecibo = codigo === 'REC';
         if (esRecibo) porId('tipoLetra').value = 'X';
         else if (porId('tipoLetra').value === 'X') porId('tipoLetra').value = 'A';
+        porId('tipoCodigoEditable').classList.toggle('d-none', editando);
+        porId('tipoCodigoFijo').classList.toggle('d-none', !editando);
+        porId('tipoCodigoTexto').textContent = codigo;
+        porId('tipoLetraEditable').classList.toggle('d-none', editando || esRecibo);
+        porId('tipoLetraFijo').classList.toggle('d-none', !editando && !esRecibo);
+        porId('tipoLetraTexto').textContent = porId('tipoLetra').value;
+        porId('tipoImpactoEditable').classList.toggle('d-none', editando || !!existente);
+        porId('tipoImpactoFijo').classList.toggle('d-none', !editando && !existente);
+        porId('tipoImpactoTexto').textContent = porId('tipoImpacto').value === 'C' ? 'Crédito' : 'Deuda';
     }
     function resetTipo() {
         SGTL.reiniciarFormulario('#tipoForm');
         porId('tipoId').value = '';
-        porId('tipoCodigo').disabled = false;
-        porId('tipoImpacto').disabled = false;
         porId('tipoActivo').checked = true;
         porId('tipoImpacto').value = 'D';
         porId('tipoLetra').value = 'A';
-        sincronizarLetraTipo();
+        sincronizarTipo();
     }
     function recargar(mensaje, silencioso) {
         return Promise.all([
@@ -150,7 +163,7 @@
             LetraPredeterminada: porId('tipoLetra').value, SucursalID: porId('tipoSucursal').value, NumeradorID: porId('tipoNumerador').value
         };
         guardar('tipoForm', '/tipos-comprobante', porId('tipoId').value, cuerpoTipo(item, porId('tipoActivo').checked),
-            'Tipo de comprobante ' + tipo + ' guardado.', resetTipo);
+            'Tipo de comprobante ' + tipo + ' ' + item.LetraPredeterminada + ' guardado.', resetTipo);
     }
     function editarSucursal(id) {
         var item = datos.sucursales.filter(function (x) { return Number(x.SucursalID) === Number(id); })[0]; if (!item) return;
@@ -165,19 +178,17 @@
         porId('numeradorNombre').focus();
     }
     function editarTipo(id) {
-        var item = datos.tipos.filter(function (x) { return x.Tipo === id; })[0]; if (!item) return;
+        var item = datos.tipos.filter(function (x) { return Number(x.FactTipo_ID) === Number(id); })[0]; if (!item) return;
         resetTipo();
-        porId('tipoId').value = item.Tipo;
+        porId('tipoId').value = item.FactTipo_ID;
         porId('tipoCodigo').value = item.Tipo;
-        porId('tipoCodigo').disabled = true;
         porId('tipoDescripcion').value = item.Descripcion || '';
         porId('tipoImpacto').value = item.Impacto;
-        porId('tipoImpacto').disabled = true;
         porId('tipoLetra').value = item.LetraPredeterminada || (item.Tipo === 'REC' ? 'X' : 'A');
         porId('tipoSucursal').value = item.SucursalID || '';
         porId('tipoNumerador').value = item.NumeradorID || '';
         porId('tipoActivo').checked = item.Activo;
-        sincronizarLetraTipo();
+        sincronizarTipo();
         porId('tipoDescripcion').focus();
     }
     // Activar e inactivar no piden confirmación (§5.2) y conservan el registro.
@@ -194,8 +205,8 @@
         },
         tipo: {
             ruta: '/tipos-comprobante', nombre: 'Tipo de comprobante', campoEstado: 'Activo',
-            buscar: function (id) { return datos.tipos.filter(function (x) { return x.Tipo === id; })[0]; },
-            etiqueta: function (item) { return item.Tipo + ' · ' + item.Descripcion; }
+            buscar: function (id) { return datos.tipos.filter(function (x) { return Number(x.FactTipo_ID) === Number(id); })[0]; },
+            etiqueta: function (item) { return item.Tipo + ' · ' + (item.LetraPredeterminada || '—') + ' · ' + item.Descripcion; }
         }
     };
     function cambiarEstado(boton, tipo, id, activar) {
@@ -266,7 +277,7 @@
         porId('cancelarSucursal').addEventListener('click', resetSucursal);
         porId('cancelarNumerador').addEventListener('click', resetNumerador);
         porId('cancelarTipo').addEventListener('click', resetTipo);
-        porId('tipoCodigo').addEventListener('input', sincronizarLetraTipo);
+        porId('tipoCodigo').addEventListener('input', sincronizarTipo);
         document.addEventListener('click', alHacerClic);
         SGTL.tabla.cargando('#sucursalesBody', 4);
         SGTL.tabla.cargando('#numeradoresBody', 4);

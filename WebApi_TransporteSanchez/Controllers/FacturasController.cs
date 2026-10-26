@@ -503,9 +503,9 @@ WHERE c.ClaveOperacion=@clave;";
             }
         }
 
-        private static string NumeroFactura(int numero)
+        private static string NumeroFactura(string letra, string sucursal, int numero)
         {
-            return "FAC-" + numero.ToString("D8", CultureInfo.InvariantCulture);
+            return "FAC-" + letra + "-" + sucursal + "-" + numero.ToString("D8", CultureInfo.InvariantCulture);
         }
 
         [HttpGet]
@@ -521,7 +521,7 @@ WHERE c.ClaveOperacion=@clave;";
                     ComprobanteImpresion comprobante = null;
                     const string sql = @"
 SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,t.Descripcion AS TipoDescripcion,
-       c.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
+       c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
        c.Letra,c.Sucursal,
        c.FechaEmision,c.FechaVencimiento,c.Moneda,c.Estado AS EstadoDocumental,
        CASE WHEN c.Estado='ANULADO' THEN 'Anulado'
@@ -538,7 +538,7 @@ SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,t.Descripcion AS TipoDescripcion,
         JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
         WHERE cp.ComprobanteID=c.Comprobante_ID AND cp.Vigente=1
          ORDER BY cp.ComprobanteProforma_ID DESC) AS ProformaNumero,
-        (SELECT r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+        (SELECT r.Tipo+'-'+r.Letra+'-'+r.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
          FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID) AS ComprobanteReferenciaNumero
 FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
@@ -648,7 +648,7 @@ ORDER BY cp.ComprobanteProforma_ID;";
                     }
                     const string sqlCancelados = @"
 SELECT deuda.Comprobante_ID AS ComprobanteID,
-       deuda.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),deuda.NumeroCorrelativo),8) AS Numero,
+       deuda.Tipo+'-'+deuda.Letra+'-'+deuda.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),deuda.NumeroCorrelativo),8) AS Numero,
        deuda.FechaEmision,deuda.Concepto,CAST(ap.Importe AS decimal(18,2)) AS ImporteAplicado
 FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
 JOIN dbo.COMPROBANTES deuda ON deuda.Comprobante_ID=ap.ComprobanteDeudaID
@@ -713,7 +713,7 @@ ORDER BY ap.Aplicacion_ID;";
                         FacturaVigente = factura == null ? null : new
                         {
                             factura.ComprobanteID,
-                            Numero = NumeroFactura(factura.NumeroCorrelativo),
+                            Numero = NumeroFactura(factura.Letra, factura.Sucursal, factura.NumeroCorrelativo),
                             factura.Total
                         },
                         VersionProforma = Convert.ToBase64String(proforma.Version),
@@ -770,7 +770,7 @@ ORDER BY ap.Aplicacion_ID;";
                         try
                         {
                             var usuario = ValidarAcceso(connection, transaction, "FAC_EMITIR");
-                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "FAC");
+                            var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, "FAC", request.Letra);
                             var letra = request.Letra;
                             var sucursal = request.Sucursal;
                             FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
@@ -802,7 +802,7 @@ ORDER BY ap.Aplicacion_ID;";
                                 {
                                     porClave.ComprobanteID,
                                     porClave.ClienteID,
-                                    Numero = NumeroFactura(porClave.NumeroCorrelativo),
+                                    Numero = NumeroFactura(porClave.Letra, porClave.Sucursal, porClave.NumeroCorrelativo),
                                     porClave.Total,
                                     Estado = "EMITIDO",
                                     Reintento = true
@@ -823,7 +823,7 @@ ORDER BY ap.Aplicacion_ID;";
                                 {
                                     error = "La proforma ya tiene una factura vigente.",
                                     ComprobanteID = existente.ComprobanteID,
-                                    Numero = NumeroFactura(existente.NumeroCorrelativo)
+                                    Numero = NumeroFactura(existente.Letra, existente.Sucursal, existente.NumeroCorrelativo)
                                 });
                             }
                             var detalles = LeerDetalles(connection, transaction, id);
@@ -937,7 +937,7 @@ VALUES
                                     P("@concepto", concepto),P("@nombreUsuario", usuario.NombreUsuario),
                                     P("@claveAuditoria", "Comprobante_ID=" + comprobanteId),
                                     P("@claveProformaAuditoria", "Proforma_ID=" + id),
-                                    P("@detalleAuditoria", "Factura " + NumeroFactura(correlativo) + " desde Proforma_ID=" + id)
+                                    P("@detalleAuditoria", "Factura " + NumeroFactura(letra, sucursal, correlativo) + " desde Proforma_ID=" + id)
                                 });
                                 command.ExecuteNonQuery();
                             }
@@ -946,7 +946,7 @@ VALUES
                             return Content(HttpStatusCode.Created, new
                             {
                                 ComprobanteID = comprobanteId,
-                                Numero = NumeroFactura(correlativo),
+                                Numero = NumeroFactura(letra, sucursal, correlativo),
                                 Tipo = "FAC",
                                 Estado = "EMITIDO",
                                 ClienteID = proforma.ClienteID,

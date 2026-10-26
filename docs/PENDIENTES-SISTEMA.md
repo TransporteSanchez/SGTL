@@ -1023,8 +1023,8 @@ cargadas." y errores sin textos técnicos.
 - [ ] Guardar una sucursal sin datos: Código y Nombre en rojo con su mensaje; el cursor va a Código.
 - [ ] Interruptor de una sucursal activa → toast "Sucursal inactivada." y la etiqueta pasa a Inactivo; otra vez →
   "Sucursal activada.". Igual con un numerador y un tipo de comprobante (con datos de prueba).
-- [ ] Lápiz de un tipo de comprobante: carga el formulario con el código bloqueado; la cruz gris lo limpia.
-- [ ] Guardar con un código repetido: toast rojo con el mensaje de la API.
+- [ ] Lápiz de un tipo de comprobante: carga el formulario con código, letra e impacto como datos fijos; la cruz gris lo limpia.
+- [ ] Guardar con el mismo código y la misma letra: toast rojo con el mensaje de la API; con otra letra, se registra una segunda configuración.
 
 **Eliminar configuraciones sin relaciones (26/10):** en Gestionar tipos de comprobante, las filas de sucursales,
 numeradores y tipos muestran Eliminar solo cuando la API permite el borrado físico. Inactivar conserva el registro.
@@ -1047,6 +1047,22 @@ reconstruir desde esos documentos.
   solo el estado. Una sucursal que figure en un comprobante no ofrece Eliminar ni permite cambiar su código.
 - [ ] Riesgo anterior, separado de este cambio: al guardar el formulario completo de un numerador abierto antes
   de una emisión, se puede enviar un `UltimoNumero` viejo. Proteger el correlativo sin impedir su edición deliberada.
+
+**Tipos de comprobante por letra (26/10):** un mismo código puede tener configuraciones A y B separadas. La
+descripción y el impacto pertenecen al código; cada letra tiene su propia sucursal, numerador y estado. La emisión
+usa la configuración y el próximo número de la letra elegida. `TIPOS_COMPROBANTE` conserva un código único y sus
+relaciones históricas; la nueva migración `database/cuenta-corriente/12_tipos_por_letra.sql` cambia la clave de
+`FACTURACION_TIPOS_COMPROBANTE` y la unicidad del número visible. **No se ejecuta automáticamente contra la base
+compartida.** Las pantallas, el PDF, los correos y las respuestas de la API muestran el identificador completo,
+por ejemplo `FAC-B-0002-00000012`, para distinguir correlativos iguales.
+- [ ] Rocío: revisar y ejecutar `12_tipos_por_letra.sql` en la base compartida antes de probar la pantalla nueva.
+- [ ] En VM: registrar FAC B con el código FAC existente, la misma descripción e impacto, y otro numerador;
+  comprobar que FAC A y FAC B aparecen en filas distintas. Repetir FAC B debe mostrar el error de código y letra.
+- [ ] Editar, inactivar y eliminar una variante sin comprobantes: solo debe cambiar esa letra. Una variante con
+  comprobantes propios no ofrece Eliminar; la otra sí, salvo comprobantes históricos sin letra.
+- [ ] Emitir comprobantes de prueba A y B: el formulario debe mostrar el próximo número del numerador elegido para
+  cada letra y la API debe registrarlos sin mezclar configuraciones, aun si ambos correlativos coinciden. Al asignar
+  un numerador, comprobar que su próximo correlativo no exista ya para ese código, letra y sucursal.
 
 **Gestionar e-mail (commit "Configuración: design system en Gestionar e-mail", pantalla de Facu):** "Registrar
 configuración de e-mail" en verde (antes "Nueva configuración"), mismo título en el modal. Filas con lápiz, "Probar

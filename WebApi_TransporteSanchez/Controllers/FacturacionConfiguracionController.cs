@@ -44,18 +44,21 @@ namespace WebApi_TransporteSanchez.Controllers
             return sucursal;
         }
 
-        public static ConfiguracionEmisionComprobante Obtener(SqlConnection connection, SqlTransaction transaction, string tipo)
+        public static ConfiguracionEmisionComprobante Obtener(SqlConnection connection, SqlTransaction transaction, string tipo, string letra = null)
         {
+            letra = NormalizarLetra(letra);
             const string sql = @"
-SELECT c.Tipo,t.Descripcion,c.LetraPredeterminada,c.NumeradorID,n.UltimoNumero,s.Codigo AS SucursalPredeterminada
+SELECT TOP (1) c.Tipo,t.Descripcion,c.LetraPredeterminada,c.NumeradorID,n.UltimoNumero,s.Codigo AS SucursalPredeterminada
 FROM dbo.FACTURACION_TIPOS_COMPROBANTE c WITH (UPDLOCK,HOLDLOCK)
 JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
 JOIN dbo.FACTURACION_NUMERADORES n WITH (UPDLOCK,HOLDLOCK) ON n.Numerador_ID=c.NumeradorID AND n.Activo=1
 JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID AND s.Activa=1
-WHERE c.Tipo=@tipo AND c.Activo=1;";
+WHERE c.Tipo=@tipo AND c.Activo=1 AND (@letra IS NULL OR c.LetraPredeterminada=@letra)
+ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='B' THEN 1 ELSE 2 END;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(P("@tipo", tipo));
+                command.Parameters.Add(P("@letra", letra));
                 using (var reader = command.ExecuteReader())
                 {
                     if (!reader.Read())
@@ -79,6 +82,8 @@ WHERE c.Tipo=@tipo AND c.Activo=1;";
             letra = configuracion.Tipo == "REC" ? "X" : NormalizarLetra(letra) ?? configuracion.LetraPredeterminada;
             if (configuracion.Tipo != "REC" && letra != "A" && letra != "B")
                 throw new ArgumentException("La letra del comprobante debe ser A o B.");
+            if (letra != configuracion.LetraPredeterminada)
+                throw new InvalidOperationException("El tipo de comprobante no tiene una configuración de facturación activa para esa letra.");
             sucursal = NormalizarSucursal(sucursal) ?? configuracion.SucursalPredeterminada;
             using (var command = new SqlCommand("SELECT COUNT(*) FROM dbo.FACTURACION_SUCURSALES WHERE Codigo=@codigo AND Activa=1;", connection, transaction))
             {
@@ -125,12 +130,12 @@ WHERE Numerador_ID=@id AND Activo=1 AND UltimoNumero<99999999;", connection, tra
         private static SqlParameter P(string name, object value) { return new SqlParameter(name, value ?? DBNull.Value); }
 
         // Texto para la pantalla (§9 del design system): las validaciones traen un mensaje para el usuario y un
-        // código repetido se explica; el resto (base de datos, red) es técnico y no se muestra.
+        // un dato repetido se explica; el resto (base de datos, red) es técnico y no se muestra.
         private static string MensajeParaUsuario(Exception ex)
         {
             if (ex is ArgumentException || ex is InvalidOperationException) return ex.Message;
             var sql = ex as SqlException;
-            if (sql != null && (sql.Number == 2627 || sql.Number == 2601)) return "Ya existe un registro con ese código.";
+            if (sql != null && (sql.Number == 2627 || sql.Number == 2601)) return "Ya existe un registro con esos datos.";
             return "No se pudo completar la operación. Probá de nuevo.";
         }
 
@@ -522,11 +527,12 @@ FROM dbo.FACTURACION_NUMERADORES n WHERE (@todos=1 OR n.Activo=1) ORDER BY n.Nom
         [HttpGet, Route("tipos-comprobante")]
         public IHttpActionResult Tipos()
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo,
-CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES comprobante WHERE comprobante.Tipo=t.Tipo)
+            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT c.FactTipo_ID,t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo,
+CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES comprobante WHERE comprobante.Tipo=t.Tipo
+    AND (comprobante.Letra=c.LetraPredeterminada OR NULLIF(LTRIM(RTRIM(comprobante.Letra)),'') IS NULL))
     THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
-FROM dbo.TIPOS_COMPROBANTE t LEFT JOIN dbo.FACTURACION_TIPOS_COMPROBANTE c ON c.Tipo=t.Tipo
-LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = r["Activo"] != DBNull.Value && (bool)r["Activo"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE c JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
+LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo,c.LetraPredeterminada;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { FactTipo_ID = (int)r["FactTipo_ID"], Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = (bool)r["Activo"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -545,27 +551,40 @@ LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN d
                     {
                         try
                         {
-                            using (var configuracion = new SqlCommand("SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            using (var configuracion = new SqlCommand("SELECT COUNT(*) FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo AND LetraPredeterminada=@letra;", c, tx))
                             {
-                                configuracion.Parameters.Add(P("@tipo", tipo));
-                                configuracion.ExecuteScalar();
+                                configuracion.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letra", letra) });
+                                if ((int)configuracion.ExecuteScalar() != 0)
+                                    throw new ArgumentException("Ya existe un tipo de comprobante con ese código y letra.");
                             }
-                            using (var existe = new SqlCommand("SELECT COUNT(*) FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            string descripcionActual = null, impactoActual = null;
+                            using (var existente = new SqlCommand("SELECT Descripcion,Impacto FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
-                                existe.Parameters.Add(P("@tipo", tipo));
-                                if (Convert.ToInt32(existe.ExecuteScalar(), CultureInfo.InvariantCulture) != 0)
-                                    throw new ArgumentException("Ya existe un tipo de comprobante con ese código.");
+                                existente.Parameters.Add(P("@tipo", tipo));
+                                using (var r = existente.ExecuteReader())
+                                    if (r.Read()) { descripcionActual = (string)r["Descripcion"]; impactoActual = (string)r["Impacto"]; }
                             }
+                            if (impactoActual != null && !string.Equals(impactoActual.Trim(), request.Impacto, StringComparison.OrdinalIgnoreCase))
+                                throw new ArgumentException("El impacto debe coincidir con el del tipo de comprobante existente.");
+                            if (descripcionActual != null && !string.Equals(descripcionActual.Trim(), request.Descripcion.Trim(), StringComparison.OrdinalIgnoreCase))
+                                throw new ArgumentException("La descripción debe coincidir con la del tipo de comprobante existente.");
                             ValidarDependenciasActivas(c, tx, request);
-                            using (var cmd = new SqlCommand(@"
-INSERT dbo.TIPOS_COMPROBANTE (Tipo,Descripcion,Impacto) VALUES (@tipo,@descripcion,@impacto);
-INSERT dbo.FACTURACION_TIPOS_COMPROBANTE (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Activo)
-VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
+                            if (impactoActual == null)
                             {
-                                cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto), P("@letra", letra), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
-                                cmd.ExecuteNonQuery();
+                                using (var cmd = new SqlCommand("INSERT dbo.TIPOS_COMPROBANTE (Tipo,Descripcion,Impacto) VALUES (@tipo,@descripcion,@impacto);", c, tx))
+                                {
+                                    cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto) });
+                                    cmd.ExecuteNonQuery();
+                                }
                             }
-                            tx.Commit(); Auditar(c, u, "ALTA", "Tipo=" + tipo, "Configuración de " + tipo); return Content(HttpStatusCode.Created, new { Tipo = tipo });
+                            int factTipoId;
+                            using (var cmd = new SqlCommand(@"INSERT dbo.FACTURACION_TIPOS_COMPROBANTE (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Activo)
+OUTPUT INSERTED.FactTipo_ID VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
+                            {
+                                cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letra", letra), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
+                                factTipoId = (int)cmd.ExecuteScalar();
+                            }
+                            tx.Commit(); Auditar(c, u, "ALTA", "FactTipo_ID=" + factTipoId, "Configuración de " + tipo + " " + letra); return Content(HttpStatusCode.Created, new { FactTipo_ID = factTipoId, Tipo = tipo, LetraPredeterminada = letra });
                         }
                         catch { if (tx.Connection != null) tx.Rollback(); throw; }
                     }
@@ -574,14 +593,14 @@ VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
-        [HttpPut, Route("tipos-comprobante/{tipo}")]
-        public IHttpActionResult GuardarTipo(string tipo, [FromBody] TipoRequest request)
+        [HttpPut, Route("tipos-comprobante/{id:int}")]
+        public IHttpActionResult GuardarTipo(int id, [FromBody] TipoRequest request)
         {
             try
             {
-                tipo = CodigoTipo(tipo); ValidarTipo(tipo, request);
-                if (!string.IsNullOrWhiteSpace(request.Tipo) && CodigoTipo(request.Tipo) != tipo)
-                    throw new ArgumentException("El código del tipo de comprobante no se puede modificar.");
+                if (id <= 0) throw new ArgumentException("El tipo de comprobante no es válido.");
+                string tipo = CodigoTipo(request == null ? null : request.Tipo);
+                ValidarTipo(tipo, request);
                 string letra = FacturacionComprobantesConfiguracion.NormalizarLetra(request.LetraPredeterminada);
                 using (var c = new SqlConnection(ConnectionString()))
                 {
@@ -590,35 +609,46 @@ VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
                     {
                         try
                         {
-                            bool activoAnterior;
-                            using (var configuracion = new SqlCommand("SELECT Activo FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            bool activoAnterior = false;
+                            string tipoActual = null, letraActual = null;
+                            using (var configuracion = new SqlCommand("SELECT Tipo,LetraPredeterminada,Activo FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE FactTipo_ID=@id;", c, tx))
                             {
-                                configuracion.Parameters.Add(P("@tipo", tipo));
-                                var valor = configuracion.ExecuteScalar();
-                                activoAnterior = valor != null && (bool)valor;
+                                configuracion.Parameters.Add(P("@id", id));
+                                using (var r = configuracion.ExecuteReader())
+                                {
+                                    if (r.Read())
+                                    {
+                                        tipoActual = (string)r["Tipo"];
+                                        letraActual = ((string)r["LetraPredeterminada"]).Trim();
+                                        activoAnterior = (bool)r["Activo"];
+                                    }
+                                }
                             }
+                            if (tipoActual == null) { tx.Rollback(); return NotFound(); }
+                            if (tipoActual != tipo) throw new ArgumentException("El código del tipo de comprobante no se puede modificar.");
+                            if (letraActual != letra) throw new ArgumentException("La letra del tipo de comprobante no se puede modificar.");
                             string impactoActual;
                             using (var existente = new SqlCommand("SELECT Impacto FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
                                 existente.Parameters.Add(P("@tipo", tipo));
                                 impactoActual = existente.ExecuteScalar() as string;
                             }
-                            if (impactoActual == null) return NotFound();
+                            if (impactoActual == null) { tx.Rollback(); return NotFound(); }
                             if (request.Activo) ValidarDependenciasActivas(c, tx, request);
                             if (!string.Equals(impactoActual.Trim(), request.Impacto, StringComparison.OrdinalIgnoreCase))
                                 throw new ArgumentException("El impacto no se puede modificar una vez creado el tipo de comprobante.");
                             using (var cmd = new SqlCommand(@"
 UPDATE dbo.TIPOS_COMPROBANTE SET Descripcion=@descripcion WHERE Tipo=@tipo;
-MERGE dbo.FACTURACION_TIPOS_COMPROBANTE AS destino USING (SELECT @tipo AS Tipo) AS origen ON destino.Tipo=origen.Tipo
-WHEN MATCHED THEN UPDATE SET LetraPredeterminada=@letra,SucursalID=@sucursal,NumeradorID=@numerador,Activo=@activo,FechaModificacion=SYSUTCDATETIME()
-WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Activo) VALUES (@tipo,@letra,@sucursal,@numerador,@activo);", c, tx))
+UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE
+SET SucursalID=@sucursal,NumeradorID=@numerador,Activo=@activo,FechaModificacion=SYSUTCDATETIME()
+WHERE FactTipo_ID=@id;", c, tx))
                             {
-                                cmd.Parameters.AddRange(new[] { P("@descripcion", request.Descripcion.Trim()), P("@tipo", tipo), P("@letra", letra), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
+                                cmd.Parameters.AddRange(new[] { P("@descripcion", request.Descripcion.Trim()), P("@tipo", tipo), P("@id", id), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
                                 cmd.ExecuteNonQuery();
                             }
                             var baja = activoAnterior && !request.Activo;
-                            Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Tipo=" + tipo,
-                                baja ? "Tipo de comprobante inactivado" : "Configuración de " + tipo, tx);
+                            Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "FactTipo_ID=" + id,
+                                baja ? "Tipo de comprobante inactivado" : "Configuración de " + tipo + " " + letra, tx);
                             tx.Commit(); return Ok();
                         }
                         catch { if (tx.Connection != null) tx.Rollback(); throw; }
@@ -628,12 +658,12 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
-        [HttpPut, Route("tipos-comprobante/{tipo}/estado")]
-        public IHttpActionResult CambiarEstadoTipo(string tipo, [FromBody] EstadoActivoRequest request)
+        [HttpPut, Route("tipos-comprobante/{id:int}/estado")]
+        public IHttpActionResult CambiarEstadoTipo(int id, [FromBody] EstadoActivoRequest request)
         {
             try
             {
-                tipo = CodigoTipo(tipo);
+                if (id <= 0) throw new ArgumentException("El tipo de comprobante no es válido.");
                 if (request == null || !request.Activo.HasValue) throw new ArgumentException("Seleccioná el estado del tipo de comprobante.");
                 using (var c = new SqlConnection(ConnectionString()))
                 {
@@ -644,14 +674,17 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                         {
                             bool existe = false, activoAnterior = false;
                             int sucursalId = 0, numeradorId = 0;
-                            using (var cmd = new SqlCommand("SELECT Activo,SucursalID,NumeradorID FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            string tipo = null, letra = null;
+                            using (var cmd = new SqlCommand("SELECT Tipo,LetraPredeterminada,Activo,SucursalID,NumeradorID FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE FactTipo_ID=@id;", c, tx))
                             {
-                                cmd.Parameters.Add(P("@tipo", tipo));
+                                cmd.Parameters.Add(P("@id", id));
                                 using (var r = cmd.ExecuteReader())
                                 {
                                     if (r.Read())
                                     {
                                         existe = true;
+                                        tipo = (string)r["Tipo"];
+                                        letra = ((string)r["LetraPredeterminada"]).Trim();
                                         activoAnterior = (bool)r["Activo"];
                                         sucursalId = (int)r["SucursalID"];
                                         numeradorId = (int)r["NumeradorID"];
@@ -662,14 +695,14 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                             if (activoAnterior != request.Activo.Value)
                             {
                                 if (request.Activo.Value) ValidarDependenciasActivas(c, tx, sucursalId, numeradorId);
-                                using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE SET Activo=@activo,FechaModificacion=SYSUTCDATETIME() WHERE Tipo=@tipo;", c, tx))
+                                using (var cmd = new SqlCommand("UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE SET Activo=@activo,FechaModificacion=SYSUTCDATETIME() WHERE FactTipo_ID=@id;", c, tx))
                                 {
-                                    cmd.Parameters.AddRange(new[] { P("@activo", request.Activo.Value), P("@tipo", tipo) });
+                                    cmd.Parameters.AddRange(new[] { P("@activo", request.Activo.Value), P("@id", id) });
                                     cmd.ExecuteNonQuery();
                                 }
                                 var baja = activoAnterior && !request.Activo.Value;
-                                Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "Tipo=" + tipo,
-                                    baja ? "Tipo de comprobante inactivado" : "Tipo de comprobante activado", tx);
+                                Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "FactTipo_ID=" + id,
+                                    baja ? "Tipo de comprobante " + tipo + " " + letra + " inactivado" : "Tipo de comprobante " + tipo + " " + letra + " activado", tx);
                             }
                             tx.Commit();
                             return Ok();
@@ -683,13 +716,13 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
             catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
-        [HttpDelete, Route("tipos-comprobante/{tipo}")]
-        public IHttpActionResult EliminarTipo(string tipo)
+        [HttpDelete, Route("tipos-comprobante/{id:int}")]
+        public IHttpActionResult EliminarTipo(int id)
         {
             const string relacion = "No se puede eliminar el tipo de comprobante: tiene comprobantes asociados.";
             try
             {
-                tipo = CodigoTipo(tipo);
+                if (id <= 0) throw new ArgumentException("El tipo de comprobante no es válido.");
                 using (var c = new SqlConnection(ConnectionString()))
                 {
                     c.Open(); var u = ValidarUsuario(c, true);
@@ -698,29 +731,45 @@ WHEN NOT MATCHED THEN INSERT (Tipo,LetraPredeterminada,SucursalID,NumeradorID,Ac
                         try
                         {
                             // La emisión toma primero la configuración; conservamos ese orden de bloqueo.
-                            using (var cmd = new SqlCommand("SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            string tipo = null, letra = null;
+                            using (var cmd = new SqlCommand("SELECT Tipo,LetraPredeterminada FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE FactTipo_ID=@id;", c, tx))
                             {
-                                cmd.Parameters.Add(P("@tipo", tipo));
-                                cmd.ExecuteScalar();
+                                cmd.Parameters.Add(P("@id", id));
+                                using (var r = cmd.ExecuteReader())
+                                {
+                                    if (r.Read())
+                                    {
+                                        tipo = (string)r["Tipo"];
+                                        letra = ((string)r["LetraPredeterminada"]).Trim();
+                                    }
+                                }
                             }
+                            if (tipo == null) { tx.Rollback(); return NotFound(); }
                             using (var cmd = new SqlCommand("SELECT Tipo FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
                                 cmd.Parameters.Add(P("@tipo", tipo));
                                 if (cmd.ExecuteScalar() == null) { tx.Rollback(); return NotFound(); }
                             }
-                            using (var cmd = new SqlCommand("SELECT CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo) THEN 1 ELSE 0 END;", c, tx))
+                            using (var cmd = new SqlCommand(@"SELECT CASE WHEN EXISTS (
+SELECT 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+WHERE Tipo=@tipo AND (Letra=@letra OR NULLIF(LTRIM(RTRIM(Letra)),'') IS NULL)
+) THEN 1 ELSE 0 END;", c, tx))
                             {
-                                cmd.Parameters.Add(P("@tipo", tipo));
+                                cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letra", letra) });
                                 if ((int)cmd.ExecuteScalar() != 0) { tx.Rollback(); return Content(HttpStatusCode.Conflict, new { error = relacion }); }
                             }
-                            using (var cmd = new SqlCommand(@"DELETE FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE Tipo=@tipo;
-DELETE FROM dbo.COMPROBANTES_NUMERADORES WHERE Tipo=@tipo;
-DELETE FROM dbo.TIPOS_COMPROBANTE WHERE Tipo=@tipo;", c, tx))
+                            using (var cmd = new SqlCommand(@"DELETE FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE FactTipo_ID=@id;
+IF NOT EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE Tipo=@tipo)
+   AND NOT EXISTS (SELECT 1 FROM dbo.COMPROBANTES WHERE Tipo=@tipo)
+BEGIN
+    DELETE FROM dbo.COMPROBANTES_NUMERADORES WHERE Tipo=@tipo;
+    DELETE FROM dbo.TIPOS_COMPROBANTE WHERE Tipo=@tipo;
+END;", c, tx))
                             {
-                                cmd.Parameters.Add(P("@tipo", tipo));
+                                cmd.Parameters.AddRange(new[] { P("@id", id), P("@tipo", tipo) });
                                 cmd.ExecuteNonQuery();
                             }
-                            Auditar(c, u, "ELIMINAR", "Tipo=" + tipo, "Tipo de comprobante " + tipo + " eliminado", tx);
+                            Auditar(c, u, "ELIMINAR", "FactTipo_ID=" + id, "Tipo de comprobante " + tipo + " " + letra + " eliminado", tx);
                             tx.Commit();
                             return Ok();
                         }
@@ -737,8 +786,54 @@ DELETE FROM dbo.TIPOS_COMPROBANTE WHERE Tipo=@tipo;", c, tx))
         [HttpGet, Route("emision/{tipo}")]
         public IHttpActionResult Emision(string tipo)
         {
-            try { tipo = TipoSeguro(tipo); using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); var cfg = FacturacionComprobantesConfiguracion.Obtener(c, null, tipo); using (var cmd = new SqlCommand("SELECT Codigo,Nombre FROM dbo.FACTURACION_SUCURSALES WHERE Activa=1 ORDER BY Codigo;", c)) using (var r = cmd.ExecuteReader()) { var sucursales = new List<object>(); while (r.Read()) sucursales.Add(new { Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"] }); return Ok(new { cfg.Tipo, cfg.Descripcion, LetraPredeterminada = cfg.Tipo == "REC" ? "X" : cfg.LetraPredeterminada, SucursalPredeterminada = cfg.SucursalPredeterminada, ProximoNumero = FacturacionComprobantesConfiguracion.NumeroVisible(cfg.UltimoNumero + 1), Letras = cfg.Tipo == "REC" ? new[] { "X" } : new[] { "A", "B" }, Sucursales = sucursales }); } } }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            try
+            {
+                tipo = TipoSeguro(tipo);
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open();
+                    ValidarUsuario(c, false);
+                    var cfg = FacturacionComprobantesConfiguracion.Obtener(c, null, tipo);
+                    var configuraciones = new List<object>();
+                    var letras = new List<string>();
+                    using (var cmd = new SqlCommand(@"
+SELECT c.LetraPredeterminada AS Letra,s.Codigo AS SucursalPredeterminada,n.UltimoNumero
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE c
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID AND n.Activo=1
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID AND s.Activa=1
+WHERE c.Tipo=@tipo AND c.Activo=1
+ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='B' THEN 1 ELSE 2 END;", c))
+                    {
+                        cmd.Parameters.Add(P("@tipo", tipo));
+                        using (var r = cmd.ExecuteReader())
+                        {
+                            while (r.Read())
+                            {
+                                string letra = ((string)r["Letra"]).Trim();
+                                letras.Add(letra);
+                                configuraciones.Add(new
+                                {
+                                    Letra = letra,
+                                    SucursalPredeterminada = (string)r["SucursalPredeterminada"],
+                                    ProximoNumero = FacturacionComprobantesConfiguracion.NumeroVisible((int)r["UltimoNumero"] + 1)
+                                });
+                            }
+                        }
+                    }
+                    var sucursales = new List<object>();
+                    using (var cmd = new SqlCommand("SELECT Codigo,Nombre FROM dbo.FACTURACION_SUCURSALES WHERE Activa=1 ORDER BY Codigo;", c))
+                    using (var r = cmd.ExecuteReader())
+                        while (r.Read()) sucursales.Add(new { Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"] });
+                    return Ok(new
+                    {
+                        cfg.Tipo, cfg.Descripcion, cfg.LetraPredeterminada, cfg.SucursalPredeterminada,
+                        ProximoNumero = FacturacionComprobantesConfiguracion.NumeroVisible(cfg.UltimoNumero + 1),
+                        Letras = letras, Configuraciones = configuraciones, Sucursales = sucursales
+                    });
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
     }
 }

@@ -193,16 +193,16 @@ ORDER BY c.Razon_Social;";
 
                     const string sql = @"
 WITH Deudas AS (
-    SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.FechaVencimiento,c.Total,
+    SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaVencimiento,c.Total,
            c.Total-COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Pendiente
     FROM dbo.COMPROBANTES c
     JOIN dbo.CLIENTES cl ON cl.Cliente_ID=c.ClienteID AND ISNULL(cl.EstadoCliente,0)=1
     LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
     WHERE c.ClienteID=@clienteId AND c.Estado='EMITIDO' AND c.Impacto='D'
-    GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.FechaVencimiento,c.Total
+    GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaVencimiento,c.Total
 ), Proximo AS (
     SELECT TOP (1) FechaVencimiento,
-           Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
+           Tipo+'-'+Letra+'-'+Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
            Pendiente
     FROM Deudas WHERE Pendiente>0 AND FechaVencimiento>=CONVERT(date,GETDATE())
     ORDER BY FechaVencimiento,Comprobante_ID
@@ -238,16 +238,16 @@ WHERE c.Cliente_ID=@clienteId;";
                 {
                     const string sql = @"
 WITH Deudas AS (
-    SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.FechaVencimiento,c.Total,
+    SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaVencimiento,c.Total,
            c.Total-COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Pendiente
     FROM dbo.COMPROBANTES c
     JOIN dbo.CLIENTES cliente ON cliente.Cliente_ID=c.ClienteID AND ISNULL(cliente.EstadoCliente,0)=1
     LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
     WHERE c.Estado='EMITIDO' AND c.Impacto='D'
-    GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.FechaVencimiento,c.Total
+    GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaVencimiento,c.Total
 ), Proximo AS (
     SELECT TOP (1) d.FechaVencimiento,
-           cl.Razon_Social+' · '+d.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),d.NumeroCorrelativo),8) AS Comprobante,
+           cl.Razon_Social+' · '+d.Tipo+'-'+d.Letra+'-'+d.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),d.NumeroCorrelativo),8) AS Comprobante,
            d.Pendiente
     FROM Deudas d
     JOIN dbo.CLIENTES cl ON cl.Cliente_ID=d.ClienteID AND ISNULL(cl.EstadoCliente,0)=1
@@ -319,7 +319,7 @@ WITH Aplicado AS (
     FROM dbo.CUENTA_CORRIENTE_APLICACIONES WHERE Vigente=1 GROUP BY ComprobanteDeudaID
 ), Documentos AS (
     SELECT m.Movimiento_ID,m.ComprobanteID,m.ClienteID,cl.Razon_Social AS Cliente,
-           m.FechaContable,m.Tipo,m.Concepto,c.NumeroCorrelativo,c.Total,c.Estado AS EstadoComprobante,c.Impacto,
+           m.FechaContable,m.Tipo,m.Concepto,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.Total,c.Estado AS EstadoComprobante,c.Impacto,
            COALESCE(a.Importe,0) AS Cancelado,c.Total-COALESCE(a.Importe,0) AS Saldo,
            CASE WHEN c.Estado='ANULADO' THEN 'Anulado'
                 WHEN c.Impacto='D' AND COALESCE(a.Importe,0)=0 THEN 'Pendiente'
@@ -329,7 +329,7 @@ WITH Aplicado AS (
            COALESCE((SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
                      JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
                      WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC),
-                    (SELECT 'Relacionado con '+r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+                    (SELECT 'Relacionado con '+r.Tipo+'-'+r.Letra+'-'+r.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
                      FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID)) AS Origen
     FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS m
     JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=m.ComprobanteID
@@ -365,7 +365,7 @@ WITH Aplicado AS (
                     }
                     string sql = cte + @"
 SELECT Movimiento_ID AS MovimientoID,ComprobanteID,ClienteID,Cliente,FechaContable AS Fecha,Tipo,
-       Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
+       Tipo+'-'+Letra+'-'+Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
        Concepto,CAST(Total AS decimal(18,2)) AS Debe,CAST(0 AS decimal(18,2)) AS Haber,
        CAST(CASE WHEN Impacto='C' THEN Total ELSE Cancelado END AS decimal(18,2)) AS Cancelado,
        CAST(CASE WHEN Impacto='C' THEN 0 ELSE Saldo END AS decimal(18,2)) AS Saldo,
@@ -379,7 +379,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
 SELECT a.Aplicacion_ID AS AplicacionID,a.ComprobanteDeudaID,
        credito.Comprobante_ID AS ComprobanteID,credito.ClienteID,cl.Razon_Social AS Cliente,
        a.FechaAplicacion AS Fecha,credito.Tipo,
-       credito.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),credito.NumeroCorrelativo),8) AS Comprobante,
+       credito.Tipo+'-'+credito.Letra+'-'+credito.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),credito.NumeroCorrelativo),8) AS Comprobante,
        credito.Concepto,CAST(a.Importe AS decimal(18,2)) AS Importe,'Aplicado' AS Estado,credito.Estado AS EstadoComprobante
 FROM dbo.CUENTA_CORRIENTE_APLICACIONES a
 JOIN dbo.COMPROBANTES credito ON credito.Comprobante_ID=a.ComprobanteCreditoID
@@ -452,21 +452,21 @@ WHERE (@clienteId IS NULL OR m.ClienteID=@clienteId) AND ISNULL(cl.EstadoCliente
                     if (clienteId.HasValue && !ClienteExiste(db, clienteId.Value)) return NotFound();
                     const string sql = @"
 WITH SinRelacionar AS (
-    SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
+    SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Total,
            COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
            COALESCE((SELECT TOP (1) 'Proforma '+p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
                      JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
                      WHERE cp.ComprobanteID=c.Comprobante_ID ORDER BY cp.ComprobanteProforma_ID DESC),
-                    (SELECT 'Relacionado con '+r.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
+                    (SELECT 'Relacionado con '+r.Tipo+'-'+r.Letra+'-'+r.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
                      FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID)) AS Origen
     FROM dbo.COMPROBANTES c
     JOIN dbo.CLIENTES cl ON cl.Cliente_ID=c.ClienteID AND ISNULL(cl.EstadoCliente,0)=1
     LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
     WHERE (@clienteId IS NULL OR c.ClienteID=@clienteId) AND c.Estado='EMITIDO' AND c.Impacto='D'
-    GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
+    GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Total,
              c.ComprobanteReferenciaID
     UNION ALL
-    SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total,
+    SELECT c.Comprobante_ID,c.ClienteID,cl.Razon_Social AS Cliente,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Total,
            COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado,
            CAST(NULL AS varchar(200)) AS Origen
     FROM dbo.COMPROBANTES c
@@ -474,10 +474,10 @@ WITH SinRelacionar AS (
     LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID=c.Comprobante_ID
     WHERE (@clienteId IS NULL OR c.ClienteID=@clienteId) AND c.Estado='EMITIDO'
       AND c.Tipo='REC' AND c.Impacto='C'
-    GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Total
+    GROUP BY c.Comprobante_ID,c.ClienteID,cl.Razon_Social,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.FechaVencimiento,c.Total
 )
 SELECT Comprobante_ID AS ComprobanteID,ClienteID,Cliente,Tipo,
-       Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
+       Tipo+'-'+Letra+'-'+Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),NumeroCorrelativo),8) AS Comprobante,
        FechaEmision,FechaVencimiento,CAST(Total AS decimal(18,2)) AS ImporteOriginal,
        CAST(Aplicado AS decimal(18,2)) AS ImporteAplicado,
        CAST(Total-Aplicado AS decimal(18,2)) AS SaldoPendiente,

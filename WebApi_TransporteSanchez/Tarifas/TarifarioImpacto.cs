@@ -166,7 +166,7 @@ OUTER APPLY (SELECT TOP (1) p.Proforma_ID, ISNULL(p.Numero, '') AS Numero, p.Est
                 OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE d WHERE d.Proforma_ID = p.Proforma_ID
                            AND UPPER(LTRIM(RTRIM(ISNULL(d.Codigo, '')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID)))
              ORDER BY CASE p.Estado WHEN 'Facturada' THEN 0 WHEN 'Aceptada' THEN 1 WHEN 'Generada' THEN 2 ELSE 3 END) doc
-OUTER APPLY (SELECT TOP (1) c.Comprobante_ID, c.Tipo + '-' + RIGHT('00000000' + CONVERT(varchar(11), c.NumeroCorrelativo), 8) AS Numero
+OUTER APPLY (SELECT TOP (1) c.Comprobante_ID, c.Tipo + '-' + c.Letra + '-' + c.Sucursal + '-' + RIGHT('00000000' + CONVERT(varchar(11), c.NumeroCorrelativo), 8) AS Numero
              FROM dbo.COMPROBANTES c
              WHERE c.Tipo = 'FAC' AND (
                    EXISTS (SELECT 1 FROM dbo.COMPROBANTES_PROFORMAS cp WHERE cp.ComprobanteID = c.Comprobante_ID

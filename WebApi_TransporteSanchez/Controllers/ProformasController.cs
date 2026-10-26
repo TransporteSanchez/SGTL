@@ -539,7 +539,7 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "sit.PlataformaLineas, sit.PlataformaPorCorregir, sit.PlataformaPorRevisar, sit.PlataformaPorReclamar, sit.PlataformaEsperando " +
                         "FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
-                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
+                        "c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
                         "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
                         ProformasPlataformaController.SqlSituacionBorrador() +

@@ -5,11 +5,15 @@ const vm = require('vm');
 
 const fuente = fs.readFileSync(path.join(__dirname, '..', 'assets', 'static', 'js', 'facturacion-configuracion.js'), 'utf8');
 
-async function cargar(tipo, descripcion, controlTipo) {
+async function cargar(tipo, descripcion, controlTipo, configuraciones) {
+    const eventosLetra = {};
     const campos = {
         tipo: controlTipo,
-        letra: { innerHTML: '', disabled: false },
-        sucursal: { innerHTML: '' },
+        letra: { innerHTML: '', disabled: false, value: 'A',
+            addEventListener: function (evento, accion) { eventosLetra[evento] = accion; },
+            removeEventListener: function (evento, accion) { if (eventosLetra[evento] === accion) delete eventosLetra[evento]; }
+        },
+        sucursal: { innerHTML: '', value: '' },
         numero: { value: '', readOnly: false }
     };
     const urls = [];
@@ -27,8 +31,9 @@ async function cargar(tipo, descripcion, controlTipo) {
                     LetraPredeterminada: tipo === 'REC' ? 'X' : 'A',
                     SucursalPredeterminada: '0001',
                     ProximoNumero: '00000003',
-                    Letras: tipo === 'REC' ? ['X'] : ['A', 'B'],
-                    Sucursales: [{ Codigo: '0001', Nombre: 'Casa central' }]
+                    Letras: configuraciones ? configuraciones.map(function (c) { return c.Letra; }) : (tipo === 'REC' ? ['X'] : ['A', 'B']),
+                    Configuraciones: configuraciones,
+                    Sucursales: [{ Codigo: '0001', Nombre: 'Casa central' }, { Codigo: '0002', Nombre: 'Sucursal B' }]
                 }); }
             });
         }
@@ -37,7 +42,7 @@ async function cargar(tipo, descripcion, controlTipo) {
     const promesa = sandbox.window.ConfiguracionFacturacion.cargar(tipo, {
         tipo: 'tipo', letra: 'letra', sucursal: 'sucursal', numero: 'numero'
     });
-    return { promesa: promesa, campos: campos, urls: urls };
+    return { promesa: promesa, campos: campos, urls: urls, eventosLetra: eventosLetra };
 }
 
 async function probarDescripcionesDelCatalogo() {
@@ -71,8 +76,22 @@ async function probarDescripcionFaltante() {
     assert.strictEqual(control.textContent, '');
 }
 
-probarDescripcionesDelCatalogo().then(probarDescripcionFaltante).then(function () {
-    console.log('OK: descripciones de tipos de comprobante desde el catálogo');
+async function probarConfiguracionPorLetra() {
+    const prueba = await cargar('FAC', 'Factura logística', { textContent: '' }, [
+        { Letra: 'A', SucursalPredeterminada: '0001', ProximoNumero: '00000003' },
+        { Letra: 'B', SucursalPredeterminada: '0002', ProximoNumero: '00000009' }
+    ]);
+    await prueba.promesa;
+    assert.ok(prueba.eventosLetra.change, 'la letra permite actualizar su configuración');
+    prueba.campos.letra.value = 'B';
+    prueba.eventosLetra.change();
+    assert.strictEqual(prueba.campos.sucursal.value, '0002', 'B usa su sucursal configurada');
+    assert.strictEqual(prueba.campos.numero.value, '00000009', 'B muestra el próximo número de su numerador');
+    assert.match(prueba.campos.letra.innerHTML, /value="B"/, 'B está disponible para emitir');
+}
+
+probarDescripcionesDelCatalogo().then(probarDescripcionFaltante).then(probarConfiguracionPorLetra).then(function () {
+    console.log('OK: tipos de comprobante y configuración de emisión por letra desde el catálogo');
 }).catch(function (error) {
     console.error(error.stack || error);
     process.exitCode = 1;
