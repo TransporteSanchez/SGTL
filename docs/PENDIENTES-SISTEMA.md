@@ -3399,6 +3399,8 @@ sale con `FAC` y los textos de hoy. Pasos:
    en la próxima proforma de Rukas. **Probar en la VM:** una proforma de Rukas nueva (por ejemplo, en vivo con el caso 2
    corregido o el caso 3) con el adicional aparte y el total igual; la factura de esa proforma con las dos líneas;
    Tableros → Facturación con centavos y el nombre nuevo.
+   **26/10: Facu borró los comprobantes de la demo** para su cambio de dejar de usar facturas (D3 de Tableros, en la
+   §39): el juego de demo se vuelve a generar después de su cambio.
    **Antes de la presentación:** el cliente "distribuidora-powerful S.A." (viaje 5 y otros) tiene un nombre que no parece
    real; cambiarlo en Gestionar clientes por uno creíble (el relevamiento de textos de prueba no lo detecta).
 
@@ -3602,10 +3604,17 @@ pidió: los errores se van solos, el aviso concuerda en singular y plural, Audit
   M5, M11 y M14; de Tableros M4, M7 a M10, M12 y M13; de cuenta corriente (Facu) M6 y M15; de Listar viajes M16.
 - **D3, antes del 29/10:** el 26/10 la base no tiene ningún comprobante emitido (`api/dashboard/top-clientes-facturacion`
   cuenta todos los `EMITIDO`, sin filtrar por usuario, y da `[]`), aunque la demo del 25/10 generó FAC-00000001 y
-  00000002, REC-00000001 y NC-00000001 después de la limpieza. El `04` tiene el freno de `abe3398` (no vuelve a borrar sin
-  `@OtraVez = 1`) y ningún commit posterior a la demo cambia esas consultas. Rocío corre este diagnóstico (solo lectura) y
-  le pasa el resultado a Claude; si los documentos no están, preguntarle a Facu si corrió algo en la base con su cambio a
-  "comprobante":
+  00000002, REC-00000001 y NC-00000001 después de la limpieza. **Causa (Rocío, 26/10): Facu borró comprobantes en la base
+  para su cambio de dejar de usar facturas.** El juego de demo se vuelve a generar cuando su cambio esté en
+  `rocionuvoli` y él diga que no borra más (con el instructivo actualizado a lo suyo). Preguntarle a Facu:
+  - qué borró (solo comprobantes, o también proformas, movimientos de cuenta corriente y numeradores) y si vuelve los
+    viajes a su estado: si quedaron en Facturado sin comprobante (43, 44, 25 y 26 de la demo), tarifas los trata como "ya
+    vio el cliente" (`Tarifas/TarifarioImpacto.cs:448`) y la proforma no deja volver a facturarlos;
+  - cómo quedan los tipos y los estados: tarifas busca `COMPROBANTES.Tipo = 'FAC'` (`TarifarioImpacto.cs:170`) y los
+    estados Facturado y Facturada; Tableros suma `Tipo IN ('FAC', 'ND', 'NC')` (`TablerosController.cs:332`). Si cambian,
+    hay que cambiarlos acá en el mismo merge, o esos tableros y la detección de "ya está en un comprobante" quedan vacíos
+    sin dar error.
+  Para ver qué quedó en la base, Rocío puede correr este diagnóstico (solo lectura) y pasarle el resultado a Claude:
   ```sql
   SELECT N'Comprobantes' AS Que, Tipo, Estado, COUNT(*) AS Cantidad,
          MIN(NumeroCorrelativo) AS Primero, MAX(NumeroCorrelativo) AS Ultimo
