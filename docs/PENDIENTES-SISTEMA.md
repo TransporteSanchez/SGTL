@@ -2050,7 +2050,7 @@ con su línea abajo y con aire arriba:
   *"), tarifa fija y por km, origen o destino.
 - [ ] 2. Registrar proforma (Detalle de conceptos con sus dos botones, Totales, Condiciones comerciales), una de Rukas
   (los títulos que se ocultan siguen ocultos) y el ojo de Listar proformas.
-- [ ] 3. Cuenta corriente: Registrar recibo (1 · Datos generales, 2 · Forma de pago, 3 · Imputación con su botón), el
+- [ ] 3. Cuenta corriente: Registrar recibo (Datos generales, Forma de pago, Imputación a comprobantes con su botón), el
   ojo de una factura con conceptos y comprobantes aplicados, y el detalle con "Trazabilidad".
 - [ ] 4. Gestionar e-mail (Registrar configuración), Gestionar integración de WhatsApp y el detalle de un registro de
   auditoría (Valores anteriores / Valores nuevos).
