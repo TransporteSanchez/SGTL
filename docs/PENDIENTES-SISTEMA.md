@@ -3476,6 +3476,10 @@ del 24 y 25/10 y el código anterior no funciona contra ella (las tarifas viejas
 "factura" por "comprobante") y Fede (recupero de clave por WhatsApp y "Reenviar WhatsApp" en viajes) trabajan desde ahí.
 `main` se actualiza cuando terminen las tandas 3 a 5 (a `main` pasa solo lo probado). **Otra vez al día el 25/10 a la
 noche**, con la limpieza de la facturación de prueba, el juego de demo y sus arreglos: desde ahí avanzan los dos.
+**`main` también, el 25/10 a la noche, por pedido de Rocío** (avance directo de `dfd6817` a `b6ebaf3`, 70 commits): las
+cuatro ramas iguales. Entraron sin prueba en la VM la hoja de ruta (§36), el control interno (§37), las dos mejoras de
+cuenta corriente (§29) y lo último de la demo (adicional de Rukas aparte, centavos, "Importe promedio por viaje");
+tableros (§35) se estaba probando. Lo que salga de esas tandas se corrige en `rocionuvoli` y pasa a `main` después.
 
 | Orden | Tanda | Qué | Pasos | Antes de probar |
 |---|---|---|---|---|
