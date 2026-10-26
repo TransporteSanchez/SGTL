@@ -59,6 +59,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37) |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
+| 41 | Emitir comprobantes directos con tipos de deuda configurados, como FC | Hecho en código (26/10); falta aplicar la migración y probar en VM | Pendiente de subir | Correr `database/cuenta-corriente/13_comprobantes_directos_configurables.sql`, recompilar y probar (§41) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3672,3 +3673,14 @@ cierren las pruebas de la §39**, antes que lo demás.
   `database/limpieza/01_relevar_datos_de_prueba.sql` (solo lectura) y corregir todo lo que salga. Desde el 25/10, la VM
   usa solo datos con forma de reales (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`, que manda sobre los documentos viejos).
 
+---
+
+## 41. Emisión directa con tipos de comprobante configurados — Hecho en código (26/10)
+
+La emisión directa consultaba siempre FAC, aunque hubiera otro tipo de deuda activo, como FC. El formulario ahora permite elegir un tipo de deuda con configuración, sucursal y numerador activos; conserva las letras y la numeración de la variante elegida. El permiso para emitir estos tipos es `FAC_EMITIR`. La API comprueba el impacto del catálogo antes de guardar.
+
+El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF, enviarse por e-mail, imputarse con un recibo y acreditarse con una nota de crédito corriente. Los indicadores de facturación incluyen los tipos de deuda configurados. La emisión desde proforma sigue usando FAC.
+
+**Base:** Rocío debe ejecutar `database/cuenta-corriente/13_comprobantes_directos_configurables.sql` después de las migraciones previas. El script amplía la restricción de los movimientos de cuenta corriente; no se ejecutó contra la base compartida. Para usar un mismo código con letras A y B, aplicar también las migraciones 11 y 12 en su orden.
+
+**Probar en la VM:** recompilar la API y recargar el navegador; con FC activo y sin FAC activo, abrir «Emitir comprobante directo», elegir FC y su letra, emitir y verificar número y movimiento. Revisar el detalle, PDF, envío por e-mail, saldo, ranking y tablero. Aplicar un recibo y una nota de crédito corriente sobre FC. Confirmar que un tipo de crédito, un numerador inactivo y una sucursal inactiva no se ofrecen en el selector.

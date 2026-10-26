@@ -138,7 +138,7 @@ SELECT TOP (@cantidad)
 FROM dbo.COMPROBANTES comp
 JOIN dbo.CLIENTES c ON c.Cliente_ID = comp.ClienteID
 WHERE comp.Estado = 'EMITIDO'
-  AND comp.Tipo IN ('FAC', 'ND', 'NC')
+  AND (comp.Impacto='D' OR comp.Tipo='NC')
 GROUP BY c.Cliente_ID, c.Razon_Social
 ORDER BY Facturacion DESC, RazonSocial;";
 

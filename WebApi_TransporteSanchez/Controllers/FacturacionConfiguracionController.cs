@@ -18,6 +18,7 @@ namespace WebApi_TransporteSanchez.Controllers
     {
         public string Tipo { get; set; }
         public string Descripcion { get; set; }
+        public string Impacto { get; set; }
         public string LetraPredeterminada { get; set; }
         public int NumeradorID { get; set; }
         public int UltimoNumero { get; set; }
@@ -48,10 +49,10 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             letra = NormalizarLetra(letra);
             const string sql = @"
-SELECT TOP (1) c.Tipo,t.Descripcion,c.LetraPredeterminada,c.NumeradorID,n.UltimoNumero,s.Codigo AS SucursalPredeterminada
+SELECT TOP (1) c.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.NumeradorID,n.UltimoNumero,s.Codigo AS SucursalPredeterminada
 FROM dbo.FACTURACION_TIPOS_COMPROBANTE c WITH (UPDLOCK,HOLDLOCK)
 JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
-JOIN dbo.FACTURACION_NUMERADORES n WITH (UPDLOCK,HOLDLOCK) ON n.Numerador_ID=c.NumeradorID AND n.Activo=1
+JOIN dbo.FACTURACION_NUMERADORES n WITH (UPDLOCK,HOLDLOCK) ON n.Numerador_ID=c.NumeradorID AND n.Activo=1 AND n.UltimoNumero<99999999
 JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID AND s.Activa=1
 WHERE c.Tipo=@tipo AND c.Activo=1 AND (@letra IS NULL OR c.LetraPredeterminada=@letra)
 ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='B' THEN 1 ELSE 2 END;";
@@ -67,6 +68,7 @@ ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='
                     {
                         Tipo = (string)reader["Tipo"],
                         Descripcion = (string)reader["Descripcion"],
+                        Impacto = (string)reader["Impacto"],
                         LetraPredeterminada = ((string)reader["LetraPredeterminada"]).Trim(),
                         NumeradorID = (int)reader["NumeradorID"],
                         UltimoNumero = (int)reader["UltimoNumero"],
@@ -85,6 +87,8 @@ ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='
             if (letra != configuracion.LetraPredeterminada)
                 throw new InvalidOperationException("El tipo de comprobante no tiene una configuración de facturación activa para esa letra.");
             sucursal = NormalizarSucursal(sucursal) ?? configuracion.SucursalPredeterminada;
+            if (sucursal != configuracion.SucursalPredeterminada)
+                throw new InvalidOperationException("La sucursal seleccionada no corresponde al tipo de comprobante y letra.");
             using (var command = new SqlCommand("SELECT COUNT(*) FROM dbo.FACTURACION_SUCURSALES WHERE Codigo=@codigo AND Activa=1;", connection, transaction))
             {
                 command.Parameters.Add(P("@codigo", sucursal));
@@ -176,12 +180,6 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
             }
         }
 
-        private static string TipoSeguro(string tipo)
-        {
-            tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant();
-            if (tipo != "FAC" && tipo != "REC" && tipo != "NC" && tipo != "ND") throw new ArgumentException("El tipo de comprobante no es válido.");
-            return tipo;
-        }
         private static string CodigoTipo(string tipo)
         {
             tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant();
@@ -783,12 +781,45 @@ END;", c, tx))
             catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
+        [HttpGet, Route("tipos-emision-directa")]
+        public IHttpActionResult TiposEmisionDirecta()
+        {
+            try
+            {
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open();
+                    ValidarUsuario(c, false);
+                    var tipos = new List<object>();
+                    using (var cmd = new SqlCommand(@"
+SELECT DISTINCT t.Tipo,t.Descripcion,t.Impacto
+FROM dbo.TIPOS_COMPROBANTE t
+JOIN dbo.FACTURACION_TIPOS_COMPROBANTE c ON c.Tipo=t.Tipo AND c.Activo=1
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID AND n.Activo=1 AND n.UltimoNumero<99999999
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID AND s.Activa=1
+WHERE t.Impacto='D' AND t.Tipo<>'ND'
+ORDER BY t.Tipo,t.Descripcion;", c))
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            tipos.Add(new
+                            {
+                                Tipo = (string)reader["Tipo"],
+                                Descripcion = (string)reader["Descripcion"],
+                                Impacto = (string)reader["Impacto"]
+                            });
+                    return Ok(tipos);
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+        }
+
         [HttpGet, Route("emision/{tipo}")]
         public IHttpActionResult Emision(string tipo)
         {
             try
             {
-                tipo = TipoSeguro(tipo);
+                tipo = CodigoTipo(tipo);
                 using (var c = new SqlConnection(ConnectionString()))
                 {
                     c.Open();
@@ -799,7 +830,7 @@ END;", c, tx))
                     using (var cmd = new SqlCommand(@"
 SELECT c.LetraPredeterminada AS Letra,s.Codigo AS SucursalPredeterminada,n.UltimoNumero
 FROM dbo.FACTURACION_TIPOS_COMPROBANTE c
-JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID AND n.Activo=1
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID AND n.Activo=1 AND n.UltimoNumero<99999999
 JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID AND s.Activa=1
 WHERE c.Tipo=@tipo AND c.Activo=1
 ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='B' THEN 1 ELSE 2 END;", c))
@@ -821,9 +852,18 @@ ORDER BY CASE WHEN c.LetraPredeterminada='A' THEN 0 WHEN c.LetraPredeterminada='
                         }
                     }
                     var sucursales = new List<object>();
-                    using (var cmd = new SqlCommand("SELECT Codigo,Nombre FROM dbo.FACTURACION_SUCURSALES WHERE Activa=1 ORDER BY Codigo;", c))
-                    using (var r = cmd.ExecuteReader())
-                        while (r.Read()) sucursales.Add(new { Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"] });
+                    using (var cmd = new SqlCommand(@"
+SELECT DISTINCT s.Codigo,s.Nombre
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE cfg
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=cfg.SucursalID AND s.Activa=1
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=cfg.NumeradorID AND n.Activo=1 AND n.UltimoNumero<99999999
+WHERE cfg.Tipo=@tipo AND cfg.Activo=1
+ORDER BY s.Codigo;", c))
+                    {
+                        cmd.Parameters.Add(P("@tipo", tipo));
+                        using (var r = cmd.ExecuteReader())
+                            while (r.Read()) sucursales.Add(new { Codigo = (string)r["Codigo"], Nombre = (string)r["Nombre"] });
+                    }
                     return Ok(new
                     {
                         cfg.Tipo, cfg.Descripcion, cfg.LetraPredeterminada, cfg.SucursalPredeterminada,

@@ -41,6 +41,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public int ComprobanteID { get; set; }
             public string Tipo { get; set; }
+            public string Impacto { get; set; }
             public string Numero { get; set; }
             public string Estado { get; set; }
             public string Cliente { get; set; }
@@ -89,7 +90,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var comprobante = LeerComprobante(connection, id);
                     if (comprobante == null) return NotFound();
 
-                    ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo));
+                    ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo, comprobante.Impacto));
                     if (!string.Equals(comprobante.Estado, "EMITIDO", StringComparison.OrdinalIgnoreCase))
                         return BadRequest("Solo se pueden enviar comprobantes emitidos.");
 
@@ -151,7 +152,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     comprobante = LeerComprobante(connection, id);
                     if (comprobante == null) return NotFound();
 
-                    usuario = ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo));
+                    usuario = ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo, comprobante.Impacto));
                     if (!string.Equals(comprobante.Estado, "EMITIDO", StringComparison.OrdinalIgnoreCase))
                         return BadRequest("Solo se pueden enviar comprobantes emitidos.");
 
@@ -296,7 +297,7 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
         private static ComprobanteCorreo LeerComprobante(SqlConnection connection, int comprobanteId)
         {
             const string sql = @"
-SELECT c.Comprobante_ID,c.Tipo,
+SELECT c.Comprobante_ID,c.Tipo,c.Impacto,
        c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
        c.Estado,c.FechaEmision,c.RazonSocial AS Cliente,cl.Email AS EmailCliente
 FROM dbo.COMPROBANTES c
@@ -312,6 +313,7 @@ WHERE c.Comprobante_ID=@id;";
                     {
                         ComprobanteID = (int)reader["Comprobante_ID"],
                         Tipo = (string)reader["Tipo"],
+                        Impacto = (string)reader["Impacto"],
                         Numero = (string)reader["Numero"],
                         Estado = (string)reader["Estado"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
@@ -478,7 +480,7 @@ WHERE HistorialEnvio_ID=@id;", connection))
                 : (perfil.UsaSsl.GetValueOrDefault(true) ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
         }
 
-        private static string PermisoEnvio(string tipo)
+        private static string PermisoEnvio(string tipo, string impacto)
         {
             switch ((tipo ?? string.Empty).Trim().ToUpperInvariant())
             {
@@ -486,7 +488,9 @@ WHERE HistorialEnvio_ID=@id;", connection))
                 case "NC": return "NC_EMITIR";
                 case "ND": return "ND_EMITIR";
                 case "REC": return "REC_EMITIR";
-                default: throw new InvalidOperationException("El tipo de comprobante no admite envío por correo.");
+                default:
+                    if (string.Equals(impacto, "D", StringComparison.OrdinalIgnoreCase)) return "FAC_EMITIR";
+                    throw new InvalidOperationException("El tipo de comprobante no admite envío por correo.");
             }
         }
 

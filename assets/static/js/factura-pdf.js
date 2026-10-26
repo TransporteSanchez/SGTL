@@ -43,18 +43,24 @@
         });
     }
 
-    function tituloComprobante(tipo) {
-        return {
+    function tituloComprobante(tipo, descripcion) {
+        var titulo = {
             FAC: 'FACTURA',
             REC: 'RECIBO',
             NC: 'NOTA DE CRÉDITO',
             ND: 'NOTA DE DÉBITO'
-        }[tipo] || null;
+        }[tipo];
+        if (titulo) return titulo;
+        var catalogo = String(descripcion || '').trim();
+        return catalogo ? catalogo.toLocaleUpperCase('es-AR') : null;
     }
-    function nombreArchivoComprobante(tipo) {
-        return {
+    function nombreArchivoComprobante(tipo, descripcion) {
+        var nombre = {
             FAC: 'Factura', REC: 'Recibo', NC: 'Nota_de_Credito', ND: 'Nota_de_Debito'
-        }[tipo] || 'Comprobante';
+        }[tipo];
+        if (nombre) return nombre;
+        return String(descripcion || '').trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/gi, '_').replace(/^_+|_+$/g, '');
     }
 
     function proformasFactura(factura) {
@@ -81,7 +87,7 @@
         var margen = 9;
         var anchoUtil = ancho - (margen * 2);
         var y = margen;
-        var titulo = tituloComprobante(factura.Tipo) || 'COMPROBANTE';
+        var titulo = tituloComprobante(factura.Tipo, factura.TipoDescripcion);
         var colorTexto = [20, 20, 20];
         var colorSecundario = [90, 90, 90];
         var colorFondo = [245, 245, 245];
@@ -304,12 +310,12 @@
 
     function generarDocumento(id) {
         return obtenerComprobante(id).then(function (factura) {
-            if (!tituloComprobante(factura.Tipo)) throw new Error('El comprobante seleccionado no se puede imprimir.');
+            if (!tituloComprobante(factura.Tipo, factura.TipoDescripcion)) throw new Error('El comprobante seleccionado no se puede imprimir.');
             return datosEmpresa(factura.FechaEmision).then(function (empresa) {
                 return {
                     documento: construir(factura, empresa),
                     comprobante: factura,
-                    nombreArchivo: nombreArchivoComprobante(factura.Tipo) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
+                    nombreArchivo: nombreArchivoComprobante(factura.Tipo, factura.TipoDescripcion) + '_' + texto(factura.Numero).replace(/[^a-z0-9_-]/gi, '_') + '.pdf'
                 };
             });
         });
@@ -335,7 +341,6 @@
         }).catch(function (error) {
             var texto = error && error.message ? error.message : 'No se pudo generar el PDF del comprobante. Probá de nuevo.';
             if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
-            else window.alert(texto);
         });
     }
 

@@ -14,6 +14,7 @@
     var reciboEditando = null;
     var comprobanteOperacion = null;
     var comprobanteTipo = null;
+    var comprobanteDirecto = false;
     var facturasReferencia = [];
     var ivaComprobanteFijo = null;
     var vencimientoComprobanteEditado = false;
@@ -28,11 +29,12 @@
 
     function porId(id) { return document.getElementById(id); }
 
-    function cargarConfiguracionEmision(tipo, controles, valoresActuales) {
+    function cargarConfiguracionEmision(tipo, controles, valoresActuales, vigente) {
         if (!window.ConfiguracionFacturacion || !window.ConfiguracionFacturacion.cargar) {
             return Promise.reject(new Error('No se cargó la configuración de Facturación.'));
         }
-        return window.ConfiguracionFacturacion.cargar(tipo, controles).then(function (datos) {
+        return window.ConfiguracionFacturacion.cargar(tipo, controles, vigente).then(function (datos) {
+            if (typeof vigente === 'function' && !vigente()) return datos;
             valoresActuales = valoresActuales || {};
             ['letra', 'sucursal', 'numero'].forEach(function (nombre) {
                 var valor = valoresActuales[nombre];
@@ -45,6 +47,63 @@
                 control.value = valor;
             });
             return datos;
+        });
+    }
+    function agregarTiposFiltroCuenta(tipos) {
+        var filtro = porId('ccTipo');
+        (tipos || []).forEach(function (item) {
+            var codigo = String(item.Tipo || '').trim().toUpperCase();
+            if (!codigo || Array.prototype.some.call(filtro.options, function (opcion) { return opcion.value === codigo; })) return;
+            filtro.insertAdjacentHTML('beforeend', '<option value="' + escapar(codigo) + '">' +
+                escapar(item.Descripcion ? codigo + ' · ' + item.Descripcion : codigo) + '</option>');
+        });
+    }
+    function cargarTiposComprobanteDirecto() {
+        var operacion = comprobanteOperacion;
+        return apiGet('/facturacion-config/tipos-emision-directa').then(function (tipos) {
+            tipos = tipos || [];
+            agregarTiposFiltroCuenta(tipos);
+            if (!comprobanteDirecto || comprobanteOperacion !== operacion) return tipos;
+            var selector = porId('cmpTipoSeleccion');
+            selector.innerHTML = '<option value="">Seleccioná un tipo</option>' + tipos.map(function (item) {
+                var codigo = String(item.Tipo || '').trim().toUpperCase();
+                return '<option value="' + escapar(codigo) + '">' +
+                    escapar(codigo + ' · ' + (item.Descripcion || codigo)) + '</option>';
+            }).join('');
+            selector.value = '';
+            porId('btnEmitirComprobante').disabled = true;
+            if (!tipos.length) {
+                window.SGTL.avisoFormulario(porId('cmpError'), 'No hay tipos de comprobante de deuda activos para emitir.');
+            }
+            return tipos;
+        });
+    }
+    function seleccionarTipoComprobanteDirecto() {
+        var selector = porId('cmpTipoSeleccion');
+        var tipo = selector.value;
+        var boton = porId('btnEmitirComprobante');
+        comprobanteTipo = tipo || null;
+        boton.disabled = true;
+        porId('cmpTipoComprobante').textContent = '';
+        porId('cmpLetra').innerHTML = '';
+        porId('cmpSucursal').innerHTML = '';
+        porId('cmpNumeroComprobante').value = '';
+        if (!tipo) return Promise.resolve();
+        window.SGTL.limpiarError(selector);
+        window.SGTL.avisoFormulario(porId('cmpError'), '');
+        selector.disabled = true;
+        var operacion = comprobanteOperacion;
+        var vigente = function () {
+            return comprobanteDirecto && comprobanteOperacion === operacion && comprobanteTipo === tipo;
+        };
+        return cargarConfiguracionEmision(tipo, {
+            tipo: 'cmpTipoComprobante', letra: 'cmpLetra', sucursal: 'cmpSucursal', numero: 'cmpNumeroComprobante'
+        }, null, vigente).then(function () {
+            if (vigente()) boton.disabled = false;
+        }).catch(function (ex) {
+            if (vigente()) window.SGTL.avisoFormulario(porId('cmpError'), textoError(ex, 'No se pudo cargar la configuración del comprobante. Probá de nuevo.'));
+        }).then(function () {
+            if (vigente()) selector.disabled = false;
         });
     }
     function token() {
@@ -435,9 +494,9 @@
         return window.SGTL.estado(estado);
     }
     function tipoComprobante(item) {
-        var tipo = String((item && item.Tipo) || '').toUpperCase();
-        if (['FAC', 'REC', 'NC', 'ND'].indexOf(tipo) !== -1) return tipo;
-        var coincidencia = /^(FAC|REC|NC|ND)-/.exec(String((item && item.Comprobante) || ''));
+        var tipo = String((item && item.Tipo) || '').trim().toUpperCase();
+        if (tipo) return tipo;
+        var coincidencia = /^([A-Z0-9]+)-/.exec(String((item && item.Comprobante) || '').toUpperCase());
         return coincidencia ? coincidencia[1] : '';
     }
     function estadoRecibo(item) {
@@ -463,7 +522,7 @@
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
                 : window.SGTL.botonFila('anular', {
                     id: id, texto: 'Anular recibo', deshabilitado: !esRecibo,
-                    motivo: 'No se puede anular ' + nombre + ': ' + (tipo === 'FAC' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
+                    motivo: 'No se puede anular ' + nombre + ': ' + (tipo && tipo !== 'REC' && tipo !== 'NC' && tipo !== 'ND' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
                 })
         ]);
     }
@@ -673,7 +732,7 @@
         }
         return pendientes.find(function (item) { return item.ComprobanteID === id; });
     }
-    // Detalle chico: solo para comprobantes que no son factura, recibo ni nota (el resto abre su vista completa).
+    // Detalle chico: solo para movimientos sin un tipo de comprobante identificable.
     function abrirDetalle(id) {
         var item = buscarComprobante(Number(id));
         if (!item) return;
@@ -707,6 +766,8 @@
     function presentarComprobanteSoloLectura(comprobante) {
         var tipo = tipoComprobante(comprobante);
         porId('cmpTitulo').textContent = 'Ver ' + nombreTipoComprobante(tipo) + ' ' + (comprobante.Numero || '');
+        porId('cmpTipoSeleccionGrupo').classList.add('d-none');
+        porId('cmpTipoFijoGrupo').classList.remove('d-none');
         var mensaje = porId('cmpMensaje');
         mensaje.className = 'alert alert-info py-2';
         mensaje.textContent = 'Consulta de solo lectura. Los datos del comprobante no se pueden modificar.';
@@ -808,7 +869,7 @@
 
     // El ojo de la fila (§1.4) abre el comprobante completo en solo lectura, como en proformas.
     function verComprobante(id, tipo) {
-        if (['FAC', 'REC', 'NC', 'ND'].indexOf(tipo) !== -1) abrirComprobanteSoloLectura(id, tipo);
+        if (tipo) abrirComprobanteSoloLectura(id, tipo);
         else abrirDetalle(id);
     }
 
@@ -918,7 +979,7 @@
         var id = comprobanteActualId;
         window.SGTL.confirmar({
             titulo: '¿Anular ' + nombreComprobanteActual() + '?',
-            mensaje: 'Queda anulado (conserva su número) y las facturas que cancelaba vuelven a tener saldo pendiente. No se puede deshacer.',
+            mensaje: 'Queda anulado (conserva su número) y los comprobantes que cancelaba vuelven a tener saldo pendiente. No se puede deshacer.',
             verbo: 'Anular',
             peligro: true,
             motivo: { etiqueta: 'Motivo de la anulación', obligatorio: true },
@@ -954,7 +1015,7 @@
     function cargarFacturasRecibo() {
         var cliente = clienteReciboActual();
         if (!cliente) {
-            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus facturas pendientes.</td></tr>';
+            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
             actualizarResumenRecibo();
             return Promise.resolve();
         }
@@ -962,8 +1023,10 @@
         return apiGet('/clientes/' + cliente.ClienteID + '/comprobantes-pendientes').then(function (comprobantes) {
             var clienteFormulario = clienteReciboActual();
             if (!clienteFormulario || clienteFormulario.ClienteID !== cliente.ClienteID) return;
-            var facturasPendientes = (comprobantes || []).filter(function (item) { return item.Tipo === 'FAC'; });
-            porId('reciboFacturas').innerHTML = facturasPendientes.map(function (item) {
+            var comprobantesDeuda = (comprobantes || []).filter(function (item) {
+                return item.Tipo !== 'REC' && centavos(item.SaldoPendiente) > 0;
+            });
+            porId('reciboFacturas').innerHTML = comprobantesDeuda.map(function (item) {
                 return '<tr><td><input type="checkbox" class="form-check-input cc-recibo-check" data-id="' + Number(item.ComprobanteID) + '"></td>' +
                     '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td class="text-center">' + fecha(item.FechaVencimiento) + '</td>' +
                     '<td class="text-end">' + dinero(item.ImporteOriginal) + '</td><td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
@@ -971,12 +1034,12 @@
                     'data-id="' + Number(item.ComprobanteID) + '" data-pendiente="' + Number(item.SaldoPendiente) + '" ' +
                     'data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" data-vencimiento="' + escapar(item.FechaVencimiento || '') + '" ' +
                     'data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
-            }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene facturas pendientes.</td></tr>';
+            }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene comprobantes pendientes.</td></tr>';
             porId('reciboFacturas').querySelectorAll('.cc-recibo-aplicar').forEach(enlazarMascaraMonto);
             actualizarResumenRecibo();
         }).catch(function (ex) {
-            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">No se pudieron cargar las facturas pendientes.</td></tr>';
-            porId('reciboError').textContent = textoError(ex, 'No se pudieron cargar las facturas pendientes. Probá de nuevo.');
+            porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">No se pudieron cargar los comprobantes pendientes.</td></tr>';
+            porId('reciboError').textContent = textoError(ex, 'No se pudieron cargar los comprobantes pendientes. Probá de nuevo.');
             actualizarResumenRecibo();
         });
     }
@@ -1044,7 +1107,7 @@
         porId('reciboError').textContent = '';
         var mensaje = porId('reciboMensaje');
         mensaje.className = 'alert alert-info py-2';
-        mensaje.textContent = 'Podés escribir el importe o elegir facturas para que se calcule solo.';
+        mensaje.textContent = 'Podés escribir el importe o elegir comprobantes para que se calcule solo.';
         porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', false);
         porId('reciboNumeroComprobante').readOnly = true;
@@ -1158,7 +1221,8 @@
     function nombreTipoComprobante(tipo) {
         if (tipo === 'FAC') return 'factura';
         if (tipo === 'NC') return 'nota de crédito';
-        return 'nota de débito';
+        if (tipo === 'ND') return 'nota de débito';
+        return 'comprobante';
     }
     function nombreAccionEmision(tipo) {
         if (tipo === 'FAC') return 'Emitir comprobante directo';
@@ -1212,7 +1276,7 @@
                 '<td class="text-end"><input type="text" inputmode="decimal" class="form-control form-control-sm text-end cc-allocation-input cc-nc-aplicar" ' +
                 'data-id="' + Number(item.ComprobanteID) + '" data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" ' +
                 'data-vencimiento="' + escapar(vencimiento) + '" data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
-        }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene facturas pendientes.</td></tr>';
+        }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene comprobantes pendientes.</td></tr>';
         cuerpo.querySelectorAll('.cc-nc-aplicar').forEach(enlazarMascaraMonto);
         actualizarResumenNotaCredito();
     }
@@ -1304,21 +1368,21 @@
         }
         grupoAplicaciones.classList.remove('d-none');
         if (!clienteId) {
-            porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus facturas pendientes.</td></tr>';
+            porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
             porId('btnEmitirComprobante').disabled = true;
             actualizarResumenNotaCredito();
             return Promise.resolve();
         }
-        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Cargando facturas pendientes…</td></tr>';
+        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Cargando comprobantes pendientes…</td></tr>';
         porId('btnEmitirComprobante').disabled = true;
         return apiGet('/clientes/' + clienteId + '/facturas-referencia').then(function (facturas) {
             var clienteActualFormulario = clienteComprobanteActual();
             if (comprobanteTipo !== 'NC' || !clienteActualFormulario || clienteActualFormulario.ClienteID !== clienteId) return;
             facturasReferencia = (facturas || []).filter(function (item) { return centavos(item.SaldoPendiente) > 0; });
             if (!facturasReferencia.length) {
-                porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">No hay facturas con saldo pendiente.</td></tr>';
+                porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">No hay comprobantes con saldo pendiente.</td></tr>';
                 porId('cmpMensaje').className = 'alert alert-warning py-2';
-                porId('cmpMensaje').textContent = 'El cliente no tiene facturas con saldo para emitir una nota de crédito.';
+                porId('cmpMensaje').textContent = 'El cliente no tiene comprobantes con saldo para emitir una nota de crédito.';
                 porId('btnEmitirComprobante').disabled = true;
                 actualizarResumenNotaCredito();
                 return;
@@ -1336,7 +1400,7 @@
             return Promise.resolve();
         }
         grupo.classList.remove('d-none');
-        porId('cmpReferenciaAyuda').textContent = 'El neto, el IVA y los otros impuestos se completan con el saldo de la factura.';
+        porId('cmpReferenciaAyuda').textContent = 'El neto, el IVA y los otros impuestos se completan con el saldo del comprobante.';
         if (!clienteId) {
             porId('cmpReferencia').innerHTML = '<option value="">Seleccioná un cliente primero</option>';
             porId('btnEmitirComprobante').disabled = true;
@@ -1354,9 +1418,9 @@
                     escapar(item.Numero) + ' · ' + fecha(item.FechaEmision) + ' · Saldo ' + dinero(item.SaldoPendiente) + '</option>';
             }).join('');
             if (!facturasReferencia.length) {
-                porId('cmpReferencia').innerHTML = '<option value="">No hay facturas con saldo pendiente</option>';
+                porId('cmpReferencia').innerHTML = '<option value="">No hay comprobantes con saldo pendiente</option>';
                 porId('cmpMensaje').className = 'alert alert-warning py-2';
-                porId('cmpMensaje').textContent = 'El cliente no tiene facturas con saldo para emitir una nota de crédito.';
+                porId('cmpMensaje').textContent = 'El cliente no tiene comprobantes con saldo para emitir una nota de crédito.';
                 porId('btnEmitirComprobante').disabled = true;
                 aplicarImportesFacturaReferencia();
                 return;
@@ -1369,18 +1433,27 @@
         if (comprobanteTipo !== 'NC') return;
         var cliente = clienteComprobanteActual();
         cargarFacturasReferencia('NC', cliente && cliente.ClienteID).catch(function (ex) {
-            porId('cmpError').textContent = textoError(ex, 'No se pudieron cargar las facturas del cliente. Probá de nuevo.');
+            porId('cmpError').textContent = textoError(ex, 'No se pudieron cargar los comprobantes del cliente. Probá de nuevo.');
             porId('btnEmitirComprobante').disabled = true;
         });
     }
     function abrirNuevoComprobante(tipo) {
         var cliente = clienteActual();
-        comprobanteTipo = tipo;
+        comprobanteDirecto = tipo === 'FAC';
+        comprobanteTipo = comprobanteDirecto ? null : tipo;
         comprobanteOperacion = nuevaClave();
         var hoy = hoyIso();
         var nombreAccion = nombreAccionEmision(tipo);
         porId('cmpTitulo').textContent = nombreAccion;
         porId('cmpTipoComprobante').textContent = '';
+        porId('cmpTipoSeleccion').innerHTML = '<option value="">Seleccioná un tipo</option>';
+        porId('cmpTipoSeleccion').value = '';
+        porId('cmpTipoSeleccion').disabled = false;
+        porId('cmpLetra').innerHTML = '';
+        porId('cmpSucursal').innerHTML = '';
+        porId('cmpNumeroComprobante').value = '';
+        porId('cmpTipoSeleccionGrupo').classList.toggle('d-none', !comprobanteDirecto);
+        porId('cmpTipoFijoGrupo').classList.toggle('d-none', comprobanteDirecto);
         poblarClientesComprobante(cliente && cliente.ClienteID);
         ponerFecha('cmpFechaEmision', hoy); limitarFecha('cmpFechaEmision', 'maxDate', hoy);
         vencimientoComprobanteEditado = false;
@@ -1390,7 +1463,7 @@
         porId('cmpIvaPct').querySelectorAll('.cc-iva-factura').forEach(function (opcion) { opcion.remove(); });
         porId('cmpNeto').value = '0,00'; porId('cmpIvaPct').value = '21'; porId('cmpOtros').value = '0,00';
         porId('cmpImporteTotalNC').value = '0,00';
-        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus facturas pendientes.</td></tr>';
+        porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
         porId('cmpSoloLecturaRelacion').classList.add('d-none');
         porId('cmpSoloLecturaRelacion').innerHTML = '';
         porId('cmpDetalleLectura').classList.add('d-none');
@@ -1402,8 +1475,9 @@
         var mensaje = porId('cmpMensaje');
         mensaje.className = 'alert alert-info py-2';
         mensaje.textContent = tipo === 'NC'
-            ? 'Ingresá el importe y distribuí la nota de crédito entre las facturas pendientes.'
-            : 'Completá los datos para emitir la ' + nombreTipoComprobante(tipo) + '.';
+            ? 'Ingresá el importe y distribuí la nota de crédito entre los comprobantes pendientes.'
+            : comprobanteDirecto ? 'Completá los datos para emitir el comprobante.'
+                : 'Completá los datos para emitir la ' + nombreTipoComprobante(tipo) + '.';
         porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('cmpCliente', false);
         porId('cmpIvaImporte').readOnly = true;
@@ -1416,24 +1490,34 @@
         porId('btnCerrarComprobante').textContent = 'Cancelar';
         boton.innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>' + nombreAccion;
         recalcularComprobante();
-        cargarConfiguracionEmision(tipo, {
+        var operacion = comprobanteOperacion;
+        var vigente = function () { return comprobanteOperacion === operacion && !comprobanteDirecto && comprobanteTipo === tipo; };
+        var carga = comprobanteDirecto ? cargarTiposComprobanteDirecto() : cargarConfiguracionEmision(tipo, {
             tipo: 'cmpTipoComprobante', letra: 'cmpLetra', sucursal: 'cmpSucursal', numero: 'cmpNumeroComprobante'
-        }).then(function () {
-            return cargarFacturasReferencia(tipo, cliente && cliente.ClienteID);
-        }).then(function () {
-            if (comprobanteTipo === tipo && !(tipo === 'NC' && !facturasReferencia.length)) boton.disabled = false;
+        }, null, vigente).then(function () {
+            if (vigente()) return cargarFacturasReferencia(tipo, cliente && cliente.ClienteID);
+        });
+        var finalizacion = carga.then(function () {
+            if (vigente() && !(tipo === 'NC' && !facturasReferencia.length)) boton.disabled = false;
         }).catch(function (ex) {
-            porId('cmpError').textContent = textoError(ex, 'No se pudo cargar la configuración del comprobante. Probá de nuevo.');
+            if (comprobanteOperacion !== operacion) return;
+            window.SGTL.avisoFormulario(porId('cmpError'), textoError(ex, 'No se pudo cargar la configuración del comprobante. Probá de nuevo.'));
             boton.disabled = true;
         });
         porId('modalNuevoComprobante').classList.toggle('cc-solo-lectura', false);
         bootstrap.Modal.getOrCreateInstance(porId('modalNuevoComprobante')).show();
+        return finalizacion;
     }
     function emitirComprobante() {
         var cliente = clienteComprobanteActual();
         var error = porId('cmpError');
         error.textContent = '';
         if (!token()) { error.textContent = window.SGTL.mensajeError({ status: 401 }, ''); return; }
+        if (comprobanteDirecto && (!comprobanteTipo || comprobanteTipo !== porId('cmpTipoSeleccion').value)) {
+            window.SGTL.marcarError(porId('cmpTipoSeleccion'), 'Seleccioná un tipo de comprobante.');
+            window.SGTL.avisoFormulario(error, 'Revisá los campos marcados.');
+            return;
+        }
         if (!comprobanteTipo) { error.textContent = 'No se pudo determinar el tipo de comprobante. Cerrá el formulario y probá de nuevo.'; return; }
         if (!cliente) { error.textContent = 'Seleccioná un cliente para emitir el comprobante.'; return; }
         var emision = porId('cmpFechaEmision').value;
@@ -1456,7 +1540,7 @@
         if (comprobanteTipo !== 'NC' && (!vencimiento || vencimiento < emision)) {
             error.textContent = 'El vencimiento debe ser igual o posterior a la emisión.'; return;
         }
-        if (comprobanteTipo === 'NC' && !aplicaciones.length) { error.textContent = 'Seleccioná una o más facturas para aplicar la nota de crédito.'; return; }
+        if (comprobanteTipo === 'NC' && !aplicaciones.length) { error.textContent = 'Seleccioná uno o más comprobantes para aplicar la nota de crédito.'; return; }
         if (!concepto) { error.textContent = 'Ingresá el concepto del comprobante.'; return; }
         if (importes.neto <= 0) { error.textContent = 'El importe neto debe ser mayor que cero.'; return; }
         if (importes.otros < 0) { error.textContent = 'Otros impuestos no puede ser negativo.'; return; }
@@ -1468,11 +1552,11 @@
             var excedePendiente = Array.prototype.some.call(document.querySelectorAll('.cc-nc-aplicar'), function (input) {
                 return !input.disabled && centavos(input.value) > Number(input.getAttribute('data-pendiente-centavos') || 0);
             });
-            if (excedePendiente) { error.textContent = 'Un importe aplicado supera el saldo pendiente de la factura.'; return; }
+            if (excedePendiente) { error.textContent = 'Un importe aplicado supera el saldo pendiente del comprobante.'; return; }
         }
 
         var listo = window.SGTL.procesando('#btnEmitirComprobante');
-        apiPost('/comprobantes', {
+        return apiPost('/comprobantes', {
             ClaveOperacion: comprobanteOperacion, ClienteID: cliente.ClienteID, Tipo: comprobanteTipo,
             FechaEmision: emision, FechaVencimiento: vencimiento, ComprobanteReferenciaID: referencia,
             Concepto: concepto, Neto: importes.neto / 100, IvaPct: Number(porId('cmpIvaPct').value),
@@ -1483,9 +1567,10 @@
         }).then(function (comprobante) {
             listo();
             comprobanteOperacion = null;
-            var nombre = comprobanteTipo === 'FAC' ? 'Factura' :
-                comprobanteTipo === 'NC' ? 'Nota de crédito' : 'Nota de débito';
-            cerrarModalYNotificar('modalNuevoComprobante', nombre + ' emitida' + (comprobante.Numero ? ': ' + comprobante.Numero : '') + '.');
+            var nombre = comprobanteTipo === 'FAC' ? 'Factura emitida' :
+                comprobanteTipo === 'NC' ? 'Nota de crédito emitida' :
+                    comprobanteTipo === 'ND' ? 'Nota de débito emitida' : 'Comprobante emitido';
+            cerrarModalYNotificar('modalNuevoComprobante', nombre + (comprobante.Numero ? ': ' + comprobante.Numero : '') + '.');
             cargarCuenta();
         }).catch(function (ex) {
             listo();
@@ -1804,6 +1889,7 @@
         porId('btnDistribuirRecibo').addEventListener('click', distribuirRecibo);
         porId('btnDistribuirNC').addEventListener('click', distribuirNotaCredito);
         porId('btnEmitirComprobante').addEventListener('click', emitirComprobante);
+        porId('cmpTipoSeleccion').addEventListener('change', seleccionarTipoComprobanteDirecto);
         porId('cmpCliente').addEventListener('change', function () {
             actualizarClienteComprobante();
         });
@@ -1916,6 +2002,9 @@
         inicializada = true; enlazarEventos(); mostrarCarga(); establecerRangoUltimos30Dias();
         ponerFecha('reciboFecha', hoyIso());
         cargarClientes().then(cargarCuenta).catch(mostrarError);
+        apiGet('/facturacion-config/tipos-comprobante').then(agregarTiposFiltroCuenta).catch(function () {
+            // El filtro conserva sus opciones básicas; la emisión volverá a consultar los tipos al abrirse.
+        });
     }
     window.CuentaCorrienteUI = { inicializar: inicializar };
 })(window, document);

@@ -301,8 +301,7 @@ VALUES (@usuario, @tablero, @orden, @x, @y, @ancho, @alto);", conexion, transacc
 
         // GET api/tableros/facturacion?fechaDesde=AAAA-MM-DD&fechaHasta=AAAA-MM-DD
         // Facturación del período por cliente y por día de emisión (la pantalla la agrupa por mes o por semana). Misma cuenta
-        // que "Top clientes en facturación" (CuentaCorrienteController): facturas y notas de débito emitidas, menos notas de
-        // crédito.
+        // que "Top clientes en facturación" (CuentaCorrienteController): comprobantes de deuda emitidos, menos notas de crédito.
         [HttpGet, Route("facturacion")]
         public IHttpActionResult GetFacturacion(string fechaDesde = null, string fechaHasta = null)
         {
@@ -329,7 +328,7 @@ SELECT c.ClienteID,
 FROM dbo.COMPROBANTES c
 JOIN dbo.CLIENTES cl ON cl.Cliente_ID = c.ClienteID
 WHERE c.Estado = 'EMITIDO'
-  AND c.Tipo IN ('FAC', 'ND', 'NC')
+  AND (c.Impacto = 'D' OR c.Tipo = 'NC')
   AND c.FechaEmision >= @desde AND c.FechaEmision < @hasta
 GROUP BY c.ClienteID, cl.Razon_Social, CONVERT(date, c.FechaEmision)
 ORDER BY Fecha, c.ClienteID;", conexion))

@@ -447,11 +447,11 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                                     return Content(HttpStatusCode.BadRequest,
                                         new { error = "Uno de los comprobantes no pertenece al cliente." });
                                 }
-                                if (deuda.Estado != "EMITIDO" || deuda.Impacto != "D" || deuda.Tipo != "FAC")
+                                if (deuda.Estado != "EMITIDO" || deuda.Impacto != "D")
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "Los recibos solo se pueden aplicar a facturas emitidas." });
+                                        new { error = "Los recibos solo se pueden aplicar a comprobantes de deuda emitidos." });
                                 }
                                 if (fecha < deuda.FechaEmision.Date)
                                 {

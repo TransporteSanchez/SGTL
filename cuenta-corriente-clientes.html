@@ -241,12 +241,13 @@
                         <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente <span class="text-danger">*</span></label><select id="cmpCliente" class="form-select" required><option value="">Seleccioná un cliente</option></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpFechaEmision">Fecha de emisión <span class="text-danger">*</span></label><input id="cmpFechaEmision" class="form-control" placeholder="DD/MM/AAAA"></div>
                         <div class="col-md-3" id="cmpVencimientoGrupo"><label class="form-label" for="cmpFechaVencimiento">Fecha de vencimiento <span class="text-danger">*</span></label><input id="cmpFechaVencimiento" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="col-md-3"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">Tipo de comprobante</span><span id="cmpTipoComprobante" class="sgtl-dato-valor" aria-live="polite"></span></div></div>
+                        <div class="col-md-3 d-none" id="cmpTipoSeleccionGrupo"><label class="form-label" for="cmpTipoSeleccion">Tipo de comprobante <span class="text-danger">*</span></label><select id="cmpTipoSeleccion" class="form-select" required><option value="">Seleccioná un tipo</option></select></div>
+                        <div class="col-md-3" id="cmpTipoFijoGrupo"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">Tipo de comprobante</span><span id="cmpTipoComprobante" class="sgtl-dato-valor" aria-live="polite"></span></div></div>
                         <div class="col-md-3"><label class="form-label" for="cmpLetra">Letra</label><select id="cmpLetra" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpSucursal">Sucursal</label><select id="cmpSucursal" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpNumeroComprobante">N° comprobante</label><input id="cmpNumeroComprobante" class="form-control" readonly></div>
                         <div class="col-12 d-none" id="cmpReferenciaGrupo">
-                            <label class="form-label" for="cmpReferencia" id="cmpReferenciaEtiqueta">Factura relacionada <span class="text-danger">*</span></label>
+                            <label class="form-label" for="cmpReferencia" id="cmpReferenciaEtiqueta">Comprobante relacionado <span class="text-danger">*</span></label>
                             <select id="cmpReferencia" class="form-select"></select>
                             <div class="form-text" id="cmpReferenciaAyuda"></div>
                         </div>
@@ -295,7 +296,7 @@
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title" id="modalNuevoReciboTitulo">Registrar recibo</h5>
-                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputar facturas pendientes.</small>
+                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputar comprobantes pendientes.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
