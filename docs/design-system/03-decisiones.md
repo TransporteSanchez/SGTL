@@ -247,7 +247,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   camiones, por marca o fecha de alta. En Gestionar orígenes y destinos, ambas pestañas permiten ordenar por
   descripción, cliente, provincia o localidad. En Gestionar presupuestos, por número, fecha, cliente, ruta, km o
   importe. En Listar y Gestionar viajes, por número de viaje, cliente, fecha de inicio, fecha de fin, origen,
-  destino, número de remito o cantidad de km. Las demás pantallas incorporan columnas ordenables cuando se definan.
+  destino, número de remito o cantidad de km. En Listar y Gestionar clientes, por CUIT, razón social o fecha de alta.
+  Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---
 

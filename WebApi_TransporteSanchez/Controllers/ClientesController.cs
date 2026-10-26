@@ -186,7 +186,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Clientes/Buscar
         [HttpGet]
         [Route("api/Clientes/Buscar")]
-        public IHttpActionResult Buscar(string dni = null, string cuit = null, string razonSocial = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string dni = null, string cuit = null, string razonSocial = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6, string orden = null, string direccion = null)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -255,8 +255,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
 
                     var tipos = TiposCliente(db);
-                    var results = query
-                        .OrderByDescending(x => x.Cliente_ID)
+                    var results = ClientesOrden.Aplicar(query, orden, direccion)
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
                         .Select(x => new ClienteBusquedaDto

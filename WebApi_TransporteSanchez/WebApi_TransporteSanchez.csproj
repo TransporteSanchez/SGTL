@@ -419,6 +419,7 @@
     <Compile Include="Controllers\CamionesController.cs" />
     <Compile Include="Controllers\ChoferesController.cs" />
     <Compile Include="Controllers\ClientesController.cs" />
+    <Compile Include="Controllers\ClientesOrden.cs" />
     <Compile Include="Controllers\CuentaCorrienteController.cs" />
     <Compile Include="Controllers\ComprobantesController.cs" />
     <Compile Include="Controllers\FacturasController.cs" />
