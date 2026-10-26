@@ -3306,7 +3306,8 @@ del gasoil; kilometraje y consumo de un camión (y el aviso si falta la fecha); 
   destinos.".
 - [ ] 3. Gestionar camiones: "Cambiar precio del gasoil" con el precio de hoy. Editar el camión: el kilometraje del
   tablero de hoy, la fecha y el consumo (pedirle a la empresa el consumo real). Sin la fecha → "Completá la fecha del
-  kilometraje.".
+  kilometraje.". **Falta en los 4 camiones (25/10):** ninguno tiene kilometraje, fecha ni consumo; sin eso, Ver detalle
+  del viaje no estima el combustible ni el margen.
 - [ ] 4. Listar camiones → Ver detalle: "Kilometraje y consumo" con el kilometraje de hoy.
 - [ ] 5. Listar viajes → Ver detalle de un viaje entregado: "Recorrido completo y costo" con los tres tramos (comparar
   uno con Google Maps a mano), el combustible estimado y el margen.
@@ -3469,7 +3470,8 @@ la Mac sin frenar los demás. Las tandas van en orden de prioridad para el jueve
 2. `database/tarifas/03_cargar_tablas_de_tarifas_2026.sql` tal cual: revisar los camiones "Elegir en Gestionar camiones"
    y que "Viajes antes del 01/01/2026" dé 0 (si no, avisar a Claude en la Mac). Después `@Aplicar = 1` y `COMMIT`.
 3. VM: `git pull` en `rocionuvoli` (anotar el commit), recompilar la API en Visual Studio, Live Server y Ctrl+F5.
-4. Gestionar camiones: elegir el tipo de los camiones que el `03` no pudo deducir.
+4. Gestionar camiones: elegir el tipo de los camiones que el `03` no pudo deducir. **Hecho (Rocío lo revisó en la base el
+   25/10):** los 4 camiones están activos, con un tipo de la tabla y el año del modelo, y ningún viaje quedó sin importe.
 5. `database/tarifas/04_viajes_con_la_tabla_de_tarifas.sql` tal cual: la columna "Falta" vacía, revisar el resumen y
    anotar los importes nuevos de la demo de Rukas (viajes 25 y 26: pasárselos a Claude para los Excel). Después
    `@Aplicar = 1` y `COMMIT`.
