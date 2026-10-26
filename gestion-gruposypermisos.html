@@ -13,6 +13,9 @@
 
         /* Las dos listas de asignación conservan un alto manejable en escritorio y celular. */
         .lista-usuarios-grupo { max-height: clamp(150px, 20vh, 200px); overflow-y: auto; }
+        @media (min-width: 1500px) and (min-height: 760px) {
+            .lista-usuarios-grupo { height: clamp(180px, 24vh, 230px); max-height: none; }
+        }
 
     </style>
 
