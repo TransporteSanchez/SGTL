@@ -422,6 +422,7 @@
     <Compile Include="Controllers\ClientesController.cs" />
     <Compile Include="Controllers\ClientesOrden.cs" />
     <Compile Include="Controllers\CuentaCorrienteController.cs" />
+    <Compile Include="Controllers\CuentaCorrienteOrdenSql.cs" />
     <Compile Include="Controllers\ComprobantesController.cs" />
     <Compile Include="Controllers\FacturasController.cs" />
     <Compile Include="Controllers\FacturacionConfiguracionController.cs" />

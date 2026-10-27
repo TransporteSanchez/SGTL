@@ -25,6 +25,7 @@ function renderizarFacturaConCreditoAplicado(tipo, impacto) {
     const tabla = { innerHTML: '' };
     const cabecera = { innerHTML: '' };
     const sandbox = {
+        ordenMovimientos: null,
         movimientos: [{
             ComprobanteID: 25,
             Fecha: '2026-10-12',
@@ -53,6 +54,7 @@ function renderizarFacturaConCreditoAplicado(tipo, impacto) {
         badgeEstado: function (estado) { return estado; },
         window: {
             SGTL: {
+                tabla: { habilitarOrden: function () { return { parametros: function () { return {}; } }; } },
                 botonFila: function () { return ''; },
                 accionesFila: function () { return ''; }
             }
@@ -63,6 +65,7 @@ function renderizarFacturaConCreditoAplicado(tipo, impacto) {
         extraerFuncion('tipoComprobante'),
         extraerFuncion('estadoRecibo'),
         extraerFuncion('accionesComprobante'),
+        extraerFuncion('encabezadoMovimiento'),
         extraerFuncion('renderMovimientos')
     ].join('\n'), sandbox,
         { filename: 'cuenta-corriente-clientes.js' });

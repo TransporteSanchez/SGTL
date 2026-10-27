@@ -64,6 +64,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 44 | Editar la identidad de tipos de comprobante y marcar los electrónicos | Migración 16 aplicada según el usuario (27/10); falta probar en VM | Pendiente de subir | Corregir una sigla y una letra con historial, y comprobar el bloqueo electrónico (§44) |
 | 45 | Emitir créditos y débitos internos directos desde cuenta corriente | Corregido en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Recompilar la API, recargar y emitir con C y D activos, aunque NC y ND estén inactivos (§45) |
 | 46 | Emitir créditos internos sin imputar e imputarlos después | Hecho en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Emitir C con saldo libre e imputarlo parcial y sucesivamente a comprobantes internos de deuda (§46) |
+| 48 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§48) |
+| 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en esta tanda (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
@@ -3750,6 +3752,40 @@ Las siglas FAC, ND, NC y REC tienen circuitos propios y permanecen fijas. FAC y 
 La API guarda las imputaciones posteriores mediante `PUT /api/comprobantes/{id}/aplicaciones`: cada importe solicitado es el **total acumulado** del crédito aplicado a esa deuda, por lo que repetir exactamente la petición no duplica la aplicación. Rechaza deudas de otro cliente, importes que excedan el saldo del crédito o de la deuda, y modificaciones de aplicaciones ya registradas. El script de solo lectura `database/cuenta-corriente/03_verificacion_posterior.sql` ahora considera válido un crédito corriente sin aplicar o parcialmente aplicado; sigue denunciando sobreaplicaciones y exige que un cancelatorio emitido tenga una sola aplicación por su total. No se requiere migración nueva de la base.
 
 **Probar en la VM:** recompilar la API y recargar Gestionar cuenta corriente. Con C activo, emitir un crédito sin deuda seleccionada con neto $ 1.000,00, IVA 21 % ($ 210,00) y otros impuestos $ 50,00; verificar el total $ 1.260,00, su desglose, número, movimiento, detalle, PDF y saldo disponible en ambas vistas de cuenta corriente. Crear dos comprobantes internos de deuda para el mismo cliente, cada uno con saldo suficiente. Imputar $ 400,00 al primero, volver a abrir «Imputar crédito» y agregar $ 200,00 para que esa deuda acumule $ 600,00; aplicar los $ 660,00 restantes al segundo. Verificar que el crédito pasa de «Sin aplicar» a «Parcialmente aplicado» y luego a «Aplicado», y que los saldos de ambas deudas bajan una sola vez. Repetir el mismo `PUT` y comprobar que no agrega otra aplicación; intentar exceder cualquiera de los saldos y usar una deuda de otro cliente: la API debe rechazarlo sin guardar cambios. Confirmar que una anulación de proforma sigue emitiendo su crédito cancelatorio por el total y con una sola aplicación.
+
+---
+
+## 48. Ordenar las columnas de cuenta corriente — Hecho en código (27/10)
+
+La vista de movimientos de Gestionar cuenta corriente permite ordenar por Cliente, Comprobante, Concepto, Fecha,
+Total, Cancelado y Saldo desde sus encabezados, con `SGTL.tabla.habilitarOrden`: primer clic ascendente, segundo
+descendente y una columna nueva empieza ascendente. Conserva las flechas y el criterio al reconstruir los encabezados,
+filtrar, cambiar de cliente y paginar. La API ordena todos los resultados antes de paginar, con un desempate estable;
+los importes se ordenan como números y las fechas por su valor. Las aplicaciones permanecen debajo de su comprobante
+en orden cronológico. PDF y Excel usan el mismo criterio sobre todos los resultados filtrados. Fecha permanece entre
+Concepto y Total. No requiere migración SQL.
+
+**Verificación local:** pruebas Node del orden de las siete columnas, direcciones, flechas, filtros, paginación,
+exportaciones, respuestas tardías, SQL permitido y recibos anulados, con datos locales y sin consultar la base compartida.
+
+**Probar en la VM:** recompilar la API y recargar con Ctrl+F5. Con todos los clientes, alternar dos veces cada encabezado;
+probar importes como 2, 10 y 100 y fechas que crucen de mes. Cambiar de columna y comprobar que arranca ascendente.
+Ir a la segunda página, filtrar y exportar PDF y Excel: deben conservar el criterio y considerar todos los resultados.
+Elegir un cliente: se oculta su columna y se conserva el orden. Desplegar un comprobante con varias aplicaciones y
+comprobar que siguen juntas y en orden cronológico, con sus saldos progresivos. Volver de Comprobantes sin relacionar
+a Cuenta corriente y verificar que se mantiene el criterio.
+
+---
+
+## 52. Ordenar columnas de choferes y camiones — Hecho en código (27/10)
+
+Gestionar y Listar choferes muestran DNI, Apellido y nombre, Fecha de alta, Estado y Acciones, sin ID. Las tres
+primeras columnas permiten ordenar antes de paginar y exportar. Gestionar y Listar camiones ocultan ID, ubican Fecha
+de alta después de Modelo y permiten ordenar Marca y Fecha de alta. Usan `SGTL.tabla.habilitarOrden` y los criterios
+permitidos por la API. La compilación de la API y las 76 pruebas Node finalizaron correctamente.
+
+**Probar en la VM:** en ambas vistas de cada módulo, alternar cada encabezado, cambiar de página y exportar CSV.
+Verificar que se conserva el criterio, que DNI se ordena por su valor y que no aparece la columna ID.
 
 ---
 

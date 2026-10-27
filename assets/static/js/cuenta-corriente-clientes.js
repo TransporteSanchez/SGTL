@@ -25,6 +25,8 @@
     var paginaActual = 1;
     var paginacionMovimientos = { total: 0, totalPages: 0 };
     var tamanioPagina = 15;
+    var ordenMovimientos = null;
+    var secuenciaCargaCuenta = 0;
     var filtrosCuenta = null;
     var modalVistaPreviaComprobante = null;
     var urlVistaPreviaComprobante = null;
@@ -613,12 +615,21 @@
         });
         parametros.set('page', String(paginaActual));
         parametros.set('pageSize', String(tamanioPagina));
+        agregarOrdenMovimientos(parametros);
         return parametros.toString();
+    }
+    function agregarOrdenMovimientos(parametros) {
+        var orden = ordenMovimientos ? ordenMovimientos.parametros() : {};
+        if (orden.orden) {
+            parametros.set('orden', orden.orden);
+            parametros.set('direccion', orden.direccion);
+        }
     }
     function tamanioPaginaPara(total) {
         return tamanioPagina === 0 ? Math.max(Number(total) || 0, 1) : tamanioPagina;
     }
     function cargarCuenta(pagina) {
+        var version = ++secuenciaCargaCuenta;
         if (pagina != null) paginaActual = Math.max(1, Number(pagina) || 1);
         var cliente = clienteActual();
         mostrarCarga();
@@ -634,13 +645,16 @@
         return Promise.all([
             apiGet(rutas.saldo), apiGet(rutas.movimientos), apiGet(rutas.pendientes)
         ]).then(function (resultados) {
+            if (version !== secuenciaCargaCuenta) return;
             resumen = resultados[0]; movimientos = resultados[1].items || []; pendientes = resultados[2] || [];
             paginacionMovimientos = {
                 total: Number(resultados[1].total || 0),
                 totalPages: Number(resultados[1].totalPages || 0)
             };
             renderTodo();
-        }).catch(mostrarError);
+        }).catch(function (error) {
+            if (version === secuenciaCargaCuenta) mostrarError(error);
+        });
     }
 
     function renderResumen() {
@@ -653,12 +667,21 @@
         porId('ccProximoVencimientoNota').textContent = resumen && resumen.ProximoComprobante
             ? resumen.ProximoComprobante + ' · ' + dinero(resumen.ProximoImporte) : 'Sin próximos vencimientos';
     }
+    function encabezadoMovimiento(campo, texto, alineacion) {
+        return '<th' + (alineacion ? ' class="' + alineacion + '"' : '') + '>' +
+            '<button type="button" class="sgtl-orden-boton" data-sgtl-orden="' + campo + '">' + texto +
+            '<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>';
+    }
     function renderMovimientos() {
         var mostrarCliente = esConsultaGeneral();
         porId('ccTablaCabecera').innerHTML = '<tr><th class="cc-toggle-column"><span class="visually-hidden">Desplegar</span></th>' +
-            '<th class="text-center">Fecha</th>' + (mostrarCliente ? '<th>Cliente</th>' : '') + '<th>Comprobante</th><th>Concepto</th><th class="text-end">Total</th>' +
-            '<th class="text-end">Cancelado</th><th class="text-end">Saldo</th>' +
+            (mostrarCliente ? encabezadoMovimiento('cliente', 'Cliente') : '') +
+            encabezadoMovimiento('comprobante', 'Comprobante') + encabezadoMovimiento('concepto', 'Concepto') +
+            encabezadoMovimiento('fecha', 'Fecha', 'text-center') + encabezadoMovimiento('total', 'Total', 'text-end') +
+            encabezadoMovimiento('cancelado', 'Cancelado', 'text-end') + encabezadoMovimiento('saldo', 'Saldo', 'text-end') +
             '<th class="text-center">Estado</th><th class="text-center">Acciones</th></tr>';
+        ordenMovimientos = window.SGTL.tabla.habilitarOrden('#ccTabla', function () { cargarCuenta(1); },
+            ordenMovimientos ? ordenMovimientos.parametros() : {});
         if (!movimientos.length) {
             window.SGTL.tabla.vacia('#ccTablaCuerpo', mostrarCliente ? 10 : 9);
             return;
@@ -670,9 +693,9 @@
                     '" aria-expanded="false" aria-label="Mostrar comprobantes aplicados a ' + escapar(item.Comprobante) +
                     '"><i class="bi bi-chevron-down"></i></button>'
                 : '';
-            var filaPrincipal = '<tr class="cc-parent-row' + (indice % 2 ? '' : ' cc-fila-rayada') + '"><td class="text-center">' + control + '</td><td class="text-center">' + fecha(item.Fecha) +
-                '</td>' + (mostrarCliente ? '<td>' + escapar(item.Cliente || '—') + '</td>' : '') + '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + escapar(item.Concepto) +
-                '</td><td class="cc-money">' + dinero(item.Debe) + '</td><td class="cc-money cc-credit">' +
+            var filaPrincipal = '<tr class="cc-parent-row' + (indice % 2 ? '' : ' cc-fila-rayada') + '"><td class="text-center">' + control + '</td>' +
+                (mostrarCliente ? '<td>' + escapar(item.Cliente || '—') + '</td>' : '') + '<td class="cc-document">' + escapar(item.Comprobante) + '</td><td>' + escapar(item.Concepto) +
+                '</td><td class="text-center">' + fecha(item.Fecha) + '</td><td class="cc-money">' + dinero(item.Debe) + '</td><td class="cc-money cc-credit">' +
                 dinero(item.Cancelado) + '</td><td class="cc-money cc-debit fw-bold">' + dinero(item.Saldo) +
                 '</td><td class="text-center">' + badgeEstado(item.Estado) + '</td><td class="text-center">' +
                 accionesComprobante(item) + '</td></tr>';
@@ -685,10 +708,11 @@
                 // La última aplicación cierra el grupo de la factura (línea más marcada debajo).
                 var claseUltima = posicion === aplicaciones.length - 1 ? ' cc-application-last' : '';
                 return '<tr class="cc-application-row' + claseCreditoAplicado + claseUltima + ' d-none" data-parent="' + Number(item.ComprobanteID) + '">' +
-                    '<td></td><td class="text-center cc-dato-aplicado">' + fecha(aplicacion.Fecha) + '</td>' +
+                    '<td></td>' +
                     (mostrarCliente ? '<td class="cc-dato-aplicado">' + escapar(aplicacion.Cliente || item.Cliente || '—') + '</td>' : '') + '<td class="cc-document cc-application-document">' +
                     '<i class="bi bi-arrow-return-right me-2" aria-hidden="true"></i>' + escapar(aplicacion.Comprobante) +
                     '</td><td class="cc-dato-aplicado">' + escapar(aplicacion.Concepto || 'Aplicación a ' + item.Comprobante) + '</td>' +
+                    '<td class="text-center cc-dato-aplicado">' + fecha(aplicacion.Fecha) + '</td>' +
                     '<td class="cc-money">—</td><td class="cc-money cc-credit">' + dinero(aplicacion.Importe) +
                     '</td><td class="cc-money fw-bold">' + dinero(saldoProgresivo) + '</td><td class="text-center">' +
                     badgeEstado(aplicacion.Estado || 'Aplicado') + '</td><td class="text-center">' +
@@ -1845,6 +1869,7 @@
         });
         parametros.set('page', '1');
         parametros.set('pageSize', '0');
+        agregarOrdenMovimientos(parametros);
         return parametros.toString();
     }
     function obtenerMovimientosParaExportar() {
@@ -1883,43 +1908,43 @@
     function datosListadoMovimientos(items) {
         var incluirCliente = esConsultaGeneral();
         var filas = items.reduce(function (acumulado, item) {
-            var filaComprobante = ['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto || '', dinero(item.Debe),
+            var filaComprobante = ['Comprobante', item.Comprobante, item.Concepto || '', fecha(item.Fecha), dinero(item.Debe),
                 dinero(item.Cancelado), dinero(item.Saldo), item.Estado || ''];
-            if (incluirCliente) filaComprobante.splice(2, 0, item.Cliente || '');
+            if (incluirCliente) filaComprobante.splice(1, 0, item.Cliente || '');
             acumulado.push(filaComprobante);
             var saldoProgresivo = Number(item.Debe || 0);
             (item.Aplicaciones || []).forEach(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
-                var filaAplicacion = ['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto || '', '—',
+                var filaAplicacion = ['Aplicación', aplicacion.Comprobante, aplicacion.Concepto || '', fecha(aplicacion.Fecha), '—',
                     dinero(aplicacion.Importe), dinero(saldoProgresivo), aplicacion.Estado || 'Aplicado'];
-                if (incluirCliente) filaAplicacion.splice(2, 0, aplicacion.Cliente || item.Cliente || '');
+                if (incluirCliente) filaAplicacion.splice(1, 0, aplicacion.Cliente || item.Cliente || '');
                 acumulado.push(filaAplicacion);
             });
             return acumulado;
         }, []);
-        var cabecera = ['Nivel', 'Fecha', 'Comprobante', 'Concepto', 'Total', 'Cancelado', 'Saldo', 'Estado'];
-        if (incluirCliente) cabecera.splice(2, 0, 'Cliente');
+        var cabecera = ['Nivel', 'Comprobante', 'Concepto', 'Fecha', 'Total', 'Cancelado', 'Saldo', 'Estado'];
+        if (incluirCliente) cabecera.splice(1, 0, 'Cliente');
         return { cabecera: cabecera, filas: filas, comprobantes: items.length };
     }
     function datosListadoMovimientosExcel(items) {
         var incluirCliente = esConsultaGeneral();
         var filas = items.reduce(function (acumulado, item) {
-            var filaComprobante = ['Comprobante', fecha(item.Fecha), item.Comprobante, item.Concepto || '', Number(item.Debe || 0),
+            var filaComprobante = ['Comprobante', item.Comprobante, item.Concepto || '', fecha(item.Fecha), Number(item.Debe || 0),
                 Number(item.Cancelado || 0), Number(item.Saldo || 0), item.Estado || ''];
-            if (incluirCliente) filaComprobante.splice(2, 0, item.Cliente || '');
+            if (incluirCliente) filaComprobante.splice(1, 0, item.Cliente || '');
             acumulado.push(filaComprobante);
             var saldoProgresivo = Number(item.Debe || 0);
             (item.Aplicaciones || []).forEach(function (aplicacion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
-                var filaAplicacion = ['Aplicación', fecha(aplicacion.Fecha), aplicacion.Comprobante, aplicacion.Concepto || '', null,
+                var filaAplicacion = ['Aplicación', aplicacion.Comprobante, aplicacion.Concepto || '', fecha(aplicacion.Fecha), null,
                     Number(aplicacion.Importe || 0), saldoProgresivo, aplicacion.Estado || 'Aplicado'];
-                if (incluirCliente) filaAplicacion.splice(2, 0, aplicacion.Cliente || item.Cliente || '');
+                if (incluirCliente) filaAplicacion.splice(1, 0, aplicacion.Cliente || item.Cliente || '');
                 acumulado.push(filaAplicacion);
             });
             return acumulado;
         }, []);
-        var cabecera = ['Nivel', 'Fecha', 'Comprobante', 'Concepto', 'Total', 'Cancelado', 'Saldo', 'Estado'];
-        if (incluirCliente) cabecera.splice(2, 0, 'Cliente');
+        var cabecera = ['Nivel', 'Comprobante', 'Concepto', 'Fecha', 'Total', 'Cancelado', 'Saldo', 'Estado'];
+        if (incluirCliente) cabecera.splice(1, 0, 'Cliente');
         return { cabecera: cabecera, filas: filas, comprobantes: items.length };
     }
     function estilosColumnasListado() {
@@ -1938,12 +1963,12 @@
         }
         return esConsultaGeneral()
             ? {
-                0: { cellWidth: 18 }, 1: { cellWidth: 18 }, 2: { cellWidth: 34 }, 3: { cellWidth: 28 },
-                4: { cellWidth: 'auto' }, 5: { halign: 'right', cellWidth: 23 }, 6: { halign: 'right', cellWidth: 23 },
+                0: { cellWidth: 18 }, 1: { cellWidth: 34 }, 2: { cellWidth: 28 }, 3: { cellWidth: 'auto' },
+                4: { halign: 'center', cellWidth: 18 }, 5: { halign: 'right', cellWidth: 23 }, 6: { halign: 'right', cellWidth: 23 },
                 7: { halign: 'right', cellWidth: 23 }, 8: { cellWidth: 21 }
             }
             : {
-                0: { cellWidth: 22 }, 1: { cellWidth: 19 }, 2: { cellWidth: 34 }, 3: { cellWidth: 'auto' },
+                0: { cellWidth: 22 }, 1: { cellWidth: 34 }, 2: { cellWidth: 'auto' }, 3: { halign: 'center', cellWidth: 19 },
                 4: { halign: 'right', cellWidth: 24 }, 5: { halign: 'right', cellWidth: 24 },
                 6: { halign: 'right', cellWidth: 25 }, 7: { cellWidth: 23 }
             };

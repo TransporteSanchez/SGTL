@@ -288,21 +288,23 @@ OUTER APPLY (SELECT * FROM Proximo) p;";
         [HttpGet]
         [Route("clientes/{clienteId:int}/cuenta-corriente")]
         public IHttpActionResult ObtenerMovimientos(int clienteId, DateTime? desde = null, DateTime? hasta = null,
-            string tipo = null, string estado = null, int page = 1, int pageSize = 50)
+            string tipo = null, string estado = null, int page = 1, int pageSize = 50,
+            string orden = null, string direccion = null)
         {
-            return ConsultarMovimientos(clienteId, desde, hasta, tipo, estado, page, pageSize);
+            return ConsultarMovimientos(clienteId, desde, hasta, tipo, estado, page, pageSize, orden, direccion);
         }
 
         [HttpGet]
         [Route("cuenta-corriente/movimientos")]
         public IHttpActionResult ObtenerMovimientosGenerales(DateTime? desde = null, DateTime? hasta = null,
-            string tipo = null, string estado = null, int page = 1, int pageSize = 50)
+            string tipo = null, string estado = null, int page = 1, int pageSize = 50,
+            string orden = null, string direccion = null)
         {
-            return ConsultarMovimientos(null, desde, hasta, tipo, estado, page, pageSize);
+            return ConsultarMovimientos(null, desde, hasta, tipo, estado, page, pageSize, orden, direccion);
         }
 
         private IHttpActionResult ConsultarMovimientos(int? clienteId, DateTime? desde, DateTime? hasta,
-            string tipo, string estado, int page, int pageSize)
+            string tipo, string estado, int page, int pageSize, string orden, string direccion)
         {
             if (page < 1) page = 1;
             if (pageSize < 0 || pageSize > 200) pageSize = 50;
@@ -391,7 +393,7 @@ SELECT Movimiento_ID AS MovimientoID,ComprobanteID,ClienteID,Cliente,FechaContab
        CAST(CASE WHEN Tipo='REC' AND EstadoComprobante='ANULADO' THEN 0 ELSE Saldo END AS decimal(18,2)) AS SaldoPendiente,
        EstadoFinanciero AS Estado,EstadoComprobante,
        COALESCE(Origen,'Comprobante directo') AS Origen
-FROM Filtrados ORDER BY FechaContable,Movimiento_ID
+FROM Filtrados" + CuentaCorrienteOrdenSql.Obtener(orden, direccion) + @"
 OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
                     var items = db.Database.SqlQuery<MovimientoCuentaDto>(sql, parameters).ToList();
 

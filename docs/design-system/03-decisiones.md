@@ -258,6 +258,10 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   destino, número de remito o cantidad de km. En Listar y Gestionar clientes, por CUIT, razón social o fecha de alta.
   En Listar y Gestionar proformas, por número, cliente, total, fecha o usuario; sus columnas se muestran en el orden
   Número, Cliente, Total, Fecha, Usuario, Estado, Acciones.
+  En Gestionar cuenta corriente, la vista de movimientos permite ordenar por Cliente, Comprobante, Concepto, Fecha,
+  Total, Cancelado o Saldo (27/10); Fecha va entre Concepto y Total. La API ordena los comprobantes principales antes
+  de paginar; las aplicaciones permanecen debajo de su comprobante, en orden cronológico, para conservar el saldo
+  progresivo. El mismo orden se usa en PDF y Excel. Con un cliente elegido, la columna Cliente no se muestra.
   Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---

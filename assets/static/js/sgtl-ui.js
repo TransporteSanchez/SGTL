@@ -536,10 +536,11 @@
   }
 
   // Encabezados ordenables: la pantalla aplica el orden antes de paginar.
-  function habilitarOrden(tablaObjetivo, alCambiar) {
+  function habilitarOrden(tablaObjetivo, alCambiar, ordenInicial) {
     var tablaElemento = elemento(tablaObjetivo);
-    var campo = '';
-    var direccion = '';
+    // Una tabla que reconstruye sus encabezados puede conservar el criterio y las flechas.
+    var campo = ordenInicial && ordenInicial.orden || '';
+    var direccion = ordenInicial && ordenInicial.direccion || '';
     if (!tablaElemento) return { parametros: function () { return {}; } };
 
     var botones = tablaElemento.querySelectorAll('th button[data-sgtl-orden]');

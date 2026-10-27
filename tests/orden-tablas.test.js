@@ -67,4 +67,11 @@ assert.strictEqual(dni.th.getAttribute('aria-sort'), 'ascending');
 assert.strictEqual(fecha.th.getAttribute('aria-sort'), undefined);
 assert.strictEqual(cambios, 3, 'cada cambio de orden pide una búsqueda nueva');
 
+const reconstruido = window.SGTL.tabla.habilitarOrden('#tablaChoferes', function () { cambios += 1; }, orden.parametros());
+assert.strictEqual(dni.th.getAttribute('aria-sort'), 'ascending', 'reconstruir la cabecera conserva el criterio y su flecha');
+assert.strictEqual(JSON.stringify(reconstruido.parametros()), '{"orden":"dni","direccion":"asc"}');
+dni.boton.click();
+assert.strictEqual(JSON.stringify(reconstruido.parametros()), '{"orden":"dni","direccion":"desc"}',
+    'el siguiente clic después de reconstruir alterna a descendente');
+
 console.log('OK: los encabezados alternan ascendente y descendente e informan el orden activo');
