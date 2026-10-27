@@ -145,6 +145,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Entrega { get; set; }
             public string Tipo_Cliente { get; set; }
             public bool Tiene_Evidencia { get; set; }
+            public bool Tiene_Gastos { get; set; }
             public bool Facturada { get; set; }
             public int? Presupuesto_ID { get; set; }
             public int? EnProforma_ID { get; set; }
@@ -209,6 +210,8 @@ namespace WebApi_TransporteSanchez.Controllers
             "v.Importe, v.Importe_Detalle, v.Estado, v.Resultado_Entrega, v.Fecha_Entrega, " +
             "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia, " +
+            // Con gastos del chofer no se elimina (punto 22 de la §41; VIAJE_GASTOS es de database/costos/01).
+            "CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Gastos, " +
             SQL_FACTURADA + " AS Facturada, " +
             "(SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID = v.Viaje_ID) AS Presupuesto_ID, " +
             "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado " +
@@ -882,10 +885,18 @@ SELECT CAST(CASE WHEN EXISTS (
             {
                 using (var db = new SGTLAuditContext(Cn()))
                 {
-                    var estado = EstadoActual(db, id);
-                    if (estado == null) return NotFound();
+                    var v = db.Database.SqlQuery<EstadoViajeRow>(SELECT_ESTADO + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    if (v == null) return NotFound();
+                    var estado = v.Estado;
                     if (estado == EstadoFacturado)
                         return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje ya está facturado: no se puede cambiar la evidencia." } });
+                    // Es de la entrega (punto 22 de la §41): en un directo, desde que salió (se sube al entregarlo); con
+                    // plataforma, que no pasa por En viaje, desde el día del viaje.
+                    var hoy = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time").Date;
+                    if (EsRegistrado(estado) && !EsConPlataforma(v.Tipo_Cliente))
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "No se puede adjuntar la evidencia: el viaje todavía no salió." } });
+                    if (EsRegistrado(estado) && v.Fecha_Inicio.Date > hoy)
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "No se puede adjuntar la evidencia: el viaje todavía no empezó." } });
 
                     db.Database.ExecuteSqlCommand(
                         "IF EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id) " +
@@ -996,6 +1007,10 @@ SELECT CAST(CASE WHEN EXISTS (
 
             if (fechaEntrega.HasValue && fechaEntrega.Value.Date < v.Fecha_Inicio.Date)
                 errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "La fecha de entrega no puede ser anterior al inicio del viaje." });
+            // Ni futura (punto 22 de la §41): la entrega ya pasó. Hoy en la Argentina (§2 de PENDIENTES).
+            var hoy = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time").Date;
+            if (fechaEntrega.HasValue && fechaEntrega.Value.Date > hoy)
+                errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "La fecha de entrega no puede ser posterior a hoy." });
 
             bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
 
@@ -1437,6 +1452,13 @@ SELECT CAST(CASE WHEN EXISTS (
 
                     if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0)
                         return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado." });
+
+                    // Con gastos del chofer (los cargó en viaje y después se volvió atrás) no se elimina: son de la rendición.
+                    bool hayGastos = db.Database.SqlQuery<int?>("SELECT OBJECT_ID(N'dbo.VIAJE_GASTOS', N'U')").First().HasValue;
+                    if (hayGastos && db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.VIAJE_GASTOS WHERE Viaje_ID=@id", P("@id", id)).First() > 0)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje: tiene gastos cargados." });
+                    // Una evidencia de antes (hoy ya no se adjunta sin salir) se borra con el viaje.
+                    db.Database.ExecuteSqlCommand("DELETE FROM VIAJE_EVIDENCIA WHERE Viaje_ID=@id", P("@id", id));
 
                     // Los otros viajes de su grupo se acomodan o quedan para revisar (§43).
                     var antesOrden = OrdenDelDia.SujetoDeViaje(db, id);

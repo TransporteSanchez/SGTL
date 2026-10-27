@@ -60,13 +60,13 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 
 ## 4. Huecos encontrados
 
-### 4.1 Para corregir (no hace falta decidir nada)
+### 4.1 Para corregir (no hace falta decidir nada) — corregidos el 27/10
 
 | # | Qué pasa hoy | Qué propongo |
 |---|---|---|
-| A | **La fecha de entrega puede ser futura** ("Estado y entrega" y la hoja de ruta no ponen tope). | No posterior a hoy, en la pantalla y en la API: "Fecha no permitida: tiene que ser hoy o antes." |
-| B | **Eliminar un viaje Registrado que tiene gastos** (los cargó en viaje y después se volvió atrás) da un error técnico: la base no deja borrarlo. | Botón deshabilitado con el motivo: "No se puede eliminar el viaje: tiene gastos cargados." (la API lo controla igual). |
-| C | **La evidencia se puede adjuntar en Registrado**, y al eliminar el viaje queda suelta o da error. | Que la evidencia se adjunte desde En viaje (en los directos se sube al entregar); con plataforma, desde el día del viaje. Al eliminar un Registrado, si tuviera una vieja, se borra con él. |
+| A | **La fecha de entrega podía ser futura** en "Estado y entrega" (la hoja de ruta ya lo controlaba). | **Hecho:** no posterior a hoy, en la pantalla (el calendario no deja elegir días futuros y debajo del campo: "No puede ser posterior a hoy.") y en la API. |
+| B | **Eliminar un viaje Registrado con gastos** (los cargó en viaje y después se volvió atrás) daba un error técnico. | **Hecho:** Eliminar deshabilitado con el motivo "No se puede eliminar el viaje: tiene gastos cargados" (la API lo controla igual). |
+| C | **La evidencia se podía adjuntar en Registrado**, y al eliminar el viaje quedaba suelta o daba error. | **Hecho:** en un directo, desde que salió (se sube al entregarlo); con plataforma, desde el día del viaje. Al eliminar un Registrado, una evidencia vieja se borra con él. |
 
 ### 4.2 Para decidir (negocio)
 

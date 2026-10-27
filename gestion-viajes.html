@@ -610,8 +610,10 @@
             const motivoEliminar = 'No se puede eliminar el viaje: ' + (bloqueado ? situacion
                 : (enProforma ? 'está en el borrador de proforma #' + viaje.EnProforma_ID
                 : (desdePresupuesto ? 'viene del presupuesto #' + viaje.Presupuesto_ID
-                : 'está ' + etiquetaEstado(viaje.Estado).toLowerCase())));
-            const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
+                : (!registrado ? 'está ' + etiquetaEstado(viaje.Estado).toLowerCase()
+                : 'tiene gastos cargados'))));
+            // Con gastos del chofer (los cargó en viaje y se volvió atrás) tampoco: son de la rendición.
+            const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto && !viaje.Tiene_Gastos;
             // Orden del design system (§1.4): ver detalle, editar, cambiar estado, eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('ver', { id: viaje.Viaje_ID }),
@@ -1866,9 +1868,10 @@
         // Calendario de la fecha de entrega: los días anteriores al inicio del viaje se ven bloqueados y no se pueden
         // elegir. No se usa minDate porque borra sin aviso una fecha anterior escrita a mano; así queda escrita y la
         // validación dice por qué no va.
+        // Ni antes del inicio ni después de hoy (punto 22 de la §41).
         function diaEntrega(fechas, texto, fp, dia) {
-            var inicio = inicioViajeEstado();
-            if (inicio && fp.formatDate(dia.dateObj, 'Y-m-d') < inicio) dia.classList.add('flatpickr-disabled');
+            var inicio = inicioViajeEstado(), fecha = fp.formatDate(dia.dateObj, 'Y-m-d');
+            if ((inicio && fecha < inicio) || fecha > SGTL.fechaISO(new Date())) dia.classList.add('flatpickr-disabled');
         }
 
         // Datos de la entrega (§6.3): cada campo se marca en rojo con su mensaje. Si son obligatorios lo decide pedirEntrega.
@@ -1887,7 +1890,8 @@
                 id: 'fechaEntrega',
                 validar: function (fecha) {
                     var inicio = inicioViajeEstado();
-                    return inicio && fecha < inicio ? 'No puede ser anterior al inicio del viaje (' + SGTL.fecha(inicio) + ').' : '';
+                    if (inicio && fecha < inicio) return 'No puede ser anterior al inicio del viaje (' + SGTL.fecha(inicio) + ').';
+                    return fecha > SGTL.fechaISO(new Date()) ? 'No puede ser posterior a hoy.' : '';
                 }
             }
         };

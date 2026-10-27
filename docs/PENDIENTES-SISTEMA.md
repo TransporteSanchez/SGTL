@@ -3807,6 +3807,11 @@ como presentación). Los números son los del listado de Rocío.
   Registrado. Para decidir con Rocío (D–G): si el Rechazo o la entrega Parcial se cobran completos; qué pasa con un viaje
   de un presupuesto aceptado que se cancela (hoy queda colgado); cambiar camión o chofer con el viaje en curso; si
   administración puede iniciar un viaje de otro día sin aviso.
+  **A–C corregidos (27/10), subidos, pendientes de probar en la VM** (`tests/viajes-flujo.test.js`). Cómo probarlo:
+  recompilar. "Estado y entrega" de un viaje En viaje → Entregado: el calendario no deja elegir días futuros y, escrita
+  a mano, "No puede ser posterior a hoy." debajo de la fecha. Un viaje que estuvo En viaje con un gasto del chofer y se
+  volvió a Registrado: Eliminar gris con "No se puede eliminar el viaje: tiene gastos cargados". La evidencia de un
+  directo no se adjunta en Registrado (la API lo rechaza); en uno de Rukas, desde el día del viaje.
 - [ ] **23. Dashboard con muchos tableros:** analizar ofrecer, si la persona quiere, dividirlos por tema como en Tableros
   (todo junto o por pestañas).
 - [ ] **26. Orden de los módulos en el menú,** el que Rocío charló con Facu (el menú está en `sidebar-loader.js`, §3.1 del
