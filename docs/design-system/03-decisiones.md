@@ -134,7 +134,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
     la regla ("No se puede editar la factura: solo se editan los recibos").
   - **No da órdenes** ("anulá la proforma", "emití una nota de crédito", "inactivalo"): destrabar algo puede tener
     consecuencias, y la persona lo decide sabiendo qué implica, desde la acción que corresponde. Lo que falta se dice
-    como un hecho ("falta cargar N° entrega Rukas").
+    como un hecho ("falta cargar N° entrega Rukas"). Los avisos que dejan algo pendiente sí dicen qué hace falta, con
+    "es necesario que…" (§5.1).
   - **El número del otro documento, sí; el de la fila, no:** la proforma donde está el viaje, el presupuesto del que
     vino, la factura emitida, el viaje generado. El número de la fila ya se ve en la fila.
   - Minúscula después de los dos puntos, voseo y sin punto final (es un globito, como un título, §9). Lo que se ve
@@ -392,6 +393,13 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   cosa. Por ejemplo, al guardar una tabla de tarifas que dejaría viajes sin tabla: "No se puede guardar la tabla de
   tarifas: 4 viajes quedarían sin tabla." y, por cliente, "Distribuidora del Litoral S.A.: 3 viajes, del 20/10/2026 al
   23/10/2026". Hasta 5 renglones, los que más tienen primero, y al final "y N clientes más". Los renglones van sin punto.
+- **Un aviso que deja algo pendiente** (27/10, Rocío; primero en el precio por orden del día) dice **qué pasa, por qué
+  no se resuelve solo y qué hace falta**, hablándole a la persona con "es necesario que…": "Al guardar, el viaje #50
+  queda como segundo del día y le corresponde $ 407.089,00. Como está entregado no se cambia solo, es necesario que
+  revises ese viaje." Si lo que cambia lo ve el cliente, suma "es necesario que le avises al cliente" (o "que se lo
+  envíes de nuevo"). El porqué va con "Como está…" (no "Al estar…": se repite el "al"). Vale para los avisos amarillos,
+  las confirmaciones, los toasts y la línea gris del final de un globito ("Es necesario que lo revises en Ver detalle del
+  viaje."). Los motivos de los botones deshabilitados siguen el §1.4: un hecho, sin "es necesario".
 - **Nunca `alert()`.**
 - **Lo que se manda afuera al guardar se avisa antes, a la vista** (22/10, viajes): un aviso azul
   (`alert alert-info sgtl-aviso-whatsapp`, con el ícono de WhatsApp) junto al dato que lo dispara, con el nombre de
