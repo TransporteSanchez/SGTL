@@ -114,16 +114,17 @@
   }
 
   // Recorrido completo para el chofer (Rocío, 24/10): galpón → origen → destino → galpón.
-  // "Abrir en Google Maps" arranca desde donde está el chofer (sin origen, Google usa su ubicación) y sigue con lo que le
-  // falta, hasta el galpón: sin salir, origen → destino → galpón; en viaje, destino → galpón. Un viaje terminado muestra
-  // la vuelta entera desde el galpón. Sin galpón cargado, el enlace de siempre (origen → destino).
+  // "Abrir en Google Maps" sin salir arranca en el galpón (Rocío, 27/10, punto 35 de la §41: el viaje se inicia siempre
+  // ahí), aunque el chofer esté en otro lado. En viaje sigue desde donde está (sin origen, Google usa su ubicación) con lo
+  // que le falta: destino → galpón. Un viaje terminado muestra la vuelta entera desde el galpón. Sin galpón cargado, el
+  // enlace de siempre (origen → destino).
   function enlaceNavegacion(v, galpon) {
     var origen = v.Origen_Direccion ? v.Origen_Direccion + ', Argentina' : '';
     var destino = v.Destino_Direccion ? v.Destino_Direccion + ', Argentina' : '';
     if (!galpon || !origen || !destino) return v.Maps_Url || '';
     var base = 'https://www.google.com/maps/dir/?api=1&travelmode=driving&destination=' + encodeURIComponent(galpon);
     var estadoViaje = v.Estado || 'Registrado';
-    if (estadoViaje === 'Registrado') return base + '&waypoints=' + encodeURIComponent(origen + '|' + destino);
+    if (estadoViaje === 'Registrado') return base + '&origin=' + encodeURIComponent(galpon) + '&waypoints=' + encodeURIComponent(origen + '|' + destino);
     if (estadoViaje === 'En_viaje') return base + '&waypoints=' + encodeURIComponent(destino);
     return base + '&origin=' + encodeURIComponent(galpon) + '&waypoints=' + encodeURIComponent(origen + '|' + destino);
   }

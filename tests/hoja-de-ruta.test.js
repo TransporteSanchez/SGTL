@@ -89,7 +89,7 @@ function parametros(url) {
     return q;
 }
 let enlace = parametros(H.enlaceNavegacion(Object.assign({ Estado: 'Registrado' }, lugares), galpon));
-assert.ok(!enlace.origin, 'sin origen: Google arranca desde donde está el chofer');
+assert.strictEqual(enlace.origin, galpon, 'sin salir: arranca en el galpón, aunque el chofer esté en otro lado (punto 35, 27/10)');
 assert.strictEqual(enlace.waypoints, 'Av. San Martín 2100, Unquillo, Córdoba, Argentina|Bv. Oroño 1200, Rosario, Santa Fe, Argentina');
 assert.strictEqual(enlace.destination, galpon, 'termina en el galpón');
 enlace = parametros(H.enlaceNavegacion(Object.assign({ Estado: 'En_viaje' }, lugares), galpon));

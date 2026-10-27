@@ -3142,8 +3142,9 @@ sistema (módulo de Fede: ver abajo).
 **Ajustes del 24/10, después de verla Rocío** (commit aparte; cambian `HojaDeRutaController.cs` y `CostosController.cs`:
 **recompilar**):
 - **Recorrido completo para el chofer:** con el galpón cargado (§37), el mapa dibuja galpón → origen → destino → galpón
-  (letras A a D) y "Abrir en Google Maps" arranca desde donde está el chofer con lo que le falta: sin salir, origen →
-  destino → galpón; en viaje, destino → galpón. La API manda el galpón y los km al galpón. Sin galpón, como antes.
+  (letras A a D) y "Abrir en Google Maps" sin salir arranca en el galpón (galpón → origen → destino → galpón, punto 35 de
+  la §41, 27/10); en viaje, desde donde está el chofer, destino → galpón. La API manda el galpón y los km al galpón. Sin
+  galpón, como antes.
 - **La distancia que ve el chofer** es la del recorrido completo, la que hace de verdad: "Recorrido completo 475,4 km" y
   debajo, en gris, "232,5 km de origen a destino" (Rocío eligió esta entre tres maquetas). Sin los km al galpón (no hay
   galpón o todavía no se calcularon), "Distancia 232,5 km" con "de origen a destino" debajo.
@@ -3816,8 +3817,12 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **33.** El chofer no puede iniciar un viaje sin fecha: el botón deshabilitado con un globito que diga que se
   comunique con administración para corregir la fecha y la hora. Tampoco puede cargar gastos en un viaje que todavía no
   arrancó (confirmar qué pasa En viaje). Buscar otros casos así.
-- [ ] **35.** El recorrido completo empieza siempre en el galpón, no en la ubicación actual: el viaje se inicia en el
-  galpón.
+- [x] **35.** El recorrido completo empieza siempre en el galpón, no en la ubicación actual: el viaje se inicia en el
+  galpón. **Hecho (27/10), subido, pendiente de probar en la VM:** en la hoja de ruta, "Abrir en Google Maps" de un viaje
+  sin salir arranca en el galpón aunque el chofer esté en otro lado; en viaje sigue desde donde está, con lo que le
+  falta. Cómo probarlo: entrar como chofer, abrir un viaje Registrado → "Abrir en Google Maps": el punto de partida es el
+  galpón y después el origen, el destino y la vuelta al galpón; en uno En viaje, desde la ubicación actual al destino y
+  al galpón.
 
 ### Viajes, camiones y control interno
 - [ ] **8. Número de remito.** El formato "0001-00045108" es el de los comprobantes argentinos (punto de venta - número);
