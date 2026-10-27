@@ -88,6 +88,8 @@
             porId('tipoDescripcion').value = existente.Descripcion || '';
             porId('tipoImpacto').value = existente.Impacto;
         }
+        if (!editando && !existente && ['FAC', 'ND', 'NC', 'REC'].indexOf(codigo) !== -1)
+            porId('tipoImpacto').value = codigo === 'NC' || codigo === 'REC' ? 'C' : 'D';
         var esRecibo = codigo === 'REC';
         if (esRecibo) porId('tipoLetra').value = 'X';
         else if (porId('tipoLetra').value === 'X') porId('tipoLetra').value = 'A';
@@ -97,9 +99,18 @@
         porId('tipoLetraEditable').classList.toggle('d-none', editando || esRecibo);
         porId('tipoLetraFijo').classList.toggle('d-none', !editando && !esRecibo);
         porId('tipoLetraTexto').textContent = porId('tipoLetra').value;
-        porId('tipoImpactoEditable').classList.toggle('d-none', editando || !!existente);
-        porId('tipoImpactoFijo').classList.toggle('d-none', !editando && !existente);
+        var tipoFijo = ['FAC', 'ND', 'NC', 'REC'].indexOf(codigo) !== -1;
+        var impactoEditable = !tipoFijo && ((!editando && !existente) || (editando && existente && existente.PuedeCambiarImpacto === true));
+        porId('tipoImpactoEditable').classList.toggle('d-none', !impactoEditable);
+        porId('tipoImpactoFijo').classList.toggle('d-none', impactoEditable);
         porId('tipoImpactoTexto').textContent = porId('tipoImpacto').value === 'C' ? 'Crédito' : 'Deuda';
+        porId('tipoImpactoMotivo').textContent = impactoEditable ? '' : tipoFijo
+            ? 'El impacto de este tipo de comprobante es fijo.'
+            : editando && existente && existente.PuedeCambiarImpacto === false
+                ? 'El impacto no se puede modificar porque este tipo ya tiene comprobantes.'
+                : editando ? 'El impacto no se puede modificar con los datos disponibles.'
+                : 'El impacto se comparte entre las letras de una misma sigla.';
+        porId('tipoImpactoMotivo').classList.toggle('d-none', impactoEditable);
     }
     function resetTipo() {
         SGTL.reiniciarFormulario('#tipoForm');
@@ -129,7 +140,15 @@
         var listo = SGTL.procesando(porId(formulario).querySelector('button[type="submit"]'));
         solicitud(ruta + (id ? '/' + encodeURIComponent(id) : ''), id ? 'PUT' : 'POST', cuerpo)
             .then(function () { listo(); reiniciar(); return recargar(mensaje); })
-            .catch(function (ex) { listo(); avisarError(ex); });
+            .catch(function (ex) {
+                listo(); avisarError(ex);
+                if (formulario === 'tipoForm' && id && ex.status === 409) {
+                    recargar(null, true).then(function () {
+                        if (Number(porId('tipoId').value) !== Number(id)) return;
+                        editarTipo(id);
+                    });
+                }
+            });
     }
     function cuerpoSucursal(item, activa) {
         return { Codigo: item.Codigo, Nombre: item.Nombre, Activa: activa };

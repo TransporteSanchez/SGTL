@@ -61,6 +61,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
 | 41 | Emitir comprobantes directos con tipos de deuda configurados, como FC | Hecho en código (26/10); falta aplicar la migración y probar en VM | Pendiente de subir | Correr `database/cuenta-corriente/13_comprobantes_directos_configurables.sql`, recompilar y probar (§41) |
 | 43 | Emitir comprobantes internos desde proformas y cancelarlos con un crédito interno | Hecho en código (27/10); faltan las migraciones y probar en VM | Pendiente de subir | Correr `database/cuenta-corriente/14_comprobantes_desde_proforma_configurables.sql` y `15_credito_interno_cancelatorio.sql` en ese orden después de 13, recompilar y probar (§43) |
+| 44 | Corregir el impacto de un tipo de comprobante configurable | Hecho en código (27/10); falta probar en VM | Pendiente de subir | Editar una sigla sin comprobantes y verificar ambas letras; con comprobantes, comprobar que el impacto queda fijo (§44) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -1025,7 +1026,7 @@ cargadas." y errores sin textos técnicos.
 - [ ] Guardar una sucursal sin datos: Código y Nombre en rojo con su mensaje; el cursor va a Código.
 - [ ] Interruptor de una sucursal activa → toast "Sucursal inactivada." y la etiqueta pasa a Inactivo; otra vez →
   "Sucursal activada.". Igual con un numerador y un tipo de comprobante (con datos de prueba).
-- [ ] Lápiz de un tipo de comprobante: carga el formulario con código, letra e impacto como datos fijos; la cruz gris lo limpia.
+- [ ] Lápiz de un tipo de comprobante: carga sigla y letra como datos fijos. El impacto se puede editar si la sigla es configurable y no tiene comprobantes; en los demás casos queda fijo con su motivo. La cruz gris limpia el formulario.
 - [ ] Guardar con el mismo código y la misma letra: toast rojo con el mensaje de la API; con otra letra, se registra una segunda configuración.
 
 **Eliminar configuraciones sin relaciones (26/10):** en Gestionar tipos de comprobante, las filas de sucursales,
@@ -3710,3 +3711,11 @@ La anulación consulta los tipos de crédito con configuración activa y permite
 **Base:** ejecutar `database/cuenta-corriente/14_comprobantes_desde_proforma_configurables.sql` después de 13 y luego `database/cuenta-corriente/15_credito_interno_cancelatorio.sql`. Amplían las restricciones de vínculo, referencia cancelatoria e impacto de los movimientos; no se ejecutaron contra la base compartida.
 
 **Probar en la VM:** con FC activo y FAC inactivo, recompilar la API y recargar el navegador. Abrir una proforma aceptada y tocar «Emitir comprobante»: debe mostrar FC, su letra, sucursal y próximo número, el total de la proforma y las fechas. Emitir; comprobar número FC, todos los renglones, vínculo y estado Facturada en ambas pantallas de proformas, estado Facturado de sus viajes, movimiento en cuenta corriente y número de proforma en el PDF. Con crédito interno activo y NC inactiva, abrir «Anular comprobante»: debe mostrar el FC vinculado y su total fijo, proponer crédito interno, cargar su letra, sucursal y número, y emitir el crédito por el total exacto. Verificar que el crédito aparece aplicado al FC en cuenta corriente y en su PDF, que el PDF del FC conserva el número de proforma después de la anulación, que el ranking descuenta el crédito, que la proforma queda Anulada y que los viajes se liberan para otra proforma. Con dos tipos de crédito activos, comprobar que pide elegir; sin ninguno, que muestra el motivo con los datos del FC visibles y no deja emitir. Si no hay tipos de deuda activos, el modal de emisión debe avisarlo sin mostrar un error de conexión. Revisar los cambios de tarifa de un viaje asociado a ese FC.
+
+---
+
+## 44. Editar el impacto de un tipo de comprobante configurable — Hecho en código (27/10)
+
+En Gestionar tipos de comprobante, el impacto de una sigla configurable se puede corregir mientras no exista ningún comprobante registrado con esa sigla, en ninguna letra. El cambio se comparte entre las letras A y B. Si ya hay comprobantes, el impacto queda fijo para conservar el significado de los documentos y movimientos históricos. FAC y ND siguen siendo de deuda; NC y REC, de crédito. La API comprueba la condición al guardar, incluso si se registró un comprobante después de abrir el formulario.
+
+**Probar en la VM:** recompilar la API y recargar la pantalla. En una sigla configurable sin comprobantes, como D si todavía está sin uso, tocar Editar: Impacto debe ser un selector con el valor actual. Cambiar D de Crédito a Deuda y guardar; las filas D A y D B deben mostrar Deuda. En Anular comprobante de la proforma, D ya no debe figurar entre los créditos y Crédito interno debe aparecer seleccionado si es el único crédito activo. Al editar una sigla con comprobantes, Impacto debe mostrarse como dato fijo con el motivo. Comprobar que FAC, ND, NC y REC también lo muestran fijo. Al agregar otra letra a una sigla existente, el impacto debe conservar el valor de esa sigla.
