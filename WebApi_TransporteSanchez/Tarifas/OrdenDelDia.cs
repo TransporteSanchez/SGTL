@@ -253,7 +253,7 @@ SELECT N'Viaje' AS Clase, v.Viaje_ID AS Id, v.Fecha_Inicio AS Inicio, v.Vuelta, 
        fac.Comprobante_ID, fac.Numero AS Comprobante_Numero,
        v.Importe, ISNULL(v.ClienteID, 0) AS ClienteID, ISNULL(v.CamionID, 0) AS CamionID, RTRIM(ISNULL(v.Distancia_KM, '')) AS Km,
        ISNULL(v.Falso_Flete, 0) AS Falso_Flete, ISNULL(v.Estadia_Modulos, 0) AS Estadia_Modulos, v.TarifarioID,
-       CAST(NULL AS nvarchar(max)) AS Datos
+       CAST(NULL AS nvarchar(max)) AS Datos, 0 AS VueltaNueva, CAST(0 AS bit) AS Este
 FROM dbo.VIAJES v
 OUTER APPLY (SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps
              WHERE ps.ViajeID = v.Viaje_ID AND ps.Estado = 'Aceptado' ORDER BY ps.Presupuesto_ID DESC) pr
@@ -285,11 +285,11 @@ SELECT N'Presupuesto' AS Clase, ps.Presupuesto_ID AS Id,
        ISNULL(TRY_CAST(JSON_VALUE(ps.Datos, '$.fechaInicio') AS datetime2), '19000101') AS Inicio,
        TRY_CAST(JSON_VALUE(ps.Datos, '$.vuelta') AS int) AS Vuelta, N'Aceptado' AS Estado, CAST(0 AS bit) AS DePresupuesto,
        CAST(NULL AS int) AS Proforma_ID, CAST(NULL AS nvarchar(30)) AS Proforma_Numero, CAST(NULL AS nvarchar(30)) AS Proforma_Estado,
-       CAST(NULL AS int) AS Comprobante_ID, CAST(NULL AS nvarchar(30)) AS Comprobante_Numero,
+       CAST(NULL AS nvarchar(30)) AS Tipo_Proforma, CAST(NULL AS decimal(18, 2)) AS Precio_Linea, CAST(NULL AS int) AS Comprobante_ID, CAST(NULL AS nvarchar(30)) AS Comprobante_Numero,
        TRY_CAST(JSON_VALUE(ps.Datos, '$.importe') AS decimal(18, 2)) AS Importe, @c AS ClienteID,
        ISNULL(TRY_CAST(JSON_VALUE(ps.Datos, '$.camionId') AS int), 0) AS CamionID, ISNULL(JSON_VALUE(ps.Datos, '$.distancia'), '') AS Km,
        CAST(0 AS bit) AS Falso_Flete, 0 AS Estadia_Modulos, TRY_CAST(JSON_VALUE(ps.Datos, '$.tarifarioId') AS int) AS TarifarioID,
-       ps.Datos
+       ps.Datos, 0 AS VueltaNueva, CAST(0 AS bit) AS Este
 FROM dbo.PRESUPUESTOS ps
 WHERE ps.Estado = 'Aceptado' AND ps.ViajeID IS NULL AND ISJSON(ps.Datos) = 1 AND ps.Presupuesto_ID <> @sinPresupuesto
   AND TRY_CAST(JSON_VALUE(ps.Datos, '$.clienteId') AS int) = @c AND TRY_CAST(JSON_VALUE(ps.Datos, '$.origenId') AS int) = @o
