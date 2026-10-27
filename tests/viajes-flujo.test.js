@@ -171,6 +171,8 @@ assert.ok(/bool sinCarga = f\.Estado == "Sin_carga";/.test(proformas) && /\(sinC
     '10: Traer viajes lo trae como un entregado, con "Sin carga" en la línea');
 assert.ok(/CASE WHEN ISNULL\(v\.Falso_Flete, 0\) = 1 THEN 2 \* ki\.Km/.test(leer('WebApi_TransporteSanchez/Controllers/CostosController.cs')),
     '10: el recorrido es galpón → origen → galpón');
+assert.ok(/UPDATE v SET Estado=CASE WHEN ISNULL\(v\.Falso_Flete,0\)=1 AND v\.Resultado_Entrega IS NULL THEN 'Sin_carga'/
+    .test(leer('WebApi_TransporteSanchez/Controllers/ComprobantesController.cs')), '10: la nota de crédito lo devuelve a Sin carga');
 const scriptSinCarga = leer('database/viajes/03_viaje_sin_carga.sql');
 assert.ok(/IF COL_LENGTH\('dbo\.VIAJES', 'Sin_Carga_Observacion'\) IS NULL\s+ALTER TABLE dbo\.VIAJES ADD Sin_Carga_Observacion/.test(scriptSinCarga),
     '10: el script agrega la observación (idempotente)');

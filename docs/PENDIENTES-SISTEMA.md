@@ -3808,9 +3808,11 @@ como presentación). Los números son los del listado de Rocío.
      observación: "Viaje #N sin carga.", la etiqueta azul, "Recorrido completo … galpón → origen → galpón" y Cargar gasto.
   5. Registrar proforma → Traer viajes: el sin carga viene, con "- Sin carga" en la descripción y el 60 %.
   6. Editar un viaje: no está la casilla "Falso flete". Gestionar tarifas: el campo se llama "Viaje sin carga".
-  - [ ] **Con Facu (nota de crédito):** al anular con nota de crédito la factura de una proforma, sus viajes vuelven a
-    Entregado (o Listo para facturar). Un viaje sin carga tendría que volver a Sin carga. Está en
-    `ComprobantesController` (módulo de Facu): no se tocó.
+  7. Facturar una proforma con un viaje sin carga y emitir la nota de crédito de esa factura: el viaje vuelve a **Sin
+     carga** (los demás, a Entregado o Listo para facturar, como siempre).
+  - [ ] **Avisarle a Facu (Rocío):** el cambio de la nota de crédito está en su módulo (`ComprobantesController`, la nota
+    de crédito cancelatoria de la factura de una proforma): un viaje con `Falso_Flete` y sin resultado de entrega vuelve
+    a `Sin_carga` en lugar de `Entregado`. Lo hizo Claude el 27/10 a pedido de Rocío.
 - [ ] **11. Los demás adicionales (estadía).** Hoy la estadía se carga a mano en módulos y se suma al importe. Los datos de
   la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
   Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos

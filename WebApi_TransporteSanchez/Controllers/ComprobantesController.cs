@@ -901,8 +901,10 @@ VALUES (@cliente,@credito,'C',@deuda,'D',@importe,@fecha,1,@usuario);", connecti
                             }
 
                             // Nota de Credito cancelatoria de la Factura de una Proforma: desvincula la Factura,
-                            // anula la Proforma y libera sus viajes (vuelven a Listo para facturar / Entregado)
-                            // para que puedan incluirse en otra Proforma y volver a facturarse.
+                            // anula la Proforma y libera sus viajes (vuelven a Listo para facturar / Entregado, o a
+                            // Sin carga si el camión llegó al origen y no había carga: Falso_Flete sin resultado de
+                            // entrega, punto 10 de la §41 de PENDIENTES, 27/10) para que puedan incluirse en otra
+                            // Proforma y volver a facturarse.
                             if (request.Tipo == "NC" && request.ProformaID.HasValue)
                             {
                                 using (var command = new SqlCommand(@"
@@ -912,7 +914,8 @@ WHERE ProformaID=@proforma AND ComprobanteID=@factura AND Vigente=1;
 IF @@ROWCOUNT<>1
     THROW 51060, 'No se pudo desvincular la Factura de la Proforma.', 1;
 
-UPDATE v SET Estado=CASE WHEN EXISTS (SELECT 1 FROM dbo.CLIENTES c WHERE c.Cliente_ID=v.ClienteID AND c.Tipo_Cliente='Con_plataforma')
+UPDATE v SET Estado=CASE WHEN ISNULL(v.Falso_Flete,0)=1 AND v.Resultado_Entrega IS NULL THEN 'Sin_carga'
+                         WHEN EXISTS (SELECT 1 FROM dbo.CLIENTES c WHERE c.Cliente_ID=v.ClienteID AND c.Tipo_Cliente='Con_plataforma')
                          THEN 'Listo_para_facturar' ELSE 'Entregado' END,
              Usu_Modi=LEFT(@nombreUsuario,20),Fecha_Modi=GETDATE()
 FROM dbo.VIAJES v
