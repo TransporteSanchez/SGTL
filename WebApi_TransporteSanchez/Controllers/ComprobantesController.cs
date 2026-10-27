@@ -643,55 +643,17 @@ ORDER BY c.Comprobante_ID DESC;";
             DateTime emision = request.FechaEmision.Value.Date;
             if (emision > FechaArgentina()) return BadRequest("No se admite una fecha de emisión futura.");
             bool cancelatorioProforma = request.ProformaID.HasValue;
-            DateTime? vencimiento = request.Tipo == "NC" || cancelatorioProforma ? null : request.FechaVencimiento.HasValue
-                ? request.FechaVencimiento.Value.Date : (DateTime?)null;
-            if (request.Tipo != "NC" && !cancelatorioProforma && !vencimiento.HasValue)
-                return BadRequest("La fecha de vencimiento es obligatoria.");
-            if (vencimiento.HasValue && vencimiento.Value < emision)
-                return BadRequest("El vencimiento no puede ser anterior a la emisión.");
             request.Aplicaciones = request.Aplicaciones ?? new List<AplicacionComprobanteRequest>();
             if (request.Aplicaciones.Count > 200)
-                return BadRequest("La nota de crédito supera la cantidad máxima de comprobantes aplicables.");
+                return BadRequest("El crédito supera la cantidad máxima de comprobantes aplicables.");
             if (request.Aplicaciones.Any(x => x == null || x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
                 return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
             if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
                 return BadRequest("No se puede aplicar dos veces el mismo comprobante.");
-            bool notaCreditoCorriente = request.Tipo == "NC" && !cancelatorioProforma;
-            if (notaCreditoCorriente && request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("La nota de crédito corriente no admite un único comprobante de referencia.");
-            if (notaCreditoCorriente && request.Aplicaciones.Count == 0)
-                return BadRequest("La nota de crédito debe aplicarse a uno o más comprobantes de deuda.");
-            if (cancelatorioProforma && !request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("El crédito cancelatorio debe relacionarse con el comprobante de la proforma.");
-            if (cancelatorioProforma && request.Aplicaciones.Count > 0)
-                return BadRequest("El crédito cancelatorio no admite distribución múltiple.");
-            if (request.Tipo != "NC" && !cancelatorioProforma && request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("Solo un crédito cancelatorio admite un comprobante de referencia.");
-            if (request.Tipo != "NC" && request.Aplicaciones.Count > 0)
-                return BadRequest("Solo la nota de crédito admite aplicaciones a comprobantes de deuda.");
             if (request.Concepto.Length == 0 || request.Concepto.Length > 200)
                 return BadRequest("El concepto es obligatorio y no puede superar los 200 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
                 return BadRequest("Las observaciones no pueden superar los 2000 caracteres.");
-            if (!notaCreditoCorriente)
-            {
-                if (request.Neto <= 0 || request.Neto != Redondear(request.Neto))
-                    return BadRequest("El importe neto debe ser mayor que cero y tener hasta dos decimales.");
-                if (request.IvaPct < 0 || request.IvaPct > 100 || request.IvaPct != Redondear(request.IvaPct))
-                    return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
-                if ((request.Tipo == "NC" || cancelatorioProforma) && (!request.IVA.HasValue || request.IVA.Value < 0
-                    || request.IVA.Value != Redondear(request.IVA.Value)))
-                    return BadRequest("El importe de IVA del crédito no es válido.");
-                if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
-                    return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
-            }
-
-            decimal iva = notaCreditoCorriente ? 0 : (request.Tipo == "NC" || cancelatorioProforma
-                ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m));
-            decimal total = notaCreditoCorriente ? 0 : request.Neto + iva + request.OtrosImpuestos;
-            string impacto = cancelatorioProforma ? "C" : request.Tipo == "NC" ? "C" : "D";
-            string permiso = request.Tipo == "NC" ? "NC_EMITIR" : request.Tipo == "ND" ? "ND_EMITIR" : "FAC_EMITIR";
-            if (cancelatorioProforma) permiso = "NC_EMITIR";
 
             try
             {
@@ -702,10 +664,47 @@ ORDER BY c.Comprobante_ID DESC;";
                     {
                         try
                         {
-                            var usuario = ValidarAcceso(connection, transaction, permiso);
+                            ObtenerNombreUsuarioToken();
                             var configuracion = FacturacionComprobantesConfiguracion.Obtener(connection, transaction, request.Tipo, request.Letra);
-                            if (configuracion.Impacto != impacto)
+                            string impacto = configuracion.Impacto;
+                            if (impacto != "C" && impacto != "D" || cancelatorioProforma && impacto != "C")
                                 throw new InvalidOperationException("El tipo de comprobante no admite esta emisión.");
+                            string permiso = impacto == "C" ? "NC_EMITIR" : request.Tipo == "ND" ? "ND_EMITIR" : "FAC_EMITIR";
+                            var usuario = ValidarAcceso(connection, transaction, permiso);
+                            bool notaCreditoCorriente = impacto == "C" && !cancelatorioProforma;
+                            DateTime? vencimiento = impacto == "C" ? null : request.FechaVencimiento.HasValue
+                                ? request.FechaVencimiento.Value.Date : (DateTime?)null;
+                            if (impacto == "D" && !vencimiento.HasValue)
+                                return BadRequest("La fecha de vencimiento es obligatoria.");
+                            if (vencimiento.HasValue && vencimiento.Value < emision)
+                                return BadRequest("El vencimiento no puede ser anterior a la emisión.");
+                            if (notaCreditoCorriente && request.ComprobanteReferenciaID.HasValue)
+                                return BadRequest("El crédito corriente no admite un único comprobante de referencia.");
+                            if (notaCreditoCorriente && request.Aplicaciones.Count == 0)
+                                return BadRequest("El crédito debe aplicarse a uno o más comprobantes de deuda.");
+                            if (cancelatorioProforma && !request.ComprobanteReferenciaID.HasValue)
+                                return BadRequest("El crédito cancelatorio debe relacionarse con el comprobante de la proforma.");
+                            if (cancelatorioProforma && request.Aplicaciones.Count > 0)
+                                return BadRequest("El crédito cancelatorio no admite distribución múltiple.");
+                            if (impacto == "D" && request.ComprobanteReferenciaID.HasValue)
+                                return BadRequest("Solo un crédito cancelatorio admite un comprobante de referencia.");
+                            if (impacto == "D" && request.Aplicaciones.Count > 0)
+                                return BadRequest("Solo un crédito admite aplicaciones a comprobantes de deuda.");
+                            if (!notaCreditoCorriente)
+                            {
+                                if (request.Neto <= 0 || request.Neto != Redondear(request.Neto))
+                                    return BadRequest("El importe neto debe ser mayor que cero y tener hasta dos decimales.");
+                                if (request.IvaPct < 0 || request.IvaPct > 100 || request.IvaPct != Redondear(request.IvaPct))
+                                    return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
+                                if (cancelatorioProforma && (!request.IVA.HasValue || request.IVA.Value < 0
+                                    || request.IVA.Value != Redondear(request.IVA.Value)))
+                                    return BadRequest("El importe de IVA del crédito no es válido.");
+                                if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
+                                    return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
+                            }
+                            decimal iva = notaCreditoCorriente ? 0 : cancelatorioProforma
+                                ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m);
+                            decimal total = notaCreditoCorriente ? 0 : request.Neto + iva + request.OtrosImpuestos;
                             var letra = request.Letra;
                             var sucursal = request.Sucursal;
                             FacturacionComprobantesConfiguracion.ValidarDatos(connection, transaction, ref letra, ref sucursal, configuracion);
@@ -817,7 +816,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                     {
                                         transaction.Rollback();
                                         return Content(HttpStatusCode.BadRequest,
-                                            new { error = "La fecha de la nota de crédito no puede ser anterior al comprobante aplicado." });
+                                            new { error = "La fecha del crédito no puede ser anterior al comprobante aplicado." });
                                     }
                                     if (aplicacion.Importe > factura.Pendiente)
                                     {

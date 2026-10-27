@@ -63,8 +63,8 @@ function probarFlujosYDependencias() {
         'el aviso del Recibo debe informar el número generado');
     assert.match(comprobante, /cerrarModalYNotificar\('modalNuevoComprobante'/,
         'al emitir Factura, NC o ND debe cerrar su formulario y mostrar el aviso flotante');
-    assert.match(comprobante, /'Factura emitida'[\s\S]*'Nota de crédito emitida'[\s\S]*'Nota de débito emitida'[\s\S]*'Comprobante emitido'[\s\S]*comprobante\.Numero/,
-        'el aviso debe identificar FAC, NC, ND o un tipo directo configurado e informar su número generado');
+    assert.match(comprobante, /'Crédito emitido'[\s\S]*'Débito emitido'[\s\S]*'Comprobante emitido'[\s\S]*comprobante\.Numero/,
+        'el aviso debe identificar la operación emitida e informar su número generado');
     assert.match(altaRecibo, /modalNuevoReciboTitulo'\)\.textContent = 'Registrar recibo'/,
         'el formulario de recibo se titula igual que su botón (§6.1)');
     assert.match(pagina, /assets\/static\/css\/sgtl\.css/,
@@ -83,7 +83,7 @@ function probarNombresDeEmision() {
         'Emitir Débito'
     ], 'Cuenta corriente muestra los cuatro nombres elegidos');
 
-    ['FAC', 'NC', 'ND'].forEach(function (tipo, indice) {
+    ['directo', 'credito', 'debito'].forEach(function (tipo, indice) {
         const campos = {};
         const configuraciones = [];
         let consultasTiposDirectos = 0;
@@ -118,10 +118,10 @@ function probarNombresDeEmision() {
         assert.strictEqual(campos.cmpTitulo.textContent, esperado, tipo + ': el título coincide con el menú');
         assert.strictEqual(campos.btnEmitirComprobante.innerHTML.replace(/<[^>]+>/g, '').trim(), esperado,
             tipo + ': el botón del formulario coincide con el título');
-        assert.deepStrictEqual(configuraciones, tipo === 'FAC' ? [] : [tipo],
-            tipo + ': solo crédito y débito consultan su configuración fija al abrir');
-        assert.strictEqual(consultasTiposDirectos, tipo === 'FAC' ? 1 : 0,
-            tipo + ': la emisión directa consulta los tipos elegibles, no FAC por defecto');
+        assert.deepStrictEqual(configuraciones, [],
+            tipo + ': la configuración se consulta después de elegir un tipo activo');
+        assert.strictEqual(consultasTiposDirectos, 1,
+            tipo + ': la emisión consulta el catálogo de tipos elegibles');
     });
 }
 

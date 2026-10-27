@@ -1055,6 +1055,39 @@ ORDER BY t.Tipo,t.Descripcion;", c))
             catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
+        [HttpGet, Route("tipos-emision-debito")]
+        public IHttpActionResult TiposEmisionDebito()
+        {
+            try
+            {
+                using (var c = new SqlConnection(ConnectionString()))
+                {
+                    c.Open();
+                    ValidarUsuario(c, false);
+                    var tipos = new List<object>();
+                    using (var cmd = new SqlCommand(@"
+SELECT DISTINCT t.Tipo,t.Descripcion,t.Impacto
+FROM dbo.TIPOS_COMPROBANTE t
+JOIN dbo.FACTURACION_TIPOS_COMPROBANTE cfg ON cfg.Tipo=t.Tipo AND cfg.Activo=1
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=cfg.NumeradorID AND n.Activo=1 AND n.UltimoNumero<99999999
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=cfg.SucursalID AND s.Activa=1
+WHERE t.Impacto='D'
+ORDER BY t.Tipo,t.Descripcion;", c))
+                    using (var reader = cmd.ExecuteReader())
+                        while (reader.Read())
+                            tipos.Add(new
+                            {
+                                Tipo = (string)reader["Tipo"],
+                                Descripcion = (string)reader["Descripcion"],
+                                Impacto = (string)reader["Impacto"]
+                            });
+                    return Ok(tipos);
+                }
+            }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+        }
+
         [HttpGet, Route("tipos-emision-credito")]
         public IHttpActionResult TiposEmisionCredito()
         {

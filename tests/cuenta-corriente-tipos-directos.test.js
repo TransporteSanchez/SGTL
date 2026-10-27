@@ -45,7 +45,7 @@ async function probarSeleccionYEmision() {
     const solicitudes = [];
     const sandbox = {
         comprobanteTipo: null,
-        comprobanteDirecto: true,
+        comprobanteModo: 'directo',
         comprobanteOperacion: 'operacion',
         porId: function (id) { return campos[id]; },
         escapar: function (valor) { return String(valor); },
@@ -137,7 +137,7 @@ async function probarSinTiposActivos() {
     };
     const sandbox = {
         comprobanteOperacion: 'operacion',
-        comprobanteDirecto: true,
+        comprobanteModo: 'directo',
         porId: function (id) { return campos[id]; },
         apiGet: function () { return Promise.resolve([]); },
         escapar: String,
@@ -161,7 +161,7 @@ async function probarCatalogoTardioNoReemplazaOtroFormulario() {
     };
     let resolver;
     const sandbox = {
-        comprobanteOperacion: 'directo', comprobanteDirecto: true,
+        comprobanteOperacion: 'directo', comprobanteModo: 'directo',
         porId: function (id) { return campos[id]; },
         escapar: String,
         apiGet: function () { return new Promise(function (resolve) { resolver = resolve; }); },
@@ -173,7 +173,7 @@ async function probarCatalogoTardioNoReemplazaOtroFormulario() {
         { filename: 'cuenta-corriente-clientes.js' });
     const carga = sandbox.cargarTiposComprobanteDirecto();
     sandbox.comprobanteOperacion = 'nota';
-    sandbox.comprobanteDirecto = false;
+    sandbox.comprobanteModo = 'credito';
     resolver([{ Tipo: 'FC', Descripcion: 'Comprobante interno', Impacto: 'D' }]);
     await carga;
     assert.strictEqual(campos.cmpTipoSeleccion.innerHTML, 'Formulario de nota');
@@ -214,7 +214,7 @@ async function probarErrorCatalogoQuedaDentroDelModal() {
         extraerFuncion('nombreTipoComprobante'), extraerFuncion('nombreAccionEmision'),
         extraerFuncion('abrirNuevoComprobante')
     ].join('\n'), sandbox, { filename: 'cuenta-corriente-clientes.js' });
-    await sandbox.abrirNuevoComprobante('FAC');
+    await sandbox.abrirNuevoComprobante('directo');
     assert.strictEqual(abierto, true, 'el formulario se abre aunque falle la carga de tipos');
     assert.strictEqual(campos.cmpError.textContent, 'No se pudo cargar el catálogo.');
     assert.strictEqual(campos.btnEmitirComprobante.disabled, true);

@@ -35,8 +35,19 @@ assert.match(validarDatos, /sucursal\s*!=\s*configuracion\.SucursalPredeterminad
 const emitir = bloque(comprobantes, 'public IHttpActionResult Emitir(');
 assert.match(emitir, /request\.Tipo\.Length\s*>\s*3/, 'el código debe respetar la longitud del catálogo');
 assert.match(emitir, /request\.Tipo\.Any\(/, 'el código debe respetar los caracteres del catálogo');
-assert.match(emitir, /request\.Tipo\s*==\s*"NC"\s*\?\s*"NC_EMITIR"\s*:\s*request\.Tipo\s*==\s*"ND"\s*\?\s*"ND_EMITIR"\s*:\s*"FAC_EMITIR"/, 'los tipos directos de deuda usan el permiso de emisión directa');
-assert.match(emitir, /configuracion\.Impacto\s*!=\s*impacto/, 'la API impide emitir con un impacto distinto del catálogo');
+const indiceConfiguracion = emitir.indexOf('FacturacionComprobantesConfiguracion.Obtener(');
+const indicePermiso = emitir.indexOf('ValidarAcceso(connection, transaction, permiso)');
+assert.ok(indiceConfiguracion >= 0 && indicePermiso > indiceConfiguracion,
+    'el permiso de emisión se determina después de obtener el impacto del tipo configurado');
+assert.match(emitir.slice(indiceConfiguracion, indicePermiso),
+    /string\s+impacto\s*=\s*configuracion\.Impacto/,
+    'la emisión utiliza el impacto vigente del catálogo, incluso si cambia la sigla');
+assert.match(emitir.slice(indiceConfiguracion, indicePermiso),
+    /impacto\s*==\s*"C"\s*\?\s*"NC_EMITIR"\s*:\s*request\.Tipo\s*==\s*"ND"\s*\?\s*"ND_EMITIR"\s*:\s*"FAC_EMITIR"/,
+    'un crédito interno requiere NC_EMITIR; ND mantiene ND_EMITIR y los demás tipos de deuda FAC_EMITIR');
+assert.match(emitir.slice(indiceConfiguracion, indicePermiso),
+    /cancelatorioProforma\s*&&\s*impacto\s*!=\s*"C"/,
+    'la API impide cancelar una proforma con un tipo que no sea de crédito');
 
 assert.ok(!/deuda\.Tipo\s*!=\s*"FAC"/.test(recibos), 'el recibo admite cualquier comprobante emitido de deuda');
 assert.match(cuenta, /comp\.Impacto\s*=\s*'D'/, 'el ranking de clientes incluye deuda de tipos personalizados');

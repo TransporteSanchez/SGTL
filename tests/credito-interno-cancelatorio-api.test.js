@@ -56,17 +56,17 @@ function probarCancelacionPorImpactoYProforma() {
     const emitir = bloque(comprobantes, 'public IHttpActionResult Emitir(');
     assert.match(emitir, /bool cancelatorioProforma\s*=\s*request\.ProformaID\.HasValue/,
         'la cancelatoria se identifica por el vínculo con la proforma');
-    assert.match(emitir, /cancelatorioProforma\s*\?\s*"C"/,
-        'un crédito cancelatorio configurable registra impacto C');
-    assert.match(emitir, /if\s*\(cancelatorioProforma\)\s*permiso\s*=\s*"NC_EMITIR"/,
-        'el crédito cancelatorio requiere permiso de emisión de crédito');
-    assert.match(emitir, /configuracion\.Impacto\s*!=\s*impacto/,
-        'el servidor contrasta el impacto con el tipo configurado');
-    assert.match(emitir, /cancelatorioProforma\s*\?\s*null\s*:\s*request\.FechaVencimiento/,
-        'el crédito cancelatorio no tiene vencimiento');
+    assert.match(emitir, /string\s+impacto\s*=\s*configuracion\.Impacto/,
+        'el impacto emitido se toma del tipo configurado');
+    assert.match(emitir, /cancelatorioProforma\s*&&\s*impacto\s*!=\s*"C"/,
+        'solo un tipo de crédito puede cancelar la proforma');
+    assert.match(emitir, /impacto\s*==\s*"C"\s*\?\s*"NC_EMITIR"/,
+        'todo crédito configurable requiere el permiso de emisión de crédito');
+    assert.match(emitir, /DateTime\?\s+vencimiento\s*=\s*impacto\s*==\s*"C"\s*\?\s*null/,
+        'los créditos configurables no tienen vencimiento');
     assert.match(emitir, /cancelatorioProforma\s*&&\s*request\.Aplicaciones\.Count\s*>\s*0/,
         'no admite aplicaciones elegidas por el cliente');
-    assert.match(emitir, /request\.Tipo\s*==\s*"NC"\s*\|\|\s*cancelatorioProforma\s*\?\s*request\.IVA\.Value\s*:\s*Redondear/,
+    assert.match(emitir, /decimal\s+iva\s*=\s*notaCreditoCorriente\s*\?\s*0\s*:\s*cancelatorioProforma\s*\?\s*request\.IVA\.Value\s*:\s*Redondear/,
         'el crédito cancelatorio conserva el IVA exacto de la factura, aunque los renglones tengan distintos redondeos');
     assert.match(emitir, /if\s*\(cancelatorioProforma\)[\s\S]*?LeerFacturaReferencia/,
         'la referencia de la cancelatoria se lee para cualquier sigla de crédito');
@@ -78,8 +78,8 @@ function probarCancelacionPorImpactoYProforma() {
         'el crédito configurable aplica el total contra el comprobante de deuda');
     assert.match(emitir, /if\s*\(cancelatorioProforma\)[\s\S]*?UPDATE dbo\.COMPROBANTES_PROFORMAS/,
         'el crédito configurable desvincula la proforma y libera sus viajes');
-    assert.match(emitir, /bool notaCreditoCorriente\s*=\s*request\.Tipo\s*==\s*"NC"\s*&&\s*!cancelatorioProforma/,
-        'la NC corriente mantiene su flujo separado');
+    assert.match(emitir, /bool notaCreditoCorriente\s*=\s*impacto\s*==\s*"C"\s*&&\s*!cancelatorioProforma/,
+        'un crédito interno corriente conserva el flujo de aplicaciones distinto del cancelatorio');
 }
 
 probarTiposDeCreditoDisponibles();
