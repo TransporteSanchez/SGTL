@@ -33,6 +33,10 @@ cuenta corriente, recibos, comprobantes), Fede (`fedemontenegro`: WhatsApp).
 
 ## Reglas de esta sesión
 
+- **Responder siempre en español rioplatense, con voseo**: respuestas, preguntas, cierres, lo que se ve del
+  razonamiento y mensajes de commit. Vale también después de que la charla se resume y en los turnos que arranca un
+  aviso automático. Lo que llega en inglés (informes de subagentes u otras sesiones, resúmenes, avisos) se traduce
+  antes de mostrárselo a Rocío; el código, los comandos y un error citado textual quedan como están.
 - **Nunca correr SQL contra la base desde acá.** Los `UPDATE`/`DELETE` de datos se proponen dentro de
   `BEGIN TRAN` … `SELECT @@ROWCOUNT` … `-- COMMIT; o ROLLBACK;` para que Rocío los corra.
 - **Módulos de Facu o Fede:** antes de cambiar cómo funcionan (lógica, datos, API), avisar a Rocío para que
