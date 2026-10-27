@@ -91,17 +91,24 @@
         mensaje.className = tipo === 'error' ? 'text-danger' : (tipo === 'ok' ? 'text-success' : 'text-muted');
         mensaje.textContent = texto;
     }
+    // Lo que tarda el viaje según Google (punto 36 de la §41): junto a los km y como mínimo para el fin. null sin ruta.
+    var segundosRuta = null;
+    function revisarFin() { if (el('fechaFin').value) formulario.validar('fechaFin'); }
     function aplicarRutaPresupuesto(resultado) {
         var distancia = kilometrosRuta(resultado), ruta = resultado && resultado.routes && resultado.routes[0], tramos;
         if (!distancia || !ruta || !ruta.legs || !ruta.legs.length) return false;
         tramos = ruta.legs;
         el('distancia').value = distancia;
-        actualizarMensajeMapa('Distancia: ' + SGTL.km(distancia) + ' km, de ' + tramos[0].start_address + ' a ' + tramos[tramos.length - 1].end_address + '.', 'ok');
+        segundosRuta = SGTLGoogleMaps.segundosDeRuta(ruta);
+        actualizarMensajeMapa('Distancia: ' + SGTL.km(distancia) + ' km' + (segundosRuta ? ' (Google estima ' + SGTLGoogleMaps.textoDuracion(segundosRuta) + ' de viaje)' : '') +
+            ', de ' + tramos[0].start_address + ' a ' + tramos[tramos.length - 1].end_address + '.', 'ok');
+        revisarFin();
         solicitarCalculo();
         return true;
     }
     function limpiarRutaPresupuesto() {
         rutaPresupuestoSeq++;
+        segundosRuta = null;
         if (directionsRendererPresupuesto) directionsRendererPresupuesto.set('directions', null);
         el('distancia').value = '';
         actualizarMensajeMapa('Seleccioná origen y destino para calcular la distancia.');
@@ -120,6 +127,7 @@
         return exactos.some(function (tipo) { return tipos.indexOf(tipo) >= 0; }) && !waypoint.partial_match ? 'exacta' : 'aproximada';
     }
     function rutaPresupuestoNoDisponible(motivo) {
+        segundosRuta = null;
         if (directionsRendererPresupuesto) directionsRendererPresupuesto.set('directions', null);
         el('distancia').value = '';
         actualizarMensajeMapa(motivo, 'error');
@@ -550,7 +558,11 @@
         { id: 'destinoId', requerido: 'Seleccioná un destino.' },
         { id: 'fechaInicio', requerido: 'Completá la fecha y hora de inicio.' },
         { id: 'fechaFin', requerido: 'Completá la fecha y hora de fin.',
-            validar: function (valor) { return el('fechaInicio').value && valor < el('fechaInicio').value ? 'La fecha de fin no puede ser anterior a la de inicio.' : ''; } },
+            validar: function (valor) {
+                if (el('fechaInicio').value && valor < el('fechaInicio').value) return 'La fecha de fin no puede ser anterior a la de inicio.';
+                // No antes de lo que tarda el viaje según Google (punto 36 de la §41).
+                return window.SGTLGoogleMaps ? SGTLGoogleMaps.errorFin(el('fechaInicio').value, valor, segundosRuta) : '';
+            } },
         { id: 'camionId', requerido: 'Seleccioná un camión.' },
         { id: 'distancia', requerido: 'Falta la distancia: la calcula Google Maps con el origen y el destino.', validar: function (valor) { return Number(valor) > 0 ? '' : 'Falta la distancia: la calcula Google Maps con el origen y el destino.'; } },
         { id: 'tipoTarifa', requerido: 'Seleccioná un tipo de tarifa.' }
@@ -569,7 +581,7 @@
         });
     });
     ['origenId', 'destinoId'].forEach(function (id) { el(id).addEventListener('change', calcularRutaPresupuesto); });
-    ['fechaInicio', 'fechaFin'].forEach(function (id) { el(id).addEventListener('change', function () { actualizarTiempoEstimado(); solicitarCalculo(); }); });
+    ['fechaInicio', 'fechaFin'].forEach(function (id) { el(id).addEventListener('change', function () { actualizarTiempoEstimado(); solicitarCalculo(); if (id === 'fechaInicio') revisarFin(); }); });
     el('tipoTarifa').addEventListener('change', solicitarCalculo);
     // El tipo y el modelo del camión cambian la tarifa.
     el('camionId').addEventListener('change', solicitarCalculo);

@@ -3849,9 +3849,17 @@ como presentación). Los números son los del listado de Rocío.
   los remitos (4 o 5 dígitos de punto de venta, con letra) y sumar una máscara que complete los ceros.
 - [ ] **28.** Cambiar la dirección del galpón afecta solo a los viajes que todavía no salieron o que se carguen después; o
   preguntar a cuáles aplicarlo (los registrados que no salieron, o solo los nuevos).
-- [ ] **36.** Mostrar las horas estimadas de Google junto a los km al cargar un viaje o presupuesto: si el destino queda
+- [x] **36.** Mostrar las horas estimadas de Google junto a los km al cargar un viaje o presupuesto: si el destino queda
   antes de ese tiempo, error o advertencia; si queda mucho después, ver si se pide un motivo. Sirve también para el punto
   3 (viajes superpuestos).
+  **Hecho (27/10), subido, pendiente de probar en la VM**, como decidió Rocío: junto a los km se ve lo que tarda según
+  Google ("48,5 km · 1 h 5 min" en Registrar viaje; "(Google estima 1 h 5 min de viaje)" en presupuestos) y si el fin
+  queda antes, error debajo de Fin que no deja guardar: "Fin no permitido: tiene que ser a las 06:05 hs o después
+  (Google estima 1 h 5 min de viaje)." (con la fecha si llega otro día). Si es más tiempo, no se pide nada. Sin la ruta
+  de Google (km a mano) no hay control; la API no lo controla (la duración la da Google en el navegador). Cómo probarlo
+  en la VM (en el 5502, donde anda Google): Registrar viaje con origen y destino → al lado de los km, el tiempo; poner un
+  fin anterior a inicio + ese tiempo → el error debajo de Fin y Guardar no deja; corregirlo → se va. Lo mismo en
+  Registrar presupuesto.
 - [ ] **37.** Kilometraje, consumo y combustible: hechos en la §37, sin probar en la VM. Faltan los datos: el kilometraje
   inicial, su fecha y el consumo de los 4 camiones, y el precio del gasoil (Gestionar camiones).
 

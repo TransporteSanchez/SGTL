@@ -889,9 +889,11 @@
             var n = Number(t);
             return t && isFinite(n) ? n : NaN;
         }
+        // Lo que tarda el viaje según Google (punto 36 de la §41): junto a los km y como mínimo para el fin. null sin ruta.
+        var segundosRuta = null;
         function mostrarKm(valor) {
             var n = kmNumero(valor);
-            $('#rutaKm').text(isNaN(n) ? '' : SGTL.km(n) + ' km');
+            $('#rutaKm').text(isNaN(n) ? '' : SGTL.km(n) + ' km' + (segundosRuta && window.SGTLGoogleMaps ? ' · ' + SGTLGoogleMaps.textoDuracion(segundosRuta) : ''));
         }
 
         // ===================== TARIFA (resultado) =====================
@@ -1055,6 +1057,8 @@
         // Sin ruta no se bloquea el alta: la distancia se carga a mano y la tarifa por km se calcula igual.
         function rutaViajeNoDisponible(motivo) {
             var kmCambia = !conservarKmGuardado && !rutaFija();
+            segundosRuta = null;
+            if ($('#fechaFin').val()) formularioViaje.validar('fechaFin');
             if (directionsRenderer) directionsRenderer.set('directions', null);
             if (kmCambia) $('#distanciaKm').val('');
             conservarKmGuardado = false;
@@ -1072,6 +1076,8 @@
             var metros = ruta.legs.reduce(function (t, l) { return t + (l.distance ? l.distance.value : 0); }, 0);
             var km = (metros / 1000).toFixed(1);
             var desde = ruta.legs[0].start_address, hasta = ruta.legs[ruta.legs.length - 1].end_address;
+            segundosRuta = SGTLGoogleMaps.segundosDeRuta(ruta);
+            if ($('#fechaFin').val()) formularioViaje.validar('fechaFin');
             usarDistanciaManual(false);
             $('#rutaAviso').toggleClass('d-none', !avisoRutaViaje).text(avisoRutaViaje);
             avisoRutaViaje = '';
@@ -1439,6 +1445,7 @@
             $('#viajeIdEdicion, #tarifarioId, #distanciaKm').val('');
             $('#tarifaTipoFija').prop('checked', true);
             inicioVisto = '';
+            segundosRuta = null;
             mostrarOrden(null);
             ocupado = { CamionID: '', ChoferID: '' };
             $('#precioRevisarViaje').empty();
@@ -1595,7 +1602,12 @@
             inicio: { id: 'fechaInicio', requerido: 'Elegí la fecha y hora de inicio.' },
             fin: {
                 id: 'fechaFin', requerido: 'Elegí la fecha y hora de fin.',
-                validar: function (valor) { var fi = $('#fechaInicio').val(); return fi && valor < fi ? 'No puede ser anterior al inicio.' : ''; }
+                validar: function (valor) {
+                    var fi = $('#fechaInicio').val();
+                    if (fi && valor < fi) return 'No puede ser anterior al inicio.';
+                    // No antes de lo que tarda el viaje según Google (punto 36 de la §41).
+                    return window.SGTLGoogleMaps ? SGTLGoogleMaps.errorFin(fi, valor, segundosRuta) : '';
+                }
             },
             camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.', validar: function () { return ocupado.CamionID; } },
             chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? ocupado.ChoferID : 'Elegí un chofer de la lista.'; } },
