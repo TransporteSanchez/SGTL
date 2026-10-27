@@ -113,7 +113,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Resultado_Entrega { get; set; }
             public DateTime? Fecha_Entrega { get; set; }
             public string Usuario { get; set; }
-            public string Motivo { get; set; }        // al cancelar el viaje
+            public string Motivo { get; set; }        // al cancelar el viaje; al marcarlo sin carga, la observación
         }
 
         // Fila de la grilla de gestion-viajes.html. Debe coincidir 1:1 con SELECT_GRILLA.
@@ -158,6 +158,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Cancelado_Fecha { get; set; }
             public string Cancelado_Usuario { get; set; }
             public int? Cancelado_Presupuesto_ID { get; set; }
+            public string Sin_Carga_Observacion { get; set; }
         }
 
         private class EstadoViajeRow
@@ -182,6 +183,8 @@ namespace WebApi_TransporteSanchez.Controllers
         // vuelve a Registrado. No está en los flujos: no cuenta en el camión ocupado, el orden del día, las proformas, los
         // costos ni los indicadores.
         public const string EstadoCancelado = "Cancelado";
+        // El camión llegó al origen y no había carga (punto 10 de la §41; antes "falso flete").
+        public const string EstadoSinCarga = "Sin_carga";
 
         // Con plataforma (Rukas): el seguimiento fino queda en Rukas; en SGTL solo la puerta a la proforma.
         private static readonly string[] FlujoConPlataforma = { EstadoRegistrado, EstadoListoParaFacturar, EstadoFacturado };
@@ -225,7 +228,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Gastos, " +
             SQL_FACTURADA + " AS Facturada, " +
             "(SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID = v.Viaje_ID) AS Presupuesto_ID, " +
-            "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado, {CANCELADO} " +
+            "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado, {CANCELADO}, {SIN_CARGA} " +
             "FROM VIAJES v " +
             "LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID " +
             "LEFT JOIN DESTINO d ON d.Destino_ID = v.DestinoID " +
@@ -247,9 +250,16 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<int>("SELECT CASE WHEN COL_LENGTH('dbo.VIAJES', 'Cancelado_Presupuesto_ID') IS NULL THEN 0 ELSE 1 END").First() == 1;
         }
 
+        // Con database/viajes/03 corrido: la observación del viaje sin carga.
+        private static bool HaySinCarga(DbContext db)
+        {
+            return db.Database.SqlQuery<int>("SELECT CASE WHEN COL_LENGTH('dbo.VIAJES', 'Sin_Carga_Observacion') IS NULL THEN 0 ELSE 1 END").First() == 1;
+        }
+
         private static string Grilla(DbContext db)
         {
-            return SELECT_GRILLA.Replace("{CANCELADO}", HayCancelado(db)
+            return SELECT_GRILLA.Replace("{SIN_CARGA}", HaySinCarga(db) ? "v.Sin_Carga_Observacion" : "CAST(NULL AS nvarchar(300)) AS Sin_Carga_Observacion")
+                .Replace("{CANCELADO}", HayCancelado(db)
                 ? "v.Cancelado_Motivo, v.Cancelado_Fecha, v.Cancelado_Usuario, v.Cancelado_Presupuesto_ID"
                 : "CAST(NULL AS nvarchar(300)) AS Cancelado_Motivo, CAST(NULL AS datetime) AS Cancelado_Fecha, CAST(NULL AS nvarchar(50)) AS Cancelado_Usuario, " +
                   "CAST(NULL AS int) AS Cancelado_Presupuesto_ID");
@@ -857,6 +867,9 @@ SELECT CAST(CASE WHEN EXISTS (
                     // Cancelar (desde Registrado) y reactivar (de Cancelado a Registrado).
                     if (nuevo == EstadoCancelado || v.Estado == EstadoCancelado)
                         return CambiarCancelado(db, v, nuevo, body, proformaDelViaje);
+                    // Sin carga (desde En viaje; con plataforma, desde Registrado) y volver atrás.
+                    if (nuevo == EstadoSinCarga || v.Estado == EstadoSinCarga)
+                        return CambiarSinCarga(db, v, nuevo, body, proformaDelViaje);
                     var errores = ValidarCambioEstado(v, FlujoEstados(v.Tipo_Cliente), nuevo, resultado, body.Fecha_Entrega);
                     if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
 
@@ -955,6 +968,62 @@ SELECT CAST(CASE WHEN EXISTS (
             }
             SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id, "Estado=" + EstadoCancelado + " -> " + EstadoRegistrado);
             return Ok(new { Viaje_ID = id, Estado = EstadoRegistrado, Message = "Viaje #" + id + " reactivado.", Orden = ordenReactivado });
+        }
+
+        // Viaje sin carga (punto 10 de la §41; antes "falso flete", Rocío 27/10): el camión llegó al origen y no había carga.
+        // Desde En viaje (con plataforma, que no pasa por En viaje, desde Registrado) y fuera de una proforma, con la fecha y una
+        // observación opcional. Se cobra el porcentaje de la tabla (Falso_Flete = 1) y sigue a la proforma como un entregado; la
+        // fecha va en Fecha_Entrega. Si fue un error vuelve al estado de antes y se cobra completo. Para volver a ir, otro viaje.
+        private IHttpActionResult CambiarSinCarga(SGTLAuditContext db, EstadoViajeRow v, string nuevo, CambioEstadoViajeDto body,
+            ProformaDelViaje proforma)
+        {
+            int id = v.Viaje_ID;
+            var usuario = UsuarioCorto(body.Usuario);
+            if (!HaySinCarga(db)) return ErrorEstado("Estado", "Para marcar viajes sin carga falta correr database/viajes/03_viaje_sin_carga.sql.");
+            bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
+            string anterior = conPlataforma ? EstadoRegistrado : EstadoEnViaje;
+            bool sinCarga = nuevo == EstadoSinCarga;
+            DateTime? fecha = null;
+            string observacion = null;
+            if (sinCarga)
+            {
+                if (v.Estado == EstadoSinCarga) return ErrorEstado("Estado", "El viaje ya está sin carga.");
+                if (conPlataforma ? !EsRegistrado(v.Estado) : v.Estado != EstadoEnViaje)
+                    return ErrorEstado("Estado", "No se puede marcar sin carga: el viaje está " + (v.Estado ?? EstadoRegistrado).Replace('_', ' ').ToLowerInvariant() + ".");
+                if (!body.Fecha_Entrega.HasValue) return ErrorEstado("Fecha_Entrega", "Elegí la fecha.");
+                fecha = body.Fecha_Entrega.Value.Date;
+                var hoy = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time").Date;
+                if (fecha < v.Fecha_Inicio.Date) return ErrorEstado("Fecha_Entrega", "La fecha no puede ser anterior al inicio del viaje.");
+                if (fecha > hoy) return ErrorEstado("Fecha_Entrega", "La fecha no puede ser posterior a hoy.");
+                observacion = Recortar(body.Motivo, 300);
+                if (observacion.Length == 0) observacion = null;
+            }
+            else if (nuevo != anterior)
+                return ErrorEstado("Estado", "Un viaje sin carga solo puede volver a " + (conPlataforma ? "Registrado" : "En viaje") + ".");
+            // En un borrador cambia lo que se cobra: primero se quita del borrador.
+            if (proforma != null)
+                return ErrorEstado("Estado", (sinCarga ? "No se puede marcar sin carga: " : "No se puede cambiar el estado: ") + "el viaje está en la proforma "
+                    + TextoProforma(proforma) + ".");
+
+            // El importe con el porcentaje de la tabla (o completo, si vuelve atrás); la base y la estadía no cambian.
+            var viaje = db.Set<VIAJES>().Find(id);
+            var guardada = TarifaGuardada(db, id);
+            var datos = DatosParaImporte(viaje, new ViajeDto { Falso_Flete = sinCarga, Estadia_Modulos = guardada.Estadia_Modulos }, guardada, false);
+            var calculo = CalcularImporte(db, id, datos, guardada, false);
+            if (!calculo.Ok) return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
+
+            db.Database.ExecuteSqlCommand(
+                "UPDATE VIAJES SET Estado=@e, Resultado_Entrega=NULL, Fecha_Entrega=@f, Sin_Carga_Observacion=@o, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@id",
+                P("@e", nuevo), P("@f", fecha), P("@o", observacion), P("@u", usuario), P("@id", id));
+            GuardarImporte(db, id, datos, calculo);
+            SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id,
+                "Estado=" + (v.Estado ?? EstadoRegistrado) + " -> " + nuevo + (observacion != null ? "; Observación=" + observacion : "")
+                + "; Importe=" + calculo.Importe.ToString("0.00", CultureInfo.InvariantCulture));
+            var mensaje = sinCarga
+                ? "Viaje #" + id + " sin carga. Se cobra " + TarifarioCalculo.Pesos(calculo.Importe)
+                    + (calculo.FalsoFletePorcentaje.HasValue ? " (" + calculo.FalsoFletePorcentaje.Value.ToString("0.##", new CultureInfo("es-AR")) + " % de la tarifa)" : "") + "."
+                : "Viaje #" + id + " vuelve a " + (conPlataforma ? "registrado" : "en viaje") + ". Se cobra " + TarifarioCalculo.Pesos(calculo.Importe) + ".";
+            return Ok(new { Viaje_ID = id, Estado = nuevo, Message = mensaje });
         }
 
         // POST: api/Viajes/{id}/Evidencia
@@ -1271,6 +1340,8 @@ SELECT CAST(CASE WHEN EXISTS (
 
                     // La vuelta sale sola (§43): se calcula con la 1ª y, si es el segundo viaje del día, otra vez con la 2ª.
                     viajeDto.Vuelta = null;
+                    // Sin carga es un estado (punto 10 de la §41): un viaje nuevo se cobra completo.
+                    viajeDto.Falso_Flete = false;
                     var calculo = CalcularImporte(db, 0, viajeDto, new TarifaGuardadaRow(), true);
                     if (!calculo.Ok)
                     {
@@ -1399,6 +1470,8 @@ SELECT CAST(CASE WHEN EXISTS (
 
                 // La vuelta la decide la API (§43): la que llega de la pantalla no se usa; se parte de la guardada.
                 viajeDto.Vuelta = TarifaGuardada(db, id).Vuelta;
+                // Sin carga lo pone el estado (punto 10 de la §41): el formulario ya no lo marca.
+                viajeDto.Falso_Flete = TarifaGuardada(db, id).Falso_Flete;
 
                 bool desdePresupuesto = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0;
                 if (desdePresupuesto && (viaje.ClienteID != viajeDto.ClienteID || viaje.OrigenID != viajeDto.OrigenID || viaje.DestinoID != viajeDto.DestinoID ||
@@ -1511,7 +1584,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     }
                 }
 
-                // Falso flete y estadía se pueden cargar en cualquier estado (se conocen después del viaje). Si no cambió
+                // La estadía se puede cargar en cualquier estado (se conoce después del viaje; sin carga lo pone el estado). Si no cambió
                 // nada de la tarifa y no se puede calcular (un viaje viejo sin tarifa vigente), se guarda igual sin importe.
                 var calculo = CalcularImporte(db, id, DatosParaImporte(viaje, viajeDto, tarifaGuardada, tarifaEditable), tarifaGuardada, cambiaTarifa);
                 if (!calculo.Ok && (cambiaTarifa || CambianAdicionales(tarifaGuardada, viajeDto)))

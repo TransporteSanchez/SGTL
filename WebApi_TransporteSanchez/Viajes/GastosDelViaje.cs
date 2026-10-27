@@ -7,7 +7,8 @@ using System.Linq;
 namespace WebApi_TransporteSanchez.Viajes
 {
     // Gastos del viaje (control interno, §37 de PENDIENTES): quién los carga y cuándo (Rocío, 27/10, punto 33 de la §41).
-    //   - El chofer, desde su hoja de ruta: desde que inicia el viaje y hasta 2 días después de registrar la entrega. Los de
+    //   - El chofer, desde su hoja de ruta: desde que inicia el viaje y hasta 2 días después de registrar la entrega (o el
+    //     viaje sin carga, punto 10 de la §41). Los de
     //     plataforma (Rukas) no se inician en el sistema: desde el día del viaje hasta 2 días después del fin.
     //   - Administración (quien gestiona viajes), desde Ver detalle del viaje, como excepción: con el viaje entregado o
     //     listo para facturar (lo que el chofer no llegó a rendir).
@@ -22,7 +23,7 @@ namespace WebApi_TransporteSanchez.Viajes
         public const int MaxBytesComprobante = 5 * 1024 * 1024;
 
         private const string Registrado = "Registrado", EnViaje = "En_viaje", Entregado = "Entregado",
-            ListoParaFacturar = "Listo_para_facturar", Facturado = "Facturado", Cancelado = "Cancelado";
+            ListoParaFacturar = "Listo_para_facturar", Facturado = "Facturado", Cancelado = "Cancelado", SinCarga = "Sin_carga";
 
         public class Datos
         {
@@ -53,10 +54,12 @@ namespace WebApi_TransporteSanchez.Viajes
                 return null;
             }
             if (estado == Registrado) return no + "el viaje todavía no se inició.";
-            if (estado == Entregado)
+            // Sin carga es como una entrega: la fecha es la del día que llegó al origen.
+            if (estado == Entregado || estado == SinCarga)
             {
                 var desde = (entrega ?? fin).Date;
-                if (hoy > desde.AddDays(DiasParaRendir)) return no + "pasaron más de " + DiasParaRendir + " días de la entrega." + rendir;
+                if (hoy > desde.AddDays(DiasParaRendir))
+                    return no + "pasaron más de " + DiasParaRendir + " días " + (estado == SinCarga ? "del viaje." : "de la entrega.") + rendir;
                 return null;
             }
             if (estado == EnViaje) return null;
@@ -67,7 +70,7 @@ namespace WebApi_TransporteSanchez.Viajes
         public static string MotivoAdministracion(string accion, string estado)
         {
             string no = "No se puede " + accion + " el gasto: ";
-            if (estado == Entregado || estado == ListoParaFacturar) return null;
+            if (estado == Entregado || estado == ListoParaFacturar || estado == SinCarga) return null;
             if (estado == Facturado) return no + "el viaje ya está facturado.";
             if (estado == Cancelado) return no + "el viaje está cancelado.";
             return no + "el viaje todavía no se entregó (mientras está en viaje los carga el chofer).";
@@ -81,6 +84,7 @@ namespace WebApi_TransporteSanchez.Viajes
                 case Entregado: return "entregado";
                 case ListoParaFacturar: return "listo para facturar";
                 case Facturado: return "facturado";
+                case SinCarga: return "sin carga";
                 default: return (estado ?? "").Replace('_', ' ').ToLowerInvariant();
             }
         }

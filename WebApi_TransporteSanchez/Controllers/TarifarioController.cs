@@ -750,7 +750,7 @@ namespace WebApi_TransporteSanchez.Controllers
             return ConPunto(d.Nombre.Trim() + ", vigente desde el " + d.Vigente_Desde.Value.ToString("dd/MM/yyyy")
                 + (d.Para_Todos == false ? ", para " + string.Join(", ", d.Clientes.Distinct().Select(c => Nombre(nombres, c))) : ", para todos los clientes"))
                 + " Bandas " + d.Km_Banda1 + " / " + d.Km_Banda2 + " / " + d.Km_Banda3 + " km; estadía " + TarifarioCalculo.Pesos(d.Estadia_Modulo)
-                + " por módulo; falso flete " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. Valores (hasta " + d.Km_Banda1 + " km 1ª y 2ª vuelta, hasta "
+                + " por módulo; viaje sin carga " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %. Valores (hasta " + d.Km_Banda1 + " km 1ª y 2ª vuelta, hasta "
                 + d.Km_Banda2 + ", hasta " + d.Km_Banda3 + " y por km): "
                 + string.Join("; ", d.Valores.OrderBy(v => v.Modelo_Nuevo).ThenBy(v => Array.IndexOf(TarifarioCalculo.TiposVehiculo, v.Tipo_Vehiculo.Trim()))
                     .Select(v => Modelo(d.Anio_Corte, v.Modelo_Nuevo) + " · " + v.Tipo_Vehiculo.Trim() + ": "
@@ -845,7 +845,7 @@ namespace WebApi_TransporteSanchez.Controllers
             if (a.Datos.Estadia_Modulo != d.Estadia_Modulo)
                 c.Add("el módulo de estadía: " + TarifarioCalculo.Pesos(a.Datos.Estadia_Modulo) + " → " + TarifarioCalculo.Pesos(d.Estadia_Modulo));
             if (a.Datos.Falso_Flete_Porcentaje != d.Falso_Flete_Porcentaje)
-                c.Add("el falso flete: " + a.Datos.Falso_Flete_Porcentaje.ToString("0.##", es) + " % → " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %");
+                c.Add("el viaje sin carga: " + a.Datos.Falso_Flete_Porcentaje.ToString("0.##", es) + " % → " + d.Falso_Flete_Porcentaje.ToString("0.##", es) + " %");
             foreach (var v in d.Valores)
             {
                 var antes = a.Valores.FirstOrDefault(x => x.Modelo_Nuevo == v.Modelo_Nuevo && x.Tipo_Vehiculo == v.Tipo_Vehiculo.Trim());

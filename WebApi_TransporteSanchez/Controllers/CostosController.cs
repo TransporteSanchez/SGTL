@@ -118,6 +118,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal? Importe { get; set; }
             public string Estado { get; set; }
             public int? GalponID { get; set; }
+            public bool Sin_Carga { get; set; }
         }
 
         public class GastoRow
@@ -205,7 +206,10 @@ namespace WebApi_TransporteSanchez.Controllers
         private const string SQL_KM_RUTA = "TRY_CAST(REPLACE(RTRIM(v.Distancia_KM), ',', '.') AS decimal(10, 1))";
 
         // Viajes que ya hizo el camión (los que cuentan para su kilometraje).
-        private const string SQL_ENTREGADO = "v.Estado IN ('Entregado', 'Listo_para_facturar', 'Facturado')";
+        private const string SQL_ENTREGADO = "v.Estado IN ('Entregado', 'Listo_para_facturar', 'Facturado', 'Sin_carga')";
+        // Los km de un viaje: galpón → origen → destino → galpón; sin carga (Falso_Flete = 1, punto 10 de la §41), galpón →
+        // origen → galpón (los km al origen, ida y vuelta). Va después de SQL_KM_GALPON_DEL_VIAJE.
+        private const string SQL_KM_DEL_VIAJE = "CASE WHEN ISNULL(v.Falso_Flete, 0) = 1 THEN 2 * ki.Km ELSE ki.Km + " + SQL_KM_RUTA + " + kv.Km END";
 
         // El galpón de cada viaje (Rocío, 27/10, punto 28 de la §41; database/costos/02): el elegido al cambiar el galpón
         // (v.GalponID) o, si no, el vigente el día de su inicio. Deja gv.Galpon_ID; va después de "FROM dbo.VIAJES v".
@@ -853,8 +857,8 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<KilometrajeRow>(
                 "SELECT c.Camion_ID, RTRIM(ISNULL(c.Dominio,'')) AS Dominio, c.Km_Inicial, c.Fecha_Km_Inicial, c.Consumo_L_100km, " +
                 "COUNT(v.Viaje_ID) AS Viajes, " +
-                "SUM(CASE WHEN v.Viaje_ID IS NOT NULL AND (ki.Km IS NULL OR kv.Km IS NULL OR " + SQL_KM_RUTA + " IS NULL) THEN 1 ELSE 0 END) AS Viajes_Sin_Km, " +
-                "CAST(ISNULL(SUM(ki.Km + " + SQL_KM_RUTA + " + kv.Km), 0) AS decimal(12, 1)) AS Km_Recorridos " +
+                "SUM(CASE WHEN v.Viaje_ID IS NOT NULL AND (" + SQL_KM_DEL_VIAJE + ") IS NULL THEN 1 ELSE 0 END) AS Viajes_Sin_Km, " +
+                "CAST(ISNULL(SUM(" + SQL_KM_DEL_VIAJE + "), 0) AS decimal(12, 1)) AS Km_Recorridos " +
                 "FROM dbo.CAMIONES c " +
                 "LEFT JOIN dbo.VIAJES v ON v.CamionID = c.Camion_ID AND " + SQL_ENTREGADO + " " +
                 "  AND c.Fecha_Km_Inicial IS NOT NULL AND CAST(v.Fecha_Inicio AS date) >= c.Fecha_Km_Inicial " +
@@ -962,7 +966,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         "v.OrigenID, ISNULL(o.Descripcion,'') AS Origen, ki.Km AS Km_Ida, " + SQL_KM_RUTA + " AS Km_Ruta, " +
                         "v.DestinoID, ISNULL(d.Descripcion,'') AS Destino, kv.Km AS Km_Vuelta, gv.Galpon_ID AS GalponID, " +
                         "pg.Precio_Litro, pg.Vigente_Desde AS Precio_Desde, " +
-                        (hayImporte ? "v.Importe" : "CAST(NULL AS decimal(18, 2))") + " AS Importe, ISNULL(v.Estado, 'Registrado') AS Estado " +
+                        (hayImporte ? "v.Importe" : "CAST(NULL AS decimal(18, 2))") + " AS Importe, ISNULL(v.Estado, 'Registrado') AS Estado, " +
+                        "CAST(ISNULL(v.Falso_Flete, 0) AS bit) AS Sin_Carga " +
                         "FROM dbo.VIAJES v " + SQL_GALPON_DEL_VIAJE + SQL_KM_GALPON_DEL_VIAJE +
                         "LEFT JOIN dbo.CAMIONES cam ON cam.Camion_ID = v.CamionID " +
                         "LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID " +
@@ -977,8 +982,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         "WHERE Viaje_ID = @id ORDER BY Fecha, Gasto_ID", P("@id", id)).ToList();
                     var galpon = v.GalponID.HasValue ? LeerGalpones(db).FirstOrDefault(g => g.Galpon_ID == v.GalponID.Value) : null;
 
-                    decimal? kmTotal = v.Km_Ida.HasValue && v.Km_Ruta.HasValue && v.Km_Vuelta.HasValue
-                        ? v.Km_Ida + v.Km_Ruta + v.Km_Vuelta : null;
+                    // Sin carga (punto 10 de la §41): galpón → origen → galpón, los km al origen ida y vuelta.
+                    decimal? kmTotal = v.Sin_Carga ? v.Km_Ida * 2
+                        : v.Km_Ida.HasValue && v.Km_Ruta.HasValue && v.Km_Vuelta.HasValue ? v.Km_Ida + v.Km_Ruta + v.Km_Vuelta : null;
                     decimal? litros = kmTotal.HasValue && v.Consumo_L_100km.HasValue
                         ? (decimal?)decimal.Round(kmTotal.Value * v.Consumo_L_100km.Value / 100m, 1) : null;
                     decimal? combustible = litros.HasValue && v.Precio_Litro.HasValue
@@ -990,7 +996,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         Galpon_Configurado = galpon != null,
                         // El galpón de este viaje (punto 28 de la §41), para nombrarlo en el primer tramo.
                         v.GalponID, Galpon = CalleGalpon(galpon),
-                        v.OrigenID, v.Origen, v.Km_Ida, v.Km_Ruta, v.DestinoID, v.Destino, v.Km_Vuelta,
+                        v.OrigenID, v.Origen, v.Km_Ida, v.Km_Ruta, v.DestinoID, v.Destino, v.Km_Vuelta, v.Sin_Carga,
                         Km_Total = kmTotal,
                         v.Precio_Litro, v.Precio_Desde,
                         Litros_Estimados = litros,

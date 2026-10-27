@@ -430,15 +430,17 @@
   }
 
   // Estado de un viaje con su texto ("En_viaje" → "En viaje"). "Cancelado" en un viaje es que no se hizo: va en rojo,
-  // como lo anulado (en cuenta corriente "Cancelado" es pagado y va en verde, §4.1). Sin estado es Registrado.
+  // como lo anulado (en cuenta corriente "Cancelado" es pagado y va en verde, §4.1). "Sin carga" (llegó al origen y no
+  // había carga) va en azul, como Entregado: falta facturarlo. Sin estado es Registrado.
   var ESTADOS_VIAJE = {
-    Registrado: 'Registrado', En_viaje: 'En viaje', Entregado: 'Entregado', Listo_para_facturar: 'Listo para facturar',
-    Facturado: 'Facturado', Cancelado: 'Cancelado'
+    Registrado: 'Registrado', En_viaje: 'En viaje', Entregado: 'Entregado', Sin_carga: 'Sin carga',
+    Listo_para_facturar: 'Listo para facturar', Facturado: 'Facturado', Cancelado: 'Cancelado'
   };
+  var COLOR_ESTADO_VIAJE = { Cancelado: 'rojo', Sin_carga: 'azul' };
   function textoEstadoViaje(valor) { return ESTADOS_VIAJE[valor || 'Registrado'] || valor; }
   function estadoViaje(valor) {
     valor = valor || 'Registrado';
-    return estado(valor, textoEstadoViaje(valor), valor === 'Cancelado' ? 'rojo' : null);
+    return estado(valor, textoEstadoViaje(valor), COLOR_ESTADO_VIAJE[valor] || null);
   }
 
   // ---------------------------------------------------------------- Acciones de cada fila (§1.4)

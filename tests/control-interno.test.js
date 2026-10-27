@@ -49,7 +49,8 @@ const reglaGastos = leer('WebApi_TransporteSanchez/Viajes/GastosDelViaje.cs');
 assert.ok(/public const int DiasParaRendir = 2;/.test(reglaGastos) && /"el viaje todavía no se inició\."/.test(reglaGastos)
     && /"el viaje ya está facturado\."/.test(reglaGastos), 'desde que se inicia, hasta 2 días después de la entrega, nunca facturado');
 assert.ok(/Completá los litros que cargaste/.test(reglaGastos), 'el combustible pide los litros');
-assert.ok(/if \(estado == Entregado \|\| estado == ListoParaFacturar\) return null;/.test(reglaGastos), 'administración: entregado o listo para facturar');
+assert.ok(/if \(estado == Entregado \|\| estado == ListoParaFacturar \|\| estado == SinCarga\) return null;/.test(reglaGastos),
+    'administración: entregado, listo para facturar o sin carga (punto 10 de la §41)');
 assert.ok(/Exigir\(sesion\.Tiene\("gestion de viajes"\)/.test(accion('Post', 'Viajes/{id:int}/Gastos')), 'administración: quien gestiona viajes');
 assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').includes('Viajes\\GastosDelViaje.cs'), 'GastosDelViaje.cs está en el proyecto');
 

@@ -6,6 +6,7 @@
 //   E. Estado Cancelado: un viaje que no se hizo (desde Registrado, con motivo) deja de contar y puede volver a Registrado.
 //   F. En viaje se cambian el camión y el chofer, con motivo y sin cambiar el precio.
 //   G. Administración no inicia un viaje de un día futuro (uno atrasado sí).
+//   Punto 10 de la §41: "Sin carga" (antes "falso flete") es un estado, desde En viaje, y se cobra el porcentaje de la tabla.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -137,5 +138,42 @@ assert.ok(/EsRegistrado\(v\.Estado\) && v\.Fecha_Inicio\.Date > hoy && \(nuevo =
 assert.ok(/'No se puede iniciar el viaje: es del '/.test(pantalla) && /> SGTL\.fechaISO\(new Date\(\)\)\s*\? SGTL\.fecha\(v\.Fecha_Inicio\)/.test(pantalla),
     'G: y la tarjeta "En viaje" queda gris con el motivo');
 
+// Punto 10: sin carga
+assert.ok(/estado-azul">Sin carga</.test(SGTL.estadoViaje('Sin_carga')), '10: Sin carga va en azul, como Entregado');
+assert.strictEqual(SGTL.estadosViaje().Sin_carga, 'Sin carga', '10: y está en el filtro de estado');
+const sinCargaApi = api.slice(api.indexOf('private IHttpActionResult CambiarSinCarga('), api.indexOf('// POST: api/Viajes/{id}/Evidencia'));
+assert.ok(/string anterior = conPlataforma \? EstadoRegistrado : EstadoEnViaje;/.test(sinCargaApi),
+    '10: desde En viaje (con plataforma, desde Registrado) y vuelve al de antes');
+assert.ok(/"La fecha no puede ser posterior a hoy\."/.test(sinCargaApi) && /"La fecha no puede ser anterior al inicio del viaje\."/.test(sinCargaApi),
+    '10: la fecha entre el inicio y hoy');
+assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),
+    '10: se cobra el porcentaje de la tabla (y completo si vuelve atrás)');
+assert.ok(/viajeDto\.Falso_Flete = TarifaGuardada\(db, id\)\.Falso_Flete;/.test(put) && /viajeDto\.Falso_Flete = false;/.test(api),
+    '10: el formulario ya no lo marca: lo pone el estado');
+assert.ok(!/id="falsoFlete"/.test(pantalla) && /posibles = posibles\.concat\('Sin_carga'\)/.test(pantalla) && /id="fechaSinCarga"/.test(pantalla),
+    '10: en Gestionar viajes, la tarjeta Sin carga en lugar de la casilla');
+const calculoTarifa = leer('WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs');
+const sinComentarios = function (codigo) { return codigo.split('\n').filter(function (l) { return !/^\s*\/\//.test(l); }).join('\n'); };
+assert.ok(/" · sin carga \("/.test(calculoTarifa) && !/"[^"\n]*falso flete[^"\n]*"/i.test(sinComentarios(calculoTarifa)) &&
+    !/"[^"\n]*falso flete[^"\n]*"/i.test(sinComentarios(leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs'))), '10: ningún texto dice "falso flete"');
+assert.ok(/>Viaje sin carga <span class="text-danger">\*<\/span><\/label>/.test(leer('gestion-tarifas.html')), '10: en la tabla de tarifas, "Viaje sin carga"');
+const hojaRuta = leer('WebApi_TransporteSanchez/Controllers/HojaDeRutaController.cs');
+assert.ok(/\[HttpPost, Route\("Viajes\/\{id:int\}\/SinCarga"\)\]/.test(hojaRuta) && /Estado = ViajesController\.EstadoSinCarga,/.test(hojaRuta),
+    '10: el chofer lo registra desde su hoja de ruta');
+const enViajeChofer = H.accionesDe({ Viaje_ID: 45, Estado: 'En_viaje', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-27T05:00:00' }, '2026-10-27');
+assert.strictEqual(enViajeChofer.sinCarga.texto, 'Registrar sin carga', '10: al lado de Registrar entrega');
+assert.strictEqual(H.motivoGasto({ Estado: 'Sin_carga', Tipo_Cliente: 'Directo', Fecha_Entrega: '2026-10-27T00:00:00' }, '2026-10-28'), '',
+    '10: los gastos, como en un entregado');
+assert.ok(/if \(estado == Entregado \|\| estado == SinCarga\)/.test(gastos), '10: también en la API');
+assert.strictEqual(H.kmRecorridoCompleto({ Estado: 'Sin_carga', Distancia_KM: '402.3', Km_Ida: 12.4, Km_Vuelta: 398 }), 24.8,
+    '10: en la hoja de ruta, el recorrido es galpón → origen → galpón');
+assert.ok(/bool sinCarga = f\.Estado == "Sin_carga";/.test(proformas) && /\(sinCarga \? " - Sin carga" : ""\)/.test(proformas),
+    '10: Traer viajes lo trae como un entregado, con "Sin carga" en la línea');
+assert.ok(/CASE WHEN ISNULL\(v\.Falso_Flete, 0\) = 1 THEN 2 \* ki\.Km/.test(leer('WebApi_TransporteSanchez/Controllers/CostosController.cs')),
+    '10: el recorrido es galpón → origen → galpón');
+const scriptSinCarga = leer('database/viajes/03_viaje_sin_carga.sql');
+assert.ok(/IF COL_LENGTH\('dbo\.VIAJES', 'Sin_Carga_Observacion'\) IS NULL\s+ALTER TABLE dbo\.VIAJES ADD Sin_Carga_Observacion/.test(scriptSinCarga),
+    '10: el script agrega la observación (idempotente)');
+
 console.log('OK: flujo de los viajes (entrega parcial o con rechazo, fecha de entrega, eliminar con gastos, evidencia, viaje cancelado, '
-    + 'cambio de camión o chofer en viaje y viajes de días futuros)');
+    + 'cambio de camión o chofer en viaje, viajes de días futuros y viaje sin carga)');

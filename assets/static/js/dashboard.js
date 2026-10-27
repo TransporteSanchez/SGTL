@@ -250,6 +250,8 @@
   function grupoDe(v) {
     var estado = v.Estado || 'Registrado';
     if (estado === 'Registrado' || estado === 'En_viaje') return 'pendiente';
+    // Sin carga (punto 10 de la §41): cuenta como viaje, no como entrega.
+    if (estado === 'Sin_carga' || (estado === 'Facturado' && v.Falso_Flete)) return 'sinCarga';
     if (v.Resultado_Entrega === 'Rechazo') return 'rechazo';
     if (v.Resultado_Entrega === 'Parcial') return 'parcial';
     return 'entregado';
@@ -275,7 +277,7 @@
     return html;
   }
 
-  function contador() { return { viajes: 0, entregado: 0, parcial: 0, rechazo: 0, pendiente: 0, enViaje: 0, km: 0 }; }
+  function contador() { return { viajes: 0, entregado: 0, parcial: 0, rechazo: 0, pendiente: 0, sinCarga: 0, enViaje: 0, km: 0 }; }
 
   function sumar(c, v) {
     c.viajes++;
@@ -1298,10 +1300,10 @@
     if (v.Estado === 'Registrado' && !directo && fin && fin < hoy) {
       motivos.push({ orden: 1, fecha: fin, estado: 'Sin cerrar', detalle: 'Terminó el ' + SGTL.fecha(fin) + ': falta marcarlo listo para facturar' });
     }
-    if ((v.Estado === 'Entregado' || v.Estado === 'Listo_para_facturar') && !v.EnProforma_ID) {
+    if ((v.Estado === 'Entregado' || v.Estado === 'Listo_para_facturar' || v.Estado === 'Sin_carga') && !v.EnProforma_ID) {
       var dias = entrega ? diasEntre(entrega, hoy) : 0;
       if (dias > DIAS_SIN_PROFORMA) {
-        motivos.push({ orden: 2, fecha: entrega, estado: 'Sin proforma', detalle: (v.Estado === 'Entregado' ? 'Entregado' : 'Listo para facturar') + ' hace ' + dias + ' días' });
+        motivos.push({ orden: 2, fecha: entrega, estado: 'Sin proforma', detalle: SGTL.textoEstadoViaje(v.Estado) + ' hace ' + dias + ' días' });
       }
     }
     // La evidencia es solo de clientes directos y ya no se puede adjuntar una vez facturado.
@@ -1333,10 +1335,11 @@
       buscarViajes(null, null, 'En_viaje'),
       buscarViajes(null, sumarDias(hoy, -1), 'Registrado'),
       buscarViajes(null, null, 'Entregado'),
-      buscarViajes(null, null, 'Listo_para_facturar')
+      buscarViajes(null, null, 'Listo_para_facturar'),
+      buscarViajes(null, null, 'Sin_carga')
     ];
-    $.when.apply($, pedidos.concat([catalogos])).done(function (enViaje, registrados, entregados, listos) {
-      var filas = enViaje.concat(registrados, entregados, listos).map(function (v) {
+    $.when.apply($, pedidos.concat([catalogos])).done(function (enViaje, registrados, entregados, listos, sinCarga) {
+      var filas = enViaje.concat(registrados, entregados, listos, sinCarga).map(function (v) {
         registrarViaje(v);
         return { viaje: v, motivos: motivosRevisar(v, ahora, hoy) };
       }).filter(function (f) { return f.motivos.length; });

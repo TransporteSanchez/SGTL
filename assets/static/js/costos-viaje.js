@@ -38,12 +38,15 @@
   function recorrido(c, calculando) {
     if (!c.Galpon_Configurado) return dato('Recorrido completo', '<span class="text-muted">Falta cargar el galpón en Gestionar empresa.</span>');
     var faltante = calculando ? 'Calculando…' : 'Sin calcular';
+    var galpon = c.Galpon ? 'Galpón (' + c.Galpon + ')' : 'Galpón';
     return dato('Recorrido completo',
       '<ul class="list-unstyled mb-1">' +
       // El galpón de este viaje, nombrado (punto 28 de la §41: puede haber más de uno).
-      tramo(c.Galpon ? 'Galpón (' + c.Galpon + ')' : 'Galpón', c.Origen || 'Origen', c.Km_Ida, faltante) +
-      tramo(c.Origen || 'Origen', c.Destino || 'Destino', c.Km_Ruta, 'Sin km') +
-      tramo(c.Destino || 'Destino', 'Galpón', c.Km_Vuelta, faltante) +
+      tramo(galpon, c.Origen || 'Origen', c.Km_Ida, faltante) +
+      // Sin carga (punto 10 de la §41): del origen vuelve al galpón, sin ir al destino.
+      (c.Sin_Carga
+        ? tramo(c.Origen || 'Origen', 'Galpón', c.Km_Ida, faltante)
+        : tramo(c.Origen || 'Origen', c.Destino || 'Destino', c.Km_Ruta, 'Sin km') + tramo(c.Destino || 'Destino', 'Galpón', c.Km_Vuelta, faltante)) +
       '<li class="d-flex justify-content-between gap-3 fw-bold border-top pt-1 mt-1"><span>Total</span><span class="text-nowrap">' +
       (c.Km_Total == null ? '—' : esc(km(c.Km_Total))) + '</span></li></ul>' +
       (c.Km_Total == null && !calculando ? suave('Los km al galpón se calculan con Google Maps al abrir el detalle.') : ''));
@@ -148,10 +151,12 @@
     }
     pedir(viajeId).then(function (c) {
       if (!sigueAbierto()) return;
-      var faltan = c.Galpon_Configurado && (c.Km_Ida == null || c.Km_Vuelta == null);
+      // Sin carga solo hacen falta los km al origen.
+      var faltaVuelta = c.Km_Vuelta == null && !c.Sin_Carga;
+      var faltan = c.Galpon_Configurado && (c.Km_Ida == null || faltaVuelta);
       if (!faltan || !window.SGTLGalpon) { mostrar(contenedor, c); return; }
       mostrar(contenedor, c, true);
-      window.SGTLGalpon.completar({ origen: c.Km_Ida == null ? c.OrigenID : null, destino: c.Km_Vuelta == null ? c.DestinoID : null, galpon: c.GalponID })
+      window.SGTLGalpon.completar({ origen: c.Km_Ida == null ? c.OrigenID : null, destino: faltaVuelta ? c.DestinoID : null, galpon: c.GalponID })
         .then(function () { return pedir(viajeId); })
         .then(function (nuevo) { if (sigueAbierto()) mostrar(contenedor, nuevo); }, function () { if (sigueAbierto()) mostrar(contenedor, c); });
     }, function (error) {

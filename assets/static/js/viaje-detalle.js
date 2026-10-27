@@ -45,7 +45,7 @@
     return listas;
   }
 
-  // Importe del viaje: el que guardó al calcular su tarifa con la tabla de tarifas (con el falso flete y la estadía).
+  // Importe del viaje: el que guardó al calcular su tarifa con la tabla de tarifas (con el viaje sin carga y la estadía).
   function importe(v) {
     if (v.Importe == null) return Promise.resolve(null);
     var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0;
@@ -129,7 +129,12 @@
       ? '<a href="' + API + '/Viajes/' + encodeURIComponent(v.Viaje_ID) + '/Evidencia" target="_blank" rel="noopener"><i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</a>'
       : '<span class="suave">' + (rukas ? 'Sin adjuntar (la constancia está en Rukas)' : 'Sin adjuntar') + '</span>';
     var cancelado = v.Estado === 'Cancelado';
-    var entrega = cancelado && !entregado
+    // Sin carga (punto 10 de la §41): llegó al origen y no había carga; el día y lo que anotaron.
+    var sinCarga = v.Estado === 'Sin_carga' || (v.Estado === 'Facturado' && v.Falso_Flete && !v.Resultado_Entrega);
+    var entrega = sinCarga
+      ? par(dato('Resultado', SGTL.estadoViaje('Sin_carga') + '<div class="suave">Llegó al origen y no había carga.</div>'),
+          dato('Fecha', texto(SGTL.fecha(v.Fecha_Entrega)))) + (v.Sin_Carga_Observacion ? dato('Observación', texto(v.Sin_Carga_Observacion)) : '')
+      : cancelado && !entregado
       ? dato('Resultado', '<span class="suave">No se hizo: el viaje está cancelado.</span>')
       : entregado
       ? par(dato('Resultado', v.Resultado_Entrega ? SGTL.estado(v.Resultado_Entrega, v.Resultado_Entrega, COLOR_RESULTADO[v.Resultado_Entrega]) : '—'),

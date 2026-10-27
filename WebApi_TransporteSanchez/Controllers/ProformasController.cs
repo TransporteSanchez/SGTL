@@ -1084,7 +1084,9 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                         if (reservados.Contains(f.Viaje_ID)) { enOtraProforma.Add(f.Viaje_ID); continue; }
                         if (f.Estado == "Facturado") { facturados.Add(f.Viaje_ID); continue; }
                         if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }
-                        if (!conPlataforma && f.Estado != "Entregado") { noEntregados.Add(f.Viaje_ID); continue; }
+                        // Sin carga (punto 10 de la §41) se cobra como un entregado, con el porcentaje de la tabla.
+                        bool sinCarga = f.Estado == "Sin_carga";
+                        if (!conPlataforma && f.Estado != "Entregado" && !sinCarga) { noEntregados.Add(f.Viaje_ID); continue; }
 
                         var calculo = ImporteViaje(tarifas, f.Viaje_ID);
                         if (calculo.PresupuestoInvalido)
@@ -1093,7 +1095,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                         if (importe <= 0) { sinTarifa.Add(f.Viaje_ID); continue; }
 
                         if (conPlataforma && f.Estado == "Registrado") registrados.Add(f.Viaje_ID);
-                        if (!conPlataforma && !f.Tiene_Evidencia) sinEvidencia.Add(f.Viaje_ID);
+                        if (!conPlataforma && !f.Tiene_Evidencia && !sinCarga) sinEvidencia.Add(f.Viaje_ID);
                         // Parcial o con rechazo: se cobra completo (el viaje se hizo; Rocío, 27/10), pero se avisa. Con plataforma
                         // no: lo que se cobra lo dice el Excel de Rukas.
                         bool noCompleto = !conPlataforma && (f.Resultado_Entrega == "Parcial" || f.Resultado_Entrega == "Rechazo");
@@ -1105,7 +1107,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                             Descripcion = f.Fecha_Inicio.ToString("dd/MM/yyyy") +
                                           (string.IsNullOrWhiteSpace(f.Num_Transporte) ? "" : (" - Transporte " + f.Num_Transporte)) +
                                           (string.IsNullOrWhiteSpace(f.Num_Remito) ? "" : (" - Remito " + f.Num_Remito)) +
-                                          (string.IsNullOrWhiteSpace(f.Num_de_Carga) ? "" : (" - Entrega " + f.Num_de_Carga)),
+                                          (string.IsNullOrWhiteSpace(f.Num_de_Carga) ? "" : (" - Entrega " + f.Num_de_Carga)) +
+                                          (sinCarga ? " - Sin carga" : ""),
                             Cantidad = 1, Unidad = "Viaje", PrecioUnitario = Redondear(importe), DescuentoPct = 0, IvaPct = 21,
                             Resultado_Entrega = noCompleto ? f.Resultado_Entrega : null
                         });

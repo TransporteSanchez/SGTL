@@ -71,6 +71,7 @@
   // Qué puede hacer el chofer con el viaje (decisiones de Rocío, 24/10). Con hoyIso, un viaje se inicia solo el día de su
   // fecha de inicio (Rocío, 27/10, punto 33 de la §41): si sale otro día, administración corrige antes la fecha y la hora.
   //   paso: el siguiente paso del circuito ({ accion: 'iniciar' | 'entregar', texto, motivo si no se puede }) o null;
+  //   sinCarga: en viaje, "Registrar sin carga" (llegó al origen y no había carga; punto 10 de la §41) o null;
   //   reemplazar: si puede cambiar la evidencia; ver: si hay evidencia para abrir; nota: aclaración debajo.
   // La evidencia se sube al registrar la entrega (es obligatoria): después solo se reemplaza. Un viaje entregado antes
   // de que fuera obligatoria (22/10) y sin evidencia no ofrece nada: la carga la administración en Gestionar viajes.
@@ -83,7 +84,7 @@
   }
 
   function accionesDe(v, hoyIso) {
-    var r = { paso: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
+    var r = { paso: null, sinCarga: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
     var estadoViaje = v.Estado || 'Registrado';
     // Un cancelado (no se hizo) queda en Anteriores con su etiqueta y sin botones.
     if (estadoViaje === 'Cancelado') {
@@ -100,6 +101,7 @@
       r.paso = { accion: 'iniciar', texto: 'Iniciar viaje', motivo: bloquea ? 'No se puede iniciar el viaje: está en la proforma ' + bloquea : motivoFechaParaIniciar(v, hoyIso) };
     } else if (estadoViaje === 'En_viaje') {
       r.paso = { accion: 'entregar', texto: 'Registrar entrega', motivo: bloquea ? 'No se puede registrar la entrega: el viaje está en la proforma ' + bloquea : '' };
+      r.sinCarga = { accion: 'sin-carga', texto: 'Registrar sin carga', motivo: bloquea ? 'No se puede registrar sin carga: el viaje está en la proforma ' + bloquea : '' };
     } else {
       r.reemplazar = !!v.Tiene_Evidencia;
     }
@@ -147,6 +149,8 @@
     if (!esDirecto(v)) return soloFecha(v.Fecha_Inicio) > hoy ? null : pasaron(v.Fecha_Fin || v.Fecha_Inicio, 'del viaje');
     if (estadoViaje === 'En_viaje') return '';
     if (estadoViaje === 'Entregado') return pasaron(v.Fecha_Entrega || v.Fecha_Fin || v.Fecha_Inicio, 'de la entrega');
+    // Sin carga, como una entrega: desde el día que llegó al origen.
+    if (estadoViaje === 'Sin_carga') return pasaron(v.Fecha_Entrega || v.Fecha_Fin || v.Fecha_Inicio, 'del viaje');
     return null;
   }
 
@@ -170,6 +174,8 @@
 
   // Km del recorrido completo: los del viaje más los del galpón al origen y del destino al galpón (null si falta alguno).
   function kmRecorridoCompleto(v) {
+    // Sin carga (punto 10 de la §41): del origen volvió al galpón, los km al origen ida y vuelta.
+    if (v.Estado === 'Sin_carga') return v.Km_Ida == null ? null : Math.round(Number(v.Km_Ida) * 2 * 10) / 10;
     var t = String(v.Distancia_KM == null ? '' : v.Distancia_KM).trim();
     if (t.indexOf(',') >= 0) t = t.replace(/\./g, '').replace(',', '.');
     var viaje = t ? Number(t) : NaN;
@@ -285,17 +291,18 @@
     return html;
   }
 
-  function botonPaso(v, paso) {
-    var icono = paso.accion === 'iniciar' ? 'bi-play-circle' : 'bi-check2-circle';
+  function botonPaso(v, paso, clase) {
+    var icono = paso.accion === 'iniciar' ? 'bi-play-circle' : paso.accion === 'sin-carga' ? 'bi-slash-circle' : 'bi-check2-circle';
+    clase = clase || 'btn-success';
     var contenido = '<i class="bi ' + icono + ' me-1" aria-hidden="true"></i>' + esc(paso.texto);
     // Deshabilitado con el motivo (§1.4) escrito debajo: en el celular no hay globitos. Sin aria-label, que el estilo
     // del sistema reserva para los botones de solo ícono (§12).
     if (paso.motivo) {
-      var idMotivo = 'motivo-viaje-' + esc(v.Viaje_ID);
-      return '<button type="button" class="btn btn-success" disabled aria-describedby="' + idMotivo + '">' + contenido + '</button>' +
+      var idMotivo = 'motivo-' + paso.accion + '-' + esc(v.Viaje_ID);
+      return '<button type="button" class="btn ' + clase + '" disabled aria-describedby="' + idMotivo + '">' + contenido + '</button>' +
         '<div class="form-text mt-0 w-100" id="' + idMotivo + '">' + esc(paso.motivo) + '.</div>';
     }
-    return '<button type="button" class="btn btn-success" data-accion="' + paso.accion + '" data-id="' + esc(v.Viaje_ID) + '">' + contenido + '</button>';
+    return '<button type="button" class="btn ' + clase + '" data-accion="' + paso.accion + '" data-id="' + esc(v.Viaje_ID) + '">' + contenido + '</button>';
   }
 
   // La distancia que ve el chofer (Rocío, 24/10): la del recorrido completo, que es la que hace de verdad, con la de
@@ -303,6 +310,7 @@
   // destino, aclarada igual.
   function distanciaDelViaje(v) {
     var total = kmRecorridoCompleto(v);
+    if (v.Estado === 'Sin_carga' && total != null) return dato('Recorrido completo', esc(SGTL.km(total)) + ' km<div class="suave">galpón → origen → galpón</div>');
     var deOrigenADestino = kmTexto(v.Distancia_KM);
     if (total == null) return dato('Distancia', esc(deOrigenADestino) + (deOrigenADestino ? '<div class="suave">de origen a destino</div>' : ''));
     return dato('Recorrido completo', esc(SGTL.km(total)) + ' km<div class="suave">' + esc(deOrigenADestino) + ' de origen a destino</div>');
@@ -316,7 +324,7 @@
       distanciaDelViaje(v) +
       si(v.Num_Remito, 'Número de remito', texto(v.Num_Remito)) +
       (esDirecto(v) ? '' : si(v.Num_Transporte, 'N° transporte SAP', texto(v.Num_Transporte)) + si(v.Num_de_Carga, 'N° entrega Rukas', texto(v.Num_de_Carga))) +
-      (v.Fecha_Entrega ? dato('Fecha de entrega', esc(SGTL.fecha(v.Fecha_Entrega))) : '') +
+      (v.Fecha_Entrega ? dato(v.Estado === 'Sin_carga' ? 'Fecha' : 'Fecha de entrega', esc(SGTL.fecha(v.Fecha_Entrega))) : '') +
       (v.Tiene_Evidencia ? dato('Evidencia', '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-evidencia" data-id="' +
         esc(v.Viaje_ID) + '"><i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</button>') : '') +
       (estado.gastos && v.Gastos_Cantidad ? dato('Gastos', '<button type="button" class="btn btn-link p-0 align-baseline" data-accion="ver-gastos" data-id="' +
@@ -324,6 +332,7 @@
 
     var botones = [];
     if (a.paso) botones.push(botonPaso(v, a.paso));
+    if (a.sinCarga) botones.push(botonPaso(v, a.sinCarga, 'btn-outline-secondary'));
     if (a.reemplazar) {
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-camera me-1" aria-hidden="true"></i>Reemplazar evidencia</button>');
@@ -547,6 +556,31 @@
     }).then(function (hecho) {
       if (!hecho) return;
       SGTL.toastExito('Viaje #' + id + ' en viaje.');
+      cargar();
+    });
+  }
+
+  // Sin carga (punto 10 de la §41; antes "falso flete"): llegó al origen y no había carga. El viaje se cierra así; si después
+  // hay carga, administración registra otro viaje. Lo que se cobra lo calcula la API.
+  function registrarSinCarga(id) {
+    var v = estado.porId[id];
+    if (!v) return;
+    SGTL.confirmar({
+      titulo: '¿Registrar el viaje #' + id + ' sin carga?',
+      mensaje: 'Llegaste a ' + (v.Origen || 'el origen') + ' y no había carga: el viaje se cierra así. Si después hay carga, administración registra otro viaje.',
+      verbo: 'Registrar sin carga',
+      motivo: { etiqueta: 'Observación', obligatorio: false, placeholder: 'Por ejemplo: la planta no tenía la carga lista', ayuda: 'Opcional. Queda en el viaje.' },
+      accion: function (observacion) {
+        return pedir({
+          url: API + '/HojaDeRuta/Viajes/' + encodeURIComponent(id) + '/SinCarga',
+          type: 'POST',
+          contentType: 'application/json',
+          data: JSON.stringify({ Observacion: observacion || null })
+        }, 'No se pudo registrar el viaje sin carga. Probá de nuevo.');
+      }
+    }).then(function (hecho) {
+      if (!hecho) return;
+      SGTL.toastExito('Viaje #' + id + ' sin carga.');
       cargar();
     });
   }
@@ -947,6 +981,7 @@
       var accion = boton.getAttribute('data-accion');
       if (accion === 'iniciar') iniciarViaje(id);
       else if (accion === 'entregar') abrirEntrega(id);
+      else if (accion === 'sin-carga') registrarSinCarga(id);
       else if (accion === 'evidencia') abrirEvidencia(id);
       else if (accion === 'ver-evidencia') verEvidencia(id);
       else if (accion === 'ver-mapa') verMapa(id);

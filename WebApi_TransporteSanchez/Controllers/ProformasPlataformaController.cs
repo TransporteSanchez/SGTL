@@ -516,7 +516,7 @@ WHERE Proforma_ID=@id;",
                 "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Fecha_Inicio, " +
                 "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino " +
                 "FROM dbo.VIAJES v LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID " +
-                "WHERE v.ClienteID=@cli AND v.Estado IN ('Registrado','Listo_para_facturar') " +
+                "WHERE v.ClienteID=@cli AND v.Estado IN ('Registrado','Listo_para_facturar','Sin_carga') " +
                 "  AND RTRIM(ISNULL(v." + columna + ",'')) <> '' " +
                 "  AND NOT EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv JOIN dbo.PROFORMAS p ON p.Proforma_ID = pv.ProformaID " +
                 "                  WHERE pv.ViajeID = v.Viaje_ID AND p.Estado <> 'Anulada') " +

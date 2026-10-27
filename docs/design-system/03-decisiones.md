@@ -30,7 +30,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
 | Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)`; lo que acompaña al estado: `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))` |
-| Estado de un viaje (§4.1) | `SGTL.estadoViaje(estado)` (con su texto: "En_viaje" → "En viaje"; Cancelado en rojo); los textos para un filtro: `SGTL.estadosViaje()` |
+| Estado de un viaje (§4.1) | `SGTL.estadoViaje(estado)` (con su texto: "En_viaje" → "En viaje"; Cancelado en rojo, Sin carga en azul); los textos para un filtro: `SGTL.estadosViaje()` |
 | Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
 | Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
@@ -327,7 +327,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Color | Significa | Estados |
 |---|---|---|
 | Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión; en la tabla de tarifas (24/10): Anterior, Próxima |
-| Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
+| Azul | En curso | En viaje, Entregado, Sin carga (viaje, 27/10), Generada, Modificación (auditoría) |
 | Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
 | Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10), Vigente (tabla de tarifas, 24/10) |
 | Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10), Cancelado (viaje que no se hizo, 27/10) |

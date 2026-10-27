@@ -259,7 +259,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             {
                 t = Vigente(db, p.FechaInicio, p.ClienteID);
                 if (t == null)
-                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el falso flete y la estadía. Cargala en Gestionar tarifas.");
+                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el viaje sin carga y la estadía. Cargala en Gestionar tarifas.");
             }
             return SumarAdicionales(r, t, p.FalsoFlete, p.EstadiaModulos);
         }
@@ -271,7 +271,8 @@ namespace WebApi_TransporteSanchez.Tarifas
             r.Estadia = 0;
             r.FalsoFletePorcentaje = null;
             r.EstadiaModulo = null;
-            // "…, 1ª vuelta: $ 645.535,00 · falso flete (60 %): $ 387.321,00 · estadía (1 módulo): $ 96.577,00" (M15, 25/10).
+            // "…, 1ª vuelta: $ 645.535,00 · sin carga (60 %): $ 387.321,00 · estadía (1 módulo): $ 96.577,00" (M15, 25/10; "sin
+            // carga" en lugar de "falso flete", punto 10 de la §41).
             var detalle = r.TarifaDetalle + ": " + Pesos(r.ImporteBase);
             decimal importe = r.ImporteBase;
 
@@ -281,7 +282,7 @@ namespace WebApi_TransporteSanchez.Tarifas
                 r.FalsoFletePorcentaje = t.Falso_Flete_Porcentaje;
                 r.FalsoFlete = conFalso - r.ImporteBase;
                 importe = conFalso;
-                detalle += " · falso flete (" + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %): " + Pesos(conFalso);
+                detalle += " · sin carga (" + t.Falso_Flete_Porcentaje.ToString("0.##", EsAr) + " %): " + Pesos(conFalso);
             }
             if (t != null && estadiaModulos > 0)
             {

@@ -3781,7 +3781,8 @@ como presentación). Los números son los del listado de Rocío.
   grilla, la persona la revisa y guarda con las mismas validaciones. Falta el Excel real de la empresa para ver su
   formato. El aviso de valores que no suben ya existe ("Revisá estos valores": la 2ª vuelta más cara que la 1ª o una
   banda más barata que la anterior), y no impide guardar (decisión del 25/10).
-- [ ] **10. Falso flete.** Hoy se puede marcar en cualquier estado antes de facturar, desde Gestionar viajes; el importe
+- [x] **10. Falso flete → "Sin carga".** Hecho (27/10), subido, pendiente de probar en la VM (pasos abajo). Antes se podía
+  marcar en cualquier estado antes de facturar, desde Gestionar viajes; el importe
   pasa a ser el 60 % de la tarifa (no se suma: la reemplaza), aunque el detalle se lee como un adicional. Pedido de
   Rocío: se sabe recién cuando el camión llega al origen y no hay carga, así que se marca solo con el viaje En viaje, lo
   puede marcar el chofer desde su hoja de ruta (con una observación) o un operador, el viaje se cierra con un estado
@@ -3789,6 +3790,27 @@ como presentación). Los números son los del listado de Rocío.
   estado "Sin carga", acción "Registrar sin carga", importe "Viaje sin carga (60 % de la tarifa)"). A decidir: si se
   factura como un viaje entregado (Traer viajes de proformas es de Facu: avisarle), qué pasa con los clientes con
   plataforma (¿Rukas lo paga?), los gastos del chofer y el recorrido completo (galpón → origen → galpón).
+  **Cómo quedó (Rocío, 27/10: "no quiero usar la palabra falso flete"):** estado **"Sin carga"** (azul, como Entregado),
+  desde En viaje (con plataforma, que no pasa por En viaje, desde Registrado), fuera de una proforma; vuelve al de antes
+  si fue un error. Lo marca el chofer ("Registrar sin carga" en su hoja de ruta, con observación opcional) o administración
+  (Cambiar estado, con la fecha y la observación). Se cobra el porcentaje de la tabla (la columna `Falso_Flete` de
+  siempre) y el detalle dice "sin carga (60 %)"; la casilla del formulario ya no está. Traer viajes lo trae como un
+  entregado, con "Sin carga" en la línea. Gastos del chofer, como en un entregado (hasta 2 días). Recorrido y kilometraje:
+  galpón → origen → galpón. En la tabla de tarifas, "Viaje sin carga". Para volver a ir, otro viaje. Para Claudia:
+  ¿Rukas lo paga? (lo que se cobra lo decide su Excel). `tests/viajes-flujo.test.js`. Cómo probarlo:
+  1. **Antes de recompilar**, correr `database/viajes/03_viaje_sin_carga.sql` (primero con `@Aplicar = 0`: además de las
+     restricciones, lista los viajes viejos con falso flete marcado en otro estado, para revisarlos; después `@Aplicar = 1`).
+  2. Gestionar viajes, un viaje En viaje con tabla → banderita → tarjeta **Sin carga** (azul): "Se cobra el 60 % de la
+     tarifa: $ …", la fecha (hoy) y la observación. Guardar: "Viaje #N sin carga. Se cobra $ … (60 % de la tarifa).", la
+     fila en azul con el globito (lo que se cobra y la observación) y Ver detalle con el resultado "Sin carga".
+  3. Banderita del mismo viaje → "En viaje": "Viaje #N vuelve a en viaje. Se cobra $ …" (completo).
+  4. Hoja de ruta del chofer, un viaje En viaje: "Registrar sin carga" debajo de "Registrar entrega"; confirmar con una
+     observación: "Viaje #N sin carga.", la etiqueta azul, "Recorrido completo … galpón → origen → galpón" y Cargar gasto.
+  5. Registrar proforma → Traer viajes: el sin carga viene, con "- Sin carga" en la descripción y el 60 %.
+  6. Editar un viaje: no está la casilla "Falso flete". Gestionar tarifas: el campo se llama "Viaje sin carga".
+  - [ ] **Con Facu (nota de crédito):** al anular con nota de crédito la factura de una proforma, sus viajes vuelven a
+    Entregado (o Listo para facturar). Un viaje sin carga tendría que volver a Sin carga. Está en
+    `ComprobantesController` (módulo de Facu): no se tocó.
 - [ ] **11. Los demás adicionales (estadía).** Hoy la estadía se carga a mano en módulos y se suma al importe. Los datos de
   la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
   Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos

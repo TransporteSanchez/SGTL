@@ -306,15 +306,9 @@
                                          y el aviso, lo que pasa con los otros al guardar (orden-del-dia.js). -->
                                     <div class="form-text mt-2 d-none" id="vueltaLinea"></div>
                                     <div id="ordenDelDia" class="mt-2 d-none"></div>
-                                    <!-- Se conocen después del viaje: se cargan también cuando la tarifa ya quedó fija. -->
+                                    <!-- Se conoce después del viaje: se carga también cuando la tarifa ya quedó fija. El viaje sin carga
+                                         (antes "falso flete") ya no es una casilla: es un estado (punto 10 de la §41). -->
                                     <div class="row g-3 mt-1" id="grupoAdicionales">
-                                        <div class="col-md-6">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="falsoFlete">
-                                                <label class="form-check-label" for="falsoFlete">Falso flete</label>
-                                            </div>
-                                            <div class="form-text" id="falsoFleteAyuda">Fue a cargar y no había carga: se cobra una parte del viaje.</div>
-                                        </div>
                                         <div class="col-md-6" id="grupoEstadia">
                                             <label for="estadiaModulos" class="form-label">Módulos de estadía</label>
                                             <input type="text" inputmode="numeric" class="form-control" id="estadiaModulos" value="0" maxlength="2" autocomplete="off">
@@ -549,7 +543,7 @@
 
         var viajesPagina = {};
         // En un viaje que ya salió solo se completan los números: el botón de la fila y el título del modal dicen esto (§3.1).
-        // Un viaje que ya salió se completa: remito, números de referencia, falso flete y estadía (M-f de la reprueba en la VM,
+        // Un viaje que ya salió se completa: remito, números de referencia y estadía (M-f de la reprueba en la VM,
         // 25/10: antes decía "Completar números de remito y entrega").
         var TITULO_COMPLETAR_NUMEROS = 'Completar el viaje';
 
@@ -586,6 +580,11 @@
                         (estadoPf ? ', ' + escHtml(estadoPf.toLowerCase()) : '') + '.</div>');
             }
             if (viaje.Estado === 'Cancelado') partes.push('<div>' + escHtml(SGTLDetalleViaje.textoCancelado(viaje)) + '</div>');
+            // Sin carga (punto 10 de la §41): lo que se cobra y lo que anotaron.
+            if (viaje.Estado === 'Sin_carga') {
+                partes.push('<div>Sin carga: se cobra <strong>' + escHtml(SGTL.monto(viaje.Importe)) + '</strong>.</div>' +
+                    (viaje.Sin_Carga_Observacion ? '<div class="text-muted">' + escHtml(viaje.Sin_Carga_Observacion) + '</div>' : ''));
+            }
             // Un cancelado sigue diciendo de qué presupuesto salió aunque el presupuesto ya haya generado otro viaje.
             var presupuesto = viaje.Presupuesto_ID || viaje.Cancelado_Presupuesto_ID;
             if (presupuesto) partes.push('<div>Generado desde el <strong>presupuesto #' + escHtml(presupuesto) + '</strong>.</div>');
@@ -830,6 +829,21 @@
                                 </div>
                             </div>
                         </div>
+                        <!-- Sin carga (punto 10 de la §41): el día que llegó al origen y una observación. -->
+                        <div class="sgtl-opcion-estado-detalle" id="estadoViajeSinCarga">
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <label for="fechaSinCarga" class="form-label">Fecha <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="fechaSinCarga" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <div class="form-text">El día que llegó al origen.</div>
+                                </div>
+                                <div class="col-12">
+                                    <label for="observacionSinCarga" class="form-label">Observación</label>
+                                    <textarea class="form-control" id="observacionSinCarga" rows="2" maxlength="300" placeholder="Por ejemplo: la planta no tenía la carga lista"></textarea>
+                                    <div class="form-text">Opcional. Queda en el viaje y en Auditoría.</div>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Cancelar (caso E de docs/diseno/viajes-diseno.md): el motivo y lo que pasa con los otros viajes del día. -->
                         <div class="sgtl-opcion-estado-detalle" id="estadoViajeCancelar">
                             <label for="motivoCancelado" class="form-label">Motivo <span class="text-danger">*</span></label>
@@ -929,7 +943,7 @@
         function estadiaModulos() { var n = parseInt($('#estadiaModulos').val(), 10); return n > 0 ? n : 0; }
 
         // La tabla de tarifas que vale en una fecha (AAAA-MM-DD) para el cliente del viaje (la propia o la general), para el
-        // falso flete, la estadía y su ayuda.
+        // viaje sin carga, la estadía y su ayuda.
         function tarifarioVigente(fecha) {
             var cliente = $('#clienteSelect').val() || 0, clave = fecha + '|' + cliente;
             if (!fecha) return Promise.resolve(null);
@@ -941,23 +955,22 @@
         }
         function actualizarAyudaAdicionales() {
             tarifarioVigente(fechaInicioViaje()).then(function (t) {
-                $('#falsoFleteAyuda').text(t ? 'Fue a cargar y no había carga: se cobra el ' + porcentaje(t.Falso_Flete_Porcentaje) + ' del viaje.'
-                    : 'Fue a cargar y no había carga: se cobra una parte del viaje.');
                 $('#estadiaAyuda').text(t ? 'Módulo de ' + t.Estadia_Horas_Modulo + ' hs: ' + SGTL.monto(t.Estadia_Modulo) + '. Corre después de '
                     + t.Estadia_Desde_Horas + ' hs de iniciado el servicio (' + t.Estadia_Desde_Horas_Larga + ' hs si son más de ' + t.Km_Banda3 + ' km).' : '');
             });
         }
 
-        // El importe del viaje: la base y, si hay, falso flete y estadía. Va en la línea de la tarifa o, si la tarifa ya
-        // quedó fija, en el dato fijo del bloque.
+        // El importe del viaje: la base y, si hay, sin carga (lo pone el estado) y estadía. Va en la línea de la tarifa o, si la
+        // tarifa ya quedó fija, en el dato fijo del bloque.
+        var sinCargaGuardado = false;
         function mostrarImporte() {
             if (!baseTarifa) return;
-            var base = baseTarifa, falso = $('#falsoFlete').is(':checked'), modulos = estadiaModulos();
+            var base = baseTarifa, falso = sinCargaGuardado, modulos = estadiaModulos();
             var pintar = function (t) {
                 var total = Number(base.importe), partes = [];
                 if (falso) {
                     var conFalso = redondear(base.importe * t.Falso_Flete_Porcentaje / 100);
-                    partes.push('falso flete (' + porcentaje(t.Falso_Flete_Porcentaje) + '): ' + SGTL.monto(conFalso));
+                    partes.push('sin carga (' + porcentaje(t.Falso_Flete_Porcentaje) + '): ' + SGTL.monto(conFalso));
                     total = conFalso;
                 }
                 if (modulos > 0) {
@@ -965,7 +978,7 @@
                     partes.push('estadía (' + modulos + (modulos === 1 ? ' módulo' : ' módulos') + '): ' + SGTL.monto(estadia));
                     total = redondear(total + estadia);
                 }
-                // "$ 483.898,00 sin IVA · Tarifas … · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ 645.535,00 · falso flete
+                // "$ 483.898,00 sin IVA · Tarifas … · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ 645.535,00 · sin carga
                 // (60 %): …" (M15 de la prueba en la VM del 25/10).
                 var html = '<strong>' + SGTL.monto(total) + '</strong><span>sin IVA · ' + SGTL.escapar(base.detalle)
                     + (partes.length ? ': ' + SGTL.monto(base.importe) + ' · ' + SGTL.escapar(partes.join(' · ')) : '') + '</span>';
@@ -976,7 +989,7 @@
             tarifarioVigente(fecha).then(function (t) {
                 if (base !== baseTarifa) return;
                 if (t) { pintar(t); return; }
-                var aviso = 'No hay una tabla de tarifas vigente el ' + SGTL.fecha(fecha) + ' para calcular el falso flete y la estadía. Cargala en ' + ENLACE_TARIFAS + '.';
+                var aviso = 'No hay una tabla de tarifas vigente el ' + SGTL.fecha(fecha) + ' para calcular el viaje sin carga y la estadía. Cargala en ' + ENLACE_TARIFAS + '.';
                 if (rutaFija()) $('#fijoTarifa').html(aviso); else setTarifaInfo(aviso, 'falta');
             });
         }
@@ -1249,7 +1262,7 @@
             $('#distanciaKm').val('');
             limpiarRutaViaje();
             resolverTarifa();
-            // Cada cliente puede tener su tabla de tarifas: cambian el falso flete y la estadía.
+            // Cada cliente puede tener su tabla de tarifas: cambian el viaje sin carga y la estadía.
             actualizarAyudaAdicionales();
             if ($('#clienteBuscar').hasClass('is-invalid')) formularioViaje.validar('clienteBuscar');
         }
@@ -1457,9 +1470,9 @@
             if (viajeBloqueado) {
                 var plataforma = clienteConPlataforma();
                 if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
-                // También se cargan el falso flete y la estadía (§34; M16 de la prueba en la VM del 25/10).
+                // También se carga la estadía (§34; M16 de la prueba en la VM del 25/10). Sin carga es un estado.
                 else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
-                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ', el falso flete y la estadía'
+                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ' y la estadía'
                     + (estado === 'En_viaje' ? ', y se puede cambiar el camión o el chofer. Si cambia el recorrido, registrá otro viaje.' : '.');
             } else if (presupuestoDelViaje) {
                 tipo = 'info';
@@ -1483,7 +1496,7 @@
             ocupado = { CamionID: '', ChoferID: '' };
             $('#precioRevisarViaje').empty();
             baseTarifa = null;
-            $('#falsoFlete').prop('checked', false);
+            sinCargaGuardado = false;
             $('#estadiaModulos').val('0');
             bloquearDatosDelViaje(null);
             $('#origenSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
@@ -1567,7 +1580,7 @@
                                 });
                             });
                         }
-                        $('#falsoFlete').prop('checked', !!v.Falso_Flete);
+                        sinCargaGuardado = !!v.Falso_Flete;
                         $('#estadiaModulos').val(v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0);
                         viajeEditado = { ChoferID: v.ChoferID, CamionID: v.CamionID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
                         bloquearDatosDelViaje(v);
@@ -1615,7 +1628,8 @@
                 Tarifa_Modo: tipo === 'km' ? 'Km' : 'Fija',
                 // La vuelta la decide la API (§43).
                 Vuelta: null,
-                Falso_Flete: $('#falsoFlete').is(':checked'),
+                // Sin carga lo pone el estado: la API conserva el guardado.
+                Falso_Flete: sinCargaGuardado,
                 Estadia_Modulos: estadiaModulos(),
                 ClienteID: parseInt($('#clienteSelect').val()) || 0,
                 Usu_Alta: usuarioActual(),
@@ -1751,7 +1765,9 @@
             En_viaje: { texto: 'El camión salió con la carga.', aviso: 'en viaje' },
             Entregado: { texto: 'Se entregó. Indicá el resultado y la fecha, y adjuntá el remito firmado.', aviso: 'entregado' },
             Listo_para_facturar: { texto: 'La entrega ya figura en Rukas y el viaje tiene los números y la tarifa para facturar.', aviso: 'listo para facturar' },
-            Cancelado: { texto: 'No se hizo: el cliente lo canceló o se suspendió. No se cobra y libera el camión y el chofer.', aviso: 'cancelado' }
+            Cancelado: { texto: 'No se hizo: el cliente lo canceló o se suspendió. No se cobra y libera el camión y el chofer.', aviso: 'cancelado' },
+            // Punto 10 de la §41 (antes "falso flete"): prepararSinCarga completa cuánto se cobra.
+            Sin_carga: { texto: 'Llegó al origen y no había carga. Se cobra una parte de la tarifa.', aviso: 'sin carga' }
         };
 
         function esDirecto(v) { return (v.Tipo_Cliente || 'Directo') !== 'Con_plataforma'; }
@@ -1765,10 +1781,14 @@
         function antesDeLaEntrega(v, e) { var flujo = flujoDeViaje(v); return !!e && flujo.indexOf(e) < flujo.indexOf(estadoDeEntrega(v)); }
 
         // Cancelado (caso E de docs/diseno/viajes-diseno.md): desde Registrado; un cancelado solo vuelve a Registrado.
+        // Sin carga (punto 10 de la §41): desde En viaje (con plataforma, que no pasa por En viaje, desde Registrado); vuelve atrás
+        // si fue un error.
         function estadosPosibles(v) {
             if (v.Estado === 'Cancelado') return ['Registrado'];
+            if (v.Estado === 'Sin_carga') return [esDirecto(v) ? 'En_viaje' : 'Registrado'];
             var flujo = flujoDeViaje(v), i = flujo.indexOf(v.Estado);
             var posibles = flujo.filter(function (e, j) { return e !== 'Facturado' && e !== v.Estado && (i < 0 || Math.abs(j - i) <= 1); });
+            if (esDirecto(v) ? v.Estado === 'En_viaje' : viajeRegistrado(v.Estado)) posibles = posibles.concat('Sin_carga');
             return viajeRegistrado(v.Estado) ? posibles.concat('Cancelado') : posibles;
         }
 
@@ -1783,6 +1803,7 @@
         }
 
         function textoOpcionEstado(v, e) {
+            if (v.Estado === 'Sin_carga') return 'Había carga: vuelve a ' + (e === 'En_viaje' ? 'en viaje' : 'registrado') + ' y se cobra la tarifa completa.';
             var texto = ESTADOS_VIAJE[e].texto;
             if (e === 'En_viaje' && v.Estado === 'Entregado') texto = 'Todavía no se entregó.';
             if (e === 'Registrado' && v.Estado === 'Listo_para_facturar') texto = 'Deja de estar listo para facturar y se puede editar todo.';
@@ -1806,11 +1827,13 @@
                 (esDirecto(v) ? '' : ' · Transporte ' + textoRef(v.Num_Transporte)) + ' · Remito ' + textoRef(v.Num_Remito));
             $('#estadoViajeActual').html(badgeEstadoViaje(v.Estado));
 
-            // Los datos de la entrega y el motivo vuelven a su lugar antes de redibujar las tarjetas (si no, se borrarían con ellas).
-            $('#estadoViajeDeposito').append($('#estadoViajeEntrega')).append($('#estadoViajeCancelar'));
+            // Los datos de la entrega, del viaje sin carga y el motivo vuelven a su lugar antes de redibujar las tarjetas (si no, se
+            // borrarían con ellas).
+            $('#estadoViajeDeposito').append($('#estadoViajeEntrega')).append($('#estadoViajeSinCarga')).append($('#estadoViajeCancelar'));
             SGTL.reiniciarFormulario('#formEstadoViaje', '#alertaEstadoViaje');
             formularioEntrega.reiniciar();
             formularioCancelar.reiniciar();
+            formularioSinCarga.reiniciar();
             var faltan = faltanParaFacturar(v);
             // En un borrador de proforma no se cancela: primero se quita del borrador (la API controla lo mismo).
             var enBorrador = v.EnProforma_ID ? 'No se puede cancelar el viaje: está en el borrador de proforma #' + v.EnProforma_ID + '.' : '';
@@ -1821,9 +1844,10 @@
             SGTL.opcionesEstado('#estadoViajeOpciones', 'estadoViajeNuevo', posibles.map(function (e) {
                 var bloqueada = e === 'Listo_para_facturar' && faltan.length > 0;
                 if (e === 'Cancelado' && enBorrador) return { valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: true, motivo: enBorrador };
-                if (futuro && (e === 'En_viaje' || e === 'Listo_para_facturar')) {
+                if (futuro && (e === 'En_viaje' || e === 'Listo_para_facturar' || e === 'Sin_carga')) {
                     return { valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: true,
-                        motivo: (e === 'En_viaje' ? 'No se puede iniciar el viaje: es del ' : 'No se puede marcar: el viaje es del ') + futuro + '.' };
+                        motivo: (e === 'En_viaje' ? 'No se puede iniciar el viaje: es del ' : e === 'Sin_carga' ? 'No se puede marcar sin carga: el viaje es del '
+                            : 'No se puede marcar: el viaje es del ') + futuro + '.' };
                 }
                 return {
                     valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: bloqueada,
@@ -1831,6 +1855,7 @@
                 };
             }), { opcional: corrigeEntrega(v) });
             if (posibles.indexOf('Cancelado') >= 0 && !enBorrador) prepararCancelar(v);
+            if (posibles.indexOf('Sin_carga') >= 0) prepararSinCarga(v);
 
             // Los datos de la entrega van dentro de la tarjeta que la registra o, si ya está en ese estado, arriba.
             var opcional = corrigeEntrega(v);
@@ -1969,6 +1994,33 @@
             });
         }
 
+        // Sin carga: la fecha (el día que llegó al origen, entre el inicio y hoy) y una observación opcional. La tarjeta dice
+        // cuánto se cobra con el porcentaje de la tabla vigente.
+        var formularioSinCarga = SGTL.validador([{
+            id: 'fechaSinCarga', requerido: 'Elegí la fecha.',
+            validar: function (fecha) {
+                var inicio = inicioViajeEstado();
+                if (inicio && fecha < inicio) return 'No puede ser anterior al inicio del viaje (' + SGTL.fecha(inicio) + ').';
+                return fecha > SGTL.fechaISO(new Date()) ? 'No puede ser posterior a hoy.' : '';
+            }
+        }]);
+        function prepararSinCarga(v) {
+            var tarjeta = $('#estadoViajeOpciones .sgtl-opcion-estado[data-valor="Sin_carga"]');
+            tarjeta.append($('#estadoViajeSinCarga'));
+            $('#observacionSinCarga').val('');
+            var hoy = SGTL.fechaISO(new Date()), inicio = inicioViajeEstado();
+            var fecha = inicio && inicio > hoy ? '' : hoy;
+            if (window.fpSinCarga) { fpSinCarga.setDate(fecha || null, false); fpSinCarga.redraw(); } else $('#fechaSinCarga').val(fecha);
+            if (!(v.Importe_Base > 0)) return;
+            // La tabla del cliente del viaje (la propia o la general) vigente en su inicio.
+            SGTL.ajax({ url: API_VIAJES + '/Tarifario/Vigente', type: 'GET', data: { fecha: String(v.Fecha_Inicio || '').substring(0, 10), clienteId: v.ClienteID || 0 } })
+                .catch(function () { return null; }).then(function (t) {
+                if (!t || !viajeEstado || viajeEstado.Viaje_ID !== v.Viaje_ID) return;
+                tarjeta.find('.sgtl-opcion-estado-texto').first().text('Llegó al origen y no había carga. Se cobra el ' + porcentaje(t.Falso_Flete_Porcentaje)
+                    + ' de la tarifa: ' + SGTL.monto(redondear(v.Importe_Base * t.Falso_Flete_Porcentaje / 100)) + '.');
+            });
+        }
+
         function confirmarEstadoViaje(evento) {
             if (evento) evento.preventDefault();
             var id = $('#estadoViajeId').val();
@@ -1979,6 +2031,13 @@
             if (!nuevo) {
                 $('#estadoViajeOpciones').addClass('is-invalid');
                 SGTL.avisoFormulario('#alertaEstadoViaje', 'Elegí el estado nuevo.');
+                return;
+            }
+            if (nuevo === 'Sin_carga') {
+                formularioSinCarga.validarTodo();
+                if (!SGTL.revisarFormulario('#formEstadoViaje', '#alertaEstadoViaje')) return;
+                guardarEstadoViaje(v, { Estado: nuevo, Fecha_Entrega: $('#fechaSinCarga').val(), Motivo: $('#observacionSinCarga').val().trim(),
+                    Usuario: usuarioActual() }, null);
                 return;
             }
             if (nuevo === 'Cancelado') {
@@ -2023,8 +2082,8 @@
                     SGTL.modal('#ModalEstadoViaje', 'hide');
                     buscarViajes(currentPage);
                     var flujo = flujoDeViaje(v);
-                    // Cancelado o reactivado: con lo que cambió en los otros viajes del día (§43).
-                    if (dto.Estado === 'Cancelado' || v.Estado === 'Cancelado') {
+                    // Cancelado o reactivado: con lo que cambió en los otros viajes del día (§43). Sin carga: con lo que se cobra.
+                    if (dto.Estado === 'Cancelado' || v.Estado === 'Cancelado' || dto.Estado === 'Sin_carga' || v.Estado === 'Sin_carga') {
                         var texto = (r && r.Message) || ('Viaje #' + id + (dto.Estado === 'Cancelado' ? ' cancelado.' : ' reactivado.'));
                         SGTL.toastExito(window.SGTLOrdenDelDia ? SGTLOrdenDelDia.textoGuardado(texto, r && r.Orden) : texto);
                     }
@@ -2065,6 +2124,7 @@
                 window.fpInicio = SGTL.selectorFecha('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha, onClose: alCerrarFecha });
                 window.fpFin = SGTL.selectorFecha('#fechaFin', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', altInput: true, altFormat: 'd/m/Y H:i', onChange: alCambiarFecha, onClose: alCerrarFecha });
                 window.fpEntrega = SGTL.selectorFecha('#fechaEntrega', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', onDayCreate: diaEntrega });
+                window.fpSinCarga = SGTL.selectorFecha('#fechaSinCarga', { dateFormat: 'Y-m-d', altInput: true, altFormat: 'd/m/Y', onDayCreate: diaEntrega });
             }
             // Cliente y chofer: el mismo buscador que los filtros y Registrar proforma (lista que se recorre o se filtra
             // escribiendo). Va antes del validador, que se engancha al campo que se ve.
@@ -2118,7 +2178,6 @@
             $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
             // Tabla de tarifas: el camión (tipo y año del modelo) cambia la tarifa. Y puede estar ocupado (§43).
             $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); revisarOcupado(); actualizarMotivoAsignacion(); });
-            $('#falsoFlete').on('change', mostrarImporte);
             $('#estadiaModulos').on('input', mostrarImporte);
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
             // gestion-viajes.html?viaje=ID abre ese viaje para editar (enlace "Abrir viaje" del control de proforma de plataforma).

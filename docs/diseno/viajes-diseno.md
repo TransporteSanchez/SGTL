@@ -17,6 +17,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | **Directo** | Registrado → En viaje → Entregado → Facturado | De a un paso: Entregado → En viaje → Registrado. Facturado → Entregado solo con la nota de crédito |
 | **Con plataforma (Rukas)** | Registrado → Listo para facturar → Facturado | Listo para facturar → Registrado. Facturado → Listo para facturar solo con la nota de crédito |
 | **Los dos** | Registrado → **Cancelado** (no se hizo; con motivo, fuera de una proforma) | Cancelado → Registrado, si el camión y el chofer están libres y el presupuesto del que salió no generó otro viaje |
+| **Sin carga** (punto 10) | En viaje → **Sin carga** (con plataforma, desde Registrado): llegó al origen y no había carga; se cobra el % de la tabla y sigue a la proforma como un entregado | Sin carga → En viaje (o Registrado), y se cobra completo |
 
 - **Quién mueve cada paso:**
   - Registrado → En viaje: el chofer desde su hoja de ruta, **solo el día del viaje** (punto 33), o administración desde
@@ -81,8 +82,8 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 
 ### 4.3 Ya anotados que tocan este flujo
 
-- **Punto 10, viaje sin carga (falso flete):** hoy se marca en cualquier estado; la propuesta es un estado final "Sin
-  carga" desde En viaje (se junta con D).
+- **Punto 10, viaje sin carga (antes "falso flete"):** **hecho (27/10)**, un estado "Sin carga" desde En viaje (ver la
+  §41 de `docs/PENDIENTES-SISTEMA.md`).
 - **Punto 11, estadía:** hoy se carga a mano; la propuesta es que salga de las horas que registra el chofer.
 - **Punto 34, viajes pasados abiertos:** para la presentación, que los viajes viejos queden cerrados (Registrado con
   fecha pasada = "Quedó sin iniciar", En viaje pasado = "Entrega sin registrar").

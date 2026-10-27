@@ -106,6 +106,11 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? Fecha_Entrega { get; set; }
         }
 
+        public class SinCargaChoferDto
+        {
+            public string Observacion { get; set; }
+        }
+
         public class EvidenciaChoferDto
         {
             public string Nombre_Archivo { get; set; }
@@ -571,6 +576,49 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         Estado = ViajesController.EstadoEntregado,
                         Resultado_Entrega = resultado,
                         Fecha_Entrega = body.Fecha_Entrega.Value.Date,
+                        Usuario = sesion.Nombre_Usuario
+                    }), porDefecto);
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error(ex, porDefecto);
+            }
+        }
+
+        // POST api/HojaDeRuta/Viajes/{id}/SinCarga — En viaje → Sin carga (punto 10 de la §41; antes "falso flete"): el chofer
+        // llegó al origen y no había carga. Con una observación opcional; la fecha es hoy. Solo clientes directos (los de
+        // plataforma los marca administración). ViajesController calcula lo que se cobra.
+        [HttpPost, Route("Viajes/{id:int}/SinCarga")]
+        public async Task<IHttpActionResult> SinCarga(int id, [FromBody] SinCargaChoferDto body)
+        {
+            const string porDefecto = "No se pudo registrar el viaje sin carga. Probá de nuevo.";
+            try
+            {
+                SesionRow sesion;
+                ViajeDelChoferRow v;
+                DateTime hoy;
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    sesion = ValidarSesion(db);
+                    v = ViajeDelChofer(db, ChoferDe(sesion), id);
+                    hoy = db.Database.SqlQuery<DateTime>("SELECT CAST(" + SQL_HOY + " AS datetime)").First();
+                }
+                if (v == null) return NoEstaEnTuHojaDeRuta();
+                if (EsConPlataforma(v.Tipo_Cliente)) return Rechazo("No se puede registrar sin carga: lo sigue la plataforma del cliente.");
+                if (v.Estado != ViajesController.EstadoEnViaje)
+                    return Rechazo(string.IsNullOrEmpty(v.Estado) || v.Estado == ViajesController.EstadoRegistrado
+                        ? "No se puede registrar sin carga: el viaje todavía no se inició."
+                        : "No se puede registrar sin carga: el viaje está " + TextoEstado(v.Estado) + ".");
+                if (BloqueaPorProforma(v)) return Rechazo("No se puede registrar sin carga: el viaje está en la proforma " + TextoProforma(v) + ".");
+
+                using (var viajes = ViajesDelSistema())
+                {
+                    return await Ejecutar(viajes.CambiarEstado(id, new ViajesController.CambioEstadoViajeDto
+                    {
+                        Estado = ViajesController.EstadoSinCarga,
+                        Fecha_Entrega = hoy.Date,
+                        Motivo = body == null ? null : body.Observacion,
                         Usuario = sesion.Nombre_Usuario
                     }), porDefecto);
                 }
