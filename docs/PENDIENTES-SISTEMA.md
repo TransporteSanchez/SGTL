@@ -3802,6 +3802,11 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **22. Toda la lógica del flujo de viajes, en todos los escenarios:** cambios de estado, edición y el proceso completo
   hacia adelante y hacia atrás, sin huecos (el profe suele probar casos borde). Las dudas, con Rocío. Incluye los puntos
   3, 10 y 33.
+  **Revisado (27/10):** `docs/diseno/viajes-diseno.md` con el flujo como está hoy y los huecos. Para corregir (A–C): la
+  fecha de entrega puede ser futura; eliminar un viaje con gastos da un error técnico; la evidencia se puede adjuntar en
+  Registrado. Para decidir con Rocío (D–G): si el Rechazo o la entrega Parcial se cobran completos; qué pasa con un viaje
+  de un presupuesto aceptado que se cancela (hoy queda colgado); cambiar camión o chofer con el viaje en curso; si
+  administración puede iniciar un viaje de otro día sin aviso.
 - [ ] **23. Dashboard con muchos tableros:** analizar ofrecer, si la persona quiere, dividirlos por tema como en Tableros
   (todo junto o por pestañas).
 - [ ] **26. Orden de los módulos en el menú,** el que Rocío charló con Facu (el menú está en `sidebar-loader.js`, §3.1 del
