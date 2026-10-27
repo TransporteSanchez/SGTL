@@ -25,9 +25,15 @@ assert.match(listar, /comprobante\.Letra\s*=\s*c\.LetraPredeterminada/, 'la rela
 
 const crear = bloque('public IHttpActionResult CrearTipo(', '[HttpPut, Route(');
 assert.match(crear, /WHERE Tipo=@tipo AND LetraPredeterminada=@letra/, 'se impide solo el mismo par código y letra');
-assert.match(crear, /Ya existe un tipo de comprobante con ese código y letra/, 'el rechazo de un par repetido explica el conflicto');
+assert.match(crear, /Ya existe un tipo de comprobante con esa sigla y letra/, 'el rechazo de un par repetido explica el conflicto');
 assert.match(crear, /INSERT dbo\.TIPOS_COMPROBANTE/, 'el código nuevo se agrega al catálogo');
 assert.match(crear, /INSERT dbo\.FACTURACION_TIPOS_COMPROBANTE/, 'la variante se agrega a la configuración');
+const auditoriaAlta = crear.indexOf('Auditar(c, u, "ALTA"');
+const confirmacionAlta = crear.indexOf('tx.Commit()');
+assert.ok(auditoriaAlta >= 0 && auditoriaAlta < confirmacionAlta,
+    'el alta y su auditoría se confirman en la misma transacción');
+assert.match(crear.slice(auditoriaAlta, confirmacionAlta), /Auditar\(c, u, "ALTA",[\s\S]*?, tx\)/,
+    'la auditoría del alta participa de la transacción');
 
 assert.match(fuente, /Route\("tipos-comprobante\/\{id:int\}"\)/, 'edición y eliminación identifican la variante por ID');
 assert.match(fuente, /Route\("tipos-comprobante\/\{id:int\}\/estado"\)/, 'el estado identifica la variante por ID');

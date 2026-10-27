@@ -124,7 +124,7 @@ WHERE Numerador_ID=@id AND Activo=1 AND UltimoNumero<99999999;", connection, tra
         public class EstadoSucursalRequest { public bool? Activa { get; set; } }
         public class NumeradorRequest { public string Nombre { get; set; } public int UltimoNumero { get; set; } public bool Activo { get; set; } }
         public class EstadoActivoRequest { public bool? Activo { get; set; } }
-        public class TipoRequest { public string Tipo { get; set; } public string Descripcion { get; set; } public string Impacto { get; set; } public string LetraPredeterminada { get; set; } public int SucursalID { get; set; } public int NumeradorID { get; set; } public bool Activo { get; set; } }
+        public class TipoRequest { public string Tipo { get; set; } public string TipoOriginal { get; set; } public string Descripcion { get; set; } public string Impacto { get; set; } public string LetraPredeterminada { get; set; } public string LetraOriginal { get; set; } public int SucursalID { get; set; } public int NumeradorID { get; set; } public bool Activo { get; set; } public bool EsElectronico { get; set; } }
         private class UsuarioSesion { public int UsuarioID { get; set; } public string Nombre { get; set; } public bool EsAdmin { get; set; } }
 
         private static string ConnectionString()
@@ -184,7 +184,7 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
         {
             tipo = (tipo ?? string.Empty).Trim().ToUpperInvariant();
             if (tipo.Length == 0 || tipo.Length > 3 || tipo.Any(c => !((c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'))))
-                throw new ArgumentException("El código del tipo debe contener entre uno y tres caracteres alfanuméricos.");
+                throw new ArgumentException("La sigla del tipo debe contener entre uno y tres caracteres alfanuméricos.");
             return tipo;
         }
         private static string ImpactoSeguro(string impacto)
@@ -525,15 +525,19 @@ FROM dbo.FACTURACION_NUMERADORES n WHERE (@todos=1 OR n.Activo=1) ORDER BY n.Nom
         [HttpGet, Route("tipos-comprobante")]
         public IHttpActionResult Tipos()
         {
-            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT c.FactTipo_ID,t.Tipo,t.Descripcion,t.Impacto,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo,
-CAST(CASE WHEN t.Tipo IN ('FAC','ND','NC','REC')
+            try { using (var c = new SqlConnection(ConnectionString())) { c.Open(); ValidarUsuario(c, false); using (var cmd = new SqlCommand(@"SELECT c.FactTipo_ID,t.Tipo,t.Descripcion,t.Impacto,t.EsElectronico,c.LetraPredeterminada,c.SucursalID,s.Codigo AS Sucursal,c.NumeradorID,n.Nombre AS Numerador,c.Activo,
+CAST(CASE WHEN t.EsElectronico=1 OR t.Tipo IN ('FAC','ND','NC','REC')
     OR EXISTS (SELECT 1 FROM dbo.COMPROBANTES comprobante WHERE comprobante.Tipo=t.Tipo)
     THEN 0 ELSE 1 END AS bit) AS PuedeCambiarImpacto,
+CAST(CASE WHEN t.EsElectronico=1 OR t.Tipo IN ('FAC','ND','NC','REC')
+    THEN 0 ELSE 1 END AS bit) AS PuedeCambiarSigla,
+CAST(CASE WHEN t.EsElectronico=1 OR t.Tipo='REC'
+    THEN 0 ELSE 1 END AS bit) AS PuedeCambiarLetra,
 CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES comprobante WHERE comprobante.Tipo=t.Tipo
     AND (comprobante.Letra=c.LetraPredeterminada OR NULLIF(LTRIM(RTRIM(comprobante.Letra)),'') IS NULL))
     THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
 FROM dbo.FACTURACION_TIPOS_COMPROBANTE c JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
-LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo,c.LetraPredeterminada;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { FactTipo_ID = (int)r["FactTipo_ID"], Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = (bool)r["Activo"], PuedeCambiarImpacto = (bool)r["PuedeCambiarImpacto"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
+LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID=c.NumeradorID ORDER BY t.Tipo,c.LetraPredeterminada;", c)) { using (var r = cmd.ExecuteReader()) { var datos = new List<object>(); while (r.Read()) datos.Add(new { FactTipo_ID = (int)r["FactTipo_ID"], Tipo = (string)r["Tipo"], Descripcion = (string)r["Descripcion"], Impacto = (string)r["Impacto"], EsElectronico = (bool)r["EsElectronico"], LetraPredeterminada = r["LetraPredeterminada"] as string, SucursalID = r["SucursalID"] == DBNull.Value ? (int?)null : (int)r["SucursalID"], Sucursal = r["Sucursal"] as string, NumeradorID = r["NumeradorID"] == DBNull.Value ? (int?)null : (int)r["NumeradorID"], Numerador = r["Numerador"] as string, Activo = (bool)r["Activo"], PuedeCambiarImpacto = (bool)r["PuedeCambiarImpacto"], PuedeCambiarSigla = (bool)r["PuedeCambiarSigla"], PuedeCambiarLetra = (bool)r["PuedeCambiarLetra"], PuedeEliminar = (bool)r["PuedeEliminar"] }); return Ok(datos); } } } }
             catch (UnauthorizedAccessException) { return Unauthorized(); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -556,25 +560,36 @@ LEFT JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID=c.SucursalID LEFT JOIN d
                             {
                                 configuracion.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letra", letra) });
                                 if ((int)configuracion.ExecuteScalar() != 0)
-                                    throw new ArgumentException("Ya existe un tipo de comprobante con ese código y letra.");
+                                {
+                                    tx.Rollback();
+                                    return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla y letra.", codigo = "TIPO_DUPLICADO" });
+                                }
                             }
                             string descripcionActual = null, impactoActual = null;
-                            using (var existente = new SqlCommand("SELECT Descripcion,Impacto FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            bool? esElectronicoActual = null;
+                            using (var existente = new SqlCommand("SELECT Descripcion,Impacto,EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
                                 existente.Parameters.Add(P("@tipo", tipo));
                                 using (var r = existente.ExecuteReader())
-                                    if (r.Read()) { descripcionActual = (string)r["Descripcion"]; impactoActual = (string)r["Impacto"]; }
+                                    if (r.Read()) { descripcionActual = (string)r["Descripcion"]; impactoActual = (string)r["Impacto"]; esElectronicoActual = (bool)r["EsElectronico"]; }
+                            }
+                            if (esElectronicoActual == true)
+                            {
+                                tx.Rollback();
+                                return Content(HttpStatusCode.Conflict, new { error = "No se puede agregar otra letra al tipo de comprobante: es electrónico." });
                             }
                             if (impactoActual != null && !string.Equals(impactoActual.Trim(), request.Impacto, StringComparison.OrdinalIgnoreCase))
                                 throw new ArgumentException("El impacto debe coincidir con el del tipo de comprobante existente.");
                             if (descripcionActual != null && !string.Equals(descripcionActual.Trim(), request.Descripcion.Trim(), StringComparison.OrdinalIgnoreCase))
                                 throw new ArgumentException("La descripción debe coincidir con la del tipo de comprobante existente.");
+                            if (esElectronicoActual != null && esElectronicoActual.Value != request.EsElectronico)
+                                throw new ArgumentException("La condición de comprobante electrónico debe coincidir con la del tipo existente.");
                             ValidarDependenciasActivas(c, tx, request);
                             if (impactoActual == null)
                             {
-                                using (var cmd = new SqlCommand("INSERT dbo.TIPOS_COMPROBANTE (Tipo,Descripcion,Impacto) VALUES (@tipo,@descripcion,@impacto);", c, tx))
+                                using (var cmd = new SqlCommand("INSERT dbo.TIPOS_COMPROBANTE (Tipo,Descripcion,Impacto,EsElectronico) VALUES (@tipo,@descripcion,@impacto,@esElectronico);", c, tx))
                                 {
-                                    cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto) });
+                                    cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto), P("@esElectronico", request.EsElectronico) });
                                     cmd.ExecuteNonQuery();
                                 }
                             }
@@ -585,13 +600,22 @@ OUTPUT INSERTED.FactTipo_ID VALUES (@tipo,@letra,@sucursal,@numerador,@activo);"
                                 cmd.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letra", letra), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
                                 factTipoId = (int)cmd.ExecuteScalar();
                             }
-                            tx.Commit(); Auditar(c, u, "ALTA", "FactTipo_ID=" + factTipoId, "Configuración de " + tipo + " " + letra); return Content(HttpStatusCode.Created, new { FactTipo_ID = factTipoId, Tipo = tipo, LetraPredeterminada = letra });
+                            Auditar(c, u, "ALTA", "FactTipo_ID=" + factTipoId, "Configuración de " + tipo + " " + letra, tx);
+                            tx.Commit(); return Content(HttpStatusCode.Created, new { FactTipo_ID = factTipoId, Tipo = tipo, LetraPredeterminada = letra });
                         }
                         catch { if (tx.Connection != null) tx.Rollback(); throw; }
                     }
                 }
             }
-            catch (UnauthorizedAccessException) { return Unauthorized(); } catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); } catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
+            catch (UnauthorizedAccessException) { return Unauthorized(); }
+            catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
+            catch (SqlException ex)
+            {
+                if (ex.Number == 2601 || ex.Number == 2627)
+                    return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla y letra.", codigo = "TIPO_DUPLICADO" });
+                return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) });
+            }
+            catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
         [HttpPut, Route("tipos-comprobante/{id:int}")]
@@ -601,15 +625,41 @@ OUTPUT INSERTED.FactTipo_ID VALUES (@tipo,@letra,@sucursal,@numerador,@activo);"
             {
                 if (id <= 0) throw new ArgumentException("El tipo de comprobante no es válido.");
                 string tipo = CodigoTipo(request == null ? null : request.Tipo);
-                ValidarTipo(tipo, request);
                 string letra = FacturacionComprobantesConfiguracion.NormalizarLetra(request.LetraPredeterminada);
+                string tipoOriginal = string.IsNullOrWhiteSpace(request.TipoOriginal) ? null : CodigoTipo(request.TipoOriginal);
+                string letraOriginal = FacturacionComprobantesConfiguracion.NormalizarLetra(request.LetraOriginal);
                 using (var c = new SqlConnection(ConnectionString()))
                 {
                     c.Open(); var u = ValidarUsuario(c, true);
+                    // Los clientes anteriores no envían la identidad original. La prelectura no conserva
+                    // bloqueos; dentro de la transacción se comprueba de nuevo la fila por su ID.
+                    if (tipoOriginal == null || letraOriginal == null)
+                    {
+                        using (var previo = new SqlCommand("SELECT Tipo,LetraPredeterminada FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE FactTipo_ID=@id;", c))
+                        {
+                            previo.Parameters.Add(P("@id", id));
+                            using (var r = previo.ExecuteReader())
+                            {
+                                if (!r.Read()) return NotFound();
+                                if (tipoOriginal == null) tipoOriginal = (string)r["Tipo"];
+                                if (letraOriginal == null) letraOriginal = ((string)r["LetraPredeterminada"]).Trim();
+                            }
+                        }
+                    }
                     using (var tx = c.BeginTransaction(IsolationLevel.Serializable))
                     {
                         try
                         {
+                            // Emisión bloquea primero la configuración. El cambio de sigla toma todas sus
+                            // variantes antes del catálogo para esperar emisiones de cualquiera de ellas.
+                            if (tipoOriginal != tipo)
+                            {
+                                using (var grupo = new SqlCommand("SELECT FactTipo_ID FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipoActual ORDER BY FactTipo_ID;", c, tx))
+                                {
+                                    grupo.Parameters.Add(P("@tipoActual", tipoOriginal));
+                                    using (var r = grupo.ExecuteReader()) while (r.Read()) { }
+                                }
+                            }
                             bool activoAnterior = false;
                             string tipoActual = null, letraActual = null;
                             using (var configuracion = new SqlCommand("SELECT Tipo,LetraPredeterminada,Activo FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE FactTipo_ID=@id;", c, tx))
@@ -626,21 +676,59 @@ OUTPUT INSERTED.FactTipo_ID VALUES (@tipo,@letra,@sucursal,@numerador,@activo);"
                                 }
                             }
                             if (tipoActual == null) { tx.Rollback(); return NotFound(); }
-                            if (tipoActual != tipo) throw new ArgumentException("El código del tipo de comprobante no se puede modificar.");
-                            if (letraActual != letra) throw new ArgumentException("La letra del tipo de comprobante no se puede modificar.");
-                            string impactoActual;
-                            using (var existente = new SqlCommand("SELECT Impacto FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            if (tipoActual != tipoOriginal || letraActual != letraOriginal)
                             {
-                                existente.Parameters.Add(P("@tipo", tipo));
-                                impactoActual = existente.ExecuteScalar() as string;
+                                tx.Rollback();
+                                return Content(HttpStatusCode.Conflict, new { error = "La configuración del tipo de comprobante cambió. Volvé a abrirla antes de guardar." });
                             }
-                            if (impactoActual == null) { tx.Rollback(); return NotFound(); }
+                            bool cambiarSigla = tipoActual != tipo;
+                            bool cambiarLetra = letraActual != letra;
+                            string impactoActual;
+                            bool esElectronicoActual;
+                            using (var existente = new SqlCommand("SELECT Impacto,EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                existente.Parameters.Add(P("@tipo", tipoActual));
+                                using (var r = existente.ExecuteReader())
+                                {
+                                    if (!r.Read()) { tx.Rollback(); return NotFound(); }
+                                    impactoActual = (string)r["Impacto"];
+                                    esElectronicoActual = (bool)r["EsElectronico"];
+                                }
+                            }
+                            if (esElectronicoActual)
+                            {
+                                tx.Rollback();
+                                return Content(HttpStatusCode.Conflict, new { error = "No se puede modificar el tipo de comprobante: es electrónico." });
+                            }
+                            if (cambiarSigla && new[] { "FAC", "ND", "NC", "REC" }.Contains(tipoActual))
+                            {
+                                tx.Rollback();
+                                return Content(HttpStatusCode.Conflict, new { error = "No se puede cambiar la sigla de este tipo de comprobante: es un tipo fijo del sistema." });
+                            }
+                            if (cambiarSigla && new[] { "FAC", "ND", "NC", "REC" }.Contains(tipo))
+                            {
+                                tx.Rollback();
+                                return Content(HttpStatusCode.Conflict, new { error = "La sigla elegida está reservada para un tipo de comprobante del sistema.", codigo = "TIPO_DUPLICADO" });
+                            }
+                            ValidarTipo(tipo, request);
                             if (request.Activo) ValidarDependenciasActivas(c, tx, request);
+                            if (cambiarLetra)
+                            {
+                                using (var duplicada = new SqlCommand("SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipoActual AND LetraPredeterminada=@letra AND FactTipo_ID<>@id;", c, tx))
+                                {
+                                    duplicada.Parameters.AddRange(new[] { P("@tipoActual", tipoActual), P("@letra", letra), P("@id", id) });
+                                    if (duplicada.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla y letra.", codigo = "TIPO_DUPLICADO" });
+                                    }
+                                }
+                            }
                             if (!string.Equals(impactoActual.Trim(), request.Impacto, StringComparison.OrdinalIgnoreCase))
                             {
-                                using (var vinculados = new SqlCommand("SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                                using (var vinculados = new SqlCommand("SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipoActual;", c, tx))
                                 {
-                                    vinculados.Parameters.Add(P("@tipo", tipo));
+                                    vinculados.Parameters.Add(P("@tipoActual", tipoActual));
                                     if (vinculados.ExecuteScalar() != null)
                                     {
                                         tx.Rollback();
@@ -648,18 +736,132 @@ OUTPUT INSERTED.FactTipo_ID VALUES (@tipo,@letra,@sucursal,@numerador,@activo);"
                                     }
                                 }
                             }
+                            if (cambiarLetra)
+                            {
+                                // Una letra vacía histórica no permite atribuir el comprobante a una variante.
+                                using (var ambiguos = new SqlCommand(@"SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)
+WHERE Tipo=@tipoActual AND NULLIF(LTRIM(RTRIM(Letra)),'') IS NULL;", c, tx))
+                                {
+                                    ambiguos.Parameters.Add(P("@tipoActual", tipoActual));
+                                    if (ambiguos.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "No se puede cambiar la letra del tipo de comprobante: hay comprobantes anteriores sin letra identificada." });
+                                    }
+                                }
+                                // El numerador de origen puede estar por debajo de un número usado antes
+                                // con la letra destino, aunque los comprobantes actuales no se superpongan.
+                                using (var letraDestino = new SqlCommand("SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipoActual AND Letra=@letra;", c, tx))
+                                {
+                                    letraDestino.Parameters.AddRange(new[] { P("@tipoActual", tipoActual), P("@letra", letra) });
+                                    if (letraDestino.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "No se puede cambiar la letra del tipo de comprobante: ya existen comprobantes con la letra elegida.", codigo = "LETRA_USADA" });
+                                    }
+                                }
+                            }
+                            if (cambiarSigla)
+                            {
+                                // CrearTipo comprueba primero el par código/letra y después el catálogo.
+                                // Conservamos ese orden para evitar un bloqueo circular con el alta.
+                                using (var configuracionDestino = new SqlCommand("SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                                {
+                                    configuracionDestino.Parameters.Add(P("@tipo", tipo));
+                                    if (configuracionDestino.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla.", codigo = "TIPO_DUPLICADO" });
+                                    }
+                                }
+                                using (var tipoDestino = new SqlCommand("SELECT TOP (1) 1 FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                                {
+                                    tipoDestino.Parameters.Add(P("@tipo", tipo));
+                                    if (tipoDestino.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla.", codigo = "TIPO_DUPLICADO" });
+                                    }
+                                }
+                            }
+                            long comprobantesTipo = 0, emitidosTipo = 0, comprobantesLetra = 0, emitidosLetra = 0;
+                            if (cambiarSigla || cambiarLetra)
+                            {
+                                using (var contar = new SqlCommand(@"SELECT COUNT_BIG(*),
+COALESCE(SUM(CASE WHEN Estado IN ('EMITIDO','ANULADO') THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),0),
+COALESCE(SUM(CASE WHEN Letra=@letraActual THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),0),
+COALESCE(SUM(CASE WHEN Letra=@letraActual AND Estado IN ('EMITIDO','ANULADO') THEN CONVERT(bigint,1) ELSE CONVERT(bigint,0) END),0)
+FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipoActual;", c, tx))
+                                {
+                                    contar.Parameters.AddRange(new[] { P("@tipoActual", tipoActual), P("@letraActual", letraActual) });
+                                    using (var r = contar.ExecuteReader())
+                                    {
+                                        r.Read();
+                                        comprobantesTipo = r.GetInt64(0);
+                                        emitidosTipo = r.GetInt64(1);
+                                        comprobantesLetra = r.GetInt64(2);
+                                        emitidosLetra = r.GetInt64(3);
+                                    }
+                                }
+                            }
+                            // La migración 16 configura las FK con cascada. Así conservamos TipoComp_ID,
+                            // FactTipo_ID y los IDs de todos los comprobantes, incluso los emitidos.
+                            if (cambiarSigla)
+                            {
+                                using (var renombrarTipo = new SqlCommand("UPDATE dbo.TIPOS_COMPROBANTE SET Tipo=@tipo,Descripcion=@descripcion,Impacto=@impacto,EsElectronico=@esElectronico WHERE Tipo=@tipoActual;", c, tx))
+                                {
+                                    renombrarTipo.Parameters.AddRange(new[] { P("@tipo", tipo), P("@tipoActual", tipoActual), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto), P("@esElectronico", request.EsElectronico) });
+                                    renombrarTipo.ExecuteNonQuery();
+                                }
+                            }
+                            else
+                            {
+                                using (var actualizarTipo = new SqlCommand("UPDATE dbo.TIPOS_COMPROBANTE SET Descripcion=@descripcion,Impacto=@impacto,EsElectronico=@esElectronico WHERE Tipo=@tipo;", c, tx))
+                                {
+                                    actualizarTipo.Parameters.AddRange(new[] { P("@tipo", tipo), P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto), P("@esElectronico", request.EsElectronico) });
+                                    actualizarTipo.ExecuteNonQuery();
+                                }
+                            }
+                            if (cambiarSigla)
+                            {
+                                using (var referencias = new SqlCommand("UPDATE dbo.COMPROBANTES SET TipoReferencia=@tipo WHERE TipoReferencia=@tipoActual;", c, tx))
+                                {
+                                    referencias.Parameters.AddRange(new[] { P("@tipo", tipo), P("@tipoActual", tipoActual) });
+                                    referencias.ExecuteNonQuery();
+                                }
+                                using (var referenciasViejas = new SqlCommand("SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE TipoReferencia=@tipoActual;", c, tx))
+                                {
+                                    referenciasViejas.Parameters.Add(P("@tipoActual", tipoActual));
+                                    if (referenciasViejas.ExecuteScalar() != null)
+                                    {
+                                        tx.Rollback();
+                                        return Content(HttpStatusCode.Conflict, new { error = "No se pudo actualizar la sigla en todas las referencias. Probá de nuevo." });
+                                    }
+                                }
+                            }
+                            if (cambiarLetra)
+                            {
+                                using (var letrasHistoricas = new SqlCommand("UPDATE dbo.COMPROBANTES SET Letra=@letra WHERE Tipo=@tipo AND Letra=@letraActual;", c, tx))
+                                {
+                                    letrasHistoricas.Parameters.AddRange(new[] { P("@tipo", tipo), P("@letraActual", letraActual), P("@letra", letra) });
+                                    letrasHistoricas.ExecuteNonQuery();
+                                }
+                            }
                             using (var cmd = new SqlCommand(@"
-UPDATE dbo.TIPOS_COMPROBANTE SET Descripcion=@descripcion,Impacto=@impacto WHERE Tipo=@tipo;
 UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE
-SET SucursalID=@sucursal,NumeradorID=@numerador,Activo=@activo,FechaModificacion=SYSUTCDATETIME()
+SET LetraPredeterminada=@letra,SucursalID=@sucursal,NumeradorID=@numerador,Activo=@activo,FechaModificacion=SYSUTCDATETIME()
 WHERE FactTipo_ID=@id;", c, tx))
                             {
-                                cmd.Parameters.AddRange(new[] { P("@descripcion", request.Descripcion.Trim()), P("@impacto", request.Impacto), P("@tipo", tipo), P("@id", id), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
+                                cmd.Parameters.AddRange(new[] { P("@letra", letra), P("@id", id), P("@sucursal", request.SucursalID), P("@numerador", request.NumeradorID), P("@activo", request.Activo) });
                                 cmd.ExecuteNonQuery();
                             }
                             var baja = activoAnterior && !request.Activo;
+                            string detalle = "Configuración de " + tipoActual + " " + letraActual + " a " + tipo + " " + letra;
+                            if (cambiarSigla) detalle += "; sigla: " + comprobantesTipo + " comprobantes, " + emitidosTipo + " emitidos o anulados";
+                            if (cambiarLetra) detalle += "; letra: " + comprobantesLetra + " comprobantes, " + emitidosLetra + " emitidos o anulados";
+                            if (!esElectronicoActual && request.EsElectronico) detalle += "; marcado como comprobante electrónico";
                             Auditar(c, u, baja ? "BAJA" : "MODIFICAR", "FactTipo_ID=" + id,
-                                baja ? "Tipo de comprobante inactivado" : "Configuración de " + tipo + " " + letra, tx);
+                                baja ? "Tipo de comprobante inactivado; " + detalle : detalle, tx);
                             tx.Commit(); return Ok();
                         }
                         catch { if (tx.Connection != null) tx.Rollback(); throw; }
@@ -668,7 +870,13 @@ WHERE FactTipo_ID=@id;", c, tx))
             }
             catch (UnauthorizedAccessException) { return Unauthorized(); }
             catch (InvalidOperationException ex) { return Content(HttpStatusCode.Forbidden, new { error = ex.Message }); }
-            catch (SqlException ex) { return Content(ex.Number == 547 ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest, new { error = ex.Number == 547 ? "No se puede guardar el tipo de comprobante: tiene relaciones que impiden el cambio." : MensajeParaUsuario(ex) }); }
+            catch (SqlException ex)
+            {
+                if (ex.Number == 2601 || ex.Number == 2627)
+                    return Content(HttpStatusCode.Conflict, new { error = "Ya existe un tipo de comprobante con esa sigla y letra.", codigo = "TIPO_DUPLICADO" });
+                return Content(ex.Number == 547 ? HttpStatusCode.Conflict : HttpStatusCode.BadRequest,
+                    new { error = ex.Number == 547 ? "No se puede guardar el tipo de comprobante: tiene relaciones que impiden el cambio." : MensajeParaUsuario(ex) });
+            }
             catch (Exception ex) { return Content(HttpStatusCode.BadRequest, new { error = MensajeParaUsuario(ex) }); }
         }
 
@@ -706,6 +914,17 @@ WHERE FactTipo_ID=@id;", c, tx))
                                 }
                             }
                             if (!existe) { tx.Rollback(); return NotFound(); }
+                            using (var electronico = new SqlCommand("SELECT EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            {
+                                electronico.Parameters.Add(P("@tipo", tipo));
+                                object valor = electronico.ExecuteScalar();
+                                if (valor == null) { tx.Rollback(); return NotFound(); }
+                                if ((bool)valor)
+                                {
+                                    tx.Rollback();
+                                    return Content(HttpStatusCode.Conflict, new { error = "No se puede cambiar el estado del tipo de comprobante: es electrónico." });
+                                }
+                            }
                             if (activoAnterior != request.Activo.Value)
                             {
                                 if (request.Activo.Value) ValidarDependenciasActivas(c, tx, sucursalId, numeradorId);
@@ -759,10 +978,16 @@ WHERE FactTipo_ID=@id;", c, tx))
                                 }
                             }
                             if (tipo == null) { tx.Rollback(); return NotFound(); }
-                            using (var cmd = new SqlCommand("SELECT Tipo FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
+                            using (var cmd = new SqlCommand("SELECT EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (XLOCK,HOLDLOCK) WHERE Tipo=@tipo;", c, tx))
                             {
                                 cmd.Parameters.Add(P("@tipo", tipo));
-                                if (cmd.ExecuteScalar() == null) { tx.Rollback(); return NotFound(); }
+                                object valor = cmd.ExecuteScalar();
+                                if (valor == null) { tx.Rollback(); return NotFound(); }
+                                if ((bool)valor)
+                                {
+                                    tx.Rollback();
+                                    return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el tipo de comprobante: es electrónico." });
+                                }
                             }
                             using (var cmd = new SqlCommand(@"SELECT CASE WHEN EXISTS (
 SELECT 1 FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK)

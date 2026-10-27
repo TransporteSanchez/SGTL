@@ -25,9 +25,9 @@ function iniciarPantalla(opciones) {
             { NumeradorID: 4, Nombre: 'En uso', UltimoNumero: 7, Activo: true, PuedeEliminar: false }
         ],
         tipos: [
-            { FactTipo_ID: 31, Tipo: 'TMP', Descripcion: 'Temporal', Impacto: 'D', LetraPredeterminada: 'A', SucursalID: 1, NumeradorID: 3, Activo: true, PuedeEliminar: true },
-            { FactTipo_ID: 41, Tipo: 'FAC', Descripcion: 'Factura', Impacto: 'D', LetraPredeterminada: 'A', SucursalID: 2, NumeradorID: 4, Activo: true, PuedeEliminar: false },
-            { FactTipo_ID: 42, Tipo: 'FAC', Descripcion: 'Factura', Impacto: 'D', LetraPredeterminada: 'B', SucursalID: 1, NumeradorID: 3, Activo: true, PuedeEliminar: true }
+            { FactTipo_ID: 31, Tipo: 'TMP', Descripcion: 'Temporal', Impacto: 'D', LetraPredeterminada: 'A', SucursalID: 1, NumeradorID: 3, Activo: true, PuedeEliminar: true, PuedeCambiarImpacto: true, PuedeCambiarSigla: true, PuedeCambiarLetra: true },
+            { FactTipo_ID: 41, Tipo: 'FAC', Descripcion: 'Factura', Impacto: 'D', LetraPredeterminada: 'A', SucursalID: 2, NumeradorID: 4, Activo: true, PuedeEliminar: false, PuedeCambiarImpacto: false, PuedeCambiarSigla: false, PuedeCambiarLetra: false },
+            { FactTipo_ID: 42, Tipo: 'FAC', Descripcion: 'Factura', Impacto: 'D', LetraPredeterminada: 'B', SucursalID: 1, NumeradorID: 3, Activo: true, PuedeEliminar: true, PuedeCambiarImpacto: false, PuedeCambiarSigla: false, PuedeCambiarLetra: true }
         ]
     };
     const document = {
@@ -130,10 +130,11 @@ async function probar() {
     assert.strictEqual(pantalla.controles.tipoCodigo.value, 'FAC');
     assert.strictEqual(pantalla.controles.tipoLetra.value, 'B');
     assert.strictEqual(pantalla.controles.tipoSucursal.value, 1, 'Editar B carga su propia sucursal');
-    assert.strictEqual(pantalla.controles.tipoCodigo.disabled, false, 'El código fijo no es un campo deshabilitado');
-    assert.strictEqual(pantalla.controles.tipoLetra.disabled, false, 'La letra fija no es un campo deshabilitado');
+    assert.strictEqual(pantalla.controles.tipoCodigo.disabled, false, 'La sigla fija no es un campo deshabilitado');
+    assert.strictEqual(pantalla.controles.tipoLetra.disabled, false, 'La letra editable no es un campo deshabilitado');
     assert.strictEqual(pantalla.controles.tipoCodigoEditable.classList.contains('d-none'), true);
-    assert.strictEqual(pantalla.controles.tipoLetraEditable.classList.contains('d-none'), true);
+    assert.strictEqual(pantalla.controles.tipoLetraEditable.classList.contains('d-none'), false,
+        'FAC B sin comprobantes permite editar su letra aunque FAC A tenga comprobantes');
 
     pantalla.controles.tipoDescripcion.value = 'Factura corregida';
     pantalla.eventosCampos.tipoCodigo.input();

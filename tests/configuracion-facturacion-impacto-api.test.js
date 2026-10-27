@@ -15,16 +15,16 @@ const db = new DatabaseSync(':memory:');
 try {
     db.exec(`
         ATTACH DATABASE ':memory:' AS dbo;
-        CREATE TABLE dbo.TIPOS_COMPROBANTE (Tipo TEXT, Descripcion TEXT, Impacto TEXT);
+        CREATE TABLE dbo.TIPOS_COMPROBANTE (Tipo TEXT, Descripcion TEXT, Impacto TEXT, EsElectronico INTEGER);
         CREATE TABLE dbo.FACTURACION_TIPOS_COMPROBANTE
             (FactTipo_ID INTEGER, Tipo TEXT, LetraPredeterminada TEXT, SucursalID INTEGER, NumeradorID INTEGER, Activo INTEGER);
         CREATE TABLE dbo.FACTURACION_SUCURSALES (Sucursal_ID INTEGER, Codigo TEXT);
         CREATE TABLE dbo.FACTURACION_NUMERADORES (Numerador_ID INTEGER, Nombre TEXT);
         CREATE TABLE dbo.COMPROBANTES (Comprobante_ID INTEGER, Tipo TEXT, Letra TEXT);
         INSERT INTO dbo.TIPOS_COMPROBANTE VALUES
-            ('D','Débito interno','C'),('C','Crédito interno','C'),
-            ('FC','Comprobante interno','D'),('FAC','Factura','D'),
-            ('ND','Nota de débito','D'),('NC','Nota de crédito','C'),('REC','Recibo','C');
+            ('D','Débito interno','C',0),('C','Crédito interno','C',0),
+            ('FC','Comprobante interno','D',0),('FAC','Factura','D',0),
+            ('ND','Nota de débito','D',0),('NC','Nota de crédito','C',0),('REC','Recibo','C',0);
         INSERT INTO dbo.FACTURACION_SUCURSALES VALUES (1,'0001');
         INSERT INTO dbo.FACTURACION_NUMERADORES VALUES (1,'Numerador');
         INSERT INTO dbo.FACTURACION_TIPOS_COMPROBANTE VALUES
@@ -50,7 +50,7 @@ const inicioGuardar = fuente.indexOf('public IHttpActionResult GuardarTipo(');
 const finGuardar = fuente.indexOf('[HttpPut, Route("tipos-comprobante/{id:int}/estado")]', inicioGuardar);
 assert.ok(inicioGuardar >= 0 && finGuardar > inicioGuardar, 'debe existir la edición de tipos');
 const guardar = fuente.slice(inicioGuardar, finGuardar);
-assert.match(guardar, /SELECT Impacto FROM dbo\.TIPOS_COMPROBANTE WITH \(XLOCK,HOLDLOCK\) WHERE Tipo=@tipo/,
+assert.match(guardar, /SELECT Impacto,EsElectronico FROM dbo\.TIPOS_COMPROBANTE WITH \(XLOCK,HOLDLOCK\) WHERE Tipo=@tipo/,
     'el guardado bloquea la sigla compartida antes de comprobar emisiones de otra letra');
 assert.match(guardar, /SELECT[^";]*FROM dbo\.COMPROBANTES[^";]*WHERE Tipo=@tipo/i,
     'al guardar se vuelve a comprobar toda la sigla, no solo la letra editada');
@@ -60,7 +60,7 @@ assert.match(guardar, /HttpStatusCode\.Conflict/,
     'un tipo con comprobantes asociados debe rechazarse como conflicto comprensible');
 assert.match(guardar, /catch\s*\(SqlException ex\)[\s\S]*?ex\.Number\s*==\s*547\s*\?\s*HttpStatusCode\.Conflict/,
     'si una emisión concurrente activa la FK, la API también debe devolver un conflicto');
-assert.match(guardar, /if\s*\(!string\.Equals\(impactoActual\.Trim\(\),\s*request\.Impacto[\s\S]*?\}\s*using\s*\(var cmd = new SqlCommand\(@"\s*UPDATE dbo\.TIPOS_COMPROBANTE/,
-    'editar solo la descripción debe conservar la ruta normal de guardado');
+assert.match(guardar, /UPDATE dbo\.TIPOS_COMPROBANTE SET Tipo=@tipo,Descripcion=@descripcion,Impacto=@impacto,EsElectronico=@esElectronico WHERE Tipo=@tipoActual;/,
+    'editar actualiza descripción, impacto e identidad en el mismo tipo compartido');
 
 console.log('OK: cambio de impacto solo para tipos personalizados sin comprobantes');
