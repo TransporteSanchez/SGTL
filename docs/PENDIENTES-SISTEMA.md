@@ -68,6 +68,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 48 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§48) |
 | 49 | Imputar recibos después de emitirlos | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Emitir un recibo sin deudas y usar «Imputar recibo» parcial y sucesivamente (§49) |
 | 50 | Vincular un débito interno con un FC | Hecho en código (27/10); migración 17 pendiente de aplicar | Pendiente de subir | Aplicar el script 17 y emitir un D relacionado con un FC del mismo cliente (§50) |
+| 51 | Acentos en el concepto de recibos sin imputar | Texto de emisión corregido; script 18 preparado para datos anteriores, sin ejecutar | Pendiente de subir | Recompilar y emitir un recibo; Rocío debe revisar y aplicar 18 para los ya guardados (§51) |
 | 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en esta tanda (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
 
@@ -3873,6 +3874,27 @@ la deuda total del cliente en $ 121,00 y total original del FC sin cambios. Repe
 y comprobar que no quedan opciones del anterior. Intentar un FC de otro cliente, un origen anulado o fiscal y una
 fecha anterior al FC: debe rechazar sin emitir ni consumir número. Reintentar con la misma clave: debe devolver el
 mismo D sin duplicar deuda; con otro vínculo y la misma clave, debe rechazar.
+
+---
+
+## 51. Corregir los acentos del concepto de recibos sin imputar — Código y propuesta SQL listos (27/10)
+
+La versión anterior de `RecibosController` tenía mal escrito el literal generado de «Cobranza sin imputación».
+La fuente actual contiene el acento correcto; la página ya declara UTF-8. Recompilar la API evita volver a guardar
+el texto incorrecto, pero no cambia los conceptos persistidos por versiones anteriores.
+
+`database/cuenta-corriente/18_corregir_concepto_recibos.sql` propone corregir únicamente ese texto exacto en recibos
+y sus movimientos de emisión. Utiliza caracteres Unicode por código, comparación binaria y largo exacto; conserva
+conceptos personalizados, otros tipos de comprobante, reversos e importes. Muestra los registros afectados y sus
+cantidades y termina con ROLLBACK. **No se ejecutó contra la base compartida.** Rocío debe revisar los resultados y,
+para aplicarlo, reemplazar el ROLLBACK final del bloque TRY por COMMIT y ejecutar el script completo.
+
+**Verificación local:** expresión C# real compilada para recibos con cero, una y dos aplicaciones; UPDATE reales
+adaptados a SQLite en memoria con casos protegidos, idempotencia y reversión. Sin consultar la base compartida.
+
+**Probar en la VM:** recompilar la API y emitir un recibo sin imputar: debe decir «Cobranza sin imputación». Después
+de aplicar la corrección de datos, revisar el recibo anterior, la cuenta corriente, el detalle, PDF y Excel. Los
+nombres de clientes y los conceptos ingresados a mano deben conservarse.
 
 ---
 

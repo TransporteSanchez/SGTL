@@ -487,7 +487,7 @@ WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connecti
                             }
 
                             int comprobanteId;
-                            string concepto = request.Aplicaciones.Count == 0 ? "Cobranza sin imputaciÃ³n"
+                            string concepto = request.Aplicaciones.Count == 0 ? "Cobranza sin imputación"
                                 : request.Aplicaciones.Count == 1 ? "Cobranza de 1 comprobante"
                                 : "Cobranza de " + request.Aplicaciones.Count + " comprobantes";
                             using (var command = new SqlCommand(@"
