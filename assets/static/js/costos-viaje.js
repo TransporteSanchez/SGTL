@@ -2,7 +2,9 @@
 // El recorrido real del camión: galpón → origen (vacío) → destino → galpón (vacío); el combustible estimado (km × consumo
 // del camión × precio del gasoil a la fecha del viaje); los gastos que rindió el chofer con su ticket; y el margen
 // estimado: el importe del viaje menos el combustible estimado y los demás gastos rendidos.
-// Uso (lo llama viaje-detalle.js): SGTLCostosViaje.dibujar(viajeId, contenedor, sigueAbierto).
+// Uso (lo llama viaje-detalle.js): SGTLCostosViaje.dibujar(viajeId, contenedor, sigueAbierto, { alCargarGasto }).
+// "Cargar gasto" (Rocío, 27/10, punto 33 de la §41): quien gestiona viajes, como excepción, con el viaje entregado o listo
+// para facturar; si no se puede, el botón queda deshabilitado con el motivo que da la API (§1.4).
 // Si faltan los km al galpón del origen o del destino, los calcula con SGTLGalpon (galpon-km.js) y vuelve a dibujar.
 (function (window, document) {
   'use strict';
@@ -58,9 +60,19 @@
 
   var TIPOS = { Combustible: 'Combustible', Peaje: 'Peaje', Comida: 'Comida', Otro: 'Otro' };
 
+  function botonCargarGasto(c) {
+    if (!c.Cargar_Gasto) return '';
+    var motivo = c.Cargar_Gasto.Motivo;
+    var boton = '<button type="button" class="btn btn-sm btn-outline-primary"' + (motivo ? ' disabled' : ' data-cargar-gasto') + '>' +
+      '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>';
+    return '<div class="mt-2">' + (motivo
+      ? '<span class="sgtl-envoltura-deshabilitado d-inline-block" tabindex="0" data-bs-toggle="tooltip" title="' + esc(motivo) + '">' + boton + '</span>'
+      : boton) + '</div>';
+  }
+
   function gastos(c) {
     var lista = c.Gastos || [];
-    if (!lista.length) return dato('Gastos del chofer', '<span class="text-muted">El chofer no cargó gastos.</span>');
+    if (!lista.length) return dato('Gastos del chofer', '<span class="text-muted">El chofer no cargó gastos.</span>' + botonCargarGasto(c));
     var filas = lista.map(function (g) {
       var detalle = [window.SGTL.fecha(g.Fecha), TIPOS[g.Tipo] || g.Tipo];
       if (g.Litros != null) detalle.push(cantidad(g.Litros) + ' l');
@@ -75,7 +87,7 @@
       ? suave('Combustible rendido ' + esc(monto(rendido)) + ' (estimado ' + esc(monto(c.Combustible_Estimado)) + ').') : '';
     return dato('Gastos del chofer', '<ul class="list-unstyled mb-1">' + filas +
       '<li class="d-flex justify-content-between gap-3 fw-bold border-top pt-1 mt-1"><span>Total</span><span class="text-nowrap">' +
-      esc(monto(c.Gastos_Total)) + '</span></li></ul>' + comparacion);
+      esc(monto(c.Gastos_Total)) + '</span></li></ul>' + comparacion + botonCargarGasto(c));
   }
 
   // Margen estimado = importe − combustible estimado − los gastos rendidos que no son combustible (el combustible ya va
@@ -121,14 +133,16 @@
       });
   }
 
-  function dibujar(viajeId, contenedor, sigueAbierto) {
+  function dibujar(viajeId, contenedor, sigueAbierto, opciones) {
     if (!contenedor) return;
     sigueAbierto = sigueAbierto || function () { return true; };
+    contenedor._sgtlCostos = opciones || {};
     if (!contenedor.dataset.sgtlTickets) {
       contenedor.dataset.sgtlTickets = 'true';
       contenedor.addEventListener('click', function (e) {
         var boton = e.target.closest('[data-ticket-gasto]');
         if (boton) verTicket(boton.getAttribute('data-ticket-gasto'));
+        if (e.target.closest('[data-cargar-gasto]') && contenedor._sgtlCostos.alCargarGasto) contenedor._sgtlCostos.alCargarGasto();
       });
     }
     pedir(viajeId).then(function (c) {

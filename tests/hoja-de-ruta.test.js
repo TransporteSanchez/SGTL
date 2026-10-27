@@ -73,12 +73,29 @@ assert.strictEqual(H.atraso({ Estado: 'Registrado', Tipo_Cliente: 'Con_plataform
     'con plataforma, nada (lo sigue la plataforma)');
 assert.strictEqual(H.atraso({ Estado: 'Entregado', Tipo_Cliente: 'Directo', Fecha_Inicio: '2026-10-23T06:00:00' }, '2026-10-24T00:00:00'), '');
 
-assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-24T15:00:00' }, '2026-10-24T00:00:00'), true);
-assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-25T05:00:00' }, '2026-10-24T00:00:00'), false,
-    'un viaje que empieza mañana todavía no tiene gastos');
-assert.strictEqual(H.puedeCargarGasto({ Estado: 'Entregado', Fecha_Inicio: '2026-10-21T06:00:00' }, '2026-10-24T00:00:00'), true,
-    'puede rendir al volver');
-assert.strictEqual(H.puedeCargarGasto({ Estado: 'Facturado', Fecha_Inicio: '2026-10-16T06:00:00' }, '2026-10-24T00:00:00'), false);
+// Iniciar, solo el día del viaje (Rocío, 27/10, punto 33 de la §41).
+assert.strictEqual(H.accionesDe(viaje({ Fecha_Inicio: '2026-10-24T15:00:00' }), '2026-10-24T00:00:00').paso.motivo, '', 'hoy: se inicia');
+assert.strictEqual(H.accionesDe(viaje({ Fecha_Inicio: '2026-10-30T05:00:00' }), '2026-10-24T00:00:00').paso.motivo,
+    'No se puede iniciar el viaje: es del 30/10/2026. Si sale hoy, es necesario que administración corrija la fecha y la hora',
+    'otro día: deshabilitado, con que administración corrija la fecha');
+assert.ok(/^No se puede iniciar el viaje: era del 22\/10\/2026\./.test(H.accionesDe(viaje({ Fecha_Inicio: '2026-10-22T05:00:00' }), '2026-10-24T00:00:00').paso.motivo),
+    'uno de un día anterior tampoco se inicia');
+
+// Gastos del chofer (punto 33): desde que inicia el viaje y hasta 2 días después de la entrega; con plataforma, desde el
+// día del viaje hasta 2 días después del fin. Después, administración.
+const hoy = '2026-10-24T00:00:00';
+assert.strictEqual(H.motivoGasto({ Estado: 'Registrado', Fecha_Inicio: '2026-10-24T05:00:00' }, hoy), null, 'sin salir: no se muestra');
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'En_viaje', Fecha_Inicio: '2026-10-24T05:00:00' }, hoy), true, 'en viaje: sí');
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Entregado', Fecha_Inicio: '2026-10-21T06:00:00', Fecha_Entrega: '2026-10-22T00:00:00' }, hoy), true,
+    'entregado hace 2 días: todavía rinde');
+assert.strictEqual(H.motivoGasto({ Estado: 'Entregado', Fecha_Inicio: '2026-10-20T06:00:00', Fecha_Entrega: '2026-10-21T00:00:00' }, hoy),
+    'No se puede cargar el gasto: pasaron más de 2 días de la entrega. Si te falta rendir algo, es necesario que se lo pases a administración',
+    'pasado el tope: deshabilitado con el motivo');
+assert.strictEqual(H.puedeCargarGasto({ Estado: 'Registrado', Tipo_Cliente: 'Con_plataforma', Fecha_Inicio: '2026-10-24T05:00:00', Fecha_Fin: '2026-10-24T12:00:00' }, hoy), true,
+    'con plataforma: desde el día del viaje');
+assert.ok(/pasaron más de 2 días del viaje/.test(H.motivoGasto({ Estado: 'Listo_para_facturar', Tipo_Cliente: 'Con_plataforma', Fecha_Inicio: '2026-10-20T05:00:00', Fecha_Fin: '2026-10-21T12:00:00' }, hoy)));
+assert.strictEqual(H.motivoGasto({ Estado: 'Facturado', Fecha_Inicio: '2026-10-16T06:00:00' }, hoy), null, 'facturado: no se muestra');
+assert.strictEqual(H.motivoGasto({ Estado: 'Facturado', Fecha_Inicio: '2026-10-16T06:00:00' }, hoy, 'eliminar'), 'No se puede eliminar el gasto: el viaje ya está facturado');
 
 // Recorrido completo para el chofer: la navegación arranca donde está y termina en el galpón.
 const galpon = 'Av. Circunvalación 1500, Córdoba, Córdoba, Argentina';

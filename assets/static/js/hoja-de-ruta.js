@@ -69,13 +69,21 @@
     return v.EnProforma_Estado === 'Generada' || v.EnProforma_Estado === 'Aceptada' ? (v.EnProforma_Numero || 'emitida') : '';
   }
 
-  // Qué puede hacer el chofer con el viaje (decisiones de Rocío, 24/10).
+  // Qué puede hacer el chofer con el viaje (decisiones de Rocío, 24/10). Con hoyIso, un viaje se inicia solo el día de su
+  // fecha de inicio (Rocío, 27/10, punto 33 de la §41): si sale otro día, administración corrige antes la fecha y la hora.
   //   paso: el siguiente paso del circuito ({ accion: 'iniciar' | 'entregar', texto, motivo si no se puede }) o null;
   //   reemplazar: si puede cambiar la evidencia; ver: si hay evidencia para abrir; nota: aclaración debajo.
   // La evidencia se sube al registrar la entrega (es obligatoria): después solo se reemplaza. Un viaje entregado antes
   // de que fuera obligatoria (22/10) y sin evidencia no ofrece nada: la carga la administración en Gestionar viajes.
   // Con plataforma (Rukas) el chofer solo mira: la entrega y el remito los registra en la plataforma.
-  function accionesDe(v) {
+  function motivoFechaParaIniciar(v, hoyIso) {
+    var dia = soloFecha(v.Fecha_Inicio), hoy = soloFecha(hoyIso);
+    if (!hoy || !dia || dia === hoy) return '';
+    return 'No se puede iniciar el viaje: ' + (dia > hoy ? 'es' : 'era') + ' del ' + ddmmaaaa(aDia(v.Fecha_Inicio)) +
+      '. Si sale hoy, es necesario que administración corrija la fecha y la hora';
+  }
+
+  function accionesDe(v, hoyIso) {
     var r = { paso: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
     var estadoViaje = v.Estado || 'Registrado';
     if (!esDirecto(v)) {
@@ -85,7 +93,7 @@
     if (estadoViaje === 'Facturado') return r;
     var bloquea = proformaQueBloquea(v);
     if (estadoViaje === 'Registrado') {
-      r.paso = { accion: 'iniciar', texto: 'Iniciar viaje', motivo: bloquea ? 'No se puede iniciar el viaje: está en la proforma ' + bloquea : '' };
+      r.paso = { accion: 'iniciar', texto: 'Iniciar viaje', motivo: bloquea ? 'No se puede iniciar el viaje: está en la proforma ' + bloquea : motivoFechaParaIniciar(v, hoyIso) };
     } else if (estadoViaje === 'En_viaje') {
       r.paso = { accion: 'entregar', texto: 'Registrar entrega', motivo: bloquea ? 'No se puede registrar la entrega: el viaje está en la proforma ' + bloquea : '' };
     } else {
@@ -106,12 +114,38 @@
     return '';
   }
 
-  // Gastos del viaje (control interno, 24/10): en cualquier viaje del chofer (directo o con plataforma) desde el día que
-  // empieza, aunque ya esté entregado (puede rendir al volver); no en uno facturado.
-  function puedeCargarGasto(v, hoyIso) {
-    var hoy = soloFecha(hoyIso);
-    return (v.Estado || 'Registrado') !== 'Facturado' && !!hoy && soloFecha(v.Fecha_Inicio) <= hoy;
+  // Gastos del viaje (control interno; Rocío, 27/10, punto 33 de la §41), la misma regla que la API
+  // (Viajes/GastosDelViaje.cs): desde que el chofer inicia el viaje y hasta 2 días después de registrar la entrega; los de
+  // plataforma, que no se inician acá, desde el día del viaje hasta 2 días después del fin. Después los carga
+  // administración desde Ver detalle del viaje. Devuelve '' si puede, el motivo si no (el botón queda deshabilitado con
+  // el motivo debajo) o null si no corresponde mostrar el botón (el viaje todavía no salió o ya está facturado).
+  var DIAS_PARA_RENDIR = 2;
+
+  function sumarDias(iso, dias) {
+    var d = aDia(iso);
+    if (!d) return '';
+    d.setDate(d.getDate() + dias);
+    return d.getFullYear() + '-' + dosCifras(d.getMonth() + 1) + '-' + dosCifras(d.getDate());
   }
+
+  function motivoGasto(v, hoyIso, accion) {
+    var hoy = soloFecha(hoyIso), estadoViaje = v.Estado || 'Registrado';
+    var no = 'No se puede ' + (accion || 'cargar') + ' el gasto: ';
+    // Un gasto que ya está se ve siempre: eliminarlo dice por qué no se puede.
+    if (accion === 'eliminar' && estadoViaje === 'Facturado') return no + 'el viaje ya está facturado';
+    if (!hoy || estadoViaje === 'Facturado') return null;
+    var pasaron = function (desde, de) {
+      return sumarDias(desde, DIAS_PARA_RENDIR) < hoy
+        ? no + 'pasaron más de ' + DIAS_PARA_RENDIR + ' días ' + de + '. Si te falta rendir algo, es necesario que se lo pases a administración'
+        : '';
+    };
+    if (!esDirecto(v)) return soloFecha(v.Fecha_Inicio) > hoy ? null : pasaron(v.Fecha_Fin || v.Fecha_Inicio, 'del viaje');
+    if (estadoViaje === 'En_viaje') return '';
+    if (estadoViaje === 'Entregado') return pasaron(v.Fecha_Entrega || v.Fecha_Fin || v.Fecha_Inicio, 'de la entrega');
+    return null;
+  }
+
+  function puedeCargarGasto(v, hoyIso) { return motivoGasto(v, hoyIso) === ''; }
 
   // Recorrido completo para el chofer (Rocío, 24/10): galpón → origen → destino → galpón.
   // "Abrir en Google Maps" sin salir arranca en el galpón (Rocío, 27/10, punto 35 de la §41: el viaje se inicia siempre
@@ -267,7 +301,7 @@
   }
 
   function tarjeta(v, conMapa) {
-    var a = accionesDe(v);
+    var a = accionesDe(v, estado.hoy);
     // Solo los datos que tienen valor (Rocío, 24/10: que la tarjeta no sea tan larga). El camión, solo el dominio.
     var si = function (valor, etiqueta, html) { return String(valor == null ? '' : valor).trim() ? dato(etiqueta, html) : ''; };
     var datos = dato('Camión', texto(v.Camion)) +
@@ -286,9 +320,16 @@
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-camera me-1" aria-hidden="true"></i>Reemplazar evidencia</button>');
     }
-    if (estado.gastos && puedeCargarGasto(v, estado.hoy)) {
+    var motivo = estado.gastos ? motivoGasto(v, estado.hoy) : null;
+    if (motivo === '') {
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="cargar-gasto" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>');
+    } else if (motivo) {
+      // Pasado el tope: deshabilitado con el motivo escrito debajo (en el celular no hay globitos).
+      var idMotivo = 'motivo-gasto-' + esc(v.Viaje_ID);
+      botones.push('<button type="button" class="btn btn-outline-primary" disabled aria-describedby="' + idMotivo + '">' +
+        '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>' +
+        '<div class="form-text mt-0 w-100" id="' + idMotivo + '">' + esc(motivo) + '.</div>');
     }
     var pie = botones.length || a.nota
       ? '<div class="card-footer d-flex flex-wrap align-items-center gap-2">' + botones.join('') +
@@ -642,7 +683,7 @@
   }
 
   // En una lista y no en una tabla: en el celular una tabla no entra (como las tarjetas de los viajes, §10).
-  function filaGasto(g) {
+  function filaGasto(g, motivoEliminar) {
     var tipo = TIPOS_GASTO[g.Tipo] || g.Tipo;
     var detalle = [SGTL.fecha(g.Fecha)];
     if (g.Detalle) detalle.push(g.Detalle);
@@ -653,13 +694,19 @@
       '<div class="d-flex gap-2 mt-2">' +
       '<button type="button" class="btn btn-sm btn-outline-secondary" data-accion="ver" data-id="' + esc(g.Gasto_ID) + '">' +
       '<i class="bi bi-paperclip me-1" aria-hidden="true"></i>Ver ticket</button>' +
-      '<button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar" data-id="' + esc(g.Gasto_ID) + '" data-importe="' + esc(g.Importe) + '">' +
-      '<i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button></div></li>';
+      (motivoEliminar
+        ? '<button type="button" class="btn btn-sm btn-outline-danger" disabled><i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button></div>' +
+          '<div class="form-text mt-1">' + esc(motivoEliminar) + '.</div></li>'
+        : '<button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar" data-id="' + esc(g.Gasto_ID) + '" data-importe="' + esc(g.Importe) + '">' +
+          '<i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button></div></li>');
   }
 
   function mostrarGastos(r) {
     var gastos = (r && r.Gastos) || [];
-    document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(filaGasto).join('')
+    // Eliminar, con la misma regla que cargar (pasado el tope, ya no).
+    var v = estado.porId[gastosAbiertos];
+    var motivoEliminar = v ? motivoGasto(v, estado.hoy, 'eliminar') : '';
+    document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(function (g) { return filaGasto(g, motivoEliminar || ''); }).join('')
       : '<li class="text-muted text-center py-4">Todavía no cargaste gastos en este viaje.</li>';
     document.getElementById('gastosTotal').textContent = gastos.length ? 'Total: ' + SGTL.monto(r.Total) : '';
   }
@@ -943,6 +990,7 @@
     enlaceNavegacion: enlaceNavegacion,
     kmRecorridoCompleto: kmRecorridoCompleto,
     puedeCargarGasto: puedeCargarGasto,
+    motivoGasto: motivoGasto,
     atraso: atraso,
     problemaDelArchivo: problemaDelArchivo
   };

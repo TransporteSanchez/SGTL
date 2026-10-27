@@ -3264,7 +3264,9 @@ Idea de Rocío (24/10) para tener control interno de cada viaje. El viaje real n
 galpón, va vacío al origen a buscar la carga, la lleva al destino y vuelve vacío al galpón. Ese recorrido no estaba en
 ningún lado, ni lo que cuesta. **Decisiones de Rocío (24/10):** el galpón se carga aparte en Gestionar empresa (no es el
 domicilio fiscal); todo se ve en Ver detalle del viaje; el precio del gasoil se carga en Gestionar camiones; el chofer
-carga gastos en todos sus viajes desde que empiezan; el chofer no carga kilómetros a mano (sale de Google Maps).
+carga gastos en todos sus viajes desde que empiezan (cambiado el 27/10: desde que inicia el viaje y hasta 2 días después
+de la entrega, y después administración; ver el punto 33 de la §41); el chofer no carga kilómetros a mano (sale de
+Google Maps).
 
 **Qué se hizo:**
 - **Base:** `database/costos/01_galpon_kilometraje_y_gastos.sql` crea `GALPON`; `ORIGEN.Km_Galpon` y
@@ -3814,9 +3816,26 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **32.** El chofer marca la entrega y sube el remito en nuestro sistema aunque el viaje sea de Rukas: ver si trae un
   riesgo (lo que manda es Rukas, que lo maneja un administrador). Poner un tope de días para cargar gastos en un viaje
   cerrado.
-- [ ] **33.** El chofer no puede iniciar un viaje sin fecha: el botón deshabilitado con un globito que diga que se
+- [x] **33.** El chofer no puede iniciar un viaje sin fecha: el botón deshabilitado con un globito que diga que se
   comunique con administración para corregir la fecha y la hora. Tampoco puede cargar gastos en un viaje que todavía no
   arrancó (confirmar qué pasa En viaje). Buscar otros casos así.
+  **Hecho (27/10), subido, pendiente de probar en la VM**, con lo que decidió Rocío ese día:
+  - **Iniciar:** solo el día de la fecha de inicio (ni antes ni después). Si no, el botón queda gris con el motivo
+    debajo: "No se puede iniciar el viaje: es del 30/10/2026. Si sale hoy, es necesario que administración corrija la
+    fecha y la hora." ("era del …" si es de un día anterior). La API lo controla igual.
+  - **Gastos del chofer:** desde que inicia el viaje (En viaje) y hasta **2 días después de registrar la entrega**; en
+    Registrado no. Los de plataforma (Rukas), que no se inician en el sistema: desde el día del viaje hasta 2 días
+    después del fin. Pasado el tope, "Cargar gasto" queda gris: "No se puede cargar el gasto: pasaron más de 2 días de
+    la entrega. Si te falta rendir algo, es necesario que se lo pases a administración." Eliminar un gasto, igual.
+  - **Administración** (quien gestiona viajes): "Cargar gasto" en Ver detalle del viaje → "Recorrido completo y costo",
+    con el viaje Entregado o Listo para facturar (lo que el chofer no llegó a rendir); en los demás estados, gris con el
+    motivo. Los gastos no van a la factura: solo cambian el margen. La regla está en un solo lugar de la API
+    (`Viajes/GastosDelViaje.cs`).
+  - **Cómo probarlo en la VM:** recompilar. Como chofer: un viaje de hoy se inicia; uno de mañana o de ayer sin iniciar
+    muestra el motivo y no deja. Uno En viaje: "Cargar gasto" anda. Uno entregado hace 1 o 2 días: anda; hace 3 o más:
+    gris con el motivo (también Eliminar en la lista de gastos). Como admin: Ver detalle de un viaje entregado →
+    "Cargar gasto" → cargar uno con su ticket → toast, el detalle se vuelve a abrir con el gasto; en uno En viaje o
+    Facturado, el botón gris con el motivo. Auditoría: el gasto con el usuario que lo cargó.
 - [x] **35.** El recorrido completo empieza siempre en el galpón, no en la ubicación actual: el viaje se inicia en el
   galpón. **Hecho (27/10), subido, pendiente de probar en la VM:** en la hoja de ruta, "Abrir en Google Maps" de un viaje
   sin salir arranca en el galpón aunque el chofer esté en otro lado; en viaje sigue desde donde está, con lo que le

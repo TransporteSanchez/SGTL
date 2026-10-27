@@ -51,6 +51,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Estado { get; set; }
             public string Tipo_Cliente { get; set; }
             public DateTime Fecha_Inicio { get; set; }
+            public DateTime Fecha_Fin { get; set; }
+            public DateTime? Fecha_Entrega { get; set; }
             public bool Tiene_Evidencia { get; set; }
             public string EnProforma_Numero { get; set; }
             public string EnProforma_Estado { get; set; }
@@ -112,17 +114,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // Un gasto del viaje que rinde el chofer (control interno, 24/10): combustible con sus litros, peaje, comida u
         // otro, con la foto o el PDF del ticket.
-        public class GastoChoferDto
-        {
-            public string Tipo { get; set; }
-            public decimal? Importe { get; set; }
-            public decimal? Litros { get; set; }
-            public DateTime? Fecha { get; set; }
-            public string Detalle { get; set; }
-            public string Nombre_Archivo { get; set; }
-            public string Content_Type { get; set; }
-            public string ContenidoBase64 { get; set; }
-        }
+        public class GastoChoferDto : Viajes.GastosDelViaje.Datos { }
 
         private class GastoDelChoferRow
         {
@@ -154,9 +146,6 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
         private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
 
-        private static readonly string[] TiposGasto = { "Combustible", "Peaje", "Comida", "Otro" };
-        private static readonly string[] TiposComprobante = { "image/jpeg", "image/png", "image/webp", "application/pdf" };
-        private const int MaxBytesComprobante = 5 * 1024 * 1024;
 
         // Los gastos, el galpón y los km al galpón son de database/costos/01_…: sin ese script la hoja de ruta funciona
         // igual, sin gastos y con el recorrido de origen a destino.
@@ -260,7 +249,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
         private static ViajeDelChoferRow ViajeDelChofer(SGTLAuditContext db, int choferId, int viajeId)
         {
             return db.Database.SqlQuery<ViajeDelChoferRow>(
-                "SELECT v.Viaje_ID, v.Estado, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, v.Fecha_Inicio, " +
+                "SELECT v.Viaje_ID, v.Estado, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, v.Fecha_Inicio, v.Fecha_Fin, v.Fecha_Entrega, " +
                 SQL_TIENE_EVIDENCIA + " AS Tiene_Evidencia, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado " +
                 "FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " + OUTER_APPLY_PROFORMA +
                 "WHERE v.Viaje_ID = @id AND v.ChoferID = @chofer",
@@ -479,7 +468,16 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
             return direccion.EndsWith(pais, StringComparison.Ordinal) ? direccion.Substring(0, direccion.Length - pais.Length) : direccion;
         }
 
-        // POST api/HojaDeRuta/Viajes/{id}/Iniciar — Registrado → En viaje (solo clientes directos).
+        // Un viaje se inicia solo el día de su fecha de inicio (Rocío, 27/10, punto 33 de la §41): si sale otro día, primero
+        // administración corrige la fecha y la hora (así quedan bien la vuelta, los costos y la hoja de ruta).
+        public static string MotivoFechaParaIniciar(DateTime inicio, DateTime hoy)
+        {
+            if (inicio.Date == hoy.Date) return null;
+            return "No se puede iniciar el viaje: " + (inicio.Date > hoy.Date ? "es" : "era") + " del " + inicio.ToString("dd/MM/yyyy") +
+                ". Si sale hoy, es necesario que administración corrija la fecha y la hora.";
+        }
+
+        // POST api/HojaDeRuta/Viajes/{id}/Iniciar — Registrado → En viaje (solo clientes directos, el día del viaje).
         [HttpPost, Route("Viajes/{id:int}/Iniciar")]
         public async Task<IHttpActionResult> Iniciar(int id)
         {
@@ -488,16 +486,20 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
             {
                 SesionRow sesion;
                 ViajeDelChoferRow v;
+                DateTime hoy;
                 using (var db = new SGTLAuditContext(Cn()))
                 {
                     sesion = ValidarSesion(db);
                     v = ViajeDelChofer(db, ChoferDe(sesion), id);
+                    hoy = db.Database.SqlQuery<DateTime>("SELECT CAST(" + SQL_HOY + " AS datetime)").First();
                 }
                 if (v == null) return NoEstaEnTuHojaDeRuta();
                 if (EsConPlataforma(v.Tipo_Cliente)) return Rechazo("No se puede iniciar el viaje: lo sigue la plataforma del cliente.");
                 if (!string.IsNullOrEmpty(v.Estado) && v.Estado != ViajesController.EstadoRegistrado)
                     return Rechazo("No se puede iniciar el viaje: ya está " + TextoEstado(v.Estado) + ".");
                 if (BloqueaPorProforma(v)) return Rechazo("No se puede iniciar el viaje: está en la proforma " + TextoProforma(v) + ".");
+                var motivoFecha = MotivoFechaParaIniciar(v.Fecha_Inicio, hoy);
+                if (motivoFecha != null) return Rechazo(motivoFecha);
 
                 using (var viajes = ViajesDelSistema())
                 {
@@ -665,8 +667,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
             }
         }
 
-        // POST api/HojaDeRuta/Viajes/{id}/Gastos — un gasto con la foto o el PDF del ticket. En cualquier viaje del chofer
-        // (directo o con plataforma) desde el día que empieza, aunque ya esté entregado; no en uno facturado.
+        // POST api/HojaDeRuta/Viajes/{id}/Gastos — un gasto con la foto o el PDF del ticket: desde que inicia el viaje y
+        // hasta 2 días después de la entrega (Viajes/GastosDelViaje.cs).
         [HttpPost, Route("Viajes/{id:int}/Gastos")]
         public IHttpActionResult CargarGasto(int id, [FromBody] GastoChoferDto body)
         {
@@ -679,58 +681,10 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     var v = ViajeDelChofer(db, ChoferDe(sesion), id);
                     if (v == null) return NoEstaEnTuHojaDeRuta();
                     var hoy = db.Database.SqlQuery<DateTime>("SELECT CAST(" + SQL_HOY + " AS datetime)").First().Date;
-                    if (v.Estado == ViajesController.EstadoFacturado) return Rechazo("No se puede cargar el gasto: el viaje ya está facturado.");
-                    if (v.Fecha_Inicio.Date > hoy) return Rechazo("No se puede cargar el gasto: el viaje todavía no empezó.");
-
-                    var tipo = body == null ? "" : (body.Tipo ?? "").Trim();
-                    if (Array.IndexOf(TiposGasto, tipo) < 0) return Rechazo("Seleccioná el tipo de gasto.");
-                    if (!body.Importe.HasValue || body.Importe <= 0 || body.Importe > 100000000) return Rechazo("Completá el importe.");
-                    var esCombustible = tipo == "Combustible";
-                    if (esCombustible && (!body.Litros.HasValue || body.Litros <= 0 || body.Litros > 5000)) return Rechazo("Completá los litros que cargaste.");
-                    if (!body.Fecha.HasValue) return Rechazo("Completá la fecha del gasto.");
-                    var fecha = body.Fecha.Value.Date;
-                    if (fecha > hoy) return Rechazo("La fecha del gasto no puede ser posterior a hoy.");
-                    if (fecha < v.Fecha_Inicio.Date.AddDays(-1)) return Rechazo("La fecha del gasto no puede ser anterior al viaje.");
-
-                    var contentType = (body.Content_Type ?? "").Trim().ToLowerInvariant();
-                    if (string.IsNullOrWhiteSpace(body.ContenidoBase64)) return Rechazo("Elegí la foto o el PDF del ticket.");
-                    if (Array.IndexOf(TiposComprobante, contentType) < 0) return Rechazo("El ticket tiene que ser una foto (JPG, PNG o WEBP) o un PDF.");
-                    byte[] archivo;
-                    try
-                    {
-                        var b64 = body.ContenidoBase64;
-                        var coma = b64.IndexOf(',');
-                        if (b64.StartsWith("data:", StringComparison.OrdinalIgnoreCase) && coma >= 0) b64 = b64.Substring(coma + 1);
-                        archivo = Convert.FromBase64String(b64);
-                    }
-                    catch (FormatException)
-                    {
-                        return Rechazo("El archivo del ticket no es válido.");
-                    }
-                    if (archivo.Length == 0 || archivo.Length > MaxBytesComprobante) return Rechazo("El ticket puede pesar como máximo 5 MB.");
-                    var nombre = (body.Nombre_Archivo ?? "").Trim();
-                    nombre = nombre.Substring(nombre.LastIndexOfAny(new[] { '/', '\\' }) + 1);
-                    foreach (var c in System.IO.Path.GetInvalidFileNameChars()) nombre = nombre.Replace(c, '_');
-                    if (nombre.Length == 0) nombre = "ticket";
-                    if (nombre.Length > 260) nombre = nombre.Substring(nombre.Length - 260);
-                    var detalle = (body.Detalle ?? "").Trim();
-                    if (detalle.Length > 200) detalle = detalle.Substring(0, 200);
-                    var usuario = Recortar(sesion.Nombre_Usuario, 50);
-
-                    var gastoId = db.Database.SqlQuery<int>(
-                        "INSERT INTO dbo.VIAJE_GASTOS (Viaje_ID, Tipo, Fecha, Importe, Litros, Detalle, Nombre_Archivo, Content_Type, Archivo, Fecha_Alta, Usu_Alta) " +
-                        "OUTPUT INSERTED.Gasto_ID " +
-                        "VALUES (@viaje, @tipo, @fecha, @importe, @litros, @detalle, @nombre, @ct, @archivo, " +
-                        "CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Argentina Standard Time' AS datetime), @usu)",
-                        P("@viaje", id), P("@tipo", tipo), P("@fecha", fecha), P("@importe", decimal.Round(body.Importe.Value, 2)),
-                        P("@litros", esCombustible ? (object)decimal.Round(body.Litros.Value, 2) : null),
-                        P("@detalle", detalle.Length == 0 ? null : detalle), P("@nombre", nombre), P("@ct", contentType),
-                        new SqlParameter("@archivo", System.Data.SqlDbType.VarBinary, -1) { Value = archivo }, P("@usu", usuario)).First();
-
-                    SGTLAuditContext.RegistrarEvento(Cn(), Recortar(usuario, 20), "INSERT", "VIAJE_GASTOS", "Gasto_ID=" + gastoId,
-                        "Viaje #" + id + ": " + tipo + " " + decimal.Round(body.Importe.Value, 2).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
-                        + (esCombustible ? " (" + decimal.Round(body.Litros.Value, 2).ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + " l)" : "")
-                        + ", ticket " + nombre);
+                    var motivo = Viajes.GastosDelViaje.MotivoChofer("cargar", v.Estado, EsConPlataforma(v.Tipo_Cliente), v.Fecha_Inicio, v.Fecha_Fin, v.Fecha_Entrega, hoy);
+                    if (motivo != null) return Rechazo(motivo);
+                    var error = Viajes.GastosDelViaje.Guardar(db, id, v.Fecha_Inicio, hoy, body, sesion.Nombre_Usuario, Cn());
+                    if (error != null) return Rechazo(error);
                     var gastos = LeerGastos(db, id);
                     return Ok(new { Viaje_ID = id, Gastos = gastos, Total = gastos.Sum(g => g.Importe) });
                 }
@@ -741,7 +695,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
             }
         }
 
-        // DELETE api/HojaDeRuta/Viajes/{id}/Gastos/{gastoId} — el chofer corrige un gasto mal cargado (no en un viaje facturado).
+        // DELETE api/HojaDeRuta/Viajes/{id}/Gastos/{gastoId} — el chofer corrige un gasto mal cargado, mientras puede cargarlos.
         [HttpDelete, Route("Viajes/{id:int}/Gastos/{gastoId:int}")]
         public IHttpActionResult EliminarGasto(int id, int gastoId)
         {
@@ -752,7 +706,9 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     var sesion = ValidarSesion(db);
                     var v = ViajeDelChofer(db, ChoferDe(sesion), id);
                     if (v == null) return NoEstaEnTuHojaDeRuta();
-                    if (v.Estado == ViajesController.EstadoFacturado) return Rechazo("No se puede eliminar el gasto: el viaje ya está facturado.");
+                    var hoy = db.Database.SqlQuery<DateTime>("SELECT CAST(" + SQL_HOY + " AS datetime)").First().Date;
+                    var motivo = Viajes.GastosDelViaje.MotivoChofer("eliminar", v.Estado, EsConPlataforma(v.Tipo_Cliente), v.Fecha_Inicio, v.Fecha_Fin, v.Fecha_Entrega, hoy);
+                    if (motivo != null) return Rechazo(motivo);
                     var gasto = db.Database.SqlQuery<GastoDelChoferRow>(
                         "SELECT Gasto_ID, Viaje_ID, Tipo, Importe, Nombre_Archivo, Content_Type, CAST(NULL AS varbinary(max)) AS Archivo " +
                         "FROM dbo.VIAJE_GASTOS WHERE Gasto_ID = @gasto AND Viaje_ID = @viaje", P("@gasto", gastoId), P("@viaje", id)).FirstOrDefault();

@@ -153,13 +153,30 @@
     });
   }
 
-  function mostrarCosto(viaje, numero) {
+  function mostrarCosto(viaje, numero, opciones) {
     cargarScript('assets/static/js/google-maps.js', function () { return !!window.SGTLGoogleMaps; })
       .then(function () { return cargarScript('assets/static/js/galpon-km.js', function () { return !!window.SGTLGalpon; }); })
       .then(function () { return cargarScript('assets/static/js/costos-viaje.js', function () { return !!window.SGTLCostosViaje; }); })
       .then(function () {
-        window.SGTLCostosViaje.dibujar(viaje.Viaje_ID, document.getElementById('verViajeCosto'), function () { return numero === apertura; });
+        window.SGTLCostosViaje.dibujar(viaje.Viaje_ID, document.getElementById('verViajeCosto'), function () { return numero === apertura; },
+          { alCargarGasto: function () { cargarGasto(viaje, opciones); } });
       }, function () { /* sin los módulos, el detalle se ve igual, sin el costo */ });
+  }
+
+  // "Cargar gasto" de administración (punto 33 de la §41): el detalle se cierra, se carga el gasto y vuelve a abrirse
+  // (con el gasto nuevo si se cargó; como estaba si se canceló).
+  function cargarGasto(viaje, opciones) {
+    cargarScript('assets/static/js/gasto-viaje.js', function () { return !!window.SGTLGastoViaje; }).then(function () {
+      document.getElementById('modalVerViaje').addEventListener('hidden.bs.modal', function abrirGasto() {
+        document.getElementById('modalVerViaje').removeEventListener('hidden.bs.modal', abrirGasto);
+        window.SGTLGastoViaje.abrir({
+          viajeId: viaje.Viaje_ID,
+          resumen: (viaje.Cliente ? viaje.Cliente + ' · ' : '') + (viaje.Origen || '') + ' → ' + (viaje.Destino || ''),
+          alTerminar: function (cargado) { if (cargado) volverAAbrir(viaje, opciones); else abrir(viaje, opciones); }
+        });
+      });
+      SGTL.modal('#modalVerViaje', 'hide');
+    }, function () { SGTL.toastError('No se pudo abrir el formulario del gasto. Probá de nuevo.'); });
   }
 
   // El viaje como está ahora (después de actualizar o mantener su precio), con el mismo detalle abierto. La pantalla de
@@ -213,7 +230,7 @@
     Promise.all([cargarListas(), importe(viaje), pedir('/Viajes/' + encodeURIComponent(viaje.Viaje_ID))]).then(function (r) {
       if (numero !== apertura) return;
       document.getElementById('verViajeCuerpo').innerHTML = cuerpo(viaje, r[0], r[1], r[2], opciones);
-      mostrarCosto(viaje, numero);
+      mostrarCosto(viaje, numero, opciones);
       mostrarCambioTarifa(viaje, numero, opciones);
       mostrarOrden(viaje, numero);
     });

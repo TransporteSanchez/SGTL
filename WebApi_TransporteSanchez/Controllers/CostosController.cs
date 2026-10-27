@@ -22,7 +22,9 @@ namespace WebApi_TransporteSanchez.Controllers
     // navegador) y los guarda acá; si cambia el galpón se borran para volver a calcularse.
     // Todo pide el token. Ver los costos de un viaje: administradores o permiso de viajes; el kilometraje de un camión:
     // administradores o permiso de camiones; cambiar el galpón: administradores (Gestionar empresa); el gasoil y el
-    // kilometraje: administradores o "Gestión de camiones". Los gastos del chofer se cargan en HojaDeRutaController.
+    // kilometraje: administradores o "Gestión de camiones". Los gastos del chofer se cargan en HojaDeRutaController; como
+    // excepción, administración (quien gestiona viajes) los carga acá con el viaje entregado o listo para facturar
+    // (Viajes/GastosDelViaje.cs).
     [RoutePrefix("api/Costos")]
     public class CostosController : ApiController
     {
@@ -112,6 +114,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal? Precio_Litro { get; set; }
             public DateTime? Precio_Desde { get; set; }
             public decimal? Importe { get; set; }
+            public string Estado { get; set; }
         }
 
         public class GastoRow
@@ -603,7 +606,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         "v.OrigenID, ISNULL(o.Descripcion,'') AS Origen, o.Km_Galpon AS Km_Ida, " + SQL_KM_RUTA + " AS Km_Ruta, " +
                         "v.DestinoID, ISNULL(d.Descripcion,'') AS Destino, d.Km_Galpon AS Km_Vuelta, " +
                         "pg.Precio_Litro, pg.Vigente_Desde AS Precio_Desde, " +
-                        (hayImporte ? "v.Importe" : "CAST(NULL AS decimal(18, 2))") + " AS Importe " +
+                        (hayImporte ? "v.Importe" : "CAST(NULL AS decimal(18, 2))") + " AS Importe, ISNULL(v.Estado, 'Registrado') AS Estado " +
                         "FROM dbo.VIAJES v " +
                         "LEFT JOIN dbo.CAMIONES cam ON cam.Camion_ID = v.CamionID " +
                         "LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID " +
@@ -636,7 +639,10 @@ namespace WebApi_TransporteSanchez.Controllers
                         Combustible_Estimado = combustible,
                         v.Importe,
                         Gastos = gastos,
-                        Gastos_Total = gastos.Sum(g => g.Importe)
+                        Gastos_Total = gastos.Sum(g => g.Importe),
+                        // "Cargar gasto" para quien gestiona viajes (null: no lo ve); Motivo vacío si se puede.
+                        Cargar_Gasto = sesion.Tiene("gestion de viajes")
+                            ? new { Motivo = Viajes.GastosDelViaje.MotivoAdministracion("cargar", v.Estado) ?? "" } : null
                     });
                 }
             }
@@ -644,6 +650,43 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 return Error(ex, "No se pudo calcular el costo del viaje. Probá de nuevo.");
             }
+        }
+
+        // POST api/Costos/Viajes/{id}/Gastos — administración carga un gasto que el chofer no llegó a rendir (Rocío, 27/10,
+        // punto 33 de la §41): quien gestiona viajes, con el viaje entregado o listo para facturar. Las mismas validaciones
+        // que la hoja de ruta.
+        [HttpPost, Route("Viajes/{id:int}/Gastos")]
+        public IHttpActionResult CargarGasto(int id, [FromBody] Viajes.GastosDelViaje.Datos body)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var sesion = ValidarSesion(db);
+                    Exigir(sesion.Tiene("gestion de viajes"), "No tenés permiso para cargar gastos de los viajes.");
+                    var v = db.Database.SqlQuery<EstadoViajeRow>(
+                        "SELECT Viaje_ID, ISNULL(Estado, 'Registrado') AS Estado, Fecha_Inicio FROM dbo.VIAJES WHERE Viaje_ID = @id", P("@id", id)).FirstOrDefault();
+                    if (v == null) return Content(HttpStatusCode.NotFound, new { message = "El viaje ya no existe." });
+                    var motivo = Viajes.GastosDelViaje.MotivoAdministracion("cargar", v.Estado);
+                    if (motivo != null) return Rechazo(motivo);
+                    var hoy = db.Database.SqlQuery<DateTime>(
+                        "SELECT CAST(CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Argentina Standard Time' AS date) AS datetime)").First();
+                    var error = Viajes.GastosDelViaje.Guardar(db, id, v.Fecha_Inicio, hoy, body, sesion.Nombre_Usuario, Cn());
+                    if (error != null) return Rechazo(error);
+                    return Ok(new { Message = "Gasto del viaje #" + id + " cargado." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error(ex, "No se pudo cargar el gasto. Probá de nuevo.");
+            }
+        }
+
+        private class EstadoViajeRow
+        {
+            public int Viaje_ID { get; set; }
+            public string Estado { get; set; }
+            public DateTime Fecha_Inicio { get; set; }
         }
 
         // GET api/Costos/Gastos/{id}/Comprobante — la foto o el PDF del ticket (para la oficina).
