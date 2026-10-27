@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hoja de ruta · SGTL</title>
+    <title>Hojas de ruta · SGTL</title>
 
     <style>
         #app {
@@ -160,10 +160,15 @@
                         <div class="card-header d-flex justify-content-between align-items-start flex-wrap gap-2">
                             <div>
                                 <h5 class="card-title mb-1">
-                                    <i class="bi bi-signpost-split me-2" aria-hidden="true"></i>Hoja de ruta
+                                    <i class="bi bi-signpost-split me-2" aria-hidden="true"></i>Hojas de ruta
                                 </h5>
-                                <p class="text-muted mb-0">Tus viajes: el recorrido, el camión y la entrega.</p>
+                                <p class="text-muted mb-0" id="subtituloHojaDeRuta">Tus viajes: el recorrido, el camión y la entrega.</p>
                             </div>
+                        </div>
+                        <!-- Los administradores y quien gestiona viajes ven la de cualquier chofer, en solo lectura (punto 4 de la §41). -->
+                        <div class="card-body pt-0 d-none" id="bloqueChofer">
+                            <label for="choferHojaDeRuta" class="form-label">Chofer</label>
+                            <select class="form-select" id="choferHojaDeRuta"><option value="">Buscá un chofer</option></select>
                         </div>
                         <div class="card-body pt-0 d-flex flex-wrap align-items-center gap-3" id="contenidoHojaDeRuta">
                             <div class="sgtl-segmentado" role="group" aria-label="Qué viajes ver" id="vistaHojaDeRuta">
@@ -388,6 +393,7 @@
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/google-maps.js"></script>
     <script src="assets/static/js/hoja-de-ruta.js"></script>

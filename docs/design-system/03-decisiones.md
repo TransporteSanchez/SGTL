@@ -258,7 +258,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Dashboard | (ítem principal) |
 | Tableros | (ítem principal, nuevo 24/10: todos los tableros por tema; permiso de grupo propio, como el Dashboard; §13) |
-| Hoja de ruta | (ítem principal, nuevo 24/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
+| Hojas de ruta | (ítem principal, nuevo 24/10, en plural desde el 27/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio, que en la base sigue llamándose "Hoja de ruta", y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
 | Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
@@ -269,7 +269,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Auditoría | (ítem principal) |
 | Documentación | Consultar manual de usuario · Consultar informe de versión |
 
-- **Ítems principales:** "Dashboard", "Tableros", "Hoja de ruta" y "Auditoría" quedan sin verbo.
+- **Ítems principales:** "Dashboard", "Tableros", "Hojas de ruta" y "Auditoría" quedan sin verbo.
 - Los permisos del menú se resuelven por el archivo de cada pantalla (`sidebar-loader.js`), no
   por el texto: renombrar no cambia quién ve qué.
 - **Los permisos se ven con el texto de su opción del menú** y en el mismo orden (23/10), en Gestionar grupos y
@@ -679,7 +679,7 @@ Esto define solo cómo se muestran y cómo se cargan.
 
 - En celular el objetivo es que funcione, no que esté optimizado (las tablas no se convierten en
   tarjetas).
-- **Excepción: Hoja de ruta** (`hoja-de-ruta.html`, 24/10; la pidió Rocío para el celular del chofer). Es la única
+- **Excepción: Hojas de ruta** (`hoja-de-ruta.html`, 24/10; la pidió Rocío para el celular del chofer). Es la única
   pantalla pensada primero para el celular:
   - **una tarjeta por viaje**, agrupadas por día con el subtítulo del sistema (`.sgtl-bloque-titulo`: "Hoy · sábado
     24/10/2026"): una columna en el celular y la tablet (hasta 760 px) y dos desde 1200 px, para no scrollear tanto
@@ -692,9 +692,13 @@ Esto define solo cómo se muestran y cómo se cargan.
     576 px); el camión, solo con el dominio; "Ver mapa" y "Abrir en Google Maps" en un renglón, y los botones del pie
     lado a lado (en el celular se reparten el ancho);
   - **el chofer** (un usuario que solo tiene la Hoja de ruta) tiene el menú como todos, con el logo de SGTL, pero con
-    solo "Hoja de ruta" y **plegado al entrar**: lo abre el botón de tres rayitas si quiere (Rocío, 24/10). No ve la
+    solo "Hojas de ruta" y **plegado al entrar**: lo abre el botón de tres rayitas si quiere (Rocío, 24/10). No ve la
     Documentación. Entra directo desde el login o el enlace, y arriba sigue su nombre con Cambiar contraseña y Cerrar
     sesión. La oficina la ve en su menú, como siempre;
+  - **los administradores y quien gestiona viajes** (Rocío, 27/10, punto 4 de la §41) eligen un chofer en un buscador
+    ("Chofer", arriba) y ven su hoja de ruta **en solo lectura**: las mismas tarjetas, sin botones (los cambios se hacen
+    en Gestionar viajes), y el subtítulo "Los viajes de {chofer}, para ver: los cambios se hacen en Gestionar viajes.".
+    El enlace del WhatsApp les abre la del chofer de ese viaje;
   - en la tarjeta: horario, número de viaje y cliente, el estado (§4), el recorrido y los datos con `.sgtl-dato`. Un
     viaje de un día anterior que sigue en "Hoy y próximos" dice por qué con una etiqueta amarilla debajo del estado:
     "Quedó sin iniciar" o "Entrega sin registrar" (Rocío, 24/10; la oficina los ve en "Para revisar" como Sin salir y

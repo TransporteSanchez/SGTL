@@ -157,7 +157,8 @@ acciones.forEach(function (accion) {
     const cuerpo = api.slice(api.indexOf('public class ' + dto), api.indexOf('}', api.indexOf('public class ' + dto)));
     assert.ok(cuerpo.length > 20 && !/ChoferID|Chofer_ID/.test(cuerpo), dto + ' no trae el chofer: sale del token');
 });
-assert.ok(/WHERE v\.ChoferID = @chofer/.test(api) && /P\("@chofer", sesion\.Chofer_ID\.Value\)/.test(api),
+// El chofer de la sesión; otro, solo quien ve todas las hojas de ruta (punto 4 de la §41, abajo).
+assert.ok(/WHERE v\.ChoferID = @chofer/.test(api) && /int\? choferVisto = sesion\.Chofer_ID;/.test(api) && /P\("@chofer", choferVisto\.Value\)/.test(api),
     'la hoja de ruta filtra por el chofer de la sesión');
 const subir = api.slice(api.indexOf('public async Task<IHttpActionResult> SubirEvidencia('), api.indexOf('public async Task<IHttpActionResult> VerEvidencia('));
 assert.ok(/EsConPlataforma\(v\.Tipo_Cliente\)/.test(subir) && /EstadoEnViaje/.test(subir) && /EstadoEntregado/.test(subir),
@@ -185,8 +186,8 @@ assert.strictEqual(volverCon(''), '');
 // ---------------------------------------------------------------- Menú y permiso
 
 const menu = leer('assets/static/js/sidebar-loader.js');
-assert.ok(menu.includes('<a href="hoja-de-ruta.html" class="sidebar-link"><i class="bi bi-signpost-split"></i><span>Hoja de ruta</span>'),
-    'Hoja de ruta es un ítem principal del menú');
+assert.ok(menu.includes('<a href="hoja-de-ruta.html" class="sidebar-link"><i class="bi bi-signpost-split"></i><span>Hojas de ruta</span>'),
+    'Hojas de ruta es un ítem principal del menú (en plural desde el 27/10)');
 assert.ok(menu.includes("'hoja de ruta': 'hoja-de-ruta.html'"), 'el permiso "Hoja de ruta" abre la pantalla');
 assert.ok(menu.includes("'Login.html?volver=' + encodeURIComponent("), 'con la sesión vencida, el login sabe adónde volver');
 // El chofer (solo tiene la Hoja de ruta): el menú con el logo y solo la Hoja de ruta, plegado al entrar y que se abre con el
@@ -216,7 +217,7 @@ assert.ok(api.includes('"SELECT ISNULL(SUM(CASE WHEN " + pendiente + " THEN 1 EL
     'las cantidades usan las mismas condiciones que cada vista');
 
 // Anteriores por año (arranca en el actual) y de a 30, con "Ver más viajes" (Rocío, 24/10).
-assert.ok(/public IHttpActionResult Get\(string vista = null, int\? anio = null, int\? cantidad = null\)/.test(api) &&
+assert.ok(/public IHttpActionResult Get\(string vista = null, int\? anio = null, int\? cantidad = null, int\? choferId = null, int\? viajeId = null\)/.test(api) &&
     /anio\.Value <= hoy\.Year \? anio\.Value : hoy\.Year/.test(api), 'Anteriores se pide por año; sin año (o uno que no tiene sentido), el actual');
 assert.ok(/Math\.Min\(cantidad \?\? AnterioresPorPagina, AnterioresMaximo\)/.test(api) && api.includes('"SELECT TOP (" + (tope + 1) + ") v.Viaje_ID,') &&
     /var hayMas = filas\.Count > tope;/.test(api), 'trae de a 30 (con tope) y avisa si quedan más');
@@ -240,4 +241,23 @@ assert.ok(pantallaHtml.includes('Hoy y próximos<span data-cantidad-de="proximos
 assert.ok(leer('assets/static/js/hoja-de-ruta.js').includes("var cantidades = { proximos: data.Cantidad_Proximos, anteriores: data.Cantidad_Anteriores };"),
     'la pantalla muestra la cantidad de cada vista');
 
-console.log('OK: la hoja de ruta muestra y deja hacer lo que corresponde, solo con los viajes del chofer de la sesión');
+// Hojas de ruta (Rocío, 27/10, punto 4 de la §41): los administradores y quien gestiona viajes ven la de cualquier chofer,
+// en solo lectura; el chofer, solo la suya.
+assert.ok(/public bool PuedeVerTodas \{ get \{ return EsAdmin \|\| GestionaViajes; \} \}/.test(api) && /N'Gestión de viajes', N'Gestion de viajes'/.test(api),
+    'ven todas: los administradores y quien gestiona viajes');
+const getHoja = api.slice(api.indexOf('public IHttpActionResult Get(string vista'), api.indexOf('// POST api/HojaDeRuta/Viajes/{id}/Iniciar'));
+assert.ok(/if \(!sesion\.PuedeVerTodas\) throw new AccesoDenegadoException\("No tenés permiso para ver la hoja de ruta de otro chofer\."\);/.test(getHoja),
+    'el chofer no pide la de otro');
+assert.ok(/Solo_Lectura = soloLectura/.test(getHoja) && !/sesion\.Chofer_ID\.Value/.test(getHoja), 'la de otro, en solo lectura, con su chofer');
+['Iniciar', 'Entrega', 'SinCarga'].forEach(function (accion) {
+    const tramo = api.slice(api.indexOf('Route("Viajes/{id:int}/' + accion + '")'));
+    assert.ok(/ViajeDelChofer\(db, ChoferDe\(sesion\), id\)/.test(tramo.slice(0, 1500)), accion + ': solo con los viajes propios');
+});
+assert.ok(/v = ViajeParaVer\(db, sesion, id\);/.test(api.slice(api.indexOf('public async Task<IHttpActionResult> VerEvidencia('))), 'la evidencia se puede ver');
+const pantallaHoja = leer('assets/static/js/hoja-de-ruta.js');
+assert.ok(/var a = estado\.soloLectura \? \{ paso: null, sinCarga: null, reemplazar: false, nota: '' \} : accionesDe\(v, estado\.hoy\);/.test(pantallaHoja),
+    'en solo lectura, sin botones');
+assert.ok(/<span>Hojas de ruta<\/span>/.test(leer('assets/static/js/sidebar-loader.js')) && /\['hoja de ruta', 'Hojas de ruta'\]/.test(leer('assets/static/js/permisos-menu.js')) &&
+    /"Hoja de ruta",/.test(leer('WebApi_TransporteSanchez/Controllers/GruposController.cs')), '"Hojas de ruta" a la vista; el permiso guardado no cambia');
+
+console.log('OK: la hoja de ruta muestra y deja hacer lo que corresponde, solo con los viajes del chofer de la sesión (y las de todos, para ver)');

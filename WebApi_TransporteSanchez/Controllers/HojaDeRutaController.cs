@@ -41,8 +41,21 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Nombre_Usuario { get; set; }
             public bool EsAdmin { get; set; }
             public bool GestionaUsuarios { get; set; }
+            public bool GestionaViajes { get; set; }
             public int? Chofer_ID { get; set; }
             public string Chofer { get; set; }
+            // Las hojas de ruta de todos los choferes, para ver (punto 4 de la §41, Rocío 27/10): los administradores y
+            // quien gestiona viajes. Los cambios se siguen haciendo en Gestionar viajes.
+            public bool PuedeVerTodas { get { return EsAdmin || GestionaViajes; } }
+        }
+
+        private class ChoferParaVerRow
+        {
+            public int Chofer_ID { get; set; }
+            public string Nombre { get; set; }
+            public string Apellido { get; set; }
+            public string DNI { get; set; }
+            public string EstadoChofer { get; set; }
         }
 
         private class ViajeDelChoferRow
@@ -207,6 +220,11 @@ SELECT TOP (1) u.Usuario_ID, u.Nombre_Usuario,
                          JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
                          WHERE gu.UsuarioID = u.Usuario_ID AND m.Menu_Nombre IN (N'Gestión de usuarios', N'Gestion de usuarios'))
        THEN 1 ELSE 0 END AS bit) AS GestionaUsuarios,
+  CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.GRUPOS_USUARIOS gu
+                         JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
+                         JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
+                         WHERE gu.UsuarioID = u.Usuario_ID AND m.Menu_Nombre IN (N'Gestión de viajes', N'Gestion de viajes'))
+       THEN 1 ELSE 0 END AS bit) AS GestionaViajes,
   c.Chofer_ID,
   LTRIM(RTRIM(ISNULL(c.Nombre,'') + ' ' + ISNULL(c.Apellido,''))) AS Chofer
 FROM dbo.USUARIOS u
@@ -260,6 +278,14 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 "FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " + OUTER_APPLY_PROFORMA +
                 "WHERE v.Viaje_ID = @id AND v.ChoferID = @chofer",
                 P("@id", viajeId), P("@chofer", choferId)).FirstOrDefault();
+        }
+
+        // Para ver (no para cambiar) un viaje: el chofer, los suyos; quien puede ver todas las hojas de ruta, el de cualquiera.
+        private static ViajeDelChoferRow ViajeParaVer(SGTLAuditContext db, SesionRow sesion, int viajeId)
+        {
+            if (!sesion.PuedeVerTodas) return ViajeDelChofer(db, ChoferDe(sesion), viajeId);
+            var chofer = db.Database.SqlQuery<int?>("SELECT ChoferID FROM dbo.VIAJES WHERE Viaje_ID = @id", P("@id", viajeId)).FirstOrDefault();
+            return chofer.HasValue ? ViajeDelChofer(db, chofer.Value, viajeId) : null;
         }
 
         private static bool EsConPlataforma(string tipoCliente)
@@ -324,13 +350,15 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
 
         // ---------------------------------------------------------------- Hoja de ruta
 
-        // GET api/HojaDeRuta?vista=proximos|anteriores&anio=2026&cantidad=30
+        // GET api/HojaDeRuta?vista=proximos|anteriores&anio=2026&cantidad=30[&choferId=3][&viajeId=48]
         // proximos (por defecto): lo que todavía tiene que hacer o que termina hoy o después; incluye el viaje en curso y
         // los de clientes directos que quedaron sin salir. anteriores: el resto, del año pedido (por defecto, el actual),
         // del más nuevo al más viejo y los primeros `cantidad` (Hay_Mas dice si quedan; Anios, los años con viajes
-        // anteriores y el actual). Sin chofer asignado: { Vinculado = false } (la pantalla lo explica).
+        // anteriores y el actual). Sin chofer: { Vinculado = false } (la pantalla lo explica).
+        // Hojas de ruta (punto 4 de la §41): quien puede ver todas (Puede_Ver_Todas) pide la de un chofer con choferId, o la
+        // del chofer de un viaje con viajeId (el enlace del WhatsApp); la ve en solo lectura (Solo_Lectura).
         [HttpGet, Route("")]
-        public IHttpActionResult Get(string vista = null, int? anio = null, int? cantidad = null)
+        public IHttpActionResult Get(string vista = null, int? anio = null, int? cantidad = null, int? choferId = null, int? viajeId = null)
         {
             var anteriores = string.Equals((vista ?? "").Trim(), "anteriores", StringComparison.OrdinalIgnoreCase);
             try
@@ -339,8 +367,26 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 {
                     var sesion = ValidarSesion(db);
                     var hoy = db.Database.SqlQuery<DateTime>("SELECT CAST(" + SQL_HOY + " AS datetime)").First();
-                    if (!sesion.Chofer_ID.HasValue)
-                        return Ok(new { Vinculado = false, Chofer = "", Hoy = hoy, Gastos_Habilitados = false, Viajes = new object[0] });
+                    int? choferVisto = sesion.Chofer_ID;
+                    if (choferId.HasValue && choferId != sesion.Chofer_ID)
+                    {
+                        if (!sesion.PuedeVerTodas) throw new AccesoDenegadoException("No tenés permiso para ver la hoja de ruta de otro chofer.");
+                        choferVisto = choferId;
+                    }
+                    else if (!choferId.HasValue && viajeId.HasValue && sesion.PuedeVerTodas)
+                    {
+                        var delViaje = db.Database.SqlQuery<int?>("SELECT ChoferID FROM dbo.VIAJES WHERE Viaje_ID = @id", P("@id", viajeId.Value)).FirstOrDefault();
+                        if (delViaje.HasValue && delViaje.Value > 0 && delViaje != sesion.Chofer_ID) choferVisto = delViaje;
+                    }
+                    if (!choferVisto.HasValue)
+                        return Ok(new { Vinculado = false, Chofer = "", Hoy = hoy, Gastos_Habilitados = false, Viajes = new object[0],
+                            Puede_Ver_Todas = sesion.PuedeVerTodas });
+                    bool soloLectura = choferVisto != sesion.Chofer_ID;
+                    var nombreChofer = soloLectura
+                        ? db.Database.SqlQuery<string>("SELECT LTRIM(RTRIM(ISNULL(Nombre,'') + ' ' + ISNULL(Apellido,''))) FROM dbo.CHOFERES WHERE Chofer_ID = @id",
+                            P("@id", choferVisto.Value)).FirstOrDefault()
+                        : sesion.Chofer;
+                    if (nombreChofer == null) return Content(HttpStatusCode.NotFound, new { message = "Ese chofer ya no existe." });
 
                     // Los viajes de antes del circuito de estados no tienen Estado: cuentan como Registrado.
                     // Entre paréntesis: Anteriores es NOT de todo esto.
@@ -396,7 +442,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         (porGalpon ? CostosController.SQL_GALPON_DEL_VIAJE + CostosController.SQL_KM_GALPON_DEL_VIAJE : "") +
                         OUTER_APPLY_PROFORMA +
                         "WHERE v.ChoferID = @chofer" + where,
-                        P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy), P("@desde", desde)).ToList();
+                        P("@chofer", choferVisto.Value), P("@hoy", hoy), P("@desde", desde)).ToList();
                     var hayMas = filas.Count > tope;
                     if (hayMas) filas = filas.Take(tope).ToList();
 
@@ -447,7 +493,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         "SELECT ISNULL(SUM(CASE WHEN " + pendiente + " THEN 1 ELSE 0 END), 0) AS Proximos, " +
                         "ISNULL(SUM(CASE WHEN NOT " + pendiente + " AND " + delAnio + " THEN 1 ELSE 0 END), 0) AS Anteriores " +
                         "FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID WHERE v.ChoferID = @chofer",
-                        P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy), P("@desde", desde)).First();
+                        P("@chofer", choferVisto.Value), P("@hoy", hoy), P("@desde", desde)).First();
 
                     // Los años para elegir en Anteriores: los que tienen viajes anteriores y el actual, del más nuevo al más viejo.
                     List<int> anios = null;
@@ -456,7 +502,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         anios = db.Database.SqlQuery<int>(
                             "SELECT DISTINCT YEAR(v.Fecha_Inicio) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " +
                             "WHERE v.ChoferID = @chofer AND NOT " + pendiente,
-                            P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy)).ToList();
+                            P("@chofer", choferVisto.Value), P("@hoy", hoy)).ToList();
                         if (!anios.Contains(hoy.Year)) anios.Add(hoy.Year);
                         anios = anios.OrderByDescending(a => a).ToList();
                     }
@@ -466,7 +512,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     var galpon = hayGastos ? CostosController.DireccionGalpon(CostosController.LeerGalpon(db)) : null;
                     return Ok(new
                     {
-                        Vinculado = true, Chofer = sesion.Chofer, Hoy = hoy, Gastos_Habilitados = hayGastos, Galpon = galpon,
+                        Vinculado = true, Chofer = nombreChofer, Chofer_ID = choferVisto.Value, Solo_Lectura = soloLectura,
+                        Puede_Ver_Todas = sesion.PuedeVerTodas, Hoy = hoy, Gastos_Habilitados = hayGastos, Galpon = galpon,
                         Cantidad_Proximos = cantidades.Proximos, Cantidad_Anteriores = cantidades.Anteriores,
                         Anio = anioPedido, Anios = anios, Hay_Mas = hayMas, Viajes = viajes
                     });
@@ -685,7 +732,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 using (var db = new SGTLAuditContext(Cn()))
                 {
                     var sesion = ValidarSesion(db);
-                    v = ViajeDelChofer(db, ChoferDe(sesion), id);
+                    v = ViajeParaVer(db, sesion, id);
                 }
                 if (v == null) return NoEstaEnTuHojaDeRuta();
                 if (!v.Tiene_Evidencia) return Content(HttpStatusCode.NotFound, new { message = "El viaje no tiene evidencia cargada." });
@@ -712,7 +759,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 "WHERE Viaje_ID = @id ORDER BY Fecha, Gasto_ID", P("@id", viajeId)).ToList();
         }
 
-        // GET api/HojaDeRuta/Viajes/{id}/Gastos — los gastos que cargó el chofer en su viaje.
+        // GET api/HojaDeRuta/Viajes/{id}/Gastos — los gastos que cargó el chofer en su viaje (también para quien ve todas).
         [HttpGet, Route("Viajes/{id:int}/Gastos")]
         public IHttpActionResult Gastos(int id)
         {
@@ -721,7 +768,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 using (var db = new SGTLAuditContext(Cn()))
                 {
                     var sesion = ValidarSesion(db);
-                    var v = ViajeDelChofer(db, ChoferDe(sesion), id);
+                    var v = ViajeParaVer(db, sesion, id);
                     if (v == null) return NoEstaEnTuHojaDeRuta();
                     var gastos = LeerGastos(db, id);
                     return Ok(new { Viaje_ID = id, Gastos = gastos, Total = gastos.Sum(g => g.Importe) });
@@ -804,7 +851,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     var gasto = db.Database.SqlQuery<GastoDelChoferRow>(
                         "SELECT g.Gasto_ID, g.Viaje_ID, g.Tipo, g.Importe, g.Nombre_Archivo, g.Content_Type, g.Archivo " +
                         "FROM dbo.VIAJE_GASTOS g JOIN dbo.VIAJES v ON v.Viaje_ID = g.Viaje_ID " +
-                        "WHERE g.Gasto_ID = @gasto AND v.ChoferID = @chofer", P("@gasto", gastoId), P("@chofer", ChoferDe(sesion))).FirstOrDefault();
+                        "WHERE g.Gasto_ID = @gasto AND (@todas = 1 OR v.ChoferID = @chofer)", P("@gasto", gastoId), P("@todas", sesion.PuedeVerTodas ? 1 : 0),
+                        P("@chofer", sesion.PuedeVerTodas ? (sesion.Chofer_ID ?? 0) : ChoferDe(sesion))).FirstOrDefault();
                     if (gasto == null) return Content(HttpStatusCode.NotFound, new { message = "Ese gasto no está en tu hoja de ruta." });
                     return ResponseMessage(CostosController.ArchivoComoRespuesta(gasto.Archivo, gasto.Content_Type, gasto.Nombre_Archivo));
                 }
@@ -824,6 +872,28 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 case "Listo_para_facturar": return "listo para facturar";
                 case "Facturado": return "facturado";
                 default: return (estado ?? "").Replace('_', ' ').ToLowerInvariant();
+            }
+        }
+
+        // GET api/HojaDeRuta/ChoferesParaVer — el buscador de Hojas de ruta (punto 4 de la §41): los choferes, para quien puede
+        // ver todas las hojas de ruta.
+        [HttpGet, Route("ChoferesParaVer")]
+        public IHttpActionResult ChoferesParaVer()
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var sesion = ValidarSesion(db);
+                    if (!sesion.PuedeVerTodas) throw new AccesoDenegadoException("No tenés permiso para ver la hoja de ruta de otro chofer.");
+                    return Ok(db.Database.SqlQuery<ChoferParaVerRow>(
+                        "SELECT Chofer_ID, ISNULL(Nombre,'') AS Nombre, ISNULL(Apellido,'') AS Apellido, ISNULL(DNI,'') AS DNI, ISNULL(EstadoChofer,'') AS EstadoChofer " +
+                        "FROM dbo.CHOFERES WHERE ISNULL(EstadoChofer,'') <> 'Eliminado' ORDER BY Apellido, Nombre").ToList());
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error(ex, "No se pudieron cargar los choferes. Revisá la conexión y probá de nuevo.");
             }
         }
 

@@ -3891,7 +3891,18 @@ como presentación). Los números son los del listado de Rocío.
   design system y `permisos-menu.js`).
 
 ### Hoja de ruta, choferes y usuarios
-- [ ] **4.** "Hojas de ruta", en plural (puede haber varias). Que la vea solo el chofer asignado o un administrador.
+- [x] **4.** "Hojas de ruta", en plural (puede haber varias). Que la vea solo el chofer asignado o un administrador.
+  **Hecho (27/10), subido, pendiente de probar en la VM** (decisión de Rocío: los administradores y quien tiene Gestionar
+  viajes, en solo lectura, con un buscador de chofer; `tests/viajes-flujo.test.js`). "Hojas de ruta" en el menú, el título
+  y el texto del permiso (en la base el permiso sigue siendo "Hoja de ruta": los grupos no cambian). El chofer ve la suya
+  como siempre y no puede pedir la de otro (la API responde que no tiene permiso). Cómo probarlo (recompilar):
+  1. Entrar como administrador (sin chofer asignado): "Hojas de ruta" en el menú; la pantalla pide "Elegí un chofer para
+     ver su hoja de ruta." con el buscador "Chofer". Elegir uno: sus viajes, con "Los viajes de …, para ver: los cambios
+     se hacen en Gestionar viajes." y sin botones (ni Iniciar, ni Registrar entrega, ni Cargar gasto). Ver evidencia y los
+     gastos se abren, sin Eliminar.
+  2. Lo mismo con un usuario que no es administrador y tiene Gestionar viajes (y el permiso de Hojas de ruta).
+  3. Abrir `hoja-de-ruta.html?viaje=N` como administrador: la del chofer de ese viaje, con el viaje marcado.
+  4. Entrar como chofer: no ve el buscador, ve la suya con sus botones, como antes.
 - [ ] **29.** Ver si "camiones asignados" en choferes funciona y para qué se usa.
 - [ ] **30 y 31.** Cómo se crea el usuario de un chofer: todo chofer necesita usuario para sus viajes; ver si se carga
   junto con el chofer o desde dónde conviene. Un chofer inactivo no puede iniciar sesión. Sacar de Gestionar usuarios la

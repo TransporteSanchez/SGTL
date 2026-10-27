@@ -223,9 +223,12 @@
 
   // Anteriores (Rocío, 24/10): por año (arranca en el actual) y de a 30, con "Ver más viajes".
   var ANTERIORES_POR_PAGINA = 30;
+  // Hojas de ruta (punto 4 de la §41, Rocío 27/10): los administradores y quien gestiona viajes eligen un chofer y ven su
+  // hoja de ruta en solo lectura (choferVisto, soloLectura); los cambios se hacen en Gestionar viajes. La API controla lo mismo.
   var estado = {
     vista: 'proximos', hoy: '', viajes: [], porId: {}, busqueda: 0, buscarViaje: null, mapasAbiertos: {}, gastos: false,
-    anio: null, cantidad: ANTERIORES_POR_PAGINA, hayMas: false, sigue: null
+    anio: null, cantidad: ANTERIORES_POR_PAGINA, hayMas: false, sigue: null,
+    puedeVerTodas: false, choferVisto: null, nombreChofer: '', soloLectura: false, choferesCargados: false
   };
   var formularioGasto = null;
   var gastosAbiertos = null;   // el viaje cuya lista de gastos está abierta
@@ -317,7 +320,8 @@
   }
 
   function tarjeta(v, conMapa) {
-    var a = accionesDe(v, estado.hoy);
+    // Solo lectura: sin botones (los cambios se hacen en Gestionar viajes).
+    var a = estado.soloLectura ? { paso: null, sinCarga: null, reemplazar: false, nota: '' } : accionesDe(v, estado.hoy);
     // Solo los datos que tienen valor (Rocío, 24/10: que la tarjeta no sea tan larga). El camión, solo el dominio.
     var si = function (valor, etiqueta, html) { return String(valor == null ? '' : valor).trim() ? dato(etiqueta, html) : ''; };
     var datos = dato('Camión', texto(v.Camion)) +
@@ -337,7 +341,7 @@
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="evidencia" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-camera me-1" aria-hidden="true"></i>Reemplazar evidencia</button>');
     }
-    var motivo = estado.gastos ? motivoGasto(v, estado.hoy) : null;
+    var motivo = estado.gastos && !estado.soloLectura ? motivoGasto(v, estado.hoy) : null;
     if (motivo === '') {
       botones.push('<button type="button" class="btn btn-outline-primary" data-accion="cargar-gasto" data-id="' + esc(v.Viaje_ID) + '">' +
         '<i class="bi bi-receipt me-1" aria-hidden="true"></i>Cargar gasto</button>');
@@ -373,9 +377,10 @@
   }
 
   function sinViajes() {
+    var de = estado.soloLectura ? esc(estado.nombreChofer) + ' no tiene' : 'No tenés';
     return '<p class="text-muted text-center my-5">' + (estado.vista === 'anteriores'
-      ? 'No tenés viajes anteriores en ' + esc(estado.anio) + '.'
-      : 'No tenés viajes para hoy ni para los próximos días.') + '</p>';
+      ? de + ' viajes anteriores en ' + esc(estado.anio) + '.'
+      : de + ' viajes para hoy ni para los próximos días.') + '</p>';
   }
 
   function botonVerMas() {
@@ -462,6 +467,9 @@
     if (vista) { estado.vista = vista; estado.cantidad = ANTERIORES_POR_PAGINA; }
     var busqueda = ++estado.busqueda;
     var datos = { vista: estado.vista };
+    if (estado.choferVisto) datos.choferId = estado.choferVisto;
+    // El enlace del WhatsApp (?viaje=48): a quien ve todas, la API le muestra la hoja de ruta del chofer de ese viaje.
+    else if (estado.buscarViaje) datos.viajeId = estado.buscarViaje;
     if (estado.anio) datos.anio = estado.anio;
     if (estado.vista === 'anteriores') datos.cantidad = estado.cantidad;
     document.getElementById('bloqueAnio').classList.toggle('d-none', estado.vista !== 'anteriores');
@@ -476,9 +484,12 @@
         estado.hoy = soloFecha(data.Hoy);
         estado.gastos = !!data.Gastos_Habilitados;
         estado.galpon = data.Galpon || null;
-        document.getElementById('sinChofer').classList.toggle('d-none', data.Vinculado !== false);
+        mostrarQuienVe(data);
+        var paraElegir = data.Vinculado === false && estado.puedeVerTodas;
+        document.getElementById('sinChofer').classList.toggle('d-none', data.Vinculado !== false || paraElegir);
         document.getElementById('contenidoHojaDeRuta').classList.toggle('d-none', data.Vinculado === false);
-        document.getElementById('listaViajes').classList.toggle('d-none', data.Vinculado === false);
+        document.getElementById('listaViajes').classList.toggle('d-none', data.Vinculado === false && !paraElegir);
+        if (paraElegir) mostrarLista('<p class="text-muted text-center my-5">Elegí un chofer para ver su hoja de ruta.</p>');
         if (data.Vinculado === false) return;
         if (data.Anio) estado.anio = data.Anio;
         estado.hayMas = !!data.Hay_Mas;
@@ -494,6 +505,51 @@
         mostrarLista('<p class="text-muted text-center my-5">No se pudo cargar tu hoja de ruta.</p>');
         SGTL.toastError(error.mensajeUsuario);
       });
+  }
+
+  // Quién ve la hoja de ruta: el chofer, la suya; quien ve todas, el buscador de chofer y, si eligió otro, "para ver".
+  function mostrarQuienVe(data) {
+    estado.puedeVerTodas = !!data.Puede_Ver_Todas;
+    estado.soloLectura = !!data.Solo_Lectura;
+    estado.nombreChofer = data.Chofer || '';
+    if (data.Chofer_ID) estado.choferVisto = data.Chofer_ID;
+    document.getElementById('subtituloHojaDeRuta').textContent = estado.soloLectura
+      ? 'Los viajes de ' + estado.nombreChofer + ', para ver: los cambios se hacen en Gestionar viajes.'
+      : estado.puedeVerTodas && data.Vinculado === false
+      ? 'Los viajes de cada chofer: el recorrido, el camión y la entrega.'
+      : 'Tus viajes: el recorrido, el camión y la entrega.';
+    document.getElementById('bloqueChofer').classList.toggle('d-none', !estado.puedeVerTodas);
+    if (!estado.puedeVerTodas) return;
+    var select = document.getElementById('choferHojaDeRuta');
+    var elegir = function () {
+      select.value = estado.choferVisto ? String(estado.choferVisto) : '';
+      if (window.SelectClientePredictivo) SelectClientePredictivo.sincronizar('choferHojaDeRuta');
+    };
+    if (estado.choferesCargados) { elegir(); return; }
+    estado.choferesCargados = true;
+    pedir({ url: API + '/HojaDeRuta/ChoferesParaVer', type: 'GET' }, 'No se pudieron cargar los choferes.').then(function (choferes) {
+      (choferes || []).forEach(function (c) {
+        var opcion = document.createElement('option');
+        opcion.value = c.Chofer_ID;
+        opcion.textContent = ((c.Apellido || '').trim() + ', ' + (c.Nombre || '').trim()) + (c.DNI ? ' (DNI ' + String(c.DNI).trim() + ')' : '') +
+          (c.EstadoChofer && c.EstadoChofer !== 'Activo' ? ' (inactivo)' : '');
+        select.appendChild(opcion);
+      });
+      if (window.SelectClientePredictivo) {
+        SelectClientePredictivo.inicializar('choferHojaDeRuta', { placeholder: 'Buscá un chofer', idCampo: 'choferHojaDeRutaBuscar', textoVacio: 'No hay choferes que coincidan.' });
+      }
+      elegir();
+    }, function (error) { estado.choferesCargados = false; SGTL.toastError(error.mensajeUsuario); });
+  }
+
+  // Elegir otro chofer: su hoja de ruta, desde Hoy y próximos.
+  function verChofer(id) {
+    id = Number(id) || null;
+    if (!id || id === estado.choferVisto) return;
+    estado.choferVisto = id;
+    estado.anio = null;
+    estado.buscarViaje = null;
+    cargar('proximos');
   }
 
   // Los años con viajes anteriores (y el actual), del más nuevo al más viejo.
@@ -536,7 +592,8 @@
     }
     if (estado.vista === 'proximos') { cargar('anteriores'); return; }
     estado.buscarViaje = null;
-    SGTL.toastError('El viaje #' + id + ' no está en tu hoja de ruta.');
+    SGTL.toastError(estado.soloLectura ? 'El viaje #' + id + ' no está en la hoja de ruta de ' + estado.nombreChofer + '.'
+      : 'El viaje #' + id + ' no está en tu hoja de ruta.');
   }
 
   // ---------------------------------------------------------------- Iniciar viaje
@@ -737,7 +794,8 @@
       '<div class="d-flex gap-2 mt-2">' +
       '<button type="button" class="btn btn-sm btn-outline-secondary" data-accion="ver" data-id="' + esc(g.Gasto_ID) + '">' +
       '<i class="bi bi-paperclip me-1" aria-hidden="true"></i>Ver ticket</button>' +
-      (motivoEliminar
+      (motivoEliminar === null ? '</div></li>'
+        : motivoEliminar
         ? '<button type="button" class="btn btn-sm btn-outline-danger" disabled><i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button></div>' +
           '<div class="form-text mt-1">' + esc(motivoEliminar) + '.</div></li>'
         : '<button type="button" class="btn btn-sm btn-outline-danger" data-accion="eliminar" data-id="' + esc(g.Gasto_ID) + '" data-importe="' + esc(g.Importe) + '">' +
@@ -748,9 +806,10 @@
     var gastos = (r && r.Gastos) || [];
     // Eliminar, con la misma regla que cargar (pasado el tope, ya no).
     var v = estado.porId[gastosAbiertos];
-    var motivoEliminar = v ? motivoGasto(v, estado.hoy, 'eliminar') : '';
-    document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(function (g) { return filaGasto(g, motivoEliminar || ''); }).join('')
-      : '<li class="text-muted text-center py-4">Todavía no cargaste gastos en este viaje.</li>';
+    // Solo lectura: sin Eliminar (null).
+    var motivoEliminar = estado.soloLectura ? null : (v ? motivoGasto(v, estado.hoy, 'eliminar') : '') || '';
+    document.getElementById('listaGastos').innerHTML = gastos.length ? gastos.map(function (g) { return filaGasto(g, motivoEliminar); }).join('')
+      : '<li class="text-muted text-center py-4">' + (estado.soloLectura ? 'El chofer todavía no cargó gastos en este viaje.' : 'Todavía no cargaste gastos en este viaje.') + '</li>';
     document.getElementById('gastosTotal').textContent = gastos.length ? 'Total: ' + SGTL.monto(r.Total) : '';
   }
 
@@ -989,6 +1048,7 @@
       else if (accion === 'ver-gastos') verGastos(id);
       else if (accion === 'ver-mas') verMas(boton);
     });
+    document.getElementById('choferHojaDeRuta').addEventListener('change', function () { verChofer(this.value); });
     document.getElementById('anioHojaDeRuta').addEventListener('change', function () {
       estado.anio = Number(this.value);
       cargar('anteriores');
