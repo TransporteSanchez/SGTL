@@ -305,21 +305,17 @@
         boton.disabled = true;
         destino.value = '';
         ocultarFeedbackEnvio();
-        porId('envioComprobantePerfil').textContent = 'Verificando el perfil SMTP de facturación…';
         bootstrap.Modal.getOrCreateInstance(porId('modalEnviarComprobanteEmail')).show();
         apiGet('/comprobantes/' + encodeURIComponent(idEnvio) + '/email').then(function (datos) {
             if (version !== secuenciaEnvioComprobante) return;
             destino.value = datos.DestinatarioSugerido || '';
             if (!datos.Configurado) {
-                porId('envioComprobantePerfil').textContent = 'Facturación no tiene un perfil SMTP asignado.';
                 mostrarFeedbackEnvio('warning', 'Un administrador tiene que elegir el perfil SMTP en Configuración > Gestionar e-mail > Perfil para facturación.');
                 return;
             }
-            porId('envioComprobantePerfil').textContent = 'Se va a enviar con el servicio ' + datos.Service + ' · ' + (datos.Perfil || datos.Remitente || 'perfil SMTP asignado') + '.';
             boton.disabled = false;
         }).catch(function (error) {
             if (version !== secuenciaEnvioComprobante) return;
-            porId('envioComprobantePerfil').textContent = 'No se pudo verificar la configuración de envío.';
             mostrarFeedbackEnvio('danger', textoError(error, 'No se pudo preparar el envío del comprobante. Probá de nuevo.'));
         });
     }

@@ -76,6 +76,11 @@ function probarPieDelVisor() {
         'el visor del PDF no debe ofrecer el envío');
     assert.match(visor, /id="imprimirVistaPreviaComprobante"/, 'el visor conserva Imprimir');
     assert.match(visor, /id="descargarVistaPreviaComprobante"/, 'el visor conserva Descargar PDF');
+    const inicioEnvio = pagina.indexOf('id="modalEnviarComprobanteEmail"', fin);
+    const finEnvio = pagina.indexOf('id="modalExportarCuenta"', inicioEnvio);
+    assert.ok(inicioEnvio >= 0 && finEnvio > inicioEnvio, 'debe existir el formulario de envío');
+    assert.doesNotMatch(pagina.slice(inicioEnvio, finEnvio), /id="envioComprobantePerfil"/,
+        'el formulario no muestra el servicio ni el perfil SMTP');
 }
 
 async function probarClicEnFilaYEnvio() {
@@ -85,7 +90,6 @@ async function probarClicEnFilaYEnvio() {
     const campos = {
         btnConfirmarEnvioComprobante: { disabled: true },
         envioComprobanteDestino: { value: '', checkValidity: function () { return true; } },
-        envioComprobantePerfil: { textContent: '' },
         modalEnviarComprobanteEmail: {}
     };
     const solicitudes = [];
@@ -152,7 +156,6 @@ async function probarRespuestaViejaNoReemplazaDestinatario() {
     const campos = {
         btnConfirmarEnvioComprobante: { disabled: true },
         envioComprobanteDestino: { value: '' },
-        envioComprobantePerfil: { textContent: '' },
         modalEnviarComprobanteEmail: {}
     };
     const pendientes = new Map();
@@ -183,8 +186,6 @@ async function probarRespuestaViejaNoReemplazaDestinatario() {
     assert.strictEqual(sandbox.comprobanteActualId, 42);
     assert.strictEqual(campos.envioComprobanteDestino.value, 'b@empresa.com',
         'la respuesta tardía del comprobante A no debe cambiar el destinatario de B');
-    assert.match(campos.envioComprobantePerfil.textContent, /Perfil B/,
-        'la respuesta tardía tampoco debe cambiar el perfil mostrado para B');
     assert.strictEqual(campos.btnConfirmarEnvioComprobante.disabled, false);
 
     sandbox.abrirEnvioComprobante(43);
@@ -195,9 +196,18 @@ async function probarRespuestaViejaNoReemplazaDestinatario() {
     pendientes.get('/comprobantes/43/email').reject(new Error('falló la solicitud anterior'));
     await new Promise(setImmediate);
     assert.strictEqual(campos.envioComprobanteDestino.value, 'd@empresa.com');
-    assert.match(campos.envioComprobantePerfil.textContent, /Perfil D/,
-        'un error tardío de C no debe ocultar la configuración válida de D');
+    assert.strictEqual(campos.btnConfirmarEnvioComprobante.disabled, false,
+        'un error tardío de C no debe bloquear el envío de D');
     assert.deepStrictEqual(errores, [], 'un error de la solicitud anterior no debe aparecer en el formulario actual');
+
+    sandbox.abrirEnvioComprobante(45);
+    pendientes.get('/comprobantes/45/email').resolve({ DestinatarioSugerido: 'e@empresa.com',
+        Configurado: false, Service: null, Perfil: null });
+    await new Promise(setImmediate);
+    assert.strictEqual(campos.btnConfirmarEnvioComprobante.disabled, true,
+        'sin un perfil configurado no se habilita Enviar');
+    assert.strictEqual(errores.length, 1, 'la falta de configuración se informa dentro del formulario');
+    assert.strictEqual(errores[0][0], 'warning');
 }
 
 (async function () {
