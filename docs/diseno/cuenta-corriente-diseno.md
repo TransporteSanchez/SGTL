@@ -11,7 +11,7 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 - Una Factura por una Proforma completa en estado `Aceptada`.
 - NC siempre asociada y totalmente aplicada a una Factura pendiente.
 - ND independiente o referenciada a una Factura; constituye su propia deuda cobrable.
-- Recibo con una o varias formas de pago, completamente aplicado a Facturas/ND.
+- Recibo con una o varias formas de pago, sin aplicar, parcialmente aplicado o aplicado por completo a comprobantes de deuda; admite imputaciones posteriores (§10).
 - Sin anticipos, saldo a favor, facturación parcial ni combinación de Proformas.
 - Fecha de vencimiento obligatoria para deudas emitidas: FAC y ND.
 - La Proforma no modifica Cuenta Corriente. No facturar automáticamente Proformas históricas.
@@ -127,11 +127,11 @@ La estructura no constituye un backend operativo. Nunca emitir mediante INSERT m
 - Vincular detalle original a la Proforma efectivamente facturada y no a otra.
 - Referencia NC debe coincidir con la Factura destino de su aplicación.
 - Aplicaciones solo entre comprobantes EMITIDOS; suma por deuda <= Total.
-- Suma por crédito <= Total y, al emitir REC/NC, exactamente igual a Total.
+- Suma por crédito o recibo <= Total: pueden emitirse con saldo disponible e imputarse después. Un cancelatorio de proforma se aplica por el total a su única deuda.
 - Suma de formas de pago = Total REC; REC no tiene detalle de venta ni impuestos.
 - Total movimiento de emisión = Total comprobante; reverso mismo importe que original.
 - Un comprobante no se puede anular dos veces ni quedar sin su reverso.
-- Ninguna emisión/anulación puede dejar saldo negativo en MVP.
+- Un saldo a favor del cliente es válido cuando tiene créditos o recibos sin imputar; ninguna aplicación puede superar el saldo de la deuda o del crédito.
 - Guardar auditoría esencial en la misma transacción: un fallo revierte la operación.
   El contexto actual de auditoría tolera fallos; no reutilizarlo sin revisar este requisito.
 
@@ -319,3 +319,18 @@ Estado: aprobada funcional y técnicamente (21/10/2026).
 - Recorrido manual en la VM: una cobranza de $500.000 sobre tres Facturas de $200.000
   y una NC corriente distribuida sobre más de una Factura; además, la anulación de una
   Factura de Proforma.
+
+## 10. Recibos e imputaciones posteriores (27/10/2026)
+
+Los recibos emitidos pueden conservar todo o parte de su total sin imputar. Los importes de la forma de pago y del
+movimiento de emisión siguen siendo iguales al total del recibo. El saldo para imputar es el total menos la suma de
+sus aplicaciones vigentes; aparece como disponible en ambas vistas de cuenta corriente mientras sea mayor que cero.
+
+`PUT /api/comprobantes/{id}/aplicaciones` recibe fecha e importes acumulados por deuda. Usa `REC_EMITIR` para recibos
+y `NC_EMITIR` para otros créditos. Dentro de una transacción serializable valida cliente, estados, fechas y saldos,
+agrupa lo ya aplicado por deuda e inserta solo los incrementos. Un reintento idéntico no agrega aplicaciones ni
+auditorías. Los cancelatorios de proforma conservan su aplicación única por el total y no admiten esta operación.
+
+Editar un recibo no reescribe las fechas de sus aplicaciones. La fecha de emisión puede anteceder a la deuda cuando
+se cobró a cuenta; la fecha de cada imputación debe ser igual o posterior tanto al recibo como a la deuda. La emisión
+no puede moverse a una fecha posterior a la primera imputación vigente.

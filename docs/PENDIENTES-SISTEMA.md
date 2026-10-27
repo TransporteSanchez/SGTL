@@ -66,6 +66,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 46 | Emitir créditos internos sin imputar e imputarlos después | Hecho en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Emitir C con saldo libre e imputarlo parcial y sucesivamente a comprobantes internos de deuda (§46) |
 | 47 | Enviar comprobantes con su proforma y enviar proformas por e-mail | Hecho en código (27/10); falta probar entrega real por SMTP | Pendiente de subir | Recompilar, recargar y comprobar uno o dos PDF según la casilla, y el envío desde Listar y Gestionar proformas (§47) |
 | 48 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§48) |
+| 49 | Imputar recibos después de emitirlos | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Emitir un recibo sin deudas y usar «Imputar recibo» parcial y sucesivamente (§49) |
 | 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en esta tanda (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
 
@@ -3809,6 +3810,39 @@ Ir a la segunda página, filtrar y exportar PDF y Excel: deben conservar el crit
 Elegir un cliente: se oculta su columna y se conserva el orden. Desplegar un comprobante con varias aplicaciones y
 comprobar que siguen juntas y en orden cronológico, con sus saldos progresivos. Volver de Comprobantes sin relacionar
 a Cuenta corriente y verificar que se mantiene el criterio.
+
+---
+
+## 49. Emitir recibos sin imputar e imputarlos después — Hecho en código (27/10)
+
+El recibo se puede emitir sin elegir una deuda o aplicándolo parcialmente. La búsqueda de comprobantes no borra el
+importe ingresado y el formulario identifica el «Saldo sin imputar». Los recibos emitidos con saldo aparecen en
+Comprobantes y Comprobantes sin relacionar, con «Imputar recibo» como siguiente paso. La misma operación de créditos
+internos admite agregar aplicaciones en partes a una o varias deudas del cliente, hasta agotar el saldo. Al agotarlo,
+el recibo deja de mostrarse como disponible y permanece en las aplicaciones de las deudas.
+
+`PUT /api/comprobantes/{id}/aplicaciones` exige `REC_EMITIR` para recibos y `NC_EMITIR` para otros créditos. Conserva
+la transacción serializable, las validaciones de saldo y cliente y el contrato acumulativo: repetir exactamente la
+petición no duplica importes. No modifica el total, la forma de pago ni los movimientos del documento emitido. Editar
+el recibo conserva las fechas de sus aplicaciones; su emisión no puede quedar después de una imputación. Reintentar
+la emisión de un recibo originalmente sin aplicar sigue reconociéndolo después de imputarlo. No requiere migración SQL.
+
+**Verificación local:** pruebas de interfaz, consultas reales con SQLite local y método C# de imputación ejecutado
+con persistencia y permisos simulados: aplicación parcial y sucesiva, reintento idempotente, recibo anulado, saldo
+insuficiente, cliente distinto, fechas inválidas y reversión completa ante un error. Sin acceso a la base compartida.
+
+**Probar en la VM:** emitir un recibo por $ 1.000,00 sin marcar comprobantes y verificar saldo disponible por ese total.
+Desde «Imputar recibo», aplicar $ 400,00 a un comprobante interno, luego agregar $ 200,00 a la misma deuda y $ 400,00
+a otra del mismo cliente. Verificar saldos parciales y finales, el recibo dentro de cada deuda y sus PDF. Repetir el
+mismo `PUT`: no debe duplicar la aplicación. Probar deuda de otro cliente, recibo anulado, fecha anterior al recibo o
+a la deuda y exceso de cualquiera de los saldos: debe rechazar sin guardar nada. Emitir también un recibo parcialmente
+aplicado y completar después su saldo. Editar la referencia u observaciones de un recibo con imputaciones posteriores:
+debe conservar sus fechas. Probar con un usuario con `REC_EMITIR` y sin `NC_EMITIR`, y verificar el rechazo inverso.
+
+**Visibilidad de la acción (27/10):** por pedido del usuario, «Imputar» solo aparece en créditos internos y recibos.
+En los demás tipos se oculta; dentro de esos dos circuitos, sigue deshabilitada con el motivo cuando no se puede
+usar. Se actualizó la excepción en `AGENTS.md` y el design system. **Probar:** comparar un recibo y un crédito interno
+con una factura y un débito; el ícono de imputación solo debe estar en los dos primeros, después del sobre.
 
 ---
 

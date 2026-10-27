@@ -15,8 +15,10 @@ assert.ok(inicio > 0, 'falta implementar la imputación posterior');
 const imputar = fuente.slice(inicio);
 assert.match(imputar, /BeginTransaction\(IsolationLevel\.Serializable\)/,
     'las imputaciones deben validarse y guardarse en una transacción serializable');
-assert.match(imputar, /ValidarAcceso\(connection, transaction, "NC_EMITIR", "imputar el crédito"\)/,
-    'la imputación requiere permiso para emitir créditos');
+assert.match(imputar, /ValidarAcceso\(connection, transaction,\s*credito\.Tipo == "REC" \? "REC_EMITIR" : "NC_EMITIR"/,
+    'la imputación requiere el permiso de recibos o el de créditos según el comprobante');
+assert.doesNotMatch(imputar, /credito\.Impacto != "C" \|\| credito\.Tipo == "REC"/,
+    'un recibo de crédito admite imputaciones posteriores');
 assert.match(imputar, /ComprobanteReferenciaID|ReferenciaID/,
     'el crédito cancelatorio no puede admitir imputaciones posteriores');
 assert.match(imputar, /Estado\s*!=\s*"EMITIDO"/,

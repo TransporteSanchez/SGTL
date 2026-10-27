@@ -336,13 +336,13 @@
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title" id="modalNuevoReciboTitulo">Registrar recibo</h5>
-                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputar comprobantes pendientes.</small>
+                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputarla ahora o después.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light-danger color-danger py-2 cc-error-modal" id="reciboError" role="alert"></div>
-                    <div class="alert alert-info py-2" id="reciboMensaje">El recibo se registra y se aplica a los comprobantes elegidos.</div>
+                    <div class="alert alert-info py-2" id="reciboMensaje">Podés emitir el recibo sin imputar y aplicarlo después a los comprobantes del cliente.</div>
 
                     <div class="sgtl-bloque-titulo">Datos generales</div>
                     <div class="row g-2">
@@ -372,7 +372,7 @@
                     <div class="cc-total-row mt-2">
                         <span>Total recibo: <strong id="reciboResumenTotal">$ 0,00</strong></span>
                         <span>Total aplicado: <strong id="reciboResumenAplicado">$ 0,00</strong></span>
-                        <span>Diferencia: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
+                        <span>Saldo sin imputar: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
                     </div>
                     <div class="mt-2"><label class="form-label" for="reciboObservaciones">Observaciones</label><textarea id="reciboObservaciones" class="form-control" rows="2" maxlength="2000"></textarea></div>
                 </div>

@@ -285,7 +285,7 @@ async function probarAccionesYReciboDeFc() {
     const botones = sandbox.accionesComprobante(item);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(botones.map(function (boton) {
         return [boton.nombre, boton.deshabilitado];
-    }))), [['ver', false], ['editar', true], ['pdf', false], ['enviar', false], ['siguiente', true], ['anular', true]]);
+    }))), [['ver', false], ['editar', true], ['pdf', false], ['enviar', false], ['anular', true]]);
     sandbox.verComprobante(7, 'FC');
     assert.deepStrictEqual(accion, [[7, 'FC']]);
 

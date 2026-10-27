@@ -147,7 +147,7 @@ function probarAccionesPorTipoDeComprobante() {
     }
 
     assert.deepStrictEqual(botones({ Tipo: 'FAC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular (deshabilitado)'],
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
     'una factura se ve, tiene PDF y se puede enviar; editar y anular quedan deshabilitados');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'EMITIDO' }),
         ['ver', 'editar', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular'],
@@ -157,7 +157,7 @@ function probarAccionesPorTipoDeComprobante() {
     'un recibo anulado no se edita ni envía: se elimina');
     ['NC', 'ND'].forEach(function (tipo) {
         assert.deepStrictEqual(botones({ Tipo: tipo, EstadoComprobante: 'EMITIDO' }),
-            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular (deshabilitado)'],
+            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
         tipo + ' se puede enviar, pero no editar ni anular');
     });
     assert.deepStrictEqual(botones({ Comprobante: 'REC-00000004', Estado: 'Aplicado' }),

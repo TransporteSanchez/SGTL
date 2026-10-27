@@ -1107,12 +1107,12 @@ VALUES
         public IHttpActionResult ImputarCredito(int id, [FromBody] ImputarCreditoRequest request)
         {
             if (id <= 0 || request == null || !request.Fecha.HasValue || request.Aplicaciones == null)
-                return BadRequest("Completá la fecha y los comprobantes para imputar el crédito.");
+                return BadRequest("Completá la fecha y los comprobantes para imputar.");
             DateTime fecha = request.Fecha.Value.Date;
             if (fecha > FechaArgentina())
                 return BadRequest("La fecha de imputación no puede ser futura.");
             if (request.Aplicaciones.Count > 200)
-                return BadRequest("El crédito supera la cantidad máxima de comprobantes aplicables.");
+                return BadRequest("La imputación supera la cantidad máxima de comprobantes aplicables.");
             if (request.Aplicaciones.Any(x => x == null || x.ComprobanteID <= 0 || x.Importe <= 0
                 || x.Importe != Redondear(x.Importe)))
                 return BadRequest("Las imputaciones deben tener importes positivos con hasta dos decimales.");
@@ -1128,14 +1128,17 @@ VALUES
                     {
                         try
                         {
-                            var usuario = ValidarAcceso(connection, transaction, "NC_EMITIR", "imputar el crédito");
+                            ObtenerNombreUsuarioToken();
                             var credito = LeerCreditoImputable(connection, transaction, id);
                             if (credito == null)
                             {
                                 transaction.Rollback();
                                 return NotFound();
                             }
-                            if (credito.Impacto != "C" || credito.Tipo == "REC" || credito.ReferenciaID.HasValue)
+                            var usuario = ValidarAcceso(connection, transaction,
+                                credito.Tipo == "REC" ? "REC_EMITIR" : "NC_EMITIR",
+                                credito.Tipo == "REC" ? "imputar el recibo" : "imputar el crédito");
+                            if (credito.Impacto != "C" || credito.ReferenciaID.HasValue)
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.BadRequest,
@@ -1145,12 +1148,12 @@ VALUES
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict,
-                                    new { error = "El crédito ya no está emitido. Volvé a consultar su estado." });
+                                    new { error = "El comprobante ya no está emitido. Volvé a consultar su estado." });
                             }
                             if (fecha < credito.FechaEmision.Date)
                             {
                                 transaction.Rollback();
-                                return BadRequest("La fecha de imputación no puede ser anterior a la emisión del crédito.");
+                                return BadRequest("La fecha de imputación no puede ser anterior a la emisión del comprobante.");
                             }
 
                             var actuales = LeerAplicacionesVigentes(connection, transaction, id);
@@ -1159,20 +1162,20 @@ VALUES
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict,
-                                    new { error = "Las imputaciones del crédito cambiaron. Volvé a abrirlo para actualizar los importes." });
+                                    new { error = "Las imputaciones del comprobante cambiaron. Volvé a abrirlo para actualizar los importes." });
                             }
                             if (request.Aplicaciones.Any(x => x.Importe > credito.Total))
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict,
-                                    new { error = "El importe imputado supera el saldo del crédito." });
+                                    new { error = "El importe imputado supera el saldo disponible del comprobante." });
                             }
                             decimal importeAplicado = request.Aplicaciones.Sum(x => x.Importe);
                             if (importeAplicado > credito.Total)
                             {
                                 transaction.Rollback();
                                 return Content(HttpStatusCode.Conflict,
-                                    new { error = "El importe imputado supera el saldo del crédito." });
+                                    new { error = "El importe imputado supera el saldo disponible del comprobante." });
                             }
 
                             decimal incrementoTotal = 0;
@@ -1261,7 +1264,7 @@ VALUES (GETDATE(),@usuario,'IMPUTAR','COMPROBANTES',@clave,@anterior,@nuevo,'Cue
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo imputar el crédito. No se guardó ningún cambio." });
+                    new { error = "No se pudo imputar el comprobante. No se guardó ningún cambio." });
             }
         }
     }

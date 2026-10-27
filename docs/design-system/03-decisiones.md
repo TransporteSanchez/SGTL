@@ -128,6 +128,11 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   de proformas utiliza el perfil de e-mail de Facturación y un asunto y cuerpo que identifican la proforma.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
+- **Excepción en cuenta corriente (27/10):** «Imputar» solo aparece en créditos internos (tipos configurables de
+  impacto crédito) y recibos. Se oculta en los demás tipos, incluidas facturas, débitos y notas de crédito.
+  En créditos internos y recibos sin saldo, anulados o cancelatorios, permanece deshabilitada con el motivo.
+- **Tooltip de Editar en cuenta corriente (27/10):** para los comprobantes que no son recibos dice únicamente
+  «No se puede editar el comprobante». Los recibos anulados conservan «No se puede editar el recibo: está anulado».
 - **Excepción en Gestionar tipos de comprobante (26/10):** en las tablas de sucursales,
   numeradores y tipos de comprobante, **Eliminar** solo aparece si el registro no tiene relaciones
   que impidan borrarlo. Cuando ya las tiene, el botón se oculta. La API vuelve a comprobar las
@@ -145,7 +150,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
     FAC-00000012"); nunca un motivo suelto como "Primero generá la proforma" o "Sin pasos pendientes".
   - **El porqué dice qué le pasa a esa fila** (su estado, el documento en el que está, lo que le falta), no la regla
     general: "está activo", no "solo se eliminan los inactivos". Solo cuando el motivo es el tipo de la fila se dice
-    la regla ("No se puede editar la factura: solo se editan los recibos").
+    la regla, salvo la excepción de Editar en cuenta corriente indicada arriba.
   - **No da órdenes** ("anulá la proforma", "emití una nota de crédito", "inactivalo"): destrabar algo puede tener
     consecuencias, y la persona lo decide sabiendo qué implica, desde la acción que corresponde. Lo que falta se dice
     como un hecho ("falta cargar N° entrega Rukas").
@@ -269,6 +274,10 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   Total, Cancelado o Saldo (27/10); Fecha va entre Concepto y Total. La API ordena los comprobantes principales antes
   de paginar; las aplicaciones permanecen debajo de su comprobante, en orden cronológico, para conservar el saldo
   progresivo. El mismo orden se usa en PDF y Excel. Con un cliente elegido, la columna Cliente no se muestra.
+  Los recibos y los créditos internos emitidos con saldo disponible ofrecen el siguiente paso «Imputar recibo» o
+  «Imputar crédito», con `bi-diagram-3` (27/10). El formulario tiene el mismo título que la acción y permite aplicar
+  el saldo en partes a comprobantes del mismo cliente. En recibos, «Saldo sin imputar» muestra el remanente y la ayuda
+  aclara que se puede emitir sin seleccionar deudas e imputar después.
   Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---

@@ -331,10 +331,12 @@ WHERE ComprobanteID=@id ORDER BY FormaPago_ID;", connection, transaction))
                 }
             }
 
+            // Las imputaciones posteriores no cambian los datos del recibo emitido sin aplicar.
+            if (request.Aplicaciones.Count == 0) return true;
             var guardadas = new Dictionary<int, decimal>();
             using (var command = new SqlCommand(@"
-SELECT ComprobanteDeudaID,Importe FROM dbo.CUENTA_CORRIENTE_APLICACIONES
-WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
+SELECT ComprobanteDeudaID,SUM(Importe) FROM dbo.CUENTA_CORRIENTE_APLICACIONES
+WHERE ComprobanteCreditoID=@id AND Vigente=1 GROUP BY ComprobanteDeudaID;", connection, transaction))
             {
                 command.Parameters.Add(P("@id", existente.ComprobanteID));
                 using (var reader = command.ExecuteReader())
@@ -365,7 +367,7 @@ WHERE ComprobanteCreditoID=@id AND Vigente=1;", connection, transaction))
                 request.Aplicaciones = new List<AplicacionReciboRequest>();
             if (request.Aplicaciones.Count > 200)
                 return BadRequest("El recibo supera la cantidad máxima de comprobantes que se le pueden aplicar.");
-            if (request.Aplicaciones.Any(x => x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
+            if (request.Aplicaciones.Any(x => x == null || x.ComprobanteID <= 0 || x.Importe <= 0 || x.Importe != Redondear(x.Importe)))
                 return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
             if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
                 return BadRequest("No se puede aplicar dos veces el mismo comprobante.");
@@ -775,17 +777,16 @@ WHERE Comprobante_ID=@id AND Tipo='REC';", connection, transaction))
                             if (estado != "EMITIDO") { transaction.Rollback(); return Content(HttpStatusCode.Conflict, new { error = "Solo se pueden editar recibos emitidos." }); }
 
                             using (var command = new SqlCommand(@"
-SELECT MAX(d.FechaEmision)
+SELECT MIN(a.FechaAplicacion)
 FROM dbo.CUENTA_CORRIENTE_APLICACIONES a WITH (UPDLOCK,HOLDLOCK)
-JOIN dbo.COMPROBANTES d ON d.Comprobante_ID=a.ComprobanteDeudaID
 WHERE a.ComprobanteCreditoID=@id AND a.Vigente=1;", connection, transaction))
                             {
                                 command.Parameters.Add(P("@id", id));
-                                object fechaMinima = command.ExecuteScalar();
-                                if (fechaMinima != null && fechaMinima != DBNull.Value && fecha < Convert.ToDateTime(fechaMinima).Date)
+                                object primeraImputacion = command.ExecuteScalar();
+                                if (primeraImputacion != null && primeraImputacion != DBNull.Value && fecha > Convert.ToDateTime(primeraImputacion).Date)
                                 {
                                     transaction.Rollback();
-                                    return Content(HttpStatusCode.BadRequest, new { error = "La fecha del recibo no puede ser anterior a los comprobantes aplicados." });
+                                    return Content(HttpStatusCode.BadRequest, new { error = "La fecha del recibo no puede ser posterior a sus imputaciones." });
                                 }
                             }
 
@@ -799,8 +800,6 @@ UPDATE dbo.RECIBOS_FORMAS_PAGO SET Forma=@forma,Referencia=@referencia,FechaOper
 WHERE ComprobanteID=@id;
 UPDATE dbo.CUENTA_CORRIENTE_MOVIMIENTOS SET FechaContable=@fecha
 WHERE ComprobanteID=@id AND Clase='EMISION';
-UPDATE dbo.CUENTA_CORRIENTE_APLICACIONES SET FechaAplicacion=@fecha
-WHERE ComprobanteCreditoID=@id AND Vigente=1;
 INSERT dbo.AUDITORIA (Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos,Origen)
 VALUES (GETDATE(),@nombre,'EDITAR','COMPROBANTES',@clave,NULL,@detalle,'Cuenta Corriente');", connection, transaction))
                             {

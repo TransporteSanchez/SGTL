@@ -572,35 +572,39 @@
             ? 'No se puede enviar el comprobante por e-mail: no tiene un tipo identificado'
             : 'No se puede enviar ' + nombre + ' por e-mail: ' + (estadoDocumental === 'ANULADO'
                 ? 'está anulad' : 'todavía no está emitid') + (femenino ? 'a' : 'o');
-        var esCredito = String(item.Impacto || '').toUpperCase() === 'C' && !esRecibo;
+        var esCredito = esRecibo || String(item.Impacto || '').toUpperCase() === 'C';
+        var mostrarImputacion = esRecibo || (esCredito && tipo !== 'NC');
+        var nombreImputacion = esRecibo ? 'el recibo' : 'el crédito';
         var saldoCredito = Number(item.SaldoPendiente || 0);
         var motivoImputacion = !esCredito
-            ? 'No se puede imputar el comprobante: ' + (esRecibo ? 'es un recibo' : 'es una deuda')
+            ? 'No se puede imputar el comprobante: es una deuda'
             : item.ComprobanteReferenciaID
-                ? 'No se puede imputar el crédito: ya cancela otro comprobante'
+                ? 'No se puede imputar ' + nombreImputacion + ': ya cancela otro comprobante'
                 : estadoDocumental !== 'EMITIDO'
-                    ? 'No se puede imputar el crédito: está anulado'
-                    : 'No se puede imputar el crédito: ya está aplicado por completo';
-        return window.SGTL.accionesFila([
+                    ? 'No se puede imputar ' + nombreImputacion + ': está anulado'
+                    : 'No se puede imputar ' + nombreImputacion + ': ya está aplicado por completo';
+        var botones = [
             window.SGTL.botonFila('ver', { id: id, datos: { tipo: tipo } }),
             window.SGTL.botonFila('editar', {
                 id: id, texto: 'Editar recibo', deshabilitado: !esRecibo || anulado,
-                motivo: anulado ? 'No se puede editar el recibo: está anulado' : 'No se puede editar ' + nombre + ': solo se editan los recibos'
+                motivo: anulado ? 'No se puede editar el recibo: está anulado' : 'No se puede editar el comprobante'
             }),
             window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'No se puede ver el PDF: este tipo de comprobante no tiene' }),
-            window.SGTL.botonFila('enviar', { id: id, deshabilitado: !tipo || estadoDocumental !== 'EMITIDO', motivo: motivoEnvio }),
-            window.SGTL.botonFila('siguiente', {
-                id: id, texto: 'Imputar crédito', icono: 'bi-diagram-3',
+            window.SGTL.botonFila('enviar', { id: id, deshabilitado: !tipo || estadoDocumental !== 'EMITIDO', motivo: motivoEnvio })
+        ];
+        if (mostrarImputacion) botones.push(window.SGTL.botonFila('siguiente', {
+                id: id, texto: esRecibo ? 'Imputar recibo' : 'Imputar crédito', icono: 'bi-diagram-3',
                 deshabilitado: !esCredito || !!item.ComprobanteReferenciaID || estadoDocumental !== 'EMITIDO' || saldoCredito <= 0,
                 motivo: motivoImputacion
-            }),
-            anulado
+            }));
+        botones.push(anulado
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
                 : window.SGTL.botonFila('anular', {
                     id: id, texto: 'Anular recibo', deshabilitado: !esRecibo,
                     motivo: 'No se puede anular ' + nombre + ': ' + (tipo && tipo !== 'REC' && tipo !== 'NC' && tipo !== 'ND' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
                 })
-        ]);
+        );
+        return window.SGTL.accionesFila(botones);
     }
     function mostrarCarga() {
         window.SGTL.tabla.cargando('#ccTablaCuerpo', 10);
@@ -937,8 +941,9 @@
         porId('reciboObservaciones').value = recibo.Observaciones || '';
         renderAplicacionesReciboEdicion(recibo.Aplicaciones);
         porId('reciboResumenTotal').textContent = dinero(recibo.Total);
-        porId('reciboResumenAplicado').textContent = dinero((recibo.Aplicaciones || []).reduce(function (total, item) { return total + Number(item.Importe || 0); }, 0));
-        porId('reciboResumenDiferencia').textContent = dinero(0);
+        var aplicadoRecibo = (recibo.Aplicaciones || []).reduce(function (total, item) { return total + Number(item.Importe || 0); }, 0);
+        porId('reciboResumenAplicado').textContent = dinero(aplicadoRecibo);
+        porId('reciboResumenDiferencia').textContent = dinero(Number(recibo.Total) - aplicadoRecibo);
         var mensaje = porId('reciboMensaje');
         mensaje.className = 'alert alert-info py-2';
         mensaje.textContent = 'Consulta de solo lectura. Los datos del recibo no se pueden modificar.';
@@ -1020,8 +1025,9 @@
             porId('reciboObservaciones').disabled = false;
             renderAplicacionesReciboEdicion(recibo.Aplicaciones);
             porId('reciboResumenTotal').textContent = dinero(recibo.Total);
-            porId('reciboResumenAplicado').textContent = dinero(recibo.Total);
-            porId('reciboResumenDiferencia').textContent = dinero(0);
+            var aplicadoRecibo = (recibo.Aplicaciones || []).reduce(function (total, item) { return total + Number(item.Importe || 0); }, 0);
+            porId('reciboResumenAplicado').textContent = dinero(aplicadoRecibo);
+            porId('reciboResumenDiferencia').textContent = dinero(Number(recibo.Total) - aplicadoRecibo);
             var mensaje = porId('reciboMensaje');
             mensaje.className = 'alert alert-info py-2';
             mensaje.textContent = 'Podés modificar la fecha, la forma de pago, la referencia y las observaciones. Las imputaciones y el importe no cambian.';
@@ -1114,7 +1120,7 @@
         var cliente = clienteReciboActual();
         if (!cliente) {
             porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
-            actualizarResumenRecibo();
+            actualizarResumenRecibo(false);
             return Promise.resolve();
         }
         porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">Cargando…</td></tr>';
@@ -1134,11 +1140,11 @@
                     'data-emision="' + escapar(item.FechaEmision || '') + '" disabled value="0,00"></td></tr>';
             }).join('') || '<tr><td colspan="6" class="cc-empty">El cliente no tiene comprobantes pendientes.</td></tr>';
             porId('reciboFacturas').querySelectorAll('.cc-recibo-aplicar').forEach(enlazarMascaraMonto);
-            actualizarResumenRecibo();
+            actualizarResumenRecibo(false);
         }).catch(function (ex) {
             porId('reciboFacturas').innerHTML = '<tr><td colspan="6" class="cc-empty">No se pudieron cargar los comprobantes pendientes.</td></tr>';
             porId('reciboError').textContent = textoError(ex, 'No se pudieron cargar los comprobantes pendientes. Probá de nuevo.');
-            actualizarResumenRecibo();
+            actualizarResumenRecibo(false);
         });
     }
     function actualizarResumenRecibo(recalcularImporte) {
@@ -1205,7 +1211,7 @@
         porId('reciboError').textContent = '';
         var mensaje = porId('reciboMensaje');
         mensaje.className = 'alert alert-info py-2';
-        mensaje.textContent = 'Podés escribir el importe o elegir comprobantes para que se calcule solo.';
+        mensaje.textContent = 'Podés emitir el recibo sin seleccionar comprobantes e imputarlo después. El importe no aplicado queda como saldo disponible.';
         porId('modalNuevoRecibo').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
         window.SelectClientePredictivo.establecerDeshabilitado('reciboCliente', false);
         porId('reciboNumeroComprobante').readOnly = true;
@@ -1752,10 +1758,13 @@
     }
     function abrirImputarCredito(id) {
         var item = buscarComprobante(Number(id));
-        var operacion = { id: Number(id), saldoCentavos: 0, aplicadoPorFactura: {} };
+        var esRecibo = tipoComprobante(item) === 'REC';
+        var operacion = { id: Number(id), saldoCentavos: 0, aplicadoPorFactura: {}, esRecibo: esRecibo };
         creditoImputando = operacion;
         facturasImputacion = [];
-        porId('imputarTitulo').textContent = 'Imputar crédito';
+        porId('imputarTitulo').textContent = esRecibo ? 'Imputar recibo' : 'Imputar crédito';
+        porId('btnGuardarImputacion').innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>' +
+            (esRecibo ? 'Imputar recibo' : 'Imputar crédito');
         porId('imputarNumero').textContent = item && item.Comprobante || '—';
         porId('imputarCliente').textContent = item && item.Cliente || '—';
         porId('imputarSaldo').textContent = dinero(item && item.SaldoPendiente || 0);
@@ -1768,10 +1777,11 @@
         window.SGTL.modal(porId('modalImputarCredito'), 'show');
         return apiGet('/comprobantes/' + operacion.id).then(function (credito) {
             if (creditoImputando !== operacion) return;
-            if (credito.EstadoDocumental !== 'EMITIDO' || credito.Tipo === 'REC' ||
+            operacion.esRecibo = credito.Tipo === 'REC';
+            if (credito.EstadoDocumental !== 'EMITIDO' ||
                 credito.ComprobanteReferenciaNumero || centavos(credito.SaldoPendiente) <= 0) {
-                window.SGTL.avisoFormulario(porId('imputarError'), 'Este crédito ya no tiene saldo disponible para imputar.');
-                window.SGTL.tabla.vacia('#imputarFacturas', 5, 'Este crédito ya no tiene saldo disponible para imputar.');
+                window.SGTL.avisoFormulario(porId('imputarError'), 'Este comprobante ya no tiene saldo disponible para imputar.');
+                window.SGTL.tabla.vacia('#imputarFacturas', 5, 'Este comprobante ya no tiene saldo disponible para imputar.');
                 return;
             }
             operacion.clienteId = Number(credito.ClienteID);
@@ -1781,7 +1791,9 @@
                 var deudaId = Number(aplicacion.ComprobanteID);
                 operacion.aplicadoPorFactura[deudaId] = (operacion.aplicadoPorFactura[deudaId] || 0) + centavos(aplicacion.ImporteAplicado);
             });
-            porId('imputarTitulo').textContent = 'Imputar crédito ' + credito.Numero;
+            porId('imputarTitulo').textContent = operacion.esRecibo ? 'Imputar recibo' : 'Imputar crédito';
+            porId('btnGuardarImputacion').innerHTML = '<i class="bi bi-check-circle me-1" aria-hidden="true"></i>' +
+                (operacion.esRecibo ? 'Imputar recibo' : 'Imputar crédito');
             porId('imputarNumero').textContent = credito.Numero;
             porId('imputarCliente').textContent = credito.RazonSocial || '—';
             porId('imputarSaldo').textContent = dinero(credito.SaldoPendiente);
@@ -1833,27 +1845,28 @@
             return;
         }
         if (nuevoTotal <= 0) {
-            window.SGTL.avisoFormulario(error, 'Seleccioná uno o más comprobantes para imputar el crédito.');
+            window.SGTL.avisoFormulario(error, 'Seleccioná uno o más comprobantes para imputar.');
             return;
         }
         if (nuevoTotal > creditoImputando.saldoCentavos) {
-            window.SGTL.avisoFormulario(error, 'El total a imputar supera el saldo disponible del crédito.');
+            window.SGTL.avisoFormulario(error, 'El total a imputar supera el saldo disponible del comprobante.');
             return;
         }
         var aplicaciones = Object.keys(acumulados).map(function (deudaId) {
             return { ComprobanteID: Number(deudaId), Importe: acumulados[deudaId] / 100 };
         });
         var creditoId = creditoImputando.id;
+        var esRecibo = creditoImputando.esRecibo;
         var listo = window.SGTL.procesando('#btnGuardarImputacion');
         return apiPut('/comprobantes/' + creditoId + '/aplicaciones', {
             Fecha: fechaImputacion, Aplicaciones: aplicaciones
         }).then(function () {
             listo();
-            cerrarModalYNotificar('modalImputarCredito', 'Crédito imputado.');
+            cerrarModalYNotificar('modalImputarCredito', esRecibo ? 'Recibo imputado.' : 'Crédito imputado.');
             cargarCuenta();
         }).catch(function (ex) {
             listo();
-            window.SGTL.avisoFormulario(error, textoError(ex, 'No se pudo imputar el crédito. Probá de nuevo.'));
+            window.SGTL.avisoFormulario(error, textoError(ex, 'No se pudo imputar el comprobante. Probá de nuevo.'));
         });
     }
     function abrirAccionFutura(accion) {

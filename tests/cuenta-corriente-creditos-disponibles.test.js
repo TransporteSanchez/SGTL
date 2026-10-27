@@ -54,9 +54,11 @@ try {
             (6,1,'C',6,'A','0001',20,'EMITIDO','C',NULL,'2026-10-24',NULL),
             (7,1,'FC',7,'A','0001',20,'EMITIDO','D',NULL,'2026-10-20','2026-11-01'),
             (8,1,'C',8,'A','0001',25,'ANULADO','C',NULL,'2026-10-24',NULL),
-            (9,1,'REC',9,'X','0001',25,'ANULADO','C',NULL,'2026-10-24',NULL);
+            (9,1,'REC',9,'X','0001',25,'ANULADO','C',NULL,'2026-10-24',NULL),
+            (10,1,'REC',10,'X','0001',100,'EMITIDO','C',NULL,'2026-10-24',NULL),
+            (11,1,'REC',11,'X','0001',40,'EMITIDO','C',NULL,'2026-10-24',NULL);
         INSERT INTO CUENTA_CORRIENTE_APLICACIONES VALUES
-            (1,2,40,1), (1,4,50,1), (7,6,20,1), (1,8,25,0);
+            (1,2,40,1), (1,4,50,1), (7,6,20,1), (1,8,25,0), (1,10,40,1), (1,11,40,1);
         INSERT INTO CUENTA_CORRIENTE_MOVIMIENTOS VALUES
             (1,1,1,'2026-10-20','FC','Factura','EMISION'),
             (2,2,1,'2026-10-21','C','Crédito parcial','EMISION'),
@@ -66,7 +68,9 @@ try {
             (6,6,1,'2026-10-24','C','Crédito aplicado','EMISION'),
             (7,7,1,'2026-10-20','FC','Factura cancelada','EMISION'),
             (8,8,1,'2026-10-24','C','Crédito anulado','EMISION'),
-            (9,9,1,'2026-10-24','REC','Recibo anulado','EMISION');
+            (9,9,1,'2026-10-24','REC','Recibo anulado','EMISION'),
+            (10,10,1,'2026-10-24','REC','Recibo parcial','EMISION'),
+            (11,11,1,'2026-10-24','REC','Recibo agotado','EMISION');
         ALTER TABLE COMPROBANTES ADD COLUMN Concepto TEXT;
         ALTER TABLE CUENTA_CORRIENTE_APLICACIONES ADD COLUMN Aplicacion_ID INTEGER;
         ALTER TABLE CUENTA_CORRIENTE_APLICACIONES ADD COLUMN FechaAplicacion TEXT;
@@ -76,7 +80,7 @@ try {
 
     const pendientesSql = sqlEjecutable(sqlDelMetodo('private IHttpActionResult ConsultarPendientes', '\n        }\n    }\n}', /const string sql = @"([\s\S]*?)";/));
     const pendientes = db.prepare(pendientesSql).all({ clienteId: 1 });
-    assert.deepStrictEqual(pendientes.map(x => x.ComprobanteID).sort((a, b) => a - b), [1, 2, 3, 5],
+    assert.deepStrictEqual(pendientes.map(x => x.ComprobanteID).sort((a, b) => a - b), [1, 2, 3, 5, 10],
         'se ofrecen deudas, créditos internos y recibos con saldo, pero no cancelatorios ni créditos agotados');
     const creditoLibre = pendientes.find(x => x.ComprobanteID === 3);
     assert.deepStrictEqual([creditoLibre.Impacto, creditoLibre.ComprobanteReferenciaID, creditoLibre.EstadoComprobante,
@@ -91,8 +95,12 @@ try {
     const movimientos = db.prepare(sqlEjecutable(cte + select)).all({
         clienteId: 1, desde: null, hasta: null, tipo: null, estado: null, offset: 0, pageSize: 50
     });
-    assert.deepStrictEqual(movimientos.map(x => x.ComprobanteID).sort((a, b) => a - b), [1, 2, 3, 7, 9],
-        'el listado principal muestra créditos con saldo sin duplicar los aplicados y conserva recibos anulados');
+    assert.deepStrictEqual(movimientos.map(x => x.ComprobanteID).sort((a, b) => a - b), [1, 2, 3, 5, 7, 9, 10],
+        'el listado principal muestra créditos y recibos con saldo sin duplicar los agotados y conserva recibos anulados');
+    const reciboLibre = movimientos.find(x => x.ComprobanteID === 5);
+    assert.deepStrictEqual([reciboLibre.Debe, reciboLibre.Cancelado, reciboLibre.Saldo], [50, 0, 50]);
+    const reciboParcial = movimientos.find(x => x.ComprobanteID === 10);
+    assert.deepStrictEqual([reciboParcial.Debe, reciboParcial.Cancelado, reciboParcial.Saldo], [100, 40, 60]);
     const movimientoLibre = movimientos.find(x => x.ComprobanteID === 3);
     assert.deepStrictEqual([movimientoLibre.Impacto, movimientoLibre.ComprobanteReferenciaID,
         movimientoLibre.EstadoComprobante, movimientoLibre.Debe, movimientoLibre.Cancelado,

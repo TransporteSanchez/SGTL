@@ -356,7 +356,7 @@ WITH AplicadoDeuda AS (
     LEFT JOIN AplicadoCredito credito ON credito.ComprobanteID=c.Comprobante_ID
     WHERE (@clienteId IS NULL OR m.ClienteID=@clienteId) AND m.Clase='EMISION'
       AND (c.Impacto='D' OR (c.Tipo='REC' AND c.Estado='ANULADO')
-           OR (c.Impacto='C' AND c.Tipo<>'REC' AND c.Estado='EMITIDO'
+           OR (c.Impacto='C' AND c.Estado='EMITIDO'
                AND c.ComprobanteReferenciaID IS NULL AND COALESCE(credito.Importe,0)<c.Total))
 ), Filtrados AS (
     SELECT * FROM Documentos d
