@@ -285,7 +285,7 @@ async function probarAccionesYReciboDeFc() {
     const botones = sandbox.accionesComprobante(item);
     assert.deepStrictEqual(JSON.parse(JSON.stringify(botones.map(function (boton) {
         return [boton.nombre, boton.deshabilitado];
-    }))), [['ver', false], ['editar', true], ['pdf', false], ['enviar', false], ['anular', true]]);
+    }))), [['ver', false], ['editar', true], ['pdf', false], ['enviar', false], ['siguiente', true], ['anular', true]]);
     sandbox.verComprobante(7, 'FC');
     assert.deepStrictEqual(accion, [[7, 'FC']]);
 
@@ -294,8 +294,9 @@ async function probarAccionesYReciboDeFc() {
         porId: function (id) { return id === 'reciboFacturas' ? reciboFacturas : {}; },
         clienteReciboActual: function () { return { ClienteID: 5 }; },
         apiGet: function () { return Promise.resolve([
-            { ComprobanteID: 7, Tipo: 'FC', Comprobante: 'FC-A-0001-00000001', FechaVencimiento: '2026-11-05', ImporteOriginal: 121, SaldoPendiente: 121 },
-            { ComprobanteID: 8, Tipo: 'REC', Comprobante: 'REC-X-0001-00000001', FechaVencimiento: '2026-11-05', ImporteOriginal: 50, SaldoPendiente: 50 }
+            { ComprobanteID: 7, Tipo: 'FC', Impacto: 'D', Comprobante: 'FC-A-0001-00000001', FechaVencimiento: '2026-11-05', ImporteOriginal: 121, SaldoPendiente: 121 },
+            { ComprobanteID: 8, Tipo: 'REC', Impacto: 'C', Comprobante: 'REC-X-0001-00000001', FechaVencimiento: '2026-11-05', ImporteOriginal: 50, SaldoPendiente: 50 },
+            { ComprobanteID: 9, Tipo: 'C', Impacto: 'C', Comprobante: 'C-A-0001-00000001', FechaVencimiento: null, ImporteOriginal: 70, SaldoPendiente: 70 }
         ]); },
         escapar: String,
         fecha: String,
@@ -309,6 +310,7 @@ async function probarAccionesYReciboDeFc() {
     await recibo.cargarFacturasRecibo();
     assert.match(reciboFacturas.innerHTML, /FC-A-0001-00000001/, 'FC con deuda se puede aplicar en el recibo');
     assert.doesNotMatch(reciboFacturas.innerHTML, /REC-X-0001-00000001/, 'el recibo sin imputar no es una deuda para aplicar');
+    assert.doesNotMatch(reciboFacturas.innerHTML, /<td class="cc-document">C-A-0001-00000001/, 'un crédito libre no se ofrece como deuda del recibo');
 }
 
 (async function () {

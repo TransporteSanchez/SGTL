@@ -17,6 +17,9 @@
     var comprobanteModo = null;
     var comprobanteConfiguracionLista = false;
     var facturasReferencia = [];
+    var creditoImputando = null;
+    var facturasImputacion = [];
+    var validadorImputacion = null;
     var ivaComprobanteFijo = null;
     var vencimientoComprobanteEditado = false;
     var paginaActual = 1;
@@ -122,7 +125,7 @@
                 return cargarFacturasReferencia(modo, cliente && cliente.ClienteID);
             }
         }).then(function () {
-            if (vigente() && (modo !== 'credito' || facturasReferencia.length)) boton.disabled = false;
+            if (vigente()) boton.disabled = false;
         }).catch(function (ex) {
             if (vigente()) window.SGTL.avisoFormulario(porId('cmpError'), textoError(ex, 'No se pudo cargar la configuración del comprobante. Probá de nuevo.'));
         }).then(function () {
@@ -461,6 +464,7 @@
         }, sinConexion);
     }
     function dinero(valor) {
+        if (window.SGTL && typeof window.SGTL.monto === 'function') return window.SGTL.monto(valor);
         return new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 2 })
             .format(Number(valor || 0));
     }
@@ -541,6 +545,15 @@
             ? 'No se puede enviar el comprobante por e-mail: no tiene un tipo identificado'
             : 'No se puede enviar ' + nombre + ' por e-mail: ' + (estadoDocumental === 'ANULADO'
                 ? 'está anulad' : 'todavía no está emitid') + (femenino ? 'a' : 'o');
+        var esCredito = String(item.Impacto || '').toUpperCase() === 'C' && !esRecibo;
+        var saldoCredito = Number(item.SaldoPendiente || 0);
+        var motivoImputacion = !esCredito
+            ? 'No se puede imputar el comprobante: ' + (esRecibo ? 'es un recibo' : 'es una deuda')
+            : item.ComprobanteReferenciaID
+                ? 'No se puede imputar el crédito: ya cancela otro comprobante'
+                : estadoDocumental !== 'EMITIDO'
+                    ? 'No se puede imputar el crédito: está anulado'
+                    : 'No se puede imputar el crédito: ya está aplicado por completo';
         return window.SGTL.accionesFila([
             window.SGTL.botonFila('ver', { id: id, datos: { tipo: tipo } }),
             window.SGTL.botonFila('editar', {
@@ -549,6 +562,11 @@
             }),
             window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'No se puede ver el PDF: este tipo de comprobante no tiene' }),
             window.SGTL.botonFila('enviar', { id: id, deshabilitado: !tipo || estadoDocumental !== 'EMITIDO', motivo: motivoEnvio }),
+            window.SGTL.botonFila('siguiente', {
+                id: id, texto: 'Imputar crédito', icono: 'bi-diagram-3',
+                deshabilitado: !esCredito || !!item.ComprobanteReferenciaID || estadoDocumental !== 'EMITIDO' || saldoCredito <= 0,
+                motivo: motivoImputacion
+            }),
             anulado
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
                 : window.SGTL.botonFila('anular', {
@@ -1055,7 +1073,7 @@
             var clienteFormulario = clienteReciboActual();
             if (!clienteFormulario || clienteFormulario.ClienteID !== cliente.ClienteID) return;
             var comprobantesDeuda = (comprobantes || []).filter(function (item) {
-                return item.Tipo !== 'REC' && centavos(item.SaldoPendiente) > 0;
+                return item.Impacto === 'D' && centavos(item.SaldoPendiente) > 0;
             });
             porId('reciboFacturas').innerHTML = comprobantesDeuda.map(function (item) {
                 return '<tr><td><input type="checkbox" class="form-check-input cc-recibo-check" data-id="' + Number(item.ComprobanteID) + '"></td>' +
@@ -1312,6 +1330,7 @@
         actualizarResumenNotaCredito();
     }
     function aplicacionesNotaCredito() {
+        if (porId('cmpSinImputar').checked) return [];
         var aplicaciones = [];
         document.querySelectorAll('#cmpFacturasNC tr').forEach(function (fila) {
             var check = fila.querySelector('.cc-nc-check');
@@ -1341,23 +1360,36 @@
         }, { neto: 0, iva: 0, otros: 0, total: 0 });
     }
     function actualizarResumenNotaCredito() {
-        var solicitado = centavos(porId('cmpImporteTotalNC').value);
+        var sinImputar = porId('cmpSinImputar').checked;
         var aplicaciones = aplicacionesNotaCredito();
-        var composicion = calcularComposicionNotaCredito(aplicaciones);
-        porId('cmpNeto').value = formatearCentavos(composicion.neto);
+        var solicitado = centavos(porId('cmpImporteTotalNC').value);
+        var netoLibre = sinImputar ? centavos(porId('cmpNeto').value) : 0;
+        var otrosLibres = sinImputar ? centavos(porId('cmpOtros').value) : 0;
+        var ivaLibre = sinImputar ? Math.round(netoLibre * Number(porId('cmpIvaPct').value || 0) / 100) : 0;
+        if (sinImputar) {
+            solicitado = netoLibre + ivaLibre + otrosLibres;
+            porId('cmpImporteTotalNC').value = formatearCentavos(solicitado);
+        }
+        var composicion = sinImputar
+            ? { neto: netoLibre, iva: ivaLibre, otros: otrosLibres, total: solicitado }
+            : calcularComposicionNotaCredito(aplicaciones);
+        if (!sinImputar) {
+            porId('cmpNeto').value = formatearCentavos(composicion.neto);
+            porId('cmpOtros').value = formatearCentavos(composicion.otros);
+        }
         porId('cmpIvaImporte').value = formatearCentavos(composicion.iva);
-        porId('cmpOtros').value = formatearCentavos(composicion.otros);
         porId('cmpTotal').textContent = dinero(composicion.total / 100);
         porId('cmpResumenNCTotal').textContent = dinero(solicitado / 100);
-        porId('cmpResumenNCAplicado').textContent = dinero(composicion.total / 100);
-        porId('cmpResumenNCDiferencia').textContent = dinero((solicitado - composicion.total) / 100);
+        porId('cmpResumenNCAplicado').textContent = dinero(sinImputar ? 0 : composicion.total / 100);
+        porId('cmpResumenNCDiferencia').textContent = dinero((solicitado - (sinImputar ? 0 : composicion.total)) / 100);
         ivaComprobanteFijo = composicion.iva;
         return {
             neto: composicion.neto, iva: composicion.iva, otros: composicion.otros,
-            total: composicion.total, aplicado: composicion.total, importeSolicitado: solicitado
+            total: composicion.total, aplicado: sinImputar ? 0 : composicion.total, importeSolicitado: solicitado
         };
     }
     function distribuirNotaCredito() {
+        if (porId('cmpSinImputar').checked) return;
         var importe = centavos(porId('cmpImporteTotalNC').value);
         if (importe <= 0) {
             porId('cmpError').textContent = 'Ingresá el importe que querés distribuir.';
@@ -1402,7 +1434,6 @@
         grupoAplicaciones.classList.remove('d-none');
         if (!clienteId) {
             porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
-            porId('btnEmitirComprobante').disabled = true;
             actualizarResumenNotaCredito();
             return Promise.resolve();
         }
@@ -1415,15 +1446,38 @@
             facturasReferencia = (facturas || []).filter(function (item) { return centavos(item.SaldoPendiente) > 0; });
             if (!facturasReferencia.length) {
                 porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">No hay comprobantes con saldo pendiente.</td></tr>';
-                porId('cmpMensaje').className = 'alert alert-warning py-2';
-                porId('cmpMensaje').textContent = 'El cliente no tiene comprobantes con saldo para emitir un crédito.';
-                porId('btnEmitirComprobante').disabled = true;
+                porId('cmpSinImputar').checked = true;
+                actualizarOpcionCreditoSinImputar();
+                porId('cmpMensaje').textContent = 'Este cliente no tiene comprobantes pendientes. Podés emitir el crédito sin imputar.';
+                porId('btnEmitirComprobante').disabled = false;
                 actualizarResumenNotaCredito();
                 return;
             }
             renderizarFacturasNotaCredito();
+            porId('cmpMensaje').textContent = 'Ingresá el importe. Podés distribuirlo ahora o emitir el crédito sin imputar.';
             porId('btnEmitirComprobante').disabled = false;
         });
+    }
+    function actualizarOpcionCreditoSinImputar() {
+        var sinImputar = porId('cmpSinImputar').checked;
+        porId('cmpImputacionInicialGrupo').classList.toggle('d-none', sinImputar);
+        porId('cmpImporteTotalGrupo').classList.toggle('d-none', sinImputar);
+        porId('cmpDistribuirGrupo').classList.toggle('d-none', sinImputar);
+        porId('btnDistribuirNC').disabled = sinImputar;
+        porId('cmpNeto').readOnly = !sinImputar;
+        porId('cmpOtros').readOnly = !sinImputar;
+        porId('cmpIvaPct').disabled = !sinImputar;
+        if (sinImputar) {
+            porId('cmpNeto').value = '0,00';
+            porId('cmpIvaPct').value = '21';
+            porId('cmpOtros').value = '0,00';
+            porId('cmpFacturasNC').querySelectorAll('.cc-nc-check').forEach(function (campo) { campo.checked = false; });
+            porId('cmpFacturasNC').querySelectorAll('.cc-nc-aplicar').forEach(function (campo) {
+                campo.disabled = true;
+                campo.value = '0,00';
+            });
+        } else porId('cmpIvaPct').value = '21';
+        actualizarResumenNotaCredito();
     }
     function cargarFacturasReferenciaLegado(tipo, clienteId) {
         var grupo = porId('cmpReferenciaGrupo');
@@ -1467,7 +1521,7 @@
         if (comprobanteModo !== 'credito' || !comprobanteTipo || !comprobanteConfiguracionLista) return;
         var cliente = clienteComprobanteActual();
         cargarFacturasReferencia('credito', cliente && cliente.ClienteID).catch(function (ex) {
-            porId('cmpError').textContent = textoError(ex, 'No se pudieron cargar los comprobantes del cliente. Probá de nuevo.');
+            window.SGTL.avisoFormulario(porId('cmpError'), textoError(ex, 'No se pudieron cargar los comprobantes del cliente. Probá de nuevo.'));
             porId('btnEmitirComprobante').disabled = true;
         });
     }
@@ -1499,6 +1553,11 @@
         porId('cmpIvaPct').querySelectorAll('.cc-iva-factura').forEach(function (opcion) { opcion.remove(); });
         porId('cmpNeto').value = '0,00'; porId('cmpIvaPct').value = '21'; porId('cmpOtros').value = '0,00';
         porId('cmpImporteTotalNC').value = '0,00';
+        porId('cmpSinImputar').checked = false;
+        porId('cmpImputacionInicialGrupo').classList.remove('d-none');
+        porId('cmpImporteTotalGrupo').classList.remove('d-none');
+        porId('cmpDistribuirGrupo').classList.remove('d-none');
+        porId('btnDistribuirNC').disabled = false;
         porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
         porId('cmpReferenciaGrupo').classList.add('d-none');
         porId('cmpAplicacionesGrupo').classList.add('d-none');
@@ -1513,7 +1572,7 @@
         var mensaje = porId('cmpMensaje');
         mensaje.className = 'alert alert-info py-2';
         mensaje.textContent = modo === 'credito'
-            ? 'Ingresá el importe y distribuí el crédito entre los comprobantes pendientes.'
+            ? 'Ingresá el importe. Podés distribuirlo ahora o emitir el crédito sin imputar.'
             : modo === 'directo' ? 'Completá los datos para emitir el comprobante.'
                 : 'Completá los datos para emitir el débito.';
         porId('modalNuevoComprobante').querySelectorAll('input,select,textarea').forEach(function (campo) { campo.disabled = false; });
@@ -1554,7 +1613,7 @@
         var vencimiento = comprobanteModo === 'credito' ? null : porId('cmpFechaVencimiento').value;
         var referencia = null;
         var concepto = porId('cmpConcepto').value.trim();
-        var importeInvalido = comprobanteModo === 'credito'
+        var importeInvalido = comprobanteModo === 'credito' && !porId('cmpSinImputar').checked
             ? primerMontoInvalido([
                 { etiqueta: 'El importe total del crédito', valor: porId('cmpImporteTotalNC').value }
             ].concat(camposAplicacionSeleccionados('#cmpFacturasNC', '.cc-nc-check', '.cc-nc-aplicar')))
@@ -1570,13 +1629,21 @@
         if (comprobanteModo !== 'credito' && (!vencimiento || vencimiento < emision)) {
             error.textContent = 'El vencimiento debe ser igual o posterior a la emisión.'; return;
         }
-        if (comprobanteModo === 'credito' && !aplicaciones.length) { error.textContent = 'Seleccioná uno o más comprobantes para aplicar el crédito.'; return; }
+        if (comprobanteModo === 'credito' && !porId('cmpSinImputar').checked && !aplicaciones.length) {
+            window.SGTL.avisoFormulario(error, 'Seleccioná comprobantes para imputar o marcá «Emitir sin imputar».');
+            return;
+        }
         if (!concepto) { error.textContent = 'Ingresá el concepto del comprobante.'; return; }
-        if (importes.neto <= 0) { error.textContent = 'El importe neto debe ser mayor que cero.'; return; }
+        if (comprobanteModo === 'credito' && importes.importeSolicitado <= 0) {
+            window.SGTL.avisoFormulario(error, 'Ingresá un importe total mayor que cero para el crédito.');
+            return;
+        }
+        if (importes.neto <= 0 && !(comprobanteModo === 'credito' && porId('cmpSinImputar').checked && importes.total > 0)) {
+            error.textContent = 'El importe neto debe ser mayor que cero.'; return;
+        }
         if (importes.otros < 0) { error.textContent = 'Otros impuestos no puede ser negativo.'; return; }
         if (comprobanteModo === 'credito') {
-            if (importes.importeSolicitado <= 0) { error.textContent = 'Ingresá el importe total del crédito.'; return; }
-            if (importes.aplicado !== importes.importeSolicitado) {
+            if (!porId('cmpSinImputar').checked && importes.aplicado !== importes.importeSolicitado) {
                 error.textContent = 'El total aplicado debe coincidir con el importe del crédito.'; return;
             }
             var excedePendiente = Array.prototype.some.call(document.querySelectorAll('.cc-nc-aplicar'), function (input) {
@@ -1605,6 +1672,139 @@
             listo();
             if (ex.status === 403) error.textContent = 'Tu usuario no tiene permiso para emitir este comprobante.';
             else error.textContent = textoError(ex, 'No se pudo emitir el comprobante. Probá de nuevo.');
+        });
+    }
+    function actualizarResumenImputacionCredito() {
+        var disponible = creditoImputando && creditoImputando.saldoCentavos || 0;
+        var aplicado = 0;
+        porId('imputarFacturas').querySelectorAll('.cc-imputar-aplicar').forEach(function (campo) {
+            if (!campo.disabled) aplicado += centavos(campo.value);
+        });
+        porId('imputarTotal').textContent = dinero(aplicado / 100);
+        porId('imputarRestante').textContent = dinero((disponible - aplicado) / 100);
+        return { disponible: disponible, aplicado: aplicado };
+    }
+    function renderizarFacturasImputacion() {
+        var filas = facturasImputacion.map(function (item) {
+            return '<tr><td><input type="checkbox" class="form-check-input cc-imputar-check" aria-label="Seleccionar ' + escapar(item.Numero) + '"></td>' +
+                '<td class="cc-document">' + escapar(item.Numero) + '</td>' +
+                '<td class="text-center">' + fecha(item.FechaVencimiento || item.FechaEmision) + '</td>' +
+                '<td class="text-end fw-bold">' + dinero(item.SaldoPendiente) + '</td>' +
+                '<td class="text-end"><input type="text" inputmode="decimal" class="form-control form-control-sm text-end cc-allocation-input cc-imputar-aplicar" ' +
+                'aria-label="Importe a imputar a ' + escapar(item.Numero) + '" ' +
+                'data-id="' + Number(item.ComprobanteID) + '" data-pendiente-centavos="' + centavos(item.SaldoPendiente) + '" ' +
+                'data-emision="' + escapar(String(item.FechaEmision || '').substring(0, 10)) + '" disabled value="0,00"></td></tr>';
+        }).join('');
+        if (filas) window.SGTL.tabla.llenar('#imputarFacturas', filas);
+        else window.SGTL.tabla.vacia('#imputarFacturas', 5, 'El cliente no tiene comprobantes internos con saldo pendiente.');
+        porId('imputarFacturas').querySelectorAll('.cc-imputar-aplicar').forEach(enlazarMascaraMonto);
+        porId('btnGuardarImputacion').disabled = !facturasImputacion.length;
+        actualizarResumenImputacionCredito();
+    }
+    function abrirImputarCredito(id) {
+        var item = buscarComprobante(Number(id));
+        var operacion = { id: Number(id), saldoCentavos: 0, aplicadoPorFactura: {} };
+        creditoImputando = operacion;
+        facturasImputacion = [];
+        porId('imputarTitulo').textContent = 'Imputar crédito';
+        porId('imputarNumero').textContent = item && item.Comprobante || '—';
+        porId('imputarCliente').textContent = item && item.Cliente || '—';
+        porId('imputarSaldo').textContent = dinero(item && item.SaldoPendiente || 0);
+        window.SGTL.tabla.cargando('#imputarFacturas', 5);
+        porId('btnGuardarImputacion').disabled = true;
+        window.SGTL.avisoFormulario(porId('imputarError'), '');
+        if (validadorImputacion) validadorImputacion.reiniciar();
+        ponerFecha('imputarFecha', hoyIso());
+        limitarFecha('imputarFecha', 'maxDate', hoyIso());
+        window.SGTL.modal(porId('modalImputarCredito'), 'show');
+        return apiGet('/comprobantes/' + operacion.id).then(function (credito) {
+            if (creditoImputando !== operacion) return;
+            if (credito.EstadoDocumental !== 'EMITIDO' || credito.Tipo === 'REC' ||
+                credito.ComprobanteReferenciaNumero || centavos(credito.SaldoPendiente) <= 0) {
+                window.SGTL.avisoFormulario(porId('imputarError'), 'Este crédito ya no tiene saldo disponible para imputar.');
+                window.SGTL.tabla.vacia('#imputarFacturas', 5, 'Este crédito ya no tiene saldo disponible para imputar.');
+                return;
+            }
+            operacion.clienteId = Number(credito.ClienteID);
+            operacion.saldoCentavos = centavos(credito.SaldoPendiente);
+            operacion.fechaEmision = String(credito.FechaEmision || '').substring(0, 10);
+            (credito.ComprobantesCancelados || []).forEach(function (aplicacion) {
+                var deudaId = Number(aplicacion.ComprobanteID);
+                operacion.aplicadoPorFactura[deudaId] = (operacion.aplicadoPorFactura[deudaId] || 0) + centavos(aplicacion.ImporteAplicado);
+            });
+            porId('imputarTitulo').textContent = 'Imputar crédito ' + credito.Numero;
+            porId('imputarNumero').textContent = credito.Numero;
+            porId('imputarCliente').textContent = credito.RazonSocial || '—';
+            porId('imputarSaldo').textContent = dinero(credito.SaldoPendiente);
+            limitarFecha('imputarFecha', 'minDate', operacion.fechaEmision);
+            return apiGet('/clientes/' + operacion.clienteId + '/facturas-referencia').then(function (facturas) {
+                if (creditoImputando !== operacion) return;
+                facturasImputacion = (facturas || []).filter(function (factura) { return centavos(factura.SaldoPendiente) > 0; });
+                renderizarFacturasImputacion();
+            });
+        }).catch(function (ex) {
+            if (creditoImputando !== operacion) return;
+            window.SGTL.tabla.vacia('#imputarFacturas', 5, 'No se pudieron cargar los comprobantes pendientes.');
+            window.SGTL.avisoFormulario(porId('imputarError'), textoError(ex, 'No se pudieron cargar los comprobantes pendientes. Probá de nuevo.'));
+        });
+    }
+    function guardarImputacionCredito() {
+        var error = porId('imputarError');
+        window.SGTL.avisoFormulario(error, '');
+        if (!creditoImputando || !creditoImputando.clienteId) return;
+        if (validadorImputacion && !validadorImputacion.validarTodo()) {
+            window.SGTL.revisarFormulario(porId('modalImputarCredito'), error);
+            return;
+        }
+        var fechaImputacion = porId('imputarFecha').value;
+        var acumulados = Object.assign({}, creditoImputando.aplicadoPorFactura);
+        var nuevoTotal = 0;
+        var tieneError = false;
+        porId('imputarFacturas').querySelectorAll('tr').forEach(function (fila) {
+            var check = fila.querySelector('.cc-imputar-check');
+            var campo = fila.querySelector('.cc-imputar-aplicar');
+            if (!check || !campo || !check.checked) return;
+            var importe = leerMontoCentavos(campo.value);
+            var pendiente = Number(campo.getAttribute('data-pendiente-centavos'));
+            var emisionDeuda = campo.getAttribute('data-emision');
+            var mensaje = importe == null || importe <= 0 ? 'Ingresá un importe mayor que cero.' :
+                importe > pendiente ? 'El importe supera el saldo pendiente.' : '';
+            if (mensaje) { window.SGTL.marcarError(campo, mensaje); tieneError = true; return; }
+            window.SGTL.limpiarError(campo);
+            if (fechaImputacion < emisionDeuda) {
+                window.SGTL.marcarError(porId('imputarFecha'), 'La fecha de imputación debe ser igual o posterior a la emisión del comprobante.');
+                tieneError = true;
+            }
+            var deudaId = Number(campo.getAttribute('data-id'));
+            acumulados[deudaId] = (acumulados[deudaId] || 0) + importe;
+            nuevoTotal += importe;
+        });
+        if (tieneError) {
+            window.SGTL.revisarFormulario(porId('modalImputarCredito'), error);
+            return;
+        }
+        if (nuevoTotal <= 0) {
+            window.SGTL.avisoFormulario(error, 'Seleccioná uno o más comprobantes para imputar el crédito.');
+            return;
+        }
+        if (nuevoTotal > creditoImputando.saldoCentavos) {
+            window.SGTL.avisoFormulario(error, 'El total a imputar supera el saldo disponible del crédito.');
+            return;
+        }
+        var aplicaciones = Object.keys(acumulados).map(function (deudaId) {
+            return { ComprobanteID: Number(deudaId), Importe: acumulados[deudaId] / 100 };
+        });
+        var creditoId = creditoImputando.id;
+        var listo = window.SGTL.procesando('#btnGuardarImputacion');
+        return apiPut('/comprobantes/' + creditoId + '/aplicaciones', {
+            Fecha: fechaImputacion, Aplicaciones: aplicaciones
+        }).then(function () {
+            listo();
+            cerrarModalYNotificar('modalImputarCredito', 'Crédito imputado.');
+            cargarCuenta();
+        }).catch(function (ex) {
+            listo();
+            window.SGTL.avisoFormulario(error, textoError(ex, 'No se pudo imputar el crédito. Probá de nuevo.'));
         });
     }
     function abrirAccionFutura(accion) {
@@ -1884,7 +2084,7 @@
     }
 
     function enlazarEventos() {
-        ['cmpFechaEmision', 'cmpFechaVencimiento', 'reciboFecha'].forEach(prepararFecha);
+        ['cmpFechaEmision', 'cmpFechaVencimiento', 'reciboFecha', 'imputarFecha'].forEach(prepararFecha);
         if (window.SGTL) {
             window.SGTL.rangoFechas('#ccFecha', {
                 maxDate: 'today', onChange: sincronizarRango,
@@ -1897,6 +2097,15 @@
                 sincronizarRango();
                 cargarCuenta(1);
             });
+            validadorImputacion = window.SGTL.validador([{
+                id: 'imputarFecha', requerido: 'Completá la fecha de imputación.',
+                validar: function (valor) {
+                    if (valor > hoyIso()) return 'La fecha de imputación no puede ser futura.';
+                    if (creditoImputando && creditoImputando.fechaEmision && valor < creditoImputando.fechaEmision)
+                        return 'La fecha de imputación debe ser igual o posterior a la emisión del crédito.';
+                    return '';
+                }
+            }]);
         }
         ['ccCliente', 'ccTipo', 'ccEstado'].forEach(function (id) {
             porId(id).addEventListener('change', function () { cargarCuenta(1); });
@@ -1918,6 +2127,9 @@
         porId('btnDistribuirRecibo').addEventListener('click', distribuirRecibo);
         porId('btnDistribuirNC').addEventListener('click', distribuirNotaCredito);
         porId('btnEmitirComprobante').addEventListener('click', emitirComprobante);
+        porId('cmpSinImputar').addEventListener('change', actualizarOpcionCreditoSinImputar);
+        porId('btnGuardarImputacion').addEventListener('click', guardarImputacionCredito);
+        porId('modalImputarCredito').addEventListener('hidden.bs.modal', function () { creditoImputando = null; });
         porId('cmpTipoSeleccion').addEventListener('change', seleccionarTipoComprobanteDirecto);
         porId('cmpCliente').addEventListener('change', function () {
             actualizarClienteComprobante();
@@ -1970,6 +2182,7 @@
             else if (accion === 'editar') abrirEditarRecibo(id);
             else if (accion === 'pdf') abrirVistaPreviaComprobante(id);
             else if (accion === 'enviar') abrirEnvioComprobante(id);
+            else if (accion === 'siguiente') abrirImputarCredito(id);
             else if (accion === 'anular') anularReciboActual(id);
             else if (accion === 'eliminar') eliminarReciboActual(id);
         });
@@ -2008,6 +2221,19 @@
                 input.value = event.target.checked ? formatearCentavos(Number(input.getAttribute('data-pendiente-centavos') || 0)) : '0,00';
             }
             actualizarResumenNotaCredito();
+        });
+        porId('imputarFacturas').addEventListener('input', actualizarResumenImputacionCredito);
+        porId('imputarFacturas').addEventListener('change', function (event) {
+            if (event.target.classList.contains('cc-imputar-check')) {
+                var campo = event.target.closest('tr').querySelector('.cc-imputar-aplicar');
+                var restante = actualizarResumenImputacionCredito();
+                campo.disabled = !event.target.checked;
+                campo.value = event.target.checked
+                    ? formatearCentavos(Math.min(Math.max(0, restante.disponible - restante.aplicado),
+                        Number(campo.getAttribute('data-pendiente-centavos') || 0))) : '0,00';
+                if (!event.target.checked) window.SGTL.limpiarError(campo);
+            }
+            actualizarResumenImputacionCredito();
         });
         ['reciboFormaImporte', 'cmpNeto', 'cmpOtros', 'cmpImporteTotalNC'].forEach(function (id) {
             enlazarMascaraMonto(porId(id));

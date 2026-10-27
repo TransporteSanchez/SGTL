@@ -66,7 +66,7 @@ function probarCancelacionPorImpactoYProforma() {
         'los créditos configurables no tienen vencimiento');
     assert.match(emitir, /cancelatorioProforma\s*&&\s*request\.Aplicaciones\.Count\s*>\s*0/,
         'no admite aplicaciones elegidas por el cliente');
-    assert.match(emitir, /decimal\s+iva\s*=\s*notaCreditoCorriente\s*\?\s*0\s*:\s*cancelatorioProforma\s*\?\s*request\.IVA\.Value\s*:\s*Redondear/,
+    assert.match(emitir, /decimal\s+iva\s*=\s*notaCreditoCorriente\s*&&\s*!creditoSinAplicar\s*\?\s*0\s*:\s*cancelatorioProforma\s*\?\s*request\.IVA\.Value\s*:\s*Redondear/,
         'el crédito cancelatorio conserva el IVA exacto de la factura, aunque los renglones tengan distintos redondeos');
     assert.match(emitir, /if\s*\(cancelatorioProforma\)[\s\S]*?LeerFacturaReferencia/,
         'la referencia de la cancelatoria se lee para cualquier sigla de crédito');

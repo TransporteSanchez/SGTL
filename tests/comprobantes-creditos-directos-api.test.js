@@ -25,15 +25,24 @@ const antesConfiguracion = emitir.slice(0, indiceConfiguracion);
 assert.doesNotMatch(antesConfiguracion,
     /request\.Tipo\s*!=\s*"NC"\s*&&\s*request\.Aplicaciones\.Count\s*>\s*0/,
     'la API no debe rechazar las aplicaciones de CI antes de consultar su impacto');
+assert.doesNotMatch(emitir.slice(indiceCreditoCorriente),
+    /notaCreditoCorriente\s*&&\s*request\.Aplicaciones\.Count\s*==\s*0\)\s*return\s+BadRequest/,
+    'un crédito interno debe poder emitirse sin imputaciones');
 assert.match(emitir.slice(indiceCreditoCorriente),
-    /notaCreditoCorriente\s*&&\s*request\.Aplicaciones\.Count\s*==\s*0/,
-    'un crédito interno corriente debe aplicarse a una o más deudas');
+    /creditoSinAplicar[\s\S]*?request\.Neto\s*<\s*0/,
+    'el crédito sin imputar debe aceptar neto cero cuando otros importes hacen positivo el total');
 assert.match(emitir.slice(indiceCreditoCorriente),
-    /else\s+if\s*\(notaCreditoCorriente\)[\s\S]*?CalcularComposicionAplicacion/,
+    /creditoSinAplicar[\s\S]*?request\.IVA\.HasValue[\s\S]*?request\.IVA\.Value\s*!=\s*iva/,
+    'el IVA informado debe coincidir con el cálculo por neto y porcentaje');
+assert.match(emitir.slice(indiceCreditoCorriente),
+    /creditoSinAplicar\s*&&\s*total\s*<=\s*0/,
+    'el crédito sin imputar debe tener un total positivo');
+assert.match(emitir.slice(indiceCreditoCorriente),
+    /else\s+if\s*\(notaCreditoCorriente\s*&&\s*!creditoSinAplicar\)[\s\S]*?CalcularComposicionAplicacion/,
     'el neto, IVA y otros impuestos de CI deben derivarse de las deudas aplicadas');
 assert.match(emitir.slice(indiceCreditoCorriente),
     /notaCreditoCorriente\s*\?\s*CoincideReintentoNotaCreditoCorriente/,
-    'el reintento de CI debe comparar las aplicaciones persistidas');
+    'el reintento de CI debe conservar la validación del crédito emitido');
 assert.match(emitir.slice(indiceCreditoCorriente),
     /if\s*\(impacto\s*==\s*"C"\)[\s\S]*?INSERT dbo\.CUENTA_CORRIENTE_APLICACIONES/,
     'el crédito interno debe registrar sus aplicaciones');

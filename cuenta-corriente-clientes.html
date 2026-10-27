@@ -252,17 +252,19 @@
                             <div class="form-text" id="cmpReferenciaAyuda"></div>
                         </div>
                         <div class="col-12 d-none" id="cmpAplicacionesGrupo">
+                            <div class="form-check mb-2"><input id="cmpSinImputar" class="form-check-input" type="checkbox"><label class="form-check-label" for="cmpSinImputar">Emitir sin imputar</label></div>
+                            <div class="form-text mb-2">Si lo emitís sin imputar, cargá el neto, elegí el IVA e ingresá otros impuestos abajo. Podés aplicarlo a comprobantes internos después.</div>
                             <div class="row g-3 align-items-end justify-content-end mb-2">
-                                <div class="col-md-4"><label class="form-label" for="cmpImporteTotalNC">Importe total a acreditar <span class="text-danger">*</span></label><input id="cmpImporteTotalNC" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
-                                <div class="col-md-auto"><button type="button" class="btn btn-outline-secondary" id="btnDistribuirNC"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
+                                <div class="col-md-4" id="cmpImporteTotalGrupo"><label class="form-label" for="cmpImporteTotalNC">Importe total a acreditar <span class="text-danger">*</span></label><input id="cmpImporteTotalNC" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
+                                <div class="col-md-auto" id="cmpDistribuirGrupo"><button type="button" class="btn btn-outline-secondary" id="btnDistribuirNC"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
                             </div>
-                            <div class="table-responsive">
+                            <div class="table-responsive" id="cmpImputacionInicialGrupo">
                                 <table class="table table-sm table-striped table-hover mb-2">
                                     <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante</th><th class="text-center">Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
                                     <tbody id="cmpFacturasNC"></tbody>
                                 </table>
                             </div>
-                            <div class="cc-total-row"><span>Total del crédito: <strong id="cmpResumenNCTotal">$ 0,00</strong></span><span>Total aplicado: <strong id="cmpResumenNCAplicado">$ 0,00</strong></span><span>Diferencia: <strong id="cmpResumenNCDiferencia">$ 0,00</strong></span></div>
+                            <div class="cc-total-row"><span>Total del crédito: <strong id="cmpResumenNCTotal">$ 0,00</strong></span><span>Total aplicado: <strong id="cmpResumenNCAplicado">$ 0,00</strong></span><span>Saldo sin imputar: <strong id="cmpResumenNCDiferencia">$ 0,00</strong></span></div>
                         </div>
                         <div class="col-12 d-none" id="cmpSoloLecturaRelacion"></div>
                         <div class="col-12 d-none" id="cmpDetalleLectura">
@@ -285,6 +287,44 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" id="btnCerrarComprobante" data-bs-dismiss="modal">Cancelar</button>
                     <button type="button" class="btn btn-primary" id="btnEmitirComprobante"><i class="bi bi-check-circle me-1"></i>Emitir comprobante</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalImputarCredito" tabindex="-1" aria-labelledby="imputarTitulo" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="imputarTitulo">Imputar crédito</h5>
+                        <small class="text-muted">Aplicá el saldo disponible a comprobantes internos del mismo cliente.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light-danger color-danger py-2 cc-error-modal" id="imputarError" role="alert"></div>
+                    <div class="sgtl-bloque-titulo">Crédito disponible</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Comprobante</span><span class="sgtl-dato-valor" id="imputarNumero"></span></div></div>
+                        <div class="col-md-5"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Cliente</span><span class="sgtl-dato-valor" id="imputarCliente"></span></div></div>
+                        <div class="col-md-3"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Saldo sin imputar</span><span class="sgtl-dato-valor" id="imputarSaldo"></span></div></div>
+                    </div>
+                    <div class="sgtl-bloque-titulo">Imputación a comprobantes</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3"><label class="form-label" for="imputarFecha">Fecha de imputación <span class="text-danger">*</span></label><input id="imputarFecha" class="form-control" placeholder="DD/MM/AAAA" required></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-2">
+                            <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante interno</th><th class="text-center">Vencimiento</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar ahora</th></tr></thead>
+                            <tbody id="imputarFacturas"></tbody>
+                        </table>
+                    </div>
+                    <div class="cc-total-row"><span>Imputar ahora: <strong id="imputarTotal">$ 0,00</strong></span><span>Saldo restante: <strong id="imputarRestante">$ 0,00</strong></span></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarImputacion"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Imputar crédito</button>
                 </div>
             </div>
         </div>

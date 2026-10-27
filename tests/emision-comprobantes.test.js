@@ -147,22 +147,25 @@ function probarAccionesPorTipoDeComprobante() {
     }
 
     assert.deepStrictEqual(botones({ Tipo: 'FAC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular (deshabilitado)'],
     'una factura se ve, tiene PDF y se puede enviar; editar y anular quedan deshabilitados');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar', 'pdf', 'enviar', 'anular'],
+        ['ver', 'editar', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular'],
     'un recibo emitido se puede editar, enviar y anular');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'ANULADO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar (deshabilitado)', 'eliminar'],
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar (deshabilitado)', 'siguiente (deshabilitado)', 'eliminar'],
     'un recibo anulado no se edita ni envía: se elimina');
     ['NC', 'ND'].forEach(function (tipo) {
         assert.deepStrictEqual(botones({ Tipo: tipo, EstadoComprobante: 'EMITIDO' }),
-            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular (deshabilitado)'],
         tipo + ' se puede enviar, pero no editar ni anular');
     });
     assert.deepStrictEqual(botones({ Comprobante: 'REC-00000004', Estado: 'Aplicado' }),
-        ['ver', 'editar', 'pdf', 'enviar', 'anular'],
+        ['ver', 'editar', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular'],
     'un recibo aplicado a una factura conserva sus acciones');
+    assert.deepStrictEqual(botones({ Tipo: 'C', Impacto: 'C', SaldoPendiente: 600, EstadoComprobante: 'EMITIDO' }),
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente', 'anular (deshabilitado)'],
+        'un crédito interno con saldo tiene la acción de imputarlo');
 }
 
 function crearClase() {
@@ -325,6 +328,7 @@ function probarDistribucionDeNotaCredito() {
         porId: function (id) {
             if (id === 'cmpImporteTotalNC') return importe;
             if (id === 'cmpError') return error;
+            if (id === 'cmpSinImputar') return { checked: false };
             return null;
         },
         document: { querySelectorAll: function () { return filas; } },

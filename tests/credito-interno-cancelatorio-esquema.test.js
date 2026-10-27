@@ -191,16 +191,16 @@ function probarAuditoriaDeCreditosReferenciados() {
         db.exec(`
             ATTACH DATABASE ':memory:' AS dbo;
             CREATE TABLE dbo.COMPROBANTES (
-                Comprobante_ID INTEGER, Tipo TEXT, Impacto TEXT, ComprobanteReferenciaID INTEGER, Total INTEGER
+                Comprobante_ID INTEGER, Tipo TEXT, Impacto TEXT, ComprobanteReferenciaID INTEGER, Total INTEGER, Estado TEXT
             );
             CREATE TABLE dbo.CUENTA_CORRIENTE_APLICACIONES (
                 ComprobanteCreditoID INTEGER, ComprobanteDeudaID INTEGER, Vigente INTEGER, Importe INTEGER
             );
             INSERT INTO dbo.COMPROBANTES VALUES
-                (1,'CI','C',101,121),
-                (2,'NC','C',102,60),
-                (3,'ND','D',103,50),
-                (4,'CI','C',104,70);
+                (1,'CI','C',101,121,'EMITIDO'),
+                (2,'NC','C',102,60,'EMITIDO'),
+                (3,'ND','D',103,50,'EMITIDO'),
+                (4,'CI','C',104,70,'EMITIDO');
             INSERT INTO dbo.CUENTA_CORRIENTE_APLICACIONES VALUES
                 (2,102,1,60),
                 (4,999,1,70);

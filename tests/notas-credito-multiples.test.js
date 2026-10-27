@@ -22,7 +22,7 @@ assert.match(controlador,
     /CoincideReintentoNotaCreditoCorriente\s*\(/,
     'el reintento de una NC corriente debe comparar su encabezado sin recalcular saldos ya aplicados');
 const indiceBuscarClave = controlador.indexOf('var existente = BuscarPorClave');
-const indiceValidarSaldosNc = controlador.indexOf('else if (notaCreditoCorriente)');
+const indiceValidarSaldosNc = controlador.indexOf('else if (notaCreditoCorriente && !creditoSinAplicar)');
 assert.ok(indiceBuscarClave !== -1 && indiceValidarSaldosNc !== -1 && indiceBuscarClave < indiceValidarSaldosNc,
     'la idempotencia debe resolverse antes de validar saldos mutables de las Facturas');
 assert.match(controlador,

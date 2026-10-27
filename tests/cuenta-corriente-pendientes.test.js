@@ -24,8 +24,8 @@ assert.match(
 );
 assert.match(
     consulta,
-    /c\.Tipo\s*=\s*'REC'\s+AND\s+c\.Impacto\s*=\s*'C'/,
-    'los recibos emitidos deben incluirse como comprobantes de crédito'
+    /c\.Impacto\s*=\s*'C'\s+AND\s+\(c\.Tipo\s*=\s*'REC'\s+OR\s+c\.ComprobanteReferenciaID\s+IS\s+NULL\)/,
+    'se incluyen recibos y créditos libres, y se excluyen cancelatorios asociados'
 );
 assert.match(
     consulta,
