@@ -64,6 +64,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 44 | Editar la identidad de tipos de comprobante y marcar los electrónicos | Migración 16 aplicada según el usuario (27/10); falta probar en VM | Pendiente de subir | Corregir una sigla y una letra con historial, y comprobar el bloqueo electrónico (§44) |
 | 45 | Emitir créditos y débitos internos directos desde cuenta corriente | Corregido en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Recompilar la API, recargar y emitir con C y D activos, aunque NC y ND estén inactivos (§45) |
 | 46 | Emitir créditos internos sin imputar e imputarlos después | Hecho en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Emitir C con saldo libre e imputarlo parcial y sucesivamente a comprobantes internos de deuda (§46) |
+| 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3749,3 +3750,14 @@ Las siglas FAC, ND, NC y REC tienen circuitos propios y permanecen fijas. FAC y 
 La API guarda las imputaciones posteriores mediante `PUT /api/comprobantes/{id}/aplicaciones`: cada importe solicitado es el **total acumulado** del crédito aplicado a esa deuda, por lo que repetir exactamente la petición no duplica la aplicación. Rechaza deudas de otro cliente, importes que excedan el saldo del crédito o de la deuda, y modificaciones de aplicaciones ya registradas. El script de solo lectura `database/cuenta-corriente/03_verificacion_posterior.sql` ahora considera válido un crédito corriente sin aplicar o parcialmente aplicado; sigue denunciando sobreaplicaciones y exige que un cancelatorio emitido tenga una sola aplicación por su total. No se requiere migración nueva de la base.
 
 **Probar en la VM:** recompilar la API y recargar Gestionar cuenta corriente. Con C activo, emitir un crédito sin deuda seleccionada con neto $ 1.000,00, IVA 21 % ($ 210,00) y otros impuestos $ 50,00; verificar el total $ 1.260,00, su desglose, número, movimiento, detalle, PDF y saldo disponible en ambas vistas de cuenta corriente. Crear dos comprobantes internos de deuda para el mismo cliente, cada uno con saldo suficiente. Imputar $ 400,00 al primero, volver a abrir «Imputar crédito» y agregar $ 200,00 para que esa deuda acumule $ 600,00; aplicar los $ 660,00 restantes al segundo. Verificar que el crédito pasa de «Sin aplicar» a «Parcialmente aplicado» y luego a «Aplicado», y que los saldos de ambas deudas bajan una sola vez. Repetir el mismo `PUT` y comprobar que no agrega otra aplicación; intentar exceder cualquiera de los saldos y usar una deuda de otro cliente: la API debe rechazarlo sin guardar cambios. Confirmar que una anulación de proforma sigue emitiendo su crédito cancelatorio por el total y con una sola aplicación.
+
+---
+
+## 53. Versionar los archivos del manual de usuario (27/10)
+
+Se incluyen `docs/Manual_SGTL_actualizado.docx`, `docs/Manual_SGTL_portada_nueva.docx` y el script
+`database/documentacion/02_reemplazar_manual_version_0003.sql`, que contiene el PDF propuesto para el manual.
+El script termina con ROLLBACK: no se ejecutó ni se reemplazó el PDF de la base compartida durante esta sincronización.
+
+**Probar:** revisar las dos variantes Word y, antes de aplicar el script por decisión de Rocío, verificar el tamaño,
+la huella y la vista previa del PDF propuesto. Subir los archivos al repositorio no publica el manual en la aplicación.

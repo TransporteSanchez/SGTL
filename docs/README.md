@@ -43,6 +43,12 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/PENDIENTES-SISTEMA.md` — lista única de pendientes y estado de cada uno.
 
+### Archivos del manual de usuario
+
+- `docs/Manual_SGTL_actualizado.docx` — versión de trabajo del manual de usuario.
+- `docs/Manual_SGTL_portada_nueva.docx` — versión de trabajo con la portada nueva.
+- El script para proponer la actualización del PDF está en `database/documentacion/02_reemplazar_manual_version_0003.sql`; termina con ROLLBACK para revisar antes de aplicarlo.
+
 ### Equipo
 
 - `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md` — cómo se trabaja entre la Mac y la VM Windows.
