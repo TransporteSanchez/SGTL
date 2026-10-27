@@ -22,8 +22,8 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 
 | Tabla | Clave primaria | Relaciones y función |
 |---|---|---|
-| TIPOS_COMPROBANTE | Tipo | FAC/ND = D; NC/REC = C. Catálogo cerrado para MVP. |
-| COMPROBANTES_NUMERADORES | Tipo | Último correlativo confirmado por tipo. |
+| TIPOS_COMPROBANTE | TipoComp_ID (script 11) | `Tipo` único; FAC/ND = D; NC/REC = C. Catálogo cerrado para MVP. |
+| COMPROBANTES_NUMERADORES | CompNum_ID (script 11) | `Tipo` único y FK a tipos; último correlativo confirmado por tipo. |
 | COMPROBANTES | Comprobante_ID | FK Cliente, Tipo, usuarios y Factura de referencia opcional; NC requiere referencia. |
 | COMPROBANTES_DETALLE | Detalle_ID | FK Comprobante y línea original de Proforma opcional. Copia histórica de conceptos. |
 | COMPROBANTES_PROFORMAS | ComprobanteProforma_ID | FK compuestas garantizan misma cuenta y tipo FAC. Una Proforma por Factura. |
@@ -36,6 +36,10 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 
 Tipos e impacto redundantes en ciertas FK son discriminadores controlados por CHECK/FK:
 no deben recibirse libremente del navegador ni representar dos fuentes independientes de negocio.
+
+El script `database/cuenta-corriente/11_ids_tipos_y_numeradores.sql` migra las dos primeras tablas.
+Los nuevos IDs son `int IDENTITY` y `Tipo` sigue siendo único para las relaciones y consultas existentes.
+Hasta aplicar el script, la base conserva las PK originales sobre `Tipo`.
 
 ### Cambios en tablas existentes
 
