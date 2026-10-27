@@ -200,13 +200,13 @@
                                         <label class="form-check-label" for="usuarioActivo">Activo</label>
                                     </div>
                                 </div>
-                                <!-- Hoja de ruta (24/10): la cuenta de un chofer apunta a su ficha de Gestionar choferes. -->
-                                <div class="col-12 col-md-6" id="campoChofer">
-                                    <label for="usuarioChofer" class="form-label">Chofer</label>
+                                <!-- Rol Chofer (27/10): la cuenta de un chofer apunta a su ficha de Gestionar choferes. -->
+                                <div class="col-12 col-md-6 d-none" id="campoChofer">
+                                    <label for="usuarioChofer" class="form-label">Chofer <span class="text-danger">*</span></label>
                                     <select id="usuarioChofer" class="form-select">
-                                        <option value="">No es chofer</option>
+                                        <option value="">Seleccioná un chofer</option>
                                     </select>
-                                    <div class="form-text">Solo si el usuario es un chofer: en Hojas de ruta ve los viajes de ese chofer.</div>
+                                    <div class="form-text">En Hojas de ruta ve solo los viajes de este chofer.</div>
                                 </div>
                                 <div class="col-12 d-none" id="choferNoDisponible">
                                     <p class="form-text mt-0 mb-0" id="choferNoDisponibleTexto"></p>
@@ -254,6 +254,7 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/select-cliente-predictivo.js"></script>
+    <script src="assets/static/js/permisos-menu.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -482,6 +483,10 @@
         function esRolUser() {
             return ($('#usuarioRol').val() || '').trim().toLowerCase() === 'user';
         }
+        // Rol Chofer (Rocío, 27/10): pide el chofer y no lleva grupos (ve solo Hojas de ruta).
+        function esRolChofer() {
+            return ($('#usuarioRol').val() || '').trim().toLowerCase() === 'chofer';
+        }
 
         function cargarRoles() {
             if (!rolesCargados) {
@@ -493,7 +498,8 @@
                 const select = document.getElementById('usuarioRol');
                 select.innerHTML = '';
                 select.appendChild(new Option('Seleccioná un rol', ''));
-                (roles || []).forEach(function (rol) { select.appendChild(new Option(rol, rol)); });
+                // En castellano: Administrador, Usuario y Chofer (permisos-menu.js).
+                (roles || []).forEach(function (rol) { select.appendChild(new Option(SGTLPermisos.textoRol(rol), rol)); });
             });
         }
 
@@ -538,6 +544,7 @@
         }
 
         function mostrarSeccionGrupos() {
+            mostrarChoferSegunRol();
             const visible = esRolUser();
             $('#seccionGrupos').toggleClass('d-none', !visible);
             if (!visible) {
@@ -573,19 +580,26 @@
             return (ch.Apellido || '').trim() + ', ' + (ch.Nombre || '').trim() + ' (DNI ' + (ch.DNI || '').trim() + ')';
         }
 
-        // Si no se pueden leer los choferes, el campo no se muestra: se dice por qué, en texto (§6.3).
+        // Si no se pueden leer los choferes, el campo no se muestra: se dice por qué, en texto (§6.3). Solo con el rol Chofer.
+        let motivoChoferNoDisponible = '';
         function mostrarCampoChofer(disponible, motivo) {
             choferDisponible = disponible;
-            $('#campoChofer').toggleClass('d-none', !disponible);
-            $('#choferNoDisponible').toggleClass('d-none', disponible);
-            $('#choferNoDisponibleTexto').text(motivo || '');
+            motivoChoferNoDisponible = motivo || '';
+            mostrarChoferSegunRol();
+        }
+        function mostrarChoferSegunRol() {
+            const chofer = esRolChofer();
+            $('#campoChofer').toggleClass('d-none', !chofer || !choferDisponible);
+            $('#choferNoDisponible').toggleClass('d-none', !chofer || choferDisponible);
+            $('#choferNoDisponibleTexto').text(motivoChoferNoDisponible);
+            if (!chofer) SGTL.limpiarError('#usuarioChoferBusqueda');
         }
 
         // Nunca falla: si no se pudo leer, deja el campo como texto con el motivo.
         function cargarChoferUsuario(id) {
             const select = document.getElementById('usuarioChofer');
             select.innerHTML = '';
-            select.appendChild(new Option('No es chofer', ''));
+            select.appendChild(new Option('Seleccioná un chofer', ''));
             choferOriginal = '';
             mostrarCampoChofer(true);
             SelectClientePredictivo.sincronizar(select);
@@ -657,7 +671,14 @@
                 return mostrarSeccionGrupos();
             });
 
-            Promise.all([carga, cargarChoferUsuario(esAlta ? null : id)]).then(function () { guardar.disabled = false; }, function (error) {
+            Promise.all([carga, cargarChoferUsuario(esAlta ? null : id)]).then(function () {
+                // Una cuenta de chofer de antes del rol Chofer (rol Usuario con chofer): se abre con el rol Chofer y queda así al guardar.
+                if (esRolUser() && choferOriginal) {
+                    $('#usuarioRol').val('chofer');
+                    mostrarSeccionGrupos();
+                }
+                guardar.disabled = false;
+            }, function (error) {
                 if (esAlta) {
                     SGTL.avisoFormulario('#avisoUsuario', error.mensajeUsuario);
                     return;
@@ -672,6 +693,7 @@
             const contrasenia = document.getElementById('usuarioContrasenia');
             if (!usuarioEnEdicion && !contrasenia.value.trim()) SGTL.marcarError(contrasenia, 'Completá la contraseña.');
             if (esRolUser() && !gruposAsignados.length) marcarErrorGrupos('Asigná al menos un grupo.');
+            if (esRolChofer() && choferDisponible && !$('#usuarioChofer').val()) SGTL.marcarError('#usuarioChoferBusqueda', 'Seleccioná el chofer.');
             const bien = SGTL.revisarFormulario('#formUsuario', '#avisoUsuario');
             if (bien && $('#errorGrupos').text()) {
                 SGTL.avisoFormulario('#avisoUsuario', 'Revisá los campos marcados.');
@@ -695,7 +717,7 @@
                 EstadoUsuario: $('#usuarioActivo').is(':checked') ? 'Activo' : 'Inactivo'
             };
             if (rol.toLowerCase() === 'user') usuario.GrupoIds = gruposAsignados.map(function (g) { return g.Grupo_ID; });
-            else if (!esAlta && rol.toLowerCase() === 'admin') usuario.GrupoIds = [];
+            else if (!esAlta) usuario.GrupoIds = [];
             if (esAlta) {
                 usuario.Fecha_Alta = new Date().toISOString();
                 usuario.UsuarioLogueado = localStorage.getItem('username') || '';
@@ -729,7 +751,8 @@
 
             // El chofer (Hoja de ruta) va aparte, solo si cambió.
             const idGuardado = esAlta ? (respuesta && respuesta.Usuario_ID) : usuarioEnEdicion;
-            const chofer = choferDisponible ? String($('#usuarioChofer').val() || '') : choferOriginal;
+            // Solo el rol Chofer tiene chofer: con otro rol se le quita.
+            const chofer = !esRolChofer() ? '' : choferDisponible ? String($('#usuarioChofer').val() || '') : choferOriginal;
             if (chofer !== choferOriginal && idGuardado) {
                 try {
                     await SGTL.ajax({
@@ -758,8 +781,9 @@
         $(function () {
             formularioUsuario = SGTL.validador(reglasUsuario);
             SelectClientePredictivo.inicializar('usuarioChofer', {
-                placeholder: 'No es chofer', textoVacio: 'No hay choferes sin usuario que coincidan.', idCampo: 'usuarioChoferBusqueda'
+                placeholder: 'Buscá el chofer', textoVacio: 'No hay choferes sin usuario que coincidan.', idCampo: 'usuarioChoferBusqueda'
             });
+            $('#usuarioChofer').on('change', function () { if (this.value) SGTL.limpiarError('#usuarioChoferBusqueda'); });
             $('#usuarioNombreUsuario').on('input', function () {
                 this.value = this.value.replace(/[^A-Za-z0-9_]/g, '');
             });

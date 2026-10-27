@@ -341,8 +341,10 @@
                                 console.error("Error al parsear la respuesta JSON de login:", e);
                                 mostrarToastError();
                             }
-                        } else if (xhrLogin.status === 401) {  // Credenciales inválidas
-                            document.getElementById('generalError').textContent = 'Usuario o contraseña incorrectos.';
+                        } else if (xhrLogin.status === 401) {  // Credenciales inválidas (o un chofer inactivo: la API dice por qué)
+                            let mensaje = 'Usuario o contraseña incorrectos.';
+                            try { mensaje = JSON.parse(xhrLogin.responseText).General || mensaje; } catch (e) { }
+                            document.getElementById('generalError').textContent = mensaje;
                             document.getElementById('generalError').style.display = 'block';
                         } else {  // Otros errores
                             console.error("Error al iniciar sesión. Estado HTTP:", xhrLogin.status);

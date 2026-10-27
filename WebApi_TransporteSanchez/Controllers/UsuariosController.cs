@@ -172,54 +172,15 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+        // Los roles (Rocío, 27/10): admin (ve todo), user (las pantallas de sus grupos) y chofer (solo Hojas de ruta, con los
+        // viajes de su chofer). En pantalla se ven en castellano: Administrador, Usuario y Chofer (permisos-menu.js).
+        public static readonly string[] Roles = { "admin", "user", "chofer" };
+
         [HttpGet]
-
         [Route("Roles")]
-
         public IHttpActionResult GetRoles()
-
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-
-
-            try
-
-            {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
-                {
-
-                    var roles = db.Set<USUARIOS>()
-
-                        .Where(u => u.Rol != null && u.Rol.Trim() != "")
-
-                        .Select(u => u.Rol)
-
-                        .Distinct()
-
-                        .OrderBy(r => r)
-
-                        .ToList();
-
-
-
-                    return Ok(roles);
-
-                }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            return Ok(Roles);
         }
 
 
@@ -241,6 +202,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         .Select(u => new { u.Usuario_ID, u.Rol })
                         .FirstOrDefault();
                     if (user == null) return NotFound();
+                    // El chofer ve solo Hojas de ruta, sin grupos (el permiso sigue llamándose "Hoja de ruta" en la base).
+                    if (string.Equals((user.Rol ?? "").Trim(), "chofer", StringComparison.OrdinalIgnoreCase))
+                        return Ok(new { Rol = user.Rol, Menus = new[] { "Hoja de ruta" } });
 
                     var grupoIds = db.Set<GRUPOS_USUARIOS>()
                         .Where(gu => gu.UsuarioID == user.Usuario_ID)
@@ -897,17 +861,20 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
-            var rol = (value.Rol ?? "").Trim();
+            var rol = (value.Rol ?? "").Trim().ToLowerInvariant();
+            if (Array.IndexOf(Roles, rol) < 0) return Content(HttpStatusCode.BadRequest, new { message = "Seleccioná un rol." });
+            value.Rol = rol;
 
-            var esAdmin = string.Equals(rol, "admin", StringComparison.OrdinalIgnoreCase);
+            // Solo el usuario elige grupos: el administrador ve todo y el chofer, solo Hojas de ruta.
+            var esAdmin = rol != "user";
 
-            if (!esAdmin && string.Equals(rol, "user", StringComparison.OrdinalIgnoreCase))
+            if (rol == "user")
 
             {
 
                 if (value.GrupoIds == null || !value.GrupoIds.Any())
 
-                    return Content(HttpStatusCode.BadRequest, new { message = "El rol user requiere al menos un grupo asignado." });
+                    return Content(HttpStatusCode.BadRequest, new { message = "Asigná al menos un grupo." });
 
             }
 
@@ -1189,17 +1156,20 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
-            var rolPut = (value.Rol ?? "").Trim();
+            var rolPut = (value.Rol ?? "").Trim().ToLowerInvariant();
+            if (Array.IndexOf(Roles, rolPut) < 0) return Content(HttpStatusCode.BadRequest, new { message = "Seleccioná un rol." });
+            value.Rol = rolPut;
 
-            var esAdminPut = string.Equals(rolPut, "admin", StringComparison.OrdinalIgnoreCase);
+            // Solo el usuario elige grupos: al administrador y al chofer se les quitan (se borran abajo y no se vuelven a cargar).
+            var esAdminPut = rolPut != "user";
 
-            if (!esAdminPut && string.Equals(rolPut, "user", StringComparison.OrdinalIgnoreCase))
+            if (rolPut == "user")
 
             {
 
                 if (value.GrupoIds == null || !value.GrupoIds.Any())
 
-                    return Content(HttpStatusCode.BadRequest, new { message = "El rol user requiere al menos un grupo asignado." });
+                    return Content(HttpStatusCode.BadRequest, new { message = "Asigná al menos un grupo." });
 
             }
 

@@ -327,8 +327,9 @@
                 const detalle = respuestas[1] || {};
                 const grupos = detalle.Grupos || [];
                 const esAdmin = (usuario.Rol || '').trim().toLowerCase() === 'admin';
+                const esChofer = (usuario.Rol || '').trim().toLowerCase() === 'chofer';
                 $('#detalleEstado').html(SGTL.estado(usuario.EstadoUsuario || detalle.EstadoUsuario));
-                $('#detalleRol').text(usuario.Rol || '');
+                $('#detalleRol').text(SGTLPermisos.textoRol(usuario.Rol));
                 $('#detalleUsuario').text(usuario.Nombre_Usuario || '');
                 $('#detalleNombre').text(usuario.Nombre || '');
                 $('#detalleApellido').text(usuario.Apellido || '');
@@ -338,7 +339,8 @@
                 $('#registroUsuario').text(SGTL.textoRegistro('', alta, '', ''));
                 $('#detalleGrupos').html(grupos.length
                     ? grupos.map(bloqueGrupo).join('')
-                    : `<p class="text-muted mb-0">${esAdmin ? 'Es administrador: ve todas las pantallas.' : 'Todavía no tiene grupos asignados.'}</p>`);
+                    : `<p class="text-muted mb-0">${esAdmin ? 'Es administrador: ve todas las pantallas.'
+                        : esChofer ? 'Es chofer: ve solo Hojas de ruta, con los viajes de su chofer.' : 'Todavía no tiene grupos asignados.'}</p>`);
                 SGTL.modal('#detalleUsuarioModal', 'show');
             }).catch(function (error) {
                 SGTL.toastError((error && error.mensajeUsuario) || 'No se pudo abrir el detalle del usuario. Probá de nuevo.');

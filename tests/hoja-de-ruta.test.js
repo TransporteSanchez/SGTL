@@ -243,8 +243,27 @@ assert.ok(leer('assets/static/js/hoja-de-ruta.js').includes("var cantidades = { 
 
 // Hojas de ruta (Rocío, 27/10, punto 4 de la §41): los administradores y quien gestiona viajes ven la de cualquier chofer,
 // en solo lectura; el chofer, solo la suya.
-assert.ok(/public bool PuedeVerTodas \{ get \{ return EsAdmin \|\| GestionaViajes; \} \}/.test(api) && /N'Gestión de viajes', N'Gestion de viajes'/.test(api),
-    'ven todas: los administradores y quien gestiona viajes');
+assert.ok(/public bool PuedeVerTodas \{ get \{ return EsAdmin \|\| \(GestionaViajes && !EsChofer\); \} \}/.test(api) && /N'Gestión de viajes', N'Gestion de viajes'/.test(api),
+    'ven todas: los administradores y quien gestiona viajes (nunca un chofer)');
+
+// Rol Chofer (Rocío, 27/10): admin, user y chofer, en castellano en pantalla. El chofer ve solo Hojas de ruta, sin grupos,
+// siempre con su chofer, y no entra si su chofer está inactivo.
+const usuariosApi = leer('WebApi_TransporteSanchez/Controllers/UsuariosController.cs');
+assert.ok(/public static readonly string\[\] Roles = \{ "admin", "user", "chofer" \};/.test(usuariosApi) && /return Ok\(Roles\);/.test(usuariosApi),
+    'los tres roles, fijos');
+assert.ok(/return Ok\(new \{ Rol = user\.Rol, Menus = new\[\] \{ "Hoja de ruta" \} \}\);/.test(usuariosApi), 'el chofer ve solo Hojas de ruta');
+assert.ok(/"Seleccioná el chofer: el usuario tiene el rol Chofer\."/.test(api) && /"Solo un usuario con el rol Chofer tiene un chofer asignado\."/.test(api),
+    'solo el rol Chofer tiene chofer, y siempre uno');
+assert.ok(/el chofer de este usuario está inactivo/.test(leer('WebApi_TransporteSanchez/Controllers/AutenticacionController.cs')), 'un chofer inactivo no entra');
+assert.ok(/mensaje = JSON\.parse\(xhrLogin\.responseText\)\.General \|\| mensaje;/.test(leer('Login.html')), 'y el login dice por qué');
+const pantallaUsuarios = leer('gestion-usuarios.html');
+assert.ok(!/No es chofer/.test(pantallaUsuarios) && /SGTLPermisos\.textoRol\(rol\)/.test(pantallaUsuarios) && /'Seleccioná el chofer\.'/.test(pantallaUsuarios),
+    'Gestionar usuarios: sin "No es chofer", los roles en castellano y el chofer obligatorio con el rol Chofer');
+const permisosMenu = { };
+vm.runInNewContext(leer('assets/static/js/permisos-menu.js'), { window: permisosMenu, String: String });
+assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('admin'), 'Administrador');
+assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('user'), 'Usuario');
+assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('chofer'), 'Chofer');
 const getHoja = api.slice(api.indexOf('public IHttpActionResult Get(string vista'), api.indexOf('// POST api/HojaDeRuta/Viajes/{id}/Iniciar'));
 assert.ok(/if \(!sesion\.PuedeVerTodas\) throw new AccesoDenegadoException\("No tenés permiso para ver la hoja de ruta de otro chofer\."\);/.test(getHoja),
     'el chofer no pide la de otro');

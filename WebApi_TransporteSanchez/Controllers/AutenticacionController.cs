@@ -58,6 +58,17 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Content(HttpStatusCode.Unauthorized, new { General = "Usuario o contraseña incorrectos." });
                     }
 
+                    // Un chofer inactivo no inicia sesión (Rocío, 27/10, punto 31 de la §41): su usuario tiene el rol Chofer y su
+                    // chofer está inactivo (o ya no tiene uno).
+                    if (string.Equals((usuario.Rol ?? "").Trim(), "chofer", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var estadoChofer = db.Database.SqlQuery<string>(
+                            "SELECT ISNULL(c.EstadoChofer, '') FROM dbo.USUARIOS u JOIN dbo.CHOFERES c ON c.Chofer_ID = u.ChoferID WHERE u.Usuario_ID = @p0",
+                            new SqlParameter("@p0", usuario.Usuario_ID)).FirstOrDefault();
+                        if (!string.Equals(estadoChofer, "Activo", StringComparison.OrdinalIgnoreCase))
+                            return Content(HttpStatusCode.Unauthorized, new { General = "No se puede iniciar sesión: el chofer de este usuario está inactivo. Hablá con administración." });
+                    }
+
                     if (!ContrasenasSeguras.EsHashVigente(usuario.Contraseña))
                     {
                         var valorHeredado = usuario.Contraseña;

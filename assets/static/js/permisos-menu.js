@@ -49,5 +49,13 @@
         return lugarA === lugarB ? texto(a).localeCompare(texto(b)) : lugarA - lugarB;
     }
 
-    window.SGTLPermisos = { texto: texto, posicion: posicion, comparar: comparar };
+    // Los roles en castellano (Rocío, 27/10; en la base siguen admin, user y chofer): Administrador ve todo, Usuario las
+    // pantallas de sus grupos y Chofer solo Hojas de ruta, con los viajes de su chofer.
+    var ROLES = { admin: 'Administrador', user: 'Usuario', chofer: 'Chofer' };
+    function textoRol(rol) {
+        var clave = String(rol == null ? '' : rol).trim().toLowerCase();
+        return ROLES[clave] || String(rol == null ? '' : rol);
+    }
+
+    window.SGTLPermisos = { texto: texto, posicion: posicion, comparar: comparar, textoRol: textoRol };
 })(window);

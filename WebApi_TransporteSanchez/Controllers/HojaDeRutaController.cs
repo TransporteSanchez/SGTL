@@ -42,11 +42,12 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool EsAdmin { get; set; }
             public bool GestionaUsuarios { get; set; }
             public bool GestionaViajes { get; set; }
+            public bool EsChofer { get; set; }
             public int? Chofer_ID { get; set; }
             public string Chofer { get; set; }
             // Las hojas de ruta de todos los choferes, para ver (punto 4 de la §41, Rocío 27/10): los administradores y
             // quien gestiona viajes. Los cambios se siguen haciendo en Gestionar viajes.
-            public bool PuedeVerTodas { get { return EsAdmin || GestionaViajes; } }
+            public bool PuedeVerTodas { get { return EsAdmin || (GestionaViajes && !EsChofer); } }
         }
 
         private class ChoferParaVerRow
@@ -215,6 +216,7 @@ namespace WebApi_TransporteSanchez.Controllers
             var sesion = db.Database.SqlQuery<SesionRow>(@"
 SELECT TOP (1) u.Usuario_ID, u.Nombre_Usuario,
   CAST(CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(u.Rol,'')))) = 'admin' THEN 1 ELSE 0 END AS bit) AS EsAdmin,
+  CAST(CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(u.Rol,'')))) = 'chofer' THEN 1 ELSE 0 END AS bit) AS EsChofer,
   CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.GRUPOS_USUARIOS gu
                          JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
                          JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
@@ -944,6 +946,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
 
         // PUT api/HojaDeRuta/Usuarios/{id}/Chofer { ChoferID } — asigna (o quita, con null) el chofer del usuario.
         // Un chofer, una sola cuenta: si ya la tiene otro usuario, se rechaza (también lo asegura UX_Usuarios_ChoferID).
+        // Solo el rol Chofer tiene chofer, y siempre uno (Rocío, 27/10): la pantalla guarda primero el rol y después esto.
         [HttpPut, Route("Usuarios/{id:int}/Chofer")]
         public IHttpActionResult AsignarChofer(int id, [FromBody] VinculoChoferDto body)
         {
@@ -958,6 +961,10 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
 
                     var anterior = db.Database.SqlQuery<int?>("SELECT ChoferID FROM dbo.USUARIOS WHERE Usuario_ID = @id", P("@id", id)).ToList();
                     if (!anterior.Any()) return Content(HttpStatusCode.NotFound, new { message = "El usuario ya no existe." });
+                    var esChofer = db.Database.SqlQuery<string>("SELECT ISNULL(Rol,'') FROM dbo.USUARIOS WHERE Usuario_ID = @id", P("@id", id))
+                        .First().Trim().ToLowerInvariant() == "chofer";
+                    if (esChofer && !choferId.HasValue) return Rechazo("Seleccioná el chofer: el usuario tiene el rol Chofer.");
+                    if (!esChofer && choferId.HasValue) return Rechazo("Solo un usuario con el rol Chofer tiene un chofer asignado.");
                     if (anterior[0] == choferId) return Ok(new { ChoferID = choferId });
 
                     if (choferId.HasValue)

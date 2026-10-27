@@ -3907,6 +3907,22 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **30 y 31.** Cómo se crea el usuario de un chofer: todo chofer necesita usuario para sus viajes; ver si se carga
   junto con el chofer o desde dónde conviene. Un chofer inactivo no puede iniciar sesión. Sacar de Gestionar usuarios la
   opción "¿es chofer?": alcanza con el grupo Choferes (si hace falta saber qué chofer es, buscar una forma mejor).
+  **Rol Chofer (27/10), subido, pendiente de probar en la VM** (decisión de Rocío, opción A; `tests/hoja-de-ruta.test.js`).
+  Los roles son Administrador (ve todo), Usuario (las pantallas de sus grupos) y Chofer (solo Hojas de ruta, con los
+  viajes de su chofer, sin grupos), en castellano en pantalla (en la base siguen admin, user y chofer). Con el rol Chofer,
+  Gestionar usuarios pide el chofer (obligatorio) y no pide grupos; ya no existe "No es chofer". Solo el rol Chofer tiene
+  chofer (la API lo controla) y un chofer inactivo no inicia sesión ("No se puede iniciar sesión: el chofer de este
+  usuario está inactivo. Hablá con administración."). **Falta (para después, Rocío):** crear el usuario desde Gestionar
+  choferes. Cómo probarlo:
+  1. Recompilar y correr `database/hoja-de-ruta/02_rol_chofer.sql` (diagnóstico; después el bloque de cambios y COMMIT):
+     las cuentas de choferes (rol user con chofer) pasan al rol Chofer, sin grupos.
+  2. Gestionar usuarios → Registrar usuario: el rol dice Administrador, Usuario y Chofer. Usuario pide grupos; Chofer
+     pide "Chofer *" (sin elegirlo, "Seleccioná el chofer."); Administrador, ninguno de los dos.
+  3. Entrar con la cuenta del chofer: directo a Hojas de ruta, con sus viajes. Inactivar su chofer en Gestionar choferes
+     y volver a entrar: el mensaje de chofer inactivo. Activarlo de nuevo.
+  4. Listar usuarios → Ver detalle del chofer: Rol "Chofer" y "Es chofer: ve solo Hojas de ruta, con los viajes de su
+     chofer.".
+  5. Editar el chofer y pasarlo a Usuario con un grupo: se le quita el chofer (Auditoría: "ChoferID: … -> ninguno").
 - [ ] **32.** El chofer marca la entrega y sube el remito en nuestro sistema aunque el viaje sea de Rukas: ver si trae un
   riesgo (lo que manda es Rukas, que lo maneja un administrador). Poner un tope de días para cargar gastos en un viaje
   cerrado.

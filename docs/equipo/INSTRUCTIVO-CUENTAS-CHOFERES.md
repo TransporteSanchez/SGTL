@@ -5,16 +5,18 @@ Para la sesión de Claude Code que trabaja en la VM. Las reglas de la sesión y 
 grupo, un chofer y un usuario, y **quedan en la base** (no se limpian al final): son el chofer de la demo de la hoja de
 ruta (§36 de `docs/PENDIENTES-SISTEMA.md`).
 
-El chofer usa el sistema con una cuenta de usuario propia que apunta a su ficha de Gestionar choferes y que está en el
-grupo "Choferes", que solo abre la Hoja de ruta. Hoy se hace **una sola cuenta, de prueba**; las de los choferes reales
+El chofer usa el sistema con una cuenta de usuario propia, con el **rol Chofer**, que apunta a su ficha de Gestionar
+choferes y solo abre Hojas de ruta (desde el 27/10: antes era rol user con el grupo "Choferes"; ver
+`database/hoja-de-ruta/02_rol_chofer.sql`). Hoy se hace **una sola cuenta, de prueba**; las de los choferes reales
 quedan para otro día, a partir del relevamiento de la parte 1.
 
 ## 0. Antes de empezar
 
 - `git log --oneline -1` y anotalo. La API y Five Server levantados; Ctrl+F5. El login como admin lo hace Rocío.
-- Tienen que estar corridos `database/hoja-de-ruta/01_usuario_chofer.sql` y
+- Tienen que estar corridos `database/hoja-de-ruta/01_usuario_chofer.sql`, `database/hoja-de-ruta/02_rol_chofer.sql` y
   `database/costos/01_galpon_kilometraje_y_gastos.sql` (preparación de la §39). Si Gestionar usuarios no muestra el campo
-  "Chofer" en Registrar usuario, o dice que no se pudieron cargar los choferes, pará y avisale a Rocío.
+  "Chofer" al elegir el rol Chofer en Registrar usuario, o dice que no se pudieron cargar los choferes, pará y avisale a
+  Rocío.
 - **No asignes viajes ni cambies estados:** eso manda WhatsApp y es de la tanda 3 (§39).
 - **No escribas contraseñas.** En el paso 3.2 la contraseña la escribe Rocío, y el login con el chofer también.
 - Galpón (lo cargó Rocío el 25/10), solo mirar: Configuración → Gestionar empresa → sección Galpón muestra la dirección y
@@ -23,14 +25,17 @@ quedan para otro día, a partir del relevamiento de la parte 1.
 ## 1. Relevamiento de los choferes (solo lectura)
 
 1. Listar choferes → Estado: **Todos** → Buscar. Recorré todas las páginas.
-2. Gestionar usuarios → Registrar usuario → abrí el desplegable "Chofer": lista solo los choferes que **todavía no tienen
-   cuenta**. Anotá cuáles aparecen y **Cancelar** (no guardes nada).
+2. Gestionar usuarios → Registrar usuario → Rol **Chofer** → abrí el buscador "Chofer": lista solo los choferes que
+   **todavía no tienen cuenta**. Anotá cuáles aparecen y **Cancelar** (no guardes nada).
 3. En el chat, armale a Rocío una tabla con cada chofer: ID, nombre y apellido, estado, si ya tiene cuenta y si parece de
    prueba (nombres con PRUEBA, CLAUDE, "Prueba, Fede" o parecidos). Al final, cuántos activos reales hay sin cuenta.
 4. **En el reporte, sin datos personales de los choferes reales** (`docs/README.md`, regla 7): de los reales, solo ID,
    estado y si tiene cuenta; nada de nombre, DNI, CUIL ni teléfono. De los de prueba sí va el nombre, para la limpieza.
 
-## 2. El grupo "Choferes"
+## 2. El grupo "Choferes" (ya no hace falta)
+
+Desde el 27/10 el chofer no usa grupos: con el rol Chofer ve solo Hojas de ruta. Este paso queda por si se arma una cuenta
+como antes; **saltealo** salvo que Rocío diga otra cosa.
 
 Configuración → Gestionar grupos y permisos.
 
@@ -57,19 +62,18 @@ Configuración → Gestionar grupos y permisos.
    - Nombre de usuario: inicial del nombre y apellido, en minúscula, como los otros (`fgodoy`). Si ya existe, preguntale a
      Rocío.
    - Contraseña: **la escribe Rocío** (de 8 a 20 caracteres, con letras y números). Ella se la anota.
-   - Rol **user**, Activo.
-   - Chofer: el de 3.1 (tiene que aparecer en la lista).
-   - Grupo: **Choferes** (solo ese).
+   - Rol **Chofer**, Activo (no pide grupos).
+   - Chofer: el de 3.1 (tiene que aparecer en la lista). Sin elegirlo, "Seleccioná el chofer." debajo.
 2. Guardar → aviso verde. Puede tardar unos segundos (es el cifrado de la contraseña). Anotá el ID del usuario.
-3. Editar ese usuario: muestra su chofer y el grupo Choferes. Cancelar.
+3. Editar ese usuario: rol Chofer y su chofer, sin grupos. Cancelar.
 4. Registrar usuario otra vez → el desplegable "Chofer" ya no lo lista. Cancelar.
 5. Auditoría: el alta del usuario y el cambio de chofer ("ChoferID: ninguno -> …") con el usuario de Rocío.
 
 ### 3.3 Entrar como chofer
 
 1. Rocío cierra sesión y entra con la cuenta nueva.
-2. Tiene que ir **directo a la Hoja de ruta**, con el menú plegado. El botón de tres rayitas lo abre con el logo y solo
-   "Hoja de ruta".
+2. Tiene que ir **directo a Hojas de ruta**, con el menú plegado. El botón de tres rayitas lo abre con el logo y solo
+   "Hojas de ruta".
 3. Como todavía no tiene viajes: "No tenés viajes para hoy ni para los próximos días.". Anteriores: "No tenés viajes
    anteriores en 2026.".
 4. Escribí `index.html` en la barra de direcciones → vuelve a la Hoja de ruta.
