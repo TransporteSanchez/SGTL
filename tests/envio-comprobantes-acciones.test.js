@@ -83,21 +83,30 @@ function probarPieDelVisor() {
         'el formulario no muestra el servicio ni el perfil SMTP');
 }
 
-async function probarClicEnFilaYEnvio() {
+async function probarClicEnFilaYEnvio(incluirProforma = false, desmarcar = false, cancelar = false, fallaPdf = false) {
     const inicio = cuenta.indexOf("porId('ccTablaCuerpo').addEventListener('click', function (event) {");
     assert.notStrictEqual(inicio, -1, 'falta el manejo de acciones de la tabla');
     const escucha = cuenta.slice(inicio, hastaLlaveFinal(cuenta, inicio) + 2);
     const campos = {
         btnConfirmarEnvioComprobante: { disabled: true },
         envioComprobanteDestino: { value: '', checkValidity: function () { return true; } },
+        envioComprobanteIncluirProforma: { checked: false },
+        envioComprobanteProforma: { classList: { add() {}, toggle() {} } },
+        envioComprobanteProformaNumero: { textContent: '' },
         modalEnviarComprobanteEmail: {}
     };
     const solicitudes = [];
     const avisos = [];
     let alHacerClic;
     let modalAbierto = false;
+    let confirmaciones = 0;
+    let pdfsProforma = 0;
+    const errores = [];
     const sandbox = {
         comprobanteActualId: null,
+        proformaEnvioComprobante: null,
+        envioComprobanteEnCurso: false,
+        validadorEnvioComprobante: null,
         secuenciaEnvioComprobante: 0,
         porId: function (id) {
             if (id === 'ccTablaCuerpo') return { addEventListener: function (evento, fn) {
@@ -108,11 +117,12 @@ async function probarClicEnFilaYEnvio() {
         },
         bootstrap: { Modal: { getOrCreateInstance: function () { return { show: function () { modalAbierto = true; } }; } } },
         ocultarFeedbackEnvio: function () {},
-        mostrarFeedbackEnvio: function () { throw new Error('No se esperaba un error de envío'); },
+        mostrarFeedbackEnvio: function (tipo, texto) { errores.push(texto); },
         apiGet: function (ruta) {
             solicitudes.push(['GET', ruta]);
             return Promise.resolve({ DestinatarioSugerido: 'cliente@empresa.com', Configurado: true,
-                Service: 1, Perfil: 'Facturación' });
+                Service: 1, Perfil: 'Facturación', ProformaID: incluirProforma ? 16 : null,
+                ProformaNumero: incluirProforma ? 'PF-16' : null });
         },
         apiPost: function (ruta, cuerpo) {
             solicitudes.push(['POST', ruta, cuerpo]);
@@ -120,7 +130,21 @@ async function probarClicEnFilaYEnvio() {
         },
         cerrarModalYNotificar: function (modal, mensaje) { avisos.push([modal, mensaje]); },
         window: {
-            SGTL: { procesando: function () { return function () {}; } },
+            SGTL: {
+                procesando: function () { return function () {}; },
+                reiniciarFormulario() {},
+                validador() { return { validarTodo() { return true; } }; },
+                confirmar(opciones) {
+                    confirmaciones++;
+                    assert.ok(opciones.mensaje.includes('cliente@empresa.com'));
+                    return Promise.resolve(!cancelar);
+                }
+            },
+            generarProformaPDFParaEmail(id) {
+                assert.strictEqual(id, 16);
+                pdfsProforma++;
+                return fallaPdf ? Promise.reject(new Error('PDF no disponible')) : Promise.resolve({ PdfBase64: 'PROFORMA' });
+            },
             generarComprobantePDFParaEmail: function (id) {
                 assert.strictEqual(id, 42, 'se adjunta el PDF del comprobante elegido');
                 return Promise.resolve({ PdfBase64: 'JVBERi0=' });
@@ -143,26 +167,51 @@ async function probarClicEnFilaYEnvio() {
         'el formulario consulta la configuración de envío del comprobante elegido');
     assert.strictEqual(campos.envioComprobanteDestino.value, 'cliente@empresa.com');
     assert.strictEqual(campos.btnConfirmarEnvioComprobante.disabled, false);
+    if (desmarcar) campos.envioComprobanteIncluirProforma.checked = false;
 
     sandbox.enviarComprobantePorEmail();
+    sandbox.enviarComprobantePorEmail(); // El doble clic durante la confirmación no duplica el envío.
     await new Promise(setImmediate);
+    assert.strictEqual(confirmaciones, 1);
+    if (cancelar || fallaPdf) {
+        assert.strictEqual(solicitudes.length, 1, 'no se envía ningún correo al cancelar o si falla un adjunto');
+        assert.strictEqual(avisos.length, 0);
+        assert.strictEqual(errores.length, fallaPdf ? 1 : 0);
+        assert.strictEqual(sandbox.envioComprobanteEnCurso, false, 'se puede reintentar');
+        return;
+    }
+    const cuerpo = { Destinatario: 'cliente@empresa.com', PdfBase64: 'JVBERi0=' };
+    if (incluirProforma && !desmarcar) Object.assign(cuerpo, {
+        IncluirProforma: true, ProformaID: 16, ProformaPdfBase64: 'PROFORMA'
+    });
     assert.deepStrictEqual(JSON.parse(JSON.stringify(solicitudes[1])), ['POST', '/comprobantes/42/email',
-        { Destinatario: 'cliente@empresa.com', PdfBase64: 'JVBERi0=' }],
+        cuerpo],
     'el formulario conserva el envío del PDF adjunto al destinatario');
+    assert.strictEqual(pdfsProforma, incluirProforma && !desmarcar ? 1 : 0);
     assert.deepStrictEqual(avisos, [['modalEnviarComprobanteEmail', 'Comprobante enviado.']]);
 }
 
 async function probarRespuestaViejaNoReemplazaDestinatario() {
+    const clasesProforma = new Set(['d-none']);
     const campos = {
         btnConfirmarEnvioComprobante: { disabled: true },
         envioComprobanteDestino: { value: '' },
+        envioComprobanteIncluirProforma: { checked: false },
+        envioComprobanteProforma: { classList: {
+            add(clase) { clasesProforma.add(clase); },
+            toggle(clase, ocultar) { if (ocultar) clasesProforma.add(clase); else clasesProforma.delete(clase); }
+        } },
+        envioComprobanteProformaNumero: { textContent: '' },
         modalEnviarComprobanteEmail: {}
     };
     const pendientes = new Map();
     const errores = [];
     const sandbox = {
         comprobanteActualId: null,
+        proformaEnvioComprobante: null,
+        envioComprobanteEnCurso: false,
         secuenciaEnvioComprobante: 0,
+        window: { SGTL: { reiniciarFormulario() {} } },
         porId: function (id) { return campos[id]; },
         bootstrap: { Modal: { getOrCreateInstance: function () { return { show: function () {} }; } } },
         ocultarFeedbackEnvio: function () {},
@@ -187,6 +236,19 @@ async function probarRespuestaViejaNoReemplazaDestinatario() {
     assert.strictEqual(campos.envioComprobanteDestino.value, 'b@empresa.com',
         'la respuesta tardía del comprobante A no debe cambiar el destinatario de B');
     assert.strictEqual(campos.btnConfirmarEnvioComprobante.disabled, false);
+
+    sandbox.abrirEnvioComprobante(46);
+    pendientes.get('/comprobantes/46/email').resolve({ DestinatarioSugerido: 'p@empresa.com',
+        Configurado: true, ProformaID: 16, ProformaNumero: 'PF-00000016' });
+    await new Promise(setImmediate);
+    assert.strictEqual(sandbox.proformaEnvioComprobante, 16);
+    assert.strictEqual(clasesProforma.has('d-none'), false, 'la casilla es visible cuando la API identifica la proforma de origen');
+    assert.strictEqual(campos.envioComprobanteProformaNumero.textContent, 'PF-00000016');
+    assert.strictEqual(campos.envioComprobanteIncluirProforma.checked, true, 'la proforma se incluye por defecto');
+    sandbox.abrirEnvioComprobante(47);
+    assert.strictEqual(sandbox.proformaEnvioComprobante, null, 'al cambiar de comprobante se descarta el vínculo anterior');
+    assert.strictEqual(campos.envioComprobanteIncluirProforma.checked, false);
+    assert.strictEqual(clasesProforma.has('d-none'), true, 'no se conserva visible la proforma de otro comprobante');
 
     sandbox.abrirEnvioComprobante(43);
     sandbox.abrirEnvioComprobante(44);
@@ -214,6 +276,10 @@ async function probarRespuestaViejaNoReemplazaDestinatario() {
     probarAccionesDeTodosLosTipos();
     probarPieDelVisor();
     await probarClicEnFilaYEnvio();
+    await probarClicEnFilaYEnvio(true);
+    await probarClicEnFilaYEnvio(true, true);
+    await probarClicEnFilaYEnvio(true, false, true);
+    await probarClicEnFilaYEnvio(true, false, false, true);
     await probarRespuestaViejaNoReemplazaDestinatario();
     console.log('OK: Enviar por e-mail en Acciones para todos los comprobantes');
 })().catch(function (error) {

@@ -204,6 +204,7 @@
     <script src="assets/static/js/reportes-proformas.js"></script>
     <script src="assets/static/js/empresa-datos.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
+    <script src="assets/static/js/proforma-email.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
@@ -378,7 +379,7 @@
             }).join(''));
             renderPag();
         }
-        // Orden de §1.4: ver, PDF y el siguiente paso (emitir comprobante), igual que en Gestionar proformas.
+        // Orden de §1.4: ver, PDF, e-mail y el siguiente paso (emitir comprobante), igual que en Gestionar proformas.
         function accionesProforma(x) {
             var id = x.Proforma_ID;
             var siguiente;
@@ -388,7 +389,9 @@
             else if (estado === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir comprobante', icono: 'bi-receipt' });
             else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true,
                 motivo: 'No se puede emitir el comprobante: la proforma ' + (estado === 'Generada' ? 'todavía no está aceptada' : 'está ' + estado.toLowerCase()) });
-            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }), siguiente]);
+            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }),
+                SGTL.botonFila('enviar', { id: id, deshabilitado: estado === 'Borrador' || estado === 'Anulada',
+                    motivo: estado === 'Borrador' ? 'No se puede enviar la proforma: todavía es un borrador' : 'No se puede enviar la proforma: está anulada' }), siguiente]);
         }
         function renderPag() {
             SGTL.tabla.paginacion('#paginacion', {
@@ -444,6 +447,7 @@
             $('#cuerpoProformas')
                 .on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); })
                 .on('click', '[data-accion="pdf"]', function () { verProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="enviar"]', function () { enviarProformaPorEmail($(this).data('id')); })
                 .on('click', '[data-accion="siguiente"]', function () { facturarProforma($(this).data('id')); });
         });
     </script>

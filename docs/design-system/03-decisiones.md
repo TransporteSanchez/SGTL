@@ -101,7 +101,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
-| Enviar por e-mail (comprobantes) | `bi-envelope` | `btn-outline-secondary` |
+| Enviar por e-mail (comprobantes y proformas) | `bi-envelope` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Marcar aceptada, Emitir comprobante, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
@@ -118,7 +118,14 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   es **Cerrar · Imprimir · Descargar PDF**; no incluye el envío.
 - **En presupuestos**, "Enviar por e-mail" permanece en el pie de la vista previa:
   **Cerrar · Enviar por e-mail · Imprimir · Descargar PDF**.
-- **En proformas**, el envío por e-mail todavía no existe; el pie es **Cerrar · Imprimir · Descargar PDF**.
+- **En proformas**, "Enviar por e-mail" va después de "Ver PDF" en la columna Acciones de Listar y Gestionar
+  proformas (27/10). Se puede enviar una proforma generada, aceptada o facturada; los borradores y las anuladas
+  conservan la acción deshabilitada con el motivo. El pie del PDF sigue siendo **Cerrar · Imprimir · Descargar PDF**.
+- **Al enviar un comprobante vinculado a una proforma**, el formulario muestra "Incluir proforma", marcado al abrir
+  (27/10). Marcado, envía dos PDF separados; desmarcado, solo el comprobante. También contempla el vínculo histórico
+  cuando se canceló el comprobante con un crédito y se anuló su proforma. Sin una proforma de origen vinculada,
+  la casilla no aparece. La confirmación indica el destinatario y los documentos que se enviarán. El envío independiente
+  de proformas utiliza el perfil de e-mail de Facturación y un asunto y cuerpo que identifican la proforma.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
 - **Excepción en Gestionar tipos de comprobante (26/10):** en las tablas de sucursales,

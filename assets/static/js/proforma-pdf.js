@@ -17,10 +17,9 @@
 
     function getJsPDF() { return (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null); }
 
-    // Error con el aviso del sistema (§5.1); si la pantalla no carga sgtl-ui.js, el del navegador.
+    // Error con el aviso del sistema (§5.1).
     function avisarError(texto) {
         if (window.SGTL && window.SGTL.toastError) window.SGTL.toastError(texto);
-        else window.alert(texto);
     }
 
     // Los datos de la empresa de la proforma, con su logo (Gestionar empresa, empresa-datos.js): una ya generada usa los
@@ -344,6 +343,11 @@
     }
 
     window.verProformaPDF = verPDF;
+    window.generarProformaPDFParaEmail = function (id) {
+        return preparar(id).then(function (r) {
+            return { PdfBase64: r.doc.output('datauristring').split(',')[1] };
+        });
+    };
     window.descargarProformaPDF = function (id) { generar(id, 'descargar'); };
     window.imprimirProformaPDF = function (id) { generar(id, 'imprimir'); };
 })();

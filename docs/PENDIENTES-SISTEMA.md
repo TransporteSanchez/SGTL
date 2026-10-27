@@ -64,6 +64,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 44 | Editar la identidad de tipos de comprobante y marcar los electrónicos | Migración 16 aplicada según el usuario (27/10); falta probar en VM | Pendiente de subir | Corregir una sigla y una letra con historial, y comprobar el bloqueo electrónico (§44) |
 | 45 | Emitir créditos y débitos internos directos desde cuenta corriente | Corregido en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Recompilar la API, recargar y emitir con C y D activos, aunque NC y ND estén inactivos (§45) |
 | 46 | Emitir créditos internos sin imputar e imputarlos después | Hecho en código (27/10); falta desplegar y probar en VM | Pendiente de subir | Emitir C con saldo libre e imputarlo parcial y sucesivamente a comprobantes internos de deuda (§46) |
+| 47 | Enviar comprobantes con su proforma y enviar proformas por e-mail | Hecho en código (27/10); falta probar entrega real por SMTP | Pendiente de subir | Recompilar, recargar y comprobar uno o dos PDF según la casilla, y el envío desde Listar y Gestionar proformas (§47) |
 | 48 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§48) |
 | 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en esta tanda (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
@@ -3697,7 +3698,7 @@ El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF,
 
 ## 42. Enviar comprobantes por e-mail desde la columna Acciones — Hecho en código (27/10)
 
-En Gestionar cuenta corriente, "Enviar por e-mail" aparece después de "Ver PDF" en las acciones de todos los comprobantes, también en los tipos directos configurables y en los recibos asociados. La vista previa del comprobante queda con Cerrar · Imprimir · Descargar PDF. Los presupuestos conservan el envío en el pie de su vista previa y las proformas siguen sin envío por e-mail. Se actualizaron `AGENTS.md` y la §1.4 del design system con esta decisión.
+En Gestionar cuenta corriente, "Enviar por e-mail" aparece después de "Ver PDF" en las acciones de todos los comprobantes, también en los tipos directos configurables y en los recibos asociados. La vista previa del comprobante queda con Cerrar · Imprimir · Descargar PDF. Los presupuestos conservan el envío en el pie de su vista previa. El envío de proformas se incorporó después (§47). Se actualizaron `AGENTS.md` y la §1.4 del design system con esta decisión.
 
 El formulario de envío ya no muestra el servicio ni el nombre del perfil SMTP (27/10). Sigue comprobando la configuración antes de habilitar Enviar y avisa dentro del formulario si no hay un perfil asignado o falla la consulta.
 
@@ -3752,6 +3753,40 @@ Las siglas FAC, ND, NC y REC tienen circuitos propios y permanecen fijas. FAC y 
 La API guarda las imputaciones posteriores mediante `PUT /api/comprobantes/{id}/aplicaciones`: cada importe solicitado es el **total acumulado** del crédito aplicado a esa deuda, por lo que repetir exactamente la petición no duplica la aplicación. Rechaza deudas de otro cliente, importes que excedan el saldo del crédito o de la deuda, y modificaciones de aplicaciones ya registradas. El script de solo lectura `database/cuenta-corriente/03_verificacion_posterior.sql` ahora considera válido un crédito corriente sin aplicar o parcialmente aplicado; sigue denunciando sobreaplicaciones y exige que un cancelatorio emitido tenga una sola aplicación por su total. No se requiere migración nueva de la base.
 
 **Probar en la VM:** recompilar la API y recargar Gestionar cuenta corriente. Con C activo, emitir un crédito sin deuda seleccionada con neto $ 1.000,00, IVA 21 % ($ 210,00) y otros impuestos $ 50,00; verificar el total $ 1.260,00, su desglose, número, movimiento, detalle, PDF y saldo disponible en ambas vistas de cuenta corriente. Crear dos comprobantes internos de deuda para el mismo cliente, cada uno con saldo suficiente. Imputar $ 400,00 al primero, volver a abrir «Imputar crédito» y agregar $ 200,00 para que esa deuda acumule $ 600,00; aplicar los $ 660,00 restantes al segundo. Verificar que el crédito pasa de «Sin aplicar» a «Parcialmente aplicado» y luego a «Aplicado», y que los saldos de ambas deudas bajan una sola vez. Repetir el mismo `PUT` y comprobar que no agrega otra aplicación; intentar exceder cualquiera de los saldos y usar una deuda de otro cliente: la API debe rechazarlo sin guardar cambios. Confirmar que una anulación de proforma sigue emitiendo su crédito cancelatorio por el total y con una sola aplicación.
+
+---
+
+## 47. Enviar el comprobante y su proforma por e-mail — Hecho en código (27/10)
+
+Al enviar un comprobante desde cuenta corriente, si tiene una proforma vinculada (vigente o histórica), el formulario ofrece
+«Incluir proforma», marcado al abrir, e identifica su número. Marcado envía dos PDF separados, comprobante y proforma;
+desmarcado envía solo el comprobante. Sin vínculo, no se muestra la casilla. La API vuelve a comprobar el vínculo y el
+estado antes del envío; si falla la generación o validación de alguno de los PDF, no envía el correo. El máximo total
+de adjuntos es 10 MB. El historial conserva el comprobante y la auditoría registra también la proforma y su huella.
+
+Listar y Gestionar proformas incorporan «Enviar por e-mail» después de «Ver PDF». Envía el PDF de la proforma generada,
+aceptada o facturada con el perfil de Facturación, asunto y cuerpo propios de proforma, y registra la entrega en auditoría.
+En borradores y anuladas, la acción queda deshabilitada. Ambos envíos sugieren el e-mail actual del cliente, permiten
+cambiarlo y piden confirmación con el destinatario y los documentos. No requiere migración SQL.
+
+**Verificación local:** API compilada con MSBuild; pruebas Node de acciones, adjuntos MIME reales, cancelación,
+doble clic, respuestas tardías y error de PDF. No se enviaron correos ni se ejecutó SQL contra la base compartida.
+
+**Probar en la VM:** recargar las tres pantallas con Ctrl+F5. Con un comprobante vinculado, abrir el sobre y comprobar
+la casilla marcada y el número; enviar a un buzón de prueba y abrir los dos PDF recibidos. Repetir desmarcando la casilla
+y con un comprobante sin proforma: llega solo el comprobante. Cancelar la confirmación: no se envía. Desde Listar y
+Gestionar proformas, enviar una propia y una de plataforma: llega un PDF de proforma con su número y detalle completos.
+Comprobar el bloqueo de borradores y anuladas, destinatario vacío o inválido, falta de perfil y fallo SMTP sin perder lo
+escrito. Probar como admin y con un usuario con acceso a proformas; sin ese acceso, la API rechaza el envío independiente.
+La entrega real por SMTP queda pendiente de esa prueba.
+
+**Corrección del 27/10:** el envío inicialmente buscaba solo vínculos vigentes y excluía proformas anuladas, por eso
+«Incluir proforma» no aparecía en un comprobante cancelado con un crédito. Ahora consulta el documento de origen
+conservado en el vínculo histórico, igual que el detalle y el PDF del comprobante. El envío independiente de una
+proforma anulada sigue bloqueado. Se agregó una prueba de la consulta real con datos locales: vínculo histórico con
+proforma anulada, vínculo vigente y comprobante sin proforma. **Probar:** abrir el envío del comprobante cancelado;
+debe aparecer la casilla marcada con la proforma original. Repetir con el comprobante nuevo y verificar que muestra
+su propia proforma; en uno directo sin proforma, no debe aparecer.
 
 ---
 

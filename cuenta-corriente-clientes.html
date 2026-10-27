@@ -431,7 +431,13 @@
                     <div id="envioComprobanteFeedback" class="alert d-none" role="status"></div>
                     <label class="form-label" for="envioComprobanteDestino">Destinatario <span class="text-danger">*</span></label>
                     <input id="envioComprobanteDestino" type="email" maxlength="320" class="form-control" placeholder="cliente@empresa.com" autocomplete="email">
+                    <div class="invalid-feedback"></div>
                     <div class="form-text">Se adjuntará el PDF del comprobante. Podés modificar el e-mail sugerido del cliente.</div>
+                    <div id="envioComprobanteProforma" class="form-check mt-3 d-none">
+                        <input id="envioComprobanteIncluirProforma" class="form-check-input" type="checkbox">
+                        <label class="form-check-label" for="envioComprobanteIncluirProforma">Incluir proforma</label>
+                        <div id="envioComprobanteProformaNumero" class="form-text"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -498,6 +504,7 @@
     <script src="assets/extensions/sheetjs/xlsx.full.min.js"></script>
     <script src="assets/static/js/empresa-datos.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/proforma-pdf.js"></script>
     <script src="assets/static/js/facturacion-configuracion.js"></script>
     <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="assets/static/js/cuenta-corriente-clientes.js"></script>

@@ -32,6 +32,9 @@
     var urlVistaPreviaComprobante = null;
     var secuenciaVistaPreviaComprobante = 0;
     var secuenciaEnvioComprobante = 0;
+    var proformaEnvioComprobante = null;
+    var validadorEnvioComprobante = null;
+    var envioComprobanteEnCurso = false;
 
     function porId(id) { return document.getElementById(id); }
 
@@ -314,9 +317,7 @@
         window.SGTL.modal(modal, 'hide');
     }
     function mostrarFeedbackEnvio(tipo, texto) {
-        var aviso = porId('envioComprobanteFeedback');
-        aviso.className = 'alert alert-light-' + tipo + ' color-' + tipo;
-        aviso.textContent = texto;
+        window.SGTL.avisoFormulario('#envioComprobanteFeedback', texto);
     }
     function ocultarFeedbackEnvio() {
         var aviso = porId('envioComprobanteFeedback');
@@ -324,6 +325,7 @@
         aviso.textContent = '';
     }
     function abrirEnvioComprobante(id) {
+        if (envioComprobanteEnCurso) return;
         if (id != null) comprobanteActualId = Number(id);
         if (!comprobanteActualId) return;
         var idEnvio = comprobanteActualId;
@@ -332,11 +334,19 @@
         var destino = porId('envioComprobanteDestino');
         boton.disabled = true;
         destino.value = '';
+        proformaEnvioComprobante = null;
+        porId('envioComprobanteIncluirProforma').checked = false;
+        porId('envioComprobanteProforma').classList.add('d-none');
+        window.SGTL.reiniciarFormulario('#modalEnviarComprobanteEmail', '#envioComprobanteFeedback');
         ocultarFeedbackEnvio();
         bootstrap.Modal.getOrCreateInstance(porId('modalEnviarComprobanteEmail')).show();
         apiGet('/comprobantes/' + encodeURIComponent(idEnvio) + '/email').then(function (datos) {
             if (version !== secuenciaEnvioComprobante) return;
             destino.value = datos.DestinatarioSugerido || '';
+            proformaEnvioComprobante = datos.ProformaID || null;
+            porId('envioComprobanteProforma').classList.toggle('d-none', !proformaEnvioComprobante);
+            porId('envioComprobanteIncluirProforma').checked = !!proformaEnvioComprobante;
+            porId('envioComprobanteProformaNumero').textContent = datos.ProformaNumero || '';
             if (!datos.Configurado) {
                 mostrarFeedbackEnvio('warning', 'Un administrador tiene que elegir el perfil SMTP en Configuración > Gestionar e-mail > Perfil para facturación.');
                 return;
@@ -416,32 +426,47 @@
         }
     }
     function enviarComprobantePorEmail() {
-        if (!comprobanteActualId) return;
+        if (!comprobanteActualId || envioComprobanteEnCurso || porId('btnConfirmarEnvioComprobante').disabled) return;
         var idEnvio = comprobanteActualId;
         var destino = porId('envioComprobanteDestino').value.trim();
-        var campoDestino = porId('envioComprobanteDestino');
-        if (!destino || !campoDestino.checkValidity()) {
-            campoDestino.reportValidity();
+        if (!validadorEnvioComprobante) validadorEnvioComprobante = window.SGTL.validador([{
+            id: 'envioComprobanteDestino', requerido: 'Completá el destinatario.',
+            validar: function (valor, campo) { return campo.checkValidity() ? '' : 'Indicá una dirección de destino válida.'; }
+        }]);
+        if (!validadorEnvioComprobante.validarTodo()) {
+            window.SGTL.revisarFormulario('#modalEnviarComprobanteEmail', '#envioComprobanteFeedback');
             return;
         }
         if (typeof window.generarComprobantePDFParaEmail !== 'function') {
             mostrarFeedbackEnvio('danger', 'No se pudo preparar el PDF del comprobante. Recargá la página y probá de nuevo.');
             return;
         }
+        var proformaId = porId('envioComprobanteIncluirProforma').checked ? proformaEnvioComprobante : null;
         ocultarFeedbackEnvio();
-        var listo = window.SGTL.procesando('#btnConfirmarEnvioComprobante', 'Generando PDF…');
-        window.generarComprobantePDFParaEmail(idEnvio).then(function (adjunto) {
-            listo();
-            listo = window.SGTL.procesando('#btnConfirmarEnvioComprobante', 'Enviando…');
-            return apiPost('/comprobantes/' + encodeURIComponent(idEnvio) + '/email', {
-                Destinatario: destino,
-                PdfBase64: adjunto.PdfBase64
+        envioComprobanteEnCurso = true;
+        var listo = window.SGTL.procesando('#btnConfirmarEnvioComprobante', 'Enviando…');
+        window.SGTL.confirmar({ titulo: '¿Enviar el comprobante por e-mail?', verbo: 'Enviar',
+            mensaje: 'Se enviará a ' + destino + (proformaId ? ' con el comprobante y la proforma adjuntos.' : ' con el comprobante adjunto.')
+        }).then(function (aceptado) {
+            if (!aceptado) return null;
+            return Promise.all([window.generarComprobantePDFParaEmail(idEnvio),
+                proformaId ? window.generarProformaPDFParaEmail(proformaId) : Promise.resolve(null)
+            ]).then(function (adjuntos) {
+                var datos = { Destinatario: destino, PdfBase64: adjuntos[0].PdfBase64 };
+                if (proformaId) {
+                    datos.IncluirProforma = true;
+                    datos.ProformaID = proformaId;
+                    datos.ProformaPdfBase64 = adjuntos[1].PdfBase64;
+                }
+                return apiPost('/comprobantes/' + encodeURIComponent(idEnvio) + '/email', datos);
             });
         }).then(function (resultado) {
             listo();
-            cerrarModalYNotificar('modalEnviarComprobanteEmail', resultado.mensaje || 'Comprobante enviado.');
+            envioComprobanteEnCurso = false;
+            if (resultado) cerrarModalYNotificar('modalEnviarComprobanteEmail', resultado.mensaje || 'Comprobante enviado.');
         }).catch(function (error) {
             listo();
+            envioComprobanteEnCurso = false;
             mostrarFeedbackEnvio('danger', (error && error.mensajeUsuario) || 'No se pudo enviar el comprobante. Probá de nuevo.');
         });
     }
