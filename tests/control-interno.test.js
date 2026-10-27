@@ -15,8 +15,12 @@ const acciones = api.split('[Http').slice(1).map(function (texto) {
     return { ruta: (/Route\("([^"]*)"\)/.exec(texto) || [])[1], cuerpo: texto.slice(0, texto.indexOf('\n        }\n')) };
 });
 assert.ok(acciones.length >= 10, 'debe poder leerse cada acción de CostosController');
+// Cambiar y corregir el galpón comparten GuardarGalponNuevo: ahí se pide el token.
+const guardarGalponNuevo = api.slice(api.indexOf('private IHttpActionResult GuardarGalponNuevo('));
 acciones.forEach(function (a) {
-    assert.ok(/ValidarSesion\(db\)/.test(a.cuerpo), 'cada acción pide el token: ' + a.ruta);
+    const cuerpo = /return GuardarGalponNuevo\(/.test(a.cuerpo.split('\n').slice(0, 4).join('\n'))
+        ? guardarGalponNuevo.slice(0, guardarGalponNuevo.indexOf('\n        }\n')) : a.cuerpo;
+    assert.ok(/ValidarSesion\(db\)/.test(cuerpo), 'cada acción pide el token: ' + a.ruta);
 });
 function accion(metodo, ruta) {
     const a = api.split('[Http').slice(1).filter(function (texto) {
@@ -56,10 +60,17 @@ assert.ok(/gx\.Galpon_ID = v\.GalponID OR \(v\.GalponID IS NULL AND \(gx\.Vigent
 assert.ok(/SQL_GALPON_DEL_VIAJE \+ SQL_KM_GALPON_DEL_VIAJE/.test(accion('Get', 'Viajes/{id:int}')), 'el costo del viaje usa los km de su galpón');
 assert.ok(/SQL_GALPON_DEL_VIAJE \+ SQL_KM_GALPON_DEL_VIAJE/.test(api.slice(api.indexOf('LeerKilometraje('))), 'el kilometraje del camión también');
 assert.ok(/CostosController\.SQL_GALPON_DEL_VIAJE \+ CostosController\.SQL_KM_GALPON_DEL_VIAJE/.test(hoja), 'y la hoja de ruta');
-const cambiar = accion('Post', 'Galpones');
+const cambiar = guardarGalponNuevo.slice(0, guardarGalponNuevo.indexOf('\n        }\n'));
+assert.ok(/return GuardarGalponNuevo\(null, body\)/.test(accion('Post', 'Galpones')), 'cambiar el galpón usa GuardarGalponNuevo');
 assert.ok(/Exigir\(sesion\.EsAdmin/.test(cambiar) && /Del_Nuevo/.test(cambiar) && /Del_Actual/.test(cambiar), 'cambiar el galpón: solo administradores, con los viajes elegidos');
 assert.ok(/WHERE v\.GalponID IS NULL AND CAST\(v\.Fecha_Inicio AS date\) >= @desde AND NOT \(" \+ SQL_NO_SALIO/.test(cambiar), 'los que ya salieron conservan el actual');
+// Corregir o anular el galpón nuevo mientras no empezó (Rocío, 27/10).
+assert.ok(/\[HttpPut, Route\("Galpones\/\{id:int\}"\)\]/.test(api) && /"No se puede corregir el galpón: ya empezó a usarse\."/.test(api), 'corregir: solo el que no empezó');
+assert.ok(/Exigir\(sesion\.EsAdmin/.test(accion('Delete', 'Galpones/{id:int}')) && /"No se puede anular el cambio de galpón: ya empezó a usarse\."/.test(api)
+    && /UPDATE dbo\.VIAJES SET GalponID = NULL WHERE GalponID = @id/.test(accion('Delete', 'Galpones/{id:int}')), 'anular: sus viajes vuelven al actual');
 const pantallaGalpon = leer('gestion-empresa.html');
+assert.ok(/data-galpon="corregir"/.test(pantallaGalpon) && /data-galpon="anular"/.test(pantallaGalpon) && /'¿Anular el cambio de galpón\?'/.test(pantallaGalpon),
+    'Gestionar empresa: "Corregir galpón" y "Anular cambio" en el que viene');
 assert.ok(/Del_Nuevo: viajesGalpon\.filter/.test(pantallaGalpon) && /Propuesto según la fecha de cada viaje\./.test(pantallaGalpon),
     'Gestionar empresa: la lista propuesta por la fecha (variante A)');
 const galpones = leer('database/costos/02_galpones_por_fecha.sql');

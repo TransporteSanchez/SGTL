@@ -171,6 +171,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Tipo_Cliente { get; set; }
             public string Origen { get; set; }
             public string Destino { get; set; }
+            public int? Galpon_ID { get; set; }           // el galpón que tiene hoy
         }
 
         private class CantidadRow
@@ -380,7 +381,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     var futuro = todos.FirstOrDefault(g => g.Vigente_Desde.HasValue && g.Vigente_Desde.Value.Date > hoy.Date);
                     var galpones = todos.Select((g, i) => new
                     {
-                        g.Galpon_ID, g.Vigente_Desde, Direccion = DireccionGalpon(g), Calle = CalleGalpon(g),
+                        g.Galpon_ID, g.Vigente_Desde, Direccion = DireccionGalpon(g), Nombre = CalleGalpon(g),
+                        // Para corregir el nuevo mientras no empezó.
+                        g.ProvID, g.LocID, g.Calle, g.AlturaCalle,
                         // Hasta el día anterior al que empezó el siguiente (el de la lista de arriba).
                         Hasta = i > 0 && todos[i - 1].Vigente_Desde.HasValue ? todos[i - 1].Vigente_Desde.Value.AddDays(-1) : (DateTime?)null,
                         Actual = g.Galpon_ID == actual.Galpon_ID,
@@ -401,10 +404,11 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET api/Costos/Galpon/ViajesPorSalir?desde=AAAA-MM-DD — los viajes que todavía no salieron, con el galpón que se
-        // les propone por su fecha (desde ese día, el nuevo), y cuántos ya salieron (esos conservan el suyo).
+        // GET api/Costos/Galpon/ViajesPorSalir?desde=AAAA-MM-DD[&galpon=ID] — los viajes que todavía no salieron, con el
+        // galpón que se les propone por su fecha (desde ese día, el nuevo), y cuántos ya salieron (esos conservan el suyo).
+        // Con galpon (corregir el nuevo mientras no empezó): también de cuál salen hoy (Asignado).
         [HttpGet, Route("Galpon/ViajesPorSalir")]
-        public IHttpActionResult ViajesPorSalir(DateTime desde)
+        public IHttpActionResult ViajesPorSalir(DateTime desde, int? galpon = null)
         {
             try
             {
@@ -414,9 +418,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     Exigir(sesion.EsAdmin, "Solo un administrador puede cambiar el galpón.");
                     var viajes = db.Database.SqlQuery<ViajePorSalirRow>(
                         "SELECT v.Viaje_ID, v.Fecha_Inicio, ISNULL(c.Razon_Social,'') AS Cliente, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
-                        "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino " +
+                        "ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino, gv.Galpon_ID " +
                         "FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " +
                         "LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID " +
+                        SQL_GALPON_DEL_VIAJE +
                         "WHERE " + SQL_NO_SALIO + " ORDER BY v.Fecha_Inicio, v.Viaje_ID").ToList();
                     var salieron = db.Database.SqlQuery<int>(
                         "SELECT COUNT(*) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID WHERE NOT (" + SQL_NO_SALIO + ")").First();
@@ -425,7 +430,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         Viajes = viajes.Select(v => new
                         {
                             v.Viaje_ID, v.Fecha_Inicio, v.Cliente, v.Tipo_Cliente, v.Origen, v.Destino,
-                            Propuesto = v.Fecha_Inicio.Date >= desde.Date ? "Nuevo" : "Actual"
+                            Propuesto = v.Fecha_Inicio.Date >= desde.Date ? "Nuevo" : "Actual",
+                            Asignado = galpon.HasValue ? (v.Galpon_ID == galpon.Value ? "Nuevo" : "Actual") : null
                         }).ToList(),
                         Salieron = salieron
                     });
@@ -454,9 +460,16 @@ namespace WebApi_TransporteSanchez.Controllers
         // salieron conservan el suyo; de los que no salieron, se guarda el galpón solo en los que salen de otro que el de su
         // fecha (Del_Nuevo, Del_Actual). Los km al galpón nuevo los calcula la pantalla con Google Maps.
         [HttpPost, Route("Galpones")]
-        public IHttpActionResult CambiarGalpon([FromBody] CambioGalponDto body)
+        public IHttpActionResult CambiarGalpon([FromBody] CambioGalponDto body) { return GuardarGalponNuevo(null, body); }
+
+        // PUT api/Costos/Galpones/{id} — corregir el galpón nuevo mientras no empezó (Rocío, 27/10): la dirección o desde
+        // cuándo se usa; los viajes que no salieron se vuelven a elegir como al cambiarlo.
+        [HttpPut, Route("Galpones/{id:int}")]
+        public IHttpActionResult CorregirGalpon(int id, [FromBody] CambioGalponDto body) { return GuardarGalponNuevo(id, body); }
+
+        private IHttpActionResult GuardarGalponNuevo(int? corregir, CambioGalponDto body)
         {
-            const string porDefecto = "No se pudo cambiar el galpón. Probá de nuevo.";
+            const string porDefecto = "No se pudo guardar el galpón. Probá de nuevo.";
             try
             {
                 using (var db = new SGTLAuditContext(Cn()))
@@ -472,8 +485,10 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (!body.Vigente_Desde.HasValue) return Rechazo("Completá desde cuándo se usa.");
                     var desde = body.Vigente_Desde.Value.Date;
                     var hoy = Hoy(db);
-                    if (LeerGalpones(db).Any(g => g.Vigente_Desde.HasValue && g.Vigente_Desde.Value.Date > hoy.Date))
-                        return Rechazo("Ya hay un galpón nuevo que todavía no empezó.");
+                    var futuro = LeerGalpones(db).FirstOrDefault(g => g.Vigente_Desde.HasValue && g.Vigente_Desde.Value.Date > hoy.Date);
+                    if (corregir.HasValue && (futuro == null || futuro.Galpon_ID != corregir.Value))
+                        return Rechazo("No se puede corregir el galpón: ya empezó a usarse.");
+                    if (!corregir.HasValue && futuro != null) return Rechazo("Ya hay un galpón nuevo que todavía no empezó.");
                     if (actual.Vigente_Desde.HasValue && desde <= actual.Vigente_Desde.Value.Date)
                         return Rechazo("Fecha no permitida: tiene que ser después del " + actual.Vigente_Desde.Value.ToString("dd/MM/yyyy") + ".");
                     if (actual.ProvID == body.ProvID.Value && actual.LocID == body.LocID.Value
@@ -483,11 +498,28 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var usuario = Recortar(sesion.Nombre_Usuario, 50);
                     var ahora = "CAST(SYSDATETIMEOFFSET() AT TIME ZONE 'Argentina Standard Time' AS datetime)";
-                    var nuevoId = db.Database.SqlQuery<int>(
-                        "INSERT INTO dbo.GALPON (ProvID, LocID, Calle, AlturaCalle, Vigente_Desde, Fecha_Modi, Usu_Modi) OUTPUT INSERTED.Galpon_ID " +
-                        "VALUES (@prov, @loc, @calle, @altura, @desde, " + ahora + ", @usu)",
-                        P("@prov", body.ProvID.Value), P("@loc", body.LocID.Value), P("@calle", calle),
-                        P("@altura", altura.Length == 0 ? null : altura), P("@desde", desde), P("@usu", usuario)).First();
+                    int nuevoId;
+                    if (corregir.HasValue)
+                    {
+                        nuevoId = corregir.Value;
+                        var cambiaDireccion = futuro.ProvID != body.ProvID.Value || futuro.LocID != body.LocID.Value
+                            || !string.Equals(futuro.Calle, calle, StringComparison.OrdinalIgnoreCase)
+                            || !string.Equals(futuro.AlturaCalle ?? "", altura, StringComparison.OrdinalIgnoreCase);
+                        db.Database.ExecuteSqlCommand(
+                            "UPDATE dbo.GALPON SET ProvID = @prov, LocID = @loc, Calle = @calle, AlturaCalle = @altura, Vigente_Desde = @desde, " +
+                            "Fecha_Modi = " + ahora + ", Usu_Modi = @usu WHERE Galpon_ID = @id",
+                            P("@prov", body.ProvID.Value), P("@loc", body.LocID.Value), P("@calle", calle),
+                            P("@altura", altura.Length == 0 ? null : altura), P("@desde", desde), P("@usu", usuario), P("@id", nuevoId));
+                        // Otra dirección: sus km al galpón se vuelven a calcular.
+                        if (cambiaDireccion) db.Database.ExecuteSqlCommand("DELETE FROM dbo.GALPON_KM WHERE Galpon_ID = @id", P("@id", nuevoId));
+                        db.Database.ExecuteSqlCommand("UPDATE dbo.VIAJES SET GalponID = NULL WHERE GalponID = @id", P("@id", nuevoId));
+                    }
+                    else
+                        nuevoId = db.Database.SqlQuery<int>(
+                            "INSERT INTO dbo.GALPON (ProvID, LocID, Calle, AlturaCalle, Vigente_Desde, Fecha_Modi, Usu_Modi) OUTPUT INSERTED.Galpon_ID " +
+                            "VALUES (@prov, @loc, @calle, @altura, @desde, " + ahora + ", @usu)",
+                            P("@prov", body.ProvID.Value), P("@loc", body.LocID.Value), P("@calle", calle),
+                            P("@altura", altura.Length == 0 ? null : altura), P("@desde", desde), P("@usu", usuario)).First();
 
                     // Los que ya salieron y quedarían del nuevo por su fecha (si "desde" es un día que ya pasó) conservan el actual.
                     db.Database.ExecuteSqlCommand(
@@ -517,7 +549,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     var cantidad = db.Database.SqlQuery<int>(
                         "SELECT COUNT(*) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID " + SQL_GALPON_DEL_VIAJE +
                         "WHERE gv.Galpon_ID = @g AND " + SQL_NO_SALIO, P("@g", nuevoId)).First();
-                    SGTLAuditContext.RegistrarEvento(Cn(), Recortar(usuario, 20), "INSERT", "GALPON", "Galpon_ID=" + nuevoId,
+                    SGTLAuditContext.RegistrarEvento(Cn(), Recortar(usuario, 20), corregir.HasValue ? "UPDATE" : "INSERT", "GALPON", "Galpon_ID=" + nuevoId,
+                        (corregir.HasValue ? "Galpón nuevo corregido: " + DireccionGalpon(futuro) + " desde el " + futuro.Vigente_Desde.Value.ToString("dd/MM/yyyy") + " -> " : "") +
                         "Galpón nuevo desde el " + desde.ToString("dd/MM/yyyy") + ": " + DireccionGalpon(nuevo) + " (antes: " + DireccionGalpon(actual) + "). " +
                         cantidad + " de los viajes que no salieron salen del nuevo" +
                         (delNuevo.Count + delActual.Count > 0 ? "; elegidos a mano: " + string.Join(", ", delNuevo.Concat(delActual).Select(i => "#" + i)) : "") + ".");
@@ -525,7 +558,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         Galpon = GalponDe(nuevo),
                         Recalcular = true,
-                        Message = "Galpón cambiado. Desde el " + desde.ToString("dd/MM/yyyy") + " los viajes salen de " + CalleGalpon(nuevo) + "." +
+                        Message = (corregir.HasValue ? "Galpón nuevo corregido." : "Galpón cambiado.") +
+                            " Desde el " + desde.ToString("dd/MM/yyyy") + " los viajes salen de " + CalleGalpon(nuevo) + "." +
                             (cantidad > 0 ? " " + (cantidad == 1 ? "1 de los que no salieron ya sale de ahí." : cantidad + " de los que no salieron ya salen de ahí.") : "")
                     });
                 }
@@ -533,6 +567,40 @@ namespace WebApi_TransporteSanchez.Controllers
             catch (Exception ex)
             {
                 return Error(ex, porDefecto);
+            }
+        }
+
+        // DELETE api/Costos/Galpones/{id} — anular el cambio de galpón mientras el nuevo no empezó (Rocío, 27/10): se borra y
+        // sus viajes vuelven a salir del actual.
+        [HttpDelete, Route("Galpones/{id:int}")]
+        public IHttpActionResult AnularGalpon(int id)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var sesion = ValidarSesion(db);
+                    Exigir(sesion.EsAdmin, "Solo un administrador puede cambiar el galpón.");
+                    if (!HayGalponesPorFecha(db)) return Rechazo("Para cambiar el galpón falta correr database/costos/02_galpones_por_fecha.sql.");
+                    var hoy = Hoy(db);
+                    var futuro = LeerGalpones(db).FirstOrDefault(g => g.Galpon_ID == id);
+                    if (futuro == null) return Content(HttpStatusCode.NotFound, new { message = "El galpón ya no existe." });
+                    if (!futuro.Vigente_Desde.HasValue || futuro.Vigente_Desde.Value.Date <= hoy.Date)
+                        return Rechazo("No se puede anular el cambio de galpón: ya empezó a usarse.");
+                    var actual = LeerGalpon(db);
+                    db.Database.ExecuteSqlCommand("UPDATE dbo.VIAJES SET GalponID = NULL WHERE GalponID = @id", P("@id", id));
+                    db.Database.ExecuteSqlCommand("DELETE FROM dbo.GALPON_KM WHERE Galpon_ID = @id", P("@id", id));
+                    db.Database.ExecuteSqlCommand("DELETE FROM dbo.GALPON WHERE Galpon_ID = @id", P("@id", id));
+                    var usuario = Recortar(sesion.Nombre_Usuario, 20);
+                    SGTLAuditContext.RegistrarEvento(Cn(), usuario, "DELETE", "GALPON", "Galpon_ID=" + id,
+                        "Se anuló el cambio de galpón: " + DireccionGalpon(futuro) + " desde el " + futuro.Vigente_Desde.Value.ToString("dd/MM/yyyy") +
+                        ". Los viajes siguen saliendo de " + DireccionGalpon(actual) + ".");
+                    return Ok(new { Message = "Cambio de galpón anulado. Los viajes siguen saliendo de " + CalleGalpon(actual) + "." });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Error(ex, "No se pudo anular el cambio de galpón. Probá de nuevo.");
             }
         }
 

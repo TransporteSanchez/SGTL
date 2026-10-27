@@ -3858,8 +3858,11 @@ como presentación). Los números son los del listado de Rocío.
   motivo. Base: `database/costos/02_galpones_por_fecha.sql` (`GALPON.Vigente_Desde`, `GALPON_KM` con los km por galpón
   y `VIAJES.GalponID`, el galpón cuando no es el de la fecha). Ver detalle del viaje nombra su galpón ("Galpón (Av.
   Circunvalación 1500) → …"); la hoja de ruta y el kilometraje de los camiones usan el galpón de cada viaje.
-  **A decidir (sección 5 de la maqueta):** si también se puede cambiar el galpón en Editar viaje, mientras no salió.
-  **Corregir una dirección mal escrita** del galpón no está en la pantalla (la API lo permite: PUT api/Costos/Galpon).
+  **Decidido por Rocío (27/10):** no se elige el galpón en Editar viaje (manejan un solo galpón a la vez: alcanza con la
+  fecha y la lista al cambiarlo). En cambio, **el galpón nuevo, mientras no empezó, se corrige** ("Corregir galpón": la
+  dirección o la fecha, con los viajes como están; si cambia la fecha, se vuelven a proponer) **o se anula** ("Anular
+  cambio", con confirmación: los viajes siguen saliendo del actual). Corregir la dirección del galpón que ya está en uso
+  no está en la pantalla (la API lo permite: PUT api/Costos/Galpon).
   Cómo probarlo en la VM:
   1. Correr `database/costos/02_galpones_por_fecha.sql` (primero con `@Aplicar = 0`, después con 1; todo "OK") antes de
      recompilar.
@@ -3867,6 +3870,9 @@ como presentación). Los números son los del listado de Rocío.
      fecha de dentro de unos días → la lista de los que no salieron, con "Actual" hasta ese día y "Nuevo" desde ese día;
      cambiar una fila y ver que los números de arriba cambian → "Cambiar galpón" → el aviso, la tarjeta con los dos y el
      botón gris con el motivo; abajo, "Calculando los km al galpón…".
+     En el galpón que viene: "Corregir galpón" → los datos y los viajes como quedaron; cambiar la fecha → se vuelven a
+     proponer → Guardar → "Galpón nuevo corregido…". "Anular cambio" → confirmar → queda solo el actual y "Cambiar
+     galpón" vuelve a estar habilitado.
   3. Ver detalle de un viaje que ya salió: el galpón de siempre y su recorrido igual. Uno que pasó al nuevo: su galpón
      nombrado y los km al nuevo. Hoja de ruta (chofer): el mapa de ese viaje arranca en el galpón nuevo.
 - [x] **36.** Mostrar las horas estimadas de Google junto a los km al cargar un viaje o presupuesto: si el destino queda

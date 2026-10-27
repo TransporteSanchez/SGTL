@@ -489,7 +489,9 @@
         // "Cambiar galpón" pide la dirección nueva y desde cuándo se usa, y lista los viajes que todavía no salieron con el
         // galpón propuesto por su fecha (variante A de la maqueta: los dos galpones arriba y "Actual" o "Nuevo" en cada
         // fila). Los que ya salieron conservan el suyo. Los km al galpón nuevo se calculan con Google Maps.
-        var galponActual = null, modoGalpon = 'cambiar', viajesGalpon = [], salieronGalpon = 0, viajesGalponSeq = 0, fpGalponDesde = null;
+        // modoGalpon: 'cargar' (el primero), 'cambiar' (uno nuevo desde una fecha) o 'corregir' (el nuevo, mientras no empezó).
+        var galponActual = null, galponFuturo = null, modoGalpon = 'cambiar', viajesGalpon = [], salieronGalpon = 0, viajesGalponSeq = 0,
+            fpGalponDesde = null;
 
         var validadorGalpon = SGTL.validador([
             { id: 'galponProvincia', requerido: 'Seleccioná una provincia.' },
@@ -498,10 +500,10 @@
             { id: 'galponAltura', max: 10 },
             {
                 id: 'galponDesde',
-                get requerido() { return modoGalpon === 'cambiar' ? 'Completá desde cuándo se usa.' : ''; },
+                get requerido() { return modoGalpon !== 'cargar' ? 'Completá desde cuándo se usa.' : ''; },
                 validar: function (valor) {
                     var desdeActual = galponActual && galponActual.Vigente_Desde ? String(galponActual.Vigente_Desde).substring(0, 10) : '';
-                    return modoGalpon === 'cambiar' && desdeActual && valor <= desdeActual
+                    return modoGalpon !== 'cargar' && desdeActual && valor <= desdeActual
                         ? 'Fecha no permitida: tiene que ser después del ' + SGTL.fecha(desdeActual) + '.' : '';
                 }
             }
@@ -530,6 +532,7 @@
         // La tarjeta: cada galpón como texto (el que viene, el actual y los anteriores) y el botón para cargarlo o cambiarlo.
         function mostrarGalpones(r) {
             galponActual = r && r.Galpon && r.Galpon.Configurado ? r.Galpon : null;
+            galponFuturo = ((r && r.Galpones) || []).filter(function (g) { return g.Futuro; })[0] || null;
             var lista = campoEmpresa('galponesLista'), accion = campoEmpresa('accionGalpon');
             if (!galponActual) {
                 lista.innerHTML = '<p class="text-muted mb-0">Todavía no se cargó el galpón.</p>';
@@ -546,9 +549,15 @@
                 var detalle = [cuando, g.Viajes == null ? '' : cantidadViajes(g.Viajes)].filter(Boolean).join(' · ');
                 var etiqueta = g.Actual ? SGTL.estado('Actual', 'Actual', 'verde')
                     : g.Futuro ? SGTL.estado('Desde el ' + SGTL.fecha(g.Vigente_Desde), 'Desde el ' + SGTL.fecha(g.Vigente_Desde), 'azul') : '';
+                // El que viene, mientras no empezó, se corrige o se anula (Rocío, 27/10).
+                var acciones = g.Futuro
+                    ? '<div class="d-flex flex-wrap gap-2 mt-2">' +
+                      '<button type="button" class="btn btn-sm btn-outline-primary" data-galpon="corregir"><i class="bi bi-pencil me-1" aria-hidden="true"></i>Corregir galpón</button>' +
+                      '<button type="button" class="btn btn-sm btn-outline-danger" data-galpon="anular"><i class="bi bi-x-circle me-1" aria-hidden="true"></i>Anular cambio</button></div>'
+                    : '';
                 return '<div class="sgtl-galpon"><div class="d-flex flex-wrap justify-content-between align-items-start gap-2"><div>' +
                     '<div class="fw-semibold">' + SGTL.escapar(sinPais(g.Direccion)) + '</div>' +
-                    (detalle ? '<div class="small text-muted">' + SGTL.escapar(detalle) + '</div>' : '') + '</div>' + etiqueta + '</div></div>';
+                    (detalle ? '<div class="small text-muted">' + SGTL.escapar(detalle) + '</div>' : '') + '</div>' + etiqueta + '</div>' + acciones + '</div>';
             }).join('');
             campoEmpresa('registroGalpon').textContent = galponActual.Usu_Modi
                 ? 'Última modificación: ' + galponActual.Usu_Modi + ' · ' + SGTL.fecha(galponActual.Fecha_Modi, { hora: true }) : '';
@@ -575,14 +584,16 @@
             });
         }
 
-        function abrirGalpon() {
-            modoGalpon = galponActual ? 'cambiar' : 'cargar';
+        // corregir: el galpón nuevo, mientras no empezó, con sus datos y los viajes como están hoy.
+        function abrirGalpon(corregir) {
+            modoGalpon = corregir ? 'corregir' : galponActual ? 'cambiar' : 'cargar';
             var cargar = modoGalpon === 'cargar';
             SGTL.reiniciarFormulario('#formGalpon', '#avisoModalGalpon');
             validadorGalpon.reiniciar();
             if (fpGalponDesde) fpGalponDesde.clear();
-            campoEmpresa('tituloModalGalpon').textContent = cargar ? 'Cargar galpón' : 'Cambiar galpón';
-            campoEmpresa('btnGuardarGalpon').textContent = cargar ? 'Cargar galpón' : 'Cambiar galpón';
+            var titulo = { cargar: 'Cargar galpón', cambiar: 'Cambiar galpón', corregir: 'Corregir galpón' }[modoGalpon];
+            campoEmpresa('tituloModalGalpon').textContent = titulo;
+            campoEmpresa('btnGuardarGalpon').textContent = modoGalpon === 'corregir' ? 'Guardar' : titulo;
             campoEmpresa('tituloBloqueGalpon').textContent = cargar ? 'Galpón' : 'Galpón nuevo';
             campoEmpresa('grupoGalponDesde').classList.toggle('d-none', cargar);
             campoEmpresa('bloqueViajesGalpon').classList.toggle('d-none', cargar);
@@ -590,7 +601,42 @@
             salieronGalpon = 0;
             viajesGalponSeq++;
             dibujarViajesGalpon();
-            cargarLocalidadesGalpon('').then(function () { SGTL.modal('#modalGalpon', 'show'); });
+            var g = corregir ? galponFuturo : null;
+            if (g) {
+                campoEmpresa('galponProvincia').value = g.ProvID || '';
+                campoEmpresa('galponCalle').value = g.Calle || '';
+                campoEmpresa('galponAltura').value = g.AlturaCalle || '';
+                if (fpGalponDesde) fpGalponDesde.setDate(String(g.Vigente_Desde).substring(0, 10), false);
+            }
+            cargarLocalidadesGalpon(g ? g.ProvID : '').then(function () {
+                if (g) {
+                    campoEmpresa('galponLocalidad').value = g.LocID || '';
+                    cargarViajesGalpon(true);
+                }
+                SGTL.modal('#modalGalpon', 'show');
+            });
+        }
+
+        // Anular el cambio mientras el nuevo no empezó: se borra y los viajes siguen saliendo del actual.
+        function anularGalpon() {
+            var g = galponFuturo;
+            if (!g || !galponActual) return;
+            var mensaje = '';
+            SGTL.confirmar({
+                titulo: '¿Anular el cambio de galpón?',
+                mensaje: (g.Nombre || sinPais(g.Direccion)) + ' no se va a usar desde el ' + SGTL.fecha(g.Vigente_Desde) +
+                    ': los viajes siguen saliendo de ' + ((galponActual.Calle || '') + ' ' + (galponActual.AlturaCalle || '')).trim() + '.',
+                verbo: 'Anular',
+                peligro: true,
+                accion: function () {
+                    return SGTL.ajax({ url: API_EMPRESA + '/Costos/Galpones/' + encodeURIComponent(g.Galpon_ID), type: 'DELETE', headers: encabezadosGalpon() },
+                        'No se pudo anular el cambio de galpón. Probá de nuevo.').then(function (r) { mensaje = r && r.Message; });
+                }
+            }).then(function (hecho) {
+                if (!hecho) return;
+                SGTL.toastExito(mensaje || 'Cambio de galpón anulado.');
+                cargarGalpon();
+            });
         }
 
         // La dirección nueva como se ve en el recuadro de arriba ("Camino a Monte Cristo 2450, Córdoba").
@@ -651,18 +697,21 @@
             dibujarRecuadrosGalpon();
         }
 
-        // Con la fecha, los viajes que todavía no salieron y el galpón que se les propone (desde ese día, el nuevo).
-        function cargarViajesGalpon() {
+        // Con la fecha, los viajes que todavía no salieron y el galpón que se les propone (desde ese día, el nuevo). Al abrir
+        // "Corregir galpón" (comoEstan), cada uno con el que tiene hoy; si después cambia la fecha, otra vez propuesto.
+        function cargarViajesGalpon(comoEstan) {
             var desde = campoEmpresa('galponDesde').value;
             var seq = ++viajesGalponSeq;
             viajesGalpon = [];
             salieronGalpon = 0;
             if (!desde || !validadorGalpon.validar('galponDesde')) { dibujarViajesGalpon(); return; }
             campoEmpresa('viajesGalpon').innerHTML = '<p class="text-muted mb-0">Cargando…</p>';
-            SGTL.ajax({ url: API_EMPRESA + '/Costos/Galpon/ViajesPorSalir', type: 'GET', data: { desde: desde }, cache: false, headers: encabezadosGalpon() },
+            var datos = { desde: desde };
+            if (comoEstan === true && galponFuturo) datos.galpon = galponFuturo.Galpon_ID;
+            SGTL.ajax({ url: API_EMPRESA + '/Costos/Galpon/ViajesPorSalir', type: 'GET', data: datos, cache: false, headers: encabezadosGalpon() },
                 'No se pudieron cargar los viajes que todavía no salieron. Probá de nuevo.').then(function (r) {
                     if (seq !== viajesGalponSeq) return;
-                    viajesGalpon = (r.Viajes || []).map(function (v) { return Object.assign({ Elegido: v.Propuesto }, v); });
+                    viajesGalpon = (r.Viajes || []).map(function (v) { return Object.assign({ Elegido: v.Asignado || v.Propuesto }, v); });
                     salieronGalpon = r.Salieron || 0;
                     dibujarViajesGalpon();
                 }, function (error) {
@@ -698,14 +747,15 @@
                 Calle: valor('galponCalle'),
                 AlturaCalle: valor('galponAltura')
             };
-            var cambiar = modoGalpon === 'cambiar';
-            var listo = SGTL.procesando('#btnGuardarGalpon', cambiar ? 'Cambiando…' : 'Guardando…');
+            var cambiar = modoGalpon !== 'cargar';
+            var listo = SGTL.procesando('#btnGuardarGalpon', modoGalpon === 'cambiar' ? 'Cambiando…' : 'Guardando…');
             try {
                 var respuesta;
                 if (cambiar) {
                     // Solo los que salen de otro galpón que el de su fecha: los demás siguen la fecha.
                     respuesta = await SGTL.ajax({
-                        url: API_EMPRESA + '/Costos/Galpones', type: 'POST', contentType: 'application/json', headers: encabezadosGalpon(),
+                        url: API_EMPRESA + '/Costos/Galpones' + (modoGalpon === 'corregir' ? '/' + encodeURIComponent(galponFuturo.Galpon_ID) : ''),
+                        type: modoGalpon === 'corregir' ? 'PUT' : 'POST', contentType: 'application/json', headers: encabezadosGalpon(),
                         data: JSON.stringify(Object.assign(direccion, {
                             Vigente_Desde: valor('galponDesde'),
                             Del_Nuevo: viajesGalpon.filter(function (v) { return v.Elegido === 'Nuevo' && v.Propuesto !== 'Nuevo'; }).map(function (v) { return v.Viaje_ID; }),
@@ -750,6 +800,10 @@
             });
             campoEmpresa('accionGalpon').addEventListener('click', function (evento) {
                 if (evento.target.closest('[data-galpon="abrir"]')) abrirGalpon();
+            });
+            campoEmpresa('galponesLista').addEventListener('click', function (evento) {
+                if (evento.target.closest('[data-galpon="corregir"]')) abrirGalpon(true);
+                else if (evento.target.closest('[data-galpon="anular"]')) anularGalpon();
             });
             document.getElementById('formGalpon').addEventListener('submit', guardarGalpon);
         })();
