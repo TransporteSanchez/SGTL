@@ -3745,6 +3745,13 @@ cierren las pruebas de la §39**, antes que lo demás.
   - M16, Listar viajes: "Km" en lugar de "Cantidad de KM" (§7.3).
   - De Facu (sumar a su lista del punto 5): M6, el importe mal escrito en Registrar recibo, con "Escribí el importe como
     1.234,56." debajo del campo; M15, un saldo negativo dice "Saldo a favor del cliente" y no "Saldo deudor".
+- [ ] **8. Pedido a Fede: avisarle al chofer por WhatsApp que se canceló su viaje (27/10).** Rocío lo deja pendiente: hace
+  falta dar de alta en Meta una plantilla nueva para la cancelación (hoy hay una sola, `viaje_asignado`, y Gestionar
+  integración de WhatsApp guarda un solo nombre de plantilla) y administrarla desde la integración de WhatsApp. Después,
+  mandarla al cancelar un viaje si el chofer ya tenía la hoja de ruta. Texto de la maqueta: "Se canceló el viaje #47 del
+  28/10/2026 (Planta Córdoba Norte → Depósito Villa Carlos Paz)." Del lado de viajes se llamaría desde `CambiarCancelado`
+  (`ViajesController`); no se dejó nada armado. Con esto, ver también si al volverlo a Registrado se le reenvía la hoja de
+  ruta. Mientras tanto, el chofer lo ve en su hoja de ruta (en Anteriores, en rojo, "Este viaje se canceló.").
 
 ---
 
@@ -3817,7 +3824,8 @@ como presentación). Los números son los del listado de Rocío.
   Registrado, con motivo, en lugar de eliminarse: queda en el listado en rojo y deja de contar en camión y chofer ocupados,
   el orden del día, las proformas (también el Excel de Rukas), los costos, el tablero y la hoja de ruta. Vuelve a
   Registrado. El presupuesto del que salió sigue Aceptado (amarillo, con el ícono que dice qué viaje se canceló) y vuelve a
-  dejar "Generar viaje". Falta decidir el aviso por WhatsApp al chofer (módulo de Fede); "Sin carga" queda para el punto 10.
+  dejar "Generar viaje". El aviso por WhatsApp al chofer queda pendiente (necesita una plantilla nueva en Meta: §40, punto
+  8); "Sin carga" queda para el punto 10.
   Cómo probarlo:
   1. **Antes de recompilar**, correr `database/viajes/02_viaje_cancelado.sql` en SSMS (primero con `@Aplicar = 0`: si
      dice "NO admite Cancelado" en alguna restricción, pasarle el resultado a Claude; después con `@Aplicar = 1`).

@@ -104,8 +104,9 @@ Decisiones de Rocío (maqueta `.claude/maquetas/viajes/cancelado.html`):
 - **Presupuesto:** sigue Aceptado, en amarillo, con el ícono "El viaje #N que se generó con este presupuesto está
   cancelado: …" y "Generar viaje" habilitado. El viaje nuevo reemplaza al cancelado en el presupuesto; el cancelado
   guarda de qué presupuesto salió (`VIAJES.Cancelado_Presupuesto_ID`) y ya no se reactiva.
-- **Falta decidir:** el aviso por WhatsApp al chofer (módulo de Fede). **"Sin carga"** (falso flete, desde En viaje) se
-  ve con el punto 10.
+- **Pendiente:** el aviso por WhatsApp al chofer. Necesita una plantilla nueva en Meta, administrada desde la integración de
+  WhatsApp (módulo de Fede): punto 8 de la §40 de `docs/PENDIENTES-SISTEMA.md`. **"Sin carga"** (falso flete, desde En
+  viaje) se ve con el punto 10.
 
 ---
 
