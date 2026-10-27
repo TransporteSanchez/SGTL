@@ -861,16 +861,18 @@ WHERE Numerador_ID=@tipo AND Activo=1 AND UltimoNumero<99999999;", connection, t
 
                             int comprobanteId;
                             using (var command = new SqlCommand(@"
+DECLARE @comprobantesInsertados TABLE (Comprobante_ID int NOT NULL);
 INSERT dbo.COMPROBANTES
  (ClienteID,Tipo,Impacto,NumeroCorrelativo,FechaEmision,FechaVencimiento,Moneda,Estado,
   RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Letra,Sucursal,NumeroComprobante,Subtotal,Descuentos,Neto,IVA,
   OtrosImpuestos,Total,Concepto,Observaciones,ComprobanteReferenciaID,TipoReferencia,ClaveOperacion,
   UsuarioAltaID,UsuarioEmisionID,FechaEmisionRegistro)
-OUTPUT INSERTED.Comprobante_ID
+OUTPUT INSERTED.Comprobante_ID INTO @comprobantesInsertados
 VALUES
  (@cliente,@tipo,@impacto,@numero,@emision,@vencimiento,'ARS','EMITIDO',@razon,@cuit,@domicilio,
   @condFiscal,NULL,@letra,@sucursal,@numeroComprobante,@neto,0,@neto,@iva,@otros,@total,@concepto,@observaciones,@referencia,@tipoReferencia,
-  @clave,@usuario,@usuario,SYSUTCDATETIME());", connection, transaction))
+  @clave,@usuario,@usuario,SYSUTCDATETIME());
+SELECT Comprobante_ID FROM @comprobantesInsertados;", connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
                                 {

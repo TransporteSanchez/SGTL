@@ -489,14 +489,16 @@ WHERE Numerador_ID=@numerador AND Activo=1 AND UltimoNumero<99999999;", connecti
                                 : request.Aplicaciones.Count == 1 ? "Cobranza de 1 comprobante"
                                 : "Cobranza de " + request.Aplicaciones.Count + " comprobantes";
                             using (var command = new SqlCommand(@"
+DECLARE @comprobantesInsertados TABLE (Comprobante_ID int NOT NULL);
 INSERT dbo.COMPROBANTES
  (ClienteID,Tipo,Impacto,NumeroCorrelativo,FechaEmision,FechaVencimiento,Moneda,Estado,
   RazonSocial,CUIT,Domicilio,CondicionFiscal,CondicionComercial,Letra,Sucursal,NumeroComprobante,Subtotal,Descuentos,Neto,IVA,
   OtrosImpuestos,Total,Concepto,Observaciones,ClaveOperacion,UsuarioAltaID,UsuarioEmisionID,FechaEmisionRegistro)
-OUTPUT INSERTED.Comprobante_ID
+OUTPUT INSERTED.Comprobante_ID INTO @comprobantesInsertados
 VALUES
  (@cliente,'REC','C',@numero,@fecha,NULL,'ARS','EMITIDO',@razon,@cuit,@domicilio,
-  @condFiscal,NULL,@letra,@sucursal,@numeroComprobante,@total,0,@total,0,0,@total,@concepto,@observaciones,@clave,@usuario,@usuario,SYSUTCDATETIME());",
+  @condFiscal,NULL,@letra,@sucursal,@numeroComprobante,@total,0,@total,0,0,@total,@concepto,@observaciones,@clave,@usuario,@usuario,SYSUTCDATETIME());
+SELECT Comprobante_ID FROM @comprobantesInsertados;",
                                 connection, transaction))
                             {
                                 command.Parameters.AddRange(new[]
