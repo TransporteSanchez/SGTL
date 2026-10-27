@@ -60,7 +60,8 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
-| 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), vuelta automática y camión ocupado, para el jueves 29/10 con `main` como plan B | **Propuesta con maqueta (26/10)**, espera el OK de Rocío | — | Ver §42 |
+| 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
+| 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Decidido y maqueta aprobada (27/10)**, falta hacerlo | — | Ver §43 y `docs/diseno/vuelta-del-dia-diseno.md` |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -2782,6 +2783,7 @@ adelante) y de los **km de ida**, con una de dos tarifas, más dos adicionales.
   por km de antes (eran de prueba) dejan de cargarse; quedan en la base para los viajes que ya las usan.
 - La 2ª vuelta es el segundo viaje del mismo camión en el mismo día (solo con fija y hasta 130 km). El sistema la propone
   si el camión ya tiene un viaje que empieza antes ese día, y se puede cambiar.
+  **Corregido por Rocío el 26/10:** la 2ª vuelta depende del cliente, el origen y el destino, no del camión (§43).
 - **Falso flete:** el camión fue al origen a cargar, no había carga y volvió: se cobra el 60 % del viaje. **Estadía:** casi
   no se usa; va a mano en el viaje (módulos de 6 hs a $ 96.577).
 - Una tabla por PDF: fijas, por km, bandas y adicionales se cargan juntos, con la misma vigencia (desde su fecha hasta que
@@ -3854,7 +3856,10 @@ como presentación). Los números son los del listado de Rocío.
 
 ---
 
-## 42. Tabla de tarifas dinámica, vuelta automática y camión ocupado — PROPUESTA, ESPERA EL OK DE ROCÍO (26/10)
+## 42. Tabla de tarifas dinámica — PROPUESTA GUARDADA, VA AL FINAL (26/10)
+
+**Orden (Rocío, 26/10, después de ver la maqueta):** la propuesta queda guardada y es lo último que se hace; primero van
+las mejoras (§40, punto 7, y los puntos 2 y 12 a 14 de la §41).
 
 Pedido de Facu (26/10) y decisión de Rocío: cada tabla define su forma, sin tocar código. Va antes del jueves 29/10 junto
 con los textos (§41, puntos 12 a 14), la tarjeta (punto 2) y la vuelta automática con el control de camión ocupado
@@ -3878,16 +3883,102 @@ B, la API nueva también las escribe cuando la tabla tiene la forma de antes (do
 solo en la primera), así `main` sigue andando. Las tablas con otra forma son solo de prueba hasta el jueves (si se vuelve
 a `main`, se eliminan antes). Después de la presentación, un script saca lo viejo.
 
-**Vuelta automática y camión ocupado (propuesta; los casos a confirmar con Claudia van con un valor por defecto):**
-- La vuelta la calcula la API al guardar: entre los viajes del mismo camión que empiezan ese día, el primero va 1ª y los
-  siguientes 2ª (el 3º también), sin mirar los km del primero; el día es el de la fecha de inicio. Se ve como texto con
-  el viaje anterior del camión.
-- Si guardar, cambiar la hora o el camión, o eliminar un viaje cambia la vuelta de otro viaje del mismo camión, se
-  confirma antes con la lista: el que el cliente no vio se recalcula (con Auditoría); el que está en una proforma enviada
-  o en un comprobante queda como está.
-- El mismo camión, o el mismo chofer, en dos viajes que se superponen (inicio a fin) da error al elegirlo y al guardar.
-- Presupuestos (Facu): "Vuelta del día" pasa a texto y generar el viaje controla el camión ocupado. Avisarle a Facu.
+**La vuelta automática y el camión ocupado** se separaron de esta propuesta y se hacen antes, con las mejoras: §43.
 
-**Decisiones para el OK de Rocío:** dónde se administran los tipos; años de corte en lugar de rangos libres; que el
-chofer ocupado también dé error; la confirmación cuando cambia la vuelta de otro viaje; y que una tabla tenga al menos
-una banda (una tabla solo por km quedaría para después).
+**Decisiones para el OK de Rocío:** dónde se administran los tipos; años de corte en lugar de rangos libres; y que una
+tabla tenga al menos una banda (una tabla solo por km quedaría para después).
+
+---
+
+## 43. Precio por orden del día (1ª y 2ª vuelta automáticas) y camión ocupado — DECIDIDO Y MAQUETA APROBADA (27/10), FALTA HACER
+
+**Resumen que manda (27/10): `docs/diseno/vuelta-del-dia-diseno.md`**, con la regla, dónde se ve y todos los casos
+(normales y borde) con su mensaje y lo que puede hacer la persona. **Maqueta aprobada por Rocío (27/10):**
+`.claude/maquetas/tarifas/precio-para-revisar.html`, con cada lugar y los textos finales. Lo de abajo queda como historia de la decisión.
+**Decisión final de Rocío (27/10):** en los viajes que ya salieron (y en los de un presupuesto aceptado), si un cambio
+les toca el lugar, el precio lo decide la persona con "Actualizar el precio" o "Mantener el precio" (puede haber un
+acuerdo con el cliente); mientras tanto quedan con "Precio para revisar", y al actualizar se recuerda avisarle al
+cliente. Solo se actualizan solos los que todavía no salieron. Reemplaza lo de abajo donde se contradiga.
+
+Pedido de Rocío (§41, punto 3). Se pensó con varias vueltas el 26/10: la versión con "para revisar" (avisos en
+presupuestos, viajes y la tarjeta) se descartó por intrincada. Maqueta: `.claude/maquetas/tarifas/vuelta-del-dia.html`
+(secciones A, B y D; muestra "el día del camión", que pasa a ser el del cliente y el recorrido; las E a G eran de la
+versión descartada).
+
+**Qué es la 2ª vuelta (Rocío, 26/10; corrige la §34):** depende del **cliente, el origen y el destino**, no del camión:
+es el segundo viaje (o los siguientes) del mismo cliente, con el mismo origen y el mismo destino, el mismo día (el de la
+fecha de inicio), solo con tarifa fija y hasta la primera banda (130 km). Da igual qué camión lo haga: dos viajes del
+mismo recorrido a la misma hora con camiones distintos son uno 1ª y otro 2ª. **Hoy el código y el `04` la calculan por
+camión** (`TarifarioCalculo.ViajeAnteriorDelDia`, también en `TarifarioImpacto`, y `database/tarifas/04_…` para los viajes
+que ya estaban): hay que cambiarlo, y relevar con una consulta de solo lectura qué viajes guardados tienen otra vuelta
+con la regla nueva antes de decidir qué hacer con ellos.
+
+**Regla:**
+- Por cliente, recorrido y día hay **un solo primer viaje** (1ª vuelta); los demás son **segundo viaje** (2ª vuelta, más
+  barata). En pantalla se dice en palabras ("Primer viaje del día", "Segundo viaje del día"); "1ª vuelta" queda en la
+  tabla de tarifas.
+- El primer viaje es **el que empieza primero**, salvo que otro del grupo ya lo tenga **fijo**: ahí queda donde está y los
+  demás van como segundo, aunque empiecen antes. La etiqueta puede no coincidir con las fechas, pero lo que se le cobra
+  al cliente ese día por ese recorrido sí (Rocío: para el cliente es lo mismo).
+- **Fijo:** un viaje que ya salió (En viaje o después), uno que está en una proforma o un comprobante, uno de un
+  presupuesto aceptado y **un presupuesto aceptado que todavía no generó su viaje**: reserva su lugar (así nunca quedan
+  dos primeros viajes al generarlo).
+- Lo que no es fijo **rota solo** al registrar o editar un viaje (cliente, recorrido, hora o fecha) o eliminarlo, y al
+  aceptar, rechazar, volver a Pendiente o eliminar un presupuesto. Cada cambio queda en Auditoría ("Pasa a segundo viaje
+  del día: $ 581.492,00 → $ 407.089,00, porque el viaje #51 empieza antes."). Los de Rukas en Registrado sin proforma de
+  Rukas rotan como cualquiera (siguen el orden de las fechas, como Rukas); con proforma, fijos.
+- **No queda nada "para revisar"** por la vuelta.
+
+**Excepciones aceptadas por Rocío (26/10):**
+- Un viaje que empieza antes que un primer viaje fijo va como segundo.
+- **Eliminar el primer viaje cuando el otro ya está fijo** (por ejemplo, nadie eliminó el #44 hasta el viernes y el #47
+  ya se entregó): el otro queda como segundo viaje. La confirmación lo dice y dónde se puede cambiar, sin cambiarlo
+  desde ahí: cambiar un viaje entregado desde la acción de eliminar otro es riesgoso (Rocío, 26/10). El cambio se hace
+  en el mismo viaje: en Editar viaje (y en Ver detalle), mientras no esté en una proforma ni en un comprobante, un aviso
+  amarillo "Es el único viaje de este cliente y recorrido ese día, pero se cobra como segundo viaje: $ 407.089,00. Como
+  primer viaje serían $ 581.492,00." con el botón "Cobrar como primer viaje" (con su confirmación y Auditoría). En la fila
+  de Gestionar viajes, el ícono azul junto al estado: "Se cobra como segundo viaje aunque es el único del día. Se puede
+  cambiar en Editar viaje.". Si ya está en una proforma o facturado, se corrige como hoy (anular la proforma, nota de
+  débito).
+- Un presupuesto aceptado como segundo viaje cuyo viaje anterior se elimina: queda con el precio aceptado (a favor del
+  cliente); la confirmación de eliminar lo dice.
+
+**Camión y chofer ocupados (aparte de la vuelta):** el mismo camión, o el mismo chofer, en dos viajes (o un viaje y un
+presupuesto aceptado) que se superponen, de inicio a fin, da error al elegirlo y al guardar, debajo del campo: "Camión
+ocupado: viaje #45, de 08:00 hs a 11:30 hs." ("Chofer ocupado: …", "Camión ocupado: presupuesto #10, de …"; la fecha,
+solo si es otro día). Si el choque aparece al cambiar la fecha con el camión ya elegido, el error va igual debajo de
+Camión (§6.3 del design system).
+
+**Lo que se ve (Rocío, 26/10: avisos breves, sin órdenes, con la situación y lo que le pasa al otro viaje, en todos los
+lugares donde se decide o se mira):**
+- Registrar y editar viaje (y presupuesto), y Ver detalle del viaje: un bloque con los viajes y presupuestos aceptados de
+  ese cliente y recorrido ese día, en orden ("Alimentos La Serena S.A. · Planta Córdoba Norte → Depósito Villa Carlos
+  Paz, el miércoles 28/10/2026"): horario, viaje o presupuesto, camión, "Primer viaje del día" / "Segundo viaje del día"
+  y el precio. El que se carga, resaltado; los fijos, con por qué ("ya salió", "presupuesto aceptado"). En el detalle,
+  el de ese viaje resaltado: así se ve después por qué se cobra como se cobra.
+- Si al guardar cambia otro viaje, un aviso azul al lado: "Al guardar, el viaje #44 pasa a segundo viaje del día:
+  $ 581.492,00 → $ 407.089,00." Sin ventana de confirmación (ya se ve). Toast: "Viaje registrado. El viaje #44 se
+  actualizó a $ 407.089,00."
+- Si este viaje va como segundo porque el primero es fijo, debajo de la tarifa: "Se cobra como segundo viaje del día: el
+  viaje #50 (presupuesto aceptado) tiene el precio de primer viaje."
+- Eliminar viaje (desde la fila o el detalle), si el otro rota solo: "No se puede deshacer. El viaje #47 pasa a primer
+  viaje del día: $ 407.089,00 → $ 581.492,00." Si el otro es fijo: "No se puede deshacer. El viaje #47 queda como el único
+  de este cliente y recorrido el 28/10/2026, pero ya se entregó: sigue cobrándose como segundo viaje ($ 407.089,00). Se
+  puede cambiar en Editar viaje #47."
+- Aceptar, rechazar, volver a Pendiente o eliminar un presupuesto aceptado: la confirmación dice qué viaje cambia ("Al
+  rechazarlo, el viaje #51 pasa a primer viaje del día: $ 407.089,00 → $ 581.492,00.").
+
+**Para Claudia:** si el 3º viaje del día del mismo recorrido cobra como 2ª; y si dos viajes del mismo recorrido con
+camiones de distinto tipo (con otros valores en la tabla) se reparten igual la 1ª y la 2ª.
+
+**Tono de los avisos (Rocío, 27/10, ya en el §5.1 del design system):** qué pasa, por qué no se resuelve solo y "es
+necesario que…". Al hacer esto, pasar al mismo tono los avisos de cambios de tarifa que ya existen (`cambios-tarifa.js`:
+"Reenviáselo al cliente…", "Para corregirla, anulala…"; Gestionar viajes: "Cambió la tarifa: revisá el detalle del
+viaje.") y renombrar la tarjeta a "Cambios para revisar" (maqueta `.claude/maquetas/tarifas/precio-para-revisar.html`).
+
+**Qué toca:** `TarifarioCalculo` y `TarifarioImpacto` (el orden del día por cliente y recorrido en lugar de
+`ViajeAnteriorDelDia` por camión), `ViajesController` (la vuelta, la rotación, el camión y el chofer ocupados,
+eliminar), una consulta nueva con los viajes del día del cliente y recorrido, `gestion-viajes.html` y `viaje-detalle.js`;
+en el módulo de Facu, `PresupuestosController` (la reserva, generar el viaje, cambiar estado y eliminar) y
+`presupuestos.js` ("Vuelta del día" pasa a texto y el bloque del día): **avisarle a Facu**. La §34 (y el design system,
+si lo nombra) se corrige con la definición nueva.

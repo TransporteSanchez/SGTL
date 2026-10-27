@@ -69,6 +69,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/diseno/cuenta-corriente-distribucion-diseno.md` — plan de distribución de Recibos y Notas de Crédito.
 - `docs/diseno/auditoria-integracion.md` — cómo se registra la auditoría de altas, bajas y modificaciones.
 - `docs/diseno/proforma-rukas-diseno.md` — proforma de plataforma (Rukas): base de datos, API, pantallas y plan de desarrollo por etapas.
+- `docs/diseno/vuelta-del-dia-diseno.md` — primer y segundo viaje del día (1ª y 2ª vuelta): la regla, dónde se ve y todos los casos, normales y borde.
 - `docs/diseno/seguridad-contrasenas-diseno.md` — diseño del cambio de contraseña y migración a hashes seguros, sin segundo factor.
 - `docs/diseno/seguridad-contrasenas-plan.md` — plan de implementación y verificación del cambio seguro de contraseña.
 
