@@ -122,6 +122,15 @@ function probarImpactoAlGuardar() {
     assert.ok(/TarifarioImpacto\.Aplicar\(cn, tx, impacto/.test(api), 'el guardado aplica el recálculo en la misma transacción');
 
     const impacto = leer('WebApi_TransporteSanchez/Tarifas/TarifarioImpacto.cs');
+    const consultaViajes = /private const string SQL_VIAJES = @"([\s\S]*?)";/.exec(impacto);
+    assert.ok(consultaViajes, 'la revisión de tarifas consulta los viajes y sus comprobantes');
+    const comprobante = consultaViajes[1].split('FROM dbo.COMPROBANTES c')[1].split('ORDER BY c.Comprobante_ID')[0];
+    assert.match(comprobante, /WHERE c\.Impacto = 'D' AND \(/,
+        'un comprobante interno de deuda vinculado a la proforma identifica el viaje facturado');
+    assert.match(comprobante, /cp\.ProformaID = doc\.Proforma_ID AND cp\.Vigente = 1/,
+        'el comprobante configurable debe tener un vínculo vigente con la proforma');
+    assert.match(comprobante, /OR \(c\.Tipo = 'FAC' AND EXISTS/,
+        'las facturas históricas identificadas por el detalle V{id} siguen visibles');
     ['"Generada"', '"Aceptada"', '"Borrador"', '"Facturada"', 'Presupuesto_ID.HasValue'].forEach(function (t) {
         assert.ok(impacto.indexOf(t) !== -1, 'TarifarioImpacto separa los viajes según su documento: ' + t);
     });

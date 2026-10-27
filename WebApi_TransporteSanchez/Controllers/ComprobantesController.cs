@@ -109,6 +109,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int ProformaID { get; set; }
             public string ProformaNumero { get; set; }
             public int FacturaID { get; set; }
+            public string Tipo { get; set; }
             public int ClienteID { get; set; }
             public int NumeroCorrelativo { get; set; }
             public string Letra { get; set; }
@@ -370,7 +371,7 @@ SELECT COUNT(*)
 FROM dbo.COMPROBANTES_PROFORMAS cp WITH (UPDLOCK,HOLDLOCK)
 JOIN dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK) ON c.Comprobante_ID=cp.ComprobanteID
 WHERE cp.ProformaID=@proforma AND cp.ComprobanteID=@factura AND cp.Vigente=1
-  AND c.Tipo='FAC' AND c.Estado='EMITIDO';";
+  AND c.Impacto='D' AND c.Estado='EMITIDO';";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(P("@proforma", proformaId));
@@ -536,16 +537,16 @@ ORDER BY c.FechaVencimiento,c.FechaEmision,c.Comprobante_ID;";
                     const string sql = @"
 SELECT TOP (1)
        p.Proforma_ID AS ProformaID,p.Numero AS ProformaNumero,
-       c.Comprobante_ID AS FacturaID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision AS FechaFactura,c.Estado AS EstadoFactura,
+       c.Comprobante_ID AS FacturaID,c.Tipo,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision AS FechaFactura,c.Estado AS EstadoFactura,
        COALESCE(NULLIF(c.RazonSocial,''),p.Cli_RazonSocial) AS Cliente,c.CUIT,
        c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) AS Aplicado
 FROM dbo.PROFORMAS p
 JOIN dbo.COMPROBANTES_PROFORMAS cp ON cp.ProformaID=p.Proforma_ID AND cp.Vigente=1
-JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID AND c.Tipo='FAC'
+JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID AND c.Impacto='D'
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteDeudaID=c.Comprobante_ID
 WHERE p.Proforma_ID=@proforma
-GROUP BY p.Proforma_ID,p.Numero,c.Comprobante_ID,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.Estado,
+GROUP BY p.Proforma_ID,p.Numero,c.Comprobante_ID,c.Tipo,c.ClienteID,c.NumeroCorrelativo,c.Letra,c.Sucursal,c.FechaEmision,c.Estado,
          c.RazonSocial,p.Cli_RazonSocial,c.CUIT,c.Neto,c.IVA,c.OtrosImpuestos,c.Total
 ORDER BY c.Comprobante_ID DESC;";
                     FacturaCancelatoriaProforma factura = null;
@@ -559,7 +560,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                 factura = new FacturaCancelatoriaProforma
                                 {
                                     ProformaID = (int)reader["ProformaID"], ProformaNumero = reader["ProformaNumero"] as string,
-                                    FacturaID = (int)reader["FacturaID"], ClienteID = (int)reader["ClienteID"],
+                                    FacturaID = (int)reader["FacturaID"], Tipo = (string)reader["Tipo"], ClienteID = (int)reader["ClienteID"],
                                     NumeroCorrelativo = (int)reader["NumeroCorrelativo"], Letra = reader["Letra"] as string,
                                     Sucursal = reader["Sucursal"] as string, FechaFactura = (DateTime)reader["FechaFactura"],
                                     EstadoFactura = reader["EstadoFactura"] as string, Cliente = reader["Cliente"] as string,
@@ -572,22 +573,22 @@ ORDER BY c.Comprobante_ID DESC;";
                     }
                     if (factura == null)
                         return Content(HttpStatusCode.BadRequest,
-                            new { error = "La proforma no tiene una factura vigente para anular." });
+                            new { error = "La proforma no tiene un comprobante vigente para anular." });
 
                     string motivo = null;
                     if (factura.EstadoFactura != "EMITIDO")
-                        motivo = "La factura vinculada no está emitida.";
+                        motivo = "El comprobante vinculado no está emitido.";
                     else if (factura.Aplicado != 0)
-                        motivo = "La factura tiene movimientos en la cuenta corriente y no admite una nota de crédito cancelatoria por el total.";
+                        motivo = "El comprobante tiene movimientos en la cuenta corriente y no admite una nota de crédito cancelatoria por el total.";
                     else if (factura.Total <= 0)
-                        motivo = "La factura vinculada no tiene un importe válido para cancelar.";
+                        motivo = "El comprobante vinculado no tiene un importe válido para cancelar.";
 
                     return Ok(new
                     {
                         factura.ProformaID,
                         factura.ProformaNumero,
                         factura.FacturaID,
-                        FacturaNumero = Numero("FAC", factura.Letra, factura.Sucursal, factura.NumeroCorrelativo),
+                        FacturaNumero = Numero(factura.Tipo, factura.Letra, factura.Sucursal, factura.NumeroCorrelativo),
                         factura.ClienteID,
                         factura.Cliente,
                         factura.CUIT,
@@ -609,7 +610,7 @@ ORDER BY c.Comprobante_ID DESC;";
             catch (Exception)
             {
                 return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo obtener la factura vinculada a la proforma." });
+                    new { error = "No se pudo obtener el comprobante vinculado a la proforma." });
             }
         }
 
@@ -649,7 +650,7 @@ ORDER BY c.Comprobante_ID DESC;";
             if (notaCreditoCorriente && request.Aplicaciones.Count == 0)
                 return BadRequest("La nota de crédito debe aplicarse a uno o más comprobantes de deuda.");
             if (request.Tipo == "NC" && request.ProformaID.HasValue && !request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("La nota de crédito cancelatoria debe relacionarse con la factura de la proforma.");
+                return BadRequest("La nota de crédito cancelatoria debe relacionarse con el comprobante de la proforma.");
             if (request.Tipo == "NC" && request.ProformaID.HasValue && request.Aplicaciones.Count > 0)
                 return BadRequest("La nota de crédito cancelatoria no admite distribución múltiple.");
             if (request.Tipo != "NC" && request.ComprobanteReferenciaID.HasValue)
@@ -740,13 +741,13 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La factura de referencia no es válida para este cliente." });
+                                        new { error = "El comprobante de referencia no es válido para este cliente." });
                                 }
                                 if (emision < referencia.FechaEmision.Date || referencia.Pendiente <= 0)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "La factura relacionada ya no admite una nota de crédito cancelatoria." });
+                                        new { error = "El comprobante relacionado ya no admite una nota de crédito cancelatoria." });
                                 }
                                 decimal netoPendiente;
                                 decimal ivaPendiente;
@@ -758,7 +759,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict, new
                                     {
-                                        error = "Los importes de la factura cambiaron. Volvé a seleccionarla para actualizar el neto, el IVA y los impuestos."
+                                        error = "Los importes del comprobante cambiaron. Volvé a seleccionarlo para actualizar el neto, el IVA y los impuestos."
                                     });
                                 }
                                 if (!EsFacturaVigenteDeProforma(connection, transaction,
@@ -766,13 +767,13 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La factura indicada no es la factura vigente de la proforma." });
+                                        new { error = "El comprobante indicado no es el comprobante vigente de la proforma." });
                                 }
                                 if (referencia.Aplicado != 0)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "La factura tiene movimientos en cuenta corriente y no puede cancelarse por el total." });
+                                        new { error = "El comprobante tiene movimientos en cuenta corriente y no puede cancelarse por el total." });
                                 }
                                 aplicacionesNotaCredito.Add(new AplicacionNotaCredito
                                 {
@@ -783,7 +784,7 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La nota de crédito cancelatoria debe aplicarse a una única factura." });
+                                        new { error = "La nota de crédito cancelatoria debe aplicarse a un único comprobante." });
                                 }
                             }
                             else if (notaCreditoCorriente)
@@ -865,7 +866,7 @@ VALUES
                                     P("@numeroComprobante", FacturacionComprobantesConfiguracion.NumeroVisible(correlativo)),P("@neto", request.Neto),P("@iva", iva),
                                     P("@otros", request.OtrosImpuestos),P("@total", total),P("@concepto", request.Concepto),
                                     P("@observaciones", request.Observaciones),P("@referencia", request.ComprobanteReferenciaID),
-                                    P("@tipoReferencia", request.ComprobanteReferenciaID.HasValue ? "FAC" : null),
+                                    P("@tipoReferencia", referencia == null ? null : referencia.Tipo),
                                     P("@clave", request.ClaveOperacion),P("@usuario", usuario.UsuarioID)
                                 });
                                 comprobanteId = Convert.ToInt32(command.ExecuteScalar(), CultureInfo.InvariantCulture);
@@ -924,7 +925,7 @@ UPDATE dbo.COMPROBANTES_PROFORMAS
 SET Vigente=0,UsuarioAnulacionID=@usuario,FechaAnulacion=SYSUTCDATETIME(),MotivoAnulacion=@motivo
 WHERE ProformaID=@proforma AND ComprobanteID=@factura AND Vigente=1;
 IF @@ROWCOUNT<>1
-    THROW 51060, 'No se pudo desvincular la Factura de la Proforma.', 1;
+    THROW 51060, 'No se pudo desvincular el comprobante de la proforma.', 1;
 
 UPDATE v SET Estado=CASE WHEN EXISTS (SELECT 1 FROM dbo.CLIENTES c WHERE c.Cliente_ID=v.ClienteID AND c.Tipo_Cliente='Con_plataforma')
                          THEN 'Listo_para_facturar' ELSE 'Entregado' END,

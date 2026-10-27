@@ -191,11 +191,12 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private const int MaxPageSize = 5000;
 
-        // Viaje incluido en una Proforma con Factura vigente (COMPROBANTES_PROFORMAS, de Cuenta corriente).
+        // Viaje incluido en una proforma con comprobante de deuda emitido y vínculo vigente.
         // Contempla el vínculo explícito (PROFORMAS_VIAJES) y las líneas históricas con código V{id}.
         private const string SQL_FACTURADA =
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES_PROFORMAS cp " +
-            "WHERE cp.Vigente = 1 AND (" +
+            "JOIN dbo.COMPROBANTES c ON c.Comprobante_ID = cp.ComprobanteID " +
+            "WHERE cp.Vigente = 1 AND c.Impacto = 'D' AND c.Estado = 'EMITIDO' AND (" +
             "EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv WHERE pv.ProformaID = cp.ProformaID AND pv.ViajeID = v.Viaje_ID) " +
             "OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID = cp.ProformaID " +
             "AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,'')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID)))) THEN 1 ELSE 0 END AS bit)";
@@ -490,7 +491,8 @@ SELECT CAST(CASE WHEN EXISTS (
     SELECT 1
     FROM dbo.COMPROBANTES_PROFORMAS cp
     INNER JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
-    WHERE cp.Vigente=1
+    INNER JOIN dbo.COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
+    WHERE cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO'
       AND (
           EXISTS (SELECT 1 FROM dbo.PROFORMAS_VIAJES pv
                   WHERE pv.ProformaID=p.Proforma_ID AND pv.ViajeID=@viajeId)
@@ -842,16 +844,16 @@ SELECT CAST(CASE WHEN EXISTS (
         {
             var errores = new List<object>();
 
-            // Facturado lo asigna la Factura al emitirse y lo quita la Nota de Credito cancelatoria. A mano quedaria
-            // un viaje facturado sin factura, o liberado con la factura vigente y facturable dos veces.
+            // Facturado lo asigna el comprobante vinculado al emitirse y lo quita la nota de crédito cancelatoria.
+            // A mano quedaría un viaje facturado sin comprobante, o liberado con el comprobante vigente.
             if (v.Estado == EstadoFacturado)
             {
-                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo emití la nota de crédito de su factura desde Cuenta corriente." });
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo emití la nota de crédito de su comprobante desde la proforma." });
                 return errores;
             }
             if (nuevo == EstadoFacturado)
             {
-                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al emitir la factura." });
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al emitir un comprobante desde la proforma." });
                 return errores;
             }
 
@@ -1112,7 +1114,7 @@ SELECT CAST(CASE WHEN EXISTS (
                 {
                     return Content(HttpStatusCode.BadRequest, new List<object>
                     {
-                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, emití la nota de crédito de su factura desde Cuenta corriente." }
+                        new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, emití la nota de crédito de su comprobante desde la proforma." }
                     });
                 }
 

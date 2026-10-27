@@ -32,8 +32,8 @@ const recibos = fs.readFileSync(path.join(carpeta, 'RecibosController.cs'), 'utf
 
 assert.match(comprobantes, /private static string Numero\(string tipo, string letra, string sucursal, int numero\)/,
     'las notas y comprobantes directos forman el número con la letra y la sucursal');
-assert.match(facturas, /private static string NumeroFactura\(string letra, string sucursal, int numero\)/,
-    'las facturas desde proforma forman el número con la letra y la sucursal');
+assert.match(facturas, /private static string NumeroFactura\(string tipo, string letra, string sucursal, int numero\)/,
+    'los comprobantes desde proforma forman el número con el tipo, la letra y la sucursal');
 assert.match(recibos, /private static string NumeroRecibo\(string letra, string sucursal, int numero\)/,
     'los recibos forman el número con la letra y la sucursal');
 
@@ -60,6 +60,7 @@ function formatearDesdeCSharp(fuente, metodo, tipo, letra, sucursal, numero) {
 for (const [metodo, fuente, tipo] of [
     ['Numero', comprobantes, 'FAC'],
     ['NumeroFactura', facturas, 'FAC'],
+    ['NumeroFactura', facturas, 'FC'],
     ['NumeroRecibo', recibos, 'REC']
 ]) {
     assert.strictEqual(formatearDesdeCSharp(fuente, metodo, tipo, 'A', '0001', 12),

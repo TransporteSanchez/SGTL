@@ -47,10 +47,16 @@ async function ejecutarPrueba() {
     [
         'modalFacturarProforma', 'facProformaNumero', 'facTotal', 'facFechaEmision', 'facFechaVencimiento',
         'facObservaciones', 'facResultado', 'btnConfirmarFactura', 'btnCerrarFacturarProforma', 'facFormulario', 'facTipoComprobante',
-        'facNumeroComprobante', 'facLetra', 'facSucursal', 'facMensaje', 'facImprimirFactura', 'facDescargarFactura'
+        'facNumeroComprobante', 'facLetra', 'facSucursal', 'facMensaje', 'facImprimirFactura', 'facDescargarFactura',
+        'btnCerrarCabeceraFacturarProforma'
     ].forEach(function (id) { elementos[id] = crearElemento(); });
+    elementos.facFormulario.querySelectorAll = function () {
+        return [elementos.facTipoComprobante, elementos.facLetra, elementos.facSucursal,
+            elementos.facFechaEmision, elementos.facFechaVencimiento, elementos.facObservaciones];
+    };
 
     const solicitudes = [];
+    const tiposConfigurados = [];
     let modalAgregado = false;
     let modalMarkup = '';
     const documento = {
@@ -70,7 +76,11 @@ async function ejecutarPrueba() {
         }
     };
     const ventana = {
-        ConfiguracionFacturacion: { cargar: function () { return Promise.resolve(); } },
+        ConfiguracionFacturacion: { cargar: function (tipo) {
+            tiposConfigurados.push(tipo);
+            if (tipo === 'FAC') return Promise.reject(new Error('El tipo de comprobante no tiene una configuración de facturación activa.'));
+            return Promise.resolve({ Tipo: tipo, Descripcion: 'Comprobante interno' });
+        } },
         crypto: { randomUUID: function () { return '1a1a1a1a-1a1a-4a1a-8a1a-1a1a1a1a1a1a'; } },
         localStorage: { getItem: function () { return 'token-prueba'; } }
     };
@@ -84,9 +94,17 @@ async function ejecutarPrueba() {
         Math: Math,
         fetch: function (url, opciones) {
             solicitudes.push({ url: url, opciones: opciones || {} });
+            if (url.endsWith('/facturacion-config/tipos-emision-directa')) {
+                return Promise.resolve({ ok: true, status: 200, json: function () {
+                    return Promise.resolve([
+                        { Tipo: 'FZ', Descripcion: 'Otro comprobante interno', Impacto: 'D' },
+                        { Tipo: 'FC', Descripcion: 'Comprobante interno', Impacto: 'D' }
+                    ]);
+                } });
+            }
             if ((opciones || {}).method === 'POST') {
                 return Promise.resolve({ ok: true, status: 201, json: function () {
-                    return Promise.resolve({ Numero: 'FAC-00000012', Total: 121, ClienteID: 5, ComprobanteID: 8 });
+                    return Promise.resolve({ Tipo: 'FC', Numero: 'FC-A-0001-00000012', Total: 121, ClienteID: 5, ComprobanteID: 8 });
                 } });
             }
             return Promise.resolve({ ok: true, status: 200, json: function () {
@@ -106,6 +124,11 @@ async function ejecutarPrueba() {
     vm.runInNewContext(fuente, sandbox, { filename: 'facturacion-proforma.js' });
 
     ventana.FacturacionProforma.abrir(7);
+    assert.strictEqual(elementos.facFechaVencimiento.value, '2026-10-30',
+        'el formulario sugiere vencimiento a los 10 días de la emisión');
+    elementos.facFechaEmision.value = '2026-10-19';
+    elementos.facFechaVencimiento.value = '2026-10-29';
+    elementos.facFechaVencimiento.listeners.change();
     await esperarMicrotareas();
 
     assert.match(modalMarkup, /modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario/,
@@ -118,15 +141,41 @@ async function ejecutarPrueba() {
         'antes de emitir, el formulario ofrece Cancelar');
     assert.strictEqual(elementos.btnCerrarFacturarProforma.textContent, 'Cancelar');
 
-    assert.strictEqual(elementos.facFechaVencimiento.value, '2026-10-30',
-        'la factura desde proforma debe sugerir vencimiento a los 10 días de la emisión. Mensaje: ' + elementos.facMensaje.textContent);
+    assert.strictEqual(elementos.facFechaEmision.value, '2026-10-19',
+        'el GET de proforma no debe sobrescribir una fecha de emisión ya editada');
+    assert.strictEqual(elementos.facFechaVencimiento.value, '2026-10-29',
+        'el GET de proforma no debe sobrescribir un vencimiento ya editado');
+    assert.deepStrictEqual(tiposConfigurados, ['FC'], 'debe cargar FC aunque FAC esté inactivo');
+    assert.strictEqual(elementos.facTipoComprobante.value, 'FC', 'debe preseleccionar el comprobante interno');
+    assert.strictEqual(elementos.btnConfirmarFactura.disabled, false, 'debe poder emitir la proforma con FC activo');
+    assert.match(elementos.facMensaje.textContent, /proforma está lista/i,
+        'no debe mostrar un error de conexión por la configuración FAC inactiva');
+    elementos.facTipoComprobante.value = 'FZ';
+    elementos.facTipoComprobante.listeners.change();
+    await esperarMicrotareas();
+    assert.deepStrictEqual(tiposConfigurados, ['FC', 'FZ'], 'al cambiar de tipo debe cargar su propia configuración');
+    elementos.facTipoComprobante.value = 'FC';
+    elementos.facTipoComprobante.listeners.change();
+    await esperarMicrotareas();
     elementos.btnConfirmarFactura.listeners.click();
+    assert.strictEqual(elementos.btnCerrarFacturarProforma.disabled, true,
+        'Cancelar queda deshabilitado mientras se emite');
+    assert.strictEqual(elementos.btnCerrarCabeceraFacturarProforma.disabled, true,
+        'la cruz queda deshabilitada mientras se emite');
+    assert.strictEqual(elementos.facTipoComprobante.disabled, true,
+        'el tipo no puede cambiar durante el POST de emisión');
+    let cierreBloqueado = false;
+    elementos.modalFacturarProforma.listeners['hide.bs.modal']({ preventDefault: function () { cierreBloqueado = true; } });
+    assert.strictEqual(cierreBloqueado, true, 'Escape tampoco puede cerrar el modal durante la emisión');
     await esperarMicrotareas();
     assert.strictEqual(elementos.btnCerrarFacturarProforma.textContent, 'Cerrar',
         'después de emitir, el formulario de solo lectura ofrece Cerrar');
+    assert.strictEqual(elementos.btnCerrarFacturarProforma.disabled, false,
+        'Cerrar vuelve a habilitarse después de la respuesta');
 
     const emision = solicitudes.filter(function (solicitud) { return solicitud.opciones.method === 'POST'; })[0];
     assert.ok(emision, 'debe enviar la emisión de la factura');
+    assert.strictEqual(JSON.parse(emision.opciones.body).Tipo, 'FC', 'la emisión vinculada debe guardar el tipo interno elegido');
     assert.ok(!Object.prototype.hasOwnProperty.call(JSON.parse(emision.opciones.body), 'Conceptos'),
         'la emisión no debe permitir completar conceptos: la proforma ya debe contenerlos');
 }

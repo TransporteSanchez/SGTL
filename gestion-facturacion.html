@@ -678,7 +678,7 @@
             else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir comprobante', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
             else botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check2-circle', deshabilitado: true,
                 motivo: 'No se puede marcar como aceptada: la proforma ' + (estado === 'Borrador' ? 'todavía es un borrador' : 'está ' + estado.toLowerCase()) }));
-            if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular factura', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));
+            if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular comprobante', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));
             else if (estado === 'Generada' || estado === 'Aceptada') botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular proforma', datos: { tipo: 'proforma' } }));
             else if (estado === 'Borrador') botones.push(SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar borrador' }));
             else botones.push(SGTL.botonFila('anular', { deshabilitado: true, motivo: 'No se puede anular la proforma: ya está ' + estado.toLowerCase() }));

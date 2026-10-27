@@ -60,6 +60,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo y limpieza de textos de prueba viejos | Anotado | — | Ver §40 |
 | 41 | Emitir comprobantes directos con tipos de deuda configurados, como FC | Hecho en código (26/10); falta aplicar la migración y probar en VM | Pendiente de subir | Correr `database/cuenta-corriente/13_comprobantes_directos_configurables.sql`, recompilar y probar (§41) |
+| 43 | Emitir comprobantes internos desde proformas | Hecho en código (27/10); falta aplicar la migración y probar en VM | Pendiente de subir | Correr `database/cuenta-corriente/14_comprobantes_desde_proforma_configurables.sql` después de 13, recompilar y probar (§43) |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3454,9 +3455,9 @@ sale con `FAC` y los textos de hoy. Pasos:
 
 **Después del cambio de Facu:**
 4. Pasar el cambio de Facu a `rocionuvoli` (conflictos de a uno con Rocío).
-5. Ajustar `02_documentos_afectados_por_tarifas.sql` a los tipos y nombres nuevos y volver a relevar. Lo mismo en
-   `Tarifas/TarifarioImpacto.cs` (§33): busca el comprobante de un viaje con `Tipo = 'FAC'` y arma el número con el tipo
-   ("FAC-00000015").
+5. Ajustar `02_documentos_afectados_por_tarifas.sql` a los tipos y nombres nuevos y volver a relevar. La búsqueda
+   de `Tarifas/TarifarioImpacto.cs` (§33) ya reconoce los comprobantes de deuda vinculados a la proforma, incluido FC;
+   conserva la búsqueda histórica de FAC por el código del viaje.
 5b. **Aviso en el comprobante (§33):** el ícono rojo en su fila y el aviso en su detalle con los viajes y "Corresponde
    una nota de crédito por $ X" (módulo de Facu: lo hace él o se coordina). Hoy el aviso está en el viaje y en la tarjeta
    del dashboard. Y que **emitir la nota de crédito o de débito sobre ese comprobante lo resuelva solo** (como reenviar
@@ -3680,7 +3681,7 @@ cierren las pruebas de la §39**, antes que lo demás.
 
 La emisión directa consultaba siempre FAC, aunque hubiera otro tipo de deuda activo, como FC. El formulario ahora permite elegir un tipo de deuda con configuración, sucursal y numerador activos; conserva las letras y la numeración de la variante elegida. El permiso para emitir estos tipos es `FAC_EMITIR`. La API comprueba el impacto del catálogo antes de guardar.
 
-El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF, enviarse por e-mail, imputarse con un recibo y acreditarse con una nota de crédito corriente. Los indicadores de facturación incluyen los tipos de deuda configurados. La emisión desde proforma sigue usando FAC.
+El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF, enviarse por e-mail, imputarse con un recibo y acreditarse con una nota de crédito corriente. Los indicadores de facturación incluyen los tipos de deuda configurados. La emisión desde proforma también admite los tipos configurados desde el 27/10 (§43).
 
 **Base:** Rocío debe ejecutar `database/cuenta-corriente/13_comprobantes_directos_configurables.sql` después de las migraciones previas. El script amplía la restricción de los movimientos de cuenta corriente; no se ejecutó contra la base compartida. Para usar un mismo código con letras A y B, aplicar también las migraciones 11 y 12 en su orden.
 
@@ -3695,3 +3696,15 @@ En Gestionar cuenta corriente, "Enviar por e-mail" aparece después de "Ver PDF"
 El formulario de envío ya no muestra el servicio ni el nombre del perfil SMTP (27/10). Sigue comprobando la configuración antes de habilitar Enviar y avisa dentro del formulario si no hay un perfil asignado o falla la consulta.
 
 **Probar en la VM:** recargar Gestionar cuenta corriente y revisar una factura, un recibo, una nota de crédito, una nota de débito y un tipo directo configurable (por ejemplo, FC), además de un recibo asociado dentro de una factura. En cada fila, comprobar que el sobre aparece después de Ver PDF, con tooltip y `aria-label`; abrir Ver PDF y verificar que su pie no tiene el envío. Tocar el sobre y comprobar que abre el formulario del comprobante elegido sin la leyenda del servicio o perfil SMTP; cancelar sin enviar. Si falta la configuración, comprobar que Enviar queda deshabilitado y aparece el aviso. Abrir un presupuesto y una proforma para verificar sus pies respectivos.
+
+---
+
+## 43. Emitir comprobantes internos desde proformas — Hecho en código (27/10)
+
+En el listado de Gestionar proformas, «Emitir comprobante» abre el modal con un selector de tipos de deuda configurados. Si FC está activo, aparece preseleccionado aunque FAC esté inactivo. El modal carga la letra, sucursal y próximo número de ese tipo. Si la configuración falla, muestra el motivo dentro del modal en vez de un aviso de conexión incorrecto.
+
+La API de emisión vinculada recibe la sigla elegida, conserva los renglones, importes y datos de la proforma, registra el comprobante y el movimiento de cuenta corriente con esa sigla, y marca la proforma y sus viajes como facturados en una transacción. Las listas, la anulación cancelatoria, el PDF y la revisión de tarifas reconocen el comprobante interno vinculado. Los clientes anteriores que omiten la sigla siguen solicitando FAC.
+
+**Base:** ejecutar `database/cuenta-corriente/14_comprobantes_desde_proforma_configurables.sql` después de 13. Amplía las restricciones de vínculo y referencia cancelatoria; no se ejecutó contra la base compartida.
+
+**Probar en la VM:** con FC activo y FAC inactivo, recompilar la API y recargar el navegador. Abrir una proforma aceptada y tocar «Emitir comprobante»: debe mostrar FC, su letra, sucursal y próximo número, el total de la proforma y las fechas. Emitir; comprobar número FC, todos los renglones, vínculo y estado Facturada en ambas pantallas de proformas, estado Facturado de sus viajes, movimiento en cuenta corriente y número de proforma en el PDF. Anular con nota de crédito cancelatoria y verificar que la proforma quede Anulada y los viajes se liberen para otra proforma. Si no hay tipos de deuda activos, el modal debe avisarlo sin mostrar un error de conexión. Revisar los cambios de tarifa de un viaje asociado a ese FC.

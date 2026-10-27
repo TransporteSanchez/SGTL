@@ -5,7 +5,7 @@ const path = require('path');
 const raiz = path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers');
 const casos = [
     ['ComprobantesController.cs', 'request.Tipo', 1],
-    ['FacturasController.cs', '"FAC"', 1],
+    ['FacturasController.cs', 'request.Tipo', 1],
     ['RecibosController.cs', '"REC"', 2]
 ];
 

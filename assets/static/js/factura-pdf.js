@@ -74,7 +74,8 @@
     }
 
     function contenidoImpresionComprobante(factura) {
-        if (factura.Tipo === 'FAC') return { tipo: 'proformas', lineas: proformasFactura(factura) };
+        var proformas = proformasFactura(factura);
+        if (factura.Tipo === 'FAC' || proformas.length) return { tipo: 'proformas', lineas: proformas };
         return { tipo: 'detalle' };
     }
 
