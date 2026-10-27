@@ -3918,8 +3918,10 @@ como presentación). Los números son los del listado de Rocío.
      las cuentas de choferes (rol user con chofer) pasan al rol Chofer, sin grupos.
   2. Gestionar usuarios → Registrar usuario: el rol dice Administrador, Usuario y Chofer. Usuario pide grupos; Chofer
      pide "Chofer *" (sin elegirlo, "Seleccioná el chofer."); Administrador, ninguno de los dos.
-  3. Entrar con la cuenta del chofer: directo a Hojas de ruta, con sus viajes. Inactivar su chofer en Gestionar choferes
-     y volver a entrar: el mensaje de chofer inactivo. Activarlo de nuevo.
+  3. Entrar con la cuenta del chofer: directo a Hojas de ruta, con sus viajes. Con esa sesión abierta, inactivar su chofer
+     en Gestionar choferes (desde otra ventana, como admin) y tocar "Hoy y próximos": el aviso "Tu chofer quedó inactivo,
+     así que se cerró tu sesión. Es necesario que hables con administración." y, a los segundos, el login. Volver a
+     entrar: el mensaje de chofer inactivo. Activarlo de nuevo.
   4. Listar usuarios → Ver detalle del chofer: Rol "Chofer" y "Es chofer: ve solo Hojas de ruta, con los viajes de su
      chofer.".
   5. Editar el chofer y pasarlo a Usuario con un grupo: se le quita el chofer (Auditoría: "ChoferID: … -> ninguno").

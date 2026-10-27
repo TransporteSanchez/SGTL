@@ -256,6 +256,11 @@ assert.ok(/"Seleccioná el chofer: el usuario tiene el rol Chofer\."/.test(api) 
     'solo el rol Chofer tiene chofer, y siempre uno');
 assert.ok(/el chofer de este usuario está inactivo/.test(leer('WebApi_TransporteSanchez/Controllers/AutenticacionController.cs')), 'un chofer inactivo no entra');
 assert.ok(/mensaje = JSON\.parse\(xhrLogin\.responseText\)\.General \|\| mensaje;/.test(leer('Login.html')), 'y el login dice por qué');
+assert.ok(/if \(sesion\.EsChofer && !sesion\.ChoferActivo\) throw new ChoferInactivoException\(\);/.test(api) &&
+    /CAST\(CASE WHEN c\.EstadoChofer = 'Activo' THEN 1 ELSE 0 END AS bit\) AS ChoferActivo/.test(api),
+    'con la sesión abierta, un chofer que quedó inactivo deja de ver su hoja de ruta');
+assert.ok(/Motivo = ex\.Message/.test(api) && /var motivo = \(xhr\.responseJSON \|\| \{\}\)\.Motivo;/.test(leer('assets/static/js/sgtl-ui.js')),
+    'y la pantalla dice por qué antes de mandar al login');
 const pantallaUsuarios = leer('gestion-usuarios.html');
 assert.ok(!/No es chofer/.test(pantallaUsuarios) && /SGTLPermisos\.textoRol\(rol\)/.test(pantallaUsuarios) && /'Seleccioná el chofer\.'/.test(pantallaUsuarios),
     'Gestionar usuarios: sin "No es chofer", los roles en castellano y el chofer obligatorio con el rol Chofer');

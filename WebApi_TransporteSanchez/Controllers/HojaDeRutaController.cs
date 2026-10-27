@@ -30,6 +30,14 @@ namespace WebApi_TransporteSanchez.Controllers
         private const int AnterioresMaximo = 600;
         private static readonly string[] ResultadosEntrega = { "Completa", "Parcial", "Rechazo" };
 
+        // El rol Chofer con su chofer inactivo (o sin chofer): se le cierra la sesión aunque la tenga abierta (Rocío, 27/10).
+        // Error() responde 401 con el motivo, que la pantalla muestra antes de mandar al login.
+        private class ChoferInactivoException : UnauthorizedAccessException
+        {
+            public ChoferInactivoException()
+                : base("Tu chofer quedó inactivo, así que se cerró tu sesión. Es necesario que hables con administración.") { }
+        }
+
         private class AccesoDenegadoException : Exception
         {
             public AccesoDenegadoException(string mensaje) : base(mensaje) { }
@@ -45,6 +53,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public bool EsChofer { get; set; }
             public int? Chofer_ID { get; set; }
             public string Chofer { get; set; }
+            public bool ChoferActivo { get; set; }
             // Las hojas de ruta de todos los choferes, para ver (punto 4 de la §41, Rocío 27/10): los administradores y
             // quien gestiona viajes. Los cambios se siguen haciendo en Gestionar viajes.
             public bool PuedeVerTodas { get { return EsAdmin || (GestionaViajes && !EsChofer); } }
@@ -228,11 +237,13 @@ SELECT TOP (1) u.Usuario_ID, u.Nombre_Usuario,
                          WHERE gu.UsuarioID = u.Usuario_ID AND m.Menu_Nombre IN (N'Gestión de viajes', N'Gestion de viajes'))
        THEN 1 ELSE 0 END AS bit) AS GestionaViajes,
   c.Chofer_ID,
-  LTRIM(RTRIM(ISNULL(c.Nombre,'') + ' ' + ISNULL(c.Apellido,''))) AS Chofer
+  LTRIM(RTRIM(ISNULL(c.Nombre,'') + ' ' + ISNULL(c.Apellido,''))) AS Chofer,
+  CAST(CASE WHEN c.EstadoChofer = 'Activo' THEN 1 ELSE 0 END AS bit) AS ChoferActivo
 FROM dbo.USUARIOS u
 LEFT JOIN dbo.CHOFERES c ON c.Chofer_ID = u.ChoferID AND c.EstadoChofer <> 'Eliminado'
 WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", nombre)).FirstOrDefault();
             if (sesion == null) throw new UnauthorizedAccessException();
+            if (sesion.EsChofer && !sesion.ChoferActivo) throw new ChoferInactivoException();
             return sesion;
         }
 
@@ -251,6 +262,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
 
         private IHttpActionResult Error(Exception ex, string porDefecto)
         {
+            if (ex is ChoferInactivoException)
+                return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión.", Motivo = ex.Message });
             if (ex is UnauthorizedAccessException)
                 return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión." });
             if (ex is AccesoDenegadoException)

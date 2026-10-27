@@ -215,7 +215,9 @@
   function mensajeError(xhr, porDefecto) {
     if (xhr && xhr.status === 401) {
       setTimeout(function () { window.location.href = 'Login.html'; }, 2500);
-      return 'Tu sesión venció. Volvé a iniciar sesión.';
+      // Motivo: por qué se cerró la sesión, si la API lo dice (un chofer que quedó inactivo, HojaDeRutaController).
+      var motivo = (xhr.responseJSON || {}).Motivo;
+      return typeof motivo === 'string' && motivo.trim() ? motivo.trim() : 'Tu sesión venció. Volvé a iniciar sesión.';
     }
     if (xhr && (xhr.status === 400 || xhr.status === 409)) {
       var datos = xhr.responseJSON || {};
