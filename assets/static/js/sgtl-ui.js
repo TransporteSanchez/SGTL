@@ -916,6 +916,54 @@
     avisoFormulario(aviso, '');
   }
 
+  // Cerrar un formulario con cambios sin guardar (§6.2): no se cierra de una. Arriba del cuerpo del modal aparece el aviso
+  // amarillo "Tenés cambios sin guardar. Si cerrás, se pierden." con "Seguir editando" y "Descartar cambios". Cuenta como
+  // cambio lo que la persona escribe o elige en el modal (no lo que carga el código, ni lo que está dentro de
+  // [data-sin-cambios], como un buscador). opciones.activo(): false cuando no hay nada que perder. Devuelve { limpiar,
+  // hayCambios }: limpiar() al terminar de cargar los datos y antes de cerrar después de guardar.
+  function cambiosSinGuardar(objetivo, opciones) {
+    var ventana = elemento(objetivo);
+    var cuerpo = ventana && ventana.querySelector('.modal-body');
+    if (!cuerpo) return { limpiar: function () {}, hayCambios: function () { return false; } };
+    opciones = opciones || {};
+    var hayCambios = false;
+    var aviso = document.createElement('div');
+    aviso.className = 'alert alert-light-warning color-warning d-none';
+    aviso.setAttribute('role', 'alert');
+    aviso.setAttribute('data-sin-cambios', '');
+    aviso.innerHTML = '<div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>' +
+      '<button type="button" class="btn btn-sm btn-light-secondary" data-sgtl="seguir">Seguir editando</button>' +
+      '<button type="button" class="btn btn-sm btn-danger ms-1" data-sgtl="descartar">Descartar cambios</button>';
+    cuerpo.insertBefore(aviso, cuerpo.firstChild);
+    function ocultar() { aviso.classList.add('d-none'); }
+    function marcar(evento) {
+      var campo = evento.target;
+      if (campo && !campo.disabled && !(campo.closest && campo.closest('[data-sin-cambios]'))) hayCambios = true;
+    }
+    ventana.addEventListener('input', marcar);
+    ventana.addEventListener('change', marcar);
+    ventana.addEventListener('hide.bs.modal', function (evento) {
+      if (evento.target !== ventana || !hayCambios || (opciones.activo && !opciones.activo())) return;
+      evento.preventDefault();
+      aviso.classList.remove('d-none');
+      cuerpo.scrollTop = 0;
+    });
+    ventana.addEventListener('hidden.bs.modal', function (evento) {
+      if (evento.target === ventana) { hayCambios = false; ocultar(); }
+    });
+    // El aviso se oculta: el foco vuelve al modal para que Escape y Tab sigan andando.
+    aviso.querySelector('[data-sgtl="seguir"]').addEventListener('click', function () { ocultar(); ventana.focus(); });
+    aviso.querySelector('[data-sgtl="descartar"]').addEventListener('click', function () {
+      hayCambios = false;
+      ocultar();
+      modal(ventana, 'hide');
+    });
+    return {
+      limpiar: function () { hayCambios = false; ocultar(); },
+      hayCambios: function () { return hayCambios; }
+    };
+  }
+
   // Validación de un formulario (§6.3). reglas: [{ id (del campo), requerido ('Completá el dominio.'),
   // regex y mensaje, max, soloNumeros, soloLetras, mayusculas (solo letras y números, en mayúscula),
   // validar(valor, campo) → mensaje o '' }]. Cada campo se valida al salir y el rojo se va apenas se
@@ -1057,6 +1105,7 @@
     avisoFormulario: avisoFormulario,
     revisarFormulario: revisarFormulario,
     reiniciarFormulario: reiniciarFormulario,
+    cambiosSinGuardar: cambiosSinGuardar,
     textoRegistro: textoRegistro,
     botonInfo: botonInfo,
     conInfo: conInfo,

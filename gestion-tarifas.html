@@ -69,7 +69,7 @@
                                 <h5 class="card-title mb-1">
                                     <i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Gestionar tarifas
                                 </h5>
-                                <p class="text-muted mb-0">Cargá las tablas de tarifas: cada una vale desde su fecha hasta que se cargue la siguiente.</p>
+                                <p class="text-muted mb-0">Cargá las tablas de tarifas: cada una se aplica desde su fecha hasta que se cargue la siguiente.</p>
                             </div>
                             <button type="button" class="btn btn-success" id="btnRegistrarTarifario">
                                 <i class="bi bi-plus-lg" aria-hidden="true"></i> Registrar tabla de tarifas
@@ -124,19 +124,19 @@
                         <form id="formTarifario" novalidate>
                             <div class="sgtl-bloque-titulo">Datos</div>
                             <div class="row g-3 mb-4">
-                                <div class="col-12 col-md-6">
+                                <div class="col-12 col-lg-6">
                                     <label for="trNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="trNombre" maxlength="100" placeholder="Tarifas a agosto 2026" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="trDesde" class="form-label">Vigente desde <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control" id="trDesde" placeholder="DD/MM/AAAA" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
                                 <!-- Vigente hasta (25/10): no se carga. Es el día antes de la tabla siguiente del mismo alcance; si no hay,
                                      vale hasta que se cargue la próxima (se ve como texto, §6.3). -->
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <div class="form-label" id="trHastaEtiqueta">Vigente hasta</div>
                                     <div class="sgtl-dato-fijo" id="trHasta" aria-labelledby="trHastaEtiqueta"></div>
                                 </div>
@@ -153,12 +153,12 @@
                                     </div>
                                     <div class="form-check">
                                         <input class="form-check-input" type="radio" name="trAlcance" id="trParaAlgunos" value="algunos">
-                                        <label class="form-check-label" for="trParaAlgunos">Solo algunos clientes</label>
+                                        <label class="form-check-label" for="trParaAlgunos">Clientes en particular</label>
                                     </div>
                                 </div>
                                 <div class="form-text" id="trAlcanceAyuda"></div>
                                 <div id="trClientesCaja" class="mt-2 d-none">
-                                    <input type="text" class="form-control mb-2" id="trClientesBuscar" placeholder="Buscar cliente" autocomplete="off" aria-label="Buscar cliente">
+                                    <input type="text" class="form-control mb-2" id="trClientesBuscar" placeholder="Buscar cliente" autocomplete="off" aria-label="Buscar cliente" data-sin-cambios>
                                     <div id="trClientesLista" class="border rounded p-2" style="max-height: 220px; overflow-y: auto;"></div>
                                     <div class="invalid-feedback" id="trClientesError"></div>
                                     <div class="form-text" id="trClientesCuenta"></div>
@@ -166,18 +166,18 @@
                             </div>
                             <div class="sgtl-bloque-titulo">Bandas de km y modelos</div>
                             <div class="row g-3 mb-4">
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="trBanda1" class="form-label">Primera, hasta <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda1" maxlength="4" placeholder="130" autocomplete="off"><span class="input-group-text">km</span></div>
                                     <div class="invalid-feedback"></div>
                                     <div class="form-text">Con 1ª y 2ª vuelta del día</div>
                                 </div>
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="trBanda2" class="form-label">Segunda, hasta <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda2" maxlength="4" placeholder="190" autocomplete="off"><span class="input-group-text">km</span></div>
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <label for="trBanda3" class="form-label">Tercera, hasta <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trBanda3" maxlength="4" placeholder="250" autocomplete="off"><span class="input-group-text">km</span></div>
                                     <div class="invalid-feedback"></div>
@@ -187,7 +187,7 @@
                                      adelante"). No se edita: la empresa no lo cambia (decisión de Rocío). Es un dato de cada tabla
                                      (Anio_Corte) que Registrar copia de la anterior; un tercer grupo de modelos sería un cambio de
                                      estructura (PENDIENTES §34). -->
-                                <div class="col-12 col-md-3">
+                                <div class="col-12 col-sm-6 col-lg-3">
                                     <div class="form-label" id="trModelosEtiqueta">Modelos</div>
                                     <div class="sgtl-dato-fijo" id="trModelos" aria-labelledby="trModelosEtiqueta"></div>
                                 </div>
@@ -195,29 +195,29 @@
                             <div id="grillasTarifario"></div>
                             <div class="sgtl-bloque-titulo">Adicionales</div>
                             <div class="row g-3">
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-sm-6 col-lg-4">
                                     <label for="trFalsoFlete" class="form-label">Falso flete <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="decimal" class="form-control text-end" id="trFalsoFlete" maxlength="6" placeholder="60" autocomplete="off"><span class="input-group-text">%</span></div>
                                     <div class="invalid-feedback"></div>
                                     <div class="form-text">Del viaje, cuando fue a cargar y no había carga</div>
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-sm-6 col-lg-4">
                                     <label for="trEstadia" class="form-label">Módulo de estadía <span class="text-danger">*</span></label>
                                     <input type="text" inputmode="decimal" class="form-control text-end" id="trEstadia" placeholder="96.577,00" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-sm-6 col-lg-4">
                                     <label for="trEstadiaHoras" class="form-label">Horas por módulo <span class="text-danger">*</span></label>
                                     <input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaHoras" maxlength="2" placeholder="6" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-sm-6 col-lg-4">
                                     <label for="trEstadiaDesde" class="form-label">La estadía corre después de <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaDesde" maxlength="2" placeholder="12" autocomplete="off"><span class="input-group-text">hs</span></div>
                                     <div class="invalid-feedback"></div>
                                     <div class="form-text" id="trEstadiaDesdeAyuda">De iniciado el servicio, hasta la tercera banda</div>
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-sm-6 col-lg-4">
                                     <label for="trEstadiaDesdeLarga" class="form-label">En larga distancia, después de <span class="text-danger">*</span></label>
                                     <div class="input-group"><input type="text" inputmode="numeric" class="form-control text-end" id="trEstadiaDesdeLarga" maxlength="2" placeholder="18" autocomplete="off"><span class="input-group-text">hs</span></div>
                                     <div class="invalid-feedback"></div>
@@ -338,6 +338,7 @@
         let eraGeneral = false;       // la tabla en edición era para todos los clientes
         let unicaGeneral = false;     // y es la única para todos
         let formularioTarifario = null;
+        let cambiosTarifario = null;
         // Clientes para las tablas propias: [{ Cliente_ID, Razon_Social, Tipo_Cliente }].
         let clientesTabla = [];
 
@@ -581,13 +582,13 @@
             $('#trAlcanceOpciones').toggleClass('d-none', unicaGeneral);
             $('#trClientesCaja').toggleClass('d-none', todos);
             $('#trAlcanceAyuda').text(unicaGeneral ? 'Es la única tabla para todos los clientes. Para que algunos clientes tengan otros valores, registrá una tabla solo para ellos.'
-                : todos ? 'Vale para todos los clientes, también los que se carguen después, salvo los que tienen una tabla propia.'
-                : eraGeneral ? 'Vale solo para los clientes que elijas.' + queTablaQuedaAlResto()
-                : 'Para estos clientes, esta tabla reemplaza a la de todos los clientes.');
+                : todos ? 'Se aplica a todos los clientes, también a los que se carguen después, salvo los que tienen una tabla propia.'
+                : eraGeneral ? 'Se aplica solo a los clientes que elijas.' + queTablaQuedaAlResto()
+                : 'Se aplica solo a los clientes que elijas, en lugar de la tabla para todos los clientes.');
             if (todos) limpiarErrorClientes();
         }
-        // Al pasar a algunos clientes una tabla que era para todos, los demás clientes toman la general anterior (o, si no hay,
-        // no tienen tabla hasta la siguiente general).
+        // Al pasar a clientes en particular una tabla que era para todos, los demás clientes toman la general anterior (o, si no
+        // hay, quedan sin tabla desde la fecha de esta hasta la siguiente general: M3 de Tableros en la VM, 26/10).
         function queTablaQuedaAlResto() {
             const desde = fechaISO('trDesde');
             if (!eraGeneral || !desde) return '';
@@ -598,9 +599,10 @@
                 + ' se calculan con esos valores.';
             const siguiente = generales.filter(function (t) { return dia(t.Vigente_Desde) > desde; })
                 .sort(function (a, b) { return dia(a.Vigente_Desde) < dia(b.Vigente_Desde) ? -1 : 1; })[0];
-            if (!siguiente) return '';
+            if (!siguiente) return ' Los demás clientes quedan sin tabla desde el ' + SGTL.fecha(desde) + ': sus viajes desde esa fecha no se pueden calcular.';
             const partes = dia(siguiente.Vigente_Desde).split('-').map(Number);
-            return ' Los demás clientes no tienen tabla hasta el ' + SGTL.fecha(new Date(partes[0], partes[1] - 1, partes[2] - 1)) + '.';
+            return ' Los demás clientes quedan sin tabla del ' + SGTL.fecha(desde) + ' al ' + SGTL.fecha(new Date(partes[0], partes[1] - 1, partes[2] - 1))
+                + ': sus viajes de esas fechas no se pueden calcular.';
         }
         function validarClientes() {
             if (paraTodos() || clientesElegidos().length) { limpiarErrorClientes(); return; }
@@ -691,10 +693,11 @@
             actualizarEncabezados();
             actualizarHasta();
             revisarValores();
+            cambiosTarifario.limpiar();
         }
 
-        // Registrar viene con los valores de la tabla más nueva para todos los clientes: cuando llega la actualizada, se cambian
-        // los que subieron.
+        // Registrar viene precargada con los valores de la tabla más nueva para todos los clientes: cuando llega la actualizada,
+        // se cambian los que subieron.
         function abrirTarifario(id) {
             tarifarioEnEdicion = id || null;
             const fila = id ? tarifarios.find(function (t) { return t.Tarifario_ID === id; }) : null;
@@ -713,6 +716,7 @@
             actualizarEncabezados();
             actualizarHasta();
             revisarValores();
+            cambiosTarifario.limpiar();
             const guardar = document.getElementById('btnGuardarTarifario');
             // Una tabla nueva viene con los valores de la última para todos los clientes, nunca de una propia (F2 de la VM, 25/10).
             const ultimaGeneral = tarifarios.filter(function (t) { return t.Para_Todos !== false; })[0];
@@ -727,7 +731,7 @@
                 const viajes = Number(t.Viajes) || 0;
                 const info = id
                     ? (viajes > 0 ? 'La ' + (viajes === 1 ? 'usa 1 viaje' : 'usan ' + viajes + ' viajes') + '. Antes de guardar vas a ver qué pasa con cada uno. Si es un aumento, registrá una tabla nueva.' : '')
-                    : 'Viene con los valores de "' + t.Nombre + '", la última para todos los clientes: cambiá los que subieron.';
+                    : 'Precargada con los valores de "' + t.Nombre + '", la última para todos los clientes: cambiá los que se actualizaron y elegí a qué clientes se aplica.';
                 $('#infoTarifario').toggleClass('d-none', !info).text(info);
                 guardar.disabled = false;
             }, function () {
@@ -821,6 +825,7 @@
 
             SGTL.toastExito((respuesta && respuesta.Message) || (enEdicion ? 'Tabla de tarifas guardada.' : 'Tabla de tarifas registrada.'));
             listarTarifario();
+            cambiosTarifario.limpiar();
             setTimeout(function () { SGTL.modal('#modalTarifario', 'hide'); }, 0);
         }
 
@@ -918,7 +923,7 @@
             };
             const reglas = [
                 { id: 'trNombre', requerido: 'Completá el nombre.', max: 100 },
-                { id: 'trDesde', requerido: 'Completá desde cuándo vale.', validar: fechaValida },
+                { id: 'trDesde', requerido: 'Completá desde cuándo está vigente.', validar: fechaValida },
                 { id: 'trBanda1', requerido: 'Completá los km.', soloNumeros: true, max: 4, validar: enteroEntre(1, 9999, 'Tiene que ser mayor que cero.') },
                 { id: 'trBanda2', requerido: 'Completá los km.', soloNumeros: true, max: 4,
                     validar: function (valor) { const b1 = entero('trBanda1'); return b1 != null && Number(valor) <= b1 ? 'Tiene que ser mayor que ' + b1 + ' km.' : ''; } },
@@ -935,6 +940,8 @@
                 reglas.push({ id: this.id, requerido: 'Completá el valor.', validar: montoMayorQueCero });
             });
             formularioTarifario = SGTL.validador(reglas);
+            // Con los 40 valores copiados del PDF, Cancelar o la cruz no cierran de una (M1 de Tableros en la VM, 26/10).
+            cambiosTarifario = SGTL.cambiosSinGuardar('#modalTarifario');
             $('#trBanda1, #trBanda2, #trBanda3').on('input', function () { actualizarEncabezados(); revisarValores(); });
             $('#grillasTarifario').on('input change', 'input', revisarValores);
             // Cada banda tiene que ser mayor que la anterior: si cambia una, se vuelve a revisar la siguiente (si ya tiene

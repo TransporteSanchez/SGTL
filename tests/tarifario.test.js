@@ -301,7 +301,10 @@ function probarCambiarClientes() {
     assert.ok(/private static string PasaA\(/.test(impacto) && /"Pasa a \\""/.test(impacto), 'la confirmación dice a qué tabla pasa el viaje');
     assert.ok(/item\.SinTablaEl = v\.Fecha_Inicio;/.test(impacto) && /item\.SinTablaEl = inicio;/.test(impacto), 'marca los viajes y presupuestos que se quedan sin tabla');
     const api = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
-    assert.ok(/No se puede pasar a solo algunos clientes: es la única tabla para todos los clientes\./.test(api), 'la única para todos no pasa a algunos');
+    assert.ok(/Única tabla para todos: no puede pasar a clientes en particular\./.test(api), 'la única para todos no pasa a algunos');
+    // Errores debajo del campo, cortos y empezando por el dato (§6.3 del design system, Rocío 26/10).
+    assert.ok(/"Fecha repetida: \\"" \+ otra \+ "\\" empieza el mismo día\."/.test(api) && /"Fecha no permitida: tiene que ser el "/.test(api)
+        && /"Cliente con otra tabla: "/.test(api) && /"Faltan clientes: volvé a elegir los que quedarían sin tabla\."/.test(api), 'errores de campo cortos');
     const enImpacto = api.slice(api.indexOf('public IHttpActionResult Impacto('), api.indexOf('private static TarifarioImpacto.TablaEditada Editada('));
     const enGuardar = api.slice(api.indexOf('private IHttpActionResult Guardar('), api.indexOf('Qué pasa con los viajes y presupuestos') + 400);
     [enImpacto, enGuardar].forEach(function (bloque) {
@@ -327,8 +330,18 @@ function probarCambiarClientes() {
         && /HayCambios \{ get \{ return Items\.Any\(i => i\.Grupo == Recalcula \|\| i\.Grupo == Revisar \|\| i\.Grupo == CambiaTabla\); \} \}/.test(impacto),
         'cambiar de tabla con el mismo importe pide confirmación');
     assert.ok(/clave: 'tabla', titulo: 'Cambian de tabla, mismo importe'/.test(pantalla), 'la confirmación tiene el grupo de los que cambian de tabla');
-    assert.ok(/foreach \(var item in aplicado\.CambiaronDeTabla\)/.test(api) && /"Pasa a \\"" \+ item\.NombreTabla \+ "\\" con el mismo importe \("/.test(api),
+    assert.ok(/foreach \(var item in aplicado\.CambiaronDeTabla\)/.test(api) && /" con el mismo importe \(" \+ TarifarioImpacto\.Pesos\(item\.Importe_Nuevo\)/.test(api),
         'queda en la auditoría por viaje');
+    // Prueba de Tableros en la VM (26/10). M2: el registro de la tabla concuerda como el aviso. M11: no repite la tabla.
+    assert.ok(/frases\.Add\("Se " \+ \(primero == 1 \? "recalculó " : "recalcularon "\)/.test(api)
+        && /" pasaron"\)\s*\+ " a otra tabla con el mismo importe\."/.test(api), 'Auditoría de la tabla: "Se recalculó 1 viaje. 4 viajes pasaron a otra tabla…"');
+    assert.ok(/string porEsta = alta \? ", la tabla de tarifas nueva" : " por su corrección";/.test(api), 'Auditoría del viaje: "Pasa a "X" por su corrección"');
+    // M1: cerrar con cambios sin guardar pide confirmación (función compartida, §6.2). M3 y puntos 12 a 14: textos.
+    assert.ok(/function cambiosSinGuardar\(objetivo, opciones\)/.test(ui) && /cambiosSinGuardar: cambiosSinGuardar/.test(ui), 'SGTL.cambiosSinGuardar');
+    assert.ok(/cambiosTarifario = SGTL\.cambiosSinGuardar\('#modalTarifario'\);/.test(pantalla) && /cambiosTarifario\.limpiar\(\);\s*setTimeout/.test(pantalla),
+        'tarifas avisa si se cierra con cambios y no avisa después de guardar');
+    assert.ok(/Los demás clientes quedan sin tabla del /.test(pantalla) && /Clientes en particular/.test(pantalla)
+        && /'Precargada con los valores de "'/.test(pantalla) && !/'Vale /.test(pantalla), 'los textos nuevos de Clientes y de Registrar');
     // D3 de la reprueba (25/10): lo que ya vio el cliente no cambia de tabla.
     assert.ok(/": queda con su tabla\."/.test(impacto), 'un viaje facturado o en una proforma enviada queda con su tabla');
     // F2: una tabla nueva copia la última para todos. F4: en un comprobante, solo si el viaje está facturado.

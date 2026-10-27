@@ -66,10 +66,10 @@ sigue suma las variantes.
 - Cerrar sin guardar.
 
 **A3. Registrar tabla de tarifas: validaciones (sin guardar).**
-- Viene con los valores de la tabla más nueva, el nombre y la fecha vacíos y "Todos los clientes".
+- Precargada con los valores de la tabla más nueva, el nombre y la fecha vacíos y "Todos los clientes".
 - Guardar vacío: "Revisá los campos marcados." y el error debajo de cada campo.
-- Fecha 01/08/2026 con "Todos los clientes": "Ya hay una tabla para todos los clientes vigente desde el 01/08/2026…".
-- "Solo algunos clientes" sin tildar ninguno: "Elegí al menos un cliente.".
+- Fecha 01/08/2026 con "Todos los clientes": 'Fecha repetida: "Tarifas a agosto 2026" empieza el mismo día.'.
+- "Clientes en particular" sin tildar ninguno: "Elegí al menos un cliente.".
 - Bandas: la segunda menor o igual que la primera → "Tiene que ser mayor que 130 km." (y lo mismo con la tercera).
 - Falso flete 0 o más de 100, horas de estadía 0, montos con letras: cada uno con su error.
 - Valores fuera de orden (la 2ª vuelta más cara que la 1ª, o una banda más barata que la anterior): aviso amarillo
@@ -78,8 +78,8 @@ sigue suma las variantes.
 
 **A4. Una tabla propia de prueba.**
 - Gestionar clientes: registrar un cliente de prueba verosímil (anotá su ID).
-- Registrar tabla de tarifas "Tarifas Logística Pampeana" (o el nombre de tu cliente), desde el 01/10/2026, "Solo algunos
-  clientes" con ese cliente. Subí un valor que vayas a usar, por ejemplo Balancín, modelo 2019 en adelante, hasta 130 km
+- Registrar tabla de tarifas "Tarifas Logística Pampeana" (o el nombre de tu cliente), desde el 01/10/2026, "Clientes en
+  particular" con ese cliente. Subí un valor que vayas a usar, por ejemplo Balancín, modelo 2019 en adelante, hasta 130 km
   1ª vuelta. Guardar.
 - En la lista: la tabla nueva con el nombre del cliente; la de agosto sigue diciendo "Todos los clientes".
 
@@ -139,7 +139,7 @@ a ponerle el nombre.
   confirmación, aunque ningún importe cambie. Todos sus viajes de octubre están en la lista con 'Pasa a "…"' y el nombre
   de la tabla de prueba: los de importe igual, en "Cambian de tabla, mismo importe", y los demás donde corresponda.
   **Cancelar.**
-- Editar "Tarifas a agosto 2026" → "Solo algunos clientes" → elegir uno: la ayuda dice 'Vale solo para los clientes que
+- Editar "Tarifas a agosto 2026" → "Clientes en particular" → elegir uno: la ayuda dice 'Se aplica solo a los clientes que
   elijas. Los demás clientes pasan a "Tarifas a enero 2026", la anterior: sus viajes desde el 01/08/2026 se calculan con
   esos valores.'. Guardar: los viajes de los demás clientes desde el 01/08 dicen 'Pasa a "Tarifas a enero
   2026".' con el importe de enero. **Cancelar** (si se guarda, se recalculan viajes reales).

@@ -22,6 +22,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
+| Cerrar un formulario con cambios sin guardar (§6.2) | `SGTL.cambiosSinGuardar(modal, { activo })`: devuelve `{ limpiar, hayCambios }`; `limpiar()` al terminar de cargar los datos y antes de cerrar después de guardar |
 | Ver detalle (§6.2) | `.sgtl-dato` / `.sgtl-dato-etiqueta` / `.sgtl-dato-valor`; pie: `SGTL.textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi)`; viaje: `SGTLDetalleViaje.abrir(viaje, { enlaceGestion })` (`viaje-detalle.js`) |
 | Editar el cliente desde otra pantalla (§6.3) | `SGTLEditarCliente.abrir(id, { tipoBloqueado, alCerrar })` (`assets/static/js/cliente-editar.js`, el mismo modal de Gestionar clientes) |
 | Tabla con grupos y su resumen (§2.1) | Resumen arriba: `.sgtl-resumen` + `.sgtl-resumen-item` (con `.sgtl-info-punto rojo / amarillo / azul / verde`); título de cada grupo: `tr.sgtl-grupo` con la etiqueta del grupo y `.sgtl-grupo-ayuda` |
@@ -464,8 +465,9 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - **Cerrar un formulario con cambios sin guardar** (25/10, decisión de Rocío sobre Gestionar proformas): no se cierra de
   una. Arriba del formulario, dentro del mismo modal, un aviso amarillo "Tenés cambios sin guardar. Si cerrás, se pierden."
   con "Seguir editando" (gris) y "Descartar cambios" (rojo). No se abre otra ventana encima: es como la confirmación de
-  "Generar" de la proforma de Rukas, que también va dentro del modal. Hoy está en Gestionar proformas
-  (`#avisoDescartarProforma`); si se suma a otra pantalla, conviene pasarlo a una función de `sgtl-ui.js`.
+  "Generar" de la proforma de Rukas, que también va dentro del modal. Es la función
+  `SGTL.cambiosSinGuardar(modal, { activo })` (27/10, primero en Gestionar tarifas); Gestionar proformas todavía tiene
+  su copia (`#avisoDescartarProforma`): pasarla a la función cuando se toque esa pantalla.
 - **Detalle:** solo "Cerrar" en el pie, además de la cruz.
 - **Cómo se arma un Ver detalle** (22/10, opción B de Rocío): con los mismos bloques que su formulario
   (`.sgtl-bloque` + `.sgtl-bloque-titulo`), en filas de a dos bloques que empiezan a la misma altura

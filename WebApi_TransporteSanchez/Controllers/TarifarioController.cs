@@ -416,17 +416,28 @@ namespace WebApi_TransporteSanchez.Controllers
                             + Cuentas(aplicado)
                             + "Queda así: " + Resumen(dto, nombres));
                         // Cada viaje y presupuesto: qué le pasó, por qué tabla y el motivo aparte (M-e de la reprueba en la VM, 25/10).
-                        string causa = ", por " + (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + dto.Nombre.Trim() + "\"."
-                            + (motivo.Length > 0 ? " Motivo: " + ConPunto(motivo) : "");
+                        // Si pasa a la misma tabla que se registró o corrigió, no la nombra dos veces (M11 de Tableros en la VM,
+                        // 26/10): 'Pasa a "X" por su corrección: $ a → $ b.'
+                        string nombreTabla = dto.Nombre.Trim();
+                        string conMotivo = motivo.Length > 0 ? " Motivo: " + ConPunto(motivo) : "";
+                        string causa = ", por " + (alta ? "la tabla de tarifas nueva \"" : "la corrección de la tabla de tarifas \"") + nombreTabla + "\"." + conMotivo;
+                        string porEsta = alta ? ", la tabla de tarifas nueva" : " por su corrección";
+                        Func<string, bool> esEsta = nombre => string.Equals((nombre ?? "").Trim(), nombreTabla, StringComparison.OrdinalIgnoreCase);
                         foreach (var item in aplicado.Recalculados)
+                        {
+                            string importes = TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo);
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
                                 (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
-                                (item.NombreTabla != null ? "Pasa a \"" + item.NombreTabla + "\": " : "Importe recalculado: ")
-                                + TarifarioImpacto.Pesos(item.Importe_Anterior) + " → " + TarifarioImpacto.Pesos(item.Importe_Nuevo) + causa);
+                                item.NombreTabla == null ? "Importe recalculado: " + importes + causa
+                                : esEsta(item.NombreTabla) ? "Pasa a \"" + item.NombreTabla + "\"" + porEsta + ": " + importes + "." + conMotivo
+                                : "Pasa a \"" + item.NombreTabla + "\": " + importes + causa);
+                        }
                         foreach (var item in aplicado.CambiaronDeTabla)
                             SGTLAuditContext.RegistrarEvento(Cn(), usuarioAuditoria, "UPDATE", item.Clase == "Viaje" ? "VIAJES" : "PRESUPUESTOS",
                                 (item.Clase == "Viaje" ? "Viaje_ID=" : "Presupuesto_ID=") + item.Id,
-                                "Pasa a \"" + item.NombreTabla + "\" con el mismo importe (" + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ")" + causa);
+                                "Pasa a \"" + item.NombreTabla + "\"" + (esEsta(item.NombreTabla) ? porEsta + "," : "")
+                                + " con el mismo importe (" + TarifarioImpacto.Pesos(item.Importe_Nuevo) + ")"
+                                + (esEsta(item.NombreTabla) ? "." + conMotivo : causa));
 
                         return Ok(new
                         {
@@ -640,7 +651,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             if (string.IsNullOrWhiteSpace(d.Nombre)) error("Nombre", "Completá el nombre.");
             else if (d.Nombre.Trim().Length > 100) error("Nombre", "El nombre puede tener hasta 100 caracteres.");
-            if (!d.Vigente_Desde.HasValue) error("Vigente_Desde", "Completá desde cuándo vale.");
+            if (!d.Vigente_Desde.HasValue) error("Vigente_Desde", "Completá desde cuándo está vigente.");
             if (d.Para_Todos == false && (d.Clientes == null || !d.Clientes.Any(c => c > 0)))
                 error("Clientes", "Elegí al menos un cliente.");
             if (d.Anio_Corte < 1990 || d.Anio_Corte > 2100) error("Anio_Corte", "Completá el año del modelo desde el que valen los valores nuevos.");
@@ -789,20 +800,24 @@ namespace WebApi_TransporteSanchez.Controllers
             return c;
         }
 
-        // Lo que movió el cambio, sin los que dan 0: "Se recalcularon 1 viaje y 1 presupuesto; 1 para revisar. ".
+        // Lo que movió el cambio, sin los que dan 0, con el mismo texto que el aviso (M2 de Tableros en la VM, 26/10):
+        // "Se recalculó 1 viaje. 1 queda para revisar. 4 viajes pasaron a otra tabla con el mismo importe. ".
         private static string Cuentas(TarifarioImpacto.Aplicado a)
         {
             if (a.CambioID == 0) return "";
-            var partes = new List<string>();
+            var frases = new List<string>();
             if (a.ViajesRecalculados + a.PresupuestosRecalculados > 0)
-                partes.Add("se recalcularon " + Cantidad(a.ViajesRecalculados, a.PresupuestosRecalculados));
-            if (a.ParaRevisar > 0) partes.Add(a.ParaRevisar + " para revisar");
+            {
+                // El verbo concuerda con lo primero que se nombra, como en Recalculado.
+                int primero = a.ViajesRecalculados > 0 ? a.ViajesRecalculados : a.PresupuestosRecalculados;
+                frases.Add("Se " + (primero == 1 ? "recalculó " : "recalcularon ") + Cantidad(a.ViajesRecalculados, a.PresupuestosRecalculados) + ".");
+            }
+            if (a.ParaRevisar > 0) frases.Add(a.ParaRevisar + (a.ParaRevisar == 1 ? " queda" : " quedan") + " para revisar.");
             int viajes = a.CambiaronDeTabla.Count(i => i.Clase == "Viaje");
             if (a.CambiaronDeTabla.Count > 0)
-                partes.Add(Cantidad(viajes, a.CambiaronDeTabla.Count - viajes) + " con el mismo importe en otra tabla");
-            if (!partes.Any()) return "";
-            string texto = string.Join("; ", partes);
-            return char.ToUpper(texto[0]) + texto.Substring(1) + ". ";
+                frases.Add(Cantidad(viajes, a.CambiaronDeTabla.Count - viajes) + (a.CambiaronDeTabla.Count == 1 ? " pasó" : " pasaron")
+                    + " a otra tabla con el mismo importe.");
+            return frases.Any() ? string.Join(" ", frases) + " " : "";
         }
 
         // Termina en punto, sin repetirlo ("… S.A." no queda "S.A..").
@@ -842,14 +857,13 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var errores = new List<object>();
             bool paraTodos = dto.Para_Todos != false;
-            string fecha = dto.Vigente_Desde.Value.ToString("dd/MM/yyyy");
             if (paraTodos)
             {
                 var otra = Texto(cn, tx, "SELECT TOP (1) Nombre FROM dbo.TARIFARIOS WHERE Para_Todos=1 AND Vigente_Desde=@d AND Tarifario_ID<>@id",
                     P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
                 if (otra != null)
                     errores.Add(new { PropertyName = "Vigente_Desde",
-                        ErrorMessage = "Ya hay una tabla para todos los clientes vigente desde el " + fecha + " (\"" + otra + "\"). Elegí otra fecha o editá esa tabla." });
+                        ErrorMessage = "Fecha repetida: \"" + otra + "\" empieza el mismo día." });
                 return errores;
             }
 
@@ -858,20 +872,20 @@ namespace WebApi_TransporteSanchez.Controllers
                     "AND NOT EXISTS (SELECT 1 FROM dbo.TARIFARIOS o WHERE o.Para_Todos=1 AND o.Tarifario_ID<>@id)", P("@id", id)) > 0)
             {
                 errores.Add(new { PropertyName = "Clientes",
-                    ErrorMessage = "No se puede pasar a solo algunos clientes: es la única tabla para todos los clientes." });
+                    ErrorMessage = "Única tabla para todos: no puede pasar a clientes en particular." });
                 return errores;
             }
 
             foreach (var cliente in dto.Clientes.Where(c => c > 0).Distinct())
             {
                 var otra = Texto(cn, tx,
-                    "SELECT TOP (1) ISNULL(c.Razon_Social, 'El cliente') + ' ya tiene la tabla \"' + t.Nombre + '\"' FROM dbo.TARIFARIOS t " +
+                    "SELECT TOP (1) ISNULL(c.Razon_Social, 'El cliente') + ' ya tiene \"' + t.Nombre + '\"' FROM dbo.TARIFARIOS t " +
                     "JOIN dbo.TARIFARIO_CLIENTES tc ON tc.Tarifario_ID = t.Tarifario_ID JOIN dbo.CLIENTES c ON c.Cliente_ID = tc.ClienteID " +
                     "WHERE t.Para_Todos=0 AND tc.ClienteID=@c AND t.Vigente_Desde=@d AND t.Tarifario_ID<>@id",
                     P("@c", cliente), P("@d", dto.Vigente_Desde.Value.Date), P("@id", id));
                 if (otra != null)
                 {
-                    errores.Add(new { PropertyName = "Clientes", ErrorMessage = otra + " desde el " + fecha + ". Elegí otra fecha o editá esa tabla." });
+                    errores.Add(new { PropertyName = "Clientes", ErrorMessage = "Cliente con otra tabla: " + otra + " desde el mismo día." });
                     return errores;
                 }
             }
@@ -907,14 +921,14 @@ namespace WebApi_TransporteSanchez.Controllers
                 ErrorMessage = "No se puede guardar la tabla de tarifas: " + Cantidad(viajes, sinTabla.Count - viajes)
                     + (sinTabla.Count == 1 ? " quedaría" : " quedarían") + " sin tabla.",
                 Detalle = detalle } };
-            // Qué cambiar, debajo del campo (M8 de la prueba en la VM del 25/10): los anteriores a la fecha nueva quedan afuera por la
-            // fecha; los demás, por los clientes.
+            // Qué cambiar, debajo del campo (M8 de la prueba en la VM del 25/10; corto y empezando por el dato, §6.3 del design
+            // system, 26/10): los anteriores a la fecha nueva quedan afuera por la fecha; los demás, por los clientes.
             var porFecha = sinTabla.Where(i => i.SinTablaEl.Value.Date < dto.Vigente_Desde.Value.Date).ToList();
             if (porFecha.Any())
                 errores.Add(new { PropertyName = "Vigente_Desde",
-                    ErrorMessage = "Para que no queden sin tabla, tiene que empezar el " + porFecha.Min(i => i.SinTablaEl.Value).ToString("dd/MM/yyyy") + " o antes." });
+                    ErrorMessage = "Fecha no permitida: tiene que ser el " + porFecha.Min(i => i.SinTablaEl.Value).ToString("dd/MM/yyyy") + " o antes." });
             if (porFecha.Count < sinTabla.Count)
-                errores.Add(new { PropertyName = "Clientes", ErrorMessage = "Para que no queden sin tabla, volvé a elegir esos clientes." });
+                errores.Add(new { PropertyName = "Clientes", ErrorMessage = "Faltan clientes: volvé a elegir los que quedarían sin tabla." });
             return errores;
         }
 

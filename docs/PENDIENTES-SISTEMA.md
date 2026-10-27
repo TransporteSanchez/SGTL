@@ -3702,6 +3702,24 @@ cierren las pruebas de la §39**, antes que lo demás.
   usa solo datos con forma de reales (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`, que manda sobre los documentos viejos).
 - [ ] **7. Dudas y mejoras del reporte de Tableros (26/10, `docs/pruebas/2026-10-26-tableros.md`).** Rocío las ve
   después de cerrar sus cambios de tarifas (decisión del 26/10). Recomendación de Claude entre paréntesis.
+  **M1, M2, M3, M11 y M14: hechas (27/10), subidas, pendientes de probar en la VM** (junto con los textos 12 a 14 de la
+  §41 y los errores de campo cortos del §6.3 del design system). Recompilar la API y, en Gestionar tarifas:
+  1. Registrar tabla de tarifas: cambiar un valor y tocar Cancelar o la cruz → arriba, "Tenés cambios sin guardar. Si
+     cerrás, se pierden." con "Seguir editando" y "Descartar cambios"; abrir y cerrar sin tocar nada → cierra directo;
+     guardar → cierra sin el aviso (M1, `SGTL.cambiosSinGuardar`).
+  2. Textos: "Clientes en particular"; "Se aplica a todos los clientes, también a los que se carguen después, salvo los
+     que tienen una tabla propia." / "Se aplica solo a los clientes que elijas, en lugar de la tabla para todos los
+     clientes."; Registrar: 'Precargada con los valores de "…", la última para todos los clientes: cambiá los que se
+     actualizaron y elegí a qué clientes se aplica.'; el subtítulo dice "se aplica desde su fecha".
+  3. Errores cortos debajo del campo: fecha 01/08/2026 para todos → 'Fecha repetida: "Tarifas a agosto 2026" empieza el
+     mismo día.'; editar enero con "Vigente desde" 31/07/2026 → "Fecha no permitida: tiene que ser el 21/07/2026 o
+     antes." y, si quedan clientes afuera, "Faltan clientes: volvé a elegir los que quedarían sin tabla."
+  4. M3: editar "Tarifas a enero 2026" → "Clientes en particular" → "Los demás clientes quedan sin tabla del 01/01/2026 al
+     31/07/2026: sus viajes de esas fechas no se pueden calcular."
+  5. M2 y M11: corregir un valor de la tabla de prueba (con motivo) → en Auditoría, la tabla dice "Se recalculó 1 viaje."
+     (con la concordancia) y el viaje que pasa a la misma tabla, 'Pasa a "…" por su corrección: $ … → $ ….'
+  6. M14: a 990 px (F12), el nombre ocupa todo el ancho y "Vigente desde" y "Vigente hasta" van de a dos, sin cortar la
+     fecha; las bandas y los adicionales, también de a dos.
   - D1. El paso 4b de la §35 pide Listar viajes filtrado por origen, destino o camión, y no tiene esos filtros (cambiar el
     texto del paso; los filtros, con M8).
   - D2. La deuda de un cliente con un recibo sin imputar se ve distinta en cuenta corriente (saldo negativo) y en Tableros
@@ -3761,11 +3779,12 @@ como presentación). Los números son los del listado de Rocío.
   la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
   Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos
   datos de la tabla (el operador los puede corregir).
-- [ ] **12 y 13. Textos de para quién es la tabla.** "Solo algunos clientes" → "Clientes en particular". En lugar de
+- [x] **12 y 13. Textos de para quién es la tabla.** Hechos (27/10), subidos, pendientes de probar en la VM (§40, punto
+  7, paso 2). "Solo algunos clientes" → "Clientes en particular". En lugar de
   "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los
   clientes, también a los que se carguen después, salvo los que tienen una tabla propia." y "Se aplica solo a los
   clientes que elijas, en lugar de la tabla para todos los clientes."
-- [ ] **14. Registrar tabla.** En lugar de "Viene con los valores de…", propuesta: 'Precargada con los valores de
+- [x] **14. Registrar tabla.** Hecho (27/10), subido, pendiente de probar en la VM (§40, punto 7, paso 2). En lugar de "Viene con los valores de…", propuesta: 'Precargada con los valores de
   "Tarifas a agosto 2026": cambiá los que se actualizaron y elegí a qué clientes se aplica.'
 
 ### Antes del jueves 29/10 (pedido de Rocío)
