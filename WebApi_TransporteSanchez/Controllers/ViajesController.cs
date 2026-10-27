@@ -12,6 +12,7 @@ using System.Text;
 using System.Web.Http;
 using WebApi_TransporteSanchez.Services.WhatsApp;
 using WebApi_TransporteSanchez.Tarifas;
+using WebApi_TransporteSanchez.Viajes;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -455,6 +456,130 @@ namespace WebApi_TransporteSanchez.Controllers
                 P("@vuelta", r.AplicaVuelta ? r.Vuelta : null), P("@est", v.Estadia_Modulos),
                 P("@ff", v.Falso_Flete), P("@base", r.ImporteBase), P("@tdet", r.TarifaDetalle), P("@imp", r.Importe),
                 P("@idet", r.ImporteDetalle), P("@id", id));
+        }
+
+        // ===================== Precio por orden del día (§43, OrdenDelDia) =====================
+        // La vuelta la decide siempre la API (no la pantalla): el primer viaje del día de ese cliente y recorrido es la 1ª y los
+        // demás, la 2ª. Al guardar o eliminar, los otros viajes del grupo se acomodan (los que no salieron) o quedan para
+        // revisar (docs/diseno/vuelta-del-dia-diseno.md).
+
+        // El plan con los datos que quedan. aplica: la tarifa del viaje tiene primero y segundo viaje.
+        private static OrdenDelDia.Plan PlanDelViaje(DbContext db, int id, ViajeDto v, bool aplica, decimal? importe,
+            OrdenDelDia.Sujeto antes, string causa)
+        {
+            var despues = !aplica ? null : new OrdenDelDia.Sujeto
+            {
+                Clase = OrdenDelDia.Viaje, Id = id, ClienteID = v.ClienteID, OrigenID = v.OrigenID, DestinoID = v.DestinoID,
+                Inicio = v.Fecha_Inicio, Estado = antes != null ? antes.Estado : EstadoRegistrado,
+                DePresupuesto = antes != null && antes.DePresupuesto,
+                Vuelta = antes != null && antes.DePresupuesto ? antes.Vuelta : null,
+                Aplica = true, Importe = importe
+            };
+            if (despues == null && (antes == null || !antes.Aplica)) return null;
+            return OrdenDelDia.Planificar(db, despues, antes, causa);
+        }
+
+        // Después de guardar: lo que se actualizó solo y lo que quedó para revisar (para el aviso de la pantalla).
+        private static object AplicarOrden(DbContext db, OrdenDelDia.Plan plan, string causa, string usuario)
+        {
+            if (plan == null || !plan.Cambios.Any()) return null;
+            plan.Causa = causa;
+            var hecho = OrdenDelDia.Aplicar(db, plan, usuario, Cn());
+            return new
+            {
+                Actualizados = hecho.Actualizados.Select(c => new { c.Quien.Id, Importe = c.ImporteNuevo }).ToList(),
+                ParaRevisar = hecho.ParaRevisar.Select(c => new { c.Quien.Clase, c.Quien.Id }).ToList()
+            };
+        }
+
+        private static bool LeerFecha(string texto, out DateTime fecha)
+        {
+            return DateTime.TryParse(texto ?? "", CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
+        }
+
+        // GET api/Viajes/Ocupado: el camión o el chofer ya tienen otro viaje (o un presupuesto aceptado) en ese horario. La
+        // pantalla lo pregunta al elegirlos o al cambiar el inicio o el fin; el guardado lo vuelve a controlar.
+        [HttpGet]
+        [Route("api/Viajes/Ocupado")]
+        public IHttpActionResult Ocupado(string inicio, string fin, int camionId = 0, int choferId = 0, int viajeId = 0, int presupuestoId = 0)
+        {
+            DateTime desde, hasta;
+            if (!LeerFecha(inicio, out desde) || !LeerFecha(fin, out hasta)) return Ok(new List<object>());
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                    return Ok(Ocupacion.Errores(db, camionId, choferId, desde, hasta, viajeId, presupuestoId));
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // GET api/Viajes/{id}/AlEliminar: qué pasa con los otros viajes del grupo si se elimina (para la confirmación, después
+        // de "No se puede deshacer.").
+        [HttpGet]
+        [Route("api/Viajes/{id:int}/AlEliminar")]
+        public IHttpActionResult AlEliminar(int id)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var antes = OrdenDelDia.SujetoDeViaje(db, id);
+                    if (antes == null || !antes.Aplica) return Ok(new { Mensaje = "" });
+                    return Ok(new { Mensaje = OrdenDelDia.QuePasa(OrdenDelDia.Planificar(db, null, antes, "")) });
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // GET api/Viajes/{id}/Orden: Ver detalle y Editar, como está guardado: la línea ("Se cobra como segundo viaje del día:
+        // …"; vacía si el viaje no tiene vuelta) y el grupo del viaje (vacío si es el único).
+        [HttpGet]
+        [Route("api/Viajes/{id:int}/Orden")]
+        public IHttpActionResult Orden(int id)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    var sujeto = OrdenDelDia.SujetoDeViaje(db, id);
+                    var grupo = OrdenDelDia.GrupoGuardado(db, id);
+                    string linea = sujeto != null && sujeto.Aplica
+                        ? OrdenDelDia.Linea(new OrdenDelDia.Plan { Aplica = true, Vuelta = sujeto.Vuelta, Grupo = grupo }) : "";
+                    return Ok(new
+                    {
+                        Linea = linea,
+                        Grupo = grupo.Select(i => new
+                        {
+                            i.Clase, i.Id, i.Este, i.Estado, i.DePresupuesto, Hora = OrdenDelDia.Hora(i.Inicio), Orden = i.VueltaNueva, i.Importe
+                        }).ToList()
+                    });
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        public class PrecioDto
+        {
+            public string Usuario { get; set; }
+        }
+
+        // POST api/Viajes/{id}/Precio: "Actualizar el precio" de un viaje que quedó para revisar por el orden del día (ya salió y
+        // no está en una proforma generada ni en un comprobante). "Mantener el precio" es Resolver de api/Tarifario/Revisar.
+        [HttpPost]
+        [Route("api/Viajes/{id:int}/Precio")]
+        public IHttpActionResult ActualizarPrecio(int id, [FromBody] PrecioDto dto)
+        {
+            try
+            {
+                using (var db = new DbContext(Cn()))
+                {
+                    string error;
+                    var mensaje = OrdenDelDia.ActualizarPrecio(db, id, dto == null ? null : dto.Usuario, Cn(), out error);
+                    if (error != null) return Content(HttpStatusCode.Conflict, new { error });
+                    return Ok(new { Message = mensaje });
+                }
+            }
+            catch (Exception ex) { return InternalServerError(ex); }
         }
 
         private static string TipoCliente(DbContext db, int clienteId)
@@ -1006,10 +1131,28 @@ SELECT CAST(CASE WHEN EXISTS (
                         return Content(HttpStatusCode.BadRequest, erroresChofer);
                     }
 
+                    var ocupado = Ocupacion.Errores(db, viajeDto.CamionID, viajeDto.ChoferID, viajeDto.Fecha_Inicio, viajeDto.Fecha_Fin, 0, 0);
+                    if (ocupado.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, ocupado);
+                    }
+
+                    // La vuelta sale sola (§43): se calcula con la 1ª y, si es el segundo viaje del día, otra vez con la 2ª.
+                    viajeDto.Vuelta = null;
                     var calculo = CalcularImporte(db, 0, viajeDto, new TarifaGuardadaRow(), true);
                     if (!calculo.Ok)
                     {
                         return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
+                    }
+                    var plan = PlanDelViaje(db, 0, viajeDto, calculo.AplicaVuelta, calculo.Importe, null, "se registró un viaje");
+                    if (plan != null && plan.Vuelta == 2)
+                    {
+                        viajeDto.Vuelta = 2;
+                        calculo = CalcularImporte(db, 0, viajeDto, new TarifaGuardadaRow(), true);
+                        if (!calculo.Ok)
+                        {
+                            return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
+                        }
                     }
 
                     var viaje = new VIAJES
@@ -1038,8 +1181,9 @@ SELECT CAST(CASE WHEN EXISTS (
                         GuardarNumTransporte(db, viaje.Viaje_ID, viajeDto.Num_Transporte);
                         GuardarImporte(db, viaje.Viaje_ID, viajeDto, calculo);
                         AuditarKmManual(viaje.Viaje_ID, viajeDto, viajeDto.Usu_Alta);
+                        var orden = AplicarOrden(db, plan, "se registró el viaje #" + viaje.Viaje_ID, viajeDto.Usu_Alta);
                         var whatsApp = NotificarChofer(db, viaje);
-                        return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente.", WhatsApp = whatsApp });
+                        return Ok(new { Viaje_ID = viaje.Viaje_ID, Message = "Viaje registrado correctamente.", WhatsApp = whatsApp, Orden = orden });
                     }
                     catch (DbEntityValidationException ex)
                     {
@@ -1116,6 +1260,9 @@ SELECT CAST(CASE WHEN EXISTS (
                     });
                 }
 
+                // La vuelta la decide la API (§43): la que llega de la pantalla no se usa; se parte de la guardada.
+                viajeDto.Vuelta = TarifaGuardada(db, id).Vuelta;
+
                 bool desdePresupuesto = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0;
                 if (desdePresupuesto && (viaje.ClienteID != viajeDto.ClienteID || viaje.OrigenID != viajeDto.OrigenID || viaje.DestinoID != viajeDto.DestinoID ||
                     !MismaDistancia(viaje.Distancia_KM, viajeDto.Distancia_KM) ||
@@ -1127,12 +1274,33 @@ SELECT CAST(CASE WHEN EXISTS (
                 bool cambiaTarifa = false, tarifaEditable = false;
 
                 bool cambioHojaDeRuta = false, cambioKm = false;
+                OrdenDelDia.Plan plan = null;
                 if (EsRegistrado(estado))
                 {
                     var erroresChofer = ValidarChofer(db, viajeDto);
                     if (erroresChofer.Any())
                     {
                         return Content(HttpStatusCode.BadRequest, erroresChofer);
+                    }
+
+                    var ocupado = Ocupacion.Errores(db, viajeDto.CamionID, viajeDto.ChoferID, viajeDto.Fecha_Inicio, viajeDto.Fecha_Fin, id, 0);
+                    if (ocupado.Any())
+                    {
+                        return Content(HttpStatusCode.BadRequest, ocupado);
+                    }
+
+                    // El orden del día con los datos nuevos: la vuelta de este viaje y lo que pasa con los otros del grupo (el de
+                    // antes y el nuevo). El de un presupuesto conserva su vuelta.
+                    var antesOrden = OrdenDelDia.SujetoDeViaje(db, id);
+                    if (desdePresupuesto)
+                        plan = PlanDelViaje(db, id, viajeDto, tarifaGuardada.Vuelta.HasValue, tarifaGuardada.Importe_Base, antesOrden, "se modificó el viaje #" + id);
+                    else
+                    {
+                        viajeDto.Vuelta = null;
+                        var previo = CalcularImporte(db, id, viajeDto, tarifaGuardada, true);
+                        plan = PlanDelViaje(db, id, viajeDto, previo.Ok && previo.AplicaVuelta, previo.Ok ? previo.Importe : (decimal?)null,
+                            antesOrden, "se modificó el viaje #" + id);
+                        viajeDto.Vuelta = plan != null && plan.Aplica ? plan.Vuelta : null;
                     }
 
                     tarifaEditable = true;
@@ -1202,8 +1370,9 @@ SELECT CAST(CASE WHEN EXISTS (
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
                     if (calculo.Ok) GuardarImporte(db, id, DatosParaImporte(viaje, viajeDto, tarifaGuardada, tarifaEditable), calculo);
                     if (cambioKm) AuditarKmManual(id, viajeDto, viajeDto.Usu_Modi);
+                    var orden = AplicarOrden(db, plan, "se modificó el viaje #" + id, viajeDto.Usu_Modi);
                     var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
-                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp });
+                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp, Orden = orden });
                 }
                 catch (DbEntityValidationException ex)
                 {
@@ -1269,13 +1438,18 @@ SELECT CAST(CASE WHEN EXISTS (
                     if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0)
                         return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado." });
 
+                    // Los otros viajes de su grupo se acomodan o quedan para revisar (§43).
+                    var antesOrden = OrdenDelDia.SujetoDeViaje(db, id);
+                    var plan = antesOrden != null && antesOrden.Aplica ? OrdenDelDia.Planificar(db, null, antesOrden, "se eliminó el viaje #" + id) : null;
+
                     db.Set<VIAJES>().Remove(viaje);
 
                     try
                     {
                         db.Configuration.ValidateOnSaveEnabled = false;
                         db.SaveChanges();
-                        return Ok(new { Message = "Viaje eliminado correctamente." });
+                        var orden = AplicarOrden(db, plan, "se eliminó el viaje #" + id, null);
+                        return Ok(new { Message = "Viaje eliminado correctamente.", Orden = orden });
                     }
                     catch (DbUpdateConcurrencyException)
                     {

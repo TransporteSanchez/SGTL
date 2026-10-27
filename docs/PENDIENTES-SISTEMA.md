@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 26/10/2026.**
+**Última actualización de este documento: 27/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -61,7 +61,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
-| 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Decidido y maqueta aprobada (27/10)**, falta hacerlo | — | Ver §43 y `docs/diseno/vuelta-del-dia-diseno.md` |
+| 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | Commit del 27/10, sin pushear | **Pendiente:** correr `06` y `07` antes de recompilar; pasos en §43 |
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -3754,10 +3754,12 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **1. Vuelta vacío en la tarifa por km.** Ya no existe: era de las tarifas de prueba de antes (ruta + vuelta vacío,
   §31). En la tabla nueva la tarifa por km es km de ida × precio por km (la "larga distancia" del PDF). **Preguntarle a
   Claudia** si ese precio ya contempla la vuelta; si no, la tabla dinámica puede tener "cobrar la vuelta vacía" por tabla.
-- [ ] **2. Tarjeta "Cambios de tarifa para revisar".** Hoy está siempre en el dashboard (vacía dice "No hay nada para
+- [x] **2. Tarjeta "Cambios de tarifa para revisar".** Hecho con la §43 (27/10): se llama "Cambios para revisar", aparece
+  solo si hay algo y a quien lo puede resolver; subido, pendiente de probar en la VM (§43, paso 6). Era: hoy está siempre en el dashboard (vacía dice "No hay nada para
   revisar por cambios de tarifa.") y ya se muestra según los permisos. Pedido: que aparezca solo cuando hay algo para
   revisar, y solo a quien tiene una acción para hacer (los administradores, sí).
-- [ ] **3. 1ª y 2ª vuelta automáticas.** Hoy el sistema propone la 2ª si el camión ya tiene un viaje antes ese día, pero se
+- [x] **3. 1ª y 2ª vuelta automáticas.** Hecho como se decidió en la §43 (27/10): por cliente y recorrido, con camión y
+  chofer ocupados; subido, pendiente de probar en la VM. Era: hoy el sistema propone la 2ª si el camión ya tiene un viaje antes ese día, pero se
   puede cambiar a mano; y **no hay ningún control de que un camión (o un chofer) no tenga dos viajes al mismo tiempo**.
   Pedido: la vuelta sale sola y no se edita (se ve como texto, con el viaje anterior del camión); el mismo camión en
   viajes que se superponen da error al elegirlo y al guardar. Casos borde a decidir: editar la hora o el camión de un
@@ -3890,7 +3892,55 @@ tabla tenga al menos una banda (una tabla solo por km quedaría para después).
 
 ---
 
-## 43. Precio por orden del día (1ª y 2ª vuelta automáticas) y camión ocupado — DECIDIDO Y MAQUETA APROBADA (27/10), FALTA HACER
+## 43. Precio por orden del día (1ª y 2ª vuelta automáticas) y camión ocupado — SUBIDO, PENDIENTE DE PROBAR EN LA VM (27/10)
+
+**Hecho en la Mac (27/10)** con la API simulada y como la maqueta aprobada. Compila en la Mac (C# 7.3) y las pruebas de
+Node dan OK (`tests/orden-del-dia.test.js`, nueva, y `tests/tarifario.test.js`).
+- **API:** `Tarifas/OrdenDelDia.cs` (la regla, los textos y lo que se guarda para revisar) y `Viajes/Ocupacion.cs`
+  (camión y chofer ocupados); `TarifarioCalculo`/`TarifarioImpacto` sin el cálculo por camión; `api/Tarifario/Calcular`
+  devuelve el orden del día (`Orden`: la línea, el bloque y los avisos); en viajes, registrar, editar y eliminar acomodan
+  a los otros y controlan el camión y el chofer, y `api/Viajes/Ocupado`, `{id}/AlEliminar`, `{id}/Orden` y `{id}/Precio`
+  ("Actualizar el precio"; "Mantener el precio" es Resolver de `api/Tarifario/Revisar`); en presupuestos (Facu),
+  `{id}/AlCambiarEstado`, aceptar con el camión o el chofer ocupado no deja, aceptar, rechazar, volver a Pendiente o
+  eliminar acomodan a los otros, y con el precio para revisar no se genera el viaje.
+- **Pantallas:** Registrar y Editar viaje (sin "Vuelta": la línea, el bloque del día, los avisos y el error de ocupado
+  debajo del campo), Ver detalle del viaje (la línea y el bloque en Tarifa, y arriba el "Precio para revisar" con sus
+  botones), la fila de Gestionar viajes, Presupuestos (la línea debajo del importe, las confirmaciones, el aviso con
+  "Volver a Pendiente" y "Mantener el precio" en Ver PDF, Generar viaje deshabilitado con el motivo), Proformas (el
+  globito) y la tarjeta "Cambios para revisar" del dashboard y de Tableros (antes "Cambios de tarifa para revisar"; ahora
+  desaparece si no hay nada). Los avisos de cambios de tarifa pasaron al mismo tono (§5.1 del design system).
+- **Dos decisiones chicas mías, para que Rocío las confirme:** en el formulario de presupuesto va solo la línea, sin el
+  bloque (mientras está pendiente no mueve a los otros, y la confirmación de aceptarlo dice lo que pasa); y en
+  presupuestos el globito dice "Es necesario que lo revises en Ver PDF." (no hay "Ver detalle del presupuesto").
+- **Avisarle a Facu:** se tocaron `PresupuestosController.cs`, `presupuestos.js` y `presupuestos.html`, y el globito de
+  `gestion-facturacion.html`.
+
+**Cómo probarlo en la VM:**
+1. **Antes de recompilar:** correr en SSMS `database/tarifas/06_precio_por_orden_del_dia.sql` (las tres filas "OK") y
+   `database/tarifas/07_relevar_vueltas_por_recorrido.sql` (solo lectura). Pasarle a Claude el resultado del `07`: lo
+   que tenga otra vuelta con la regla nueva no se cambia solo; se decide antes de seguir.
+2. `git pull`, recompilar la API y recargar el navegador sin caché.
+3. Registrar viaje con tarifa fija y un recorrido de hasta 130 km, un día sin otros viajes de ese cliente y recorrido:
+   debajo de la tarifa, "Se cobra como primer viaje del día.", sin bloque.
+4. Otro del mismo cliente, recorrido y día, **más temprano** y con otro camión: el bloque con los dos, el otro con
+   "Se actualiza" y "antes $ …", y el aviso azul. Guardar: "Viaje registrado. El precio del viaje #N se actualizó a $ …".
+   En Ver detalle de los dos, el bloque con 1º y 2º.
+5. Uno más, **más tarde**: "Se cobra como segundo viaje del día: ya está el viaje #N a las HH:MM hs.", sin avisos.
+6. Pasar el segundo a En viaje o Entregado y registrar otro más temprano: el viaje entregado con "Para revisar" y el aviso
+   amarillo. Guardar: "… Es necesario que revises el precio del viaje #N.". En la fila, el ícono rojo con "Precio para
+   revisar"; en el dashboard, la tarjeta "Cambios para revisar". En Ver detalle, probar "Mantener el precio" (con un
+   motivo, y mirarlo en Auditoría) y, en otro caso, "Actualizar el precio" (el toast dice que hay que avisarle al cliente).
+7. Eliminar el primero del día: la confirmación dice qué pasa con el otro (se actualiza solo o queda para revisar).
+8. Camión ocupado: elegir un camión que ya tiene un viaje que se superpone → "Camión ocupado: viaje #N, de … hs a … hs."
+   debajo de Camión; al cambiar la hora para que no se superponga, se va. Lo mismo con el chofer. Con el error, Guardar no
+   deja.
+9. Un viaje en una proforma generada al que le cambia el lugar: queda para revisar con "Ver la proforma"; al anular la
+   proforma se recalcula con la vuelta nueva y deja de estar para revisar.
+10. Presupuestos: con tarifa fija y recorrido corto, la línea debajo del importe (sin "Vuelta del día"). Aceptarlo con un
+    viaje Registrado del mismo cliente, recorrido y día más tarde: la confirmación dice que ese viaje pasa a segundo y el
+    toast, que se actualizó. Aceptar uno con el camión ocupado: "No se puede aceptar el presupuesto. Camión ocupado: …".
+    Rechazarlo: el viaje vuelve a primero. Generar viaje con un chofer ocupado: el error debajo del chofer.
+11. Gestionar tarifas: corregir una tabla que usan viajes con vuelta: el impacto se sigue viendo y guardando bien.
 
 **Resumen que manda (27/10): `docs/diseno/vuelta-del-dia-diseno.md`**, con la regla, dónde se ve y todos los casos
 (normales y borde) con su mensaje y lo que puede hacer la persona. **Maqueta aprobada por Rocío (27/10):**

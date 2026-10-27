@@ -109,7 +109,9 @@
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
     var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">sin IVA · ' + esc(imp.detalle) + '</span>'
-      : 'Sin tarifa asignada.');
+      : 'Sin tarifa asignada.') +
+      // Precio por orden del día (§43): la línea y, si hay otro viaje de ese cliente y recorrido ese día, el bloque.
+      '<div id="verViajeOrden"></div>';
 
     var entregado = !!(v.Resultado_Entrega || v.Fecha_Entrega);
     var evidencia = v.Tiene_Evidencia
@@ -129,8 +131,9 @@
       ? '<a class="d-inline-block mt-2" href="gestion-viajes.html?viaje=' + encodeURIComponent(v.Viaje_ID) + '"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Gestionar viajes</a>'
       : '';
 
-    // En filas (pedido de Rocío, 22/10): los dos bloques de cada fila empiezan a la misma altura.
-    return '<div class="sgtl-detalle-grilla">' + bloque('Recorrido', recorrido, true) +
+    // En filas (pedido de Rocío, 22/10): los dos bloques de cada fila empiezan a la misma altura. Arriba, lo que quedó
+    // para revisar (cambios-tarifa.js).
+    return '<div id="verViajePrecio"></div><div class="sgtl-detalle-grilla">' + bloque('Recorrido', recorrido, true) +
       bloque('Fechas, camión y chofer', asignacion) + bloque('Tarifa', tarifa) +
       bloque('Entrega', entrega) + bloque('Números de referencia', numeros) +
       // Recorrido completo y costo (control interno, 24/10): lo dibuja costos-viaje.js cuando llega.
@@ -159,15 +162,44 @@
       }, function () { /* sin los módulos, el detalle se ve igual, sin el costo */ });
   }
 
-  // Si el viaje quedó para revisar por un cambio de tarifa (§33 de PENDIENTES), el aviso va arriba del detalle. El módulo
-  // se carga solo, como el del costo.
-  function mostrarCambioTarifa(viaje, numero) {
+  // El viaje como está ahora (después de actualizar o mantener su precio), con el mismo detalle abierto. La pantalla de
+  // atrás se entera con el evento "sgtl:viaje-cambiado" (para volver a buscar).
+  function volverAAbrir(viaje, opciones) {
+    document.dispatchEvent(new CustomEvent('sgtl:viaje-cambiado', { detail: { viajeId: viaje.Viaje_ID } }));
+    pedir('/Viajes/Buscar?idViaje=' + encodeURIComponent(viaje.Viaje_ID) + '&page=1&pageSize=1').then(function (datos) {
+      var v = datos && (datos.Results || datos.results || [])[0];
+      abrir(v || viaje, opciones);
+    });
+  }
+
+  // Si el viaje quedó para revisar por un cambio de tarifa (§33 de PENDIENTES) o por el orden del día (§43), el aviso va
+  // arriba del detalle, con lo que se puede hacer desde acá ("Actualizar el precio", "Mantener el precio"…). El módulo se
+  // carga solo, como el del costo.
+  function mostrarCambioTarifa(viaje, numero, opciones) {
     cargarScript('assets/static/js/cambios-tarifa.js', function () { return !!window.SGTLCambiosTarifa; })
       .then(function () { return window.SGTLCambiosTarifa.cargar({ viajeId: viaje.Viaje_ID }); })
       .then(function (filas) {
         if (numero !== apertura || !filas.length) return;
-        document.getElementById('verViajeCuerpo').insertAdjacentHTML('afterbegin', window.SGTLCambiosTarifa.aviso(filas));
+        window.SGTLCambiosTarifa.avisoPrecio('#verViajePrecio', filas, {
+          estado: viaje.Estado, dePresupuesto: !!viaje.Presupuesto_ID,
+          alResolver: function () { volverAAbrir(viaje, opciones); }
+        });
       }, function () { /* sin el módulo, el detalle se ve igual */ });
+  }
+
+  // Precio por orden del día (§43; maqueta del 27/10, 1d): debajo del importe, si se cobra como primer o segundo viaje del
+  // día y, si hay otro viaje de ese cliente y recorrido ese día, el bloque con los dos (cada uno con su estado).
+  function mostrarOrden(viaje, numero) {
+    // Solo los que tienen primer y segundo viaje (tarifa fija hasta la primera banda: la vuelta guardada no está vacía).
+    if ('Vuelta' in viaje && viaje.Vuelta == null) return;
+    Promise.all([cargarScript('assets/static/js/orden-del-dia.js', function () { return !!window.SGTLOrdenDelDia; }),
+      pedir('/Viajes/' + encodeURIComponent(viaje.Viaje_ID) + '/Orden')]).then(function (r) {
+      var orden = r[1], contenedor = document.getElementById('verViajeOrden');
+      if (numero !== apertura || !orden || !contenedor) return;
+      contenedor.innerHTML = (orden.Linea ? '<div class="suave mt-1">' + esc(orden.Linea) + '</div>' : '') +
+        (orden.Grupo && orden.Grupo.length > 1
+          ? '<div class="mt-2">' + window.SGTLOrdenDelDia.bloque(orden.Grupo, { fecha: viaje.Fecha_Inicio, modo: 'detalle' }) + '</div>' : '');
+    }, function () { /* sin el módulo, el detalle se ve igual */ });
   }
 
   function abrir(viaje, opciones) {
@@ -182,7 +214,8 @@
       if (numero !== apertura) return;
       document.getElementById('verViajeCuerpo').innerHTML = cuerpo(viaje, r[0], r[1], r[2], opciones);
       mostrarCosto(viaje, numero);
-      mostrarCambioTarifa(viaje, numero);
+      mostrarCambioTarifa(viaje, numero, opciones);
+      mostrarOrden(viaje, numero);
     });
   }
 

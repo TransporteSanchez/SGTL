@@ -388,6 +388,8 @@
                     const viaje = viajesPagina[$(this).data('id')];
                     if (viaje) SGTLDetalleViaje.abrir(viaje);
                 });
+                // Se actualizó o se mantuvo el precio desde Ver detalle (§43): la tabla, con el importe que quedó.
+                document.addEventListener('sgtl:viaje-cambiado', function () { buscarViajes(currentPage); });
                 cargarListas();
                 buscarViajes(1);
             });

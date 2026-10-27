@@ -1493,3 +1493,82 @@ body .sgtl-zona-recuadro .btn.btn-link {
         max-width: min(1440px, calc(100vw - 3rem));
     }
 }
+
+/* Precio por orden del día (§43; design system §6.3, "Bloque del día"): los viajes de ese cliente y recorrido ese día, en
+   orden, con el lugar de cada uno en un círculo ("1º", "2º"), la etiqueta de lo que le pasa y el precio. Del ancho de lo
+   que tiene (no todo el modal), con el aviso de abajo del mismo ancho. Lo arma orden-del-dia.js. */
+.sgtl-dia,
+.sgtl-dia-aviso {
+    max-width: 560px;
+}
+
+.sgtl-dia-titulo {
+    font-size: .8125rem;
+    color: var(--sgtl-texto-suave);
+    margin-bottom: .4rem;
+}
+
+.sgtl-dia {
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio);
+    overflow: hidden;
+}
+
+.sgtl-dia-fila {
+    display: grid;
+    grid-template-columns: 2.75rem 1fr auto;
+    gap: .75rem;
+    align-items: center;
+    padding: .55rem .9rem;
+}
+
+.sgtl-dia-fila + .sgtl-dia-fila {
+    border-top: 1px solid var(--sgtl-borde);
+}
+
+.sgtl-dia-fila.este {
+    background: #f3f6ff;
+    box-shadow: inset 3px 0 0 var(--sgtl-marca);
+}
+
+.sgtl-dia-orden {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    font-weight: 700;
+    font-size: .9rem;
+    background: #eef0f2;
+    color: #5c636a;
+}
+
+.sgtl-dia-fila.este .sgtl-dia-orden {
+    background: var(--sgtl-marca);
+    color: #fff;
+}
+
+.sgtl-dia-quien {
+    font-weight: 600;
+    color: var(--sgtl-texto);
+}
+
+.sgtl-dia-quien .badge {
+    margin-left: .4rem;
+    vertical-align: middle;
+}
+
+.sgtl-dia-quien small,
+.sgtl-dia-precio small {
+    display: block;
+    font-weight: 400;
+    color: var(--sgtl-texto-suave);
+}
+
+.sgtl-dia-precio {
+    text-align: right;
+    white-space: nowrap;
+    font-weight: 600;
+    color: var(--sgtl-texto);
+}

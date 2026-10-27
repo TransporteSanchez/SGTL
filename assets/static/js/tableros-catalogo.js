@@ -101,7 +101,7 @@
     { id: 'facturacionmes', tema: 'facturacion', titulo: 'Facturación por cliente y por mes', tituloId: 'titulo-facturacionmes', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-facturacion"><p class="dash-mensaje">Cargando…</p></div>' },
     // Nuevo (24/10, segunda tanda): cliente × antigüedad de lo vencido × monto.
     { id: 'deudaantiguedad', tema: 'facturacion', titulo: 'Antigüedad de la deuda', alcance: 'Hoy', tipo: 'natural', w: 12, h: 6, minH: 4, cuerpo: '<div id="calor-deuda"><p class="dash-mensaje">Cargando…</p></div>' }
-    // "Cambios de tarifa para revisar" no está acá: es una tarjeta fija del dashboard, sin estrella (cambios-tarifa.js).
+    // "Cambios para revisar" no está acá: es una tarjeta fija del dashboard, sin estrella (cambios-tarifa.js).
   ];
 
   var POR_ID = {};

@@ -117,6 +117,8 @@ namespace WebApi_TransporteSanchez.Tarifas
         {
             internal int Viaje_ID;
             internal int ClienteID;
+            internal int OrigenID;
+            internal int DestinoID;
             internal string Cliente;
             internal int CamionID;
             internal DateTime Fecha_Inicio;
@@ -140,15 +142,19 @@ namespace WebApi_TransporteSanchez.Tarifas
             internal string Comprobante_Numero;
         }
 
+        // Para la vuelta de lo que no la tiene guardada: los viajes del mismo cliente y recorrido (§43, OrdenDelDia).
         internal class Salida
         {
             internal int Viaje_ID;
-            internal int CamionID;
+            internal int ClienteID;
+            internal int OrigenID;
+            internal int DestinoID;
             internal DateTime Fecha_Inicio;
         }
 
         private const string SQL_VIAJES = @"
-SELECT v.Viaje_ID, v.ClienteID, ISNULL(cl.Razon_Social, '') AS Cliente, ISNULL(v.CamionID, 0) AS CamionID, v.Fecha_Inicio,
+SELECT v.Viaje_ID, v.ClienteID, ISNULL(v.OrigenID, 0) AS OrigenID, ISNULL(v.DestinoID, 0) AS DestinoID,
+       ISNULL(cl.Razon_Social, '') AS Cliente, ISNULL(v.CamionID, 0) AS CamionID, v.Fecha_Inicio,
        RTRIM(ISNULL(v.Distancia_KM, '')) AS Distancia_KM, v.TarifarioID, ISNULL(v.Tarifa_Modo, 'Fija') AS Tarifa_Modo, v.Vuelta,
        v.Falso_Flete, v.Estadia_Modulos, v.Importe, v.Tarifa_Detalle, v.Importe_Detalle, ISNULL(v.Estado, '') AS Estado,
        pr.Presupuesto_ID, doc.Proforma_ID, doc.Numero AS Proforma_Numero, doc.Estado AS Proforma_Estado, doc.Tipo_Proforma, doc.Precio_Linea,
@@ -276,8 +282,13 @@ WHERE v.TarifarioID IS NOT NULL";
                     "SELECT Camion_ID, RTRIM(ISNULL(Dominio, '')) AS Dominio, ISNULL(Tipo, '') AS Tipo, ISNULL(TRY_CAST(AñoModelo AS int), 0) AS Anio FROM dbo.CAMIONES",
                     r => new KeyValuePair<int, Camion>(Int(r, "Camion_ID"), new Camion { Dominio = Str(r, "Dominio"), Tipo = (Str(r, "Tipo") ?? "").Trim(), Anio = Int(r, "Anio") }))
                     .ToDictionary(x => x.Key, x => x.Value),
-                Salidas = Leer(cn, tx, "SELECT Viaje_ID, ISNULL(CamionID, 0) AS CamionID, Fecha_Inicio FROM dbo.VIAJES",
-                    r => new Salida { Viaje_ID = Int(r, "Viaje_ID"), CamionID = Int(r, "CamionID"), Fecha_Inicio = Convert.ToDateTime(r["Fecha_Inicio"]) }),
+                Salidas = Leer(cn, tx, "SELECT Viaje_ID, ISNULL(ClienteID, 0) AS ClienteID, ISNULL(OrigenID, 0) AS OrigenID, " +
+                    "ISNULL(DestinoID, 0) AS DestinoID, Fecha_Inicio FROM dbo.VIAJES",
+                    r => new Salida
+                    {
+                        Viaje_ID = Int(r, "Viaje_ID"), ClienteID = Int(r, "ClienteID"), OrigenID = Int(r, "OrigenID"),
+                        DestinoID = Int(r, "DestinoID"), Fecha_Inicio = Convert.ToDateTime(r["Fecha_Inicio"])
+                    }),
                 Viajes = Leer(cn, tx, SQL_VIAJES, LeerViaje),
                 Presupuestos = Leer(cn, tx, "SELECT Presupuesto_ID, Datos FROM dbo.PRESUPUESTOS WHERE Estado = 'Pendiente' AND ViajeID IS NULL",
                     r => new KeyValuePair<int, string>(Int(r, "Presupuesto_ID"), Str(r, "Datos"))),
@@ -328,6 +339,8 @@ WHERE v.TarifarioID IS NOT NULL";
             {
                 Viaje_ID = Int(r, "Viaje_ID"),
                 ClienteID = Int(r, "ClienteID"),
+                OrigenID = Int(r, "OrigenID"),
+                DestinoID = Int(r, "DestinoID"),
                 Cliente = Str(r, "Cliente"),
                 CamionID = Int(r, "CamionID"),
                 Fecha_Inicio = Convert.ToDateTime(r["Fecha_Inicio"]),
@@ -381,11 +394,12 @@ WHERE v.TarifarioID IS NOT NULL";
             return TarifarioCalculo.SumarAdicionales(r, falsoFlete || estadia > 0 ? t.Datos : null, falsoFlete, estadia);
         }
 
-        // 2ª vuelta si el camión ya tiene otro viaje que empieza antes ese día (como TarifarioCalculo.ViajeAnteriorDelDia).
-        private static int VueltaSugerida(List<Salida> salidas, int camionId, DateTime inicio, int viajeId)
+        // 2ª vuelta si el mismo cliente ya tiene otro viaje con el mismo origen y destino que empieza antes ese día (§43,
+        // OrdenDelDia; solo para lo que todavía no tiene la vuelta guardada).
+        private static int VueltaSugerida(List<Salida> salidas, int clienteId, int origenId, int destinoId, DateTime inicio, int viajeId)
         {
-            return camionId > 0 && salidas.Any(s => s.CamionID == camionId && s.Viaje_ID != viajeId
-                && s.Fecha_Inicio.Date == inicio.Date && s.Fecha_Inicio < inicio) ? 2 : 1;
+            return clienteId > 0 && salidas.Any(s => s.ClienteID == clienteId && s.OrigenID == origenId && s.DestinoID == destinoId
+                && s.Viaje_ID != viajeId && s.Fecha_Inicio.Date == inicio.Date && s.Fecha_Inicio < inicio) ? 2 : 1;
         }
 
         private static void AgregarViaje(Resultado res, Viaje v, List<Tabla> tablas, int editadaId,
@@ -429,7 +443,7 @@ WHERE v.TarifarioID IS NOT NULL";
             camiones.TryGetValue(v.CamionID, out Camion camion);
             string error;
             var calculo = CalcularCon(despues, camion, v.Tarifa_Modo == "Km", Km(v.Distancia_KM), v.Vuelta,
-                VueltaSugerida(salidas, v.CamionID, v.Fecha_Inicio, v.Viaje_ID), v.Falso_Flete, v.Estadia_Modulos, out error);
+                VueltaSugerida(salidas, v.ClienteID, v.OrigenID, v.DestinoID, v.Fecha_Inicio, v.Viaje_ID), v.Falso_Flete, v.Estadia_Modulos, out error);
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;
@@ -541,6 +555,9 @@ WHERE v.TarifarioID IS NOT NULL";
             if (!int.TryParse((string)json["tarifarioId"], out tarifarioId) || tarifarioId <= 0) return;   // no se calculó con la tabla
             int.TryParse((string)json["clienteId"], out clienteId);
             int.TryParse((string)json["camionId"], out camionId);
+            int origenId, destinoId;
+            int.TryParse((string)json["origenId"], out origenId);
+            int.TryParse((string)json["destinoId"], out destinoId);
             if (!DateTime.TryParse((string)json["fechaInicio"], CultureInfo.InvariantCulture, DateTimeStyles.None, out inicio)) return;
             bool tieneImporte = decimal.TryParse((string)json["importe"], NumberStyles.Number, CultureInfo.InvariantCulture, out importe);
             int? vuelta = int.TryParse((string)json["vuelta"], out vueltaGuardada) ? vueltaGuardada : (int?)null;
@@ -578,7 +595,7 @@ WHERE v.TarifarioID IS NOT NULL";
             string error;
             // El presupuesto guarda solo la base: sin falso flete ni estadía.
             var calculo = CalcularCon(despues, camion, (string)json["tipoTarifa"] == "km", km, vuelta,
-                VueltaSugerida(salidas, camionId, inicio, 0), false, 0, out error);
+                VueltaSugerida(salidas, clienteId, origenId, destinoId, inicio, 0), false, 0, out error);
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;

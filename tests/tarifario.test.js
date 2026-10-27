@@ -159,9 +159,11 @@ function probarParaRevisar() {
     assert.ok(!/SGTL\.ajax\(/.test(modulo), 'cambios-tarifa.js usa fetch: Presupuestos no carga jQuery');
 
     const presupuestos = leer('assets/static/js/presupuestos.js');
-    assert.ok(presupuestos.indexOf("'Cambió la tarifa: revisalo en Ver PDF.'") !== -1, 'Presupuestos: el ícono manda a Ver PDF');
-    assert.ok(/el\('vistaPresupuestoCambio'\)\.innerHTML = avisoCambio\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p, \{ enEditar: true \}\)/.test(presupuestos)
-        && modulo.indexOf("'Reenviáselo desde Ver PDF → Enviar por e-mail.'") !== -1,
+    assert.ok(/SGTLCambiosTarifa\.iconoPrecio\(cambiosDe\(p\), 'Ver qué cambió en el presupuesto #' \+ p\.id, \{ donde: 'Ver PDF' \}\)/.test(presupuestos),
+        'Presupuestos: el ícono manda a Ver PDF');
+    // §43 (27/10): en Ver PDF el aviso trae "Volver a Pendiente" y "Mantener el precio" si es por el orden del día.
+    assert.ok(/SGTLCambiosTarifa\.avisoPrecio\(el\('vistaPresupuestoCambio'\), cambiosDe\(p\)/.test(presupuestos) && /el\('cambioTarifaPresupuesto'\)\.innerHTML = avisoCambio\(p, \{ enEditar: true \}\)/.test(presupuestos)
+        && modulo.indexOf("'Es necesario que se lo reenvíes al cliente desde Ver PDF → Enviar por e-mail.'") !== -1,
         'Presupuestos: el aviso en Ver PDF y en Editar (en Editar, dice que se reenvía desde Ver PDF)');
     assert.ok(/SGTLCambiosTarifa\.presupuestoEnviado\(enviadoId\)/.test(presupuestos) && /\/Tarifario\/Revisar\/Presupuesto\/' \+ encodeURIComponent\(id\) \+ '\/Enviado'/.test(modulo),
         'Presupuestos: enviarlo por e-mail lo resuelve');
@@ -169,13 +171,13 @@ function probarParaRevisar() {
         'presupuestos.html carga el módulo antes de presupuestos.js');
 
     const proformas = leer('gestion-facturacion.html');
-    assert.ok(proformas.indexOf("': revisá el detalle de la proforma.'") !== -1 && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\),\s+\{ enLaProforma: true/.test(proformas),
+    assert.ok(/SGTLCambiosTarifa\.iconoPrecio\(filas, 'Ver qué cambió en ' \+ nombreProforma\(x\), \{ enLaProforma: true \}\)/.test(proformas) && /SGTLCambiosTarifa\.aviso\(cambiosDeProforma\(p\.Proforma_ID\),\s+\{ enLaProforma: true/.test(proformas),
         'Proformas: ícono en la fila y aviso en el detalle');
 
     const viajes = leer('gestion-viajes.html');
-    assert.ok(viajes.indexOf("'<div>Cambió la tarifa: revisá el detalle del viaje.</div>'") !== -1 && /botonInfo\(cambio\.length \? 'urgente' : 'info'/.test(viajes),
+    assert.ok(viajes.indexOf('partes.push(SGTLCambiosTarifa.globo(cambio))') !== -1 && /botonInfo\(cambio\.length \? 'urgente' : 'info'/.test(viajes),
         'Viajes: el ícono pasa a rojo y suma el texto');
-    assert.ok(/mostrarCambioTarifa\(viaje, numero\)/.test(leer('assets/static/js/viaje-detalle.js')), 'Ver detalle del viaje muestra el aviso');
+    assert.ok(/mostrarCambioTarifa\(viaje, numero, opciones\)/.test(leer('assets/static/js/viaje-detalle.js')), 'Ver detalle del viaje muestra el aviso');
 
     // Rocío, 25/10: cada uno ve lo que puede resolver, y la tarjeta es fija en el dashboard (sin estrella).
     const api2 = leer('WebApi_TransporteSanchez/Controllers/TarifarioController.cs');
@@ -187,7 +189,7 @@ function probarParaRevisar() {
     assert.ok(/SGTLCambiosTarifa\.tarjetaFija\(document\.getElementById\('cambiosTarifaFija'\)\)/.test(leer('index.html')), 'el dashboard la muestra fija');
     assert.ok(/SGTLCambiosTarifa\.tarjetaFija\(document\.getElementById\('cambiosTarifaTableros'\), \{ estrellaFija: true \}\)/.test(leer('tableros.html')),
         'en Tableros está en Facturación, con la estrella fija');
-    assert.ok(/'No se puede quitar del dashboard: está fijo para quien resuelve cambios de tarifa'/.test(modulo) && /disabled aria-pressed="true"/.test(modulo),
+    assert.ok(/'No se puede quitar del dashboard: está fijo para quien resuelve los cambios para revisar'/.test(modulo) && /disabled aria-pressed="true"/.test(modulo),
         'la estrella fija está deshabilitada con el motivo (§1.4)');
     assert.ok(/get\('presupuesto'\)/.test(presupuestos) && /get\('proforma'\)/.test(proformas), 'cada fila lleva a donde se corrige');
     assert.ok(/texto: 'Anular proforma'/.test(proformas), 'el aviso de la proforma trae "Anular proforma"');
@@ -244,7 +246,8 @@ function probarTablasPorCliente() {
     assert.ok(/ORDER BY t\.Para_Todos, t\.Vigente_Desde DESC/.test(calculo), 'la tabla propia del cliente gana sobre la general');
     assert.ok(/Vigente\(db, p\.FechaInicio, p\.ClienteID\)/.test(calculo), 'el cálculo usa el cliente del viaje');
     assert.ok(/ClienteID = v\.ClienteID/.test(leer('WebApi_TransporteSanchez/Controllers/ViajesController.cs')), 'el viaje pasa su cliente');
-    assert.ok(/clienteId: \$\('#clienteSelect'\)\.val\(\) \|\| 0 \}/.test(leer('gestion-viajes.html')), 'Registrar viaje calcula con el cliente');
+    assert.ok(/clienteId: \$\('#clienteSelect'\)\.val\(\) \|\| 0, origenId: \$\('#origenSelect'\)\.val\(\) \|\| 0/.test(leer('gestion-viajes.html')),
+        'Registrar viaje calcula con el cliente (y el recorrido, para el orden del día)');
     assert.ok(/clienteId: el\('cliente'\)\.value/.test(leer('assets/static/js/presupuestos.js')), 'presupuestos calcula con el cliente');
     const pantalla = leer('gestion-tarifas.html');
     assert.ok(/id="trParaTodos" value="todos" checked/.test(pantalla) && /id="trParaAlgunos"/.test(pantalla),

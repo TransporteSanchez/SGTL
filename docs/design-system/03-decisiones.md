@@ -18,7 +18,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Avisos (§5.1) | `SGTL.toastExito(texto)`, `SGTL.toastError(texto)`; error dentro de un modal: `SGTL.avisoFormulario(aviso, texto, detalle)` (`detalle`: lista opcional) |
 | Texto de un error de la API (§9) | `SGTL.mensajeError(xhr, porDefecto)`; `$.ajax` como promesa: `SGTL.ajax(opciones, porDefecto)` |
-| Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, detalle, ancho, accion })` |
+| Confirmar (§5.2) | `SGTL.confirmar({ titulo, mensaje, verbo, peligro, motivo, detalle, ancho, accion })`; `motivo`: `{ etiqueta, obligatorio, placeholder, ayuda }` (`ayuda`: el texto gris de debajo, "Opcional. Queda en Auditoría.") |
 | Guardando… (§8) | `SGTL.procesando(boton, texto)`: devuelve la función que lo restablece |
 | Abrir y cerrar modales | `SGTL.modal(modal, 'show' / 'hide')` |
 | Formularios (§6.3) | `SGTL.validador(reglas)`, `SGTL.revisarFormulario`, `SGTL.reiniciarFormulario`, `SGTL.marcarError`, `SGTL.limpiarError`; bloques: `.sgtl-bloque` + `.sgtl-bloque-titulo`; lo que no se edita: `.sgtl-dato-fijo` |
@@ -36,7 +36,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
 | Exportar (§1.2) | `SGTL.descargarCSV` |
 | Datos de la empresa en un documento (§11) | `SGTLEmpresa.obtener(fechaDeEmision)` (`assets/static/js/empresa-datos.js`): `nombre` (el nombre comercial o la razón social), `lineas` (razón social, CUIT, domicilio, contacto) y `logo` (el de la empresa, listo para jsPDF, o `null`: va el nombre en texto); `SGTLEmpresa.medidaLogo` lo encaja sin deformarlo. Un documento ya emitido pasa su fecha de emisión; un borrador, `null` |
-| Cambios de tarifa para revisar (25/10, §33 de PENDIENTES) | `SGTLCambiosTarifa` (`assets/static/js/cambios-tarifa.js`): `cargar(filtro)` (solo lo que el usuario puede resolver), `de(lista, campo, id)`, `icono(filas, texto, etiqueta)` (el rojo de §4.3 al lado del estado, con un texto corto), `aviso(filas, opciones)` (el amarillo de adentro: el importe de antes y el de ahora, qué hacer y, si se corrige ahí, el botón) y `tarjetaFija(contenedor)` (la tarjeta del dashboard que no se saca: cada fila lleva a donde se corrige) |
+| Cambios para revisar (25/10 y 27/10, §33 y §43 de PENDIENTES) | `SGTLCambiosTarifa` (`assets/static/js/cambios-tarifa.js`): `cargar(filtro)` (solo lo que el usuario puede resolver), `de(lista, campo, id)`, `iconoPrecio(filas, etiqueta, opciones)` (el rojo de §4.3 al lado del estado, con el globito de `globo(filas, opciones)`: qué pasó y, en gris, dónde se resuelve), `aviso(filas, opciones)` (el amarillo de adentro: qué cambió y qué falta, §5.1), `avisoPrecio(contenedor, filas, opciones)` (el mismo aviso adentro del viaje o del presupuesto, con los botones para resolverlo ahí: "Actualizar el precio", "Mantener el precio", "Volver a Pendiente", "Ver la proforma") y `tarjetaFija(contenedor)` ("Cambios para revisar" en el dashboard: no se saca, desaparece si no hay nada y cada fila lleva a donde se corrige) |
+| Precio por orden del día (27/10, §43 de PENDIENTES; §6.3) | `SGTLOrdenDelDia` (`assets/static/js/orden-del-dia.js`): `dibujar(contenedor, orden, { fecha, modo })` (el bloque del día y los avisos de lo que pasa al guardar, con lo que devuelve la API), `bloque(grupo, opciones)`, `avisos(lista)` y `textoGuardado(base, orden)` (el toast con lo que cambió en los otros viajes); estilos `.sgtl-dia` en `sgtl.css` |
 | Control interno de los viajes (24/10) | Km al galpón de los orígenes y destinos: `SGTLGalpon.completar(opciones)` (`assets/static/js/galpon-km.js`, con Google Maps); el bloque "Recorrido completo y costo" de Ver detalle del viaje: `SGTLCostosViaje` (`assets/static/js/costos-viaje.js`, lo carga solo `viaje-detalle.js`) |
 | Mostrar un permiso (§3.1) | `SGTLPermisos.texto(nombre)` (`assets/static/js/permisos-menu.js`): el texto de su opción del menú; `lista.sort(SGTLPermisos.comparar)` los ordena como el menú |
 | Tableros del dashboard y de Tableros (§13) | `SGTLTableros` (`assets/static/js/tableros-catalogo.js`): el catálogo (`CATALOGO`, `TEMAS`), la tarjeta (`tarjeta(t, { estrella })`) y los favoritos (`leerFavoritos`, `guardarFavoritos`, `restablecer`); los datos los dibuja `dashboard.js`; estilos en `assets/static/css/tableros.css` |
@@ -400,6 +401,11 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   envíes de nuevo"). El porqué va con "Como está…" (no "Al estar…": se repite el "al"). Vale para los avisos amarillos,
   las confirmaciones, los toasts y la línea gris del final de un globito ("Es necesario que lo revises en Ver detalle del
   viaje."). Los motivos de los botones deshabilitados siguen el §1.4: un hecho, sin "es necesario".
+- **Adentro del documento, lo pendiente se resuelve ahí mismo** (27/10, "Precio para revisar"): el aviso amarillo arriba
+  del detalle o del formulario, con el título en negrita ("Precio para revisar"), el texto con el tono de arriba y, debajo,
+  botones chicos con texto para resolverlo ("Actualizar el precio" en azul, "Mantener el precio" en gris; "Ver la
+  proforma" si se corrige en otro lado). Cada botón confirma (§5.2) y, al terminar, el toast dice cómo quedó y el detalle
+  se vuelve a abrir con los datos nuevos (`SGTLCambiosTarifa.avisoPrecio`).
 - **Nunca `alert()`.**
 - **Lo que se manda afuera al guardar se avisa antes, a la vista** (22/10, viajes): un aviso azul
   (`alert alert-info sgtl-aviso-whatsapp`, con el ícono de WhatsApp) junto al dato que lo dispara, con el nombre de
@@ -417,7 +423,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   - una línea con la consecuencia: "No se puede deshacer.";
   - botones "Cancelar" (gris) y **el verbo de la acción** ("Eliminar", "Anular", "Generar",
     "Enviar"), en rojo si destruye o anula;
-  - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal;
+  - si hace falta un motivo (anular), se pide en un campo obligatorio dentro del mismo modal; si es opcional ("Mantener el
+    precio"), el campo lleva un ejemplo adentro y, debajo, "Opcional. Queda en Auditoría.";
   - si la acción cambia otras cosas (guardar una tabla de tarifas recalcula viajes y presupuestos, §33 de PENDIENTES), el
     mensaje es **una sola línea que presenta la lista** ("Al guardar, pasa esto con los viajes y presupuestos de esta
     tabla.") y **la lista va dentro de la misma confirmación** (`detalle`, con `ancho: 'lg'`): una tabla con grupos (§2.1)
@@ -517,6 +524,13 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   ("No se puede…", §1.4). Lo que necesita más (una lista, algo para cambiar en otro lado) va arriba, en el aviso del
   formulario (§5.1). Un choque entre campos (el camión y la hora del viaje) va debajo del dato que está ocupado, aparezca
   al elegirlo o al cambiar el otro.
+- **Bloque del día** (27/10, precio por orden del día, §43 de PENDIENTES): lo que el sistema decide solo con otros
+  registros se muestra, no se elige. Debajo de la tarifa, una línea gris dice por qué ("Se cobra como segundo viaje del
+  día: ya está el viaje #44 a las 07:00 hs.") y, si hay otro viaje de ese cliente y recorrido ese día, el bloque
+  (`.sgtl-dia`, hasta 560 px): una fila por viaje con el orden en un círculo (el de este viaje en azul, con la fila
+  marcada), quién es con la etiqueta de lo que le pasa (§4.1: "Se actualiza" azul, "Para revisar" amarillo; en Ver
+  detalle, su estado), la hora de inicio y el precio (con "antes $ …" o "le corresponde $ …" en gris). Debajo, el aviso de
+  lo que va a pasar al guardar (§5.1). Lo dibuja `SGTLOrdenDelDia` con lo que devuelve la API.
 - **Cada campo se valida al salir de él**, no en cada tecla, y el rojo se va apenas se corrige.
 - **Opción vacía de los desplegables:** "Seleccioná un cliente" (voseo).
 - **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros. Enter

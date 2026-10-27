@@ -6,8 +6,6 @@
     function cambiosDe(p) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Presupuesto_ID', p.id) : []; }
     function avisoCambio(p, opciones) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDe(p), opciones) : ''; }
     var actual = null, base = null, tarifa = null, secuencia = 0, revision = 0, timer, modal, guardando = false;
-    // Vuelta del día (tabla de tarifas, 24/10): la eligió la persona; si no, se propone la 2ª si el camión ya tiene otro viaje.
-    var vueltaManual = false;
     var envioActual = null, enviando = false, secuenciaEnvio = 0, modalEnvio, modalViaje, presupuestoViaje = null, generandoViaje = false;
     var modalVista, urlVista = null, secuenciaVista = 0;
     // Filtros aplicados (§1.3: se aplican con Buscar, Enter o la cruz) y paginación del listado (§2.2).
@@ -181,12 +179,16 @@
         ponerFechaHora('fechaInicio', ''); ponerFechaHora('fechaFin', ''); el('id').value = ''; el('importe').value = ''; tarifa = null; actual = null; base = null;
         opcionesRuta(); limpiarRutaPresupuesto(); el('tarifaInfo').textContent = 'Completá los datos y seleccioná el tipo de tarifa.';
         el('cambioTarifaPresupuesto').innerHTML = '';
-        vueltaManual = false; el('vueltaPresupuesto').value = '1'; mostrarVuelta(null);
+        mostrarVuelta(null);
     }
-    // Con tarifa fija y hasta el primer límite de km hay 1ª y 2ª vuelta del día (la 2ª, más barata).
-    function mostrarVuelta(r) {
-        el('grupoVueltaPresupuesto').classList.toggle('d-none', !(r && r.AplicaVuelta));
-        el('vueltaPresupuestoAyuda').textContent = r && r.AplicaVuelta ? (r.ViajeAnterior ? 'El camión ya tiene el viaje #' + r.ViajeAnterior + ' antes, ese mismo día.' : 'Es el primer viaje del camión ese día.') : '';
+    // Precio por orden del día (§43, el mismo de Registrar viaje): con tarifa fija y hasta el primer límite de km, el primer
+    // viaje del día de ese cliente y recorrido paga la 1ª vuelta y los demás, la 2ª (más barata). No se elige: lo decide la
+    // API y la línea de debajo del importe dice por qué ("Se cobra como segundo viaje del día: ya está el viaje #44 a las
+    // 07:00 hs."). Mientras está pendiente no mueve a los otros: eso pasa al aceptarlo (lo dice la confirmación).
+    function mostrarVuelta(orden) {
+        var linea = orden && orden.Linea ? orden.Linea : '';
+        el('vueltaPresupuestoLinea').textContent = linea;
+        el('vueltaPresupuestoLinea').classList.toggle('d-none', !linea);
     }
     // Los mensajes de la API nombran la pantalla donde se resuelve: se agrega el enlace.
     function mensajeConEnlace(info, texto) {
@@ -210,19 +212,15 @@
         if (!el('camionId').value) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Seleccioná el camión para calcular la tarifa.'; return; }
         if (!(Number(el('distancia').value) > 0)) { mostrarVuelta(null); el('tarifaInfo').textContent = 'Elegí origen y destino para calcular la distancia y la tarifa.'; return; }
         // Con el cliente: si tiene tabla propia vale esa; si no, la general.
-        var params = new URLSearchParams({ tarifa: tipo, fechaInicio: el('fechaInicio').value, camionId: el('camionId').value, km: el('distancia').value, vuelta: vueltaManual ? el('vueltaPresupuesto').value : '', clienteId: el('cliente').value });
+        // Con el recorrido, para el orden del día (presupuesto=true: no reserva lugar mientras está pendiente).
+        var params = new URLSearchParams({ tarifa: tipo, fechaInicio: el('fechaInicio').value, camionId: el('camionId').value, km: el('distancia').value, clienteId: el('cliente').value,
+            origenId: el('origenId').value || 0, destinoId: el('destinoId').value || 0, presupuesto: 'true', presupuestoId: el('id').value || 0 });
         el('tarifaInfo').textContent = 'Calculando tarifa…';
         pedir(api + '/Tarifario/Calcular?' + params.toString()).then(function (r) {
             if (version !== secuencia) return;
-            if (r.AplicaVuelta && !vueltaManual && r.Vuelta !== r.VueltaSugerida) {
-                el('vueltaPresupuesto').value = String(r.VueltaSugerida);
-                vueltaManual = true; calcular(); vueltaManual = false;
-                return;
-            }
             var importe = Number(r.ImporteBase);
             if (!Number.isFinite(importe) || importe < 0) throw new Error('Importe inválido');
-            mostrarVuelta(r);
-            if (r.AplicaVuelta) el('vueltaPresupuesto').value = String(r.Vuelta);
+            mostrarVuelta(r.Orden);
             tarifa = { tipo: tipo, tarifarioId: r.TarifarioID, vuelta: r.AplicaVuelta ? r.Vuelta : null, importe: importe.toFixed(2), detalle: r.TarifaDetalle };
             el('importe').value = SGTL.monto(tarifa.importe);
             el('tarifaInfo').textContent = r.TarifaDetalle + '.';
@@ -250,7 +248,7 @@
             aviso('mensaje', 'No se pudieron cargar los presupuestos. Probá de nuevo.', true);
         });
     }
-    // presupuestos.html?presupuesto=N abre su Ver PDF (desde la tarjeta "Cambios de tarifa para revisar" del dashboard,
+    // presupuestos.html?presupuesto=N abre su Ver PDF (desde la tarjeta "Cambios para revisar" del dashboard,
     // para reenviarlo). Se usa una vez: el parámetro se saca de la dirección.
     function abrirDesdeEnlace() {
         var id = parseInt(new URLSearchParams(window.location.search).get('presupuesto'), 10);
@@ -304,7 +302,7 @@
             estadoCelda.className = 'text-center text-nowrap';
             // Si cambió la tarifa y hay que reenviarlo, el ícono rojo manda a mirar Ver PDF (§33).
             estadoCelda.innerHTML = SGTL.conInfo(etiquetaEstado(p), cambiosDe(p).length
-                ? SGTLCambiosTarifa.icono(cambiosDe(p), 'Cambió la tarifa: revisalo en Ver PDF.', 'Ver qué cambió en el presupuesto #' + p.id)
+                ? SGTLCambiosTarifa.iconoPrecio(cambiosDe(p), 'Ver qué cambió en el presupuesto #' + p.id, { donde: 'Ver PDF' })
                 : p.viajeId
                 ? SGTL.botonInfo('info', '<div>Generó el <strong>viaje #' + Number(p.viajeId) + '</strong>.</div>', 'Ver qué viaje generó el presupuesto #' + p.id)
                 : '');
@@ -316,13 +314,16 @@
             var generado = 'ya se generó el viaje #' + p.viajeId;
             var estadoTexto = String(p.estado || '').toLowerCase();
             var motivoEditar = 'No se puede editar el presupuesto: ' + (conViaje ? generado : 'está ' + estadoTexto);
+            // Con el precio para revisar por el orden del día (§43), primero se decide (Volver a Pendiente o Mantener el precio).
+            var precioParaRevisar = cambiosDe(p).some(function (c) { return SGTLCambiosTarifa.esOrden(c); });
             var motivoGenerar = 'No se puede generar el viaje: ' + (conViaje ? 'ya existe el viaje #' + p.viajeId
+                : precioParaRevisar && p.estado === 'Aceptado' ? 'el precio del presupuesto está para revisar'
                 : 'el presupuesto ' + (p.estado === 'Pendiente' ? 'todavía no está aceptado' : 'está ' + estadoTexto));
             td.innerHTML = SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: motivoEditar }),
                 SGTL.botonFila('pdf', { id: p.id, texto: 'Ver PDF' }),
                 SGTL.botonFila('estado', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede cambiar el estado: ' + generado }),
-                SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje, motivo: motivoGenerar }),
+                SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje || precioParaRevisar, motivo: motivoGenerar }),
                 SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede eliminar el presupuesto: ' + generado })
             ]);
             var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); },
@@ -339,25 +340,28 @@
         base = Object.assign({}, p); actual = Object.assign({}, p);
         if (p.tarifarioId && p.tipoTarifa && p.importe !== undefined) {
             tarifa = {tipo: p.tipoTarifa, tarifarioId: p.tarifarioId, vuelta: p.vuelta || null, importe: String(p.importe), detalle: p.tarifaDetalle};
-            if (p.vuelta) { el('vueltaPresupuesto').value = String(p.vuelta); vueltaManual = true; mostrarVuelta({ AplicaVuelta: true }); el('vueltaPresupuestoAyuda').textContent = ''; }
             el('importe').value = SGTL.monto(p.importe); el('tarifaInfo').textContent = 'Importe guardado con el presupuesto. Se recalculará si modificás los datos de la tarifa.';
         }
         else { el('tarifaInfo').textContent = 'Presupuesto anterior: completá los datos del viaje y seleccioná una tarifa para actualizarlo.'; }
         el('cambioTarifaPresupuesto').innerHTML = avisoCambio(p, { enEditar: true });
         modal.show();
     }
+    // Si estaba aceptado, la confirmación dice qué pasa con los viajes de ese día (§43).
     function eliminar(p) {
-        SGTL.confirmar({
-            titulo: '¿Eliminar el presupuesto #' + p.id + '?',
-            mensaje: 'No se puede deshacer.',
-            verbo: 'Eliminar',
-            peligro: true,
-            accion: function () {
-                return pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).catch(function (falla) {
-                    var error = new Error('eliminar'); error.mensajeUsuario = textoError(falla, 'No se pudo eliminar el presupuesto. Probá de nuevo.'); throw error;
-                });
-            }
-        }).then(function (eliminado) { if (eliminado) { aviso('mensaje', 'Presupuesto #' + p.id + ' eliminado.', false); listar(); } });
+        var respuesta = null;
+        alCambiarEstado(p, 'Eliminado').then(function (previo) {
+            return SGTL.confirmar({
+                titulo: '¿Eliminar el presupuesto #' + p.id + '?',
+                mensaje: 'No se puede deshacer.' + (previo && previo.Mensaje ? ' ' + previo.Mensaje : ''),
+                verbo: 'Eliminar',
+                peligro: true,
+                accion: function () {
+                    return pedir(api + '/Presupuestos/' + p.id, {method:'DELETE'}).then(function (r) { respuesta = r; }, function (falla) {
+                        var error = new Error('eliminar'); error.mensajeUsuario = textoError(falla, 'No se pudo eliminar el presupuesto. Probá de nuevo.'); throw error;
+                    });
+                }
+            });
+        }).then(function (eliminado) { if (eliminado) { aviso('mensaje', conOrden('Presupuesto #' + p.id + ' eliminado.', respuesta), false); listar(); } });
     }
     function clientePresupuesto(p) { return clientes.find(function (c) { return String(c.Cliente_ID) === String(p.clienteId); }) || null; }
     function encabezadosEnvio() { return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (localStorage.getItem('token') || '') }; }
@@ -367,6 +371,47 @@
         Aceptado: { texto: 'El cliente lo aceptó. Queda listo para generar el viaje.', aviso: 'aceptado', color: 'amarillo' },
         Rechazado: { texto: 'El cliente no lo aceptó. Queda guardado como rechazado.', aviso: 'rechazado', color: 'rojo' }
     };
+    // Precio por orden del día (§43): antes de aceptar, rechazar, volver a Pendiente o eliminar un presupuesto, la API dice
+    // qué pasa con los viajes de ese día de su cliente y recorrido (y, al aceptarlo, si el camión o el chofer están ocupados).
+    var VERBO_ESTADO = { Pendiente: 'Volver a Pendiente', Aceptado: 'Marcar como aceptado', Rechazado: 'Marcar como rechazado' };
+    function tituloEstado(p, estado) {
+        return estado === 'Pendiente' ? '¿Volver el presupuesto #' + p.id + ' a Pendiente?' : '¿Marcar el presupuesto #' + p.id + ' como ' + estado.toLowerCase() + '?';
+    }
+    function alCambiarEstado(p, estado) {
+        return pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/AlCambiarEstado?estado=' + encodeURIComponent(estado), { headers: encabezadosEnvio() })
+            .catch(function () { return null; });
+    }
+    function guardarEstado(p, estado) {
+        return pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) });
+    }
+    // El aviso con lo que cambió en los viajes del día ("El precio del viaje #44 se actualizó a $ …").
+    function conOrden(base, r) { return window.SGTLOrdenDelDia ? SGTLOrdenDelDia.textoGuardado(base, r && r.Orden) : base; }
+    function avisarEstado(p, estado, r) {
+        SGTL.toastExito(conOrden(r && r.Message ? r.Message : 'Presupuesto #' + p.id + ' ' + ESTADOS[estado].aviso + '.', r)); listar();
+    }
+    function confirmarEstado(p, estado, mensaje) {
+        var respuesta = null;
+        return SGTL.confirmar({
+            titulo: tituloEstado(p, estado), mensaje: mensaje, verbo: VERBO_ESTADO[estado],
+            accion: function () {
+                return guardarEstado(p, estado).then(function (r) { respuesta = r; }, function (falla) {
+                    var error = new Error('estado'); error.mensajeUsuario = textoError(falla, 'No se pudo cambiar el estado. Probá de nuevo.'); throw error;
+                });
+            }
+        }).then(function (hecho) { if (hecho) avisarEstado(p, estado, respuesta); });
+    }
+    // Desde el aviso "Precio para revisar" de Ver PDF (maqueta del 27/10, §7): vuelve a Pendiente con el precio nuevo, para
+    // reenviárselo al cliente.
+    function volverAPendiente(p, r) {
+        el('modalVistaPresupuesto').addEventListener('hidden.bs.modal', function abrirLuego() {
+            el('modalVistaPresupuesto').removeEventListener('hidden.bs.modal', abrirLuego);
+            alCambiarEstado(p, 'Pendiente').then(function (previo) {
+                confirmarEstado(p, 'Pendiente', 'Vuelve a esperar la respuesta del cliente, con el precio de ' + (r.Vuelta_Nueva === 1 ? 'primer' : 'segundo') +
+                    ' viaje del día (' + SGTL.monto(r.Importe_Nuevo) + '). Después es necesario que se lo envíes de nuevo.' + (previo && previo.Mensaje ? ' ' + previo.Mensaje : ''));
+            });
+        });
+        modalVista.hide();
+    }
     function abrirCambioEstado(p) {
         presupuestoEstado = p;
         var actual = p.estado || 'Pendiente';
@@ -386,9 +431,26 @@
         if (!p) return;
         if (!estado) { el('estadoPresupuestoOpciones').classList.add('is-invalid'); SGTL.avisoFormulario('#avisoEstadoPresupuesto', 'Elegí el estado nuevo.'); return; }
         var listo = SGTL.procesando('#btnGuardarEstadoPresupuesto');
-        pedir(api + '/Presupuestos/' + encodeURIComponent(p.id) + '/estado', { method: 'PUT', headers: encabezadosEnvio(), body: JSON.stringify({ Estado: estado }) }).then(function () {
-            listo(); SGTL.modal('#modalEstadoPresupuesto', 'hide');
-            SGTL.toastExito('Presupuesto #' + p.id + ' ' + ESTADOS[estado].aviso + '.'); listar();
+        alCambiarEstado(p, estado).then(function (previo) {
+            // El camión o el chofer ya tienen otro viaje en ese horario: no se puede aceptar.
+            var ocupado = (previo && previo.Errores) || [];
+            if (ocupado.length) {
+                listo(); SGTL.avisoFormulario('#avisoEstadoPresupuesto', 'No se puede aceptar el presupuesto. ' + ocupado.map(function (e) { return e.ErrorMessage; }).join(' '));
+                return;
+            }
+            // Cambia el precio de otros viajes del día: se confirma con lo que pasa.
+            if (previo && previo.Mensaje) {
+                listo();
+                el('modalEstadoPresupuesto').addEventListener('hidden.bs.modal', function confirmarLuego() {
+                    el('modalEstadoPresupuesto').removeEventListener('hidden.bs.modal', confirmarLuego);
+                    confirmarEstado(p, estado, previo.Mensaje);
+                });
+                SGTL.modal('#modalEstadoPresupuesto', 'hide');
+                return;
+            }
+            return guardarEstado(p, estado).then(function (r) {
+                listo(); SGTL.modal('#modalEstadoPresupuesto', 'hide'); avisarEstado(p, estado, r);
+            });
         }).catch(function (error) {
             listo(); SGTL.avisoFormulario('#avisoEstadoPresupuesto', textoError(error, 'No se pudo cambiar el estado. Probá de nuevo.'));
         });
@@ -409,7 +471,16 @@
             generandoViaje = false; listo();
             modalViaje.hide(); aviso('mensaje', 'Viaje #' + r.ViajeID + ' generado.', false); listar();
         }).catch(function (error) {
-            generandoViaje = false; listo(); aviso('generarViajeFeedback', textoError(error, 'No se pudo generar el viaje. Probá de nuevo.'), true); listar();
+            generandoViaje = false; listo();
+            // Camión o chofer ocupados (§43): el del chofer, debajo de su campo; el del camión, arriba (no es un campo acá).
+            var errores = Array.isArray(error.respuesta) ? error.respuesta : [];
+            if (errores.length) {
+                var deCampo = function (campo) { return errores.filter(function (e) { return e.PropertyName === campo; })[0]; };
+                if (deCampo('ChoferID')) SGTL.marcarError(el('generarViajeChofer'), deCampo('ChoferID').ErrorMessage);
+                aviso('generarViajeFeedback', deCampo('CamionID') ? 'No se puede generar el viaje. ' + deCampo('CamionID').ErrorMessage : 'Revisá los campos marcados.', true);
+                return;
+            }
+            aviso('generarViajeFeedback', textoError(error, 'No se pudo generar el viaje. Probá de nuevo.'), true); listar();
         });
     };
     function abrirEnvio(p) {
@@ -500,9 +571,8 @@
     ['origenId', 'destinoId'].forEach(function (id) { el(id).addEventListener('change', calcularRutaPresupuesto); });
     ['fechaInicio', 'fechaFin'].forEach(function (id) { el(id).addEventListener('change', function () { actualizarTiempoEstimado(); solicitarCalculo(); }); });
     el('tipoTarifa').addEventListener('change', solicitarCalculo);
-    // El tipo y el modelo del camión cambian la tarifa; la vuelta, también.
+    // El tipo y el modelo del camión cambian la tarifa.
     el('camionId').addEventListener('change', solicitarCalculo);
-    el('vueltaPresupuesto').addEventListener('change', function () { vueltaManual = true; solicitarCalculo(); });
     el('formulario').addEventListener('input', invalidarDocumento); el('formulario').addEventListener('change', invalidarDocumento);
     el('formulario').onsubmit = function (e) {
         e.preventDefault(); if (guardando) return;
@@ -529,7 +599,11 @@
         descarga.removeAttribute('href'); descarga.classList.add('disabled'); descarga.setAttribute('aria-disabled', 'true');
         el('imprimirVistaPresupuesto').disabled = true;
         el('tituloVistaPresupuesto').textContent = 'Ver PDF del presupuesto #' + p.id;
-        el('vistaPresupuestoCambio').innerHTML = avisoCambio(p);
+        // Lo que quedó para revisar, con "Volver a Pendiente" y "Mantener el precio" si es por el orden del día (§43).
+        if (window.SGTLCambiosTarifa) SGTLCambiosTarifa.avisoPrecio(el('vistaPresupuestoCambio'), cambiosDe(p), {
+            alResolver: function () { modalVista.hide(); listar(); },
+            alVolverAPendiente: function (r) { volverAPendiente(p, r); }
+        });
         el('vistaPresupuestoFeedback').className = 'text-center text-muted py-4'; el('vistaPresupuestoFeedback').textContent = 'Preparando el PDF…';
         modalVista.show();
         window.PresupuestoPDF.preparar(p, clientePresupuesto(p)).then(function (doc) {

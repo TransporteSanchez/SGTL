@@ -442,6 +442,8 @@
     <Compile Include="Tarifas\TarifarioCalculo.cs" />
     <Compile Include="Tarifas\TarifarioImpacto.cs" />
     <Compile Include="Tarifas\TarifarioRevisar.cs" />
+    <Compile Include="Tarifas\OrdenDelDia.cs" />
+    <Compile Include="Viajes\Ocupacion.cs" />
     <Compile Include="Services\WhatsApp\GoogleMapsLinkBuilder.cs" />
     <Compile Include="Services\WhatsApp\IWhatsAppNotifier.cs" />
     <Compile Include="Services\WhatsApp\PhoneNumberHelper.cs" />

@@ -221,6 +221,8 @@
                 <div class="modal-body">
                     <div id="alertaCompletaCampos" class="alert alert-light-danger color-danger d-none" role="alert"></div>
                     <div id="avisoViajeBloqueado" class="alert py-2 d-none" role="status"></div>
+                    <!-- "Precio para revisar" (§33 y §43): lo arma cambios-tarifa.js, con los botones para resolverlo acá. -->
+                    <div id="precioRevisarViaje"></div>
                     <form class="form" id="FormAltaViaje" novalidate>
                         <input type="hidden" id="viajeIdEdicion" value="">
                         <input type="hidden" id="tarifarioId" value="">
@@ -291,22 +293,13 @@
                                             </div>
                                         </div>
                                         <div id="tarifaError" class="invalid-feedback"></div>
-                                        <div id="grupoVuelta" class="mt-2 d-none">
-                                            <div class="d-flex flex-wrap align-items-center gap-3" role="radiogroup" aria-labelledby="etiquetaVuelta">
-                                                <span class="form-label mb-0" id="etiquetaVuelta">Vuelta</span>
-                                                <div class="form-check mb-0">
-                                                    <input class="form-check-input" type="radio" name="vueltaViaje" id="vuelta1" value="1" checked>
-                                                    <label class="form-check-label" for="vuelta1">1ª vuelta</label>
-                                                </div>
-                                                <div class="form-check mb-0">
-                                                    <input class="form-check-input" type="radio" name="vueltaViaje" id="vuelta2" value="2">
-                                                    <label class="form-check-label" for="vuelta2">2ª vuelta</label>
-                                                </div>
-                                            </div>
-                                            <div class="form-text" id="vueltaAyuda"></div>
-                                        </div>
                                         <div id="tarifaInfo" class="mt-2"></div>
                                     </div>
+                                    <!-- Precio por orden del día (§43): la vuelta no se elige, la decide la API. La línea dice si se cobra como
+                                         primer o segundo viaje del día; el bloque, los viajes de ese cliente y recorrido ese día (si hay otro);
+                                         y el aviso, lo que pasa con los otros al guardar (orden-del-dia.js). -->
+                                    <div class="form-text mt-2 d-none" id="vueltaLinea"></div>
+                                    <div id="ordenDelDia" class="mt-2 d-none"></div>
                                     <!-- Se conocen después del viaje: se cargan también cuando la tarifa ya quedó fija. -->
                                     <div class="row g-3 mt-1" id="grupoAdicionales">
                                         <div class="col-md-6">
@@ -390,6 +383,7 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/cambios-tarifa.js"></script>
+    <script src="assets/static/js/orden-del-dia.js"></script>
     <script src="assets/static/js/viaje-detalle.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
@@ -581,13 +575,14 @@
         // Lo que acompaña al estado (en qué proforma está, de qué presupuesto viene) va en el ícono de información
         // al lado del estado, que abre un globito (§4.3), no en más etiquetas. Solo dice qué pasa: qué hacer para
         // editar o eliminar lo dice el globito del botón bloqueado (pedido de Rocío, 22/10).
-        // Si cambió la tarifa y el viaje quedó para revisar (en una proforma enviada o en un comprobante), el ícono pasa
-        // a rojo y suma "Cambió la tarifa…" a lo demás (§33): queda uno solo, el más urgente (§4.3).
+        // Si el viaje quedó para revisar (cambió la tarifa y está en una proforma enviada o en un comprobante, §33, o cambió
+        // el orden del día, §43), el ícono pasa a rojo y suma "Precio para revisar" (o "Cambió la tarifa") a lo demás: qué
+        // pasó y, en gris, dónde se resuelve. Queda uno solo, el más urgente (§4.3).
         var cambiosTarifa = [];
         function infoViaje(viaje) {
             var partes = [];
             var cambio = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Viaje_ID', viaje.Viaje_ID) : [];
-            if (cambio.length) partes.push('<div>Cambió la tarifa: revisá el detalle del viaje.</div>');
+            if (cambio.length) partes.push(SGTLCambiosTarifa.globo(cambio));
             if (viaje.EnProforma_ID) {
                 var estadoPf = String(viaje.EnProforma_Estado || '');
                 partes.push(estadoPf === 'Borrador'
@@ -635,6 +630,8 @@
                 .on('click', '[data-accion="editar"]', function () { abrirModalEditarViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="estado"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="eliminar"]', function () { abrirModalEliminarViaje(String($(this).data('id'))); });
+            // Se actualizó o se mantuvo el precio desde Ver detalle (§43): la tabla, con el importe que quedó.
+            document.addEventListener('sgtl:viaje-cambiado', function () { buscarViajes(currentPage); });
         });
 
         function buscarViajes(page = 1) {
@@ -857,8 +854,7 @@
         var viajeEditado = null;
         // Tabla de tarifas (24/10): baseTarifa es la tarifa elegida sin adicionales ({ importe, detalle }); el total suma falso
         // flete y estadía con la tabla vigente en el inicio. La API vuelve a calcular todo al guardar.
-        // vueltaManual: la vuelta la eligió la persona (si no, se propone la 2ª si el camión ya tiene otro viaje ese día).
-        var baseTarifa = null, tarifarioSeq = 0, vueltaManual = false, tarifariosPorFecha = {}, inicioVisto = '';
+        var baseTarifa = null, tarifarioSeq = 0, tarifariosPorFecha = {}, inicioVisto = '';
         var formularioViaje = null;
         const ETIQUETA_RUKAS = '<span class="badge rounded-pill bg-white text-dark border">Rukas</span>';
         const ENLACE_TARIFAS = '<a href="gestion-tarifas.html" target="_blank" rel="noopener">Gestionar tarifas</a>';
@@ -1255,51 +1251,78 @@
         }
         // La tabla depende de los km: cuando cambian, se vuelve a calcular.
         function resolverTarifaSegunKm() { resolverTarifa(); }
-        function vueltaElegida() { return parseInt($('input[name="vueltaViaje"]:checked').val(), 10) || 1; }
         function fechaInicioViaje() { return String($('#fechaInicio').val() || '').substring(0, 10); }
         // Inicio y fin con los que ya se calculó la tarifa (ver alCerrarFecha).
         var fechasVistas = '';
         function fechasDelViaje() { return ($('#fechaInicio').val() || '') + '|' + ($('#fechaFin').val() || ''); }
-        // Hasta el primer límite de km, con Fija hay 1ª y 2ª vuelta; si el camión ya tiene otro viaje ese día y la persona
-        // no eligió, se propone la 2ª.
+        // La tarifa con lo que hay en pantalla. Hasta el primer límite de km, con Fija, el precio depende del orden del día
+        // (§43): la API decide si es el primer o el segundo viaje de ese cliente y recorrido ese día y devuelve el bloque.
         function resolverTarifario() {
             var seq = ++tarifarioSeq, km = kmNumero($('#distanciaKm').val()), camion = $('#camionSelect').val();
             var modo = tipoTarifa() === 'km' ? 'km' : 'fija';
             $('#tarifarioId').val('');
             baseTarifa = null;
-            if (!$('#fechaInicio').val()) { $('#grupoVuelta').addClass('d-none'); setTarifaInfo('Completá el inicio para calcular la tarifa.'); return; }
-            if (!camion) { $('#grupoVuelta').addClass('d-none'); setTarifaInfo('Elegí el camión para calcular la tarifa.'); return; }
+            if (!$('#fechaInicio').val()) { mostrarOrden(null); setTarifaInfo('Completá el inicio para calcular la tarifa.'); return; }
+            if (!camion) { mostrarOrden(null); setTarifaInfo('Elegí el camión para calcular la tarifa.'); return; }
             if (!(km > 0)) {
-                $('#grupoVuelta').addClass('d-none');
+                mostrarOrden(null);
                 setTarifaInfo(distanciaManual ? 'Cargá la distancia para calcular la tarifa.' : 'Elegí origen y destino para calcular la distancia y la tarifa.');
                 return;
             }
             setTarifaInfo('Calculando la tarifa…');
             SGTL.ajax({
                 url: API_VIAJES + '/Tarifario/Calcular', type: 'GET',
-                data: { tarifa: modo, fechaInicio: $('#fechaInicio').val(), camionId: camion, km: km, vuelta: vueltaManual ? vueltaElegida() : '', viajeId: $('#viajeIdEdicion').val() || 0, clienteId: $('#clienteSelect').val() || 0 }
+                data: {
+                    tarifa: modo, fechaInicio: $('#fechaInicio').val(), camionId: camion, km: km, viajeId: $('#viajeIdEdicion').val() || 0,
+                    clienteId: $('#clienteSelect').val() || 0, origenId: $('#origenSelect').val() || 0, destinoId: $('#destinoSelect').val() || 0
+                }
             }).then(function (r) {
                 if (seq !== tarifarioSeq) return;
-                if (r.AplicaVuelta && !vueltaManual && r.Vuelta !== r.VueltaSugerida) {
-                    $('#vuelta' + r.VueltaSugerida).prop('checked', true);
-                    vueltaManual = true;
-                    resolverTarifario();
-                    vueltaManual = false;
-                    return;
-                }
-                $('#grupoVuelta').toggleClass('d-none', !r.AplicaVuelta);
-                if (r.AplicaVuelta) {
-                    $('#vuelta' + r.Vuelta).prop('checked', true);
-                    $('#vueltaAyuda').text(r.ViajeAnterior ? 'El camión ya tiene el viaje #' + r.ViajeAnterior + ' antes, ese mismo día.' : 'Es el primer viaje del camión ese día.');
-                }
+                mostrarOrden(r.Orden);
                 $('#tarifarioId').val(r.TarifarioID);
                 ponerBase(r.ImporteBase, r.TarifaDetalle);
             }).catch(function (e) {
                 if (seq !== tarifarioSeq) return;
-                $('#grupoVuelta').addClass('d-none');
+                mostrarOrden(null);
                 var r = e.xhr && e.xhr.responseJSON;
                 setTarifaInfo(r && r.Mensaje ? conEnlaces(r.Mensaje) : SGTL.escapar(e.mensajeUsuario), 'falta');
             });
+        }
+        // Precio por orden del día (§43): la línea de debajo de la tarifa ("Se cobra como segundo viaje del día: …"), el bloque
+        // con los viajes de ese cliente y recorrido ese día (solo si hay otro) y lo que va a pasar con los otros al guardar.
+        function mostrarOrden(orden) {
+            var linea = orden && orden.Linea ? orden.Linea : '';
+            $('#vueltaLinea').text(linea).toggleClass('d-none', !linea);
+            if (window.SGTLOrdenDelDia) SGTLOrdenDelDia.dibujar('#ordenDelDia', orden, { fecha: fechaInicioViaje(), modo: 'formulario' });
+        }
+        // Al abrir un viaje: el bloque como está guardado (la vuelta no se vuelve a calcular hasta que cambie algo).
+        function cargarOrdenGuardado(id) {
+            SGTL.ajax({ url: API_VIAJES + '/Viajes/' + id + '/Orden', type: 'GET' }).then(function (r) {
+                if (String($('#viajeIdEdicion').val()) !== String(id) || !r) return;
+                mostrarOrden({ Linea: r.Linea, Grupo: r.Grupo, Avisos: [] });
+            }, function () { });
+        }
+
+        // ===================== CAMIÓN Y CHOFER OCUPADOS (§43) =====================
+        // Al elegirlos o al cambiar el horario, la API dice si ya tienen otro viaje (o un presupuesto aceptado) en ese horario.
+        // El error va debajo del campo, corto (§6.3: "Camión ocupado: viaje #45, de 08:00 hs a 11:30 hs."); al guardar, la
+        // API lo vuelve a controlar.
+        var ocupado = { CamionID: '', ChoferID: '' }, ocupadoSeq = 0;
+        function revisarOcupado() {
+            var seq = ++ocupadoSeq, inicio = $('#fechaInicio').val(), fin = $('#fechaFin').val();
+            var camion = $('#camionSelect').val(), chofer = $('#choferSelect').val();
+            if (!inicio || !fin || (!camion && !chofer) || $('#camionSelect').prop('disabled')) { ponerOcupado([]); return; }
+            SGTL.ajax({
+                url: API_VIAJES + '/Viajes/Ocupado', type: 'GET',
+                data: { inicio: inicio, fin: fin, camionId: camion || 0, choferId: chofer || 0, viajeId: $('#viajeIdEdicion').val() || 0 }
+            }).then(function (errores) { if (seq === ocupadoSeq) ponerOcupado(errores || []); }, function () { });
+        }
+        function ponerOcupado(errores) {
+            ocupado = { CamionID: '', ChoferID: '' };
+            (errores || []).forEach(function (e) { if (e && Object.prototype.hasOwnProperty.call(ocupado, e.PropertyName)) ocupado[e.PropertyName] = e.ErrorMessage; });
+            if (!formularioViaje) return;
+            if ($('#camionSelect').val() || $('#camionSelect').hasClass('is-invalid')) formularioViaje.validar('camionSelect');
+            if ($('#choferSelect').val() || $('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
         }
         // Al abrir un viaje: el importe que guardó al calcular su tarifa, sin volver a buscarla.
         function importeGuardado(v) {
@@ -1416,10 +1439,9 @@
             $('#viajeIdEdicion, #tarifarioId, #distanciaKm').val('');
             $('#tarifaTipoFija').prop('checked', true);
             inicioVisto = '';
-            $('#vuelta1').prop('checked', true);
-            $('#grupoVuelta').addClass('d-none');
-            $('#vueltaAyuda').text('');
-            vueltaManual = false;
+            mostrarOrden(null);
+            ocupado = { CamionID: '', ChoferID: '' };
+            $('#precioRevisarViaje').empty();
             baseTarifa = null;
             $('#falsoFlete').prop('checked', false);
             $('#estadiaModulos').val('0');
@@ -1488,9 +1510,18 @@
                         if (v.TarifarioID > 0) {
                             $(v.Tarifa_Modo === 'Km' ? '#tarifaTipoKm' : '#tarifaTipoFija').prop('checked', true);
                             $('#tarifarioId').val(v.TarifarioID);
-                            // La vuelta guardada se respeta: no se vuelve a proponer.
-                            vueltaManual = true;
-                            if (v.Vuelta) { $('#vuelta' + v.Vuelta).prop('checked', true); $('#grupoVuelta').removeClass('d-none'); }
+                            if (v.Vuelta) cargarOrdenGuardado(id);
+                        }
+                        // "Precio para revisar" (§33 y §43): arriba del formulario, con lo que se puede hacer desde acá.
+                        if (window.SGTLCambiosTarifa && SGTLCambiosTarifa.avisoPrecio) {
+                            SGTLCambiosTarifa.cargar({ viajeId: id }).then(function (filas) {
+                                if (String($('#viajeIdEdicion').val()) !== String(id)) return;
+                                SGTLCambiosTarifa.avisoPrecio('#precioRevisarViaje', filas, {
+                                    estado: v.Estado, dePresupuesto: !!(deLaTabla && deLaTabla.Presupuesto_ID),
+                                    // Resuelto: el viaje se vuelve a abrir con el precio que quedó.
+                                    alResolver: function () { abrirModalEditarViaje(id); buscarViajes(currentPage || 1); }
+                                });
+                            });
                         }
                         $('#falsoFlete').prop('checked', !!v.Falso_Flete);
                         $('#estadiaModulos').val(v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0);
@@ -1537,7 +1568,8 @@
                 // La tabla de tarifas, fija o por km.
                 TarifarioID: parseInt($('#tarifarioId').val()) || 0,
                 Tarifa_Modo: tipo === 'km' ? 'Km' : 'Fija',
-                Vuelta: tipo === 'fija' && !$('#grupoVuelta').hasClass('d-none') ? vueltaElegida() : null,
+                // La vuelta la decide la API (§43).
+                Vuelta: null,
                 Falso_Flete: $('#falsoFlete').is(':checked'),
                 Estadia_Modulos: estadiaModulos(),
                 ClienteID: parseInt($('#clienteSelect').val()) || 0,
@@ -1565,8 +1597,8 @@
                 id: 'fechaFin', requerido: 'Elegí la fecha y hora de fin.',
                 validar: function (valor) { var fi = $('#fechaInicio').val(); return fi && valor < fi ? 'No puede ser anterior al inicio.' : ''; }
             },
-            camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.' },
-            chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? '' : 'Elegí un chofer de la lista.'; } },
+            camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.', validar: function () { return ocupado.CamionID; } },
+            chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? ocupado.ChoferID : 'Elegí un chofer de la lista.'; } },
             km: { id: 'kmManual', validar: function (valor) { return kmNumero(valor) > 0 ? '' : 'Escribí los km con números, por ejemplo 146,8.'; } },
             estadia: { id: 'estadiaModulos', soloNumeros: true, max: 2 },
             motivo: { id: 'motivoKmManual', requerido: '' }
@@ -1608,31 +1640,50 @@
                 success: function (r) {
                     listo();
                     SGTL.modal('#ModalAltaViaje', 'hide');
-                    SGTL.toastExito(esEdicion ? 'Viaje guardado.' : 'Viaje registrado.');
+                    // Con lo que cambió en los otros viajes del día (§43): "El precio del viaje #44 se actualizó a $ …".
+                    SGTL.toastExito(window.SGTLOrdenDelDia ? SGTLOrdenDelDia.textoGuardado(esEdicion ? 'Viaje guardado.' : 'Viaje registrado.', r && r.Orden)
+                        : (esEdicion ? 'Viaje guardado.' : 'Viaje registrado.'));
                     avisarWhatsApp(r && r.WhatsApp);
                     buscarViajes(1);
                 },
-                error: function (xhr) { listo(); mostrarAlertaModal(parsearError(xhr)); }
+                error: function (xhr) {
+                    listo();
+                    // Camión o chofer ocupados: debajo de su campo (§6.3), con "Revisá los campos marcados." arriba.
+                    var r = xhr && xhr.responseJSON;
+                    var deCampos = xhr && xhr.status === 400 && Array.isArray(r)
+                        ? r.filter(function (e) { return e && (e.PropertyName === 'CamionID' || e.PropertyName === 'ChoferID'); }) : [];
+                    if (deCampos.length) {
+                        ponerOcupado(deCampos);
+                        SGTL.revisarFormulario('#FormAltaViaje', '#alertaCompletaCampos');
+                        $('#ModalAltaViaje').scrollTop(0);
+                        return;
+                    }
+                    mostrarAlertaModal(parsearError(xhr));
+                }
             });
         }
 
         // ===================== ELIMINAR / ESTADO =====================
+        // La confirmación dice qué pasa con los otros viajes del día de ese cliente y recorrido (§43).
         function abrirModalEliminarViaje(id) {
-            SGTL.confirmar({
-                titulo: '¿Eliminar el viaje #' + id + '?',
-                mensaje: 'No se puede deshacer.',
-                verbo: 'Eliminar',
-                peligro: true,
-                accion: function () {
-                    return new Promise(function (resolver, rechazar) {
-                        $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'DELETE' })
-                            .done(resolver)
-                            .fail(function (xhr) { var e = new Error('DELETE'); e.mensajeUsuario = parsearError(xhr); rechazar(e); });
-                    });
-                }
+            var respuesta = null;
+            SGTL.ajax({ url: API_VIAJES + '/Viajes/' + id + '/AlEliminar', type: 'GET' }).catch(function () { return null; }).then(function (r) {
+                return SGTL.confirmar({
+                    titulo: '¿Eliminar el viaje #' + id + '?',
+                    mensaje: 'No se puede deshacer.' + (r && r.Mensaje ? ' ' + r.Mensaje : ''),
+                    verbo: 'Eliminar',
+                    peligro: true,
+                    accion: function () {
+                        return new Promise(function (resolver, rechazar) {
+                            $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'DELETE' })
+                                .done(function (data) { respuesta = data; resolver(data); })
+                                .fail(function (xhr) { var e = new Error('DELETE'); e.mensajeUsuario = parsearError(xhr); rechazar(e); });
+                        });
+                    }
+                });
             }).then(function (eliminado) {
                 if (!eliminado) return;
-                SGTL.toastExito('Viaje eliminado.');
+                SGTL.toastExito(window.SGTLOrdenDelDia ? SGTLOrdenDelDia.textoGuardado('Viaje eliminado.', respuesta && respuesta.Orden) : 'Viaje eliminado.');
                 buscarViajes(1);
             });
         }
@@ -1912,6 +1963,7 @@
                     actualizarAyudaAdicionales();
                     if ($('#fechaFin').val()) formularioViaje.validar('fechaFin');
                     actualizarAvisoWhatsApp();
+                    revisarOcupado();
                 };
                 // Escrita a mano y cerrada con un clic afuera, flatpickr guarda la fecha sin avisar el cambio: se revisa al cerrar.
                 var alCerrarFecha = function () { if (fechasDelViaje() !== fechasVistas) alCambiarFecha(); };
@@ -1946,6 +1998,7 @@
             $('#choferSelect').on('change', function () {
                 actualizarAvisoWhatsApp();
                 if ($('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
+                revisarOcupado();
             });
             $('#agregarOrigenViaje, #agregarDestinoViaje').on('click', function () {
                 var tipo = this.id === 'agregarOrigenViaje' ? 'Origen' : 'Destino';
@@ -1967,9 +2020,8 @@
                 actualizarAvisoWhatsApp();
             });
             $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
-            // Tabla de tarifas: el camión (tipo y año del modelo) y la vuelta cambian la tarifa.
-            $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); });
-            $('input[name="vueltaViaje"]').on('change', function () { vueltaManual = true; resolverTarifario(); });
+            // Tabla de tarifas: el camión (tipo y año del modelo) cambia la tarifa. Y puede estar ocupado (§43).
+            $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); revisarOcupado(); });
             $('#falsoFlete').on('change', mostrarImporte);
             $('#estadiaModulos').on('input', mostrarImporte);
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });

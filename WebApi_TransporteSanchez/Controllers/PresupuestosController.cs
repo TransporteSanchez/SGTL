@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Entity.Core.EntityClient;
 using System.Data.SqlClient;
 using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Web.Http;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using WebApi_TransporteSanchez.Tarifas;
+using WebApi_TransporteSanchez.Viajes;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -51,12 +55,102 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             using (var cn = new SqlConnection(Cn()))
             using (var cmd = new SqlCommand("DELETE FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID=@id AND ViajeID IS NULL", cn))
+            using (var db = new System.Data.Entity.DbContext(Cn()))
             {
                 cmd.Parameters.Add("@id", SqlDbType.Int).Value = id;
                 cn.Open();
+                // Si estaba aceptado, libera su lugar en el día (§43): los otros viajes de su grupo se acomodan.
+                string causa;
+                var plan = PlanAlCambiar(db, id, EstadoActual(cn, id), "Eliminado", out causa);
                 if (cmd.ExecuteNonQuery() == 0) return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el presupuesto: no existe o ya tiene un viaje generado." });
-                return Ok();
+                return Ok(new { Orden = AplicarOrden(db, plan, causa, null) });
             }
+        }
+
+        // ---------------------------------------------------------------- Precio por orden del día (§43, OrdenDelDia)
+        // Un presupuesto aceptado que todavía no generó su viaje reserva su lugar en el día de su cliente y recorrido (1ª o 2ª
+        // vuelta): al aceptarlo, los viajes de ese día que no salieron se acomodan y los demás quedan para revisar; al
+        // rechazarlo, volverlo a Pendiente o eliminarlo, lo libera. El cálculo es el de viajes (Tarifas/OrdenDelDia.cs).
+
+        private static string EstadoActual(SqlConnection cn, int id)
+        {
+            using (var cmd = new SqlCommand("SELECT Estado FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID=@id AND ViajeID IS NULL", cn))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteScalar() as string;
+            }
+        }
+
+        private static OrdenDelDia.Plan PlanAlCambiar(System.Data.Entity.DbContext db, int id, string estadoActual, string estadoNuevo, out string causa)
+        {
+            causa = null;
+            bool eraAceptado = estadoActual == "Aceptado", quedaAceptado = estadoNuevo == "Aceptado";
+            if (estadoActual == null || eraAceptado == quedaAceptado) return null;
+            var sujeto = OrdenDelDia.SujetoDePresupuesto(db, id);
+            if (sujeto == null || !sujeto.Aplica) return null;
+            if (quedaAceptado)
+            {
+                causa = "se aceptó el presupuesto #" + id;
+                sujeto.Estado = "Aceptado";
+                return OrdenDelDia.Planificar(db, sujeto, null, causa);
+            }
+            causa = estadoNuevo == "Pendiente" ? "el presupuesto #" + id + " volvió a Pendiente"
+                : estadoNuevo == "Eliminado" ? "se eliminó el presupuesto #" + id : "se rechazó el presupuesto #" + id;
+            return OrdenDelDia.Planificar(db, null, sujeto, causa);
+        }
+
+        private static object AplicarOrden(System.Data.Entity.DbContext db, OrdenDelDia.Plan plan, string causa, string usuario)
+        {
+            if (plan == null || !plan.Cambios.Any()) return null;
+            plan.Causa = causa;
+            var hecho = OrdenDelDia.Aplicar(db, plan, usuario, ConnectionStringHelper.GetConnectionString("SGTLEntities"));
+            return new
+            {
+                Actualizados = hecho.Actualizados.Select(c => new { c.Quien.Id, Importe = c.ImporteNuevo }).ToList(),
+                ParaRevisar = hecho.ParaRevisar.Select(c => new { c.Quien.Clase, c.Quien.Id }).ToList()
+            };
+        }
+
+        // El camión y el chofer del presupuesto ya tienen otro viaje (o presupuesto aceptado) en ese horario.
+        private static List<Ocupacion.Error> Ocupado(System.Data.Entity.DbContext db, string datos, int id, int choferId)
+        {
+            JObject p;
+            try { p = JObject.Parse(datos ?? ""); } catch { return new List<Ocupacion.Error>(); }
+            int camion; DateTime inicio, fin;
+            if (!int.TryParse((string)p["camionId"], out camion)) camion = 0;
+            if (choferId <= 0 && !int.TryParse((string)p["choferId"], out choferId)) choferId = 0;
+            if (!DateTime.TryParse((string)p["fechaInicio"], CultureInfo.InvariantCulture, DateTimeStyles.None, out inicio)
+                || !DateTime.TryParse((string)p["fechaFin"], CultureInfo.InvariantCulture, DateTimeStyles.None, out fin)) return new List<Ocupacion.Error>();
+            return Ocupacion.Errores(db, camion, choferId, inicio, fin, 0, id);
+        }
+
+        private static string Datos(SqlConnection cn, int id)
+        {
+            using (var cmd = new SqlCommand("SELECT Datos FROM dbo.PRESUPUESTOS WHERE Presupuesto_ID=@id", cn))
+            {
+                cmd.Parameters.AddWithValue("@id", id);
+                return cmd.ExecuteScalar() as string;
+            }
+        }
+
+        // GET api/Presupuestos/{id}/AlCambiarEstado?estado=X (o estado=Eliminado): qué pasa con los viajes del día al hacerlo,
+        // para la confirmación, y si el camión o el chofer están ocupados (no se puede aceptar).
+        [HttpGet, Route("{id:int}/AlCambiarEstado")]
+        public IHttpActionResult AlCambiarEstado(int id, string estado)
+        {
+            try
+            {
+                using (var cn = new SqlConnection(Cn()))
+                using (var db = new System.Data.Entity.DbContext(Cn()))
+                {
+                    cn.Open();
+                    string actual = EstadoActual(cn, id), causa;
+                    var plan = PlanAlCambiar(db, id, actual, estado, out causa);
+                    var ocupado = estado == "Aceptado" && actual != "Aceptado" ? Ocupado(db, Datos(cn, id), id, 0) : new List<Ocupacion.Error>();
+                    return Ok(new { Mensaje = plan == null ? "" : OrdenDelDia.QuePasa(plan), Errores = ocupado });
+                }
+            }
+            catch { return Content(HttpStatusCode.InternalServerError, new { error = "No se pudo revisar el día del presupuesto." }); }
         }
         public class EstadoRequest { public string Estado { get; set; } }
         public class GenerarViajeRequest { public int ChoferID { get; set; } }
@@ -70,11 +164,31 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var cn = new SqlConnection(Cn()))
                 using (var cmd = new SqlCommand("UPDATE dbo.PRESUPUESTOS SET Estado=@estado, FechaModificacion=GETDATE() WHERE Presupuesto_ID=@id AND ViajeID IS NULL", cn))
+                using (var db = new System.Data.Entity.DbContext(Cn()))
                 {
-                    cn.Open(); EnviosPresupuestosController.ValidarUsuario(Request, cn);
+                    cn.Open(); var usuario = EnviosPresupuestosController.ValidarUsuario(Request, cn);
+                    // Precio por orden del día (§43): aceptar reserva su lugar (si el camión o el chofer no están ocupados) y
+                    // acomoda a los otros; dejar de estar aceptado lo libera.
+                    string actual = EstadoActual(cn, id), causa;
+                    if (request.Estado == "Aceptado" && actual != null && actual != "Aceptado")
+                    {
+                        var ocupado = Ocupado(db, Datos(cn, id), id, 0);
+                        if (ocupado.Any())
+                            return Content(HttpStatusCode.Conflict, new { error = "No se puede aceptar el presupuesto. " + string.Join(" ", ocupado.Select(e => e.ErrorMessage)) });
+                    }
+                    var plan = PlanAlCambiar(db, id, actual, request.Estado, out causa);
                     cmd.Parameters.AddWithValue("@estado", request.Estado); cmd.Parameters.AddWithValue("@id", id);
                     if (cmd.ExecuteNonQuery() == 0) return Content(HttpStatusCode.Conflict, new { error = "El presupuesto no existe o ya tiene un viaje generado." });
-                    return Ok(new { Estado = request.Estado });
+                    // Vuelto a Pendiente desde "Precio para revisar": se recalcula con la vuelta que le corresponde y queda para reenviar.
+                    decimal? importeNuevo = request.Estado == "Pendiente" && actual == "Aceptado" ? OrdenDelDia.PresupuestoAPendiente(db, id, usuario) : null;
+                    return Ok(new
+                    {
+                        Estado = request.Estado,
+                        Orden = AplicarOrden(db, plan, causa, usuario),
+                        Message = importeNuevo.HasValue
+                            ? "Presupuesto #" + id + " en Pendiente, con el precio actualizado a " + OrdenDelDia.Pesos(importeNuevo) + ". Es necesario que se lo envíes de nuevo al cliente."
+                            : null
+                    });
                 }
             }
             catch (EnviosPresupuestosController.AccesoException ex) { return Content(ex.Codigo, new { error = ex.Message }); }
@@ -90,6 +204,19 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var cn = new SqlConnection(Cn()))
                 {
                     cn.Open(); var usuario = EnviosPresupuestosController.ValidarUsuario(Request, cn);
+                    // Antes de la transacción (§43): si el precio quedó para revisar por el orden del día, primero se revisa; y el
+                    // camión y el chofer no pueden estar ocupados en ese horario.
+                    using (var db = new System.Data.Entity.DbContext(Cn()))
+                    {
+                        if (db.Database.SqlQuery<int>(
+                            "SELECT CASE WHEN COL_LENGTH(N'dbo.TARIFARIO_REVISAR', N'Vuelta_Nueva') IS NOT NULL AND EXISTS (SELECT 1 FROM dbo.TARIFARIO_REVISAR r " +
+                            "JOIN dbo.TARIFARIO_CAMBIOS c ON c.Cambio_ID = r.Cambio_ID WHERE c.Tipo = N'Orden del día' AND r.Presupuesto_ID = @id " +
+                            "AND r.Resuelto_Fecha IS NULL AND r.Tipo = N'Presupuesto' AND r.Vuelta_Nueva IS NOT NULL) THEN 1 ELSE 0 END",
+                            new SqlParameter("@id", id)).First() == 1)
+                            return Content(HttpStatusCode.Conflict, new { error = "No se puede generar el viaje: el precio del presupuesto está para revisar." });
+                        var ocupado = Ocupado(db, Datos(cn, id), id, request.ChoferID);
+                        if (ocupado.Any()) return Content(HttpStatusCode.BadRequest, ocupado);
+                    }
                     using (var tx = cn.BeginTransaction(IsolationLevel.Serializable))
                     {
                         string json, estado; int? existente;

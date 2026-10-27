@@ -15,6 +15,8 @@ namespace WebApi_TransporteSanchez.Tarifas
     //   - Tarifa fija: el precio por viaje de la banda (hasta Km_Banda1 con 1ª o 2ª vuelta, hasta Km_Banda2, hasta
     //     Km_Banda3). Más de Km_Banda3: la fija de Km_Banda3 más los km que pasan × el precio por km.
     //   - Tarifa por km: todo el viaje × el precio por km.
+    // La 1ª o 2ª vuelta no se calcula acá: la decide OrdenDelDia (§43), con el primer viaje del día del mismo cliente y
+    // recorrido.
     // Más dos adicionales: falso flete (un % del viaje) y módulos de estadía. Cada banda va de más del mínimo hasta el
     // máximo inclusive, como las tarifas por km de antes.
     //
@@ -138,17 +140,6 @@ namespace WebApi_TransporteSanchez.Tarifas
                 "WHERE t.Vigente_Desde <= @f AND (t.Para_Todos = 1 OR EXISTS (SELECT 1 FROM dbo.TARIFARIO_CLIENTES tc " +
                 "WHERE tc.Tarifario_ID = t.Tarifario_ID AND tc.ClienteID = @c)) " +
                 "ORDER BY t.Para_Todos, t.Vigente_Desde DESC", P("@f", fecha.Date), P("@c", clienteId)).FirstOrDefault();
-        }
-
-        // La 2ª vuelta: el mismo camión ya tiene otro viaje ese día que empieza antes. Devuelve ese viaje o null.
-        public static int? ViajeAnteriorDelDia(DbContext db, int camionId, DateTime inicio, int viajeId)
-        {
-            if (camionId <= 0) return null;
-            var anterior = db.Database.SqlQuery<int>(
-                "SELECT TOP (1) Viaje_ID FROM dbo.VIAJES WHERE CamionID=@c AND Viaje_ID<>@id " +
-                "AND Fecha_Inicio >= @d AND Fecha_Inicio < @d1 AND Fecha_Inicio < @ini ORDER BY Fecha_Inicio DESC",
-                P("@c", camionId), P("@id", viajeId), P("@d", inicio.Date), P("@d1", inicio.Date.AddDays(1)), P("@ini", inicio)).ToList();
-            return anterior.Count > 0 ? anterior[0] : (int?)null;
         }
 
         // Tarifa sin adicionales.

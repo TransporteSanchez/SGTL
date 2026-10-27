@@ -192,12 +192,16 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // GET api/Tarifario/Calcular: el importe del viaje (o del presupuesto) con lo que hay en pantalla, con el mismo
-        // cálculo que se guarda. tarifa: "fija" o "km", las dos de la tabla. Devuelve también si corresponde la 2ª vuelta
-        // (el camión ya tiene otro viaje ese día que empieza antes).
+        // cálculo que se guarda. tarifa: "fija" o "km", las dos de la tabla. Con el cliente, el origen y el destino, también
+        // el precio por orden del día (§43, OrdenDelDia): la vuelta sale sola (no se elige; "vuelta" ya no se usa) y en
+        // "Orden" van el grupo del día (si hay otro viaje o presupuesto aceptado), la línea de debajo de la tarifa y, en un
+        // viaje, lo que va a pasar con los otros al guardar. presupuesto = true: es un presupuesto pendiente (no reserva lugar
+        // ni mueve a los otros hasta que se acepte).
         [HttpGet]
         [Route("api/Tarifario/Calcular")]
         public IHttpActionResult Calcular(string tarifa, string fechaInicio, int camionId = 0, string km = null, int? vuelta = null,
-            bool falsoFlete = false, int estadia = 0, int viajeId = 0, int clienteId = 0)
+            bool falsoFlete = false, int estadia = 0, int viajeId = 0, int clienteId = 0, int origenId = 0, int destinoId = 0,
+            bool presupuesto = false, int presupuestoId = 0)
         {
             if (tarifa != "fija" && tarifa != "km")
                 return BadRequest("Elegí la tarifa: fija o por km.");
@@ -220,7 +224,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 FechaInicio = inicio,
                 CamionID = camionId,
                 Km = kmPedido,
-                Vuelta = vuelta,
+                Vuelta = null,
                 FalsoFlete = falsoFlete,
                 EstadiaModulos = estadia
             };
@@ -230,19 +234,72 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(Cn()))
                 {
                     var r = TarifarioCalculo.Calcular(db, pedido);
-                    var anterior = TarifarioCalculo.ViajeAnteriorDelDia(db, camionId, inicio, viajeId);
                     if (!r.Ok) return Content(HttpStatusCode.NotFound, new { Mensaje = r.Mensaje });
+
+                    // El viaje que se está editando, como está guardado (para sacarlo de su grupo de antes).
+                    var antes = !presupuesto && viajeId > 0 ? OrdenDelDia.SujetoDeViaje(db, viajeId) : null;
+                    OrdenDelDia.Plan plan = null;
+                    if (r.AplicaVuelta && clienteId > 0 && origenId > 0 && destinoId > 0)
+                    {
+                        var despues = new OrdenDelDia.Sujeto
+                        {
+                            Clase = presupuesto ? OrdenDelDia.Presupuesto : OrdenDelDia.Viaje,
+                            Id = presupuesto ? presupuestoId : viajeId,
+                            ClienteID = clienteId, OrigenID = origenId, DestinoID = destinoId, Inicio = inicio,
+                            Estado = antes != null ? antes.Estado : "Registrado",
+                            DePresupuesto = antes != null && antes.DePresupuesto,
+                            Vuelta = antes != null && antes.DePresupuesto ? antes.Vuelta : null,
+                            Aplica = true, Importe = r.Importe
+                        };
+                        plan = OrdenDelDia.Planificar(db, despues, antes, "se modificó el viaje #" + viajeId);
+                        if (plan.Vuelta == 2)
+                        {
+                            pedido.Vuelta = 2;
+                            r = TarifarioCalculo.Calcular(db, pedido);
+                            if (!r.Ok) return Content(HttpStatusCode.NotFound, new { Mensaje = r.Mensaje });
+                        }
+                        var este = plan.Grupo.FirstOrDefault(i => i.Este);
+                        if (este != null) este.Importe = r.Importe;
+                    }
+                    else if (antes != null && antes.Aplica)
+                        plan = OrdenDelDia.Planificar(db, null, antes, "se modificó el viaje #" + viajeId);
+
                     return Ok(new
                     {
                         r.TarifarioID, r.Tarifario, r.TipoVehiculo, r.ModeloNuevo, r.Banda, r.AplicaVuelta, r.Vuelta,
                         r.ImporteBase, r.TarifaDetalle, r.FalsoFlete, r.FalsoFletePorcentaje, r.Estadia, r.EstadiaModulo,
                         r.Importe, r.ImporteDetalle,
-                        VueltaSugerida = anterior.HasValue ? 2 : 1,
-                        ViajeAnterior = anterior
+                        VueltaSugerida = r.Vuelta ?? 1,
+                        Orden = plan == null ? null : OrdenParaPantalla(plan, presupuesto)
                     });
                 }
             }
             catch (Exception ex) { return InternalServerError(ex); }
+        }
+
+        // El plan como lo muestra la pantalla: el bloque (solo si hay más de uno), la línea y los avisos.
+        public static object OrdenParaPantalla(OrdenDelDia.Plan plan, bool presupuesto)
+        {
+            return new
+            {
+                plan.Aplica,
+                plan.Vuelta,
+                Linea = OrdenDelDia.Linea(plan),
+                Grupo = plan.Grupo.Count > 1 ? plan.Grupo.Select(i =>
+                {
+                    var cambio = plan.Cambios.FirstOrDefault(c => c.Quien == i);
+                    return (object)new
+                    {
+                        i.Clase, i.Id, i.Este, i.Estado, i.DePresupuesto,
+                        Hora = OrdenDelDia.Hora(i.Inicio),
+                        Orden = i.VueltaNueva,
+                        Via = cambio == null ? null : cambio.Via,
+                        i.Importe,
+                        ImporteNuevo = cambio == null ? null : cambio.ImporteNuevo
+                    };
+                }).ToList() : new List<object>(),
+                Avisos = presupuesto ? new List<OrdenDelDia.Aviso>() : OrdenDelDia.Avisos(plan)
+            };
         }
 
         // POST api/Tarifario/Impacto?id=N: qué pasaría con los viajes y presupuestos al guardar la tabla (id = 0 si es nueva),
@@ -455,10 +512,12 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // ---------------------------------------------------------------- Para revisar (§33)
         // Cada uno ve lo que puede resolver (Rocío, 25/10): los presupuestos, quien tiene permiso de presupuestos; las
-        // proformas y los comprobantes, quien gestiona proformas o cuenta corriente. Los administradores, todo. El
-        // usuario sale del token, como en TablerosController.
+        // proformas y los comprobantes, quien gestiona proformas o cuenta corriente; los viajes que quedaron para revisar por
+        // el orden del día (§43), quien gestiona viajes. Los administradores, todo. El usuario sale del token, como en
+        // TablerosController.
 
         private static readonly string[] PermisosPresupuestos = { "Presupuestos", "Gestionar presupuestos" };
+        private static readonly string[] PermisosViajes = { "Gestión de viajes", "Gestionar viajes" };
         private static readonly string[] PermisosFacturacion =
         {
             "Gestión de proformas", "Gestión de facturas", "Cuenta Corriente", "Cuenta corriente de clientes"
@@ -469,7 +528,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usuario { get; set; }
             public bool Presupuestos { get; set; }
             public bool Facturacion { get; set; }
-            public bool Ve(string tipo) { return tipo == "Presupuesto" ? Presupuestos : Facturacion; }
+            public bool Viajes { get; set; }
+            public bool Ve(string tipo) { return tipo == "Presupuesto" ? Presupuestos : tipo == "Viaje" ? Viajes : Facturacion; }
         }
 
         // Sin token válido o con el usuario inactivo: null (la acción responde 401).
@@ -515,7 +575,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     Usuario = claim.Value,
                     Presupuestos = admin || TienePermiso(cn, id, PermisosPresupuestos),
-                    Facturacion = admin || TienePermiso(cn, id, PermisosFacturacion)
+                    Facturacion = admin || TienePermiso(cn, id, PermisosFacturacion),
+                    Viajes = admin || TienePermiso(cn, id, PermisosViajes)
                 };
             }
         }
@@ -549,7 +610,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 var alcance = AlcanceDelToken();
                 if (alcance == null) return Unauthorized();
-                return Ok(new { alcance.Presupuestos, alcance.Facturacion });
+                return Ok(new { alcance.Presupuestos, alcance.Facturacion, alcance.Viajes });
             }
             catch (Exception ex) { return InternalServerError(ex); }
         }

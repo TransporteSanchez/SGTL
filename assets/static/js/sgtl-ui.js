@@ -300,6 +300,7 @@
       '<label for="sgtlConfirmarMotivo" class="form-label" data-sgtl="motivo-etiqueta"></label>' +
       '<textarea id="sgtlConfirmarMotivo" class="form-control" rows="2"></textarea>' +
       '<div class="invalid-feedback"></div>' +
+      '<div class="form-text d-none" data-sgtl="motivo-ayuda"></div>' +
       '</div>' +
       '</div>' +
       '<div class="modal-footer">' +
@@ -313,7 +314,8 @@
   }
 
   // opciones: titulo ("¿Eliminar el chofer Juan Pérez?"), mensaje ("No se puede deshacer."),
-  // verbo ("Eliminar"), peligro (botón rojo), motivo ({ etiqueta, obligatorio }), detalle (HTML ya escapado que va
+  // verbo ("Eliminar"), peligro (botón rojo), motivo ({ etiqueta, obligatorio, placeholder, ayuda: el texto gris de
+  // debajo, como "Opcional. Queda en Auditoría." }), detalle (HTML ya escapado que va
   // debajo del mensaje: la lista de lo que cambia), ancho ('lg' para una ventana más ancha) y accion(motivo):
   // función que hace el trabajo y devuelve una promesa. Si la promesa falla, el error queda dentro
   // del modal (con error.mensajeUsuario, si viene). Devuelve una promesa: true si se hizo, false si se canceló.
@@ -340,6 +342,10 @@
     bloqueMotivo.classList.toggle('d-none', !pideMotivo);
     campoMotivo.value = '';
     limpiarError(campoMotivo);
+    var ayudaMotivo = div.querySelector('[data-sgtl="motivo-ayuda"]');
+    campoMotivo.placeholder = pideMotivo ? (opciones.motivo.placeholder || '') : '';
+    ayudaMotivo.textContent = pideMotivo ? (opciones.motivo.ayuda || '') : '';
+    ayudaMotivo.classList.toggle('d-none', !ayudaMotivo.textContent);
     if (pideMotivo) {
       div.querySelector('[data-sgtl="motivo-etiqueta"]').innerHTML = escapar(opciones.motivo.etiqueta || 'Motivo') +
         (motivoObligatorio ? ' <span class="text-danger">*</span>' : '');

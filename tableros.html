@@ -185,7 +185,7 @@
                 var indicadores = delTema.filter(function (t) { return t.tipo === 'kpi'; });
                 var resto = delTema.filter(function (t) { return t.tipo !== 'kpi'; });
                 return '<div class="tab-pane fade' + (i === 0 ? ' show active' : '') + '" id="pane-' + tema.id + '" role="tabpanel" aria-labelledby="tab-' + tema.id + '">' +
-                    // Cambios de tarifa para revisar (§33): la primera de Facturación, arriba de los indicadores, fija (no está en
+                    // Cambios para revisar (§33 y §43): la primera de Facturación, arriba de los indicadores, fija (no está en
                     // el catálogo de favoritos).
                     (tema.id === 'facturacion' ? '<div id="cambiosTarifaTableros" class="mb-3" hidden></div>' : '') +
                     (indicadores.length ? '<div class="row g-3 mb-3 tableros-grilla">' + indicadores.map(columnaTablero).join('') + '</div>' : '') +

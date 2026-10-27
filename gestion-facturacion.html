@@ -624,11 +624,11 @@
         var cambiosTarifa = [];
         var cambiosTarifaCargados = false;
         function cambiosDeProforma(id) { return window.SGTLCambiosTarifa ? SGTLCambiosTarifa.de(cambiosTarifa, 'Proforma_ID', id) : []; }
-        // Una proforma generada o aceptada con viajes cuya tarifa cambió: el ícono rojo manda a mirar el detalle (§33).
+        // Una proforma generada o aceptada con viajes cuyo precio cambió (la tarifa, §33, o el orden del día, §43): el ícono
+        // rojo, con qué pasó con cada viaje y que se corrige anulándola y generándola de nuevo.
         function iconoCambioTarifa(x) {
             var filas = cambiosDeProforma(x.Proforma_ID);
-            return filas.length ? SGTLCambiosTarifa.icono(filas, 'Cambió la tarifa de ' + (filas.length === 1 ? '1 viaje' : filas.length + ' viajes') +
-                ': revisá el detalle de la proforma.', 'Ver qué cambió en ' + nombreProforma(x)) : '';
+            return filas.length ? SGTLCambiosTarifa.iconoPrecio(filas, 'Ver qué cambió en ' + nombreProforma(x), { enLaProforma: true }) : '';
         }
         function renderGrid(data) {
             var cuerpo = document.getElementById('cuerpoProformas');
@@ -827,7 +827,8 @@
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
                 ponerBadgeEstado('badgeEstadoModal', estadoActual);
-                // Si cambió la tarifa de sus viajes, el aviso trae "Anular proforma" para corregirla desde acá (§33).
+                // Si cambió el precio de sus viajes (la tarifa, §33, o el orden del día, §43), el aviso trae "Anular proforma"
+                // para corregirla desde acá.
                 var cambioTarifa = document.getElementById('cambioTarifaProforma');
                 var anulable = estadoActual === 'Generada' || estadoActual === 'Aceptada';
                 cambioTarifa.innerHTML = window.SGTLCambiosTarifa ? SGTLCambiosTarifa.aviso(cambiosDeProforma(p.Proforma_ID),
@@ -1035,7 +1036,7 @@
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
             cargarClientes();
             buscarProformas(1);
-            // gestion-facturacion.html?proforma=N abre su detalle (desde la tarjeta "Cambios de tarifa para revisar" del
+            // gestion-facturacion.html?proforma=N abre su detalle (desde la tarjeta "Cambios para revisar" del
             // dashboard). Se usa una vez: el parámetro se saca de la dirección.
             var proformaUrl = parseInt(new URLSearchParams(window.location.search).get('proforma'), 10);
             if (proformaUrl > 0) {
