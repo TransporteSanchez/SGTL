@@ -38,7 +38,8 @@ Revisá cada punto contra tus cambios (pedile a tu IA: "Revisá los cambios con 
 AGENTS.md"):
 
 1. **Botones de la fila:** solo ícono con tooltip y `aria-label`, con `SGTL.botonFila` / `SGTL.accionesFila`,
-   en el orden Ver detalle · Editar · Ver PDF · Cambiar estado · Siguiente paso · Activar/Inactivar ·
+   en el orden Ver detalle · Editar · Ver PDF · Enviar por e-mail (en comprobantes) · Cambiar estado ·
+   Siguiente paso · Activar/Inactivar ·
    Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.**
    Excepción: en Gestionar tipos de comprobante, Eliminar se oculta para sucursales, numeradores y tipos
    que ya tienen relaciones (§1.4). Para las demás acciones, el motivo es siempre
@@ -46,9 +47,10 @@ AGENTS.md"):
    órdenes ni reglas sueltas como "Primero…" o "Solo se…" (la regla va solo si el motivo es el tipo de la fila: "No se
    puede editar la factura: solo se editan los recibos"); vale también para el pie de un modal. Fuera de las filas,
    los botones llevan texto ("Editar cliente", "Reemplazar Excel"), no solo un ícono. (§1.4, §1.6)
-2. **"Ver PDF"** abre la vista previa dentro del sistema con el pie Cerrar · Enviar por e-mail · Imprimir ·
-   Descargar PDF. "Enviar por e-mail" va ahí, no como botón de la fila. **El ojo** de un documento lo abre
-   completo, en solo lectura. (§1.4)
+2. **"Ver PDF"** abre la vista previa dentro del sistema. En los comprobantes, el pie es Cerrar · Imprimir ·
+   Descargar PDF y "Enviar por e-mail" va en la columna Acciones, después de "Ver PDF". En presupuestos, el pie
+   sigue siendo Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; en proformas, Cerrar · Imprimir · Descargar PDF.
+   **El ojo** de un documento lo abre completo, en solo lectura. (§1.4)
 3. **Verbos en infinitivo:** el botón que abre un modal y el título del modal dicen lo mismo ("Registrar
    recibo", "Emitir comprobante directo"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
    empiezan con verbo ("Gestionar…", "Listar…") y el título de la pantalla es igual a la opción. (§3.1, §6.1)

@@ -25,7 +25,7 @@
     var modalVistaPreviaComprobante = null;
     var urlVistaPreviaComprobante = null;
     var secuenciaVistaPreviaComprobante = 0;
-    var idVistaPreviaComprobante = null;
+    var secuenciaEnvioComprobante = 0;
 
     function porId(id) { return document.getElementById(id); }
 
@@ -298,6 +298,8 @@
     function abrirEnvioComprobante(id) {
         if (id != null) comprobanteActualId = Number(id);
         if (!comprobanteActualId) return;
+        var idEnvio = comprobanteActualId;
+        var version = ++secuenciaEnvioComprobante;
         var boton = porId('btnConfirmarEnvioComprobante');
         var destino = porId('envioComprobanteDestino');
         boton.disabled = true;
@@ -305,7 +307,8 @@
         ocultarFeedbackEnvio();
         porId('envioComprobantePerfil').textContent = 'Verificando el perfil SMTP de facturación…';
         bootstrap.Modal.getOrCreateInstance(porId('modalEnviarComprobanteEmail')).show();
-        apiGet('/comprobantes/' + encodeURIComponent(comprobanteActualId) + '/email').then(function (datos) {
+        apiGet('/comprobantes/' + encodeURIComponent(idEnvio) + '/email').then(function (datos) {
+            if (version !== secuenciaEnvioComprobante) return;
             destino.value = datos.DestinatarioSugerido || '';
             if (!datos.Configurado) {
                 porId('envioComprobantePerfil').textContent = 'Facturación no tiene un perfil SMTP asignado.';
@@ -315,6 +318,7 @@
             porId('envioComprobantePerfil').textContent = 'Se va a enviar con el servicio ' + datos.Service + ' · ' + (datos.Perfil || datos.Remitente || 'perfil SMTP asignado') + '.';
             boton.disabled = false;
         }).catch(function (error) {
+            if (version !== secuenciaEnvioComprobante) return;
             porId('envioComprobantePerfil').textContent = 'No se pudo verificar la configuración de envío.';
             mostrarFeedbackEnvio('danger', textoError(error, 'No se pudo preparar el envío del comprobante. Probá de nuevo.'));
         });
@@ -340,7 +344,6 @@
         descarga.setAttribute('aria-disabled', 'true');
         imprimir.disabled = true;
         var item = buscarComprobante(Number(id));
-        idVistaPreviaComprobante = Number(id);
         porId('tituloVistaPreviaComprobante').textContent = 'Ver PDF del comprobante' + (item && item.Comprobante ? ' ' + item.Comprobante : '');
         feedback.className = 'text-center text-muted py-4';
         feedback.textContent = 'Preparando el PDF…';
@@ -390,6 +393,7 @@
     }
     function enviarComprobantePorEmail() {
         if (!comprobanteActualId) return;
+        var idEnvio = comprobanteActualId;
         var destino = porId('envioComprobanteDestino').value.trim();
         var campoDestino = porId('envioComprobanteDestino');
         if (!destino || !campoDestino.checkValidity()) {
@@ -402,10 +406,10 @@
         }
         ocultarFeedbackEnvio();
         var listo = window.SGTL.procesando('#btnConfirmarEnvioComprobante', 'Generando PDF…');
-        window.generarComprobantePDFParaEmail(comprobanteActualId).then(function (adjunto) {
+        window.generarComprobantePDFParaEmail(idEnvio).then(function (adjunto) {
             listo();
             listo = window.SGTL.procesando('#btnConfirmarEnvioComprobante', 'Enviando…');
-            return apiPost('/comprobantes/' + encodeURIComponent(comprobanteActualId) + '/email', {
+            return apiPost('/comprobantes/' + encodeURIComponent(idEnvio) + '/email', {
                 Destinatario: destino,
                 PdfBase64: adjunto.PdfBase64
             });
@@ -502,8 +506,8 @@
     function estadoRecibo(item) {
         return String(item.EstadoComprobante || item.EstadoDocumental || item.Estado || 'EMITIDO').toUpperCase();
     }
-    // Botones de cada fila (§1.4): los mismos cuatro en todas, en este orden; lo que no se puede hacer queda
-    // deshabilitado con "No se puede {acción}: {por qué}". Enviar por e-mail va en el pie de Ver PDF, como en presupuestos.
+    // Botones de cada fila (§1.4): Enviar por e-mail va después de Ver PDF para todos los comprobantes.
+    // Lo que no se puede hacer queda deshabilitado con el motivo en el tooltip.
     function accionesComprobante(item) {
         var tipo = tipoComprobante(item);
         var id = Number(item.ComprobanteID);
@@ -511,6 +515,13 @@
         var anulado = esRecibo && estadoRecibo(item) === 'ANULADO';
         // El comprobante de la fila dentro del motivo, en minúscula (§9): "la factura", "la nota de crédito".
         var nombre = { FAC: 'la factura', REC: 'el recibo', NC: 'la nota de crédito', ND: 'la nota de débito' }[tipo] || 'el comprobante';
+        // Pendientes solo devuelve comprobantes emitidos; Estado es financiero, no documental.
+        var estadoDocumental = String(item.EstadoComprobante || item.EstadoDocumental || 'EMITIDO').trim().toUpperCase();
+        var femenino = tipo === 'FAC' || tipo === 'NC' || tipo === 'ND';
+        var motivoEnvio = !tipo
+            ? 'No se puede enviar el comprobante por e-mail: no tiene un tipo identificado'
+            : 'No se puede enviar ' + nombre + ' por e-mail: ' + (estadoDocumental === 'ANULADO'
+                ? 'está anulad' : 'todavía no está emitid') + (femenino ? 'a' : 'o');
         return window.SGTL.accionesFila([
             window.SGTL.botonFila('ver', { id: id, datos: { tipo: tipo } }),
             window.SGTL.botonFila('editar', {
@@ -518,6 +529,7 @@
                 motivo: anulado ? 'No se puede editar el recibo: está anulado' : 'No se puede editar ' + nombre + ': solo se editan los recibos'
             }),
             window.SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF', deshabilitado: !tipo, motivo: 'No se puede ver el PDF: este tipo de comprobante no tiene' }),
+            window.SGTL.botonFila('enviar', { id: id, deshabilitado: !tipo || estadoDocumental !== 'EMITIDO', motivo: motivoEnvio }),
             anulado
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
                 : window.SGTL.botonFila('anular', {
@@ -1911,17 +1923,6 @@
         porId('btnDescargarListadoPdf').addEventListener('click', function () { exportarListadoPdf('descargar'); });
         porId('btnConfirmarEnvioComprobante').addEventListener('click', enviarComprobantePorEmail);
         porId('imprimirVistaPreviaComprobante').addEventListener('click', imprimirVistaPreviaComprobante);
-        // "Enviar por e-mail" va en el pie de Ver PDF (como en presupuestos): cierra la vista y abre el envío.
-        porId('enviarVistaPreviaComprobante').addEventListener('click', function () {
-            var id = idVistaPreviaComprobante;
-            var vista = porId('modalVistaPreviaComprobante');
-            if (!id) return;
-            vista.addEventListener('hidden.bs.modal', function abrirLuego() {
-                vista.removeEventListener('hidden.bs.modal', abrirLuego);
-                abrirEnvioComprobante(id);
-            });
-            modalVistaPreviaComprobante.hide();
-        });
         document.querySelectorAll('.cc-tab').forEach(function (tab) {
             tab.addEventListener('click', function () { cambiarVista(tab.getAttribute('data-view')); });
         });
@@ -1951,6 +1952,7 @@
             if (accion === 'ver') verComprobante(id, boton.getAttribute('data-tipo'));
             else if (accion === 'editar') abrirEditarRecibo(id);
             else if (accion === 'pdf') abrirVistaPreviaComprobante(id);
+            else if (accion === 'enviar') abrirEnvioComprobante(id);
             else if (accion === 'anular') anularReciboActual(id);
             else if (accion === 'eliminar') eliminarReciboActual(id);
         });

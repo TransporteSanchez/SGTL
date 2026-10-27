@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 26/10/2026.**
+**Última actualización de este documento: 27/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -1010,7 +1010,7 @@ También: el paginador compartido no se ocultaba sin resultados en ninguna panta
 - [ ] Un recibo anulado → Eliminar recibo: confirmación → toast "Recibo eliminado." (solo datos de prueba).
 - [ ] Emitir comprobante → Emitir crédito: título y botón dicen "Emitir crédito"; sin cliente, la
   factura relacionada dice "Seleccioná un cliente primero".
-- [ ] Ojo de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
+- [ ] Sobre de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
   y avisa "Comprobante enviado a …" (con un correo de prueba).
 - [ ] Exportar (ícono): modal "Exportar" con Vista previa, Excel y PDF; los tres bajan lo filtrado.
 
@@ -1224,7 +1224,7 @@ siga la misma estructura que las demás. Rocío lo simuló en la Mac con la API 
   generar el viaje y verde después, Rechazado rojo; el viaje generado va como etiqueta "Viaje #N" debajo del estado
   (antes había un desplegable de estado dentro de la tabla y una columna Viaje).
 - **Botones de cada fila:** Editar · Ver PDF · Cambiar estado (banderita, nuevo) · Generar viaje · Eliminar.
-  "Enviar por e-mail" pasa al pie de "Ver PDF" (como en el detalle de cuenta corriente), así son cinco botones
+  "Enviar por e-mail" pasa al pie de "Ver PDF", así son cinco botones
   como en proformas y la tabla entra a 1366 px. Origen y destino van en una columna "Ruta".
 - **Ventana "Cambiar estado":** resumen del presupuesto, estado actual y los estados posibles como tarjetas con
   su explicación; Cancelar + Guardar; si no se elige ninguno, "Elegí el estado nuevo.". Usa el mismo
@@ -1383,10 +1383,11 @@ pasar el merge a las ramas del equipo juntas.
    es la nuestra** (cierra la sesión al cambiarla), adaptada a su API: no manda el usuario y con la sesión vencida va al
    login. Se sacó la de Facu de `views/header.html`.
 2. **Cuenta corriente:** de Facu, "Distribuir" en recibo y NC (por vencimiento), NC sobre varias facturas, montos
-   1.234,56 (`SGTL.montoCentavos` y compañía en `sgtl-ui.js`), arreglo del menú lateral. **Botones de la fila: cuatro
-   en todas** (Ver detalle · Editar · Ver PDF · Anular o Eliminar), deshabilitados con el motivo; "Enviar por e-mail"
-   en el pie de Ver PDF, como en presupuestos. **El ojo abre la vista completa de Facu** en solo lectura, sin agregarle
-   nada (el detalle chico queda solo para tipos que no sean factura, recibo o nota). Textos y títulos nuestros (§6.1);
+   1.234,56 (`SGTL.montoCentavos` y compañía en `sgtl-ui.js`), arreglo del menú lateral. **Botones de la fila: cinco
+   en todas** (Ver detalle · Editar · Ver PDF · Enviar por e-mail · Anular o Eliminar), deshabilitados con el motivo;
+   la ubicación del envío se actualizó el 27/10 (§42). **El ojo abre la vista completa de Facu** en solo lectura,
+   sin agregarle nada (el detalle chico queda solo para tipos que no sean factura, recibo o nota). Textos y títulos
+   nuestros (§6.1);
    ventanas de emisión extra grandes y con el alto del recibo, como las dejó Facu; anular y eliminar con la
    confirmación del sistema; sus mensajes nuevos, en pantalla y en la API, con minúscula ("factura", "nota de crédito").
 3. **Presupuestos:** mapa de Google y km automáticos (de Facu). **Sin la distancia de Google no se guarda** (opción A),
@@ -1417,16 +1418,15 @@ pudo compilar en la Mac.**
   en el campo; bien → toast "Contraseña cambiada. Volvé a iniciar sesión con la nueva." y vuelve al login; entra con la nueva.
 - [ ] Gestionar usuarios: alta con contraseña "abc" → mensaje de 8 a 20 caracteres con letras y números; editar sin
   tocar la contraseña → la conserva.
-- [ ] Cuenta corriente, botones de la fila: en una factura, Ver detalle y Ver PDF activos, Editar y Anular grises con el
-  motivo; en un recibo emitido, los cuatro activos; en uno anulado, Eliminar en lugar de Anular. Mismo lugar en todas
-  las filas, también en las aplicaciones desplegadas.
+- [ ] Cuenta corriente, botones de la fila: en una factura, Ver detalle, Ver PDF y Enviar por e-mail activos, Editar y
+  Anular grises con el motivo; en un recibo emitido, los cinco activos; en uno anulado, Enviar por e-mail deshabilitado
+  y Eliminar en lugar de Anular. Mismo lugar en todas las filas, también en las aplicaciones desplegadas.
 - [ ] El ojo de una factura, una NC y un recibo → la vista completa en solo lectura ("Ver factura FAC-…"), fechas
   DD/MM/AAAA, solo Cerrar. Después, "Emitir comprobante directo" abre el formulario vacío y editable.
 - [ ] Comparar las descripciones de FAC, NC, ND y REC en Gestionar tipos de comprobante con el campo "Tipo de
   comprobante" de Emitir comprobante directo, Emitir crédito, Emitir Débito y Registrar recibo. También deben coincidir
   al ver un comprobante o recibo existente y al editar un recibo con REC activo; no hace falta emitir para comprobarlo.
-- [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; "Enviar por
-  e-mail" cierra el PDF y abre el envío.
+- [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Imprimir · Descargar PDF; el sobre de la fila abre el envío.
 - [ ] Editar recibo desde la fila → abre el recibo. Anular → confirmación del sistema con motivo → "Recibo anulado.".
   Eliminar uno anulado → "Recibo eliminado.".
 - [ ] Registrar recibo de un cliente de prueba con varias facturas: importe 500000 → al salir del campo "500.000,00";
@@ -1559,8 +1559,9 @@ pudo compilar: es el riesgo principal.
   errores rojos de JavaScript. Anotar cualquiera con la pantalla y el texto.
 - [ ] 6. Dashboard: el período se ve como selector; elegir Trimestre → cambian el texto de abajo y los números.
   Personalizar → Widgets → bajar con la rueda hasta "Calendario de viajes"; Cancelar.
-- [ ] 7. Cuenta corriente: cuatro botones por fila (los que no aplican, grises con el motivo); el ojo de una factura
-  abre la vista completa; Ver PDF de una factura abre la vista previa con "Enviar por e-mail" en el pie (no enviar);
+- [ ] 7. Cuenta corriente: cinco botones por fila (los que no aplican, grises con el motivo); el ojo de una factura
+  abre la vista completa; Ver PDF de una factura abre la vista previa sin "Enviar por e-mail" en el pie; el sobre está
+  en Acciones (no enviar);
   desplegar una factura con aplicados → grupo con la barra azul.
 - [ ] 8. **Con OK de Rocío (consume un número de recibo):** Registrar recibo a un cliente de prueba con facturas
   pendientes, importe y Distribuir → reparte desde la que vence primero; Emitir → toast. Anotar el recibo.
@@ -3684,3 +3685,11 @@ El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF,
 **Base:** Rocío debe ejecutar `database/cuenta-corriente/13_comprobantes_directos_configurables.sql` después de las migraciones previas. El script amplía la restricción de los movimientos de cuenta corriente; no se ejecutó contra la base compartida. Para usar un mismo código con letras A y B, aplicar también las migraciones 11 y 12 en su orden.
 
 **Probar en la VM:** recompilar la API y recargar el navegador; con FC activo y sin FAC activo, abrir «Emitir comprobante directo», elegir FC y su letra, emitir y verificar número y movimiento. Revisar el detalle, PDF, envío por e-mail, saldo, ranking y tablero. Aplicar un recibo y una nota de crédito corriente sobre FC. Confirmar que un tipo de crédito, un numerador inactivo y una sucursal inactiva no se ofrecen en el selector.
+
+---
+
+## 42. Enviar comprobantes por e-mail desde la columna Acciones — Hecho en código (27/10)
+
+En Gestionar cuenta corriente, "Enviar por e-mail" aparece después de "Ver PDF" en las acciones de todos los comprobantes, también en los tipos directos configurables y en los recibos asociados. La vista previa del comprobante queda con Cerrar · Imprimir · Descargar PDF. Los presupuestos conservan el envío en el pie de su vista previa y las proformas siguen sin envío por e-mail. Se actualizaron `AGENTS.md` y la §1.4 del design system con esta decisión.
+
+**Probar en la VM:** recargar Gestionar cuenta corriente y revisar una factura, un recibo, una nota de crédito, una nota de débito y un tipo directo configurable (por ejemplo, FC), además de un recibo asociado dentro de una factura. En cada fila, comprobar que el sobre aparece después de Ver PDF, con tooltip y `aria-label`; abrir Ver PDF y verificar que su pie no tiene el envío. Tocar el sobre y comprobar que abre el formulario de envío del comprobante elegido; cancelar sin enviar. Abrir un presupuesto y una proforma para verificar sus pies respectivos.

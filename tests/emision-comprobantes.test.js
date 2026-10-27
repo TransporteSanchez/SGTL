@@ -126,7 +126,7 @@ function probarNombresDeEmision() {
 }
 
 function probarAccionesPorTipoDeComprobante() {
-    // Botones de cada fila (§1.4 del design system): los mismos cuatro en todas, en este orden;
+    // Botones de cada fila: Enviar por e-mail sigue a Ver PDF en todos los comprobantes;
     // lo que no se puede hacer queda deshabilitado con el motivo.
     const sandbox = {
         window: {
@@ -147,21 +147,21 @@ function probarAccionesPorTipoDeComprobante() {
     }
 
     assert.deepStrictEqual(botones({ Tipo: 'FAC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'anular (deshabilitado)'],
-    'una factura se ve y tiene PDF; editar y anular quedan deshabilitados');
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+    'una factura se ve, tiene PDF y se puede enviar; editar y anular quedan deshabilitados');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar', 'pdf', 'anular'],
-    'un recibo emitido se puede editar y anular');
+        ['ver', 'editar', 'pdf', 'enviar', 'anular'],
+    'un recibo emitido se puede editar, enviar y anular');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'ANULADO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'eliminar'],
-    'un recibo anulado no se edita ni se vuelve a anular: se elimina');
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar (deshabilitado)', 'eliminar'],
+    'un recibo anulado no se edita ni envía: se elimina');
     ['NC', 'ND'].forEach(function (tipo) {
         assert.deepStrictEqual(botones({ Tipo: tipo, EstadoComprobante: 'EMITIDO' }),
-            ['ver', 'editar (deshabilitado)', 'pdf', 'anular (deshabilitado)'],
-        tipo + ' no se edita ni se anula');
+            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+        tipo + ' se puede enviar, pero no editar ni anular');
     });
     assert.deepStrictEqual(botones({ Comprobante: 'REC-00000004', Estado: 'Aplicado' }),
-        ['ver', 'editar', 'pdf', 'anular'],
+        ['ver', 'editar', 'pdf', 'enviar', 'anular'],
     'un recibo aplicado a una factura conserva sus acciones');
 }
 

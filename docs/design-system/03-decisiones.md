@@ -101,20 +101,24 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
+| Enviar por e-mail (comprobantes) | `bi-envelope` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Marcar aceptada, Emitir comprobante, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
-- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Inactivar", "Eliminar".
+- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Enviar por e-mail", "Inactivar", "Eliminar".
 - **El ojo de un documento** (proforma, factura, recibo, nota de crédito o débito) abre el documento completo en
   solo lectura: título "Ver proforma 0001-00000017", "Ver factura FAC-00000012"; solo "Cerrar" en el pie
   (gestionar proformas, listar proformas y cuenta corriente, 22/10).
 - **"Ver PDF"** abre la vista previa del PDF dentro del sistema (no en una pestaña nueva): título "Ver PDF del
-  presupuesto" / "Ver PDF del comprobante FAC-00000012", y el pie **Cerrar · Enviar por e-mail · Imprimir ·
-  Descargar PDF** (este último, el principal). **"Enviar por e-mail" va en ese pie, no como botón de la fila**:
-  así se ve lo que se manda y la fila no se llena de botones (presupuestos, cuenta corriente y proformas, 22/10).
-  Si el módulo no envía por e-mail (proformas, por ahora), el pie es Cerrar · Imprimir · Descargar PDF.
+  presupuesto" / "Ver PDF del comprobante FAC-00000012". Descargar PDF es el botón principal del pie.
+- **En todos los comprobantes**, incluidos los tipos directos configurables y los recibos asociados, "Enviar por e-mail"
+  va en la columna Acciones, después de "Ver PDF" (27/10). Abre el envío de ese comprobante. El pie de su vista previa
+  es **Cerrar · Imprimir · Descargar PDF**; no incluye el envío.
+- **En presupuestos**, "Enviar por e-mail" permanece en el pie de la vista previa:
+  **Cerrar · Enviar por e-mail · Imprimir · Descargar PDF**.
+- **En proformas**, el envío por e-mail todavía no existe; el pie es **Cerrar · Imprimir · Descargar PDF**.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
 - **Excepción en Gestionar tipos de comprobante (26/10):** en las tablas de sucursales,
