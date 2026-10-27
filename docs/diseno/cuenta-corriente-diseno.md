@@ -334,3 +334,15 @@ auditorías. Los cancelatorios de proforma conservan su aplicación única por e
 Editar un recibo no reescribe las fechas de sus aplicaciones. La fecha de emisión puede anteceder a la deuda cuando
 se cobró a cuenta; la fecha de cada imputación debe ser igual o posterior tanto al recibo como a la deuda. La emisión
 no puede moverse a una fecha posterior a la primera imputación vigente.
+
+## 11. Referencia del débito interno (27/10/2026)
+
+Los débitos internos de impacto D pueden guardar opcionalmente `ComprobanteReferenciaID` hacia un comprobante
+interno de deuda emitido del mismo cliente, como FC. `TipoReferencia` conserva la sigla real de ese documento.
+El vínculo identifica el origen del cargo, no es una aplicación de crédito: el nuevo débito aporta su propio
+movimiento de deuda por el importe ingresado y el comprobante original conserva sus importes.
+
+La fecha del débito debe ser igual o posterior a la del origen. La API valida tipo, impacto, estado y cliente bajo
+la transacción de emisión, y el reintento compara también la referencia. La migración idempotente
+`database/cuenta-corriente/17_debito_interno_referencia.sql` amplía `CK_CC_COMP_Referencia` sin alterar datos, FK ni
+el disparador de identidad de la migración 16. El detalle y el PDF muestran el número del comprobante relacionado.

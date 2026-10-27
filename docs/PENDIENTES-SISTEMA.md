@@ -67,6 +67,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 47 | Enviar comprobantes con su proforma y enviar proformas por e-mail | Hecho en código (27/10); falta probar entrega real por SMTP | Pendiente de subir | Recompilar, recargar y comprobar uno o dos PDF según la casilla, y el envío desde Listar y Gestionar proformas (§47) |
 | 48 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§48) |
 | 49 | Imputar recibos después de emitirlos | Hecho en código (27/10); pruebas locales OK | Pendiente de subir | Emitir un recibo sin deudas y usar «Imputar recibo» parcial y sucesivamente (§49) |
+| 50 | Vincular un débito interno con un FC | Hecho en código (27/10); migración 17 pendiente de aplicar | Pendiente de subir | Aplicar el script 17 y emitir un D relacionado con un FC del mismo cliente (§50) |
 | 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en esta tanda (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en esta tanda (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
 
@@ -3843,6 +3844,35 @@ debe conservar sus fechas. Probar con un usuario con `REC_EMITIR` y sin `NC_EMIT
 En los demás tipos se oculta; dentro de esos dos circuitos, sigue deshabilitada con el motivo cuando no se puede
 usar. Se actualizó la excepción en `AGENTS.md` y el design system. **Probar:** comparar un recibo y un crédito interno
 con una factura y un débito; el ícono de imputación solo debe estar en los dos primeros, después del sobre.
+
+---
+
+## 50. Vincular el débito interno con un comprobante interno — Hecho en código (27/10)
+
+Emitir Débito permite elegir opcionalmente un «Comprobante interno relacionado», como FC, del mismo cliente. La
+opción vacía es «Sin vincular». No limita la selección al saldo pendiente del origen: el débito puede documentar un
+cargo posterior sobre un comprobante ya pagado. Conserva los importes nuevos ingresados, suma su propio movimiento
+de deuda y no modifica ni imputa el total del comprobante de origen. El vínculo queda en el detalle y el PDF.
+
+La API vuelve a comprobar que ambos sean tipos internos, que el origen tenga impacto de deuda y esté emitido, que
+sea del mismo cliente y que la fecha del débito no sea anterior. Usa la referencia existente por ID y su copia de
+sigla, manteniendo los reintentos idempotentes y el permiso de emisión de deuda configurada. No cambia los circuitos
+de crédito cancelatorio, recibos ni emisión directa sin referencia. La clasificación usa tipos configurables para
+que corregir la sigla de FC no rompa la posibilidad de referenciarlo.
+
+**Base:** Rocío debe aplicar `database/cuenta-corriente/17_debito_interno_referencia.sql` después de la migración 16.
+Es idempotente; amplía el CHECK de referencias y conserva las FK y el disparador de la sigla. No modifica datos ni
+importes existentes. El script no se ejecutó contra la base compartida.
+
+**Verificación local:** API compilada y pruebas de referencia opcional, clientes, fechas, estado, tipos, respuestas
+tardías, importes independientes, validaciones C# y restricción SQL ejecutada con SQLite local.
+
+**Probar en la VM:** aplicar 17, recargar con Ctrl+F5 y abrir Emitir Débito. Con D activo, elegir cliente y FC relacionado,
+cargar neto $ 100,00 e IVA 21 % y emitir. Verificar D por $ 121,00, referencia al FC en el detalle y PDF, aumento de
+la deuda total del cliente en $ 121,00 y total original del FC sin cambios. Repetir «Sin vincular». Cambiar de cliente
+y comprobar que no quedan opciones del anterior. Intentar un FC de otro cliente, un origen anulado o fiscal y una
+fecha anterior al FC: debe rechazar sin emitir ni consumir número. Reintentar con la misma clave: debe devolver el
+mismo D sin duplicar deuda; con otro vínculo y la misma clave, debe rechazar.
 
 ---
 

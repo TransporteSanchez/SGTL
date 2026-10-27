@@ -388,6 +388,21 @@ GROUP BY c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.Letra,c.Sucur
             }
         }
 
+        private static bool EsTipoInterno(string tipo)
+        {
+            return !string.IsNullOrWhiteSpace(tipo) && !new[] { "FAC", "NC", "ND", "REC" }
+                .Contains(tipo.Trim(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static void ValidarReferenciaDebito(FacturaReferencia referencia, int clienteId, DateTime emision)
+        {
+            if (referencia == null || referencia.ClienteID != clienteId || referencia.Estado != "EMITIDO"
+                || !EsTipoInterno(referencia.Tipo))
+                throw new InvalidOperationException("Seleccioná un comprobante interno de deuda emitido del mismo cliente.");
+            if (emision.Date < referencia.FechaEmision.Date)
+                throw new InvalidOperationException("La fecha del débito no puede ser anterior a la emisión del comprobante relacionado.");
+        }
+
         private static CreditoImputable LeerCreditoImputable(SqlConnection connection, SqlTransaction transaction, int id)
         {
             const string sql = @"
@@ -742,6 +757,7 @@ ORDER BY c.Comprobante_ID DESC;";
                             var usuario = ValidarAcceso(connection, transaction, permiso);
                             bool notaCreditoCorriente = impacto == "C" && !cancelatorioProforma;
                             bool creditoSinAplicar = notaCreditoCorriente && request.Aplicaciones.Count == 0;
+                            bool debitoReferenciado = impacto == "D" && request.ComprobanteReferenciaID.HasValue;
                             DateTime? vencimiento = impacto == "C" ? null : request.FechaVencimiento.HasValue
                                 ? request.FechaVencimiento.Value.Date : (DateTime?)null;
                             if (impacto == "D" && !vencimiento.HasValue)
@@ -754,8 +770,8 @@ ORDER BY c.Comprobante_ID DESC;";
                                 return BadRequest("El crédito cancelatorio debe relacionarse con el comprobante de la proforma.");
                             if (cancelatorioProforma && request.Aplicaciones.Count > 0)
                                 return BadRequest("El crédito cancelatorio no admite distribución múltiple.");
-                            if (impacto == "D" && request.ComprobanteReferenciaID.HasValue)
-                                return BadRequest("Solo un crédito cancelatorio admite un comprobante de referencia.");
+                            if (debitoReferenciado && !EsTipoInterno(request.Tipo))
+                                return BadRequest("Solo un débito interno admite vincularse a otro comprobante interno.");
                             if (impacto == "D" && request.Aplicaciones.Count > 0)
                                 return BadRequest("Solo un crédito admite aplicaciones a comprobantes de deuda.");
                             if (!notaCreditoCorriente || creditoSinAplicar)
@@ -821,6 +837,11 @@ ORDER BY c.Comprobante_ID DESC;";
 
                             var aplicacionesNotaCredito = new List<AplicacionNotaCredito>();
                             FacturaReferencia referencia = null;
+                            if (debitoReferenciado)
+                            {
+                                referencia = LeerFacturaReferencia(connection, transaction, request.ComprobanteReferenciaID.Value);
+                                ValidarReferenciaDebito(referencia, request.ClienteID, emision);
+                            }
                             if (cancelatorioProforma)
                             {
                                 referencia = LeerFacturaReferencia(connection, transaction, request.ComprobanteReferenciaID.Value);

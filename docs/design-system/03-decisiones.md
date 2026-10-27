@@ -488,6 +488,9 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 - "Registrar proforma" crea el borrador; "Generar" le asigna el número. "Registrar recibo" abre el
   formulario; el botón del pie es "Emitir recibo". "Emitir comprobante" (siguiente paso de una proforma) abre la
   ventana "Emitir comprobante".
+- **Emitir Débito interno (27/10):** ofrece «Comprobante interno relacionado» como selector opcional del mismo
+  cliente, con «Sin vincular». Elegir un FC conserva los importes nuevos del débito; el vínculo se muestra en el
+  detalle como dato de texto y en el PDF. Las fechas y la referencia se validan con las funciones compartidas.
 - **Nada de sustantivos solos en botones ni títulos** ("Recibo", "Factura directa", "Tipos de comprobantes") ni
   de "Nuevo…" / "Nueva…".
 

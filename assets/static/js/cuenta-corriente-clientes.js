@@ -17,6 +17,7 @@
     var comprobanteModo = null;
     var comprobanteConfiguracionLista = false;
     var facturasReferencia = [];
+    var validadorVinculoDebito = null;
     var creditoImputando = null;
     var facturasImputacion = [];
     var validadorImputacion = null;
@@ -111,7 +112,14 @@
         porId('cmpLetra').innerHTML = '';
         porId('cmpSucursal').innerHTML = '';
         porId('cmpNumeroComprobante').value = '';
-        if (!tipo) return Promise.resolve();
+        if (!tipo) {
+            if (comprobanteModo === 'debito') {
+                porId('cmpReferenciaGrupo').classList.add('d-none');
+                porId('cmpReferencia').value = '';
+                facturasReferencia = [];
+            }
+            return Promise.resolve();
+        }
         window.SGTL.limpiarError(selector);
         window.SGTL.avisoFormulario(porId('cmpError'), '');
         selector.disabled = true;
@@ -125,7 +133,7 @@
         }, null, vigente).then(function () {
             if (!vigente()) return;
             comprobanteConfiguracionLista = true;
-            if (modo === 'credito') {
+            if (modo === 'credito' || modo === 'debito') {
                 var cliente = clienteComprobanteActual();
                 return cargarFacturasReferencia(modo, cliente && cliente.ClienteID);
             }
@@ -899,8 +907,8 @@
         porId('cmpReferenciaGrupo').classList.add('d-none');
         porId('cmpAplicacionesGrupo').classList.add('d-none');
         var relaciones = [];
-        if (comprobante.ProformaNumero) relaciones.push('<div class="col-md-6"><label class="form-label">Proforma</label><input class="form-control" disabled value="' + escapar(comprobante.ProformaNumero) + '"></div>');
-        if (comprobante.ComprobanteReferenciaNumero) relaciones.push('<div class="col-md-6"><label class="form-label">Comprobante relacionado</label><input class="form-control" disabled value="' + escapar(comprobante.ComprobanteReferenciaNumero) + '"></div>');
+        if (comprobante.ProformaNumero) relaciones.push('<div class="col-md-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Proforma</span><span class="sgtl-dato-valor">' + escapar(comprobante.ProformaNumero) + '</span></div>');
+        if (comprobante.ComprobanteReferenciaNumero) relaciones.push('<div class="col-md-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Comprobante relacionado</span><span class="sgtl-dato-valor">' + escapar(comprobante.ComprobanteReferenciaNumero) + '</span></div>');
         var bloqueRelacion = porId('cmpSoloLecturaRelacion');
         bloqueRelacion.classList.toggle('d-none', !relaciones.length);
         bloqueRelacion.innerHTML = relaciones.length ? '<div class="row g-3">' + relaciones.join('') + '</div>' : '';
@@ -1344,6 +1352,7 @@
         return { neto: neto, iva: iva, otros: otros, total: neto + iva + otros };
     }
     function aplicarImportesFacturaReferencia() {
+        if (comprobanteModo === 'debito') return;
         var id = Number(porId('cmpReferencia').value || 0);
         var factura = facturasReferencia.find(function (item) { return item.ComprobanteID === id; });
         if (!factura) {
@@ -1475,6 +1484,54 @@
         porId('cmpError').textContent = '';
         actualizarResumenNotaCredito();
     }
+    function esTipoInterno(tipo) {
+        return !!tipo && ['FAC', 'NC', 'ND', 'REC'].indexOf(String(tipo).toUpperCase()) < 0;
+    }
+    function validarVinculoDebito() {
+        if (!validadorVinculoDebito) validadorVinculoDebito = window.SGTL.validador([
+            { id: 'cmpReferencia', validar: function (valor) {
+                if (comprobanteModo !== 'debito') return '';
+                var original = facturasReferencia.find(function (item) { return Number(item.ComprobanteID) === Number(valor); });
+                return esTipoInterno(comprobanteTipo) && original && esTipoInterno(original.Tipo)
+                    ? '' : 'Seleccioná un comprobante interno del cliente.';
+            } },
+            { id: 'cmpFechaEmision', validar: function (valor) {
+                if (comprobanteModo !== 'debito' || !porId('cmpReferencia').value) return '';
+                var original = facturasReferencia.find(function (item) { return Number(item.ComprobanteID) === Number(porId('cmpReferencia').value); });
+                return original && valor < String(original.FechaEmision).substring(0, 10)
+                    ? 'La fecha del débito no puede ser anterior al comprobante relacionado.' : '';
+            } }
+        ]);
+        return validadorVinculoDebito.validarTodo();
+    }
+    function cargarReferenciaDebito(clienteId) {
+        var grupo = porId('cmpReferenciaGrupo'), selector = porId('cmpReferencia');
+        var tipo = comprobanteTipo, operacion = comprobanteOperacion;
+        facturasReferencia = [];
+        selector.innerHTML = '<option value="">Sin vincular</option>';
+        selector.value = '';
+        grupo.classList.toggle('d-none', !esTipoInterno(tipo));
+        if (!esTipoInterno(tipo)) return Promise.resolve();
+        porId('cmpReferenciaEtiqueta').textContent = 'Comprobante interno relacionado';
+        porId('cmpReferenciaAyuda').textContent = 'Opcional. El débito incrementa la deuda y queda vinculado al comprobante elegido.';
+        window.SGTL.limpiarError(selector);
+        if (!clienteId) return Promise.resolve();
+        porId('btnEmitirComprobante').disabled = true;
+        return apiGet('/clientes/' + clienteId + '/facturas-referencia').then(function (facturas) {
+            var cliente = clienteComprobanteActual();
+            if (comprobanteOperacion !== operacion || comprobanteModo !== 'debito' || comprobanteTipo !== tipo ||
+                !cliente || Number(cliente.ClienteID) !== Number(clienteId)) return;
+            facturasReferencia = (facturas || []).filter(function (item) { return esTipoInterno(item.Tipo); });
+            selector.innerHTML = '<option value="">Sin vincular</option>' + facturasReferencia.map(function (item) {
+                return '<option value="' + Number(item.ComprobanteID) + '">' + escapar(item.Numero) + '</option>';
+            }).join('');
+            porId('btnEmitirComprobante').disabled = false;
+        }).catch(function (error) {
+            var cliente = clienteComprobanteActual();
+            if (comprobanteOperacion === operacion && comprobanteModo === 'debito' && comprobanteTipo === tipo &&
+                cliente && Number(cliente.ClienteID) === Number(clienteId)) throw error;
+        });
+    }
     function cargarFacturasReferencia(modo, clienteId) {
         var grupoReferencia = porId('cmpReferenciaGrupo');
         var grupoAplicaciones = porId('cmpAplicacionesGrupo');
@@ -1484,6 +1541,7 @@
         grupoReferencia.classList.add('d-none');
         if (modo !== 'credito') {
             grupoAplicaciones.classList.add('d-none');
+            if (modo === 'debito') return cargarReferenciaDebito(clienteId);
             return Promise.resolve();
         }
         grupoAplicaciones.classList.remove('d-none');
@@ -1573,9 +1631,9 @@
         });
     }
     function actualizarClienteComprobante() {
-        if (comprobanteModo !== 'credito' || !comprobanteTipo || !comprobanteConfiguracionLista) return;
+        if (['credito', 'debito'].indexOf(comprobanteModo) < 0 || !comprobanteTipo || !comprobanteConfiguracionLista) return;
         var cliente = clienteComprobanteActual();
-        cargarFacturasReferencia('credito', cliente && cliente.ClienteID).catch(function (ex) {
+        cargarFacturasReferencia(comprobanteModo, cliente && cliente.ClienteID).catch(function (ex) {
             window.SGTL.avisoFormulario(porId('cmpError'), textoError(ex, 'No se pudieron cargar los comprobantes del cliente. Probá de nuevo.'));
             porId('btnEmitirComprobante').disabled = true;
         });
@@ -1615,6 +1673,8 @@
         porId('btnDistribuirNC').disabled = false;
         porId('cmpFacturasNC').innerHTML = '<tr><td colspan="6" class="cc-empty">Seleccioná un cliente para ver sus comprobantes pendientes.</td></tr>';
         porId('cmpReferenciaGrupo').classList.add('d-none');
+        porId('cmpReferencia').innerHTML = '<option value="">Sin vincular</option>';
+        porId('cmpReferencia').value = '';
         porId('cmpAplicacionesGrupo').classList.add('d-none');
         porId('cmpSoloLecturaRelacion').classList.add('d-none');
         porId('cmpSoloLecturaRelacion').innerHTML = '';
@@ -1697,6 +1757,13 @@
             error.textContent = 'El importe neto debe ser mayor que cero.'; return;
         }
         if (importes.otros < 0) { error.textContent = 'Otros impuestos no puede ser negativo.'; return; }
+        if (comprobanteModo === 'debito' && porId('cmpReferencia').value) {
+            referencia = Number(porId('cmpReferencia').value);
+            if (!validarVinculoDebito()) {
+                window.SGTL.revisarFormulario(porId('modalNuevoComprobante'), error);
+                return;
+            }
+        }
         if (comprobanteModo === 'credito') {
             if (!porId('cmpSinImputar').checked && importes.aplicado !== importes.importeSolicitado) {
                 error.textContent = 'El total aplicado debe coincidir con el importe del crédito.'; return;
