@@ -43,8 +43,8 @@ function probarMensajesApi() {
     const mensajes = [
         'La proforma no tiene un comprobante vigente para anular.',
         'El comprobante vinculado no está emitido.',
-        'El comprobante tiene movimientos en la cuenta corriente y no admite una nota de crédito cancelatoria por el total.',
-        'La nota de crédito cancelatoria debe relacionarse con el comprobante de la proforma.',
+        'El comprobante tiene movimientos en la cuenta corriente y no admite un crédito cancelatorio por el total.',
+        'El crédito cancelatorio debe relacionarse con el comprobante de la proforma.',
         'El comprobante de referencia no es válido para este cliente.',
         'Los importes del comprobante cambiaron.',
         'El comprobante indicado no es el comprobante vigente de la proforma.'
@@ -78,7 +78,7 @@ async function probarModalYNotaCredito() {
     campos.btnCerrarNCX = elemento();
     campos.ncLetra.value = 'A';
     campos.ncSucursal.value = '0001';
-    const camposEditables = [campos.ncLetra, campos.ncSucursal, campos.ncFechaEmision, campos.ncObservaciones];
+    const camposEditables = [campos.ncTipoComprobante, campos.ncLetra, campos.ncSucursal, campos.ncFechaEmision, campos.ncObservaciones];
     campos.ncFormulario.querySelectorAll = () => camposEditables;
     let modalAgregado = false;
     let htmlModal = '';
@@ -106,18 +106,23 @@ async function probarModalYNotaCredito() {
     let retenerGetId = 0;
     let retenerConfiguracion = false;
     let errorConfiguracion;
+    let errorCatalogo;
+    let tiposCredito = [{ Tipo: 'CI', Descripcion: 'Crédito interno', Impacto: 'C' }];
+    const configuraciones = [];
     const comprobante = {
-        ProformaID: 7, ProformaNumero: 'PF-00000007', FacturaID: 101,
+        ProformaID: 7, ProformaNumero: 'PF-00000007', FacturaID: 101, FacturaTipo: 'FC',
         FacturaNumero: 'FC-A-0001-00000012', ClienteID: 5, Cliente: 'Cliente', CUIT: '20123456789',
         FechaFactura: '2026-10-20', Neto: 100, IVA: 21, IvaPct: 21, OtrosImpuestos: 0,
         Total: 121, Cancelable: true
     };
     const window = {
         ConfiguracionFacturacion: { cargar(tipo, controles, vigente) {
+            configuraciones.push(tipo);
+            if (tipo === 'NC') return Promise.reject(new Error('El tipo NC no tiene una configuración de facturación activa.'));
             if (retenerConfiguracion) {
                 retenerConfiguracion = false;
                 return new Promise(resolve => { resolverConfigAnterior = () => {
-                    if (!vigente || vigente()) campos.ncTipoComprobante.value = 'Configuración anterior';
+                    if (!vigente || vigente()) campos.ncNumeroComprobante.value = 'Configuración anterior';
                     resolve();
                 }; });
             }
@@ -128,6 +133,7 @@ async function probarModalYNotaCredito() {
         SGTL: {
             avisoFormulario(aviso, texto) { aviso.textContent = texto; },
             monto(valor) { return '$ ' + Number(valor).toFixed(2).replace('.', ','); },
+            escapar(valor) { return String(valor).replace(/[&<>"']/g, caracter => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[caracter])); },
             toastExito(texto) { toasts.push(texto); }
         }
     };
@@ -136,6 +142,10 @@ async function probarModalYNotaCredito() {
         fetch(url, opciones) {
             solicitudes.push({ url, opciones });
             if (opciones.method === 'POST') return new Promise(resolve => { responderPost = resolve; });
+            if (url.endsWith('/facturacion-config/tipos-emision-credito')) return Promise.resolve({
+                ok: !errorCatalogo, status: errorCatalogo ? 500 : 200,
+                json() { return Promise.resolve(errorCatalogo ? { error: errorCatalogo } : tiposCredito); }
+            });
             const id = Number((url.match(/\/proformas\/(\d+)\//) || [])[1]);
             if (id === retenerGetId) return new Promise(resolve => { responderGetAnterior = resolve; });
             return Promise.resolve({ ok: true, status: 200, json() {
@@ -154,17 +164,24 @@ async function probarModalYNotaCredito() {
     assert.match(htmlModal, /id="btnCerrarNC"[^>]*>Cancelar<\/button>/,
         'antes de emitir la nota de crédito, el pie ofrece Cancelar');
     assert.match(htmlModal, /id="btnCerrarNCX"/, 'la cruz se puede bloquear durante la emisión');
-    for (const id of ['ncCliente', 'ncCuit', 'ncFactura', 'ncFechaFactura', 'ncImporte',
-        'ncTipoComprobante', 'ncNumeroComprobante']) {
+    for (const id of ['ncCliente', 'ncCuit', 'ncFactura', 'ncFechaFactura', 'ncImporte', 'ncNumeroComprobante']) {
         assert.match(htmlModal, new RegExp('<output id="' + id + '" class="sgtl-dato-fijo'),
             id + ': el dato fijo se presenta como texto');
     }
+    assert.match(htmlModal, /<select id="ncTipoComprobante" class="form-select"/,
+        'el tipo de crédito se elige entre los configurados');
     assert.match(htmlModal, />Comprobante a anular<\/span>/);
     assert.match(htmlModal, />Fecha del comprobante<\/span>/);
-    for (const id of ['ncLetra', 'ncSucursal', 'ncFechaEmision', 'ncObservaciones']) {
+    for (const id of ['ncTipoComprobante', 'ncLetra', 'ncSucursal', 'ncFechaEmision', 'ncObservaciones']) {
         assert.match(htmlModal, new RegExp('<label class="form-label" for="' + id + '">'),
             id + ': el campo editable tiene etiqueta asociada');
     }
+    assert.ok(solicitudes[0].url.endsWith('/proformas/7/factura-cancelatoria'),
+        'primero se consulta el comprobante vinculado');
+    assert.ok(solicitudes.some(solicitud => solicitud.url.endsWith('/facturacion-config/tipos-emision-credito')),
+        'se consultan los créditos configurados');
+    assert.strictEqual(campos.ncTipoComprobante.value, 'CI', 'el único crédito se preselecciona');
+    assert.deepStrictEqual(configuraciones, ['CI'], 'NC inactiva no bloquea el crédito interno activo');
     assert.strictEqual(campos.ncFactura.value, 'FC-A-0001-00000012');
     assert.strictEqual(campos.ncFechaFactura.value, '20/10/2026',
         'la fecha fija se ve en el formato del sistema');
@@ -184,17 +201,19 @@ async function probarModalYNotaCredito() {
     assert.strictEqual(cierreEvitado, true, 'Escape no cierra el modal mientras emite');
 
     responderPost({ ok: true, status: 201, json() {
-        return Promise.resolve({ Numero: 'NC-A-0001-00000020', Total: 121 });
+        return Promise.resolve({ Numero: 'CI-A-0001-00000020', Total: 121 });
     } });
     await new Promise(resolve => setImmediate(resolve));
     const post = solicitudes.find(solicitud => solicitud.opciones.method === 'POST');
-    assert.ok(post, 'la anulación emite una nota de crédito');
+    assert.ok(post, 'la anulación emite un crédito interno');
     const cuerpo = JSON.parse(post.opciones.body);
-    assert.strictEqual(cuerpo.Tipo, 'NC');
+    assert.strictEqual(cuerpo.Tipo, 'CI');
     assert.strictEqual(cuerpo.ProformaID, 7);
     assert.strictEqual(cuerpo.ComprobanteReferenciaID, 101);
-    assert.strictEqual(cuerpo.Concepto, 'Nota de crédito cancelatoria de FC-A-0001-00000012');
-    assert.deepStrictEqual(toasts, ['Comprobante anulado con una nota de crédito por el total.']);
+    assert.strictEqual(cuerpo.Concepto, 'Crédito interno cancelatorio de FC-A-0001-00000012');
+    assert.deepStrictEqual([cuerpo.Neto, cuerpo.IVA, cuerpo.OtrosImpuestos], [100, 21, 0],
+        'la composición se toma del comprobante original sin editar el importe');
+    assert.deepStrictEqual(toasts, ['Comprobante anulado con un crédito cancelatorio por el total.']);
     assert.strictEqual(campos.ncFormulario.classList.contains('d-none'), true,
         'el formulario editable se oculta tras emitir la NC');
     assert.strictEqual(campos.ncResultado.classList.contains('d-none'), false,
@@ -220,36 +239,86 @@ async function probarModalYNotaCredito() {
     assert.ok(camposEditables.every(campo => !campo.disabled), 'los campos se restauran para corregir el formulario');
     assert.strictEqual(campos.btnConfirmarNC.disabled, false, 'el usuario puede volver a intentar');
 
-    errorConfiguracion = new Error('El tipo NC no tiene una configuración de facturación activa.');
+    errorConfiguracion = new Error('El tipo CI no tiene una configuración de facturación activa.');
     window.FacturacionProformaAnulacion.abrir(7);
     await new Promise(resolve => setImmediate(resolve));
     assert.strictEqual(campos.ncMensaje.textContent,
-        'El tipo NC no tiene una configuración de facturación activa.',
+        'El tipo CI no tiene una configuración de facturación activa.',
         'se muestra el rechazo real de la configuración');
+    assert.strictEqual(campos.ncFactura.value, 'FC-A-0001-00000012',
+        'el comprobante sigue visible aunque falle la configuración del crédito');
     assert.strictEqual(campos.btnConfirmarNC.disabled, true);
 
     errorConfiguracion = null;
+    errorCatalogo = 'No se pudieron cargar los tipos de crédito.';
+    window.FacturacionProformaAnulacion.abrir(7);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(campos.ncFactura.value, 'FC-A-0001-00000012',
+        'el comprobante sigue visible aunque falle el catálogo de créditos');
+    assert.strictEqual(campos.ncMensaje.textContent, errorCatalogo);
+    assert.strictEqual(campos.btnConfirmarNC.disabled, true);
+
+    errorCatalogo = null;
+    tiposCredito = [
+        { Tipo: 'CI', Descripcion: 'Crédito interno', Impacto: 'C' },
+        { Tipo: 'CRE', Descripcion: 'Crédito especial', Impacto: 'C' }
+    ];
+    window.FacturacionProformaAnulacion.abrir(7);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(campos.ncTipoComprobante.value, '',
+        'con varios créditos no se presume cuál corresponde');
+    assert.strictEqual(campos.btnConfirmarNC.disabled, true);
+    campos.ncTipoComprobante.value = 'CRE';
+    campos.ncTipoComprobante.listeners.change();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(campos.btnConfirmarNC.disabled, false,
+        'la elección explícita habilita la cancelación');
+    assert.strictEqual(configuraciones[configuraciones.length - 1], 'CRE');
+    campos.btnConfirmarNC.listeners.click();
+    const creditoElegido = JSON.parse(solicitudes.filter(solicitud => solicitud.opciones.method === 'POST').slice(-1)[0].opciones.body);
+    assert.strictEqual(creditoElegido.Tipo, 'CRE');
+    assert.strictEqual(creditoElegido.Concepto, 'Crédito especial cancelatorio de FC-A-0001-00000012');
+    responderPost({ ok: false, status: 409, json() { return Promise.resolve({ error: 'La operación cambió.' }); } });
+    await new Promise(resolve => setImmediate(resolve));
+
+    tiposCredito = [];
+    window.FacturacionProformaAnulacion.abrir(7);
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(campos.ncFactura.value, 'FC-A-0001-00000012',
+        'sin tipos de crédito también permanece visible el comprobante');
+    assert.match(campos.ncMensaje.textContent, /No hay tipos de crédito activos/);
+    assert.strictEqual(campos.btnConfirmarNC.disabled, true);
+
+    tiposCredito = [{ Tipo: 'CI', Descripcion: 'Crédito interno', Impacto: 'C' }];
     retenerGetId = 8;
-    retenerConfiguracion = true;
     window.FacturacionProformaAnulacion.abrir(8);
     window.FacturacionProformaAnulacion.abrir(9);
     await new Promise(resolve => setImmediate(resolve));
     assert.strictEqual(campos.ncProformaNumero.textContent, 'Proforma PF-9');
-    resolverConfigAnterior();
     responderGetAnterior({ ok: true, status: 200, json() {
         return Promise.resolve({ ...comprobante, ProformaID: 8, ProformaNumero: 'PF-8' });
     } });
     await new Promise(resolve => setImmediate(resolve));
     assert.strictEqual(campos.ncProformaNumero.textContent, 'Proforma PF-9',
         'la respuesta GET anterior no altera el modal nuevo');
-    assert.notStrictEqual(campos.ncTipoComprobante.value, 'Configuración anterior',
+
+    retenerGetId = 0;
+    retenerConfiguracion = true;
+    window.FacturacionProformaAnulacion.abrir(8);
+    await new Promise(resolve => setImmediate(resolve));
+    window.FacturacionProformaAnulacion.abrir(9);
+    await new Promise(resolve => setImmediate(resolve));
+    resolverConfigAnterior();
+    await new Promise(resolve => setImmediate(resolve));
+    assert.strictEqual(campos.ncProformaNumero.textContent, 'Proforma PF-9',
         'la configuración anterior no altera el modal nuevo');
+    assert.notStrictEqual(campos.ncNumeroComprobante.value, 'Configuración anterior');
 
     campos.btnConfirmarNC.listeners.click();
     window.FacturacionProformaAnulacion.abrir(10);
     await new Promise(resolve => setImmediate(resolve));
     responderPost({ ok: true, status: 201, json() {
-        return Promise.resolve({ Numero: 'NC-A-0001-00000021', Total: 121 });
+        return Promise.resolve({ Numero: 'CI-A-0001-00000021', Total: 121 });
     } });
     await new Promise(resolve => setImmediate(resolve));
     assert.strictEqual(campos.ncProformaNumero.textContent, 'Proforma PF-10',

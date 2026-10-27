@@ -29,16 +29,16 @@ try {
             (1, '2026-10-26', 'ND',  'D', 'EMITIDO', 20),
             (1, '2026-10-26', 'NC',  'C', 'EMITIDO', 30),
             (1, '2026-10-26', 'REC', 'C', 'EMITIDO', 90),
-            (1, '2026-10-26', 'OTR', 'C', 'EMITIDO', 5),
+            (1, '2026-10-26', 'CI',  'C', 'EMITIDO', 5),
             (1, '2026-10-26', 'FC',  'D', 'ANULADO', 200),
             (1, '2026-09-30', 'FC',  'D', 'EMITIDO', 70);
     `);
     const filas = db.prepare(sql).all({ '@desde': '2026-10-01', '@hasta': '2026-11-01' });
     assert.strictEqual(filas.length, 1, 'debe agrupar el período por cliente y fecha');
-    assert.strictEqual(filas[0].Total, 140, 'FAC + FC + ND − NC, sin recibos ni comprobantes ajenos al período');
-    assert.strictEqual(filas[0].Comprobantes, 4, 'el comprobante FC debe sumarse al recuento');
+    assert.strictEqual(filas[0].Total, 135, 'FAC + FC + ND − NC − CI, sin recibos ni comprobantes ajenos al período');
+    assert.strictEqual(filas[0].Comprobantes, 5, 'FC y CI deben sumarse al recuento');
 } finally {
     db.close();
 }
 
-console.log('OK: Tableros incluye tipos de deuda configurables en la facturación');
+console.log('OK: Tableros incluye deuda y créditos configurables en la facturación');

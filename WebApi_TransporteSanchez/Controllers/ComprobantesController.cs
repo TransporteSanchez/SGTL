@@ -27,7 +27,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public DateTime? FechaEmision { get; set; }
             public DateTime? FechaVencimiento { get; set; }
             public int? ComprobanteReferenciaID { get; set; }
-            // Cuando se informa, la NC solo puede cancelar la Factura vigente de esta Proforma.
+            // Cuando se informa, el crédito solo puede cancelar el comprobante vigente de esta proforma.
             public int? ProformaID { get; set; }
             public string Concepto { get; set; }
             public decimal Neto { get; set; }
@@ -136,9 +136,11 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Letra { get; set; }
             public string Sucursal { get; set; }
             public int? ReferenciaID { get; set; }
+            public int? ProformaID { get; set; }
             public string Concepto { get; set; }
             public string Observaciones { get; set; }
             public decimal Neto { get; set; }
+            public decimal? IvaPct { get; set; }
             public decimal IVA { get; set; }
             public decimal OtrosImpuestos { get; set; }
             public decimal Total { get; set; }
@@ -383,9 +385,13 @@ WHERE cp.ProformaID=@proforma AND cp.ComprobanteID=@factura AND cp.Vigente=1
         private static ComprobanteExistente BuscarPorClave(SqlConnection connection, SqlTransaction transaction, Guid clave)
         {
             const string sql = @"
-SELECT TOP (1) Comprobante_ID,ClienteID,Tipo,NumeroCorrelativo,FechaEmision,FechaVencimiento,Letra,Sucursal,
-       ComprobanteReferenciaID,Concepto,Observaciones,Neto,IVA,OtrosImpuestos,Total
-FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
+SELECT TOP (1) c.Comprobante_ID,c.ClienteID,c.Tipo,c.NumeroCorrelativo,c.FechaEmision,c.FechaVencimiento,c.Letra,c.Sucursal,
+       c.ComprobanteReferenciaID,c.Concepto,c.Observaciones,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
+       (SELECT TOP (1) d.IvaPct FROM dbo.COMPROBANTES_DETALLE d
+        WHERE d.ComprobanteID=c.Comprobante_ID ORDER BY d.Orden) AS IvaPct,
+       (SELECT TOP (1) cp.ProformaID FROM dbo.COMPROBANTES_PROFORMAS cp
+        WHERE cp.ComprobanteID=c.ComprobanteReferenciaID ORDER BY cp.ComprobanteProforma_ID DESC) AS ProformaID
+FROM dbo.COMPROBANTES c WITH (UPDLOCK,HOLDLOCK) WHERE c.ClaveOperacion=@clave;";
             using (var command = new SqlCommand(sql, connection, transaction))
             {
                 command.Parameters.Add(P("@clave", clave));
@@ -400,8 +406,11 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
                         FechaVencimiento = reader["FechaVencimiento"] == DBNull.Value ? (DateTime?)null : (DateTime)reader["FechaVencimiento"],
                         Letra = reader["Letra"] as string, Sucursal = reader["Sucursal"] as string,
                         ReferenciaID = reader["ComprobanteReferenciaID"] == DBNull.Value ? (int?)null : (int)reader["ComprobanteReferenciaID"],
+                        ProformaID = reader["ProformaID"] == DBNull.Value ? (int?)null : (int)reader["ProformaID"],
                         Concepto = (string)reader["Concepto"], Observaciones = reader["Observaciones"] as string,
-                        Neto = (decimal)reader["Neto"], IVA = (decimal)reader["IVA"],
+                        Neto = (decimal)reader["Neto"],
+                        IvaPct = reader["IvaPct"] == DBNull.Value ? (decimal?)null : (decimal)reader["IvaPct"],
+                        IVA = (decimal)reader["IVA"],
                         OtrosImpuestos = (decimal)reader["OtrosImpuestos"], Total = (decimal)reader["Total"]
                     };
                 }
@@ -424,7 +433,8 @@ FROM dbo.COMPROBANTES WITH (UPDLOCK,HOLDLOCK) WHERE ClaveOperacion=@clave;";
             DateTime emision, DateTime? vencimiento, decimal iva, decimal total)
         {
             return CoincideEncabezado(actual, request, emision, vencimiento)
-                && actual.Neto == request.Neto && actual.IVA == iva
+                && actual.ProformaID == request.ProformaID
+                && actual.Neto == request.Neto && actual.IvaPct == request.IvaPct && actual.IVA == iva
                 && actual.OtrosImpuestos == request.OtrosImpuestos && actual.Total == total;
         }
 
@@ -579,7 +589,7 @@ ORDER BY c.Comprobante_ID DESC;";
                     if (factura.EstadoFactura != "EMITIDO")
                         motivo = "El comprobante vinculado no está emitido.";
                     else if (factura.Aplicado != 0)
-                        motivo = "El comprobante tiene movimientos en la cuenta corriente y no admite una nota de crédito cancelatoria por el total.";
+                        motivo = "El comprobante tiene movimientos en la cuenta corriente y no admite un crédito cancelatorio por el total.";
                     else if (factura.Total <= 0)
                         motivo = "El comprobante vinculado no tiene un importe válido para cancelar.";
 
@@ -588,6 +598,7 @@ ORDER BY c.Comprobante_ID DESC;";
                         factura.ProformaID,
                         factura.ProformaNumero,
                         factura.FacturaID,
+                        FacturaTipo = factura.Tipo,
                         FacturaNumero = Numero(factura.Tipo, factura.Letra, factura.Sucursal, factura.NumeroCorrelativo),
                         factura.ClienteID,
                         factura.Cliente,
@@ -631,9 +642,10 @@ ORDER BY c.Comprobante_ID DESC;";
             if (!request.FechaEmision.HasValue) return BadRequest("La fecha de emisión es obligatoria.");
             DateTime emision = request.FechaEmision.Value.Date;
             if (emision > FechaArgentina()) return BadRequest("No se admite una fecha de emisión futura.");
-            DateTime? vencimiento = request.Tipo == "NC" ? null : request.FechaVencimiento.HasValue
+            bool cancelatorioProforma = request.ProformaID.HasValue;
+            DateTime? vencimiento = request.Tipo == "NC" || cancelatorioProforma ? null : request.FechaVencimiento.HasValue
                 ? request.FechaVencimiento.Value.Date : (DateTime?)null;
-            if (request.Tipo != "NC" && !vencimiento.HasValue)
+            if (request.Tipo != "NC" && !cancelatorioProforma && !vencimiento.HasValue)
                 return BadRequest("La fecha de vencimiento es obligatoria.");
             if (vencimiento.HasValue && vencimiento.Value < emision)
                 return BadRequest("El vencimiento no puede ser anterior a la emisión.");
@@ -644,21 +656,19 @@ ORDER BY c.Comprobante_ID DESC;";
                 return BadRequest("Las aplicaciones deben tener importes positivos con hasta dos decimales.");
             if (request.Aplicaciones.GroupBy(x => x.ComprobanteID).Any(x => x.Count() > 1))
                 return BadRequest("No se puede aplicar dos veces el mismo comprobante.");
-            bool notaCreditoCorriente = request.Tipo == "NC" && !request.ProformaID.HasValue;
+            bool notaCreditoCorriente = request.Tipo == "NC" && !cancelatorioProforma;
             if (notaCreditoCorriente && request.ComprobanteReferenciaID.HasValue)
                 return BadRequest("La nota de crédito corriente no admite un único comprobante de referencia.");
             if (notaCreditoCorriente && request.Aplicaciones.Count == 0)
                 return BadRequest("La nota de crédito debe aplicarse a uno o más comprobantes de deuda.");
-            if (request.Tipo == "NC" && request.ProformaID.HasValue && !request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("La nota de crédito cancelatoria debe relacionarse con el comprobante de la proforma.");
-            if (request.Tipo == "NC" && request.ProformaID.HasValue && request.Aplicaciones.Count > 0)
-                return BadRequest("La nota de crédito cancelatoria no admite distribución múltiple.");
-            if (request.Tipo != "NC" && request.ComprobanteReferenciaID.HasValue)
-                return BadRequest("Solo la nota de crédito admite un comprobante de referencia.");
+            if (cancelatorioProforma && !request.ComprobanteReferenciaID.HasValue)
+                return BadRequest("El crédito cancelatorio debe relacionarse con el comprobante de la proforma.");
+            if (cancelatorioProforma && request.Aplicaciones.Count > 0)
+                return BadRequest("El crédito cancelatorio no admite distribución múltiple.");
+            if (request.Tipo != "NC" && !cancelatorioProforma && request.ComprobanteReferenciaID.HasValue)
+                return BadRequest("Solo un crédito cancelatorio admite un comprobante de referencia.");
             if (request.Tipo != "NC" && request.Aplicaciones.Count > 0)
                 return BadRequest("Solo la nota de crédito admite aplicaciones a comprobantes de deuda.");
-            if (request.ProformaID.HasValue && request.Tipo != "NC")
-                return BadRequest("La proforma solo se puede indicar al emitir una nota de crédito cancelatoria.");
             if (request.Concepto.Length == 0 || request.Concepto.Length > 200)
                 return BadRequest("El concepto es obligatorio y no puede superar los 200 caracteres.");
             if ((request.Observaciones ?? string.Empty).Length > 2000)
@@ -669,17 +679,19 @@ ORDER BY c.Comprobante_ID DESC;";
                     return BadRequest("El importe neto debe ser mayor que cero y tener hasta dos decimales.");
                 if (request.IvaPct < 0 || request.IvaPct > 100 || request.IvaPct != Redondear(request.IvaPct))
                     return BadRequest("El porcentaje de IVA debe estar entre 0 y 100.");
-                if (request.Tipo == "NC" && (!request.IVA.HasValue || request.IVA.Value < 0
+                if ((request.Tipo == "NC" || cancelatorioProforma) && (!request.IVA.HasValue || request.IVA.Value < 0
                     || request.IVA.Value != Redondear(request.IVA.Value)))
-                    return BadRequest("El importe de IVA de la nota de crédito no es válido.");
+                    return BadRequest("El importe de IVA del crédito no es válido.");
                 if (request.OtrosImpuestos < 0 || request.OtrosImpuestos != Redondear(request.OtrosImpuestos))
                     return BadRequest("Otros impuestos no puede ser negativo y debe tener hasta dos decimales.");
             }
 
-            decimal iva = notaCreditoCorriente ? 0 : (request.Tipo == "NC" ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m));
+            decimal iva = notaCreditoCorriente ? 0 : (request.Tipo == "NC" || cancelatorioProforma
+                ? request.IVA.Value : Redondear(request.Neto * request.IvaPct / 100m));
             decimal total = notaCreditoCorriente ? 0 : request.Neto + iva + request.OtrosImpuestos;
-            string impacto = request.Tipo == "NC" ? "C" : "D";
+            string impacto = cancelatorioProforma ? "C" : request.Tipo == "NC" ? "C" : "D";
             string permiso = request.Tipo == "NC" ? "NC_EMITIR" : request.Tipo == "ND" ? "ND_EMITIR" : "FAC_EMITIR";
+            if (cancelatorioProforma) permiso = "NC_EMITIR";
 
             try
             {
@@ -734,7 +746,7 @@ ORDER BY c.Comprobante_ID DESC;";
 
                             var aplicacionesNotaCredito = new List<AplicacionNotaCredito>();
                             FacturaReferencia referencia = null;
-                            if (request.Tipo == "NC" && request.ProformaID.HasValue)
+                            if (cancelatorioProforma)
                             {
                                 referencia = LeerFacturaReferencia(connection, transaction, request.ComprobanteReferenciaID.Value);
                                 if (referencia == null || referencia.ClienteID != request.ClienteID || referencia.Estado != "EMITIDO")
@@ -747,13 +759,16 @@ ORDER BY c.Comprobante_ID DESC;";
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.Conflict,
-                                        new { error = "El comprobante relacionado ya no admite una nota de crédito cancelatoria." });
+                                        new { error = "El comprobante relacionado ya no admite un crédito cancelatorio." });
                                 }
                                 decimal netoPendiente;
                                 decimal ivaPendiente;
                                 decimal otrosPendientes;
                                 CalcularComposicionPendiente(referencia, out netoPendiente, out ivaPendiente, out otrosPendientes);
-                                if (request.Neto != netoPendiente || iva != ivaPendiente
+                                decimal porcentajeIvaPendiente = netoPendiente > 0
+                                    ? Redondear(ivaPendiente * 100m / netoPendiente) : 0;
+                                if (request.Neto != netoPendiente || request.IvaPct != porcentajeIvaPendiente
+                                    || iva != ivaPendiente
                                     || request.OtrosImpuestos != otrosPendientes || total != referencia.Pendiente)
                                 {
                                     transaction.Rollback();
@@ -780,11 +795,11 @@ ORDER BY c.Comprobante_ID DESC;";
                                     Factura = referencia, Importe = total, Neto = netoPendiente,
                                     IVA = ivaPendiente, OtrosImpuestos = otrosPendientes
                                 });
-                                if (request.Tipo == "NC" && request.ProformaID.HasValue && aplicacionesNotaCredito.Count != 1)
+                                if (aplicacionesNotaCredito.Count != 1)
                                 {
                                     transaction.Rollback();
                                     return Content(HttpStatusCode.BadRequest,
-                                        new { error = "La nota de crédito cancelatoria debe aplicarse a un único comprobante." });
+                                        new { error = "El crédito cancelatorio debe aplicarse a un único comprobante." });
                                 }
                             }
                             else if (notaCreditoCorriente)
@@ -894,7 +909,7 @@ VALUES (@comprobante,@cliente,@tipo,'EMISION',@impacto,@total,@emision,@concepto
                                 command.ExecuteNonQuery();
                             }
 
-                            if (request.Tipo == "NC")
+                            if (impacto == "C")
                             {
                                 foreach (var aplicacion in aplicacionesNotaCredito)
                                 {
@@ -915,10 +930,9 @@ VALUES (@cliente,@credito,'C',@deuda,'D',@importe,@fecha,1,@usuario);", connecti
                                 }
                             }
 
-                            // Nota de Credito cancelatoria de la Factura de una Proforma: desvincula la Factura,
-                            // anula la Proforma y libera sus viajes (vuelven a Listo para facturar / Entregado)
-                            // para que puedan incluirse en otra Proforma y volver a facturarse.
-                            if (request.Tipo == "NC" && request.ProformaID.HasValue)
+                            // El crédito cancelatorio desvincula el comprobante de deuda, anula la proforma
+                            // y libera sus viajes para que puedan incluirse en otra proforma.
+                            if (cancelatorioProforma)
                             {
                                 using (var command = new SqlCommand(@"
 UPDATE dbo.COMPROBANTES_PROFORMAS
@@ -945,7 +959,7 @@ VALUES
  (GETDATE(),@nombreUsuario,'ANULAR','PROFORMAS',@claveProforma,'Estado=Facturada',@detalleProforma,'Cuenta Corriente');",
                                     connection, transaction))
                                 {
-                                    string motivo = "Nota de crédito " + Numero(request.Tipo, letra, sucursal, correlativo) + ": " + request.Concepto;
+                                    string motivo = "Crédito cancelatorio " + Numero(request.Tipo, letra, sucursal, correlativo) + ": " + request.Concepto;
                                     command.Parameters.AddRange(new[]
                                     {
                                         P("@usuario", usuario.UsuarioID),P("@motivo", motivo.Length > 500 ? motivo.Substring(0, 500) : motivo),

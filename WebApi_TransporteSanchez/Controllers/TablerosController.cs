@@ -301,7 +301,7 @@ VALUES (@usuario, @tablero, @orden, @x, @y, @ancho, @alto);", conexion, transacc
 
         // GET api/tableros/facturacion?fechaDesde=AAAA-MM-DD&fechaHasta=AAAA-MM-DD
         // Facturación del período por cliente y por día de emisión (la pantalla la agrupa por mes o por semana). Misma cuenta
-        // que "Top clientes en facturación" (CuentaCorrienteController): comprobantes de deuda emitidos, menos notas de crédito.
+        // que "Top clientes en facturación" (CuentaCorrienteController): comprobantes de deuda emitidos, menos créditos salvo recibos.
         [HttpGet, Route("facturacion")]
         public IHttpActionResult GetFacturacion(string fechaDesde = null, string fechaHasta = null)
         {
@@ -323,12 +323,12 @@ VALUES (@usuario, @tablero, @orden, @x, @y, @ancho, @alto);", conexion, transacc
 SELECT c.ClienteID,
        COALESCE(NULLIF(LTRIM(RTRIM(cl.Razon_Social)), ''), 'Sin nombre') AS Cliente,
        CONVERT(date, c.FechaEmision) AS Fecha,
-       CAST(SUM(CASE WHEN c.Tipo = 'NC' THEN -c.Total ELSE c.Total END) AS decimal(18,2)) AS Total,
+       CAST(SUM(CASE WHEN c.Impacto = 'C' THEN -c.Total ELSE c.Total END) AS decimal(18,2)) AS Total,
        COUNT(*) AS Comprobantes
 FROM dbo.COMPROBANTES c
 JOIN dbo.CLIENTES cl ON cl.Cliente_ID = c.ClienteID
 WHERE c.Estado = 'EMITIDO'
-  AND (c.Impacto = 'D' OR c.Tipo = 'NC')
+  AND (c.Impacto = 'D' OR (c.Impacto = 'C' AND c.Tipo <> 'REC'))
   AND c.FechaEmision >= @desde AND c.FechaEmision < @hasta
 GROUP BY c.ClienteID, cl.Razon_Social, CONVERT(date, c.FechaEmision)
 ORDER BY Fecha, c.ClienteID;", conexion))

@@ -639,7 +639,7 @@
             var filasAplicaciones = aplicaciones.map(function (aplicacion, posicion) {
                 saldoProgresivo = Math.max(0, saldoProgresivo - Number(aplicacion.Importe || 0));
                 aplicacion.Saldo = saldoProgresivo;
-                var claseCreditoAplicado = aplicacion.Tipo === 'REC' || aplicacion.Tipo === 'NC'
+                var claseCreditoAplicado = aplicacion.Impacto === 'C'
                     ? ' cc-credit-application-row' : '';
                 // La última aplicación cierra el grupo de la factura (línea más marcada debajo).
                 var claseUltima = posicion === aplicaciones.length - 1 ? ' cc-application-last' : '';

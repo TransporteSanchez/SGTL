@@ -25,7 +25,8 @@ const casos = [
     { tipo: 'ND', impacto: 'D', permiso: 'ND_EMITIR' },
     { tipo: 'REC', impacto: 'C', permiso: 'REC_EMITIR' },
     { tipo: 'FC', impacto: 'D', permiso: 'FAC_EMITIR' },
-    { tipo: 'OT', impacto: 'C', permiso: 'ERROR' }
+    { tipo: 'CI', impacto: 'C', permiso: 'NC_EMITIR' },
+    { tipo: 'OT', impacto: 'C', permiso: 'NC_EMITIR' }
 ];
 
 const script = `
@@ -45,7 +46,7 @@ const ejecucion = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', 
 });
 assert.strictEqual(ejecucion.status, 0, ejecucion.stderr || ejecucion.stdout);
 assert.deepStrictEqual(JSON.parse(ejecucion.stdout.trim()), casos.map(function (caso) { return caso.permiso; }),
-    'FC de deuda debe usar FAC_EMITIR y un tipo de crédito desconocido debe rechazarse');
+    'FC de deuda usa FAC_EMITIR y los créditos configurables usan NC_EMITIR');
 
 assert.match(fuente, /SELECT c\.Comprobante_ID,c\.Tipo,c\.Impacto,/,
     'el permiso del tipo configurado debe basarse en el impacto persistido en COMPROBANTES');
@@ -54,4 +55,4 @@ assert.match(fuente, /Impacto = \(string\)reader\["Impacto"\]/,
 assert.strictEqual((fuente.match(/PermisoEnvio\(comprobante\.Tipo, comprobante\.Impacto\)/g) || []).length, 2,
     'preparar y enviar correo deben validar el mismo permiso del comprobante');
 
-console.log('OK: envío por correo de tipos directos de deuda con permiso FAC_EMITIR');
+console.log('OK: envío por correo de comprobantes configurables según su impacto');

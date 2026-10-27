@@ -529,15 +529,17 @@ SELECT c.Comprobante_ID,c.ClienteID,c.Tipo,t.Descripcion AS TipoDescripcion,
             WHEN c.Impacto='D' AND COALESCE(a.ImporteAplicado,0)=0 THEN 'Pendiente'
             WHEN c.Impacto='D' AND COALESCE(a.ImporteAplicado,0)<c.Total THEN 'Parcial'
             WHEN c.Impacto='D' THEN 'Cancelado'
-            ELSE c.Estado END AS EstadoFinanciero,
+            WHEN COALESCE(a.ImporteAplicado,0)=0 THEN 'Sin aplicar'
+            WHEN COALESCE(a.ImporteAplicado,0)<c.Total THEN 'Parcialmente aplicado'
+            ELSE 'Aplicado' END AS EstadoFinanciero,
        c.RazonSocial,c.CUIT,c.Domicilio,c.CondicionFiscal,c.CondicionComercial,
        c.Subtotal,c.Descuentos,c.Neto,c.IVA,c.OtrosImpuestos,c.Total,
        COALESCE(a.ImporteAplicado,0) AS ImporteAplicado,
-       CASE WHEN c.Impacto='D' THEN c.Total-COALESCE(a.ImporteAplicado,0) ELSE 0 END AS SaldoPendiente,
+       c.Total-COALESCE(a.ImporteAplicado,0) AS SaldoPendiente,
        c.Concepto,c.Observaciones,
        (SELECT TOP (1) p.Numero FROM dbo.COMPROBANTES_PROFORMAS cp
         JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
-        WHERE cp.ComprobanteID=c.Comprobante_ID AND cp.Vigente=1
+        WHERE cp.ComprobanteID=c.Comprobante_ID
          ORDER BY cp.ComprobanteProforma_ID DESC) AS ProformaNumero,
         (SELECT r.Tipo+'-'+r.Letra+'-'+r.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),r.NumeroCorrelativo),8)
          FROM dbo.COMPROBANTES r WHERE r.Comprobante_ID=c.ComprobanteReferenciaID) AS ComprobanteReferenciaNumero
@@ -545,7 +547,9 @@ FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo=c.Tipo
 OUTER APPLY (SELECT SUM(ap.Importe) AS ImporteAplicado
              FROM dbo.CUENTA_CORRIENTE_APLICACIONES ap
-             WHERE ap.ComprobanteDeudaID=c.Comprobante_ID AND ap.Vigente=1) a
+             WHERE ap.Vigente=1 AND
+                   ((c.Impacto='D' AND ap.ComprobanteDeudaID=c.Comprobante_ID)
+                    OR (c.Impacto='C' AND ap.ComprobanteCreditoID=c.Comprobante_ID))) a
 WHERE c.Comprobante_ID=@id;";
                     using (var command = new SqlCommand(sql, connection))
                     {
@@ -630,7 +634,7 @@ WHERE ComprobanteID=@id ORDER BY Orden,Detalle_ID;";
 SELECT p.Proforma_ID AS ProformaID,p.Numero
 FROM dbo.COMPROBANTES_PROFORMAS cp
 JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
-WHERE cp.ComprobanteID=@id AND cp.Vigente=1
+WHERE cp.ComprobanteID=@id
 ORDER BY cp.ComprobanteProforma_ID;";
                     using (var command = new SqlCommand(sqlProformas, connection))
                     {

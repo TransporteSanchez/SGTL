@@ -490,6 +490,7 @@ WHERE HistorialEnvio_ID=@id;", connection))
                 case "REC": return "REC_EMITIR";
                 default:
                     if (string.Equals(impacto, "D", StringComparison.OrdinalIgnoreCase)) return "FAC_EMITIR";
+                    if (string.Equals(impacto, "C", StringComparison.OrdinalIgnoreCase)) return "NC_EMITIR";
                     throw new InvalidOperationException("El tipo de comprobante no admite envío por correo.");
             }
         }

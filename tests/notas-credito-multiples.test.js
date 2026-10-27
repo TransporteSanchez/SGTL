@@ -32,8 +32,8 @@ assert.match(controlador,
     /foreach\s*\(var aplicacion in aplicacionesNotaCredito\)/,
     'la emisión debe persistir todas las aplicaciones de la NC');
 assert.match(controlador,
-    /request\.Tipo\s*==\s*"NC"[\s\S]*?request\.ProformaID\.HasValue[\s\S]*?aplicacionesNotaCredito\.Count\s*!=\s*1/,
-    'una NC cancelatoria de Proforma debe seguir teniendo una única aplicación');
+    /if\s*\(cancelatorioProforma\)\s*\{\s*referencia\s*=\s*LeerFacturaReferencia[\s\S]*?aplicacionesNotaCredito\.Count\s*!=\s*1/,
+    'un crédito cancelatorio de proforma debe tener una única aplicación');
 assert.match(controlador,
     /FechaVencimiento\s*\{\s*get;\s*set;\s*\}/,
     'las Facturas de referencia deben exponer vencimiento para ordenar la distribución');

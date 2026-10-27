@@ -64,6 +64,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Cliente { get; set; }
             public DateTime Fecha { get; set; }
             public string Tipo { get; set; }
+            public string Impacto { get; set; }
             public string Comprobante { get; set; }
             public string Concepto { get; set; }
             public decimal Importe { get; set; }
@@ -134,11 +135,11 @@ namespace WebApi_TransporteSanchez.Controllers
 SELECT TOP (@cantidad)
        c.Cliente_ID AS ClienteID,
        COALESCE(NULLIF(LTRIM(RTRIM(c.Razon_Social)), ''), 'Sin nombre') AS RazonSocial,
-       CONVERT(decimal(18,2), SUM(CASE WHEN comp.Tipo = 'NC' THEN -comp.Total ELSE comp.Total END)) AS Facturacion
+       CONVERT(decimal(18,2), SUM(CASE WHEN comp.Impacto='C' THEN -comp.Total ELSE comp.Total END)) AS Facturacion
 FROM dbo.COMPROBANTES comp
 JOIN dbo.CLIENTES c ON c.Cliente_ID = comp.ClienteID
 WHERE comp.Estado = 'EMITIDO'
-  AND (comp.Impacto='D' OR comp.Tipo='NC')
+  AND (comp.Impacto='D' OR (comp.Impacto='C' AND comp.Tipo<>'REC'))
 GROUP BY c.Cliente_ID, c.Razon_Social
 ORDER BY Facturacion DESC, RazonSocial;";
 
@@ -378,7 +379,7 @@ OFFSET @offset ROWS FETCH NEXT @pageSize ROWS ONLY;";
                     var aplicaciones = db.Database.SqlQuery<AplicacionCuentaDto>(@"
 SELECT a.Aplicacion_ID AS AplicacionID,a.ComprobanteDeudaID,
        credito.Comprobante_ID AS ComprobanteID,credito.ClienteID,cl.Razon_Social AS Cliente,
-       a.FechaAplicacion AS Fecha,credito.Tipo,
+       a.FechaAplicacion AS Fecha,credito.Tipo,credito.Impacto,
        credito.Tipo+'-'+credito.Letra+'-'+credito.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),credito.NumeroCorrelativo),8) AS Comprobante,
        credito.Concepto,CAST(a.Importe AS decimal(18,2)) AS Importe,'Aplicado' AS Estado,credito.Estado AS EstadoComprobante
 FROM dbo.CUENTA_CORRIENTE_APLICACIONES a

@@ -88,7 +88,7 @@ SELECT c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total,
        MIN(CASE WHEN a.Vigente=1 THEN a.ComprobanteDeudaID END) AS ComprobanteDeudaID
 FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID = c.Comprobante_ID
-WHERE c.Tipo = 'NC' AND c.ComprobanteReferenciaID IS NOT NULL
+WHERE c.Impacto = 'C' AND c.ComprobanteReferenciaID IS NOT NULL
 GROUP BY c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total
 HAVING COUNT(CASE WHEN a.Vigente=1 THEN 1 END) <> 1
     OR COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) <> c.Total
