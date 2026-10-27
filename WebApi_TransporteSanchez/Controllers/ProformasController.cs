@@ -30,6 +30,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal DescuentoPct { get; set; }
             public decimal IvaPct { get; set; }
             public decimal Subtotal { get; set; }
+            // Solo para ver (no se guarda): el resultado de la entrega del viaje de la línea (V{id}), para la etiqueta
+            // "Parcial" o "Con rechazo" (caso D de docs/diseno/viajes-diseno.md).
+            public string Resultado_Entrega { get; set; }
         }
 
         public class ProformaDto
@@ -700,9 +703,13 @@ ORDER BY d.Proforma_ID, d.Orden";
         private static List<DetalleLineaDto> LeerDetalle(DbContext db, int id)
         {
             return db.Database.SqlQuery<DetalleLineaDto>(
-                "SELECT Detalle_ID,Orden,Codigo,Concepto,Descripcion,ISNULL(Cantidad,0) AS Cantidad,Unidad," +
-                "ISNULL(PrecioUnitario,0) AS PrecioUnitario,ISNULL(DescuentoPct,0) AS DescuentoPct,ISNULL(IvaPct,0) AS IvaPct,ISNULL(Subtotal,0) AS Subtotal " +
-                "FROM PROFORMA_DETALLE WHERE Proforma_ID=@id ORDER BY Orden", P("@id", id)).ToList();
+                "SELECT d.Detalle_ID,d.Orden,d.Codigo,d.Concepto,d.Descripcion,ISNULL(d.Cantidad,0) AS Cantidad,d.Unidad," +
+                "ISNULL(d.PrecioUnitario,0) AS PrecioUnitario,ISNULL(d.DescuentoPct,0) AS DescuentoPct,ISNULL(d.IvaPct,0) AS IvaPct,ISNULL(d.Subtotal,0) AS Subtotal, " +
+                "re.Resultado_Entrega " +
+                "FROM PROFORMA_DETALLE d " +
+                "OUTER APPLY (SELECT TOP (1) v.Resultado_Entrega FROM VIAJES v " +
+                "  WHERE LTRIM(RTRIM(ISNULL(d.Codigo,''))) = 'V' + CAST(v.Viaje_ID AS varchar(12))) re " +
+                "WHERE d.Proforma_ID=@id ORDER BY d.Orden", P("@id", id)).ToList();
         }
 
         private static bool TieneFacturaVigente(DbContext db, int proformaId)
@@ -1028,6 +1035,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
             public string Distancia_KM { get; set; }
             public string Estado { get; set; }
             public bool Tiene_Evidencia { get; set; }
+            public string Resultado_Entrega { get; set; }
         }
 
         // Prellenado desde viajes. Devuelve { lineas, advertencias }. Nunca trae viajes facturados ni sin tarifa.
@@ -1053,7 +1061,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     var filas = db.Database.SqlQuery<ViajePrellenado>(
                         "SELECT v.Viaje_ID, v.Fecha_Inicio, ISNULL(o.Descripcion,'') AS Origen, ISNULL(de.Descripcion,'') AS Destino, " +
                         "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
-                        "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Estado, " +
+                        "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.Estado, v.Resultado_Entrega, " +
                         "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia " +
                         "FROM VIAJES v LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID LEFT JOIN DESTINO de ON de.Destino_ID = v.DestinoID " +
                         "WHERE v.ClienteID=@cli AND v.Fecha_Inicio >= @d1 AND v.Fecha_Inicio < @d2 ORDER BY v.Fecha_Inicio",
@@ -1067,6 +1075,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     var sinTarifa = new List<int>();
                     var registrados = new List<int>();
                     var sinEvidencia = new List<int>();
+                    var noCompletos = new List<string>();
                     int orden = 1;
                     foreach (var f in filas)
                     {
@@ -1085,6 +1094,10 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
 
                         if (conPlataforma && f.Estado == "Registrado") registrados.Add(f.Viaje_ID);
                         if (!conPlataforma && !f.Tiene_Evidencia) sinEvidencia.Add(f.Viaje_ID);
+                        // Parcial o con rechazo: se cobra completo (el viaje se hizo; Rocío, 27/10), pero se avisa. Con plataforma
+                        // no: lo que se cobra lo dice el Excel de Rukas.
+                        bool noCompleto = !conPlataforma && (f.Resultado_Entrega == "Parcial" || f.Resultado_Entrega == "Rechazo");
+                        if (noCompleto) noCompletos.Add("#" + f.Viaje_ID + (f.Resultado_Entrega == "Parcial" ? " (entrega parcial)" : " (con rechazo)"));
 
                         lineas.Add(new DetalleLineaDto
                         {
@@ -1093,7 +1106,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                                           (string.IsNullOrWhiteSpace(f.Num_Transporte) ? "" : (" - Transporte " + f.Num_Transporte)) +
                                           (string.IsNullOrWhiteSpace(f.Num_Remito) ? "" : (" - Remito " + f.Num_Remito)) +
                                           (string.IsNullOrWhiteSpace(f.Num_de_Carga) ? "" : (" - Entrega " + f.Num_de_Carga)),
-                            Cantidad = 1, Unidad = "Viaje", PrecioUnitario = Redondear(importe), DescuentoPct = 0, IvaPct = 21
+                            Cantidad = 1, Unidad = "Viaje", PrecioUnitario = Redondear(importe), DescuentoPct = 0, IvaPct = 21,
+                            Resultado_Entrega = noCompleto ? f.Resultado_Entrega : null
                         });
                     }
 
@@ -1104,6 +1118,10 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     if (enOtraProforma.Count > 0) advertencias.Add((enOtraProforma.Count == 1 ? "1 viaje ya está incluido en otra proforma y no se volvió a traer: " : enOtraProforma.Count + " viajes ya están incluidos en otra proforma y no se volvieron a traer: ") + ListaViajes(enOtraProforma) + ".");
                     if (facturados.Count > 0) advertencias.Add((facturados.Count == 1 ? "1 viaje ya estaba facturado y no se volvió a traer: " : facturados.Count + " viajes ya estaban facturados y no se volvieron a traer: ") + ListaViajes(facturados) + ".");
                     if (registrados.Count > 0) advertencias.Add((registrados.Count == 1 ? "1 viaje sigue en estado Registrado (verificá en Rukas que esté entregado): " : registrados.Count + " viajes siguen en estado Registrado (verificá en Rukas que estén entregados): ") + ListaViajes(registrados) + ".");
+                    if (noCompletos.Count > 0)
+                        advertencias.Add((noCompletos.Count == 1 ? "El viaje " + noCompletos[0] + " se cobra completo." :
+                            "Los viajes " + string.Join(", ", noCompletos.Take(noCompletos.Count - 1)) + " y " + noCompletos.Last() + " se cobran completos.") +
+                            " Si acordaste otra cosa con el cliente, cambiá el precio o el descuento de su línea.");
                     if (sinEvidencia.Count > 0) advertencias.Add((sinEvidencia.Count == 1 ? "1 viaje entregado no tiene evidencia adjunta (recomendado): " : sinEvidencia.Count + " viajes entregados no tienen evidencia adjunta (recomendado): ") + ListaViajes(sinEvidencia) + ".");
 
                     return Ok(new { lineas, advertencias });

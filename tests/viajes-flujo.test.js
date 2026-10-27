@@ -2,7 +2,10 @@
 //   A. La fecha de entrega no puede ser posterior a hoy.
 //   B. Un viaje con gastos del chofer no se elimina (antes daba un error técnico).
 //   C. La evidencia es de la entrega: en un directo, desde que salió; con plataforma, desde el día del viaje.
+//   D. La entrega parcial o con rechazo se cobra completa, pero la proforma lo avisa y lo marca en la línea.
 //   E. Estado Cancelado: un viaje que no se hizo (desde Registrado, con motivo) deja de contar y puede volver a Registrado.
+//   F. En viaje se cambian el camión y el chofer, con motivo y sin cambiar el precio.
+//   G. Administración no inicia un viaje de un día futuro (uno atrasado sí).
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -104,4 +107,35 @@ const script = leer('database/viajes/02_viaje_cancelado.sql');
     assert.ok(new RegExp("IF COL_LENGTH\\('dbo\\.VIAJES', '" + c + "'\\) IS NULL\\s+ALTER TABLE dbo\\.VIAJES ADD " + c).test(script), 'E: el script agrega ' + c + ' (idempotente)');
 });
 
-console.log('OK: flujo de los viajes (fecha de entrega, eliminar con gastos, evidencia de la entrega y viaje cancelado)');
+// D
+const proformas = leer('WebApi_TransporteSanchez/Controllers/ProformasController.cs');
+assert.ok(/f\.Resultado_Entrega == "Parcial" \|\| f\.Resultado_Entrega == "Rechazo"/.test(proformas) && /!conPlataforma &&/.test(proformas),
+    'D: Traer viajes detecta la entrega parcial o con rechazo de un directo (Rukas cobra lo que dice su Excel)');
+assert.ok(/se cobran completos\./.test(proformas) && /" Si acordaste otra cosa con el cliente, cambiá el precio o el descuento de su línea\."/.test(proformas),
+    'D: y avisa que se cobran completos');
+assert.ok(/OUTER APPLY \(SELECT TOP \(1\) v\.Resultado_Entrega FROM VIAJES v/.test(proformas), 'D: al volver a abrir el borrador, la línea sigue sabiendo el resultado');
+assert.ok(/l\.Resultado_Entrega === 'Rechazo' \? 'Con rechazo' : 'Parcial'/.test(leer('gestion-facturacion.html')), 'D: la etiqueta en la línea');
+
+// F
+const put = api.slice(api.indexOf('public IHttpActionResult Put(int id'), api.indexOf('public IHttpActionResult Delete(int id)'));
+assert.ok(/ValidarCamposBloqueados\(viaje, tarifaGuardada, viajeDto, estado, corrigeTarifa, enViaje\)/.test(put) &&
+    /if \(!permiteAsignacion && actual\.ChoferID != nuevo\.ChoferID\)/.test(api), 'F: en viaje se pueden cambiar el camión y el chofer');
+assert.ok(/PropertyName = "Cambio_Motivo", ErrorMessage = "Completá el motivo\."/.test(put), 'F: con el motivo obligatorio');
+assert.ok(/Ocupacion\.Errores\(db, viaje\.CamionID != viajeDto\.CamionID/.test(put), 'F: libres en el horario del viaje');
+assert.ok(put.indexOf('if (camionNuevo.HasValue) viaje.CamionID') > put.indexOf('var calculo = CalcularImporte('),
+    'F: el camión nuevo se aplica después de calcular el importe (el precio no cambia)');
+assert.ok(/cambioHojaDeRuta = viaje\.ChoferID != viajeDto\.ChoferID;/.test(put) && /"Cambio con el viaje en curso: "/.test(put),
+    'F: al chofer nuevo le llega la hoja de ruta y el motivo queda en Auditoría');
+assert.ok(/id="motivoAsignacion"/.test(pantalla) && /reglasViaje\.motivoAsignacion\.requerido = cambioAsignacionEnViaje\(\) \? 'Completá el motivo\.'/.test(pantalla),
+    'F: la pantalla pide el motivo si cambian');
+assert.ok(/var cambiaAsignacion = estado === 'En_viaje';/.test(pantalla) && /\.asignacion-fecha'\)\.toggleClass\('d-none', cambiaAsignacion\)/.test(pantalla),
+    'F: en viaje las fechas quedan como texto y el camión y el chofer, como campos');
+
+// G
+assert.ok(/EsRegistrado\(v\.Estado\) && v\.Fecha_Inicio\.Date > hoy && \(nuevo == EstadoEnViaje \|\| nuevo == EstadoListoParaFacturar\)/.test(api) &&
+    /"No se puede iniciar el viaje: es del "/.test(api), 'G: la API no inicia un viaje de un día futuro');
+assert.ok(/'No se puede iniciar el viaje: es del '/.test(pantalla) && /> SGTL\.fechaISO\(new Date\(\)\)\s*\? SGTL\.fecha\(v\.Fecha_Inicio\)/.test(pantalla),
+    'G: y la tarjeta "En viaje" queda gris con el motivo');
+
+console.log('OK: flujo de los viajes (entrega parcial o con rechazo, fecha de entrega, eliminar con gastos, evidencia, viaje cancelado, '
+    + 'cambio de camión o chofer en viaje y viajes de días futuros)');

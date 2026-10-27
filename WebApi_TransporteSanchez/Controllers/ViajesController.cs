@@ -70,6 +70,8 @@ namespace WebApi_TransporteSanchez.Controllers
             // Solo llegan si Google no pudo calcular la ruta y los km se cargaron a mano: van a AUDITORIA, no a VIAJES.
             public string Km_Manual_Motivo { get; set; }
             public string Km_Manual_Error_Google { get; set; }
+            // Por qué cambia el camión o el chofer con el viaje en curso (caso F de docs/diseno/viajes-diseno.md).
+            public string Cambio_Motivo { get; set; }
 
             // Solo lectura: columnas de 06/07_*.sql (fuera del EDMX).
             public string Estado { get; set; }
@@ -332,14 +334,15 @@ namespace WebApi_TransporteSanchez.Controllers
                 + ". Google: " + (string.IsNullOrWhiteSpace(v.Km_Manual_Error_Google) ? "-" : Recortar(v.Km_Manual_Error_Google, 200)));
         }
 
-        private static List<object> ValidarCamposBloqueados(VIAJES actual, TarifaGuardadaRow guardada, ViajeDto nuevo, string estado, bool permiteTarifa = false)
+        private static List<object> ValidarCamposBloqueados(VIAJES actual, TarifaGuardadaRow guardada, ViajeDto nuevo, string estado, bool permiteTarifa = false,
+            bool permiteAsignacion = false)
         {
             var cambiados = new List<string>();
             if (actual.ClienteID != nuevo.ClienteID) cambiados.Add("cliente");
             if (actual.OrigenID != nuevo.OrigenID) cambiados.Add("origen");
             if (actual.DestinoID != nuevo.DestinoID) cambiados.Add("destino");
-            if (actual.ChoferID != nuevo.ChoferID) cambiados.Add("chofer");
-            if (actual.CamionID != nuevo.CamionID) cambiados.Add("camión");
+            if (!permiteAsignacion && actual.ChoferID != nuevo.ChoferID) cambiados.Add("chofer");
+            if (!permiteAsignacion && actual.CamionID != nuevo.CamionID) cambiados.Add("camión");
             if (!permiteTarifa && CambiaTarifario(guardada, nuevo))
                 cambiados.Add("tarifa");
 
@@ -1119,6 +1122,12 @@ SELECT CAST(CASE WHEN EXISTS (
             var hoy = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time").Date;
             if (fechaEntrega.HasValue && fechaEntrega.Value.Date > hoy)
                 errores.Add(new { PropertyName = "Fecha_Entrega", ErrorMessage = "La fecha de entrega no puede ser posterior a hoy." });
+            // Un viaje de un día que todavía no llegó no sale (caso G de docs/diseno/viajes-diseno.md): la fecha manda en el
+            // orden del día, el ocupado, la tabla de tarifas y el galpón; si sale antes, primero se corrige. Uno atrasado sí
+            // (es cargar lo que ya pasó). Con plataforma, lo mismo para Listo para facturar.
+            if (EsRegistrado(v.Estado) && v.Fecha_Inicio.Date > hoy && (nuevo == EstadoEnViaje || nuevo == EstadoListoParaFacturar))
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = (nuevo == EstadoEnViaje ? "No se puede iniciar el viaje: es del " : "No se puede marcar: el viaje es del ")
+                    + v.Fecha_Inicio.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) + "." });
 
             bool conPlataforma = EsConPlataforma(v.Tipo_Cliente);
 
@@ -1403,6 +1412,9 @@ SELECT CAST(CASE WHEN EXISTS (
 
                 bool cambioHojaDeRuta = false, cambioKm = false;
                 OrdenDelDia.Plan plan = null;
+                // Camión o chofer nuevos con el viaje en curso: se aplican después de calcular el importe (el precio no cambia).
+                int? camionNuevo = null, choferNuevo = null;
+                string cambioAsignacion = null;
                 if (EsRegistrado(estado))
                 {
                     var erroresChofer = ValidarChofer(db, viajeDto);
@@ -1461,10 +1473,32 @@ SELECT CAST(CASE WHEN EXISTS (
                     // se pueden corregir tarifa y km para que coincidan con la plataforma (diseño 19/10).
                     bool corrigeTarifa = estado == "Listo_para_facturar"
                         && EsConPlataforma(TipoCliente(db, viaje.ClienteID));
-                    var erroresBloqueados = ValidarCamposBloqueados(viaje, tarifaGuardada, viajeDto, estado, corrigeTarifa);
+                    // En viaje se pueden cambiar el camión y el chofer (se rompió el camión o cambia el chofer; caso F de
+                    // docs/diseno/viajes-diseno.md, Rocío 27/10): con motivo, libres en el horario del viaje y sin cambiar el
+                    // precio (el cliente contrató el viaje con el primero). Al chofer nuevo le llega la hoja de ruta.
+                    bool enViaje = estado == EstadoEnViaje;
+                    var erroresBloqueados = ValidarCamposBloqueados(viaje, tarifaGuardada, viajeDto, estado, corrigeTarifa, enViaje);
                     if (erroresBloqueados.Any())
                     {
                         return Content(HttpStatusCode.BadRequest, erroresBloqueados);
+                    }
+                    if (enViaje && (viaje.CamionID != viajeDto.CamionID || viaje.ChoferID != viajeDto.ChoferID))
+                    {
+                        var motivo = Recortar(viajeDto.Cambio_Motivo, 200);
+                        if (motivo.Length == 0)
+                            return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Cambio_Motivo", ErrorMessage = "Completá el motivo." } });
+                        var erroresChofer = ValidarChofer(db, viajeDto);
+                        if (erroresChofer.Any()) return Content(HttpStatusCode.BadRequest, erroresChofer);
+                        var ocupado = Ocupacion.Errores(db, viaje.CamionID != viajeDto.CamionID ? viajeDto.CamionID : 0,
+                            viaje.ChoferID != viajeDto.ChoferID ? viajeDto.ChoferID : 0, viaje.Fecha_Inicio, viaje.Fecha_Fin, id, 0);
+                        if (ocupado.Any()) return Content(HttpStatusCode.BadRequest, ocupado);
+                        var partes = new List<string>();
+                        if (viaje.CamionID != viajeDto.CamionID) partes.Add("CamionID " + viaje.CamionID + " -> " + viajeDto.CamionID);
+                        if (viaje.ChoferID != viajeDto.ChoferID) partes.Add("ChoferID " + viaje.ChoferID + " -> " + viajeDto.ChoferID);
+                        cambioAsignacion = "Cambio con el viaje en curso: " + string.Join("; ", partes) + ". Motivo: " + motivo;
+                        cambioHojaDeRuta = viaje.ChoferID != viajeDto.ChoferID;
+                        camionNuevo = viajeDto.CamionID;
+                        choferNuevo = viajeDto.ChoferID;
                     }
                     if (corrigeTarifa)
                     {
@@ -1485,6 +1519,8 @@ SELECT CAST(CASE WHEN EXISTS (
                     return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
                 }
 
+                if (camionNuevo.HasValue) viaje.CamionID = camionNuevo.Value;
+                if (choferNuevo.HasValue) viaje.ChoferID = choferNuevo.Value;
                 viaje.Num_Remito = viajeDto.Num_Remito;
                 viaje.Num_de_Carga = viajeDto.Num_de_Carga;
                 viaje.Fecha_Modi = DateTime.Now;
@@ -1498,6 +1534,8 @@ SELECT CAST(CASE WHEN EXISTS (
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
                     if (calculo.Ok) GuardarImporte(db, id, DatosParaImporte(viaje, viajeDto, tarifaGuardada, tarifaEditable), calculo);
                     if (cambioKm) AuditarKmManual(id, viajeDto, viajeDto.Usu_Modi);
+                    if (cambioAsignacion != null)
+                        SGTLAuditContext.RegistrarEvento(Cn(), UsuarioCorto(viajeDto.Usu_Modi), "UPDATE", "VIAJES", "Viaje_ID=" + id, cambioAsignacion);
                     var orden = AplicarOrden(db, plan, "se modificó el viaje #" + id, viajeDto.Usu_Modi);
                     var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
                     return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp, Orden = orden });

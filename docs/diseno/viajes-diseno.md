@@ -20,7 +20,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 
 - **Quién mueve cada paso:**
   - Registrado → En viaje: el chofer desde su hoja de ruta, **solo el día del viaje** (punto 33), o administración desde
-    "Estado y entrega" (sin control de fecha).
+    "Estado y entrega": un viaje atrasado sí, uno de un día futuro no (caso G).
   - En viaje → Entregado: el chofer o administración, con resultado (Completa, Parcial o Rechazo), fecha de entrega y la
     evidencia (obligatoria en los directos).
   - Registrado → Listo para facturar (Rukas): administración a mano (con los tres números y tarifa) o solo, al generar
@@ -35,7 +35,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | Situación | Editar | Eliminar | Gastos (chofer / administración) |
 |---|---|---|---|
 | **Registrado** sin proforma | Todo. Cambiar chofer, recorrido o fecha reenvía la hoja de ruta por WhatsApp. Camión y chofer no pueden estar ocupados (§43). La vuelta y el precio los decide el orden del día (§43) | Sí, con la confirmación de lo que pasa con los otros viajes del día | No / No |
-| **En viaje** | Solo los números (remito, transporte, entrega), falso flete y estadía | No | Sí / No |
+| **En viaje** | Los números (remito, transporte, entrega), falso flete y estadía; el camión y el chofer, con motivo y sin cambiar el precio (caso F) | No | Sí / No |
 | **Entregado** | Igual que En viaje | No | Hasta 2 días después de la entrega / Sí |
 | **Listo para facturar** (Rukas) | Además, la tarifa y los km (para que coincidan con Rukas), si no está en una proforma generada | No | Hasta 2 días después del fin / Sí |
 | En un **borrador** de proforma | Según su estado | No (primero se quita del borrador) | Según su estado |
@@ -70,14 +70,14 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | B | **Eliminar un viaje Registrado con gastos** (los cargó en viaje y después se volvió atrás) daba un error técnico. | **Hecho:** Eliminar deshabilitado con el motivo "No se puede eliminar el viaje: tiene gastos cargados" (la API lo controla igual). |
 | C | **La evidencia se podía adjuntar en Registrado**, y al eliminar el viaje quedaba suelta o daba error. | **Hecho:** en un directo, desde que salió (se sube al entregarlo); con plataforma, desde el día del viaje. Al eliminar un Registrado, una evidencia vieja se borra con él. |
 
-### 4.2 Para decidir (negocio)
+### 4.2 Para decidir (negocio) — decididos el 27/10
 
 | # | Caso | Qué pasa hoy | Opciones |
 |---|---|---|---|
-| D | **Entrega con Rechazo o Parcial** | Queda Entregado como cualquiera, entra en la proforma y se cobra el precio completo. | 1) Se cobra igual (el viaje se hizo). 2) El Rechazo se cobra como "sin carga" o con otro porcentaje (se junta con el punto 10). 3) Lo decide administración en la proforma, línea por línea. |
+| D | **Entrega con Rechazo o Parcial** | Quedaba Entregado como cualquiera, entraba en la proforma y se cobraba completo sin que se viera. | **Hecho:** se cobra completo (el viaje se hizo), pero "Traer viajes" lo avisa ("El viaje #45 (entrega parcial) se cobra completo. Si acordaste otra cosa con el cliente, cambiá el precio o el descuento de su línea.") y la línea lleva la etiqueta "Parcial" o "Con rechazo". Solo directos: en Rukas manda su Excel. Pendiente: preguntarle a Claudia cómo lo manejan; si hace falta, una tarifa para estos casos más adelante. |
 | E | **Se cancela un viaje generado desde un presupuesto aceptado** | No se podía eliminar ("generado desde un presupuesto aceptado") ni cancelar: quedaba Registrado para siempre. | **Decidido y hecho (27/10): estado "Cancelado"** para todo viaje que no se hizo (sección 5). |
-| F | **Se rompe el camión o cambia el chofer con el viaje en curso** | En viaje no se cambian camión ni chofer: hay que volver a Registrado, editarlo (al chofer nuevo le llega la hoja de ruta) y volver a iniciarlo. | 1) Dejarlo así (y explicarlo en el manual). 2) Permitir cambiarlos en viaje con un motivo que queda en Auditoría. |
-| G | **Administración inicia un viaje de otro día** | Se puede (el chofer no, punto 33). | 1) Dejarlo así: administración corrige. 2) Avisar con una confirmación ("El viaje es del 30/10/2026. ¿Iniciarlo igual?"). |
+| F | **Se rompe el camión o cambia el chofer con el viaje en curso** | No se podían cambiar: había que volver a Registrado (el viaje figuraba como que no salió y, al cambiar el camión, se recalculaba el precio). | **Hecho:** en "Completar el viaje" de uno En viaje, el camión y el chofer se cambian con motivo (queda en Auditoría), libres en el horario del viaje. El precio no cambia (el cliente contrató el viaje con el primero). Al chofer nuevo le llega la hoja de ruta y el viaje pasa a su lista; los gastos del anterior quedan en el viaje. |
+| G | **Administración inicia un viaje de otro día** | Se podía cualquier día (el chofer no, punto 33). | **Hecho:** uno atrasado sí (es cargar lo que ya pasó); uno de un día futuro no: "En viaje" queda gris con "No se puede iniciar el viaje: es del 30/10/2026." (la fecha manda en el orden del día, el ocupado, la tarifa y el galpón). Con plataforma, lo mismo para Listo para facturar. |
 
 ### 4.3 Ya anotados que tocan este flujo
 
@@ -115,4 +115,4 @@ Decisiones de Rocío (maqueta `.claude/maquetas/viajes/cancelado.html`):
 Los cambios del 27/10 (orden del día, camión ocupado, iniciar en su día, gastos con tope, horas de Google, galpón) tienen
 sus pasos de prueba en la §43 y en los puntos 28, 33, 35 y 36 de la §41 de `docs/PENDIENTES-SISTEMA.md`, y pruebas de Node
 en `tests/orden-del-dia.test.js`, `tests/hoja-de-ruta.test.js`, `tests/control-interno.test.js` y
-`tests/presupuestos-mapa-horarios.test.js`. Los huecos A–C y el estado Cancelado, en `tests/viajes-flujo.test.js`.
+`tests/presupuestos-mapa-horarios.test.js`. Los huecos A–G, en `tests/viajes-flujo.test.js`.

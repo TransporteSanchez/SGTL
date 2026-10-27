@@ -691,7 +691,11 @@
             tr.innerHTML =
                 '<td><input class="form-control form-control-sm c-codigo" value="' + esc(l.Codigo || '') + '"></td>' +
                 '<td><input class="form-control form-control-sm c-concepto" value="' + esc(l.Concepto || '') + '" required aria-label="Concepto requerido"></td>' +
-                '<td><input class="form-control form-control-sm c-desc" value="' + esc(l.Descripcion || '') + '"></td>' +
+                // Entrega parcial o con rechazo (caso D de docs/diseno/viajes-diseno.md): se cobra completo, pero se ve.
+                '<td><input class="form-control form-control-sm c-desc" value="' + esc(l.Descripcion || '') + '">' +
+                (l.Resultado_Entrega === 'Parcial' || l.Resultado_Entrega === 'Rechazo'
+                    ? '<div class="mt-1">' + SGTL.estado(l.Resultado_Entrega, l.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : 'Parcial') + '</div>' : '') +
+                '</td>' +
                 '<td><input type="number" step="0.01" class="form-control form-control-sm c-cant text-end" value="' + (l.Cantidad != null ? l.Cantidad : 1) + '"></td>' +
                 '<td><input class="form-control form-control-sm c-unidad" value="' + esc(l.Unidad || '') + '"></td>' +
                 '<td><input type="number" step="0.01" class="form-control form-control-sm c-precio text-end" value="' + (l.PrecioUnitario != null ? l.PrecioUnitario : 0) + '"></td>' +

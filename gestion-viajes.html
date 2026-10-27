@@ -255,11 +255,11 @@
                                     <div class="sgtl-bloque-titulo" id="tituloBloqueAsignacion">Fechas, camión y chofer</div>
                                     <div class="sgtl-dato-fijo d-none" id="fijoAsignacion"></div>
                                     <div id="camposAsignacion" class="row g-3">
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 asignacion-fecha">
                                             <label for="fechaInicio" class="form-label">Inicio <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="fechaInicio" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
                                         </div>
-                                        <div class="col-md-6">
+                                        <div class="col-md-6 asignacion-fecha">
                                             <label for="fechaFin" class="form-label">Fin <span class="text-danger">*</span></label>
                                             <input type="text" class="form-control" id="fechaFin" placeholder="DD/MM/AAAA HH:MM" autocomplete="off">
                                         </div>
@@ -270,6 +270,12 @@
                                         <div class="col-md-6">
                                             <label for="choferSelect" class="form-label">Chofer <span id="choferRequerido" class="text-danger">*</span></label>
                                             <select class="form-select" id="choferSelect"><option value="">Seleccioná un chofer</option></select>
+                                        </div>
+                                        <!-- En viaje (caso F de docs/diseno/viajes-diseno.md): si cambia el camión o el chofer, por qué. -->
+                                        <div class="col-12 d-none" id="grupoMotivoAsignacion">
+                                            <label for="motivoAsignacion" class="form-label">Motivo del cambio <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="motivoAsignacion" maxlength="200" placeholder="Por ejemplo: se rompió el camión" autocomplete="off">
+                                            <div class="form-text">Queda en Auditoría. El precio del viaje no cambia.</div>
                                         </div>
                                     </div>
                                     <!-- Lo que le llega al chofer al guardar (ViajesController: alta, o cambio de chofer, recorrido o inicio). -->
@@ -1348,10 +1354,24 @@
                 || String(o.OrigenID) !== String($('#origenSelect').val()) || String(o.DestinoID) !== String($('#destinoSelect').val())
                 || o.inicio !== $('#fechaInicio').val();
         }
+        // En viaje (caso F): el camión o el chofer que se eligieron no son los que tenía.
+        function cambioAsignacionEnViaje() {
+            var o = viajeEditado;
+            return !!(viajeBloqueado && o && !$('#camionSelect').prop('disabled')
+                && (String(o.CamionID || '') !== String($('#camionSelect').val() || '') || String(o.ChoferID > 0 ? o.ChoferID : '') !== String($('#choferSelect').val() || '')));
+        }
+        function actualizarMotivoAsignacion() {
+            var pide = cambioAsignacionEnViaje();
+            $('#grupoMotivoAsignacion').toggleClass('d-none', !pide);
+            if (!pide) SGTL.limpiarError('#motivoAsignacion');
+        }
         function actualizarAvisoWhatsApp() {
             var ch = choferesData[$('#choferSelect').val()];
             var texto = '';
-            if (ch && !viajeBloqueado) {
+            // En viaje, al chofer nuevo le llega la hoja de ruta.
+            if (ch && cambioAsignacionEnViaje() && String(viajeEditado.ChoferID) !== String($('#choferSelect').val())) {
+                texto = 'Al guardar, <strong>' + SGTL.escapar(nombreChofer(ch)) + '</strong> recibe la hoja de ruta por WhatsApp.';
+            } else if (ch && !viajeBloqueado) {
                 texto = !viajeEditado || cambioHojaDeRuta()
                     ? 'Al guardar, <strong>' + SGTL.escapar(nombreChofer(ch)) + '</strong> recibe la hoja de ruta por WhatsApp.'
                     : 'Si cambiás ' + (presupuestoDelViaje ? 'el chofer o el inicio' : 'el chofer, el recorrido o el inicio') + ', se le reenvía la hoja de ruta por WhatsApp.';
@@ -1379,9 +1399,12 @@
             return '<div><strong>' + SGTL.escapar($('#clienteSelect option:selected').text()) + '</strong>' + (clienteConPlataforma() ? ' ' + ETIQUETA_RUKAS : '') + '</div>' +
                 '<div>' + SGTL.escapar(o ? o.Descripcion : '—') + ' → ' + SGTL.escapar(d ? d.Descripcion : '—') + '</div>';
         }
-        function textoAsignacionFija(v) {
+        // soloFechas: en viaje, el camión y el chofer van como campos (caso F).
+        function textoAsignacionFija(v, soloFechas) {
             var ch = choferesData[v.ChoferID], cm = camionesData[v.CamionID];
-            return '<div>' + SGTL.fecha(v.Fecha_Inicio, { hora: true }) + ' a ' + SGTL.fecha(v.Fecha_Fin, { hora: true }) + '</div>' +
+            var fechas = '<div>' + SGTL.fecha(v.Fecha_Inicio, { hora: true }) + ' a ' + SGTL.fecha(v.Fecha_Fin, { hora: true }) + '</div>';
+            if (soloFechas) return fechas;
+            return fechas +
                 '<div><span class="suave">Camión</span> ' + SGTL.escapar(cm ? (cm.Dominio || '').trim() : '—') +
                 ' · <span class="suave">Chofer</span> ' + SGTL.escapar(ch ? nombreChofer(ch) : 'sin asignar') + '</div>';
         }
@@ -1401,7 +1424,9 @@
             viajeTarifaEditable = estado === 'Listo_para_facturar' && clienteConPlataforma() && !presupuestoDelViaje
                 && v.EnProforma_Estado !== 'Generada' && v.EnProforma_Estado !== 'Aceptada';
             var recorridoFijo = viajeBloqueado || !!presupuestoDelViaje;
-            var asignacionFija = viajeBloqueado;
+            // En viaje se pueden cambiar el camión y el chofer, con el motivo (caso F); las fechas quedan fijas.
+            var cambiaAsignacion = estado === 'En_viaje';
+            var asignacionFija = viajeBloqueado && !cambiaAsignacion;
             var tarifaFija = rutaFija();
 
             SelectClientePredictivo.establecerDeshabilitado('clienteSelect', recorridoFijo);
@@ -1410,11 +1435,15 @@
             $('#camposRecorrido').toggleClass('d-none', recorridoFijo);
             $('#fijoRecorrido').toggleClass('d-none', !recorridoFijo).html(recorridoFijo ? textoRecorridoFijo() : '');
 
-            $('#fechaInicio, #fechaFin, #camionSelect').prop('disabled', asignacionFija);
+            $('#fechaInicio, #fechaFin').prop('disabled', viajeBloqueado);
+            $('#camionSelect').prop('disabled', asignacionFija);
             SelectClientePredictivo.establecerDeshabilitado('choferSelect', asignacionFija);
             sincronizarFechasBloqueadas();
             $('#camposAsignacion').toggleClass('d-none', asignacionFija);
-            $('#fijoAsignacion').toggleClass('d-none', !asignacionFija).html(asignacionFija ? textoAsignacionFija(v) : '');
+            $('#camposAsignacion .asignacion-fecha').toggleClass('d-none', cambiaAsignacion);
+            $('#fijoAsignacion').toggleClass('d-none', !viajeBloqueado).html(viajeBloqueado ? textoAsignacionFija(v, cambiaAsignacion) : '');
+            $('#motivoAsignacion').val('');
+            actualizarMotivoAsignacion();
 
             $('input[name="tipoTarifa"]').prop('disabled', tarifaFija);
             $('#camposTarifa').toggleClass('d-none', tarifaFija);
@@ -1430,8 +1459,8 @@
                 if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
                 // También se cargan el falso flete y la estadía (§34; M16 de la prueba en la VM del 25/10).
                 else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
-                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ', el falso flete y la estadía.'
-                    + (estado === 'En_viaje' ? ' Si cambia el recorrido, registrá otro viaje.' : '');
+                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ', el falso flete y la estadía'
+                    + (estado === 'En_viaje' ? ', y se puede cambiar el camión o el chofer. Si cambia el recorrido, registrá otro viaje.' : '.');
             } else if (presupuestoDelViaje) {
                 tipo = 'info';
                 aviso = 'El cliente, el recorrido, los km y la tarifa son los del presupuesto #' + presupuestoDelViaje + '.';
@@ -1540,7 +1569,7 @@
                         }
                         $('#falsoFlete').prop('checked', !!v.Falso_Flete);
                         $('#estadiaModulos').val(v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0);
-                        viajeEditado = { ChoferID: v.ChoferID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
+                        viajeEditado = { ChoferID: v.ChoferID, CamionID: v.CamionID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
                         bloquearDatosDelViaje(v);
                         setTarifaInfo('Buscando la tarifa…');
                         actualizarAyudaAdicionales();
@@ -1569,6 +1598,7 @@
             return {
                 Km_Manual_Motivo: manual ? ($('#motivoKmManual').val() || '').trim() : '',
                 Km_Manual_Error_Google: manual ? errorGoogleRuta : '',
+                Cambio_Motivo: cambioAsignacionEnViaje() ? ($('#motivoAsignacion').val() || '').trim() : '',
                 OrigenID: parseInt($('#origenSelect').val()) || 0,
                 DestinoID: parseInt($('#destinoSelect').val()) || 0,
                 Distancia_KM: ($('#distanciaKm').val() || '').toString().trim(),
@@ -1621,7 +1651,8 @@
             chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? ocupado.ChoferID : 'Elegí un chofer de la lista.'; } },
             km: { id: 'kmManual', validar: function (valor) { return kmNumero(valor) > 0 ? '' : 'Escribí los km con números, por ejemplo 146,8.'; } },
             estadia: { id: 'estadiaModulos', soloNumeros: true, max: 2 },
-            motivo: { id: 'motivoKmManual', requerido: '' }
+            motivo: { id: 'motivoKmManual', requerido: '' },
+            motivoAsignacion: { id: 'motivoAsignacion', requerido: '' }
         };
         function crearFormularioViaje() {
             formularioViaje = SGTL.validador(Object.keys(reglasViaje).map(function (k) { return reglasViaje[k]; }));
@@ -1639,6 +1670,7 @@
 
         function guardarViaje() {
             reglasViaje.motivo.requerido = kmCargadosAMano() ? 'Completá el motivo.' : '';
+            reglasViaje.motivoAsignacion.requerido = cambioAsignacionEnViaje() ? 'Completá el motivo.' : '';
             formularioViaje.validarTodo();
             validarTarifa();
             if (!SGTL.revisarFormulario('#FormAltaViaje', '#alertaCompletaCampos')) {
@@ -1783,9 +1815,16 @@
             // En un borrador de proforma no se cancela: primero se quita del borrador (la API controla lo mismo).
             var enBorrador = v.EnProforma_ID ? 'No se puede cancelar el viaje: está en el borrador de proforma #' + v.EnProforma_ID + '.' : '';
             var posibles = estadosPosibles(v);
+            // Un viaje de un día que todavía no llegó no sale (caso G): si sale antes, primero se corrige la fecha. Uno atrasado sí.
+            var futuro = viajeRegistrado(v.Estado) && String(v.Fecha_Inicio || '').substring(0, 10) > SGTL.fechaISO(new Date())
+                ? SGTL.fecha(v.Fecha_Inicio) : '';
             SGTL.opcionesEstado('#estadoViajeOpciones', 'estadoViajeNuevo', posibles.map(function (e) {
                 var bloqueada = e === 'Listo_para_facturar' && faltan.length > 0;
                 if (e === 'Cancelado' && enBorrador) return { valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: true, motivo: enBorrador };
+                if (futuro && (e === 'En_viaje' || e === 'Listo_para_facturar')) {
+                    return { valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: true,
+                        motivo: (e === 'En_viaje' ? 'No se puede iniciar el viaje: es del ' : 'No se puede marcar: el viaje es del ') + futuro + '.' };
+                }
                 return {
                     valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: bloqueada,
                     motivo: bloqueada ? 'No se puede marcar: falta cargar ' + faltan.slice(0, -1).join(', ') + (faltan.length > 1 ? ' y ' : '') + faltan[faltan.length - 1] + '.' : ''
@@ -2053,6 +2092,7 @@
             $('#clienteSelect').on('change', onClienteChangeViaje);
             $('#choferSelect').on('change', function () {
                 actualizarAvisoWhatsApp();
+                actualizarMotivoAsignacion();
                 if ($('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
                 revisarOcupado();
             });
@@ -2077,7 +2117,7 @@
             });
             $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
             // Tabla de tarifas: el camión (tipo y año del modelo) cambia la tarifa. Y puede estar ocupado (§43).
-            $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); revisarOcupado(); });
+            $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); revisarOcupado(); actualizarMotivoAsignacion(); });
             $('#falsoFlete').on('change', mostrarImporte);
             $('#estadiaModulos').on('input', mostrarImporte);
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });

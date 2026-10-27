@@ -3813,7 +3813,7 @@ como presentación). Los números son los del listado de Rocío.
   fecha de entrega puede ser futura; eliminar un viaje con gastos da un error técnico; la evidencia se puede adjuntar en
   Registrado. Para decidir con Rocío (D–G): si el Rechazo o la entrega Parcial se cobran completos; qué pasa con un viaje
   de un presupuesto aceptado que se cancela (hoy queda colgado); cambiar camión o chofer con el viaje en curso; si
-  administración puede iniciar un viaje de otro día sin aviso.
+  administración puede iniciar un viaje de otro día sin aviso. **Decididos y hechos los cuatro (27/10), abajo.**
   **A–C corregidos (27/10), subidos, pendientes de probar en la VM** (`tests/viajes-flujo.test.js`). Cómo probarlo:
   recompilar. "Estado y entrega" de un viaje En viaje → Entregado: el calendario no deja elegir días futuros y, escrita
   a mano, "No puede ser posterior a hoy." debajo de la fecha. Un viaje que estuvo En viaje con un gasto del chofer y se
@@ -3843,6 +3843,24 @@ como presentación). Los números son los del listado de Rocío.
      El cancelado sigue diciendo "Del presupuesto #…" y ya no se puede reactivar ("el presupuesto #… ya generó el viaje #…").
   7. Registrar proforma → Traer viajes: el cancelado no aparece. Rukas: si el Excel trae el N° de un cancelado, la línea
      va a "Para revisar" como "Viaje cancelado".
+  **D, F y G (27/10), subidos, pendientes de probar en la VM** (decisiones de Rocío; `tests/viajes-flujo.test.js`). D: la
+  entrega parcial o con rechazo se cobra completa, pero se ve. F: en viaje se cambian el camión y el chofer, con motivo y
+  sin cambiar el precio. G: administración no inicia un viaje de un día futuro (uno atrasado sí). Cómo probarlo
+  (recompilar):
+  1. **D:** Registrar proforma de un cliente directo con un viaje entregado Parcial y otro con Rechazo → Traer viajes:
+     "Los viajes #… (entrega parcial) y #… (con rechazo) se cobran completos. Si acordaste otra cosa con el cliente, cambiá
+     el precio o el descuento de su línea." y, en cada línea, la etiqueta "Parcial" o "Con rechazo" (también al volver a
+     abrir el borrador). Con Rukas no avisa nada.
+  2. **F:** "Completar el viaje" de uno En viaje: las fechas como texto, el camión y el chofer como campos. Cambiar el
+     camión: aparece "Motivo del cambio *" (sin completar, "Completá el motivo."); uno ocupado en ese horario, el error
+     debajo. Cambiar el chofer: "Al guardar, … recibe la hoja de ruta por WhatsApp.". Guardar: el importe es el mismo, en
+     Auditoría queda la modificación con el motivo y el viaje está en la hoja de ruta del chofer nuevo (y no en la del
+     anterior). En Entregado no se pueden cambiar.
+  3. **G:** un viaje Registrado de mañana → banderita: "En viaje" gris con "No se puede iniciar el viaje: es del …". Uno de
+     ayer se inicia. Uno de Rukas de mañana: "Listo para facturar" gris con "No se puede marcar: el viaje es del …".
+  - [ ] **Preguntarle a Claudia** cómo manejan hoy las entregas con rechazo y las parciales: si se cobran completas, con
+    otro porcentaje o según el caso. Si hace falta, más adelante se automatiza una tarifa para esos casos (se junta con el
+    punto 10, "Sin carga"); por ahora no se agrega nada.
 - [ ] **23. Dashboard con muchos tableros:** analizar ofrecer, si la persona quiere, dividirlos por tema como en Tableros
   (todo junto o por pestañas).
 - [ ] **26. Orden de los módulos en el menú,** el que Rocío charló con Facu (el menú está en `sidebar-loader.js`, §3.1 del
