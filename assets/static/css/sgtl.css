@@ -1572,3 +1572,14 @@ body .sgtl-zona-recuadro .btn.btn-link {
     font-weight: 600;
     color: var(--sgtl-texto);
 }
+
+/* Un galpón (Gestionar empresa → Galpón, punto 28 de la §41): recuadro con la dirección, desde cuándo y cuántos viajes. */
+.sgtl-galpon {
+    border: 1px solid var(--sgtl-borde);
+    border-radius: var(--sgtl-radio);
+    padding: .75rem 1rem;
+}
+
+.sgtl-galpon + .sgtl-galpon {
+    margin-top: .5rem;
+}

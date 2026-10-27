@@ -40,7 +40,8 @@
     var faltante = calculando ? 'Calculando…' : 'Sin calcular';
     return dato('Recorrido completo',
       '<ul class="list-unstyled mb-1">' +
-      tramo('Galpón', c.Origen || 'Origen', c.Km_Ida, faltante) +
+      // El galpón de este viaje, nombrado (punto 28 de la §41: puede haber más de uno).
+      tramo(c.Galpon ? 'Galpón (' + c.Galpon + ')' : 'Galpón', c.Origen || 'Origen', c.Km_Ida, faltante) +
       tramo(c.Origen || 'Origen', c.Destino || 'Destino', c.Km_Ruta, 'Sin km') +
       tramo(c.Destino || 'Destino', 'Galpón', c.Km_Vuelta, faltante) +
       '<li class="d-flex justify-content-between gap-3 fw-bold border-top pt-1 mt-1"><span>Total</span><span class="text-nowrap">' +
@@ -150,7 +151,7 @@
       var faltan = c.Galpon_Configurado && (c.Km_Ida == null || c.Km_Vuelta == null);
       if (!faltan || !window.SGTLGalpon) { mostrar(contenedor, c); return; }
       mostrar(contenedor, c, true);
-      window.SGTLGalpon.completar({ origen: c.Km_Ida == null ? c.OrigenID : null, destino: c.Km_Vuelta == null ? c.DestinoID : null })
+      window.SGTLGalpon.completar({ origen: c.Km_Ida == null ? c.OrigenID : null, destino: c.Km_Vuelta == null ? c.DestinoID : null, galpon: c.GalponID })
         .then(function () { return pedir(viajeId); })
         .then(function (nuevo) { if (sigueAbierto()) mostrar(contenedor, nuevo); }, function () { if (sigueAbierto()) mostrar(contenedor, c); });
     }, function (error) {

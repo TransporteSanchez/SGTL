@@ -49,6 +49,23 @@ assert.ok(/if \(estado == Entregado \|\| estado == ListoParaFacturar\) return nu
 assert.ok(/Exigir\(sesion\.Tiene\("gestion de viajes"\)/.test(accion('Post', 'Viajes/{id:int}/Gastos')), 'administración: quien gestiona viajes');
 assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').includes('Viajes\\GastosDelViaje.cs'), 'GastosDelViaje.cs está en el proyecto');
 
+// Cambiar el galpón (Rocío, 27/10, punto 28 de la §41): cada viaje sale de su galpón (el elegido o el vigente el día de
+// su inicio) y los km al galpón se guardan por galpón; los que ya salieron conservan el suyo.
+assert.ok(/gx\.Galpon_ID = v\.GalponID OR \(v\.GalponID IS NULL AND \(gx\.Vigente_Desde IS NULL OR gx\.Vigente_Desde <= CAST\(v\.Fecha_Inicio AS date\)\)\)/.test(api),
+    'el galpón del viaje: el elegido o el vigente el día de su inicio');
+assert.ok(/SQL_GALPON_DEL_VIAJE \+ SQL_KM_GALPON_DEL_VIAJE/.test(accion('Get', 'Viajes/{id:int}')), 'el costo del viaje usa los km de su galpón');
+assert.ok(/SQL_GALPON_DEL_VIAJE \+ SQL_KM_GALPON_DEL_VIAJE/.test(api.slice(api.indexOf('LeerKilometraje('))), 'el kilometraje del camión también');
+assert.ok(/CostosController\.SQL_GALPON_DEL_VIAJE \+ CostosController\.SQL_KM_GALPON_DEL_VIAJE/.test(hoja), 'y la hoja de ruta');
+const cambiar = accion('Post', 'Galpones');
+assert.ok(/Exigir\(sesion\.EsAdmin/.test(cambiar) && /Del_Nuevo/.test(cambiar) && /Del_Actual/.test(cambiar), 'cambiar el galpón: solo administradores, con los viajes elegidos');
+assert.ok(/WHERE v\.GalponID IS NULL AND CAST\(v\.Fecha_Inicio AS date\) >= @desde AND NOT \(" \+ SQL_NO_SALIO/.test(cambiar), 'los que ya salieron conservan el actual');
+const pantallaGalpon = leer('gestion-empresa.html');
+assert.ok(/Del_Nuevo: viajesGalpon\.filter/.test(pantallaGalpon) && /Propuesto según la fecha de cada viaje\./.test(pantallaGalpon),
+    'Gestionar empresa: la lista propuesta por la fecha (variante A)');
+const galpones = leer('database/costos/02_galpones_por_fecha.sql');
+assert.ok(/IF COL_LENGTH\('dbo\.GALPON', 'Vigente_Desde'\) IS NULL/.test(galpones) && /IF OBJECT_ID\(N'dbo\.GALPON_KM', N'U'\) IS NULL/.test(galpones)
+    && /IF COL_LENGTH\('dbo\.VIAJES', 'GalponID'\) IS NULL/.test(galpones), '02 agrega lo que falta, sin repetirlo');
+
 // ---------------------------------------------------------------- Base
 
 const script = leer('database/costos/01_galpon_kilometraje_y_gastos.sql');

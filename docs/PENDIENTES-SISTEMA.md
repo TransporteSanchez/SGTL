@@ -3847,8 +3847,28 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **8. Número de remito.** El formato "0001-00045108" es el de los comprobantes argentinos (punto de venta - número);
   lo puso Claude como ejemplo (`gestion-viajes.html`, sin validación, hasta 20 caracteres). Ver con Claudia cómo vienen
   los remitos (4 o 5 dígitos de punto de venta, con letra) y sumar una máscara que complete los ceros.
-- [ ] **28.** Cambiar la dirección del galpón afecta solo a los viajes que todavía no salieron o que se carguen después; o
+- [x] **28.** Cambiar la dirección del galpón afecta solo a los viajes que todavía no salieron o que se carguen después; o
   preguntar a cuáles aplicarlo (los registrados que no salieron, o solo los nuevos).
+  **Hecho (27/10), subido, pendiente de probar en la VM**, con la maqueta `.claude/maquetas/galpon/cambiar-galpon.html`
+  (variante A, elegida por Rocío): cada viaje sale de un galpón. En Gestionar empresa → Galpón se ven los galpones como
+  texto (el actual, el que viene y los anteriores, con desde cuándo y cuántos viajes) y "Cambiar galpón" pide la
+  dirección nueva y "Se usa desde"; debajo, los viajes que todavía no salieron con los dos galpones arriba (dirección y
+  cuántos van a cada uno) y "Actual" o "Nuevo" en cada fila, propuesto por la fecha. Los que ya salieron conservan el
+  suyo (su recorrido y su costo no cambian). Mientras haya uno nuevo que no empezó, "Cambiar galpón" queda gris con el
+  motivo. Base: `database/costos/02_galpones_por_fecha.sql` (`GALPON.Vigente_Desde`, `GALPON_KM` con los km por galpón
+  y `VIAJES.GalponID`, el galpón cuando no es el de la fecha). Ver detalle del viaje nombra su galpón ("Galpón (Av.
+  Circunvalación 1500) → …"); la hoja de ruta y el kilometraje de los camiones usan el galpón de cada viaje.
+  **A decidir (sección 5 de la maqueta):** si también se puede cambiar el galpón en Editar viaje, mientras no salió.
+  **Corregir una dirección mal escrita** del galpón no está en la pantalla (la API lo permite: PUT api/Costos/Galpon).
+  Cómo probarlo en la VM:
+  1. Correr `database/costos/02_galpones_por_fecha.sql` (primero con `@Aplicar = 0`, después con 1; todo "OK") antes de
+     recompilar.
+  2. Gestionar empresa → Galpón: el actual con "Actual" y la cantidad de viajes. "Cambiar galpón" → dirección nueva y una
+     fecha de dentro de unos días → la lista de los que no salieron, con "Actual" hasta ese día y "Nuevo" desde ese día;
+     cambiar una fila y ver que los números de arriba cambian → "Cambiar galpón" → el aviso, la tarjeta con los dos y el
+     botón gris con el motivo; abajo, "Calculando los km al galpón…".
+  3. Ver detalle de un viaje que ya salió: el galpón de siempre y su recorrido igual. Uno que pasó al nuevo: su galpón
+     nombrado y los km al nuevo. Hoja de ruta (chofer): el mapa de ese viaje arranca en el galpón nuevo.
 - [x] **36.** Mostrar las horas estimadas de Google junto a los km al cargar un viaje o presupuesto: si el destino queda
   antes de ese tiempo, error o advertencia; si queda mucho después, ver si se pide un motivo. Sirve también para el punto
   3 (viajes superpuestos).

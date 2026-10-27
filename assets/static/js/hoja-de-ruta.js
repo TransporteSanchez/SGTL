@@ -247,12 +247,15 @@
 
   // El mapa con el recorrido dibujado: abierto en el viaje que sigue; en los demás, "Ver mapa" lo despliega.
   // "Abrir en Google Maps" abre la app del celular para manejar (el mismo enlace del WhatsApp).
+  // El galpón del viaje (punto 28 de la §41: cada viaje sale del suyo); sin ese dato, el de hoy.
+  function galponDe(v) { return v.Galpon || estado.galpon; }
+
   function mapa(v, abierto) {
-    var enlace = enlaceNavegacion(v, estado.galpon);
+    var enlace = enlaceNavegacion(v, galponDe(v));
     if (!enlace) return '<div class="form-text">No hay dirección cargada para mostrar el recorrido en el mapa.</div>';
     var abrir = '<a class="btn btn-link px-0" href="' + esc(enlace) + '" target="_blank" rel="noopener">' +
       '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Google Maps</a>';
-    var letras = estado.galpon ? '<div class="form-text mt-1">A: galpón · B: origen · C: destino · D: vuelta al galpón</div>' : '';
+    var letras = galponDe(v) ? '<div class="form-text mt-1">A: galpón · B: origen · C: destino · D: vuelta al galpón</div>' : '';
     // "Ver mapa" lo abre y, abierto, "Ocultar mapa" lo cierra (Rocío, 24/10), en el mismo lugar.
     var enlaces = '<div class="d-flex flex-wrap gap-3"><button type="button" class="btn btn-link px-0" data-accion="ver-mapa" data-id="' +
       esc(v.Viaje_ID) + '" aria-expanded="' + (abierto ? 'true' : 'false') + '"><i class="bi bi-map me-1" aria-hidden="true"></i>' +
@@ -415,8 +418,9 @@
       var dibujo = new libs[1].DirectionsRenderer({ map: mapaViaje, draggable: false });
       if (rutas[v.Viaje_ID]) { dibujo.setDirections(rutas[v.Viaje_ID]); return; }
       var origen = v.Origen_Direccion + ', Argentina', destino = v.Destino_Direccion + ', Argentina';
-      var pedido = estado.galpon
-        ? { origin: estado.galpon, destination: estado.galpon, travelMode: 'DRIVING',
+      var galpon = galponDe(v);
+      var pedido = galpon
+        ? { origin: galpon, destination: galpon, travelMode: 'DRIVING',
             waypoints: [{ location: origen, stopover: true }, { location: destino, stopover: true }] }
         : { origin: origen, destination: destino, travelMode: 'DRIVING' };
       new libs[1].DirectionsService().route(pedido, function (resultado, status) {

@@ -1,7 +1,10 @@
 // Km al galpón de los orígenes y destinos (control interno, 24/10). El recorrido completo de un viaje es galpón → origen
 // → destino → galpón: los tramos al galpón dependen solo del origen y del destino, así que se calculan una vez por lugar
 // con Google Maps (la clave es del navegador, por eso lo hace la pantalla) y se guardan en la API (api/Costos/KmGalpon).
-// Uso: SGTLGalpon.completar() calcula todos los que faltan; SGTLGalpon.completar({ origen: 10, destino: 20 }) solo esos.
+// Con varios galpones (cambiar el galpón, punto 28 de la §41), cada lugar se calcula desde el suyo: la API dice de qué
+// galpón es cada pendiente.
+// Uso: SGTLGalpon.completar() calcula todos los que faltan; SGTLGalpon.completar({ origen: 10, destino: 20, galpon: 2 })
+// solo esos (del galpón 2).
 // alAvanzar(hechos, total) avisa el progreso. Devuelve { calculados, fallidos, total, sinGalpon }. Nunca rechaza.
 // Va después de jQuery, sgtl-ui.js y google-maps.js.
 (function (window) {
@@ -34,6 +37,7 @@
     var datos = {};
     if (opciones.origen) datos.origen = opciones.origen;
     if (opciones.destino) datos.destino = opciones.destino;
+    if (opciones.galpon) datos.galpon = opciones.galpon;
     var resultado = { calculados: 0, fallidos: 0, total: 0, sinGalpon: false };
     return window.SGTL.ajax({ url: API + '/Costos/KmGalpon/Pendientes', type: 'GET', data: datos, headers: encabezados() })
       .then(function (r) {
@@ -49,11 +53,12 @@
             return pendientes.reduce(function (cadena, lugar) {
               return cadena.then(function () {
                 var esOrigen = lugar.Tipo === 'Origen';
-                return distancia(servicio, esOrigen ? r.Galpon : lugar.Direccion, esOrigen ? lugar.Direccion : r.Galpon)
+                var galpon = lugar.Galpon || r.Galpon;
+                return distancia(servicio, esOrigen ? galpon : lugar.Direccion, esOrigen ? lugar.Direccion : galpon)
                   .then(function (km) {
                     return window.SGTL.ajax({
                       url: API + '/Costos/KmGalpon', type: 'PUT', contentType: 'application/json', headers: encabezados(),
-                      data: JSON.stringify({ Tipo: lugar.Tipo, ID: lugar.ID, Km: km })
+                      data: JSON.stringify({ Tipo: lugar.Tipo, ID: lugar.ID, Km: km, GalponID: lugar.GalponID || null })
                     });
                   })
                   .then(function () { resultado.calculados++; }, function () { resultado.fallidos++; })

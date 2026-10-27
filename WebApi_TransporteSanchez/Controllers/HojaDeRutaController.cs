@@ -97,6 +97,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public decimal Gastos_Total { get; set; }
             public decimal? Km_Ida { get; set; }
             public decimal? Km_Vuelta { get; set; }
+            public int? Galpon_ID { get; set; }
         }
 
         public class EntregaChoferDto
@@ -350,6 +351,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         : " AND " + pendiente + " ORDER BY v.Fecha_Inicio, v.Viaje_ID";
 
                     var hayGastos = HayGastos(db);
+                    // Cada viaje sale de su galpón (punto 28 de la §41, database/costos/02): sin ese script, el único que hay.
+                    var porGalpon = hayGastos && CostosController.HayGalponesPorFecha(db);
                     // Uno más que el tope, para saber si quedan.
                     var filas = db.Database.SqlQuery<ViajeRow>(
                         "SELECT TOP (" + (tope + 1) + ") v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, v.Estado, ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
@@ -358,9 +361,11 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                               "(SELECT CAST(ISNULL(SUM(g.Importe), 0) AS decimal(12, 2)) FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) AS Gastos_Total, "
                             : "0 AS Gastos_Cantidad, CAST(0 AS decimal(12, 2)) AS Gastos_Total, ") +
                         // Recorrido completo para el chofer (Rocío, 24/10): galpón → origen → destino → galpón.
-                        (hayGastos
-                            ? "o.Km_Galpon AS Km_Ida, d.Km_Galpon AS Km_Vuelta, "
-                            : "CAST(NULL AS decimal(9, 1)) AS Km_Ida, CAST(NULL AS decimal(9, 1)) AS Km_Vuelta, ") +
+                        (porGalpon
+                            ? "ki.Km AS Km_Ida, kv.Km AS Km_Vuelta, gv.Galpon_ID, "
+                            : hayGastos
+                            ? "o.Km_Galpon AS Km_Ida, d.Km_Galpon AS Km_Vuelta, CAST(NULL AS int) AS Galpon_ID, "
+                            : "CAST(NULL AS decimal(9, 1)) AS Km_Ida, CAST(NULL AS decimal(9, 1)) AS Km_Vuelta, CAST(NULL AS int) AS Galpon_ID, ") +
                         "v.Resultado_Entrega, v.Fecha_Entrega, " + SQL_TIENE_EVIDENCIA + " AS Tiene_Evidencia, " +
                         "ISNULL(NULLIF(LTRIM(RTRIM(c.Nombre_Comercial)),''), ISNULL(c.Razon_Social,'')) AS Cliente, " +
                         "ISNULL(o.Descripcion,'') AS Origen, ISNULL(o.Calle,'') AS Origen_Calle, ISNULL(o.AlturaCalle,'') AS Origen_Altura, " +
@@ -380,12 +385,16 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         "LEFT JOIN dbo.LOCALIDADES ld ON ld.Loc_ID = d.LocID " +
                         "LEFT JOIN dbo.PROVINCIAS pd ON pd.Prov_ID = d.ProvID " +
                         "LEFT JOIN dbo.CAMIONES cam ON cam.Camion_ID = v.CamionID " +
+                        (porGalpon ? CostosController.SQL_GALPON_DEL_VIAJE + CostosController.SQL_KM_GALPON_DEL_VIAJE : "") +
                         OUTER_APPLY_PROFORMA +
                         "WHERE v.ChoferID = @chofer" + where,
                         P("@chofer", sesion.Chofer_ID.Value), P("@hoy", hoy), P("@desde", desde)).ToList();
                     var hayMas = filas.Count > tope;
                     if (hayMas) filas = filas.Take(tope).ToList();
 
+                    // La dirección de cada galpón, para el mapa y la navegación de cada viaje.
+                    var galpones = porGalpon ? CostosController.LeerGalpones(db).ToDictionary(g => g.Galpon_ID, CostosController.DireccionGalpon)
+                        : new Dictionary<int, string>();
                     var viajes = filas.Select(f =>
                     {
                         var dirOrigen = GoogleMapsLinkBuilder.BuildAddress(f.Origen_Calle, f.Origen_Altura, f.Origen_Localidad, f.Origen_Provincia);
@@ -419,7 +428,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                             f.Gastos_Cantidad,
                             f.Gastos_Total,
                             f.Km_Ida,
-                            f.Km_Vuelta
+                            f.Km_Vuelta,
+                            Galpon = f.Galpon_ID.HasValue && galpones.ContainsKey(f.Galpon_ID.Value) ? galpones[f.Galpon_ID.Value] : null
                         };
                     }).ToList();
 
@@ -443,7 +453,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         anios = anios.OrderByDescending(a => a).ToList();
                     }
 
-                    // El galpón: el mapa del chofer muestra el recorrido entero y la navegación termina ahí.
+                    // El galpón vigente hoy (el de cada viaje va en el viaje): el mapa del chofer muestra el recorrido entero y la
+                    // navegación termina ahí.
                     var galpon = hayGastos ? CostosController.DireccionGalpon(CostosController.LeerGalpon(db)) : null;
                     return Ok(new
                     {
