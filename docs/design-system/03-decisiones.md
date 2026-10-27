@@ -500,6 +500,13 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
   - cada campo con problema en rojo (`is-invalid`) con su mensaje debajo
     (`invalid-feedback`): "Completá el DNI.", "El DNI tiene que tener 7 u 8 números.";
   - el cursor va al primer campo con error.
+- **El error debajo de un campo es corto** (26/10, Rocío): una línea si se puede. Si no es que falta o está mal escrito
+  ("Completá el DNI."), **empieza por el dato y qué le pasa**, y después de los dos puntos lo justo para entenderlo:
+  "Camión ocupado: viaje #45, de 08:00 hs a 11:30 hs.", "Chofer ocupado: …", "Fecha repetida: "Tarifas a agosto 2026"
+  empieza el mismo día.". No repite el valor que ya se ve en el campo ni usa la frase de los motivos de los botones
+  ("No se puede…", §1.4). Lo que necesita más (una lista, algo para cambiar en otro lado) va arriba, en el aviso del
+  formulario (§5.1). Un choque entre campos (el camión y la hora del viaje) va debajo del dato que está ocupado, aparezca
+  al elegirlo o al cambiar el otro.
 - **Cada campo se valida al salir de él**, no en cada tecla, y el rojo se va apenas se corrige.
 - **Opción vacía de los desplegables:** "Seleccioná un cliente" (voseo).
 - **Listas largas** (cliente, chofer): el buscador compartido (`SelectClientePredictivo`), el mismo de los filtros. Enter
@@ -578,6 +585,7 @@ Esto define solo cómo se muestran y cómo se cargan.
 - Siempre **DD/MM/AAAA con ceros** ("05/07/2026", no "5/7/2026" ni "2026-07-05").
 - Con hora: **"17/10/2026 21:29"** (24 h, sin "p. m."). En auditoría, con segundos:
   "17/10/2026 21:29:06".
+- **Una hora sola dentro de un texto**, sin la fecha, lleva "hs" (sin punto): "de 08:00 hs a 11:30 hs" (Rocío, 26/10).
 - Una sola función de formato en el JS compartido.
 
 ### 7.3 Montos y cantidades

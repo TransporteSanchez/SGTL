@@ -58,7 +58,8 @@ AGENTS.md"):
    primero y N más"). **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)
 7. **Formularios con `SGTL.validador`:** asterisco rojo en lo obligatorio, `form-label` con `for`, el error
-   debajo de cada campo y "Revisá los campos marcados." arriba. Los largos, en bloques con `.sgtl-bloque-titulo`
+   debajo de cada campo, corto y empezando por el dato ("Camión ocupado: viaje #45, de 08:00 hs a 11:30 hs.") y
+   "Revisá los campos marcados." arriba. Los largos, en bloques con `.sgtl-bloque-titulo`
    (nunca un `h6` ni un subtítulo con estilo propio); lo
    que no se puede editar se ve como texto (`.sgtl-dato-fijo`), nunca como campo deshabilitado. (§6.3)
 8. **Textos:** voseo ("Completá", "Seleccioná", "Probá de nuevo"), **mayúscula solo al principio** (también
