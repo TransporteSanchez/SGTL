@@ -8,8 +8,10 @@
    Qué hace:
      1. Diagnóstico (no cambia nada): si USUARIOS.Rol tiene alguna restricción que no admita 'chofer', las cuentas con
         chofer que hay que pasar y las que no se tocan (un administrador con chofer: decidir a mano).
-     2. Los cambios, dentro de una transacción que queda abierta: las cuentas con rol user y chofer pasan a rol chofer y
-        se les quitan los grupos (con el rol chofer no se usan). Al final, COMMIT o ROLLBACK a mano.
+     2. Los cambios, dentro de una transacción que queda abierta: si alguna restricción sobre USUARIOS.Rol no admite
+        'chofer', se la amplía (su definición OR [Rol]='chofer', con el mismo nombre); después las cuentas con rol user y
+        chofer pasan a rol chofer y se les quitan los grupos (con el rol chofer no se usan). Al final, COMMIT o ROLLBACK a
+        mano (el ROLLBACK también deshace la ampliación).
 
    Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo), junto con la API nueva. Mientras no se
    corra, esas cuentas siguen entrando como antes (por el grupo Choferes), y al editarlas en Gestionar usuarios se abren
@@ -25,9 +27,9 @@ IF DB_NAME() <> N'Transporte_Sanchez'
 IF COL_LENGTH('dbo.USUARIOS', 'ChoferID') IS NULL
     THROW 54511, 'Falta USUARIOS.ChoferID: correr antes database/hoja-de-ruta/01_usuario_chofer.sql.', 1;
 
-PRINT '--- Restricciones sobre USUARIOS.Rol (si aparece alguna sin ''chofer'', avisar antes de seguir)';
+PRINT '--- Restricciones sobre USUARIOS.Rol (las que no admiten ''chofer'' se amplían en los cambios)';
 SELECT cc.name AS Restriccion, cc.definition AS Definicion,
-       CASE WHEN cc.definition LIKE N'%chofer%' THEN N'Admite chofer' ELSE N'NO admite chofer' END AS Que_Pasa
+       CASE WHEN cc.definition LIKE N'%chofer%' THEN N'Admite chofer' ELSE N'Se amplía con chofer' END AS Que_Pasa
 FROM sys.check_constraints cc
 WHERE cc.parent_object_id = OBJECT_ID(N'dbo.USUARIOS') AND cc.definition LIKE N'%Rol%';
 
@@ -45,6 +47,20 @@ ORDER BY u.Nombre_Usuario;
 
 --- Cambios ---------------------------------------------------------------------------------------------------------
 BEGIN TRAN;
+
+DECLARE @Restriccion sysname, @Definicion nvarchar(max), @Sql nvarchar(max);
+WHILE 1 = 1
+BEGIN
+    SELECT TOP (1) @Restriccion = cc.name, @Definicion = cc.definition
+    FROM sys.check_constraints cc
+    WHERE cc.parent_object_id = OBJECT_ID(N'dbo.USUARIOS') AND cc.definition LIKE N'%Rol%' AND cc.definition NOT LIKE N'%chofer%';
+    IF @@ROWCOUNT = 0 BREAK;
+    SET @Sql = N'ALTER TABLE dbo.USUARIOS DROP CONSTRAINT ' + QUOTENAME(@Restriccion) + N'; ' +
+               N'ALTER TABLE dbo.USUARIOS WITH CHECK ADD CONSTRAINT ' + QUOTENAME(@Restriccion) +
+               N' CHECK (' + @Definicion + N' OR [Rol]=''chofer'');';
+    EXEC sys.sp_executesql @Sql;
+    PRINT 'Restricción ' + @Restriccion + ' ampliada con chofer.';
+END;
 
 DECLARE @Pasan TABLE (Usuario_ID int PRIMARY KEY);
 INSERT INTO @Pasan (Usuario_ID)

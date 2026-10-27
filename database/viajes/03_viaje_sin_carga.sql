@@ -9,9 +9,12 @@
      VIAJES.Sin_Carga_Observacion   lo que anotó quien lo marcó (por ejemplo, "la planta no tenía la carga lista").
    La fecha va en Fecha_Entrega (el día que llegó al origen). No cambia datos.
 
-   Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo). Antes de recompilar la API:
-     1. Ejecutar tal cual (@Aplicar = 0): dice qué falta y si VIAJES tiene alguna restricción sobre Estado que no admita
-        'Sin_carga' (si aparece, pasarle el resultado a Claude antes de seguir).
+   La base tiene CK_VIAJES_Estado (no está en ningún script del repo): al aplicar, se la amplía con 'Sin_carga'
+   conservando lo que ya admitía (su definición OR [Estado]='Sin_carga') y el mismo nombre, como hace el 02 con Cancelado.
+
+   Cómo correrlo (SSMS, base Transporte_Sanchez, compartida: avisar al equipo). Después del 02 y antes de recompilar la API:
+     1. Ejecutar tal cual (@Aplicar = 0): dice qué falta, qué restricciones sobre Estado se amplían y los viajes viejos
+        con falso flete marcado.
      2. Poner @Aplicar = 1 y ejecutar de nuevo.
    Es idempotente.
 */
@@ -27,9 +30,9 @@ PRINT '--- Qué falta';
 SELECT N'VIAJES.Sin_Carga_Observacion' AS Objeto,
        CASE WHEN COL_LENGTH('dbo.VIAJES', 'Sin_Carga_Observacion') IS NULL THEN 'Falta' ELSE 'Ya está' END AS Estado;
 
-PRINT '--- Restricciones sobre VIAJES.Estado (si aparece alguna sin ''Sin_carga'', avisar antes de seguir)';
+PRINT '--- Restricciones sobre VIAJES.Estado (las que no admiten ''Sin_carga'' se amplían al aplicar)';
 SELECT cc.name AS Restriccion, cc.definition AS Definicion,
-       CASE WHEN cc.definition LIKE N'%Sin[_]carga%' THEN N'Admite Sin_carga' ELSE N'NO admite Sin_carga' END AS Que_Pasa
+       CASE WHEN cc.definition LIKE N'%Sin[_]carga%' THEN N'Admite Sin_carga' ELSE N'Se amplía con Sin_carga' END AS Que_Pasa
 FROM sys.check_constraints cc
 WHERE cc.parent_object_id = OBJECT_ID(N'dbo.VIAJES') AND cc.definition LIKE N'%Estado%';
 
@@ -47,12 +50,23 @@ BEGIN
     RETURN;
 END;
 
-IF EXISTS (SELECT 1 FROM sys.check_constraints cc
-           WHERE cc.parent_object_id = OBJECT_ID(N'dbo.VIAJES') AND cc.definition LIKE N'%Estado%' AND cc.definition NOT LIKE N'%Sin[_]carga%')
-    THROW 54421, 'VIAJES tiene una restricción sobre Estado que no admite ''Sin_carga'': pasarle el diagnóstico a Claude.', 1;
-
 BEGIN TRY
     BEGIN TRANSACTION;
+
+    -- Cada restricción sobre Estado que no admite 'Sin_carga': se la vuelve a crear con su definición OR [Estado]='Sin_carga'.
+    DECLARE @Restriccion sysname, @Definicion nvarchar(max), @Sql nvarchar(max);
+    WHILE 1 = 1
+    BEGIN
+        SELECT TOP (1) @Restriccion = cc.name, @Definicion = cc.definition
+        FROM sys.check_constraints cc
+        WHERE cc.parent_object_id = OBJECT_ID(N'dbo.VIAJES') AND cc.definition LIKE N'%Estado%' AND cc.definition NOT LIKE N'%Sin[_]carga%';
+        IF @@ROWCOUNT = 0 BREAK;
+        SET @Sql = N'ALTER TABLE dbo.VIAJES DROP CONSTRAINT ' + QUOTENAME(@Restriccion) + N'; ' +
+                   N'ALTER TABLE dbo.VIAJES WITH CHECK ADD CONSTRAINT ' + QUOTENAME(@Restriccion) +
+                   N' CHECK (' + @Definicion + N' OR [Estado]=''Sin_carga'');';
+        EXEC sys.sp_executesql @Sql;
+        PRINT 'Restricción ' + @Restriccion + ' ampliada con Sin_carga.';
+    END;
 
     IF COL_LENGTH('dbo.VIAJES', 'Sin_Carga_Observacion') IS NULL
         ALTER TABLE dbo.VIAJES ADD Sin_Carga_Observacion nvarchar(300) NULL;
