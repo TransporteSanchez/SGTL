@@ -553,6 +553,7 @@
   var RESULTADOS = {
     Coincide: 'Coincide', Importe_distinto: 'Importe distinto', Sin_viaje: 'Sin viaje relacionado', Repetido_en_SGTL: 'N° repetido en SGTL',
     Ya_facturado: 'Ya facturado', En_otra_proforma: 'En otra proforma', Faltan_numeros: 'Faltan números', Sin_tarifa: 'Sin tarifa',
+    Viaje_cancelado: 'Viaje cancelado',
     Repetido_en_archivo: 'Repetido en el Excel', Dato_invalido: 'Dato mal en el Excel'
   };
 
@@ -888,6 +889,7 @@
       case 'Sin_viaje': return 'Transporte ' + l.Referencia + ': no corresponde a ninguno de nuestros viajes.';
       case 'Ya_facturado': return 'Transporte ' + l.Referencia + ': ya se facturó en otra proforma.';
       case 'En_otra_proforma': return 'Transporte ' + l.Referencia + ': ya está en otra proforma.';
+      case 'Viaje_cancelado': return 'Transporte ' + l.Referencia + ': ese viaje se canceló, no se hizo.';
       case 'Repetido_en_archivo': return 'Transporte ' + l.Referencia + ': está dos veces en el Excel.';
       default: return 'Transporte ' + l.Referencia + ': ' + (l.Detalle || RESULTADOS[l.Resultado] || l.Resultado) + (/\.$/.test(l.Detalle || '') ? '' : '.');
     }

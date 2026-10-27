@@ -376,7 +376,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var hoy = Hoy(db);
                     var cantidades = db.Database.SqlQuery<CantidadRow>(
                         "SELECT gv.Galpon_ID, COUNT(*) AS Viajes FROM dbo.VIAJES v " + SQL_GALPON_DEL_VIAJE +
-                        "WHERE gv.Galpon_ID IS NOT NULL GROUP BY gv.Galpon_ID").ToDictionary(c => c.Galpon_ID, c => c.Viajes);
+                        "WHERE gv.Galpon_ID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado' GROUP BY gv.Galpon_ID").ToDictionary(c => c.Galpon_ID, c => c.Viajes);
                     var todos = LeerGalpones(db);
                     var futuro = todos.FirstOrDefault(g => g.Vigente_Desde.HasValue && g.Vigente_Desde.Value.Date > hoy.Date);
                     var galpones = todos.Select((g, i) => new
@@ -424,7 +424,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         SQL_GALPON_DEL_VIAJE +
                         "WHERE " + SQL_NO_SALIO + " ORDER BY v.Fecha_Inicio, v.Viaje_ID").ToList();
                     var salieron = db.Database.SqlQuery<int>(
-                        "SELECT COUNT(*) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID WHERE NOT (" + SQL_NO_SALIO + ")").First();
+                        "SELECT COUNT(*) FROM dbo.VIAJES v LEFT JOIN dbo.CLIENTES c ON c.Cliente_ID = v.ClienteID WHERE NOT (" + SQL_NO_SALIO + ") " +
+                        "AND ISNULL(v.Estado, '') <> 'Cancelado'").First();
                     return Ok(new
                     {
                         Viajes = viajes.Select(v => new

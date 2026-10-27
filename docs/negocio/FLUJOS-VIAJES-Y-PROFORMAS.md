@@ -210,6 +210,7 @@ flowchart TD
 | **Faltan números** | El viaje existe pero le falta el remito o el N° de entrega | Completarlo y Volver a controlar | No |
 | **Sin tarifa** | El viaje no tiene tarifa o da $0 | Asignarle tarifa y Volver a controlar | No |
 | **Ya facturado / En otra proforma** | Posible cobro doble | Revisar | No |
+| **Viaje cancelado** | El viaje está cancelado en SGTL (no se hizo) pero Rukas lo trae | Si se hizo, volverlo a Registrado y Volver a controlar; si no, Registrar reclamo | No |
 | **Repetido en SGTL** | Dos viajes con el mismo N° de transporte | Corregir el que esté mal | No |
 | *Viajes fuera de la tanda* | Hay viajes del cliente con los números cargados que no están en ninguna proforma | Nada: van en la próxima. Se ven en la guía antes de tildar en Rukas; el control no los avisa (22/10) | Sí |
 

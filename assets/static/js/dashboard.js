@@ -11,14 +11,6 @@
   var CLAVE_PERIODO = 'sgtl-dashboard-periodo';
   var PERIODO_INICIAL = 'trimestre';
 
-  var ESTADOS_VIAJE = {
-    Registrado: 'Registrado',
-    En_viaje: 'En viaje',
-    Entregado: 'Entregado',
-    Listo_para_facturar: 'Listo para facturar',
-    Facturado: 'Facturado'
-  };
-
   // Cómo se cuenta cada viaje. Registrado y En viaje son pendientes; el resto ya se entregó.
   // Con plataforma (Rukas) el resultado de la entrega es opcional: sin resultado cuenta como entregado.
   // Colores: los del §4 del design system (verde terminado, amarillo falta algo, rojo mal, gris inicial).
@@ -235,8 +227,9 @@
     if (desde) datos.fechaDesde = SGTL.fechaISO(desde);
     if (hasta) datos.fechaHasta = SGTL.fechaISO(hasta);
     if (estado) datos.estado = estado;
+    // Un viaje cancelado no se hizo: no cuenta en los indicadores, las listas ni el calendario.
     return pedir('/Viajes/Buscar', datos).then(function (data) {
-      return (data && (data.Results || data.results)) || [];
+      return ((data && (data.Results || data.results)) || []).filter(function (v) { return v.Estado !== 'Cancelado'; });
     });
   }
 
@@ -274,7 +267,7 @@
 
   // apilada: en una tabla, la segunda etiqueta va debajo del estado, como en Gestionar viajes y presupuestos.
   function etiquetaEstado(v, apilada) {
-    var html = SGTL.estado(v.Estado || 'Registrado', ESTADOS_VIAJE[v.Estado] || v.Estado || 'Registrado');
+    var html = SGTL.estadoViaje(v.Estado);
     if (v.Resultado_Entrega === 'Parcial' || v.Resultado_Entrega === 'Rechazo') {
       var resultado = SGTL.estado(v.Resultado_Entrega, v.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : 'Parcial');
       html += apilada ? '<div class="mt-1">' + resultado + '</div>' : ' ' + resultado;

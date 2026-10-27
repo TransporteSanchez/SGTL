@@ -3812,6 +3812,29 @@ como presentación). Los números son los del listado de Rocío.
   a mano, "No puede ser posterior a hoy." debajo de la fecha. Un viaje que estuvo En viaje con un gasto del chofer y se
   volvió a Registrado: Eliminar gris con "No se puede eliminar el viaje: tiene gastos cargados". La evidencia de un
   directo no se adjunta en Registrado (la API lo rechaza); en uno de Rukas, desde el día del viaje.
+  **E, estado Cancelado (27/10), subido, pendiente de probar en la VM** (decisiones de Rocío y maqueta
+  `.claude/maquetas/viajes/cancelado.html`; `tests/viajes-flujo.test.js`). Un viaje que no se hizo pasa a Cancelado desde
+  Registrado, con motivo, en lugar de eliminarse: queda en el listado en rojo y deja de contar en camión y chofer ocupados,
+  el orden del día, las proformas (también el Excel de Rukas), los costos, el tablero y la hoja de ruta. Vuelve a
+  Registrado. El presupuesto del que salió sigue Aceptado (amarillo, con el ícono que dice qué viaje se canceló) y vuelve a
+  dejar "Generar viaje". Falta decidir el aviso por WhatsApp al chofer (módulo de Fede); "Sin carga" queda para el punto 10.
+  Cómo probarlo:
+  1. **Antes de recompilar**, correr `database/viajes/02_viaje_cancelado.sql` en SSMS (primero con `@Aplicar = 0`: si
+     dice "NO admite Cancelado" en alguna restricción, pasarle el resultado a Claude; después con `@Aplicar = 1`).
+  2. Gestionar viajes, un viaje Registrado → banderita → tarjeta **Cancelado** (roja). Sin motivo: "Completá el motivo."
+     debajo. Si hay otro viaje ese día del mismo cliente y recorrido, la tarjeta dice qué pasa con su precio. Guardar: el
+     aviso "Viaje #N cancelado." (y lo que cambió en el otro), la fila en rojo con el globito "Cancelado el … por …: …",
+     Editar y Eliminar grises con "No se puede … el viaje: está cancelado".
+  3. Registrar otro viaje con el mismo camión en ese horario: ya no dice "Camión ocupado". Volver el cancelado a Registrado:
+     "No se puede reactivar el viaje. Camión ocupado: …". Eliminar el otro y reactivarlo: "Viaje #N reactivado.".
+  4. Filtro de estado "Cancelado" en Gestionar y Listar viajes. Ver detalle: el bloque Cancelación (motivo, cuándo y quién),
+     sin costo ni margen. La hoja de ruta del chofer: en Anteriores, con la etiqueta roja y "Este viaje se canceló.".
+  5. Un viaje En viaje: la banderita no ofrece Cancelado. Uno en un borrador de proforma: la tarjeta gris con el motivo.
+  6. Generar un viaje desde un presupuesto aceptado y cancelarlo: en Presupuestos, Aceptado en amarillo con el ícono
+     "El viaje #N que se generó con este presupuesto está cancelado: …" y "Generar viaje" habilitado; generarlo de nuevo.
+     El cancelado sigue diciendo "Del presupuesto #…" y ya no se puede reactivar ("el presupuesto #… ya generó el viaje #…").
+  7. Registrar proforma → Traer viajes: el cancelado no aparece. Rukas: si el Excel trae el N° de un cancelado, la línea
+     va a "Para revisar" como "Viaje cancelado".
 - [ ] **23. Dashboard con muchos tableros:** analizar ofrecer, si la persona quiere, dividirlos por tema como en Tableros
   (todo junto o por pestañas).
 - [ ] **26. Orden de los módulos en el menú,** el que Rocío charló con Facu (el menú está en `sidebar-loader.js`, §3.1 del

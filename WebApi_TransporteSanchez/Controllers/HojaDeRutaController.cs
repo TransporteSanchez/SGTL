@@ -338,9 +338,12 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                         return Ok(new { Vinculado = false, Chofer = "", Hoy = hoy, Gastos_Habilitados = false, Viajes = new object[0] });
 
                     // Los viajes de antes del circuito de estados no tienen Estado: cuentan como Registrado.
+                    // Entre paréntesis: Anteriores es NOT de todo esto.
                     const string pendiente =
-                        "(v.Fecha_Fin >= @hoy OR ISNULL(v.Estado,'Registrado') = 'En_viaje' " +
-                        "OR (ISNULL(c.Tipo_Cliente,'Directo') <> 'Con_plataforma' AND ISNULL(v.Estado,'Registrado') = 'Registrado'))";
+                        "((v.Fecha_Fin >= @hoy OR ISNULL(v.Estado,'Registrado') = 'En_viaje' " +
+                        "OR (ISNULL(c.Tipo_Cliente,'Directo') <> 'Con_plataforma' AND ISNULL(v.Estado,'Registrado') = 'Registrado')) " +
+                        // Un cancelado va a Anteriores, con su etiqueta y sin botones.
+                        "AND ISNULL(v.Estado,'Registrado') <> 'Cancelado')";
                     // Anteriores: los del año pedido (un año que no tiene sentido, el actual).
                     var anioPedido = anio.HasValue && anio.Value >= 2000 && anio.Value <= hoy.Year ? anio.Value : hoy.Year;
                     var desde = new DateTime(anioPedido, 1, 1);
@@ -506,6 +509,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 }
                 if (v == null) return NoEstaEnTuHojaDeRuta();
                 if (EsConPlataforma(v.Tipo_Cliente)) return Rechazo("No se puede iniciar el viaje: lo sigue la plataforma del cliente.");
+                if (v.Estado == ViajesController.EstadoCancelado) return Rechazo("No se puede iniciar el viaje: está cancelado.");
                 if (!string.IsNullOrEmpty(v.Estado) && v.Estado != ViajesController.EstadoRegistrado)
                     return Rechazo("No se puede iniciar el viaje: ya está " + TextoEstado(v.Estado) + ".");
                 if (BloqueaPorProforma(v)) return Rechazo("No se puede iniciar el viaje: está en la proforma " + TextoProforma(v) + ".");
@@ -551,6 +555,7 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                 if (body.Fecha_Entrega == null)
                     return Rechazo("Completá la fecha de entrega.");
                 if (EsConPlataforma(v.Tipo_Cliente)) return Rechazo("No se puede registrar la entrega: lo sigue la plataforma del cliente.");
+                if (v.Estado == ViajesController.EstadoCancelado) return Rechazo("No se puede registrar la entrega: el viaje está cancelado.");
                 if (v.Estado != ViajesController.EstadoEnViaje)
                     return Rechazo(string.IsNullOrEmpty(v.Estado) || v.Estado == ViajesController.EstadoRegistrado
                         ? "No se puede registrar la entrega: el viaje todavía no se inició."
@@ -599,6 +604,8 @@ WHERE u.Nombre_Usuario = @nombre AND u.EstadoUsuario = 'Activo';", P("@nombre", 
                     return Rechazo("No se puede subir la evidencia: este viaje lo sigue la plataforma del cliente.");
                 if (v.Estado == ViajesController.EstadoFacturado)
                     return Rechazo("No se puede subir la evidencia: el viaje ya está facturado.");
+                if (v.Estado == ViajesController.EstadoCancelado)
+                    return Rechazo("No se puede subir la evidencia: el viaje está cancelado.");
                 if (v.Estado != ViajesController.EstadoEnViaje && v.Estado != ViajesController.EstadoEntregado)
                     return Rechazo("No se puede subir la evidencia: el viaje todavía no se inició.");
 

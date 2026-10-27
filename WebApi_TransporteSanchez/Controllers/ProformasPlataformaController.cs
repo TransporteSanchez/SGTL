@@ -403,6 +403,12 @@ SELECT DISTINCT r.ViajeID FROM (
                         resultado = "Ya_facturado";
                         detalle = "El viaje #" + v.Viaje_ID + " ya está facturado.";
                     }
+                    // En SGTL no se hizo: si se hizo, se reactiva el viaje; si no, se reclama (va a "Para revisar").
+                    else if (v.Estado == "Cancelado")
+                    {
+                        resultado = "Viaje_cancelado";
+                        detalle = "El viaje #" + v.Viaje_ID + " está cancelado.";
+                    }
                     else if (enOtraProforma.Contains(v.Viaje_ID))
                     {
                         resultado = "En_otra_proforma";

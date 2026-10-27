@@ -277,11 +277,22 @@
         return true;
     }
     // Etiqueta de estado (§4.1): Pendiente es esperar la respuesta del cliente (gris, no es deuda); Aceptado
-    // es amarillo mientras falta generar el viaje y verde cuando ya se generó; Rechazado, rojo.
+    // es amarillo mientras falta generar el viaje (también si el que generó se canceló) y verde cuando ya se generó;
+    // Rechazado, rojo.
     function etiquetaEstado(p) {
         var estado = p.estado || 'Pendiente';
-        var color = estado === 'Rechazado' ? 'rojo' : estado === 'Aceptado' ? (p.viajeId ? 'verde' : 'amarillo') : 'gris';
+        var color = estado === 'Rechazado' ? 'rojo' : estado === 'Aceptado' ? (p.viajeId && !viajeCancelado(p) ? 'verde' : 'amarillo') : 'gris';
         return SGTL.estado(estado, estado, color);
+    }
+    // El viaje que generó se canceló (caso E de docs/diseno/viajes-diseno.md): el presupuesto sigue aceptado y se puede
+    // volver a generar; el viaje nuevo reemplaza al cancelado.
+    function viajeCancelado(p) { return !!p.viajeId && p.viajeEstado === 'Cancelado'; }
+    function textoViajeCancelado(p) {
+        var motivo = String(p.viajeMotivo || '').trim();
+        if (motivo && motivo.charAt(1) !== motivo.charAt(1).toUpperCase()) motivo = motivo.charAt(0).toLowerCase() + motivo.slice(1);
+        if (motivo && !/[.!?]$/.test(motivo)) motivo += '.';
+        return '<div>El <strong>viaje #' + Number(p.viajeId) + '</strong> que se generó con este presupuesto está cancelado' +
+            (motivo ? ': ' + SGTL.escapar(motivo) : '.') + '</div>';
     }
     function dibujar() {
         var cuerpo = el('lista');
@@ -311,6 +322,8 @@
             // Si cambió la tarifa y hay que reenviarlo, el ícono rojo manda a mirar Ver PDF (§33).
             estadoCelda.innerHTML = SGTL.conInfo(etiquetaEstado(p), cambiosDe(p).length
                 ? SGTLCambiosTarifa.iconoPrecio(cambiosDe(p), 'Ver qué cambió en el presupuesto #' + p.id, { donde: 'Ver PDF' })
+                : viajeCancelado(p)
+                ? SGTL.botonInfo('info', textoViajeCancelado(p), 'Ver qué pasó con el viaje del presupuesto #' + p.id)
                 : p.viajeId
                 ? SGTL.botonInfo('info', '<div>Generó el <strong>viaje #' + Number(p.viajeId) + '</strong>.</div>', 'Ver qué viaje generó el presupuesto #' + p.id)
                 : '');
@@ -319,19 +332,21 @@
             // deshabilitado con "No se puede {acción}: {qué le pasa al presupuesto}".
             var td = tr.insertCell(); td.className = 'text-center text-nowrap';
             var conViaje = !!p.viajeId;
-            var generado = 'ya se generó el viaje #' + p.viajeId;
+            // Con el viaje cancelado sigue sin cambiar de estado ni eliminarse (es su historia), pero "Generar viaje" vuelve.
+            var cancelado = viajeCancelado(p);
+            var generado = cancelado ? 'generó el viaje #' + p.viajeId + ', que está cancelado' : 'ya se generó el viaje #' + p.viajeId;
             var estadoTexto = String(p.estado || '').toLowerCase();
             var motivoEditar = 'No se puede editar el presupuesto: ' + (conViaje ? generado : 'está ' + estadoTexto);
             // Con el precio para revisar por el orden del día (§43), primero se decide (Volver a Pendiente o Mantener el precio).
             var precioParaRevisar = cambiosDe(p).some(function (c) { return SGTLCambiosTarifa.esOrden(c); });
-            var motivoGenerar = 'No se puede generar el viaje: ' + (conViaje ? 'ya existe el viaje #' + p.viajeId
+            var motivoGenerar = 'No se puede generar el viaje: ' + (conViaje && !cancelado ? 'ya existe el viaje #' + p.viajeId
                 : precioParaRevisar && p.estado === 'Aceptado' ? 'el precio del presupuesto está para revisar'
                 : 'el presupuesto ' + (p.estado === 'Pendiente' ? 'todavía no está aceptado' : 'está ' + estadoTexto));
             td.innerHTML = SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: p.id, deshabilitado: p.estado !== 'Pendiente' || conViaje, motivo: motivoEditar }),
                 SGTL.botonFila('pdf', { id: p.id, texto: 'Ver PDF' }),
                 SGTL.botonFila('estado', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede cambiar el estado: ' + generado }),
-                SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || conViaje || precioParaRevisar, motivo: motivoGenerar }),
+                SGTL.botonFila('siguiente', { id: p.id, texto: 'Generar viaje', icono: 'bi-truck', deshabilitado: p.estado !== 'Aceptado' || (conViaje && !cancelado) || precioParaRevisar, motivo: motivoGenerar }),
                 SGTL.botonFila('eliminar', { id: p.id, deshabilitado: conViaje, motivo: 'No se puede eliminar el presupuesto: ' + generado })
             ]);
             var acciones = { editar: function () { abrir(p); }, pdf: function () { imprimirPresupuesto(p); },

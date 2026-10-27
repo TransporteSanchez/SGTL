@@ -345,6 +345,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     return "El viaje #" + viajeId + " ya no existe.";
                 if (clienteViaje.Value != clienteId.Value)
                     return "El viaje #" + viajeId + " pertenece a otro cliente.";
+                if (db.Database.SqlQuery<string>("SELECT ISNULL(Estado,'') FROM dbo.VIAJES WHERE Viaje_ID=@viaje",
+                        P("@viaje", viajeId)).FirstOrDefault() == "Cancelado")
+                    return "El viaje #" + viajeId + " está cancelado: no se puede incluir en la proforma.";
 
                 int proformaOcupante = db.Database.SqlQuery<int>(@"
 SELECT TOP (1) p.Proforma_ID
@@ -1067,6 +1070,8 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     int orden = 1;
                     foreach (var f in filas)
                     {
+                        // Un viaje cancelado no se hizo: no se trae (caso E de docs/diseno/viajes-diseno.md).
+                        if (f.Estado == "Cancelado") continue;
                         if (reservados.Contains(f.Viaje_ID)) { enOtraProforma.Add(f.Viaje_ID); continue; }
                         if (f.Estado == "Facturado") { facturados.Add(f.Viaje_ID); continue; }
                         if (conPlataforma && (string.IsNullOrWhiteSpace(f.Num_Remito) || string.IsNullOrWhiteSpace(f.Num_Transporte))) { sinNumeros.Add(f.Viaje_ID); continue; }

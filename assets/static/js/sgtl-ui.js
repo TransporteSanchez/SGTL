@@ -429,6 +429,18 @@
     return '<span class="badge rounded-pill estado-' + (color || colorEstado(valor)) + '">' + escapar(mostrado) + '</span>';
   }
 
+  // Estado de un viaje con su texto ("En_viaje" → "En viaje"). "Cancelado" en un viaje es que no se hizo: va en rojo,
+  // como lo anulado (en cuenta corriente "Cancelado" es pagado y va en verde, §4.1). Sin estado es Registrado.
+  var ESTADOS_VIAJE = {
+    Registrado: 'Registrado', En_viaje: 'En viaje', Entregado: 'Entregado', Listo_para_facturar: 'Listo para facturar',
+    Facturado: 'Facturado', Cancelado: 'Cancelado'
+  };
+  function textoEstadoViaje(valor) { return ESTADOS_VIAJE[valor || 'Registrado'] || valor; }
+  function estadoViaje(valor) {
+    valor = valor || 'Registrado';
+    return estado(valor, textoEstadoViaje(valor), valor === 'Cancelado' ? 'rojo' : null);
+  }
+
   // ---------------------------------------------------------------- Acciones de cada fila (§1.4)
 
   var ACCIONES = {
@@ -1086,6 +1098,9 @@
     procesando: procesando,
     confirmar: confirmar,
     estado: estado,
+    estadoViaje: estadoViaje,
+    textoEstadoViaje: textoEstadoViaje,
+    estadosViaje: function () { return Object.assign({}, ESTADOS_VIAJE); },
     colorEstado: colorEstado,
     botonFila: botonFila,
     accionesFila: accionesFila,

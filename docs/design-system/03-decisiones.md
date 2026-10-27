@@ -30,6 +30,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Botones de la fila (§1.4) | `SGTL.botonFila(accion, { id, texto, icono, datos, deshabilitado, motivo })`, `SGTL.accionesFila(botones)` |
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
 | Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)`; lo que acompaña al estado: `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))` |
+| Estado de un viaje (§4.1) | `SGTL.estadoViaje(estado)` (con su texto: "En_viaje" → "En viaje"; Cancelado en rojo); los textos para un filtro: `SGTL.estadosViaje()` |
 | Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
 | Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
@@ -329,12 +330,14 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
 | Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
 | Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10), Vigente (tabla de tarifas, 24/10) |
-| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
+| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10), Cancelado (viaje que no se hizo, 27/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
 - **Presupuestos:** Pendiente es esperar la respuesta del cliente, no una deuda: va en gris.
   Aceptado va en amarillo mientras falta generar el viaje y en verde cuando ya se generó (con la etiqueta
   informativa "Viaje #N"); Rechazado, en rojo. Para estos casos `SGTL.estado(valor, texto, color)` recibe el color.
+- **Viajes:** "Cancelado" es un viaje que no se hizo: va en rojo, como lo anulado (Rocío, 27/10). En cuenta corriente
+  "Cancelado" es pagado y sigue en verde; por eso las pantallas de viajes usan `SGTL.estadoViaje`, que ya lo pone en rojo.
 - El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
   etiqueta); las pantallas no arman su propio mapa de colores.
 

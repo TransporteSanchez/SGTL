@@ -111,6 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Resultado_Entrega { get; set; }
             public DateTime? Fecha_Entrega { get; set; }
             public string Usuario { get; set; }
+            public string Motivo { get; set; }        // al cancelar el viaje
         }
 
         // Fila de la grilla de gestion-viajes.html. Debe coincidir 1:1 con SELECT_GRILLA.
@@ -151,6 +152,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? EnProforma_ID { get; set; }
             public string EnProforma_Numero { get; set; }
             public string EnProforma_Estado { get; set; }
+            public string Cancelado_Motivo { get; set; }
+            public DateTime? Cancelado_Fecha { get; set; }
+            public string Cancelado_Usuario { get; set; }
+            public int? Cancelado_Presupuesto_ID { get; set; }
         }
 
         private class EstadoViajeRow
@@ -171,6 +176,10 @@ namespace WebApi_TransporteSanchez.Controllers
         public const string EstadoEntregado = "Entregado";
         public const string EstadoListoParaFacturar = "Listo_para_facturar";
         public const string EstadoFacturado = "Facturado";
+        // Un viaje que no se hizo (caso E de docs/diseno/viajes-diseno.md, database/viajes/02): desde Registrado, con motivo;
+        // vuelve a Registrado. No está en los flujos: no cuenta en el camión ocupado, el orden del día, las proformas, los
+        // costos ni los indicadores.
+        public const string EstadoCancelado = "Cancelado";
 
         // Con plataforma (Rukas): el seguimiento fino queda en Rukas; en SGTL solo la puerta a la proforma.
         private static readonly string[] FlujoConPlataforma = { EstadoRegistrado, EstadoListoParaFacturar, EstadoFacturado };
@@ -214,7 +223,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.VIAJE_GASTOS g WHERE g.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Gastos, " +
             SQL_FACTURADA + " AS Facturada, " +
             "(SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID = v.Viaje_ID) AS Presupuesto_ID, " +
-            "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado " +
+            "pf.Proforma_ID AS EnProforma_ID, ISNULL(pf.Numero,'') AS EnProforma_Numero, ISNULL(pf.Estado,'') AS EnProforma_Estado, {CANCELADO} " +
             "FROM VIAJES v " +
             "LEFT JOIN ORIGEN o ON o.Origen_ID = v.OrigenID " +
             "LEFT JOIN DESTINO d ON d.Destino_ID = v.DestinoID " +
@@ -229,6 +238,20 @@ namespace WebApi_TransporteSanchez.Controllers
             "OR EXISTS (SELECT 1 FROM dbo.PROFORMA_DETALLE pd WHERE pd.Proforma_ID = p.Proforma_ID " +
             "AND UPPER(LTRIM(RTRIM(ISNULL(pd.Codigo,'')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID))) " +
             "ORDER BY p.Proforma_ID DESC) pf ";
+
+        // Con database/viajes/02 corrido: el motivo, la fecha, el usuario y el presupuesto de la cancelación.
+        private static bool HayCancelado(DbContext db)
+        {
+            return db.Database.SqlQuery<int>("SELECT CASE WHEN COL_LENGTH('dbo.VIAJES', 'Cancelado_Presupuesto_ID') IS NULL THEN 0 ELSE 1 END").First() == 1;
+        }
+
+        private static string Grilla(DbContext db)
+        {
+            return SELECT_GRILLA.Replace("{CANCELADO}", HayCancelado(db)
+                ? "v.Cancelado_Motivo, v.Cancelado_Fecha, v.Cancelado_Usuario, v.Cancelado_Presupuesto_ID"
+                : "CAST(NULL AS nvarchar(300)) AS Cancelado_Motivo, CAST(NULL AS datetime) AS Cancelado_Fecha, CAST(NULL AS nvarchar(50)) AS Cancelado_Usuario, " +
+                  "CAST(NULL AS int) AS Cancelado_Presupuesto_ID");
+        }
 
         private class ProformaDelViaje { public int Proforma_ID { get; set; } public string Numero { get; set; } public string Estado { get; set; } }
 
@@ -751,7 +774,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     pPage.Add(P("@off", (page - 1) * pageSize));
                     pPage.Add(P("@lim", pageSize));
                     var results = db.Database.SqlQuery<ViajeGrillaDto>(
-                        SELECT_GRILLA + where + " ORDER BY v.Viaje_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY",
+                        Grilla(db) + where + " ORDER BY v.Viaje_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY",
                         pPage.ToArray()).ToList();
 
                     return Ok(new
@@ -782,7 +805,8 @@ SELECT CAST(CASE WHEN EXISTS (
         [Route("api/Viajes/ResumenCosto")]
         public IHttpActionResult ResumenCosto(string fechaDesde = null, string fechaHasta = null)
         {
-            var where = new StringBuilder(" WHERE 1=1 ");
+            // Sin los cancelados: no se hicieron.
+            var where = new StringBuilder(" WHERE ISNULL(v.Estado, '') <> '" + EstadoCancelado + "' ");
             var ps = new List<SqlParameter>();
             AgregarRangoFecha(where, ps, "v.Fecha_Inicio", fechaDesde, fechaHasta, "@fi");
 
@@ -827,6 +851,9 @@ SELECT CAST(CASE WHEN EXISTS (
                     var proformaDelViaje = ProformaQueIncluye(db, id);
                     if (BloqueaPorProforma(proformaDelViaje))
                         return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Estado", ErrorMessage = "El viaje está en la proforma " + TextoProforma(proformaDelViaje) + ": no se puede cambiar su estado. Si hay que corregirlo, anulá la proforma." } });
+                    // Cancelar (desde Registrado) y reactivar (de Cancelado a Registrado).
+                    if (nuevo == EstadoCancelado || v.Estado == EstadoCancelado)
+                        return CambiarCancelado(db, v, nuevo, body, proformaDelViaje);
                     var errores = ValidarCambioEstado(v, FlujoEstados(v.Tipo_Cliente), nuevo, resultado, body.Fecha_Entrega);
                     if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
 
@@ -846,6 +873,85 @@ SELECT CAST(CASE WHEN EXISTS (
             {
                 return InternalServerError(new Exception("Error al cambiar el estado del viaje.", ex));
             }
+        }
+
+        private class PresupuestoConOtroViaje { public int Presupuesto_ID { get; set; } public int ViajeID { get; set; } }
+
+        private IHttpActionResult ErrorEstado(string campo, string mensaje)
+        {
+            return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = campo, ErrorMessage = mensaje } });
+        }
+
+        // Cancelar un viaje que no se hizo (caso E de docs/diseno/viajes-diseno.md): desde Registrado, fuera de una proforma,
+        // con motivo. Deja su lugar en el día: los otros viajes de su cliente y recorrido se acomodan como al eliminarlo (§43).
+        // Reactivarlo (vuelve a Registrado): el camión y el chofer tienen que estar libres y vuelve a contar en el orden del día.
+        // El de un presupuesto guarda de cuál salió (Cancelado_Presupuesto_ID): si el presupuesto ya generó otro viaje, no se
+        // reactiva (serían dos viajes para el mismo presupuesto).
+        private IHttpActionResult CambiarCancelado(SGTLAuditContext db, EstadoViajeRow v, string nuevo, CambioEstadoViajeDto body,
+            ProformaDelViaje proforma)
+        {
+            int id = v.Viaje_ID;
+            var usuario = UsuarioCorto(body.Usuario);
+            if (!HayCancelado(db)) return ErrorEstado("Estado", "Para cancelar viajes falta correr database/viajes/02_viaje_cancelado.sql.");
+            var ahora = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time");
+
+            if (nuevo == EstadoCancelado)
+            {
+                if (!EsRegistrado(v.Estado))
+                    return ErrorEstado("Estado", v.Estado == EstadoCancelado ? "El viaje ya está cancelado."
+                        : "No se puede cancelar el viaje: ya salió (está " + v.Estado.Replace('_', ' ').ToLowerInvariant() + ").");
+                if (proforma != null)
+                    return ErrorEstado("Estado", "No se puede cancelar el viaje: está en la proforma " + TextoProforma(proforma) + ".");
+                var motivo = Recortar(body.Motivo, 300);
+                if (motivo.Length == 0) return ErrorEstado("Motivo", "Completá el motivo.");
+
+                var antes = OrdenDelDia.SujetoDeViaje(db, id);
+                var plan = antes != null && antes.Aplica ? OrdenDelDia.Planificar(db, null, antes, "se canceló el viaje #" + id) : null;
+                db.Database.ExecuteSqlCommand(
+                    "UPDATE VIAJES SET Estado=@e, Cancelado_Motivo=@m, Cancelado_Fecha=@f, Cancelado_Usuario=@u, " +
+                    "Cancelado_Presupuesto_ID=(SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID=@id), " +
+                    "Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@id",
+                    P("@e", EstadoCancelado), P("@m", motivo), P("@f", ahora), P("@u", usuario), P("@id", id));
+                SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id,
+                    "Estado=" + (v.Estado ?? EstadoRegistrado) + " -> " + EstadoCancelado + "; Motivo=" + motivo);
+                // Si su precio estaba para revisar (§33, §43), ya no hay nada que decidir: no se cobra.
+                TarifarioRevisar.Resolver(db, usuario, "Se canceló el viaje.", viajeId: id);
+                var orden = AplicarOrden(db, plan, "se canceló el viaje #" + id, usuario);
+                return Ok(new { Viaje_ID = id, Estado = EstadoCancelado, Message = "Viaje #" + id + " cancelado.", Orden = orden });
+            }
+
+            if (nuevo != EstadoRegistrado) return ErrorEstado("Estado", "Un viaje cancelado solo puede volver a Registrado.");
+            var otro = db.Database.SqlQuery<PresupuestoConOtroViaje>(
+                "SELECT ps.Presupuesto_ID, ps.ViajeID FROM dbo.VIAJES v JOIN dbo.PRESUPUESTOS ps ON ps.Presupuesto_ID = v.Cancelado_Presupuesto_ID " +
+                "WHERE v.Viaje_ID=@id AND ps.ViajeID IS NOT NULL AND ps.ViajeID <> @id", P("@id", id)).FirstOrDefault();
+            if (otro != null)
+                return ErrorEstado("Estado", "No se puede reactivar el viaje: el presupuesto #" + otro.Presupuesto_ID + " ya generó el viaje #" + otro.ViajeID + ".");
+            var viaje = db.Set<VIAJES>().Find(id);
+            var ocupado = Ocupacion.Errores(db, viaje.CamionID, viaje.ChoferID, viaje.Fecha_Inicio, viaje.Fecha_Fin, id, 0);
+            if (ocupado.Any())
+                return ErrorEstado("Estado", "No se puede reactivar el viaje. " + string.Join(" ", ocupado.Select(e => e.ErrorMessage)));
+
+            db.Database.ExecuteSqlCommand(
+                "UPDATE VIAJES SET Estado=@e, Cancelado_Motivo=NULL, Cancelado_Fecha=NULL, Cancelado_Usuario=NULL, Cancelado_Presupuesto_ID=NULL, " +
+                "Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@id",
+                P("@e", EstadoRegistrado), P("@u", usuario), P("@id", id));
+            // Vuelve a contar en su día: su vuelta (la de un presupuesto se conserva) y lo que pasa con los otros.
+            object ordenReactivado = null;
+            var sujeto = OrdenDelDia.SujetoDeViaje(db, id);
+            if (sujeto != null && sujeto.Aplica)
+            {
+                var despues = new OrdenDelDia.Sujeto
+                {
+                    Clase = OrdenDelDia.Viaje, Id = id, ClienteID = sujeto.ClienteID, OrigenID = sujeto.OrigenID, DestinoID = sujeto.DestinoID,
+                    Inicio = sujeto.Inicio, Estado = EstadoRegistrado, DePresupuesto = sujeto.DePresupuesto,
+                    Vuelta = sujeto.DePresupuesto ? sujeto.Vuelta : null, Aplica = true, Importe = sujeto.Importe
+                };
+                var plan = OrdenDelDia.Planificar(db, despues, null, "se reactivó el viaje #" + id);
+                if (plan.Vuelta.HasValue && plan.Vuelta != sujeto.Vuelta) OrdenDelDia.CambiarVuelta(db, id, plan.Vuelta.Value);
+                ordenReactivado = AplicarOrden(db, plan, "se reactivó el viaje #" + id, usuario);
+            }
+            SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id, "Estado=" + EstadoCancelado + " -> " + EstadoRegistrado);
+            return Ok(new { Viaje_ID = id, Estado = EstadoRegistrado, Message = "Viaje #" + id + " reactivado.", Orden = ordenReactivado });
         }
 
         // POST: api/Viajes/{id}/Evidencia
@@ -892,6 +998,8 @@ SELECT CAST(CASE WHEN EXISTS (
                         return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "El viaje ya está facturado: no se puede cambiar la evidencia." } });
                     // Es de la entrega (punto 22 de la §41): en un directo, desde que salió (se sube al entregarlo); con
                     // plataforma, que no pasa por En viaje, desde el día del viaje.
+                    if (estado == EstadoCancelado)
+                        return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "No se puede adjuntar la evidencia: el viaje está cancelado." } });
                     var hoy = TimeZoneInfo.ConvertTimeBySystemTimeZoneId(DateTime.UtcNow, "Argentina Standard Time").Date;
                     if (EsRegistrado(estado) && !EsConPlataforma(v.Tipo_Cliente))
                         return Content(HttpStatusCode.BadRequest, new List<object> { new { PropertyName = "Evidencia", ErrorMessage = "No se puede adjuntar la evidencia: el viaje todavía no salió." } });
@@ -1080,7 +1188,7 @@ SELECT CAST(CASE WHEN EXISTS (
                         Usu_Modi = viaje.Usu_Modi
                     };
 
-                    var est = db.Database.SqlQuery<ViajeGrillaDto>(SELECT_GRILLA + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
+                    var est = db.Database.SqlQuery<ViajeGrillaDto>(Grilla(db) + " WHERE v.Viaje_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est != null)
                     {
                         dto.Num_Transporte = est.Num_Transporte;
@@ -1274,6 +1382,11 @@ SELECT CAST(CASE WHEN EXISTS (
                         new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, emití la nota de crédito de su factura desde Cuenta corriente." }
                     });
                 }
+                if (estado == EstadoCancelado)
+                    return Content(HttpStatusCode.BadRequest, new List<object>
+                    {
+                        new { PropertyName = "Estado", ErrorMessage = "No se puede editar el viaje: está cancelado." }
+                    });
 
                 // La vuelta la decide la API (§43): la que llega de la pantalla no se usa; se parte de la guardada.
                 viajeDto.Vuelta = TarifaGuardada(db, id).Vuelta;
@@ -1442,6 +1555,8 @@ SELECT CAST(CASE WHEN EXISTS (
                     }
 
                     var estado = EstadoActual(db, id);
+                    if (estado == EstadoCancelado)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje: está cancelado." });
                     if (!EsRegistrado(estado))
                     {
                         return Content(HttpStatusCode.BadRequest, new List<object>

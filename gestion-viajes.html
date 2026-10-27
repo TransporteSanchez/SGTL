@@ -532,24 +532,13 @@
             return t && isFinite(n) ? SGTL.km(n) : t;
         }
 
-        const ESTADO_LABEL = {
-            Registrado: 'Registrado',
-            En_viaje: 'En viaje',
-            Entregado: 'Entregado',
-            Listo_para_facturar: 'Listo para facturar',
-            Facturado: 'Facturado'
-        };
-        const ESTADO_BADGE = {
-            Registrado: 'bg-secondary',
-            En_viaje: 'bg-info',
-            Entregado: 'bg-primary',
-            Listo_para_facturar: 'bg-warning text-dark',
-            Facturado: 'bg-success'
-        };
+        // Con Cancelado (el viaje no se hizo), que va en rojo (SGTL.estadoViaje).
+        const ESTADO_LABEL = SGTL.estadosViaje();
         function etiquetaEstado(e) { return ESTADO_LABEL[e] || e || '—'; }
-        // Colores del design system (§4): Registrado gris, En viaje / Entregado azul, Listo para facturar amarillo, Facturado verde.
+        // Colores del design system (§4): Registrado gris, En viaje / Entregado azul, Listo para facturar amarillo, Facturado verde,
+        // Cancelado rojo.
         function badgeEstadoViaje(e) {
-            return SGTL.estado(e || '', etiquetaEstado(e));
+            return SGTL.estadoViaje(e);
         }
 
         var viajesPagina = {};
@@ -590,7 +579,10 @@
                     : '<div>En la proforma <strong>' + escHtml(viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)) + '</strong>' +
                         (estadoPf ? ', ' + escHtml(estadoPf.toLowerCase()) : '') + '.</div>');
             }
-            if (viaje.Presupuesto_ID) partes.push('<div>Generado desde el <strong>presupuesto #' + escHtml(viaje.Presupuesto_ID) + '</strong>.</div>');
+            if (viaje.Estado === 'Cancelado') partes.push('<div>' + escHtml(SGTLDetalleViaje.textoCancelado(viaje)) + '</div>');
+            // Un cancelado sigue diciendo de qué presupuesto salió aunque el presupuesto ya haya generado otro viaje.
+            var presupuesto = viaje.Presupuesto_ID || viaje.Cancelado_Presupuesto_ID;
+            if (presupuesto) partes.push('<div>Generado desde el <strong>presupuesto #' + escHtml(presupuesto) + '</strong>.</div>');
             return partes.length ? SGTL.botonInfo(cambio.length ? 'urgente' : 'info', partes.join('<div class="mt-1"></div>'), 'Ver más información del viaje #' + viaje.Viaje_ID) : '';
         }
 
@@ -598,6 +590,8 @@
             // Facturado (estado del viaje) o con Factura vigente en Cuenta corriente.
             const facturado = viaje.Estado === 'Facturado' || viaje.Facturada === true;
             const registrado = viajeRegistrado(viaje.Estado);
+            // Cancelado: no se edita ni se elimina; la banderita sigue para volverlo a Registrado.
+            const cancelado = viaje.Estado === 'Cancelado';
             // En una proforma Generada o Aceptada el viaje no se modifica; en un borrador sí (pero no se elimina).
             const enProforma = !!viaje.EnProforma_ID;
             const proformaEmitida = viaje.EnProforma_Estado === 'Generada' || viaje.EnProforma_Estado === 'Aceptada';
@@ -607,7 +601,7 @@
                 : 'está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID));
             const tituloEditar = registrado ? 'Editar' : TITULO_COMPLETAR_NUMEROS;
             const desdePresupuesto = !!viaje.Presupuesto_ID;
-            const motivoEliminar = 'No se puede eliminar el viaje: ' + (bloqueado ? situacion
+            const motivoEliminar = 'No se puede eliminar el viaje: ' + (cancelado ? 'está cancelado' : bloqueado ? situacion
                 : (enProforma ? 'está en el borrador de proforma #' + viaje.EnProforma_ID
                 : (desdePresupuesto ? 'viene del presupuesto #' + viaje.Presupuesto_ID
                 : (!registrado ? 'está ' + etiquetaEstado(viaje.Estado).toLowerCase()
@@ -617,7 +611,8 @@
             // Orden del design system (§1.4): ver detalle, editar, cambiar estado, eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('ver', { id: viaje.Viaje_ID }),
-                SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: 'No se puede editar el viaje: ' + situacion }),
+                SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado || cancelado,
+                    motivo: 'No se puede editar el viaje: ' + (cancelado ? 'está cancelado' : situacion) }),
                 // Banderita gris, igual que en presupuestos (§1.4): abre "Cambiar estado", con los datos de la entrega.
                 SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: 'No se puede cambiar el estado: el viaje ' + situacion }),
                 SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: motivoEliminar })
@@ -828,6 +823,13 @@
                                     <div class="form-text" id="evidenciaAyuda"></div>
                                 </div>
                             </div>
+                        </div>
+                        <!-- Cancelar (caso E de docs/diseno/viajes-diseno.md): el motivo y lo que pasa con los otros viajes del día. -->
+                        <div class="sgtl-opcion-estado-detalle" id="estadoViajeCancelar">
+                            <label for="motivoCancelado" class="form-label">Motivo <span class="text-danger">*</span></label>
+                            <textarea class="form-control" id="motivoCancelado" rows="2" maxlength="300" placeholder="Por ejemplo: el cliente reprogramó la entrega"></textarea>
+                            <div class="form-text">Queda en el viaje y en Auditoría.</div>
+                            <div class="alert alert-info py-2 mt-3 mb-0 d-none" role="status" id="cancelarQuePasa"></div>
                         </div>
                     </div>
                 </div>
@@ -1490,6 +1492,10 @@
                             SGTL.toastError('El viaje #' + id + ' está facturado: no se puede modificar.');
                             return;
                         }
+                        if (v.Estado === 'Cancelado') {
+                            SGTL.toastError('No se puede editar el viaje #' + id + ': está cancelado.');
+                            return;
+                        }
                         $('#tituloViaje').text(tituloEdicionViaje(v.Estado, id));
                         $('#etiquetasViaje').html(etiquetasDelViaje(v));
                         $('#clienteSelect').val(v.ClienteID);
@@ -1712,7 +1718,8 @@
             Registrado: { texto: 'Vuelve a quedar cargado y se puede editar todo.', aviso: 'registrado' },
             En_viaje: { texto: 'El camión salió con la carga.', aviso: 'en viaje' },
             Entregado: { texto: 'Se entregó. Indicá el resultado y la fecha, y adjuntá el remito firmado.', aviso: 'entregado' },
-            Listo_para_facturar: { texto: 'La entrega ya figura en Rukas y el viaje tiene los números y la tarifa para facturar.', aviso: 'listo para facturar' }
+            Listo_para_facturar: { texto: 'La entrega ya figura en Rukas y el viaje tiene los números y la tarifa para facturar.', aviso: 'listo para facturar' },
+            Cancelado: { texto: 'No se hizo: el cliente lo canceló o se suspendió. No se cobra y libera el camión y el chofer.', aviso: 'cancelado' }
         };
 
         function esDirecto(v) { return (v.Tipo_Cliente || 'Directo') !== 'Con_plataforma'; }
@@ -1725,9 +1732,12 @@
         // Volver a un estado anterior a la entrega borra el resultado y la fecha.
         function antesDeLaEntrega(v, e) { var flujo = flujoDeViaje(v); return !!e && flujo.indexOf(e) < flujo.indexOf(estadoDeEntrega(v)); }
 
+        // Cancelado (caso E de docs/diseno/viajes-diseno.md): desde Registrado; un cancelado solo vuelve a Registrado.
         function estadosPosibles(v) {
+            if (v.Estado === 'Cancelado') return ['Registrado'];
             var flujo = flujoDeViaje(v), i = flujo.indexOf(v.Estado);
-            return flujo.filter(function (e, j) { return e !== 'Facturado' && e !== v.Estado && (i < 0 || Math.abs(j - i) <= 1); });
+            var posibles = flujo.filter(function (e, j) { return e !== 'Facturado' && e !== v.Estado && (i < 0 || Math.abs(j - i) <= 1); });
+            return viajeRegistrado(v.Estado) ? posibles.concat('Cancelado') : posibles;
         }
 
         // Lo que le falta a un viaje con plataforma para pasar a Listo para facturar (lo mismo que pide la API).
@@ -1744,6 +1754,7 @@
             var texto = ESTADOS_VIAJE[e].texto;
             if (e === 'En_viaje' && v.Estado === 'Entregado') texto = 'Todavía no se entregó.';
             if (e === 'Registrado' && v.Estado === 'Listo_para_facturar') texto = 'Deja de estar listo para facturar y se puede editar todo.';
+            if (e === 'Registrado' && v.Estado === 'Cancelado') texto = 'Se reactiva: vuelve a ocupar el camión y el chofer, y se recalcula el orden del día.';
             if (e === 'Listo_para_facturar') texto += ' Si querés, completá los datos de la entrega.';
             if (antesDeLaEntrega(v, e) && (v.Resultado_Entrega || v.Fecha_Entrega)) {
                 texto += ' Se borran el resultado y la fecha de la entrega.' + (v.Tiene_Evidencia ? ' La evidencia queda adjunta.' : '');
@@ -1763,18 +1774,24 @@
                 (esDirecto(v) ? '' : ' · Transporte ' + textoRef(v.Num_Transporte)) + ' · Remito ' + textoRef(v.Num_Remito));
             $('#estadoViajeActual').html(badgeEstadoViaje(v.Estado));
 
-            // Los datos de la entrega vuelven a su lugar antes de redibujar las tarjetas (si no, se borrarían con ellas).
-            $('#estadoViajeDeposito').append($('#estadoViajeEntrega'));
+            // Los datos de la entrega y el motivo vuelven a su lugar antes de redibujar las tarjetas (si no, se borrarían con ellas).
+            $('#estadoViajeDeposito').append($('#estadoViajeEntrega')).append($('#estadoViajeCancelar'));
             SGTL.reiniciarFormulario('#formEstadoViaje', '#alertaEstadoViaje');
             formularioEntrega.reiniciar();
+            formularioCancelar.reiniciar();
             var faltan = faltanParaFacturar(v);
-            SGTL.opcionesEstado('#estadoViajeOpciones', 'estadoViajeNuevo', estadosPosibles(v).map(function (e) {
+            // En un borrador de proforma no se cancela: primero se quita del borrador (la API controla lo mismo).
+            var enBorrador = v.EnProforma_ID ? 'No se puede cancelar el viaje: está en el borrador de proforma #' + v.EnProforma_ID + '.' : '';
+            var posibles = estadosPosibles(v);
+            SGTL.opcionesEstado('#estadoViajeOpciones', 'estadoViajeNuevo', posibles.map(function (e) {
                 var bloqueada = e === 'Listo_para_facturar' && faltan.length > 0;
+                if (e === 'Cancelado' && enBorrador) return { valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: true, motivo: enBorrador };
                 return {
                     valor: e, etiqueta: badgeEstadoViaje(e), texto: textoOpcionEstado(v, e), deshabilitado: bloqueada,
                     motivo: bloqueada ? 'No se puede marcar: falta cargar ' + faltan.slice(0, -1).join(', ') + (faltan.length > 1 ? ' y ' : '') + faltan[faltan.length - 1] + '.' : ''
                 };
             }), { opcional: corrigeEntrega(v) });
+            if (posibles.indexOf('Cancelado') >= 0 && !enBorrador) prepararCancelar(v);
 
             // Los datos de la entrega van dentro de la tarjeta que la registra o, si ya está en ese estado, arriba.
             var opcional = corrigeEntrega(v);
@@ -1901,6 +1918,18 @@
             reglasEntrega.evidencia
         ]);
 
+        // Cancelar: el motivo es obligatorio. Debajo, lo que pasa con los otros viajes del día de ese cliente y recorrido (§43),
+        // lo mismo que al eliminarlo: deja su lugar.
+        var formularioCancelar = SGTL.validador([{ id: 'motivoCancelado', requerido: 'Completá el motivo.' }]);
+        function prepararCancelar(v) {
+            $('#estadoViajeOpciones .sgtl-opcion-estado[data-valor="Cancelado"]').append($('#estadoViajeCancelar'));
+            $('#cancelarQuePasa').addClass('d-none').text('');
+            SGTL.ajax({ url: API_VIAJES + '/Viajes/' + v.Viaje_ID + '/AlEliminar', type: 'GET' }).catch(function () { return null; }).then(function (r) {
+                if (!r || !r.Mensaje || !viajeEstado || viajeEstado.Viaje_ID !== v.Viaje_ID) return;
+                $('#cancelarQuePasa').text('Al guardar, ' + r.Mensaje.charAt(0).toLowerCase() + r.Mensaje.slice(1)).removeClass('d-none');
+            });
+        }
+
         function confirmarEstadoViaje(evento) {
             if (evento) evento.preventDefault();
             var id = $('#estadoViajeId').val();
@@ -1911,6 +1940,12 @@
             if (!nuevo) {
                 $('#estadoViajeOpciones').addClass('is-invalid');
                 SGTL.avisoFormulario('#alertaEstadoViaje', 'Elegí el estado nuevo.');
+                return;
+            }
+            if (nuevo === 'Cancelado') {
+                formularioCancelar.validarTodo();
+                if (!SGTL.revisarFormulario('#formEstadoViaje', '#alertaEstadoViaje')) return;
+                guardarEstadoViaje(v, { Estado: nuevo, Motivo: $('#motivoCancelado').val().trim(), Usuario: usuarioActual() }, null);
                 return;
             }
             // Los datos de la entrega se toman de los campos en el estado que la registra y se borran si vuelve a uno
@@ -1944,12 +1979,17 @@
                         data: JSON.stringify(dto)
                     });
                 })
-                .done(function () {
+                .done(function (r) {
                     listo();
                     SGTL.modal('#ModalEstadoViaje', 'hide');
                     buscarViajes(currentPage);
                     var flujo = flujoDeViaje(v);
-                    if (dto.Estado === v.Estado) SGTL.toastExito('Datos de la entrega del viaje #' + id + ' guardados.');
+                    // Cancelado o reactivado: con lo que cambió en los otros viajes del día (§43).
+                    if (dto.Estado === 'Cancelado' || v.Estado === 'Cancelado') {
+                        var texto = (r && r.Message) || ('Viaje #' + id + (dto.Estado === 'Cancelado' ? ' cancelado.' : ' reactivado.'));
+                        SGTL.toastExito(window.SGTLOrdenDelDia ? SGTLOrdenDelDia.textoGuardado(texto, r && r.Orden) : texto);
+                    }
+                    else if (dto.Estado === v.Estado) SGTL.toastExito('Datos de la entrega del viaje #' + id + ' guardados.');
                     else SGTL.toastExito('Viaje #' + id + (flujo.indexOf(dto.Estado) < flujo.indexOf(v.Estado) ? ' vuelve a ' : ' ') + ESTADOS_VIAJE[dto.Estado].aviso + '.');
                 })
                 .fail(function (xhr) {

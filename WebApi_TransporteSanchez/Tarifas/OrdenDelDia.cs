@@ -278,7 +278,8 @@ OUTER APPLY (SELECT TOP (1) c.Comprobante_ID, c.Tipo + '-' + RIGHT('00000000' + 
 
         private const string SQL_VIAJES = SQL_VIAJES_SELECT + @"
 WHERE v.ClienteID = @c AND v.OrigenID = @o AND v.DestinoID = @d AND v.Fecha_Inicio >= @dia AND v.Fecha_Inicio < @dia1
-  AND v.Viaje_ID <> @sinViaje AND v.TarifarioID IS NOT NULL AND ISNULL(v.Tarifa_Modo, 'Fija') = 'Fija' AND v.Vuelta IS NOT NULL";
+  AND v.Viaje_ID <> @sinViaje AND v.TarifarioID IS NOT NULL AND ISNULL(v.Tarifa_Modo, 'Fija') = 'Fija' AND v.Vuelta IS NOT NULL
+  AND ISNULL(v.Estado, '') <> 'Cancelado'";
 
         private const string SQL_PRESUPUESTOS = @"
 SELECT N'Presupuesto' AS Clase, ps.Presupuesto_ID AS Id,
@@ -392,7 +393,8 @@ SELECT N'Viaje' AS Clase, v.Viaje_ID AS Id, ISNULL(v.ClienteID, 0) AS ClienteID,
        ISNULL(v.DestinoID, 0) AS DestinoID, v.Fecha_Inicio AS Inicio, ISNULL(v.Estado, N'Registrado') AS Estado,
        CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.PRESUPUESTOS ps WHERE ps.ViajeID = v.Viaje_ID AND ps.Estado = 'Aceptado') THEN 1 ELSE 0 END AS bit) AS DePresupuesto,
        v.Vuelta, v.Importe,
-       CAST(CASE WHEN v.TarifarioID IS NOT NULL AND ISNULL(v.Tarifa_Modo, 'Fija') = 'Fija' AND v.Vuelta IS NOT NULL THEN 1 ELSE 0 END AS bit) AS Aplica
+       CAST(CASE WHEN v.TarifarioID IS NOT NULL AND ISNULL(v.Tarifa_Modo, 'Fija') = 'Fija' AND v.Vuelta IS NOT NULL
+                  AND ISNULL(v.Estado, '') <> 'Cancelado' THEN 1 ELSE 0 END AS bit) AS Aplica
 FROM dbo.VIAJES v WHERE v.Viaje_ID = @id", P("@id", viajeId)).FirstOrDefault();
         }
 
@@ -430,6 +432,21 @@ FROM dbo.PRESUPUESTOS ps WHERE ps.Presupuesto_ID = @id AND ISJSON(ps.Datos) = 1"
                 : presupuestoId.HasValue && presupuestoId.Value > 0 ? SujetoDePresupuesto(db, presupuestoId.Value) : null;
             if (s == null) return false;
             return Grupo(db, s.ClienteID, s.OrigenID, s.DestinoID, s.Inicio, s.Clase == Viaje ? s.Id : 0, s.Clase == Presupuesto ? s.Id : 0).Count == 0;
+        }
+
+        // El precio de un viaje con otra vuelta (al reactivar uno cancelado): guarda la vuelta y el importe. false si no se
+        // pudo calcular (queda como estaba).
+        public static bool CambiarVuelta(DbContext db, int viajeId, int vuelta)
+        {
+            var i = db.Database.SqlQuery<Integrante>(SQL_VIAJES_SELECT + "WHERE v.Viaje_ID = @id", P("@id", viajeId)).FirstOrDefault();
+            if (i == null) return false;
+            var r = ImporteCon(db, i, vuelta);
+            if (!r.Ok) return false;
+            db.Database.ExecuteSqlCommand(
+                "UPDATE dbo.VIAJES SET Vuelta=@vuelta, Importe_Base=@base, Tarifa_Detalle=@tdet, Importe=@imp, Importe_Detalle=@idet WHERE Viaje_ID=@id",
+                P("@vuelta", vuelta), P("@base", r.ImporteBase), P("@tdet", r.TarifaDetalle), P("@imp", r.Importe),
+                P("@idet", r.ImporteDetalle), P("@id", viajeId));
+            return true;
         }
 
         public class Pendiente

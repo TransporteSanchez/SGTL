@@ -7,7 +7,6 @@
   'use strict';
 
   var API = 'http://localhost:50222/api';
-  var ESTADOS = { Registrado: 'Registrado', En_viaje: 'En viaje', Entregado: 'Entregado', Listo_para_facturar: 'Listo para facturar', Facturado: 'Facturado' };
   // Resultado de la entrega (§4.1): Completa verde, Parcial amarillo, Rechazo rojo.
   var COLOR_RESULTADO = { Completa: 'verde', Parcial: 'amarillo', Rechazo: 'rojo' };
   var DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -86,6 +85,11 @@
   function accionesDe(v, hoyIso) {
     var r = { paso: null, reemplazar: false, ver: !!v.Tiene_Evidencia, nota: '' };
     var estadoViaje = v.Estado || 'Registrado';
+    // Un cancelado (no se hizo) queda en Anteriores con su etiqueta y sin botones.
+    if (estadoViaje === 'Cancelado') {
+      r.nota = 'Este viaje se canceló.';
+      return r;
+    }
     if (!esDirecto(v)) {
       r.nota = 'Este viaje lo sigue la plataforma del cliente: la entrega y el remito se registran ahí.';
       return r;
@@ -133,7 +137,8 @@
     var no = 'No se puede ' + (accion || 'cargar') + ' el gasto: ';
     // Un gasto que ya está se ve siempre: eliminarlo dice por qué no se puede.
     if (accion === 'eliminar' && estadoViaje === 'Facturado') return no + 'el viaje ya está facturado';
-    if (!hoy || estadoViaje === 'Facturado') return null;
+    if (accion === 'eliminar' && estadoViaje === 'Cancelado') return no + 'el viaje está cancelado';
+    if (!hoy || estadoViaje === 'Facturado' || estadoViaje === 'Cancelado') return null;
     var pasaron = function (desde, de) {
       return sumarDias(desde, DIAS_PARA_RENDIR) < hoy
         ? no + 'pasaron más de ' + DIAS_PARA_RENDIR + ' días ' + de + '. Si te falta rendir algo, es necesario que se lo pases a administración'
@@ -270,7 +275,7 @@
   }
 
   function etiquetas(v) {
-    var html = SGTL.estado(v.Estado, ESTADOS[v.Estado] || v.Estado);
+    var html = SGTL.estadoViaje(v.Estado);
     if (v.Resultado_Entrega) {
       var resultado = v.Resultado_Entrega === 'Rechazo' ? 'Con rechazo' : v.Resultado_Entrega;
       html += '<div class="mt-1">' + SGTL.estado(v.Resultado_Entrega, resultado, COLOR_RESULTADO[v.Resultado_Entrega]) + '</div>';

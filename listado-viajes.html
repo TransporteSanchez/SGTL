@@ -249,14 +249,8 @@
             let currentPage = 1;
             let viajesPagina = {};
 
-            // Etiquetas de estado; los colores salen de SGTL.estado (§4 del design system).
-            const ESTADOS_VIAJE = {
-                Registrado: 'Registrado',
-                En_viaje: 'En viaje',
-                Entregado: 'Entregado',
-                Listo_para_facturar: 'Listo para facturar',
-                Facturado: 'Facturado'
-            };
+            // Etiquetas de estado, con Cancelado en rojo (SGTL.estadoViaje, §4 del design system).
+            const ESTADOS_VIAJE = SGTL.estadosViaje();
 
             function texto(valor) { const t = String(valor == null ? '' : valor).trim(); return t || '—'; }
 
@@ -350,7 +344,7 @@
                                     '<td>' + SGTL.escapar(viaje.Destino) + '</td>' +
                                     '<td>' + SGTL.escapar(texto(viaje.Num_Remito)) + '</td>' +
                                     '<td class="text-end">' + SGTL.escapar(kmTabla(viaje.Distancia_KM)) + '</td>' +
-                                    '<td class="text-center">' + SGTL.estado(viaje.Estado || '', ESTADOS_VIAJE[viaje.Estado] || viaje.Estado) + '</td>' +
+                                    '<td class="text-center">' + SGTL.estadoViaje(viaje.Estado) + '</td>' +
                                     '<td class="text-center">' + SGTL.accionesFila([SGTL.botonFila('ver', { id: viaje.Viaje_ID })]) + '</td>' +
                                     '</tr>';
                             }).join(''));

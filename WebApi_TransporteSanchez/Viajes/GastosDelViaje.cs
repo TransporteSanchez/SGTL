@@ -22,7 +22,7 @@ namespace WebApi_TransporteSanchez.Viajes
         public const int MaxBytesComprobante = 5 * 1024 * 1024;
 
         private const string Registrado = "Registrado", EnViaje = "En_viaje", Entregado = "Entregado",
-            ListoParaFacturar = "Listo_para_facturar", Facturado = "Facturado";
+            ListoParaFacturar = "Listo_para_facturar", Facturado = "Facturado", Cancelado = "Cancelado";
 
         public class Datos
         {
@@ -45,6 +45,7 @@ namespace WebApi_TransporteSanchez.Viajes
             estado = string.IsNullOrEmpty(estado) ? Registrado : estado;
             hoy = hoy.Date;
             if (estado == Facturado) return no + "el viaje ya está facturado.";
+            if (estado == Cancelado) return no + "el viaje está cancelado.";
             if (conPlataforma)
             {
                 if (inicio.Date > hoy) return no + "el viaje todavía no empezó.";
@@ -68,6 +69,7 @@ namespace WebApi_TransporteSanchez.Viajes
             string no = "No se puede " + accion + " el gasto: ";
             if (estado == Entregado || estado == ListoParaFacturar) return null;
             if (estado == Facturado) return no + "el viaje ya está facturado.";
+            if (estado == Cancelado) return no + "el viaje está cancelado.";
             return no + "el viaje todavía no se entregó (mientras está en viaje los carga el chofer).";
         }
 

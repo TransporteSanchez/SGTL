@@ -11,7 +11,8 @@ namespace WebApi_TransporteSanchez.Viajes
     // viaje y un presupuesto aceptado que todavía no generó su viaje) que se superponen, de inicio a fin. Que uno termine a la
     // hora en que empieza el otro no es superponerse. El error va debajo del campo, corto y empezando por el dato (§6.3 del
     // design system): "Camión ocupado: viaje #45, de 08:00 hs a 11:30 hs." (con la fecha, solo si es otro día).
-    // Lo usan la pantalla (api/Viajes/Ocupado, al elegir el camión o el chofer o al cambiar el horario) y el guardado.
+    // Lo usan la pantalla (api/Viajes/Ocupado, al elegir el camión o el chofer o al cambiar el horario) y el guardado. Un viaje
+    // cancelado no ocupa.
     public static class Ocupacion
     {
         public class Choque
@@ -61,7 +62,8 @@ namespace WebApi_TransporteSanchez.Viajes
             if (id <= 0) return null;
             var viaje = db.Database.SqlQuery<Choque>(
                 "SELECT TOP (1) N'viaje' AS Clase, Viaje_ID AS Id, Fecha_Inicio AS Inicio, Fecha_Fin AS Fin FROM dbo.VIAJES " +
-                "WHERE " + columna + " = @id AND Viaje_ID <> @sinViaje AND Fecha_Inicio < @fin AND Fecha_Fin > @ini ORDER BY Fecha_Inicio",
+                "WHERE " + columna + " = @id AND Viaje_ID <> @sinViaje AND Fecha_Inicio < @fin AND Fecha_Fin > @ini " +
+                "AND ISNULL(Estado, '') <> 'Cancelado' ORDER BY Fecha_Inicio",
                 P("@id", id), P("@sinViaje", sinViaje), P("@ini", inicio), P("@fin", fin)).FirstOrDefault();
             var presupuesto = db.Database.SqlQuery<Choque>(
                 "SELECT TOP (1) N'presupuesto' AS Clase, Presupuesto_ID AS Id, " +

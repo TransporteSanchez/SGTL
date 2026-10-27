@@ -180,7 +180,7 @@ OUTER APPLY (SELECT TOP (1) c.Comprobante_ID, c.Tipo + '-' + RIGHT('00000000' + 
                 OR EXISTS (SELECT 1 FROM dbo.COMPROBANTES_DETALLE cd WHERE cd.ComprobanteID = c.Comprobante_ID
                            AND UPPER(LTRIM(RTRIM(ISNULL(cd.Codigo, '')))) = 'V' + CONVERT(varchar(11), v.Viaje_ID)))
              ORDER BY c.Comprobante_ID DESC) fac
-WHERE v.TarifarioID IS NOT NULL";
+WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
 
         private static List<T> Leer<T>(SqlConnection cn, SqlTransaction tx, string sql, Func<SqlDataReader, T> fila, params SqlParameter[] ps)
         {
@@ -283,7 +283,7 @@ WHERE v.TarifarioID IS NOT NULL";
                     r => new KeyValuePair<int, Camion>(Int(r, "Camion_ID"), new Camion { Dominio = Str(r, "Dominio"), Tipo = (Str(r, "Tipo") ?? "").Trim(), Anio = Int(r, "Anio") }))
                     .ToDictionary(x => x.Key, x => x.Value),
                 Salidas = Leer(cn, tx, "SELECT Viaje_ID, ISNULL(ClienteID, 0) AS ClienteID, ISNULL(OrigenID, 0) AS OrigenID, " +
-                    "ISNULL(DestinoID, 0) AS DestinoID, Fecha_Inicio FROM dbo.VIAJES",
+                    "ISNULL(DestinoID, 0) AS DestinoID, Fecha_Inicio FROM dbo.VIAJES WHERE ISNULL(Estado, '') <> 'Cancelado'",
                     r => new Salida
                     {
                         Viaje_ID = Int(r, "Viaje_ID"), ClienteID = Int(r, "ClienteID"), OrigenID = Int(r, "OrigenID"),

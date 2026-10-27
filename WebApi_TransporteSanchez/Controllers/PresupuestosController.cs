@@ -28,9 +28,16 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var resultado = new JArray();
             using (var cn = new SqlConnection(Cn()))
-            using (var cmd = new SqlCommand("SELECT Presupuesto_ID, Datos, Estado, ViajeID FROM dbo.PRESUPUESTOS ORDER BY Presupuesto_ID DESC", cn))
             {
                 cn.Open();
+                // viajeEstado y viajeMotivo: el viaje que generó y, si se canceló, por qué (vuelve a dejar generarlo;
+                // docs/diseno/viajes-diseno.md, caso E). El motivo, con database/viajes/02 corrido.
+                bool hayCancelado;
+                using (var col = new SqlCommand("SELECT CASE WHEN COL_LENGTH('dbo.VIAJES', 'Cancelado_Motivo') IS NULL THEN 0 ELSE 1 END", cn))
+                    hayCancelado = Convert.ToInt32(col.ExecuteScalar()) == 1;
+                using (var cmd = new SqlCommand("SELECT p.Presupuesto_ID, p.Datos, p.Estado, p.ViajeID, ISNULL(v.Estado, 'Registrado'), " +
+                    (hayCancelado ? "v.Cancelado_Motivo" : "CAST(NULL AS nvarchar(300))") + " FROM dbo.PRESUPUESTOS p " +
+                    "LEFT JOIN dbo.VIAJES v ON v.Viaje_ID = p.ViajeID ORDER BY p.Presupuesto_ID DESC", cn))
                 using (var lector = cmd.ExecuteReader())
                     while (lector.Read())
                     {
@@ -38,6 +45,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         item["id"] = lector.GetInt32(0);
                         item["estado"] = lector.GetString(2);
                         item["viajeId"] = lector.IsDBNull(3) ? (JToken)JValue.CreateNull() : new JValue(lector.GetInt32(3));
+                        item["viajeEstado"] = lector.IsDBNull(3) ? (JToken)JValue.CreateNull() : new JValue(lector.GetString(4));
+                        item["viajeMotivo"] = lector.IsDBNull(5) ? (JToken)JValue.CreateNull() : new JValue(lector.GetString(5));
                         resultado.Add(item);
                     }
             }
@@ -219,13 +228,16 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                     using (var tx = cn.BeginTransaction(IsolationLevel.Serializable))
                     {
-                        string json, estado; int? existente;
-                        using (var leer = new SqlCommand("SELECT Datos, Estado, ViajeID FROM dbo.PRESUPUESTOS WITH (UPDLOCK,HOLDLOCK) WHERE Presupuesto_ID=@id", cn, tx))
+                        string json, estado, estadoExistente; int? existente;
+                        using (var leer = new SqlCommand("SELECT p.Datos, p.Estado, p.ViajeID, ISNULL(v.Estado, 'Registrado') FROM dbo.PRESUPUESTOS p WITH (UPDLOCK,HOLDLOCK) " +
+                            "LEFT JOIN dbo.VIAJES v ON v.Viaje_ID = p.ViajeID WHERE p.Presupuesto_ID=@id", cn, tx))
                         {
                             leer.Parameters.AddWithValue("@id", id);
-                            using (var r = leer.ExecuteReader()) { if (!r.Read()) return NotFound(); json = r.GetString(0); estado = r.GetString(1); existente = r.IsDBNull(2) ? (int?)null : r.GetInt32(2); }
+                            using (var r = leer.ExecuteReader()) { if (!r.Read()) return NotFound(); json = r.GetString(0); estado = r.GetString(1); existente = r.IsDBNull(2) ? (int?)null : r.GetInt32(2); estadoExistente = r.GetString(3); }
                         }
-                        if (existente.HasValue) return Content(HttpStatusCode.Conflict, new { error = "Este presupuesto ya generó el viaje #" + existente.Value + "." });
+                        // Si el viaje que generó se canceló, se vuelve a generar: el presupuesto pasa a apuntar al nuevo y el cancelado
+                        // queda en el listado (guarda de qué presupuesto salió, database/viajes/02).
+                        if (existente.HasValue && estadoExistente != "Cancelado") return Content(HttpStatusCode.Conflict, new { error = "Este presupuesto ya generó el viaje #" + existente.Value + "." });
                         if (estado != "Aceptado") return Content(HttpStatusCode.Conflict, new { error = "El presupuesto debe estar aceptado para generar un viaje." });
                         var p = JObject.Parse(json); int cliente, origen, destino, camion, tarifario, vuelta; decimal km, importe; DateTime inicio, fin;
                         string tipo = (string)p["tipoTarifa"];

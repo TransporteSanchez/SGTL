@@ -16,6 +16,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 |---|---|---|
 | **Directo** | Registrado → En viaje → Entregado → Facturado | De a un paso: Entregado → En viaje → Registrado. Facturado → Entregado solo con la nota de crédito |
 | **Con plataforma (Rukas)** | Registrado → Listo para facturar → Facturado | Listo para facturar → Registrado. Facturado → Listo para facturar solo con la nota de crédito |
+| **Los dos** | Registrado → **Cancelado** (no se hizo; con motivo, fuera de una proforma) | Cancelado → Registrado, si el camión y el chofer están libres y el presupuesto del que salió no generó otro viaje |
 
 - **Quién mueve cada paso:**
   - Registrado → En viaje: el chofer desde su hoja de ruta, **solo el día del viaje** (punto 33), o administración desde
@@ -40,6 +41,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | En un **borrador** de proforma | Según su estado | No (primero se quita del borrador) | Según su estado |
 | En una proforma **Generada o Aceptada** | No: se anula la proforma | No | Según su estado |
 | **Facturado** | No: nota de crédito | No | No / No |
+| **Cancelado** | No (se vuelve a Registrado) | No: queda en el listado | No / No |
 | **Generado desde un presupuesto aceptado** | Cliente, recorrido, km y tarifa fijos (son los del presupuesto) | No | Según su estado |
 
 - **Precio para revisar** (§43): un viaje que ya salió, o de un presupuesto, al que le cambia el orden del día no se toca
@@ -73,7 +75,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | # | Caso | Qué pasa hoy | Opciones |
 |---|---|---|---|
 | D | **Entrega con Rechazo o Parcial** | Queda Entregado como cualquiera, entra en la proforma y se cobra el precio completo. | 1) Se cobra igual (el viaje se hizo). 2) El Rechazo se cobra como "sin carga" o con otro porcentaje (se junta con el punto 10). 3) Lo decide administración en la proforma, línea por línea. |
-| E | **Se cancela un viaje generado desde un presupuesto aceptado** | No se puede eliminar ("generado desde un presupuesto aceptado") ni cancelar: queda Registrado para siempre. | 1) Dejar eliminarlo y que el presupuesto vuelva a quedar Aceptado sin viaje (después se lo pasa a Rechazado si corresponde). 2) Un estado "Cancelado" para todos los viajes que no se hicieron (queda la historia en el listado, sin borrarlo). |
+| E | **Se cancela un viaje generado desde un presupuesto aceptado** | No se podía eliminar ("generado desde un presupuesto aceptado") ni cancelar: quedaba Registrado para siempre. | **Decidido y hecho (27/10): estado "Cancelado"** para todo viaje que no se hizo (sección 5). |
 | F | **Se rompe el camión o cambia el chofer con el viaje en curso** | En viaje no se cambian camión ni chofer: hay que volver a Registrado, editarlo (al chofer nuevo le llega la hoja de ruta) y volver a iniciarlo. | 1) Dejarlo así (y explicarlo en el manual). 2) Permitir cambiarlos en viaje con un motivo que queda en Auditoría. |
 | G | **Administración inicia un viaje de otro día** | Se puede (el chofer no, punto 33). | 1) Dejarlo así: administración corrige. 2) Avisar con una confirmación ("El viaje es del 30/10/2026. ¿Iniciarlo igual?"). |
 
@@ -87,9 +89,29 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 
 ---
 
-## 5. Cómo se probó cada parte
+## 5. Viaje cancelado (caso E, 27/10)
+
+Decisiones de Rocío (maqueta `.claude/maquetas/viajes/cancelado.html`):
+
+- **Desde Registrado**, con **motivo obligatorio**, y fuera de una proforma (de un borrador, primero se quita). Se elige en
+  Cambiar estado (la banderita); no hay un botón nuevo. Etiqueta **roja**, como lo anulado.
+- **Deja de contar** en el camión y el chofer ocupados, el orden del día (los otros viajes del día se acomodan como al
+  eliminarlo), las proformas (Traer viajes no lo trae, no se suma a mano y en el Excel de Rukas va a "Para revisar"), los
+  costos, el tablero y la hoja de ruta (pasa a Anteriores, sin botones). Si su precio estaba para revisar, queda resuelto.
+- **Sigue en el listado**, filtrable, con el motivo, la fecha y el usuario en el globito y en Ver detalle (sin costo).
+- **Vuelve a Registrado** si el camión y el chofer están libres; recupera su lugar en el orden del día.
+- **Eliminar** queda solo para un viaje cargado por error (Registrado y que no venga de un presupuesto).
+- **Presupuesto:** sigue Aceptado, en amarillo, con el ícono "El viaje #N que se generó con este presupuesto está
+  cancelado: …" y "Generar viaje" habilitado. El viaje nuevo reemplaza al cancelado en el presupuesto; el cancelado
+  guarda de qué presupuesto salió (`VIAJES.Cancelado_Presupuesto_ID`) y ya no se reactiva.
+- **Falta decidir:** el aviso por WhatsApp al chofer (módulo de Fede). **"Sin carga"** (falso flete, desde En viaje) se
+  ve con el punto 10.
+
+---
+
+## 6. Cómo se probó cada parte
 
 Los cambios del 27/10 (orden del día, camión ocupado, iniciar en su día, gastos con tope, horas de Google, galpón) tienen
 sus pasos de prueba en la §43 y en los puntos 28, 33, 35 y 36 de la §41 de `docs/PENDIENTES-SISTEMA.md`, y pruebas de Node
 en `tests/orden-del-dia.test.js`, `tests/hoja-de-ruta.test.js`, `tests/control-interno.test.js` y
-`tests/presupuestos-mapa-horarios.test.js`.
+`tests/presupuestos-mapa-horarios.test.js`. Los huecos A–C y el estado Cancelado, en `tests/viajes-flujo.test.js`.

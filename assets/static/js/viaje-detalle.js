@@ -7,7 +7,6 @@
   'use strict';
 
   var API = 'http://localhost:50222/api';
-  var ESTADOS = { Registrado: 'Registrado', En_viaje: 'En viaje', Entregado: 'Entregado', Listo_para_facturar: 'Listo para facturar', Facturado: 'Facturado' };
   // Resultado de la entrega (§4.1): Completa verde, Parcial amarillo, Rechazo rojo.
   var COLOR_RESULTADO = { Completa: 'verde', Parcial: 'amarillo', Rechazo: 'rojo' };
   var listas = null;
@@ -85,11 +84,23 @@
   }
 
   function titulo(v) {
-    var html = '<span>Ver detalle del viaje #' + esc(v.Viaje_ID) + '</span>' +
-      SGTL.estado(v.Estado || 'Registrado', ESTADOS[v.Estado] || v.Estado || 'Registrado');
+    var html = '<span>Ver detalle del viaje #' + esc(v.Viaje_ID) + '</span>' + SGTL.estadoViaje(v.Estado);
     if (v.EnProforma_ID) html += etiquetaInformativa('En ' + (v.EnProforma_Numero || ('borrador de proforma #' + v.EnProforma_ID)));
-    if (v.Presupuesto_ID) html += etiquetaInformativa('Del presupuesto #' + v.Presupuesto_ID);
+    // Un cancelado sigue diciendo de qué presupuesto salió, aunque el presupuesto ya haya generado otro viaje.
+    var presupuesto = v.Presupuesto_ID || v.Cancelado_Presupuesto_ID;
+    if (presupuesto) html += etiquetaInformativa('Del presupuesto #' + presupuesto);
     return html;
+  }
+
+  // "Cancelado el 27/10/2026 por rnuvoli: el cliente reprogramó la entrega." (globito de la fila y presupuestos).
+  function textoCancelado(v) {
+    var motivo = String(v.Cancelado_Motivo || '').trim();
+    // Con minúscula después de los dos puntos, salvo una sigla ("YPF suspendió…").
+    if (motivo && motivo.charAt(1) !== motivo.charAt(1).toUpperCase()) motivo = motivo.charAt(0).toLowerCase() + motivo.slice(1);
+    if (motivo && !/[.!?]$/.test(motivo)) motivo += '.';
+    var usuario = String(v.Cancelado_Usuario || '').trim();
+    return 'Cancelado' + (v.Cancelado_Fecha ? ' el ' + SGTL.fecha(v.Cancelado_Fecha) : '') + (usuario ? ' por ' + usuario : '') +
+      (motivo ? ': ' + motivo : '.');
   }
 
   function cuerpo(v, l, imp, completo, opciones) {
@@ -117,7 +128,10 @@
     var evidencia = v.Tiene_Evidencia
       ? '<a href="' + API + '/Viajes/' + encodeURIComponent(v.Viaje_ID) + '/Evidencia" target="_blank" rel="noopener"><i class="bi bi-paperclip" aria-hidden="true"></i> Ver evidencia</a>'
       : '<span class="suave">' + (rukas ? 'Sin adjuntar (la constancia está en Rukas)' : 'Sin adjuntar') + '</span>';
-    var entrega = entregado
+    var cancelado = v.Estado === 'Cancelado';
+    var entrega = cancelado && !entregado
+      ? dato('Resultado', '<span class="suave">No se hizo: el viaje está cancelado.</span>')
+      : entregado
       ? par(dato('Resultado', v.Resultado_Entrega ? SGTL.estado(v.Resultado_Entrega, v.Resultado_Entrega, COLOR_RESULTADO[v.Resultado_Entrega]) : '—'),
         dato('Fecha', texto(SGTL.fecha(v.Fecha_Entrega)))) + dato('Evidencia', evidencia)
       : dato('Resultado', '<span class="suave">Todavía no se registró la entrega.</span>') + (v.Tiene_Evidencia ? dato('Evidencia', evidencia) : '');
@@ -127,13 +141,18 @@
 
     var registro = completo ? esc(SGTL.textoRegistro((completo.Usu_Alta || '').trim(), SGTL.fecha(completo.Fecha_Alta, { hora: true }),
       (completo.Usu_Modi || '').trim(), SGTL.fecha(completo.Fecha_Modi, { hora: true }))) : '';
-    var enlace = opciones.enlaceGestion && v.Estado !== 'Facturado' && v.Facturada !== true
+    var enlace = opciones.enlaceGestion && v.Estado !== 'Facturado' && v.Estado !== 'Cancelado' && v.Facturada !== true
       ? '<a class="d-inline-block mt-2" href="gestion-viajes.html?viaje=' + encodeURIComponent(v.Viaje_ID) + '"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Abrir en Gestionar viajes</a>'
       : '';
 
     // En filas (pedido de Rocío, 22/10): los dos bloques de cada fila empiezan a la misma altura. Arriba, lo que quedó
     // para revisar (cambios-tarifa.js).
-    return '<div id="verViajePrecio"></div><div class="sgtl-detalle-grilla">' + bloque('Recorrido', recorrido, true) +
+    // Cancelado (caso E de docs/diseno/viajes-diseno.md): primero, por qué y cuándo. Sin costo ni margen: no se hizo.
+    var cancelacion = cancelado
+      ? bloque('Cancelación', par(dato('Motivo', texto(v.Cancelado_Motivo)),
+          dato('Cuándo y quién', texto([SGTL.fecha(v.Cancelado_Fecha, { hora: true }), (v.Cancelado_Usuario || '').trim()].filter(Boolean).join(' · ')))), true)
+      : '';
+    return '<div id="verViajePrecio"></div><div class="sgtl-detalle-grilla">' + cancelacion + bloque('Recorrido', recorrido, true) +
       bloque('Fechas, camión y chofer', asignacion) + bloque('Tarifa', tarifa) +
       bloque('Entrega', entrega) + bloque('Números de referencia', numeros) +
       // Recorrido completo y costo (control interno, 24/10): lo dibuja costos-viaje.js cuando llega.
@@ -230,11 +249,13 @@
     Promise.all([cargarListas(), importe(viaje), pedir('/Viajes/' + encodeURIComponent(viaje.Viaje_ID))]).then(function (r) {
       if (numero !== apertura) return;
       document.getElementById('verViajeCuerpo').innerHTML = cuerpo(viaje, r[0], r[1], r[2], opciones);
+      // Un cancelado no tiene costo ni cuenta en el orden del día.
+      if (viaje.Estado === 'Cancelado') return;
       mostrarCosto(viaje, numero, opciones);
       mostrarCambioTarifa(viaje, numero, opciones);
       mostrarOrden(viaje, numero);
     });
   }
 
-  window.SGTLDetalleViaje = { abrir: abrir };
+  window.SGTLDetalleViaje = { abrir: abrir, textoCancelado: textoCancelado };
 })(window, document);

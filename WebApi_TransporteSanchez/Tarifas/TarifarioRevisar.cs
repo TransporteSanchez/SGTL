@@ -123,14 +123,17 @@ namespace WebApi_TransporteSanchez.Tarifas
                 P("@id", revisarId)).FirstOrDefault();
         }
 
-        // Marca como resuelto lo indicado (uno por id, o todo lo de un presupuesto). Devuelve cuántos.
-        public static int Resolver(DbContext db, string usuario, string como, int revisarId = 0, int presupuestoId = 0)
+        // Marca como resuelto lo indicado (uno por id, todo lo de un presupuesto o el precio para revisar de un viaje, al
+        // cancelarlo). Devuelve cuántos.
+        public static int Resolver(DbContext db, string usuario, string como, int revisarId = 0, int presupuestoId = 0, int viajeId = 0)
         {
             if (!Existe(db)) return 0;
-            string filtro = revisarId > 0 ? "Revisar_ID = @id" : "Presupuesto_ID = @id AND Tipo = N'Presupuesto'";
+            string filtro = revisarId > 0 ? "Revisar_ID = @id" : viajeId > 0 ? "Viaje_ID = @id AND Tipo = N'Viaje'"
+                : "Presupuesto_ID = @id AND Tipo = N'Presupuesto'";
             return db.Database.ExecuteSqlCommand(
                 "UPDATE dbo.TARIFARIO_REVISAR SET Resuelto_Fecha = @f, Resuelto_Usuario = @u, Resuelto_Como = @como WHERE " + filtro + " AND Resuelto_Fecha IS NULL",
-                P("@f", AhoraArgentina()), P("@u", Recortar(usuario, 50)), P("@como", Recortar(como, 300)), P("@id", revisarId > 0 ? revisarId : presupuestoId));
+                P("@f", AhoraArgentina()), P("@u", Recortar(usuario, 50)), P("@como", Recortar(como, 300)),
+                P("@id", revisarId > 0 ? revisarId : viajeId > 0 ? viajeId : presupuestoId));
         }
 
         // Al anular una proforma (dentro de su transacción): sus viajes que quedaron para revisar se recalculan con la tabla
