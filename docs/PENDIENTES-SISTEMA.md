@@ -3969,3 +3969,7 @@ al login al recuperar el foco o dentro de un minuto; su Bearer anterior debe rec
 enlace, probar uno vencido, cambiar el e-mail y probar uno anterior, e inactivar la cuenta antes de usarlo:
 ninguno debe permitir el cambio. Comprobar formularios en 1920, 1366, 768 y 390 px. La entrega SMTP real,
 la ejecución de las migraciones y esta prueba en VM siguen pendientes.
+
+**Unificación del 28/10:** los botones de los perfiles de Facturación, Presupuestos y recupero de contraseña
+dicen «Guardar», siguiendo el criterio de configuración del design system. **Probar:** recargar Gestionar e-mail
+con Ctrl+F5 y comprobar el mismo texto en los tres perfiles; al guardar, el botón muestra «Guardando…».
