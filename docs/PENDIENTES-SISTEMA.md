@@ -4198,6 +4198,13 @@ como presentación). Los números son los del listado de Rocío.
   la API).
 - [ ] **25.** Dónde se guarda si un cliente tiene plataforma (hoy solo QUICKFOOD): ver si se configura desde el sistema o
   está en el código, y si conviene sumarlo.
+- [ ] **Placeholders con datos de ejemplo (Rocío, 28/10; no es urgente).** Muchos campos tienen, en gris adentro, un dato
+  inventado que parece real: "Juan", "Pérez", "jperez", "3514123456", "30-71234567-8", "Av. Faraday", "AB123CD",
+  "Distribuidora Norte", "Depósito Rosario". Rocío no sabe si está bien o si confunde (puede parecer un dato ya cargado o
+  un dato verdadero) y si convendría un texto general ("Nombre del chofer", "Escribí el apellido") o nada. Otros
+  muestran solo el formato ("DD/MM/AAAA", "1.250,00", "Desde y hasta"), que sirven y no tienen ese problema. El design
+  system no tiene una regla sobre placeholders: decidir una (por ejemplo, solo el formato cuando hace falta, y lo demás
+  en la etiqueta o en la ayuda de debajo), sumarla al §6.3 y aplicarla en todas las pantallas.
 
 ---
 
