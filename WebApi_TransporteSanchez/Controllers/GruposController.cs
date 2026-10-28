@@ -213,6 +213,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public bool EsAdministrador { get; set; }
 
+            public bool EsChofer { get; set; }
+
             public bool Asignado { get; set; }
 
             public bool PuedeQuitar { get; set; }
@@ -270,6 +272,13 @@ namespace WebApi_TransporteSanchez.Controllers
         private static bool RequiereGrupo(string rol)
         {
             return string.Equals((rol ?? string.Empty).Trim(), "user", StringComparison.OrdinalIgnoreCase);
+        }
+
+        // El chofer no tiene grupos (Rocío, 27/10): con su rol ve solo Hojas de ruta. No se lo agrega a un grupo; si quedó en
+        // uno de antes del rol Chofer, se lo puede quitar.
+        private static bool EsChofer(string rol)
+        {
+            return string.Equals((rol ?? string.Empty).Trim(), "chofer", StringComparison.OrdinalIgnoreCase);
         }
 
         private string NombreUsuarioDelToken()
@@ -1082,6 +1091,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                                 EsAdministrador = esAdministrador,
 
+                                EsChofer = EsChofer(u.Rol),
+
                                 // Un administrador tiene acceso total por su rol, nunca por un grupo.
 
                                 Asignado = !esAdministrador && usuariosAsignados.Contains(u.Usuario_ID),
@@ -1158,6 +1169,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Content(HttpStatusCode.BadRequest, new { message = "Uno o más usuarios para agregar ya no existen. Actualizá la lista y probá de nuevo." });
                     if (usuariosAgregar.Any(u => EsAdministrador(u.Rol)))
                         return Content(HttpStatusCode.BadRequest, new { message = "No se puede agregar un administrador al grupo: ya tiene acceso por su rol." });
+                    if (usuariosAgregar.Any(u => EsChofer(u.Rol)))
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se puede agregar un chofer al grupo: con su rol ve solo Hojas de ruta." });
 
                     var asignacionesActuales = db.Set<GRUPOS_USUARIOS>()
                         .Where(asignacion => asignacion.GrupoID == id)
@@ -1270,11 +1283,11 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         .ToList();
 
-                    // La API también excluye administradores, aun si se invoca sin la interfaz.
+                    // La API también excluye administradores y choferes, aun si se invoca sin la interfaz.
 
                     var idsAsignables = usuariosSolicitados
 
-                        .Where(u => !EsAdministrador(u.Rol))
+                        .Where(u => !EsAdministrador(u.Rol) && !EsChofer(u.Rol))
 
                         .Select(u => u.Usuario_ID)
 

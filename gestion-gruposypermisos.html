@@ -154,7 +154,7 @@
                                             <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Guardar</button>
                                         </div>
                                     </div>
-                                    <p class="form-text mt-2 mb-1">Agregá o quitá usuarios y guardá. Los botones “Todos” afectan solo los resultados de cada búsqueda. Los administradores ya tienen acceso por su rol.</p>
+                                    <p class="form-text mt-2 mb-1">Agregá o quitá usuarios y guardá. Los botones “Todos” afectan solo los resultados de cada búsqueda. Los administradores ya tienen acceso por su rol y los choferes ven solo Hojas de ruta, sin grupos.</p>
                                     <section id="contenedorUsuariosGrupo" class="sgtl-bloque mt-2">
                                         <div class="sgtl-bloque-titulo">Asignación de usuarios</div>
                                         <p id="estadoCargaUsuariosGrupo" class="text-muted mb-0" role="status" aria-live="polite">Cargando…</p>
@@ -645,6 +645,12 @@
             return usuario.EsAdministrador === true || String(usuario.Rol || '').trim().toLowerCase() === 'admin';
         }
 
+        // El chofer no tiene grupos (con su rol ve solo Hojas de ruta): no se ofrece para agregar; si quedó en el grupo
+        // desde antes del rol Chofer, se ve entre los asignados para quitarlo.
+        function esChoferUsuarioGrupo(usuario) {
+            return usuario.EsChofer === true || String(usuario.Rol || '').trim().toLowerCase() === 'chofer';
+        }
+
         function normalizarBusquedaUsuariosGrupo(texto) {
             return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
         }
@@ -686,7 +692,7 @@
                 if (solicitud !== secuenciaCargaUsuariosGrupo || String($('#selectGrupoUsuarios').val()) !== id) return;
                 grupoUsuariosCargadoId = id;
                 usuariosGrupoCache = (Array.isArray(data) ? data : []).filter(function (usuario) {
-                    return !esAdministradorUsuarioGrupo(usuario);
+                    return !esAdministradorUsuarioGrupo(usuario) && (!esChoferUsuarioGrupo(usuario) || usuario.Asignado === true);
                 });
                 usuariosGrupoOriginalIds = new Set(usuariosGrupoCache.filter(function (usuario) {
                     return usuario.Asignado === true;
@@ -707,7 +713,7 @@
         function usuariosVisiblesGrupo(tipo) {
             const asignados = tipo === 'asignados';
             return filtrarUsuariosGrupo(usuariosGrupoCache.filter(function (usuario) {
-                return !esAdministradorUsuarioGrupo(usuario) &&
+                return !esAdministradorUsuarioGrupo(usuario) && (asignados || !esChoferUsuarioGrupo(usuario)) &&
                     usuariosGrupoEdicionIds.has(Number(usuario.Usuario_ID)) === asignados;
             }), busquedasUsuariosGrupo[tipo]);
         }
@@ -779,6 +785,7 @@
             const id = Number(usuarioId);
             const usuario = usuariosGrupoCache.find(function (item) { return Number(item.Usuario_ID) === id; });
             if (!usuario || !Number.isInteger(id) || esAdministradorUsuarioGrupo(usuario)) return false;
+            if (asignar && esChoferUsuarioGrupo(usuario) && !usuariosGrupoOriginalIds.has(id)) return false;
             if (!asignar && !puedeQuitarUsuarioGrupo(usuario)) return false;
             if (asignar) usuariosGrupoEdicionIds.add(id);
             else usuariosGrupoEdicionIds.delete(id);

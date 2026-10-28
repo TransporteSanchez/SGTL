@@ -173,8 +173,11 @@ primera, si es largo, si es confuso o si falta algo, pensando en la persona admi
      Guardar.
    - Un usuario con un solo grupo no se puede quitar de ese grupo, deshabilitado con el motivo.
    - Agregar un administrador: lo rechaza.
-   - **Agregar un usuario con rol Chofer [cruce]:** el chofer no tiene grupos (ve solo Hojas de ruta). Hoy la API lo
-     acepta: si se puede agregar, anotalo como falla. Si ya se corrigió, tiene que rechazarlo con el motivo.
+   - **Usuario con rol Chofer [cruce]:** el chofer no tiene grupos (ve solo Hojas de ruta). No aparece entre los
+     disponibles ni entra con "Agregar todos". Desde la consola, el `POST` de `api/Grupos/{id}/Usuarios/Cambios` con su ID
+     en `AgregarIds` responde "No se puede agregar un chofer al grupo: con su rol ve solo Hojas de ruta." y no guarda
+     nada (se corrigió el 28/10, antes de esta tanda). Si un chofer quedó en un grupo de antes, se ve entre los asignados y
+     se puede quitar.
    - La pestaña de permisos con las cuatro tarjetas y sin la columna ID.
    - Las listas a 1366 y a 390 px.
 5. **Menú:** Clientes entre Camiones y Viajes. En Grupos y permisos y en Ver detalle del usuario, los permisos se ven con

@@ -3991,6 +3991,11 @@ como presentación). Los números son los del listado de Rocío.
   4. Listar usuarios → Ver detalle del chofer: Rol "Chofer" y "Es chofer: ve solo Hojas de ruta, con los viajes de su
      chofer.".
   5. Editar el chofer y pasarlo a Usuario con un grupo: se le quita el chofer (Auditoría: "ChoferID: … -> ninguno").
+  5b. **Grupos y permisos → Usuarios por grupo (28/10, al integrar la rama de Facu):** un usuario con rol Chofer no
+     aparece entre los disponibles ni entra con "Agregar todos", y la API lo rechaza ("No se puede agregar un chofer al
+     grupo: con su rol ve solo Hojas de ruta."). Si quedó en un grupo de antes del rol Chofer, se ve entre los asignados y
+     se puede quitar. Probar: elegir un grupo, buscar al chofer entre los disponibles (no está) y, desde la consola, mandar
+     el `POST` de `Usuarios/Cambios` con su ID: el mensaje de arriba, sin guardar nada.
   6. Gestionar choferes → Registrar chofer: al completar nombre y apellido se propone el usuario (por ejemplo "rjuarez";
      si existe, "rjuarez2"). Sin contraseña: "Completá la contraseña." debajo; con una corta: "Tiene que tener de 8 a 20
      caracteres, con letras y números.". Con un usuario que ya existe: "Ya existe un usuario con ese nombre.". El e-mail

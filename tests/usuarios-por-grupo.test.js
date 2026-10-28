@@ -134,7 +134,43 @@ async function probarGuardado() {
         'tras guardar se recarga la asignación real y se limpian los cambios');
 }
 
-probarGuardado().then(() => {
+// El chofer no tiene grupos (Rocío, 28/10): con su rol ve solo Hojas de ruta. No se ofrece para agregar ni entra con
+// "Agregar todos"; si quedó en el grupo desde antes del rol Chofer, se ve entre los asignados y se puede quitar.
+async function probarChofer() {
+    const conChoferes = usuarios.concat([
+        { Usuario_ID: 6, Nombre_Usuario: 'rjuarez', NombreCompleto: 'Raúl Juárez', Rol: 'chofer', EsAdministrador: false, EsChofer: true, Asignado: false, PuedeQuitar: false },
+        { Usuario_ID: 7, Nombre_Usuario: 'gferreyra', NombreCompleto: 'Gustavo Ferreyra', Rol: 'chofer', EsAdministrador: false, EsChofer: true, Asignado: true, PuedeQuitar: true }
+    ]);
+    contexto.SGTL.ajax = () => Promise.resolve(conChoferes.map(usuario => Object.assign({}, usuario)));
+    valores['#buscarDisponiblesGrupo'] = '';
+    valores['#buscarAsignadosGrupo'] = '';
+    await vm.runInContext("cargarUsuariosDeGrupo('1')", contexto);
+    assert.deepStrictEqual(ejecutar('usuariosGrupoCache.map(u => u.Usuario_ID)'), [1, 2, 3, 5, 7],
+        'al cargar quedan afuera los administradores y los choferes que no están en el grupo');
+    assert.deepStrictEqual(ejecutar("usuariosVisiblesGrupo('disponibles').map(u => u.Usuario_ID)"), [2, 3],
+        'el chofer no se ofrece para agregar');
+    assert.deepStrictEqual(ejecutar("usuariosVisiblesGrupo('asignados').map(u => u.Usuario_ID)"), [1, 5, 7],
+        'el chofer que quedó en el grupo se ve para quitarlo');
+
+    vm.runInContext(`usuariosGrupoCache = ${JSON.stringify(conChoferes)};`, contexto);
+    assert.strictEqual(ejecutar('cambiarAsignacionUsuarioGrupo(6, true)'), false, 'un chofer no se agrega aunque llegue a la lista');
+    vm.runInContext("moverUsuariosVisiblesGrupo('agregar')", contexto);
+    assert.ok(!ejecutar('usuariosGrupoEdicionIds.has(6)'), '"Agregar todos" no incorpora al chofer');
+    vm.runInContext('cambiarAsignacionUsuarioGrupo(7, false)', contexto);
+    assert.deepStrictEqual(ejecutar('cambiosUsuariosGrupo()'), { AgregarIds: [2, 3], QuitarIds: [7] },
+        'el chofer de antes se puede quitar');
+    assert.ok(!ejecutar("usuariosVisiblesGrupo('disponibles').map(u => u.Usuario_ID)").includes(7),
+        'y al quitarlo no pasa a disponibles');
+    assert.strictEqual(ejecutar('cambiarAsignacionUsuarioGrupo(7, true)'), true, 'Deshacer lo puede volver a dejar como estaba');
+
+    const api = fs.readFileSync(path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers', 'GruposController.cs'), 'utf8');
+    assert.ok(/if \(usuariosAgregar\.Any\(u => EsChofer\(u\.Rol\)\)\)/.test(api) &&
+        /"No se puede agregar un chofer al grupo: con su rol ve solo Hojas de ruta\."/.test(api) &&
+        /\.Where\(u => !EsAdministrador\(u\.Rol\) && !EsChofer\(u\.Rol\)\)/.test(api) && /EsChofer = EsChofer\(u\.Rol\),/.test(api),
+        'la API rechaza al chofer en los dos guardados y lo marca en la lista');
+}
+
+probarGuardado().then(probarChofer).then(() => {
     console.log('OK: usuarios por grupo mueve y guarda solo los usuarios visibles elegidos');
 }).catch(error => {
     console.error(error);
