@@ -302,7 +302,8 @@ namespace WebApi_TransporteSanchez.Tarifas
                 // "adicionales" y no "estadía": desde el 28/10 los módulos son la espera, la descarga y el repaletizado.
                 detalle += " · adicionales (" + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + "): " + Pesos(r.Estadia);
             }
-            if (vueltaVaciaPorcentaje > 0)
+            // Un viaje sin carga no tiene vuelta vacía: no llegó al destino (Rocío, 28/10).
+            if (vueltaVaciaPorcentaje > 0 && !falsoFlete)
             {
                 // Sobre el flete, como en Rukas: el importe de la tarifa (la base), no lo que queda con los otros adicionales.
                 r.VueltaVaciaPorcentaje = vueltaVaciaPorcentaje;
@@ -425,6 +426,17 @@ namespace WebApi_TransporteSanchez.Tarifas
             normalizado = limpia.Count == 0 ? null : Newtonsoft.Json.JsonConvert.SerializeObject(limpia);
             if (normalizado != null && normalizado.Length > 2000) return "Adicionales de más: sacá alguno o acortá los comentarios.";
             return null;
+        }
+
+        // La lista guardada sin la vuelta vacía (al pasar el viaje a sin carga); null si no queda ninguno.
+        public static string SinVueltaVacia(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            List<AdicionalViaje> lista;
+            try { lista = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AdicionalViaje>>(json) ?? new List<AdicionalViaje>(); }
+            catch { return json; }
+            var quedan = lista.Where(a => a != null && a.Codigo != CodigoVueltaVacia).ToList();
+            return quedan.Count == 0 ? null : Newtonsoft.Json.JsonConvert.SerializeObject(quedan);
         }
     }
 }

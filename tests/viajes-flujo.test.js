@@ -150,8 +150,12 @@ assert.ok(/if \(conPlataforma\) return ErrorEstado\("Estado", "No se puede marca
     '10: solo en los directos: con plataforma, la API lo rechaza y Cambiar estado no lo ofrece');
 assert.ok(/"La fecha no puede ser posterior a hoy\."/.test(sinCargaApi) && /"La fecha no puede ser anterior al inicio del viaje\."/.test(sinCargaApi),
     '10: la fecha entre el inicio y hoy');
-assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos,\s*Adicionales = guardada\.Adicionales, Vuelta_Vacia_Porcentaje = guardada\.Vuelta_Vacia_Porcentaje \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),
+assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos,\s*Adicionales = adicionales, Vuelta_Vacia_Porcentaje = vueltaVacia \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),
     '10: se cobra el porcentaje de la tabla (y completo si vuelve atrás)');
+assert.ok(/bool quitaVueltaVacia = sinCarga && \(vueltaVacia \?\? 0m\) > 0;/.test(sinCargaApi)
+    && /if \(vueltaVaciaPorcentaje > 0 && !falsoFlete\)/.test(leer('WebApi_TransporteSanchez/Tarifas/TarifarioCalculo.cs'))
+    && /"Vuelta vacía de más: el viaje está sin carga\."/.test(api) && /if \(vacia > 0 && !falso\)/.test(pantalla),
+    '10: un viaje sin carga no tiene vuelta vacía (no llegó al destino): sale de la lista, no se cobra y no se puede cargar');
 assert.ok(/viajeDto\.Falso_Flete = TarifaGuardada\(db, id\)\.Falso_Flete;/.test(put) && /viajeDto\.Falso_Flete = false;/.test(api),
     '10: el formulario ya no lo marca: lo pone el estado');
 assert.ok(!/id="falsoFlete"/.test(pantalla) && /posibles = posibles\.concat\('Sin_carga'\)/.test(pantalla) && /id="fechaSinCarga"/.test(pantalla),

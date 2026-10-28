@@ -1043,7 +1043,8 @@
                 SGTL.limpiarError(cantidad[0]);
                 if (!codigo.val()) { SGTL.marcarError(codigo[0], 'Adicional sin elegir: elegí uno o quitá la fila.'); bien = false; return; }
                 if (codigo.val() === VUELTA_VACIA) {
-                    if (++vueltas > 1) { SGTL.marcarError(codigo[0], 'Vuelta vacía repetida: va una sola por viaje.'); bien = false; }
+                    if (sinCargaGuardado) { SGTL.marcarError(codigo[0], 'Vuelta vacía de más: el viaje está sin carga.'); bien = false; }
+                    else if (++vueltas > 1) { SGTL.marcarError(codigo[0], 'Vuelta vacía repetida: va una sola por viaje.'); bien = false; }
                     return;
                 }
                 var n = parseInt(cantidad.val(), 10);
@@ -1105,7 +1106,8 @@
                     partes.push('adicionales (' + textoModulos(modulos) + '): ' + SGTL.monto(estadia));
                     total = redondear(total + estadia);
                 }
-                if (vacia > 0) {
+                // Un viaje sin carga no tiene vuelta vacía: no llegó al destino (Rocío, 28/10).
+                if (vacia > 0 && !falso) {
                     var vuelta = redondear(base.importe * vacia / 100);
                     partes.push('vuelta vacía (' + porcentaje(vacia) + '): ' + SGTL.monto(vuelta));
                     total = redondear(total + vuelta);
@@ -2213,7 +2215,8 @@
                 .catch(function () { return null; }).then(function (t) {
                 if (!t || !viajeEstado || viajeEstado.Viaje_ID !== v.Viaje_ID) return;
                 tarjeta.find('.sgtl-opcion-estado-texto').first().text('Llegó al origen y no había carga. Se cobra el ' + porcentaje(t.Falso_Flete_Porcentaje)
-                    + ' de la tarifa: ' + SGTL.monto(redondear(v.Importe_Base * t.Falso_Flete_Porcentaje / 100)) + '.');
+                    + ' de la tarifa: ' + SGTL.monto(redondear(v.Importe_Base * t.Falso_Flete_Porcentaje / 100)) + '.'
+                    + (v.Vuelta_Vacia_Porcentaje > 0 ? ' Se quita la vuelta vacía: no llegó al destino.' : ''));
             });
         }
 

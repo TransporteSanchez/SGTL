@@ -1084,11 +1084,20 @@ SELECT CAST(CASE WHEN EXISTS (
                 return ErrorEstado("Estado", (sinCarga ? "No se puede marcar sin carga: " : "No se puede cambiar el estado: ") + "el viaje está en la proforma "
                     + TextoProforma(proforma) + ".");
 
-            // El importe con el porcentaje de la tabla (o completo, si vuelve atrás); la base y la estadía no cambian.
+            // El importe con el porcentaje de la tabla (o completo, si vuelve atrás); la base y los adicionales no cambian, salvo la
+            // vuelta vacía: un viaje sin carga no la tiene porque no llegó al destino (Rocío, 28/10), así que sale de la lista.
             var viaje = db.Set<VIAJES>().Find(id);
             var guardada = TarifaGuardada(db, id);
+            var adicionales = guardada.Adicionales;
+            var vueltaVacia = guardada.Vuelta_Vacia_Porcentaje;
+            bool quitaVueltaVacia = sinCarga && (vueltaVacia ?? 0m) > 0;
+            if (quitaVueltaVacia)
+            {
+                adicionales = TarifarioCalculo.SinVueltaVacia(adicionales);
+                vueltaVacia = null;
+            }
             var datos = DatosParaImporte(viaje, new ViajeDto { Falso_Flete = sinCarga, Estadia_Modulos = guardada.Estadia_Modulos,
-                Adicionales = guardada.Adicionales, Vuelta_Vacia_Porcentaje = guardada.Vuelta_Vacia_Porcentaje }, guardada, false);
+                Adicionales = adicionales, Vuelta_Vacia_Porcentaje = vueltaVacia }, guardada, false);
             var calculo = CalcularImporte(db, id, datos, guardada, false);
             if (!calculo.Ok) return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
 
@@ -1098,10 +1107,12 @@ SELECT CAST(CASE WHEN EXISTS (
             GuardarImporte(db, id, datos, calculo);
             SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id,
                 "Estado=" + (v.Estado ?? EstadoRegistrado) + " -> " + nuevo + (observacion != null ? "; Observación=" + observacion : "")
+                + (quitaVueltaVacia ? "; Vuelta vacía quitada (" + guardada.Vuelta_Vacia_Porcentaje.Value.ToString("0.##", CultureInfo.InvariantCulture) + " %)" : "")
                 + "; Importe=" + calculo.Importe.ToString("0.00", CultureInfo.InvariantCulture));
             var mensaje = sinCarga
                 ? "Viaje #" + id + " sin carga. Se cobra " + TarifarioCalculo.Pesos(calculo.Importe)
                     + (calculo.FalsoFletePorcentaje.HasValue ? " (" + calculo.FalsoFletePorcentaje.Value.ToString("0.##", new CultureInfo("es-AR")) + " % de la tarifa)" : "") + "."
+                    + (quitaVueltaVacia ? " Se quitó la vuelta vacía: no llegó al destino." : "")
                 : "Viaje #" + id + " vuelve a " + (conPlataforma ? "registrado" : "en viaje") + ". Se cobra " + TarifarioCalculo.Pesos(calculo.Importe) + ".";
             return Ok(new { Viaje_ID = id, Estado = nuevo, Message = mensaje });
         }
@@ -1553,6 +1564,12 @@ SELECT CAST(CASE WHEN EXISTS (
                     return Content(HttpStatusCode.BadRequest, new List<object>
                     {
                         new { PropertyName = "Estado", ErrorMessage = "No se puede editar el viaje: está cancelado." }
+                    });
+                // Un viaje sin carga no tiene vuelta vacía: no llegó al destino (Rocío, 28/10).
+                if (estado == EstadoSinCarga && (viajeDto.Vuelta_Vacia_Porcentaje ?? 0m) > 0)
+                    return Content(HttpStatusCode.BadRequest, new List<object>
+                    {
+                        new { PropertyName = "Adicionales", ErrorMessage = "Vuelta vacía de más: el viaje está sin carga." }
                     });
 
                 // La vuelta la decide la API (§43): la que llega de la pantalla no se usa; se parte de la guardada.

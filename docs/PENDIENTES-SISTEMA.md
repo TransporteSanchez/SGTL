@@ -4841,6 +4841,11 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
   para los viajes de antes, que tenían los módulos cargados a mano: se ven así al editarlos.
 - **Vuelta vacía**: 10, 20, 23, 30, 40, 45, 50, 60 o 70 % del flete (el importe de la tarifa, no el total con los otros
   adicionales). Una sola por viaje.
+- **Un viaje sin carga no tiene vuelta vacía** (Rocío, 28/10): se cobra solo haber ido a buscar la carga, porque no llegó
+  al destino. Al pasar a Sin carga, la vuelta vacía sale de la lista (la tarjeta lo avisa: "Se quita la vuelta vacía: no
+  llegó al destino."; queda en Auditoría) y los demás adicionales siguen. En un viaje sin carga no se puede agregar ("Vuelta
+  vacía de más: el viaje está sin carga.") y el cálculo nunca la suma. Si vuelve a En viaje, no vuelve sola: se agrega de
+  nuevo si corresponde.
 - El importe y su detalle: "… tarifa: $ … · adicionales (3 módulos): $ 289.731,00 · vuelta vacía (23 %): $ …". Antes
   decía "estadía (N módulos)"; los importes guardados conservan su texto hasta que se vuelven a calcular. Ver detalle
   del viaje (Gestionar y Listar viajes) muestra la lista, con el comentario.
@@ -4860,7 +4865,6 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
   la consola. 69 pruebas de Node OK. **El C# no se compiló en la Mac.**
 
 **Para decidir después (con Claudia o con Facu):**
-- Un viaje **Sin carga con vuelta vacía**: hoy se cobran las dos (el porcentaje sin carga y el de la vuelta vacía). ¿Es así?
 - En la proforma, los adicionales van **dentro del importe del viaje**, en su misma línea; la línea aparte, como los de
   Rukas, toca Traer viajes (Facu).
 - La lista y los valores están en el código (`TarifarioCalculo.AdicionalesFijos` y `ADICIONALES` en la pantalla): que
@@ -4882,6 +4886,9 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
 6. Quitar todos los adicionales y guardar: el importe vuelve a ser el de la tarifa sola.
 7. Un viaje con plataforma: no hay bloque de adicionales y guardarlo no cambia su importe. Un viaje directo de antes con
    módulos de estadía: aparece como "Estadía (módulos de 6 hs)" con esa cantidad.
-8. **[cruce]** El viaje con adicionales, En viaje → Sin carga → otra vez En viaje: los adicionales siguen y el importe
-   vuelve al de antes. Registrar proforma → Traer viajes: la línea del viaje trae el importe con los adicionales.
+8. **[cruce]** Un viaje En viaje con una espera y vuelta vacía → Cambiar estado → Sin carga: la tarjeta dice "Se quita la
+   vuelta vacía: no llegó al destino."; al guardar, el importe es el porcentaje sin carga más la espera, Ver detalle ya no
+   lista la vuelta vacía y Auditoría dice "Vuelta vacía quitada". Editarlo y agregar una vuelta vacía: "Vuelta vacía de
+   más: el viaje está sin carga.". Volver a En viaje: la espera sigue y se cobra la tarifa completa más la espera.
+   Registrar proforma → Traer viajes: la línea del viaje trae el importe con los adicionales.
 9. Design system del bloque (botón con texto, Quitar solo ícono con tooltip, textos con voseo) a 1366 y 390 px.
