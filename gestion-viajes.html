@@ -306,15 +306,16 @@
                                          y el aviso, lo que pasa con los otros al guardar (orden-del-dia.js). -->
                                     <div class="form-text mt-2 d-none" id="vueltaLinea"></div>
                                     <div id="ordenDelDia" class="mt-2 d-none"></div>
-                                    <!-- Se conoce después del viaje: se carga también cuando la tarifa ya quedó fija. El viaje sin carga
-                                         (antes "falso flete") ya no es una casilla: es un estado (punto 10 de la §41). -->
-                                    <div class="row g-3 mt-1" id="grupoAdicionales">
-                                        <div class="col-md-6" id="grupoEstadia">
-                                            <label for="estadiaModulos" class="form-label">Módulos de estadía</label>
-                                            <input type="text" inputmode="numeric" class="form-control" id="estadiaModulos" value="0" maxlength="2" autocomplete="off">
-                                            <div class="invalid-feedback"></div>
-                                            <div class="form-text" id="estadiaAyuda"></div>
-                                        </div>
+                                    <!-- Adicionales (Rocío, 28/10): los mismos que QUICKFOOD tiene en Rukas, con los mismos valores. Se conocen
+                                         después del viaje: se cargan también cuando la tarifa ya quedó fija. Con plataforma vienen de Rukas. El
+                                         viaje sin carga (antes "falso flete") es un estado (punto 10 de la §41). -->
+                                    <div class="mt-3" id="grupoEstadia">
+                                        <span class="form-label d-block" id="adicionalesTitulo">Adicionales</span>
+                                        <div id="listaAdicionales" class="d-flex flex-column gap-2" role="group" aria-labelledby="adicionalesTitulo"></div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm mt-2" id="btnAgregarAdicional">
+                                            <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar adicional
+                                        </button>
+                                        <div class="form-text" id="estadiaAyuda"></div>
                                     </div>
                                 </section>
 
@@ -949,7 +950,122 @@
         }
         function redondear(v) { return Math.round(Number(v) * 100) / 100; }
         function porcentaje(v) { return Number(v).toLocaleString('es-AR', { maximumFractionDigits: 2 }) + ' %'; }
-        function estadiaModulos() { var n = parseInt($('#estadiaModulos').val(), 10); return n > 0 ? n : 0; }
+        // ===================== ADICIONALES DEL VIAJE (Rocío, 28/10) =====================
+        // Los mismos que QUICKFOOD tiene en Rukas, con los mismos valores (docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md, paso 12;
+        // la misma lista que TarifarioCalculo.AdicionalesFijos): los fijos son módulos de estadía de la tabla de tarifas (la
+        // espera, por franja de horas: un módulo cada 6 hs) y la vuelta vacía es un porcentaje del flete, que elige
+        // administración. Con plataforma vienen de Rukas: el bloque no se ve y se conserva la estadía que tuviera el viaje.
+        const ADICIONALES = [
+            { codigo: 'espera_1_6', nombre: 'Espera entre 1 y 6 hs', modulos: 1 },
+            { codigo: 'espera_6_12', nombre: 'Espera entre 6 y 12 hs', modulos: 2 },
+            { codigo: 'espera_12_18', nombre: 'Espera entre 12 y 18 hs', modulos: 3 },
+            { codigo: 'espera_18_24', nombre: 'Espera entre 18 y 24 hs', modulos: 4 },
+            { codigo: 'espera_24_36', nombre: 'Espera entre 24 y 36 hs', modulos: 6 },
+            { codigo: 'espera_36_48', nombre: 'Espera entre 36 y 48 hs', modulos: 8 },
+            { codigo: 'espera_48_72', nombre: 'Espera entre 48 y 72 hs', modulos: 12 },
+            { codigo: 'espera_72_96', nombre: 'Espera entre 72 y 96 hs', modulos: 16 },
+            { codigo: 'descarga', nombre: 'Adicional por descarga', modulos: 1 },
+            { codigo: 'descarga_espera', nombre: 'Descarga + espera', modulos: 2 },
+            { codigo: 'repaletizado', nombre: 'Repaletizado', modulos: 2 },
+            { codigo: 'repaletizado_estadia', nombre: 'Repaletizado + estadía', modulos: 3 },
+            { codigo: 'estadia', nombre: 'Estadía (módulos de 6 hs)', modulos: 1 }
+        ];
+        const VUELTA_VACIA = 'vuelta_vacia';
+        const PORCENTAJES_VUELTA_VACIA = [10, 20, 23, 30, 40, 45, 50, 60, 70];
+        // La estadía que guardó un viaje con plataforma de antes (sin la lista): se conserva tal cual.
+        var estadiaPlataforma = 0;
+
+        function adicionalFijo(codigo) { return ADICIONALES.filter(function (a) { return a.codigo === codigo; })[0] || null; }
+        function textoModulos(n) { return n + (n === 1 ? ' módulo' : ' módulos'); }
+
+        function agregarFilaAdicional(a) {
+            a = a || {};
+            var fila = $('<div class="row g-2 align-items-start sgtl-adicional"></div>');
+            var codigo = $('<select class="form-select adic-codigo" aria-label="Adicional"></select>')
+                .append($('<option></option>').val('').text('Elegí un adicional'));
+            ADICIONALES.forEach(function (x) { codigo.append($('<option></option>').val(x.codigo).text(x.nombre + ' · ' + textoModulos(x.modulos))); });
+            codigo.append($('<option></option>').val(VUELTA_VACIA).text('Vuelta vacía · un porcentaje del flete'));
+            codigo.val(a.Codigo || '');
+            var cantidad = $('<input type="text" inputmode="numeric" maxlength="2" class="form-control adic-cantidad" aria-label="Cantidad" autocomplete="off">')
+                .val(a.Cantidad > 0 ? a.Cantidad : 1);
+            var porcentajeVv = $('<select class="form-select adic-porcentaje" aria-label="Porcentaje de la vuelta vacía"></select>');
+            PORCENTAJES_VUELTA_VACIA.forEach(function (p) { porcentajeVv.append($('<option></option>').val(p).text(p + ' %')); });
+            if (a.Porcentaje) porcentajeVv.val(String(Number(a.Porcentaje)));
+            var comentario = $('<input type="text" maxlength="200" class="form-control adic-comentario" aria-label="Comentario del adicional" autocomplete="off">')
+                .attr('placeholder', 'Comentario').val(a.Comentario || '');
+            var quitar = $('<button type="button" class="btn btn-outline-danger adic-quitar" data-bs-toggle="tooltip" title="Quitar adicional" aria-label="Quitar adicional">'
+                + '<i class="bi bi-trash" aria-hidden="true"></i></button>');
+            fila.append($('<div class="col-12 col-md-6"></div>').append(codigo))
+                .append($('<div class="col-4 col-md-2"></div>').append(cantidad, porcentajeVv))
+                .append($('<div class="col"></div>').append(comentario))
+                .append($('<div class="col-auto"></div>').append(quitar));
+            $('#listaAdicionales').append(fila);
+            ajustarFilaAdicional(fila);
+            return fila;
+        }
+        // La vuelta vacía lleva el porcentaje en lugar de la cantidad.
+        function ajustarFilaAdicional(fila) {
+            var vv = fila.find('.adic-codigo').val() === VUELTA_VACIA;
+            fila.find('.adic-cantidad').toggleClass('d-none', vv);
+            fila.find('.adic-porcentaje').toggleClass('d-none', !vv);
+        }
+        function leerAdicionales() {
+            return $('#listaAdicionales .sgtl-adicional').toArray().map(function (el) {
+                var f = $(el), codigo = f.find('.adic-codigo').val();
+                if (!codigo) return null;
+                var vv = codigo === VUELTA_VACIA;
+                return {
+                    Codigo: codigo,
+                    Cantidad: vv ? 1 : (parseInt(f.find('.adic-cantidad').val(), 10) || 0),
+                    Porcentaje: vv ? Number(f.find('.adic-porcentaje').val()) : null,
+                    Comentario: (f.find('.adic-comentario').val() || '').trim()
+                };
+            }).filter(Boolean);
+        }
+        function estadiaModulos() {
+            if (clienteConPlataforma()) return estadiaPlataforma;
+            return leerAdicionales().reduce(function (total, a) {
+                var fijo = adicionalFijo(a.Codigo);
+                return total + (fijo ? fijo.modulos * Math.max(a.Cantidad, 0) : 0);
+            }, 0);
+        }
+        function vueltaVaciaPorcentaje() {
+            if (clienteConPlataforma()) return 0;
+            var vv = leerAdicionales().filter(function (a) { return a.Codigo === VUELTA_VACIA; })[0];
+            return vv ? vv.Porcentaje : 0;
+        }
+        // Marca debajo del campo lo que la API rechazaría (los mismos textos que TarifarioCalculo.LeerAdicionales). true si está bien.
+        function validarAdicionales() {
+            var bien = true, vueltas = 0;
+            $('#listaAdicionales .sgtl-adicional').each(function () {
+                var f = $(this), codigo = f.find('.adic-codigo'), cantidad = f.find('.adic-cantidad');
+                SGTL.limpiarError(codigo[0]);
+                SGTL.limpiarError(cantidad[0]);
+                if (!codigo.val()) { SGTL.marcarError(codigo[0], 'Adicional sin elegir: elegí uno o quitá la fila.'); bien = false; return; }
+                if (codigo.val() === VUELTA_VACIA) {
+                    if (++vueltas > 1) { SGTL.marcarError(codigo[0], 'Vuelta vacía repetida: va una sola por viaje.'); bien = false; }
+                    return;
+                }
+                var n = parseInt(cantidad.val(), 10);
+                if (!(n >= 1 && n <= 99) || !/^\d+$/.test((cantidad.val() || '').trim())) {
+                    SGTL.marcarError(cantidad[0], 'Cantidad de 1 a 99.'); bien = false;
+                }
+            });
+            if (bien && estadiaModulos() > 99) {
+                SGTL.marcarError($('#listaAdicionales .adic-codigo').last()[0], 'Adicionales de más: suman ' + estadiaModulos() + ' módulos y el máximo es 99.');
+                bien = false;
+            }
+            return bien;
+        }
+        // Al abrir un viaje: la lista guardada o, si es de antes y tiene módulos de estadía, una "Estadía".
+        function cargarAdicionales(v) {
+            $('#listaAdicionales').empty();
+            estadiaPlataforma = v && v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0;
+            var lista = [];
+            try { lista = v && v.Adicionales ? JSON.parse(v.Adicionales) : []; } catch (e) { lista = []; }
+            if (!lista.length && estadiaPlataforma > 0) lista = [{ Codigo: 'estadia', Cantidad: estadiaPlataforma }];
+            lista.forEach(agregarFilaAdicional);
+        }
 
         // La tabla de tarifas que vale en una fecha (AAAA-MM-DD) para el cliente del viaje (la propia o la general), para el
         // viaje sin carga, la estadía y su ayuda.
@@ -964,17 +1080,19 @@
         }
         function actualizarAyudaAdicionales() {
             tarifarioVigente(fechaInicioViaje()).then(function (t) {
-                $('#estadiaAyuda').text(t ? 'Módulo de ' + t.Estadia_Horas_Modulo + ' hs: ' + SGTL.monto(t.Estadia_Modulo) + '. Corre después de '
-                    + t.Estadia_Desde_Horas + ' hs de iniciado el servicio (' + t.Estadia_Desde_Horas_Larga + ' hs si son más de ' + t.Km_Banda3 + ' km).' : '');
+                $('#estadiaAyuda').text(t ? 'Módulo de ' + t.Estadia_Horas_Modulo + ' hs: ' + SGTL.monto(t.Estadia_Modulo) + '. La espera corre después de '
+                    + t.Estadia_Desde_Horas + ' hs de iniciado el servicio (' + t.Estadia_Desde_Horas_Larga + ' hs si son más de ' + t.Km_Banda3
+                    + ' km). La vuelta vacía es un porcentaje del flete.' : 'La vuelta vacía es un porcentaje del flete.');
             });
         }
 
-        // El importe del viaje: la base y, si hay, sin carga (lo pone el estado) y estadía. Va en la línea de la tarifa o, si la
-        // tarifa ya quedó fija, en el dato fijo del bloque.
+        // El importe del viaje: la base y, si hay, sin carga (lo pone el estado), los adicionales en módulos y la vuelta vacía (el
+        // mismo cálculo que TarifarioCalculo.SumarAdicionales). Va en la línea de la tarifa o, si la tarifa ya quedó fija, en el
+        // dato fijo del bloque.
         var sinCargaGuardado = false;
         function mostrarImporte() {
             if (!baseTarifa) return;
-            var base = baseTarifa, falso = sinCargaGuardado, modulos = estadiaModulos();
+            var base = baseTarifa, falso = sinCargaGuardado, modulos = estadiaModulos(), vacia = vueltaVaciaPorcentaje();
             var pintar = function (t) {
                 var total = Number(base.importe), partes = [];
                 if (falso) {
@@ -984,8 +1102,13 @@
                 }
                 if (modulos > 0) {
                     var estadia = redondear(t.Estadia_Modulo * modulos);
-                    partes.push('estadía (' + modulos + (modulos === 1 ? ' módulo' : ' módulos') + '): ' + SGTL.monto(estadia));
+                    partes.push('adicionales (' + textoModulos(modulos) + '): ' + SGTL.monto(estadia));
                     total = redondear(total + estadia);
+                }
+                if (vacia > 0) {
+                    var vuelta = redondear(base.importe * vacia / 100);
+                    partes.push('vuelta vacía (' + porcentaje(vacia) + '): ' + SGTL.monto(vuelta));
+                    total = redondear(total + vuelta);
                 }
                 // "$ 483.898,00 sin IVA · Tarifas … · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ 645.535,00 · sin carga
                 // (60 %): …" (M15 de la prueba en la VM del 25/10).
@@ -998,7 +1121,7 @@
             tarifarioVigente(fecha).then(function (t) {
                 if (base !== baseTarifa) return;
                 if (t) { pintar(t); return; }
-                var aviso = 'No hay una tabla de tarifas vigente el ' + SGTL.fecha(fecha) + ' para calcular el viaje sin carga y la estadía. Cargala en ' + ENLACE_TARIFAS + '.';
+                var aviso = 'No hay una tabla de tarifas vigente el ' + SGTL.fecha(fecha) + ' para calcular el viaje sin carga y los adicionales. Cargala en ' + ENLACE_TARIFAS + '.';
                 if (rutaFija()) $('#fijoTarifa').html(aviso); else setTarifaInfo(aviso, 'falta');
             });
         }
@@ -1195,8 +1318,8 @@
             // Directo: el chofer recibe la hoja de ruta por WhatsApp al registrar el viaje.
             $('#choferRequerido').text(conPlataforma ? '(opcional)' : '*').toggleClass('text-muted fw-normal', conPlataforma).toggleClass('text-danger', !conPlataforma);
             reglasViaje.chofer.requerido = conPlataforma ? '' : 'Seleccioná un chofer.';
-            // Con plataforma los adicionales (estadía, peajes) vienen de Rukas: no se cargan en el viaje.
-            $('#grupoEstadia').toggleClass('d-none', conPlataforma && estadiaModulos() === 0);
+            // Con plataforma los adicionales vienen de Rukas: no se cargan en el viaje (Rocío, 28/10).
+            $('#grupoEstadia').toggleClass('d-none', conPlataforma);
             // Si ya estaba marcado (por ejemplo, después de Guardar), se vuelve a mirar con la regla nueva: un chofer
             // opcional no queda en rojo (reporte de la VM del 23/10, F3).
             if (formularioViaje && $('#choferBuscar').hasClass('is-invalid')) formularioViaje.validar('choferBuscar');
@@ -1487,9 +1610,9 @@
             if (viajeBloqueado) {
                 var plataforma = clienteConPlataforma();
                 if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
-                // También se carga la estadía (§34; M16 de la prueba en la VM del 25/10). Sin carga es un estado.
+                // También se cargan los adicionales de un directo (Rocío, 28/10; antes, la estadía). Sin carga es un estado.
                 else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
-                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito') + ' y la estadía'
+                    + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito y los adicionales')
                     + (estado === 'En_viaje' ? ', y se puede cambiar el camión o el chofer. Si cambia el recorrido, registrá otro viaje.' : '.');
             } else if (presupuestoDelViaje) {
                 tipo = 'info';
@@ -1514,7 +1637,7 @@
             $('#precioRevisarViaje').empty();
             baseTarifa = null;
             sinCargaGuardado = false;
-            $('#estadiaModulos').val('0');
+            cargarAdicionales(null);
             bloquearDatosDelViaje(null);
             $('#origenSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
             $('#destinoSelect').prop('disabled', true).html('<option value="">Elegí el cliente</option>');
@@ -1598,7 +1721,7 @@
                             });
                         }
                         sinCargaGuardado = !!v.Falso_Flete;
-                        $('#estadiaModulos').val(v.Estadia_Modulos > 0 ? v.Estadia_Modulos : 0);
+                        cargarAdicionales(v);
                         viajeEditado = { ChoferID: v.ChoferID, CamionID: v.CamionID, OrigenID: v.OrigenID, DestinoID: v.DestinoID, inicio: $('#fechaInicio').val() };
                         bloquearDatosDelViaje(v);
                         setTarifaInfo('Buscando la tarifa…');
@@ -1647,7 +1770,11 @@
                 Vuelta: null,
                 // Sin carga lo pone el estado: la API conserva el guardado.
                 Falso_Flete: sinCargaGuardado,
+                // Adicionales (Rocío, 28/10): la API recalcula los módulos y la vuelta vacía con la lista. Con plataforma no van
+                // (vienen de Rukas) y se conserva la estadía que el viaje ya tenía.
                 Estadia_Modulos: estadiaModulos(),
+                Adicionales: clienteConPlataforma() ? null : JSON.stringify(leerAdicionales()),
+                Vuelta_Vacia_Porcentaje: vueltaVaciaPorcentaje() || null,
                 ClienteID: parseInt($('#clienteSelect').val()) || 0,
                 Usu_Alta: usuarioActual(),
                 Usu_Modi: usuarioActual()
@@ -1723,7 +1850,6 @@
             camion: { id: 'camionSelect', requerido: 'Seleccioná un camión.', validar: function () { return ocupado.CamionID; } },
             chofer: { id: 'choferBuscar', requerido: 'Seleccioná un chofer.', validar: function () { return $('#choferSelect').val() ? ocupado.ChoferID : 'Elegí un chofer de la lista.'; } },
             km: { id: 'kmManual', validar: function (valor) { return kmNumero(valor) > 0 ? '' : 'Escribí los km con números, por ejemplo 146,8.'; } },
-            estadia: { id: 'estadiaModulos', soloNumeros: true, max: 2 },
             motivo: { id: 'motivoKmManual', requerido: '' },
             motivoAsignacion: { id: 'motivoAsignacion', requerido: '' }
         };
@@ -1746,6 +1872,7 @@
             reglasViaje.motivoAsignacion.requerido = cambioAsignacionEnViaje() ? 'Completá el motivo.' : '';
             formularioViaje.validarTodo();
             validarTarifa();
+            if (!clienteConPlataforma()) validarAdicionales();
             if (!SGTL.revisarFormulario('#FormAltaViaje', '#alertaCompletaCampos')) {
                 // El foco va al primer campo marcado; si es un buscador, sin abrir su lista encima de los demás errores.
                 var activo = document.activeElement;
@@ -2254,7 +2381,20 @@
             $('input[name="tipoTarifa"]').on('change', function () { limpiarErrorTarifa(); resolverTarifa(); });
             // Tabla de tarifas: el camión (tipo y año del modelo) cambia la tarifa. Y puede estar ocupado (§43).
             $('#camionSelect').on('change', function () { if (tarifaEditable()) resolverTarifa(); revisarOcupado(); actualizarMotivoAsignacion(); });
-            $('#estadiaModulos').on('input', mostrarImporte);
+            // Adicionales: agregar, cambiar y quitar recalculan el importe; el error de la fila se va al corregirla.
+            $('#btnAgregarAdicional').on('click', function () { agregarFilaAdicional().find('.adic-codigo').trigger('focus'); });
+            $('#listaAdicionales')
+                .on('change input', '.adic-codigo, .adic-cantidad, .adic-porcentaje', function () {
+                    var fila = $(this).closest('.sgtl-adicional');
+                    ajustarFilaAdicional(fila);
+                    SGTL.limpiarError(this);
+                    mostrarImporte();
+                })
+                .on('click', '.adic-quitar', function () {
+                    $('.tooltip').remove();
+                    $(this).closest('.sgtl-adicional').remove();
+                    mostrarImporte();
+                });
             $('#confirmarBtn').on('click', function (e) { e.preventDefault(); guardarViaje(); });
             // gestion-viajes.html?viaje=ID abre ese viaje para editar (enlace "Abrir viaje" del control de proforma de plataforma).
             var viajeEnUrl = parseInt(new URLSearchParams(window.location.search).get('viaje'), 10);

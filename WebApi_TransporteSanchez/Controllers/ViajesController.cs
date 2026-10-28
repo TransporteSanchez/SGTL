@@ -60,6 +60,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
+            // Adicionales de un viaje directo (Rocío, 28/10; database/viajes/04, fuera del EDMX): la lista en JSON, para verla y
+            // editarla, y la vuelta vacía. La API recalcula Estadia_Modulos (los módulos de los fijos) con la lista.
+            public string Adicionales { get; set; }
+            public decimal? Vuelta_Vacia_Porcentaje { get; set; }
 
             // Solo lectura: el importe que el viaje guardó al calcular su tarifa (lo usan proformas y dashboard).
             public decimal? Importe_Base { get; set; }
@@ -139,6 +143,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
+            public string Adicionales { get; set; }
+            public decimal? Vuelta_Vacia_Porcentaje { get; set; }
             public decimal? Importe_Base { get; set; }
             public string Tarifa_Detalle { get; set; }
             public decimal? Importe { get; set; }
@@ -221,7 +227,7 @@ namespace WebApi_TransporteSanchez.Controllers
             "SELECT v.Viaje_ID, v.Fecha_Inicio, v.Fecha_Fin, ISNULL(o.Descripcion,'') AS Origen, ISNULL(d.Descripcion,'') AS Destino, " +
             "RTRIM(ISNULL(v.Num_Remito,'')) AS Num_Remito, RTRIM(ISNULL(v.Num_de_Carga,'')) AS Num_de_Carga, RTRIM(ISNULL(v.Num_Transporte,'')) AS Num_Transporte, " +
             "RTRIM(ISNULL(v.Distancia_KM,'')) AS Distancia_KM, v.OrigenID, v.DestinoID, v.ChoferID, v.CamionID, v.ClienteID, ISNULL(c.Razon_Social,'') AS Cliente, " +
-            "v.TarifarioID, v.Tarifa_Modo, v.Vuelta, v.Estadia_Modulos, v.Falso_Flete, v.Importe_Base, v.Tarifa_Detalle, " +
+            "v.TarifarioID, v.Tarifa_Modo, v.Vuelta, v.Estadia_Modulos, v.Falso_Flete, v.Adicionales, v.Vuelta_Vacia_Porcentaje, v.Importe_Base, v.Tarifa_Detalle, " +
             "v.Importe, v.Importe_Detalle, v.Estado, v.Resultado_Entrega, v.Fecha_Entrega, " +
             "ISNULL(c.Tipo_Cliente,'Directo') AS Tipo_Cliente, " +
             "CAST(CASE WHEN EXISTS (SELECT 1 FROM VIAJE_EVIDENCIA e WHERE e.Viaje_ID = v.Viaje_ID) THEN 1 ELSE 0 END AS bit) AS Tiene_Evidencia, " +
@@ -387,6 +393,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public int? Vuelta { get; set; }
             public int Estadia_Modulos { get; set; }
             public bool Falso_Flete { get; set; }
+            public string Adicionales { get; set; }
+            public decimal? Vuelta_Vacia_Porcentaje { get; set; }
             public decimal? Importe_Base { get; set; }
             public string Tarifa_Detalle { get; set; }
         }
@@ -394,7 +402,8 @@ namespace WebApi_TransporteSanchez.Controllers
         private static TarifaGuardadaRow TarifaGuardada(DbContext db, int id)
         {
             return db.Database.SqlQuery<TarifaGuardadaRow>(
-                "SELECT TarifarioID, Tarifa_Modo, Vuelta, Estadia_Modulos, Falso_Flete, Importe_Base, Tarifa_Detalle FROM VIAJES WHERE Viaje_ID=@id",
+                "SELECT TarifarioID, Tarifa_Modo, Vuelta, Estadia_Modulos, Falso_Flete, Adicionales, Vuelta_Vacia_Porcentaje, Importe_Base, Tarifa_Detalle " +
+                "FROM VIAJES WHERE Viaje_ID=@id",
                 P("@id", id)).FirstOrDefault() ?? new TarifaGuardadaRow();
         }
 
@@ -441,7 +450,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 Km = KmDecimal(v.Distancia_KM),
                 Vuelta = v.Vuelta,
                 FalsoFlete = v.Falso_Flete,
-                EstadiaModulos = v.Estadia_Modulos
+                EstadiaModulos = v.Estadia_Modulos,
+                VueltaVaciaPorcentaje = v.Vuelta_Vacia_Porcentaje ?? 0m
             };
             if (recalcularBase || !guardada.Importe_Base.HasValue)
                 return TarifarioCalculo.Calcular(db, pedido);
@@ -460,7 +470,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static bool CambianAdicionales(TarifaGuardadaRow guardada, ViajeDto nuevo)
         {
-            return guardada.Falso_Flete != nuevo.Falso_Flete || guardada.Estadia_Modulos != nuevo.Estadia_Modulos;
+            return guardada.Falso_Flete != nuevo.Falso_Flete || guardada.Estadia_Modulos != nuevo.Estadia_Modulos
+                || (guardada.Vuelta_Vacia_Porcentaje ?? 0m) != (nuevo.Vuelta_Vacia_Porcentaje ?? 0m);
         }
 
         // Con lo que queda en el viaje: los datos nuevos donde se pueden cambiar y los guardados donde no.
@@ -478,7 +489,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 Tarifa_Modo = tarifaEditable ? nuevo.Tarifa_Modo : guardada.Tarifa_Modo,
                 Vuelta = tarifaEditable ? nuevo.Vuelta : guardada.Vuelta,
                 Falso_Flete = nuevo.Falso_Flete,
-                Estadia_Modulos = nuevo.Estadia_Modulos
+                Estadia_Modulos = nuevo.Estadia_Modulos,
+                Adicionales = nuevo.Adicionales,
+                Vuelta_Vacia_Porcentaje = nuevo.Vuelta_Vacia_Porcentaje
             };
         }
 
@@ -491,11 +504,11 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             db.Database.ExecuteSqlCommand(
                 "UPDATE VIAJES SET TarifarioID=@t, Tarifa_Modo=@modo, Vuelta=@vuelta, Estadia_Modulos=@est, Falso_Flete=@ff, Importe_Base=@base, " +
-                "Tarifa_Detalle=@tdet, Importe=@imp, Importe_Detalle=@idet WHERE Viaje_ID=@id",
+                "Tarifa_Detalle=@tdet, Importe=@imp, Importe_Detalle=@idet, Adicionales=@adic, Vuelta_Vacia_Porcentaje=@vv WHERE Viaje_ID=@id",
                 P("@t", r.TarifarioID), P("@modo", r.TarifarioID.HasValue ? Modo(v.Tarifa_Modo) : null),
                 P("@vuelta", r.AplicaVuelta ? r.Vuelta : null), P("@est", v.Estadia_Modulos),
                 P("@ff", v.Falso_Flete), P("@base", r.ImporteBase), P("@tdet", r.TarifaDetalle), P("@imp", r.Importe),
-                P("@idet", r.ImporteDetalle), P("@id", id));
+                P("@idet", r.ImporteDetalle), P("@adic", v.Adicionales), P("@vv", v.Vuelta_Vacia_Porcentaje), P("@id", id));
         }
 
         // ===================== Precio por orden del día (§43, OrdenDelDia) =====================
@@ -625,6 +638,16 @@ namespace WebApi_TransporteSanchez.Controllers
         private static string TipoCliente(DbContext db, int clienteId)
         {
             return db.Database.SqlQuery<string>("SELECT ISNULL(Tipo_Cliente,'Directo') FROM CLIENTES WHERE Cliente_ID=@id", P("@id", clienteId)).FirstOrDefault();
+        }
+
+        // Con plataforma los adicionales vienen de Rukas (el Excel de la proforma): el viaje no los lleva (Rocío, 28/10). Los
+        // módulos de estadía que un viaje de antes ya tenía, sin la lista, se conservan.
+        private static List<object> ValidarAdicionales(DbContext db, ViajeDto v)
+        {
+            var errores = new List<object>();
+            if ((!string.IsNullOrEmpty(v.Adicionales) || (v.Vuelta_Vacia_Porcentaje ?? 0m) > 0) && EsConPlataforma(TipoCliente(db, v.ClienteID)))
+                errores.Add(new { PropertyName = "Adicionales", ErrorMessage = "Adicionales de más: los de un cliente con plataforma vienen de Rukas." });
+            return errores;
         }
 
         // Directo: SGTL le envia la hoja de ruta al chofer por WhatsApp. Con plataforma el chofer puede asignarse despues.
@@ -1062,7 +1085,8 @@ SELECT CAST(CASE WHEN EXISTS (
             // El importe con el porcentaje de la tabla (o completo, si vuelve atrás); la base y la estadía no cambian.
             var viaje = db.Set<VIAJES>().Find(id);
             var guardada = TarifaGuardada(db, id);
-            var datos = DatosParaImporte(viaje, new ViajeDto { Falso_Flete = sinCarga, Estadia_Modulos = guardada.Estadia_Modulos }, guardada, false);
+            var datos = DatosParaImporte(viaje, new ViajeDto { Falso_Flete = sinCarga, Estadia_Modulos = guardada.Estadia_Modulos,
+                Adicionales = guardada.Adicionales, Vuelta_Vacia_Porcentaje = guardada.Vuelta_Vacia_Porcentaje }, guardada, false);
             var calculo = CalcularImporte(db, id, datos, guardada, false);
             if (!calculo.Ok) return Content(HttpStatusCode.BadRequest, ErrorTarifa(calculo));
 
@@ -1339,6 +1363,8 @@ SELECT CAST(CASE WHEN EXISTS (
                         dto.Vuelta = est.Vuelta;
                         dto.Estadia_Modulos = est.Estadia_Modulos;
                         dto.Falso_Flete = est.Falso_Flete;
+                        dto.Adicionales = est.Adicionales;
+                        dto.Vuelta_Vacia_Porcentaje = est.Vuelta_Vacia_Porcentaje;
                         dto.Importe_Base = est.Importe_Base;
                         dto.Tarifa_Detalle = est.Tarifa_Detalle;
                         dto.Importe = est.Importe;
@@ -1385,6 +1411,8 @@ SELECT CAST(CASE WHEN EXISTS (
                     {
                         return Content(HttpStatusCode.BadRequest, erroresChofer);
                     }
+                    var erroresAdicionales = ValidarAdicionales(db, viajeDto);
+                    if (erroresAdicionales.Any()) return Content(HttpStatusCode.BadRequest, erroresAdicionales);
 
                     var ocupado = Ocupacion.Errores(db, viajeDto.CamionID, viajeDto.ChoferID, viajeDto.Fecha_Inicio, viajeDto.Fecha_Fin, 0, 0);
                     if (ocupado.Any())
@@ -1496,6 +1524,9 @@ SELECT CAST(CASE WHEN EXISTS (
                 {
                     return NotFound();
                 }
+
+                var erroresAdicionales = ValidarAdicionales(db, viajeDto);
+                if (erroresAdicionales.Any()) return Content(HttpStatusCode.BadRequest, erroresAdicionales);
 
                 if (EstaVinculadoAProformaFacturada(db, id))
                 {
@@ -1834,8 +1865,27 @@ SELECT CAST(CASE WHEN EXISTS (
                 errores.Add(new { PropertyName = "Tarifa", ErrorMessage = "Elegí la tarifa: fija o por km." });
             if (v.Vuelta.HasValue && v.Vuelta.Value != 1 && v.Vuelta.Value != 2)
                 errores.Add(new { PropertyName = "Vuelta", ErrorMessage = "La vuelta tiene que ser la 1ª o la 2ª." });
+            // Adicionales (Rocío, 28/10): lo que cuenta para el importe sale de la lista, no de lo que mande la pantalla. Sin lista
+            // (una pantalla de antes) quedan los módulos de estadía que lleguen y sin vuelta vacía.
+            if (v.Adicionales != null)
+            {
+                string normalizado;
+                int modulos;
+                decimal? vueltaVacia;
+                var errorAdicionales = TarifarioCalculo.LeerAdicionales(v.Adicionales, out normalizado, out modulos, out vueltaVacia);
+                if (errorAdicionales != null)
+                    errores.Add(new { PropertyName = "Adicionales", ErrorMessage = errorAdicionales });
+                else
+                {
+                    v.Adicionales = normalizado;
+                    v.Estadia_Modulos = modulos;
+                    v.Vuelta_Vacia_Porcentaje = vueltaVacia;
+                }
+            }
+            else
+                v.Vuelta_Vacia_Porcentaje = null;
             if (v.Estadia_Modulos < 0 || v.Estadia_Modulos > TarifarioCalculo.MaxEstadiaModulos)
-                errores.Add(new { PropertyName = "Estadia_Modulos", ErrorMessage = "Los módulos de estadía tienen que ser entre 0 y " + TarifarioCalculo.MaxEstadiaModulos + "." });
+                errores.Add(new { PropertyName = "Adicionales", ErrorMessage = "Adicionales de más: el máximo es " + TarifarioCalculo.MaxEstadiaModulos + " módulos." });
 
             return errores;
         }

@@ -45,13 +45,25 @@
     return listas;
   }
 
-  // Importe del viaje: el que guardó al calcular su tarifa con la tabla de tarifas (con el viaje sin carga y la estadía).
+  // Importe del viaje: el que guardó al calcular su tarifa con la tabla de tarifas (con el viaje sin carga y los adicionales).
   function importe(v) {
     if (v.Importe == null) return Promise.resolve(null);
-    var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0;
+    var conAdicionales = v.Falso_Flete || v.Estadia_Modulos > 0 || v.Vuelta_Vacia_Porcentaje > 0;
     return Promise.resolve({ importe: v.Importe, detalle: (conAdicionales ? v.Importe_Detalle : v.Tarifa_Detalle) || 'tarifa guardada' });
   }
 
+
+  // Los adicionales de un viaje directo (Rocío, 28/10), con la lista que guardó la API (VIAJES.Adicionales).
+  function adicionales(v) {
+    var lista = [];
+    try { lista = v.Adicionales ? JSON.parse(v.Adicionales) : []; } catch (e) { lista = []; }
+    if (!lista.length) return '';
+    return dato('Adicionales', lista.map(function (a) {
+      var que = a.Porcentaje ? (a.Nombre || 'Vuelta vacía') + ' (' + Number(a.Porcentaje).toLocaleString('es-AR') + ' % del flete)'
+        : (a.Nombre || a.Codigo) + (a.Cantidad > 1 ? ' × ' + a.Cantidad : '');
+      return '<div>' + esc(que) + (a.Comentario ? ' <span class="suave">· ' + esc(a.Comentario) + '</span>' : '') + '</div>';
+    }).join(''));
+  }
 
   function direccion(o) {
     if (!o) return '';
@@ -120,7 +132,7 @@
       par(dato('Camión', camion ? texto(camion.Dominio) : (v.CamionID > 0 ? 'Camión #' + esc(v.CamionID) : '—')),
         dato('Chofer', chofer ? esc(((chofer.Nombre || '').trim() + ' ' + (chofer.Apellido || '').trim()).trim()) : (v.ChoferID > 0 ? 'Chofer #' + esc(v.ChoferID) : 'Sin asignar')));
     var tarifa = dato('Importe', imp ? '<strong>' + esc(SGTL.monto(imp.importe)) + '</strong> <span class="suave">sin IVA · ' + esc(imp.detalle) + '</span>'
-      : 'Sin tarifa asignada.') +
+      : 'Sin tarifa asignada.') + adicionales(v) +
       // Precio por orden del día (§43): la línea y, si hay otro viaje de ese cliente y recorrido ese día, el bloque.
       '<div id="verViajeOrden"></div>';
 

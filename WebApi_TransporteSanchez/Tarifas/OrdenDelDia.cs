@@ -52,6 +52,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public string Km { get; set; }
             public bool Falso_Flete { get; set; }
             public int Estadia_Modulos { get; set; }
+            public decimal? Vuelta_Vacia_Porcentaje { get; set; }   // database/viajes/04
             public int? TarifarioID { get; set; }
             public string Datos { get; set; }              // JSON del presupuesto
 
@@ -252,7 +253,7 @@ SELECT N'Viaje' AS Clase, v.Viaje_ID AS Id, v.Fecha_Inicio AS Inicio, v.Vuelta, 
        doc.Proforma_ID, doc.Numero AS Proforma_Numero, doc.Estado AS Proforma_Estado, doc.Tipo_Proforma, doc.Precio_Linea,
        fac.Comprobante_ID, fac.Numero AS Comprobante_Numero,
        v.Importe, ISNULL(v.ClienteID, 0) AS ClienteID, ISNULL(v.CamionID, 0) AS CamionID, RTRIM(ISNULL(v.Distancia_KM, '')) AS Km,
-       ISNULL(v.Falso_Flete, 0) AS Falso_Flete, ISNULL(v.Estadia_Modulos, 0) AS Estadia_Modulos, v.TarifarioID,
+       ISNULL(v.Falso_Flete, 0) AS Falso_Flete, ISNULL(v.Estadia_Modulos, 0) AS Estadia_Modulos, v.Vuelta_Vacia_Porcentaje, v.TarifarioID,
        CAST(NULL AS nvarchar(max)) AS Datos, 0 AS VueltaNueva, CAST(0 AS bit) AS Este
 FROM dbo.VIAJES v
 OUTER APPLY (SELECT TOP (1) ps.Presupuesto_ID FROM dbo.PRESUPUESTOS ps
@@ -289,7 +290,8 @@ SELECT N'Presupuesto' AS Clase, ps.Presupuesto_ID AS Id,
        CAST(NULL AS nvarchar(30)) AS Tipo_Proforma, CAST(NULL AS decimal(18, 2)) AS Precio_Linea, CAST(NULL AS int) AS Comprobante_ID, CAST(NULL AS nvarchar(30)) AS Comprobante_Numero,
        TRY_CAST(JSON_VALUE(ps.Datos, '$.importe') AS decimal(18, 2)) AS Importe, @c AS ClienteID,
        ISNULL(TRY_CAST(JSON_VALUE(ps.Datos, '$.camionId') AS int), 0) AS CamionID, ISNULL(JSON_VALUE(ps.Datos, '$.distancia'), '') AS Km,
-       CAST(0 AS bit) AS Falso_Flete, 0 AS Estadia_Modulos, TRY_CAST(JSON_VALUE(ps.Datos, '$.tarifarioId') AS int) AS TarifarioID,
+       CAST(0 AS bit) AS Falso_Flete, 0 AS Estadia_Modulos, CAST(NULL AS decimal(5, 2)) AS Vuelta_Vacia_Porcentaje,
+       TRY_CAST(JSON_VALUE(ps.Datos, '$.tarifarioId') AS int) AS TarifarioID,
        ps.Datos, 0 AS VueltaNueva, CAST(0 AS bit) AS Este
 FROM dbo.PRESUPUESTOS ps
 WHERE ps.Estado = 'Aceptado' AND ps.ViajeID IS NULL AND ISJSON(ps.Datos) = 1 AND ps.Presupuesto_ID <> @sinPresupuesto
@@ -381,7 +383,8 @@ WHERE ps.Estado = 'Aceptado' AND ps.ViajeID IS NULL AND ISJSON(ps.Datos) = 1 AND
                 Km = Km(i.Km),
                 Vuelta = vuelta,
                 FalsoFlete = i.Falso_Flete,
-                EstadiaModulos = i.Estadia_Modulos
+                EstadiaModulos = i.Estadia_Modulos,
+                VueltaVaciaPorcentaje = i.Vuelta_Vacia_Porcentaje ?? 0m
             });
         }
 

@@ -201,7 +201,7 @@ namespace WebApi_TransporteSanchez.Controllers
         [Route("api/Tarifario/Calcular")]
         public IHttpActionResult Calcular(string tarifa, string fechaInicio, int camionId = 0, string km = null, int? vuelta = null,
             bool falsoFlete = false, int estadia = 0, int viajeId = 0, int clienteId = 0, int origenId = 0, int destinoId = 0,
-            bool presupuesto = false, int presupuestoId = 0)
+            bool presupuesto = false, int presupuestoId = 0, decimal vueltaVacia = 0m)
         {
             if (tarifa != "fija" && tarifa != "km")
                 return BadRequest("Elegí la tarifa: fija o por km.");
@@ -226,7 +226,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 Km = kmPedido,
                 Vuelta = null,
                 FalsoFlete = falsoFlete,
-                EstadiaModulos = estadia
+                EstadiaModulos = estadia,
+                // La vuelta vacía de un viaje directo, un porcentaje del flete (Rocío, 28/10).
+                VueltaVaciaPorcentaje = vueltaVacia
             };
 
             try

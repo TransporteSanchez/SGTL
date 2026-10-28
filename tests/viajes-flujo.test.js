@@ -146,7 +146,7 @@ assert.ok(/string anterior = conPlataforma \? EstadoRegistrado : EstadoEnViaje;/
     '10: desde En viaje (con plataforma, desde Registrado) y vuelve al de antes');
 assert.ok(/"La fecha no puede ser posterior a hoy\."/.test(sinCargaApi) && /"La fecha no puede ser anterior al inicio del viaje\."/.test(sinCargaApi),
     '10: la fecha entre el inicio y hoy');
-assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),
+assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos,\s*Adicionales = guardada\.Adicionales, Vuelta_Vacia_Porcentaje = guardada\.Vuelta_Vacia_Porcentaje \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),
     '10: se cobra el porcentaje de la tabla (y completo si vuelve atrás)');
 assert.ok(/viajeDto\.Falso_Flete = TarifaGuardada\(db, id\)\.Falso_Flete;/.test(put) && /viajeDto\.Falso_Flete = false;/.test(api),
     '10: el formulario ya no lo marca: lo pone el estado');

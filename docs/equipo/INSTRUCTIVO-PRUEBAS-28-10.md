@@ -10,6 +10,8 @@ reporte de prueba** (Rocío, 28/10):
   §41, puntos 12 a 14), el tiempo estimado de Google (§41, punto 36), la hoja de ruta del chofer (§36 y §41, puntos 4,
   30, 31, 33 y 35), el control interno y el galpón (§37 y §41, punto 28), las dos mejoras de cuenta corriente (§29) y los
   arreglos de la demo (§38).
+- **Los adicionales del viaje directo** (esperas, descarga, repaletizado y vuelta vacía, como en Rukas; §60), hechos
+  la noche del 28/10 para mostrarlos el 29/10: ronda 2, parte Q.
 
 **Queda afuera:** la parte C de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (lo que ya vio el cliente, tanda 2 de la §39),
 que espera la limpieza y los documentos de demo de la §38.
@@ -32,7 +34,7 @@ cambiarlo). Si una ronda no termina en una sesión, el reporte dice hasta dónde
 | Ronda | Partes | Toca la base |
 |---|---|---|
 | 1 | A (compilación y pruebas automáticas), B (login, sesión y recupero), C (usuarios, grupos, permisos y el usuario del chofer) | Usuarios, un grupo y un chofer de prueba |
-| 2 | K (flujo de viajes), L (precio por orden del día y ocupados), M (tarifas: textos y avisos; tiempo estimado) | Viajes y presupuestos de prueba; corrige la tabla de prueba |
+| 2 | K (flujo de viajes), L (precio por orden del día y ocupados), M (tarifas: textos y avisos; tiempo estimado), Q (adicionales del viaje) | Viajes y presupuestos de prueba; corrige la tabla de prueba |
 | 3 | E (tipos de comprobante), F (cuenta corriente), G (proformas), P (lo que quedó de cuenta corriente y de la demo) | **Emite comprobantes y cambia la configuración de facturación: con OK de Rocío** |
 | 4 | N (hoja de ruta del chofer), O (control interno y galpón) | Viajes de prueba, gastos y un cambio de galpón que se anula al final |
 | 5 | D (orden de las tablas), H (cruces), I (recorrida general) | Casi nada (lo de H, con OK de Rocío) |
@@ -59,6 +61,9 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
   nuestros del 24 al 27/10 que necesitan las rondas 2 y 4 (filas 15 a 20: `tarifas/02`, `05` y `06`, `tableros/01` y
   `costos/01` y `02`). Si alguno dice "Falta correrlo", se corre como dice su encabezado, **antes de recompilar**. Al
   28/10 están todos corridos (`tarifas/06` y `costos/02`, ese mismo día).
+- **Adicionales del viaje (§60, la noche del 28/10):** `database/viajes/04_adicionales_del_viaje.sql`, fila 21 del
+  diagnóstico. **Se corre antes de recompilar** (primero con `@Aplicar = 0`, después con `1`; al final, "OK" en las dos):
+  la API nueva lee `VIAJES.Vuelta_Vacia_Porcentaje` y `VIAJES.Adicionales`, y sin ellas Gestionar viajes no carga.
 - **§43, paso 1 (hecho el 28/10):** `database/tarifas/07_relevar_vueltas_por_recorrido.sql` dio un solo caso, el viaje
   #40 (Servicios Ambientales S.A.), guardado como 2ª vuelta y que con la regla nueva es 1ª. Rocío lo edita y lo guarda
   después de recompilar: pasa a 1ª y cambia su importe. Si en la ronda 2 aparece con otro importe que antes, es eso y no
@@ -331,6 +336,17 @@ lo que crees, para la limpieza). Con tarifa fija y recorridos de hasta 130 km pa
    la sección 0.
 3. Montos: escribir "12x" en un monto de Gestionar tarifas y en uno de cuenta corriente → "Escribí el importe como
    1.234,56." debajo, sin borrar lo escrito (F5 de la tanda 1).
+
+### Parte Q — Adicionales del viaje de un cliente directo (§60)
+
+Es lo que se muestra el 29/10: si la ronda 2 no termina, **esta parte va antes que la K, la L y la M**.
+
+1. **§60, "Cómo probarlo en la VM", pasos 2 a 9** (el 1 es el script de la sección 0).
+2. Además: doble clic en Guardar con adicionales (un solo PUT); cancelar el modal después de agregar uno (no se guarda);
+   un comentario de más de 200 caracteres (el campo no deja escribir más); los textos de la lista y de la ayuda, con
+   voseo y sin inglés.
+3. **[cruce]** El viaje con adicionales en Listar viajes → Ver detalle (igual que en Gestionar viajes) y, en el mismo
+   detalle, el margen estimado del control interno calculado con el importe nuevo.
 
 ---
 

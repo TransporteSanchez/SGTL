@@ -53,6 +53,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int? Vuelta_Nueva { get; set; }
             public bool Falso_Flete { get; set; }
             public int Estadia_Modulos { get; set; }
+            public decimal? Vuelta_Vacia_Porcentaje { get; set; }   // database/viajes/04
             public decimal? Importe { get; set; }
         }
 
@@ -146,7 +147,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             var viajes = db.Database.SqlQuery<ViajeAnulado>(
                 "SELECT r.Revisar_ID, v.Viaje_ID, ISNULL(v.ClienteID, 0) AS ClienteID, ISNULL(v.CamionID, 0) AS CamionID, v.Fecha_Inicio, " +
                 "RTRIM(ISNULL(v.Distancia_KM, '')) AS Distancia_KM, ISNULL(v.Tarifa_Modo, 'Fija') AS Tarifa_Modo, v.Vuelta, " +
-                ColumnaVueltaNueva(db) + " AS Vuelta_Nueva, v.Falso_Flete, v.Estadia_Modulos, v.Importe " +
+                ColumnaVueltaNueva(db) + " AS Vuelta_Nueva, v.Falso_Flete, v.Estadia_Modulos, v.Vuelta_Vacia_Porcentaje, v.Importe " +
                 "FROM dbo.TARIFARIO_REVISAR r JOIN dbo.VIAJES v ON v.Viaje_ID = r.Viaje_ID " +
                 "WHERE r.Proforma_ID = @p AND r.Tipo = N'Proforma' AND r.Resuelto_Fecha IS NULL", P("@p", proformaId)).ToList();
             var ahora = AhoraArgentina();
@@ -164,7 +165,8 @@ namespace WebApi_TransporteSanchez.Tarifas
                     Km = decimal.TryParse(v.Distancia_KM.Replace(',', '.'), NumberStyles.Number, CultureInfo.InvariantCulture, out km) ? km : (decimal?)null,
                     Vuelta = v.Vuelta_Nueva ?? v.Vuelta,
                     FalsoFlete = v.Falso_Flete,
-                    EstadiaModulos = v.Estadia_Modulos
+                    EstadiaModulos = v.Estadia_Modulos,
+                    VueltaVaciaPorcentaje = v.Vuelta_Vacia_Porcentaje ?? 0m
                 });
                 string como;
                 if (r.Ok)

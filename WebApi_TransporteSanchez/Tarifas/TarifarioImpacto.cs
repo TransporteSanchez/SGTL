@@ -128,6 +128,7 @@ namespace WebApi_TransporteSanchez.Tarifas
             internal int? Vuelta;
             internal bool Falso_Flete;
             internal int Estadia_Modulos;
+            internal decimal? Vuelta_Vacia_Porcentaje;   // database/viajes/04
             internal decimal? Importe;
             internal string Tarifa_Detalle;
             internal string Importe_Detalle;
@@ -156,7 +157,7 @@ namespace WebApi_TransporteSanchez.Tarifas
 SELECT v.Viaje_ID, v.ClienteID, ISNULL(v.OrigenID, 0) AS OrigenID, ISNULL(v.DestinoID, 0) AS DestinoID,
        ISNULL(cl.Razon_Social, '') AS Cliente, ISNULL(v.CamionID, 0) AS CamionID, v.Fecha_Inicio,
        RTRIM(ISNULL(v.Distancia_KM, '')) AS Distancia_KM, v.TarifarioID, ISNULL(v.Tarifa_Modo, 'Fija') AS Tarifa_Modo, v.Vuelta,
-       v.Falso_Flete, v.Estadia_Modulos, v.Importe, v.Tarifa_Detalle, v.Importe_Detalle, ISNULL(v.Estado, '') AS Estado,
+       v.Falso_Flete, v.Estadia_Modulos, v.Vuelta_Vacia_Porcentaje, v.Importe, v.Tarifa_Detalle, v.Importe_Detalle, ISNULL(v.Estado, '') AS Estado,
        pr.Presupuesto_ID, doc.Proforma_ID, doc.Numero AS Proforma_Numero, doc.Estado AS Proforma_Estado, doc.Tipo_Proforma, doc.Precio_Linea,
        fac.Comprobante_ID, fac.Numero AS Comprobante_Numero
 FROM dbo.VIAJES v
@@ -350,6 +351,7 @@ WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
                 Vuelta = IntN(r, "Vuelta"),
                 Falso_Flete = Bool(r, "Falso_Flete"),
                 Estadia_Modulos = Convert.ToInt32(r["Estadia_Modulos"]),
+                Vuelta_Vacia_Porcentaje = DecN(r, "Vuelta_Vacia_Porcentaje"),
                 Importe = DecN(r, "Importe"),
                 Tarifa_Detalle = Str(r, "Tarifa_Detalle"),
                 Importe_Detalle = Str(r, "Importe_Detalle"),
@@ -378,7 +380,7 @@ WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
 
         // La base y los adicionales con la tabla t. Error: por qué no se puede calcular.
         private static TarifarioCalculo.Resultado CalcularCon(Tabla t, Camion camion, bool porKm, decimal? km, int? vueltaGuardada,
-            int vueltaSugerida, bool falsoFlete, int estadia, out string error)
+            int vueltaSugerida, bool falsoFlete, int estadia, decimal vueltaVacia, out string error)
         {
             error = null;
             if (camion == null) { error = "no tiene camión"; return null; }
@@ -391,7 +393,7 @@ WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
             if (!porKm && km.Value <= t.Datos.Km_Banda1)
                 vuelta = vueltaGuardada == 1 || vueltaGuardada == 2 ? vueltaGuardada : vueltaSugerida;
             var r = TarifarioCalculo.BaseConTabla(t.Datos, valores, camion.Tipo, nuevo, porKm, km.Value, vuelta);
-            return TarifarioCalculo.SumarAdicionales(r, falsoFlete || estadia > 0 ? t.Datos : null, falsoFlete, estadia);
+            return TarifarioCalculo.SumarAdicionales(r, falsoFlete || estadia > 0 ? t.Datos : null, falsoFlete, estadia, vueltaVacia);
         }
 
         // 2ª vuelta si el mismo cliente ya tiene otro viaje con el mismo origen y destino que empieza antes ese día (§43,
@@ -443,7 +445,8 @@ WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
             camiones.TryGetValue(v.CamionID, out Camion camion);
             string error;
             var calculo = CalcularCon(despues, camion, v.Tarifa_Modo == "Km", Km(v.Distancia_KM), v.Vuelta,
-                VueltaSugerida(salidas, v.ClienteID, v.OrigenID, v.DestinoID, v.Fecha_Inicio, v.Viaje_ID), v.Falso_Flete, v.Estadia_Modulos, out error);
+                VueltaSugerida(salidas, v.ClienteID, v.OrigenID, v.DestinoID, v.Fecha_Inicio, v.Viaje_ID), v.Falso_Flete, v.Estadia_Modulos,
+                v.Vuelta_Vacia_Porcentaje ?? 0m, out error);
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;
@@ -595,7 +598,7 @@ WHERE v.TarifarioID IS NOT NULL AND ISNULL(v.Estado, '') <> 'Cancelado'";
             string error;
             // El presupuesto guarda solo la base: sin falso flete ni estadía.
             var calculo = CalcularCon(despues, camion, (string)json["tipoTarifa"] == "km", km, vuelta,
-                VueltaSugerida(salidas, clienteId, origenId, destinoId, inicio, 0), false, 0, out error);
+                VueltaSugerida(salidas, clienteId, origenId, destinoId, inicio, 0), false, 0, 0m, out error);
             if (calculo == null)
             {
                 item.Grupo = NoSePuede;

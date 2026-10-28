@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -82,6 +83,8 @@ namespace WebApi_TransporteSanchez.Tarifas
             public int? Vuelta { get; set; }
             public bool FalsoFlete { get; set; }
             public int EstadiaModulos { get; set; }
+            // Vuelta vacía de un viaje directo: un porcentaje del flete (database/viajes/04); 0 si no tiene.
+            public decimal VueltaVaciaPorcentaje { get; set; }
         }
 
         public class Resultado
@@ -103,6 +106,8 @@ namespace WebApi_TransporteSanchez.Tarifas
             public decimal? FalsoFletePorcentaje { get; set; }
             public decimal Estadia { get; set; }
             public decimal? EstadiaModulo { get; set; }
+            public decimal VueltaVacia { get; set; }
+            public decimal? VueltaVaciaPorcentaje { get; set; }
             public decimal Importe { get; set; }
             public string ImporteDetalle { get; set; }
         }
@@ -252,25 +257,30 @@ namespace WebApi_TransporteSanchez.Tarifas
         {
             if (!r.Ok) return r;
             if (p.EstadiaModulos < 0 || p.EstadiaModulos > MaxEstadiaModulos)
-                return Falla("Los módulos de estadía tienen que ser entre 0 y " + MaxEstadiaModulos + ".");
+                return Falla("Los adicionales tienen que sumar entre 0 y " + MaxEstadiaModulos + " módulos.");
+            if (p.VueltaVaciaPorcentaje < 0 || p.VueltaVaciaPorcentaje > 100)
+                return Falla("El porcentaje de la vuelta vacía tiene que ser de 0 a 100.");
 
             Tarifario t = null;
             if (p.FalsoFlete || p.EstadiaModulos > 0)
             {
                 t = Vigente(db, p.FechaInicio, p.ClienteID);
                 if (t == null)
-                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el viaje sin carga y la estadía. Cargala en Gestionar tarifas.");
+                    return Falla("No hay una tabla de tarifas vigente el " + p.FechaInicio.ToString("dd/MM/yyyy") + " para calcular el viaje sin carga y los adicionales. Cargala en Gestionar tarifas.");
             }
-            return SumarAdicionales(r, t, p.FalsoFlete, p.EstadiaModulos);
+            return SumarAdicionales(r, t, p.FalsoFlete, p.EstadiaModulos, p.VueltaVaciaPorcentaje);
         }
 
-        // Falso flete y estadía con la tabla t (la vigente para el viaje; null si no tiene adicionales), sin leer la base.
-        public static Resultado SumarAdicionales(Resultado r, Tarifario t, bool falsoFlete, int estadiaModulos)
+        // Falso flete, los módulos de los adicionales fijos con la tabla t (la vigente para el viaje; null si no tiene ni falso
+        // flete ni módulos) y la vuelta vacía (un porcentaje del flete, no necesita la tabla), sin leer la base.
+        public static Resultado SumarAdicionales(Resultado r, Tarifario t, bool falsoFlete, int estadiaModulos, decimal vueltaVaciaPorcentaje = 0m)
         {
             r.FalsoFlete = 0;
             r.Estadia = 0;
             r.FalsoFletePorcentaje = null;
             r.EstadiaModulo = null;
+            r.VueltaVacia = 0;
+            r.VueltaVaciaPorcentaje = null;
             // "…, 1ª vuelta: $ 645.535,00 · sin carga (60 %): $ 387.321,00 · estadía (1 módulo): $ 96.577,00" (M15, 25/10; "sin
             // carga" en lugar de "falso flete", punto 10 de la §41).
             var detalle = r.TarifaDetalle + ": " + Pesos(r.ImporteBase);
@@ -289,7 +299,16 @@ namespace WebApi_TransporteSanchez.Tarifas
                 r.EstadiaModulo = t.Estadia_Modulo;
                 r.Estadia = Redondear(t.Estadia_Modulo * estadiaModulos);
                 importe += r.Estadia;
-                detalle += " · estadía (" + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + "): " + Pesos(r.Estadia);
+                // "adicionales" y no "estadía": desde el 28/10 los módulos son la espera, la descarga y el repaletizado.
+                detalle += " · adicionales (" + estadiaModulos + (estadiaModulos == 1 ? " módulo" : " módulos") + "): " + Pesos(r.Estadia);
+            }
+            if (vueltaVaciaPorcentaje > 0)
+            {
+                // Sobre el flete, como en Rukas: el importe de la tarifa (la base), no lo que queda con los otros adicionales.
+                r.VueltaVaciaPorcentaje = vueltaVaciaPorcentaje;
+                r.VueltaVacia = Redondear(r.ImporteBase * vueltaVaciaPorcentaje / 100m);
+                importe += r.VueltaVacia;
+                detalle += " · vuelta vacía (" + vueltaVaciaPorcentaje.ToString("0.##", EsAr) + " %): " + Pesos(r.VueltaVacia);
             }
 
             r.Importe = importe;
@@ -318,5 +337,94 @@ namespace WebApi_TransporteSanchez.Tarifas
         }
 
         private static Resultado Falla(string mensaje) { return new Resultado { Ok = false, Mensaje = mensaje }; }
+
+        // ===================== Adicionales del viaje de un cliente directo (Rocío, 28/10) =====================
+        // Los mismos que QUICKFOOD tiene en Rukas, con los mismos valores (docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md, paso 12):
+        // los fijos son módulos de estadía de la tabla de tarifas (la espera, por franja de horas: un módulo cada 6 hs) y la
+        // vuelta vacía es un porcentaje del flete, que elige administración tomando a Rukas como referencia. Para el importe
+        // cuentan el total de módulos (VIAJES.Estadia_Modulos) y el porcentaje (VIAJES.Vuelta_Vacia_Porcentaje); la lista
+        // (VIAJES.Adicionales, JSON) es para verla y editarla. La misma lista está en gestion-viajes.html (ADICIONALES).
+        public sealed class AdicionalFijo
+        {
+            public string Codigo;
+            public string Nombre;
+            public int Modulos;
+            public AdicionalFijo(string codigo, string nombre, int modulos) { Codigo = codigo; Nombre = nombre; Modulos = modulos; }
+        }
+
+        public static readonly AdicionalFijo[] AdicionalesFijos =
+        {
+            new AdicionalFijo("espera_1_6", "Espera entre 1 y 6 hs", 1),
+            new AdicionalFijo("espera_6_12", "Espera entre 6 y 12 hs", 2),
+            new AdicionalFijo("espera_12_18", "Espera entre 12 y 18 hs", 3),
+            new AdicionalFijo("espera_18_24", "Espera entre 18 y 24 hs", 4),
+            new AdicionalFijo("espera_24_36", "Espera entre 24 y 36 hs", 6),
+            new AdicionalFijo("espera_36_48", "Espera entre 36 y 48 hs", 8),
+            new AdicionalFijo("espera_48_72", "Espera entre 48 y 72 hs", 12),
+            new AdicionalFijo("espera_72_96", "Espera entre 72 y 96 hs", 16),
+            new AdicionalFijo("descarga", "Adicional por descarga", 1),
+            new AdicionalFijo("descarga_espera", "Descarga + espera", 2),
+            new AdicionalFijo("repaletizado", "Repaletizado", 2),
+            new AdicionalFijo("repaletizado_estadia", "Repaletizado + estadía", 3),
+            // Los viajes de antes, con módulos de estadía cargados a mano.
+            new AdicionalFijo("estadia", "Estadía (módulos de 6 hs)", 1)
+        };
+
+        public const string CodigoVueltaVacia = "vuelta_vacia";
+        public static readonly decimal[] PorcentajesVueltaVacia = { 10m, 20m, 23m, 30m, 40m, 45m, 50m, 60m, 70m };
+        public const int MaxCantidadAdicional = 99;
+        public const int MaxComentarioAdicional = 200;
+
+        public sealed class AdicionalViaje
+        {
+            public string Codigo { get; set; }
+            public string Nombre { get; set; }      // lo completa la API, para mostrarlo sin la lista
+            public int Cantidad { get; set; }
+            public decimal? Porcentaje { get; set; }
+            public string Comentario { get; set; }
+        }
+
+        // Lee y valida la lista que manda la pantalla. Devuelve el error para mostrar debajo del bloque (null si está bien) y,
+        // si está bien, la lista normalizada en JSON, el total de módulos y el porcentaje de la vuelta vacía.
+        public static string LeerAdicionales(string json, out string normalizado, out int modulos, out decimal? vueltaVacia)
+        {
+            normalizado = null;
+            modulos = 0;
+            vueltaVacia = null;
+            if (string.IsNullOrWhiteSpace(json)) return null;
+            List<AdicionalViaje> lista;
+            try { lista = Newtonsoft.Json.JsonConvert.DeserializeObject<List<AdicionalViaje>>(json) ?? new List<AdicionalViaje>(); }
+            catch { return "Adicionales sin leer: volvé a cargarlos."; }
+
+            var limpia = new List<AdicionalViaje>();
+            foreach (var a in lista)
+            {
+                if (a == null) continue;
+                var codigo = (a.Codigo ?? "").Trim();
+                var comentario = (a.Comentario ?? "").Trim();
+                if (comentario.Length > MaxComentarioAdicional)
+                    return "Comentario largo: hasta " + MaxComentarioAdicional + " caracteres.";
+                if (codigo == CodigoVueltaVacia)
+                {
+                    if (vueltaVacia.HasValue) return "Vuelta vacía repetida: va una sola por viaje.";
+                    if (!a.Porcentaje.HasValue || !PorcentajesVueltaVacia.Contains(a.Porcentaje.Value))
+                        return "Porcentaje de la vuelta vacía no permitido: elegí uno de la lista.";
+                    vueltaVacia = a.Porcentaje.Value;
+                    limpia.Add(new AdicionalViaje { Codigo = codigo, Nombre = "Vuelta vacía", Cantidad = 1, Porcentaje = a.Porcentaje, Comentario = comentario });
+                    continue;
+                }
+                var fijo = AdicionalesFijos.FirstOrDefault(f => f.Codigo == codigo);
+                if (fijo == null) return "Adicional desconocido: elegí uno de la lista.";
+                if (a.Cantidad < 1 || a.Cantidad > MaxCantidadAdicional)
+                    return "Cantidad no permitida: tiene que ser de 1 a " + MaxCantidadAdicional + ".";
+                modulos += fijo.Modulos * a.Cantidad;
+                limpia.Add(new AdicionalViaje { Codigo = codigo, Nombre = fijo.Nombre, Cantidad = a.Cantidad, Comentario = comentario });
+            }
+            if (modulos > MaxEstadiaModulos)
+                return "Adicionales de más: suman " + modulos + " módulos y el máximo es " + MaxEstadiaModulos + ".";
+            normalizado = limpia.Count == 0 ? null : Newtonsoft.Json.JsonConvert.SerializeObject(limpia);
+            if (normalizado != null && normalizado.Length > 2000) return "Adicionales de más: sacá alguno o acortá los comentarios.";
+            return null;
+        }
     }
 }

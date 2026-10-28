@@ -77,6 +77,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
 | 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 | Commits del 28/10 | Reprueba corta antes de la ronda 2 (instructivo del 28/10, §3) y lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
+| 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -3973,6 +3974,9 @@ como presentación). Los números son los del listado de Rocío.
     Tráfico, Control Proformas, sobres, tickets; recorrida del 28/10). Lo más probable es que con QUICKFOOD no pase, porque
     programa los viajes con la carga asegurada. Preguntarle a Claudia si pasó alguna vez y cómo se pagó; según eso, ver si
     en SGTL "Sin carga" sigue disponible para los viajes con plataforma.
+  - **Directos, versión reducida hecha el 28/10 (§60)** para mostrarla el 29/10 (pedido de Rocío): la lista de Rukas fija
+    en el código, cargada a mano en el viaje y sumada a su importe. Lo demás de la propuesta (la lista en la tabla de
+    tarifas, la línea aparte en la proforma y la espera con las horas del chofer) sigue para después.
 - [x] **12 y 13. Textos de para quién es la tabla.** Hechos (27/10), subidos, pendientes de probar en la VM (§40, punto
   7, paso 2). "Solo algunos clientes" → "Clientes en particular". En lugar de
   "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los
@@ -4807,3 +4811,67 @@ puntos del correo (7, 12, 13, 14, 17, 24 y 26) cuando la contraseña SMTP esté 
 **Limpieza:** mferreyra (usuario 18) y el grupo "Coordinación de tráfico" (9) quedan hasta terminar todas las rondas (sirven
 para probar permisos); después, con el SQL del reporte. El grupo viejo "PRUEBA-CLAUDE 20/10" (7) se borra antes del 29/10,
 mirando primero qué tiene (consulta del reporte). El chofer 12 y dquiroga quedan: son los de la demo.
+
+---
+
+## 60. Adicionales del viaje de un cliente directo, como en Rukas — SUBIDO, PENDIENTE DE PROBAR EN LA VM (28/10)
+
+Pedido de Rocío (28/10, para mostrarlo el 29/10): a los clientes directos se les cobran **los mismos adicionales que a
+QUICKFOOD en Rukas, con los mismos valores**, y la vuelta vacía es un porcentaje del flete que elige administración
+tomando a Rukas como referencia. Es la versión reducida de la propuesta del §41, punto 11 (la recorrida y la lista, en
+`docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md`, paso 12).
+
+**Cómo quedó:**
+- En Registrar y Editar viaje, dentro del bloque Tarifa, **"Adicionales"** con "Agregar adicional". Cada fila: el
+  adicional (una lista), la cantidad, un comentario opcional y Quitar adicional. Se cargan también con la tarifa ya fija
+  (se conocen después del viaje), como la estadía de antes.
+- **Fijos**, en módulos de estadía de la tabla de tarifas del viaje ($ 96.577 en "Tarifas a agosto 2026", un módulo
+  cada 6 hs): espera por franja de horas (de 1 a 6 hs, 1 módulo; hasta de 72 a 96 hs, 16), adicional por descarga (1),
+  descarga + espera (2), repaletizado (2) y repaletizado + estadía (3), por la cantidad. "Estadía (módulos de 6 hs)" es
+  para los viajes de antes, que tenían los módulos cargados a mano: se ven así al editarlos.
+- **Vuelta vacía**: 10, 20, 23, 30, 40, 45, 50, 60 o 70 % del flete (el importe de la tarifa, no el total con los otros
+  adicionales). Una sola por viaje.
+- El importe y su detalle: "… tarifa: $ … · adicionales (3 módulos): $ 289.731,00 · vuelta vacía (23 %): $ …". Antes
+  decía "estadía (N módulos)"; los importes guardados conservan su texto hasta que se vuelven a calcular. Ver detalle
+  del viaje (Gestionar y Listar viajes) muestra la lista, con el comentario.
+- **Con plataforma no se ve**: los adicionales vienen de Rukas en el Excel de la proforma (la API rechaza una lista en
+  esos viajes). La estadía que ya tuviera un viaje con plataforma se conserva.
+- La API valida la lista (los mismos textos que la pantalla, debajo de cada campo) y calcula los módulos y el porcentaje
+  con ella, no con lo que mande la pantalla. Los recálculos (orden del día, cambio de tabla de tarifas, revisar una
+  proforma y Sin carga) conservan los adicionales.
+- Base: `database/viajes/04_adicionales_del_viaje.sql` agrega `VIAJES.Vuelta_Vacia_Porcentaje` y `VIAJES.Adicionales`
+  (la lista en JSON), fuera del EDMX; `VIAJES.Estadia_Modulos` pasa a ser el total de módulos de los fijos. El diagnóstico
+  (`database/verificacion/01_scripts_corridos.sql`) lo mira en la fila 21.
+- Archivos: `TarifarioCalculo.cs` (la lista, `LeerAdicionales` y la vuelta vacía en `SumarAdicionales`),
+  `ViajesController.cs`, `OrdenDelDia.cs`, `TarifarioImpacto.cs`, `TarifarioRevisar.cs`, `TarifarioController.cs`,
+  `gestion-viajes.html` y `viaje-detalle.js`; `tests/viajes-flujo.test.js` actualizado.
+- Probado en la Mac con la API simulada: carga, importe (espera 6 a 12 hs con comentario, descarga y vuelta vacía 23 %:
+  la cuenta da), guardado, volver a abrir, Ver detalle, los tres errores, el bloque oculto con plataforma y sin errores en
+  la consola. 69 pruebas de Node OK. **El C# no se compiló en la Mac.**
+
+**Para decidir después (con Claudia o con Facu):**
+- Un viaje **Sin carga con vuelta vacía**: hoy se cobran las dos (el porcentaje sin carga y el de la vuelta vacía). ¿Es así?
+- En la proforma, los adicionales van **dentro del importe del viaje**, en su misma línea; la línea aparte, como los de
+  Rukas, toca Traer viajes (Facu).
+- La lista y los valores están en el código (`TarifarioCalculo.AdicionalesFijos` y `ADICIONALES` en la pantalla): que
+  salgan de la tabla de tarifas va con la tabla dinámica (§42). Los presupuestos no tienen adicionales.
+- La espera que salga sola con las horas que registra el chofer (§41, punto 11).
+
+**Cómo probarlo en la VM:**
+1. **Antes de recompilar**, correr `database/viajes/04_adicionales_del_viaje.sql` (primero con `@Aplicar = 0`, después
+   con `1`): al final, "OK" en las dos. El diagnóstico dice "Corrido" en la fila 21.
+2. Recompilar la solución y Ctrl+F5.
+3. Gestionar viajes → Editar un viaje directo con tabla de tarifas: debajo de la tarifa, "Adicionales", "Agregar
+   adicional" y la ayuda ("Módulo de 6 hs: $ 96.577,00. La espera corre después de…"). Agregar "Espera entre 6 y 12 hs"
+   con un comentario, "Adicional por descarga" y "Vuelta vacía" con 23 %: la línea del importe suma "adicionales (3
+   módulos): $ 289.731,00" y "vuelta vacía (23 %)" (el 23 % de la tarifa). Guardar: "Viaje guardado.".
+4. Volver a abrirlo: las tres filas como se cargaron. Ver detalle (también desde Listar viajes): "Adicionales" con la
+   lista y el comentario, y el mismo importe.
+5. Una fila sin elegir, una cantidad 0 y dos vueltas vacías: el error debajo de cada uno ("Adicional sin elegir…",
+   "Cantidad de 1 a 99.", "Vuelta vacía repetida…") y "Revisá los campos marcados."; no guarda.
+6. Quitar todos los adicionales y guardar: el importe vuelve a ser el de la tarifa sola.
+7. Un viaje con plataforma: no hay bloque de adicionales y guardarlo no cambia su importe. Un viaje directo de antes con
+   módulos de estadía: aparece como "Estadía (módulos de 6 hs)" con esa cantidad.
+8. **[cruce]** El viaje con adicionales, En viaje → Sin carga → otra vez En viaje: los adicionales siguen y el importe
+   vuelve al de antes. Registrar proforma → Traer viajes: la línea del viaje trae el importe con los adicionales.
+9. Design system del bloque (botón con texto, Quitar solo ícono con tooltip, textos con voseo) a 1366 y 390 px.
