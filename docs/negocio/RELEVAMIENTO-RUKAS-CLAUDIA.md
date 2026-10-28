@@ -278,6 +278,29 @@ la tabla de tarifas) y con plataforma queda pendiente: para tenerlo, esos viajes
 Entregado (punto 10 de la §41 de `docs/PENDIENTES-SISTEMA.md`). La vuelta vacía sigue como adicional aparte de los
 directos (§60).
 
+**Estadía: desde cuándo corre y cómo se cobra (consulta de Rocío a Claudia por WhatsApp; anotado el 28/10).** Rocío le
+preguntó desde cuándo se cuentan las 12 hs, hasta cuándo y qué pasa si sobran 8 hs (¿un módulo, proporcional o dos?).
+Claudia lo consultó con alguien de QUICKFOOD:
+- **Viajes de menos de 250 km:** la tarifa incluye **12 hs desde la citación** (si el camión llega antes, se toma la
+  citación; si llega después, la hora en que llegó). Pasadas las 12 hs se paga **un módulo cada 6 hs** ($ 96.577).
+- **Viajes de más de 250 km:** lo mismo, con **18 hs** incluidas.
+- Coincide con nuestra tabla de tarifas (12 y 18 hs, 250 km, módulos de 6 hs a $ 96.577).
+- **Transporte Sánchez con los directos:** casi nunca cobra estadía, porque hace viajes en el día; de vez en cuando le
+  pagan algo para reconocerle, pero "es más de onda". El dueño entiende que la estadía corre desde que se llega al lugar
+  de descarga y hay que esperar a que descarguen; QUICKFOOD, en cambio, cuenta todo el servicio desde la citación.
+
+**Lo que queda abierto (preguntarle a Claudia):**
+- **Hasta cuándo corre:** ¿hasta que termina la descarga (el remito conformado)?
+- **La citación:** ¿es la hora a la que lo citan a cargar en el origen?
+- **Cómo se redondea:** no lo respondió. Con el catálogo de Rukas (la tabla de arriba), la espera va por franja y se cobra
+  el tope: 8 hs de más caen en "Espera entre 6 y 12 hs", o sea 2 módulos; menos de 1 h no se cobra; desde las 24 hs las
+  franjas son de 12 hs (25 hs de más, 6 módulos). Confirmar que las horas de la franja son las que pasan de las 12 o 18
+  incluidas.
+
+**Qué hacemos en SGTL:** para los directos la espera se sigue cargando a mano como adicional (§60): casi nunca se cobra y,
+cuando se cobra, lo decide administración. Para QUICKFOOD la calcula Rukas y llega en el Excel de la proforma. Calcularla
+sola queda para después (punto 11 de la §41 de `docs/PENDIENTES-SISTEMA.md`).
+
 ---
 
 ## PASO 13 — Después: liquidación Marfrig vs proforma interna

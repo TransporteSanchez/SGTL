@@ -3987,6 +3987,19 @@ como presentación). Los números son los del listado de Rocío.
   - **Directos, versión reducida hecha el 28/10 (§60)** para mostrarla el 29/10 (pedido de Rocío): la lista de Rukas fija
     en el código, cargada a mano en el viaje y sumada a su importe. Lo demás de la propuesta (la lista en la tabla de
     tarifas, la línea aparte en la proforma y la espera con las horas del chofer) sigue para después.
+  - **Estadía, respuesta de Claudia (anotado el 28/10; detalle en el relevamiento, paso 12):** para QUICKFOOD la tarifa
+    incluye 12 hs (18 hs si son más de 250 km) **desde la citación** (si llega antes, la citación; si llega tarde, la
+    llegada) y después se paga un módulo cada 6 hs. Con los directos casi nunca se cobra (viajes en el día; a veces algo
+    "de onda"), y el dueño la cuenta desde que llega a descargar. **Conclusión: no automatizarla por ahora**; en los
+    directos sigue a mano (§60). Para calcularla sola más adelante faltan la hora de llegada al origen y la de fin de la
+    descarga (hoy la entrega guarda solo el día): las podría registrar el chofer en la hoja de ruta y el sistema
+    proponer la espera para que administración la confirme.
+    - [ ] **Preguntarle a Claudia:** hasta cuándo corre (¿fin de la descarga, remito conformado?); si la citación es la hora
+      de carga en el origen; y si las franjas de la espera de Rukas son las horas que pasan de las 12 o 18 incluidas (con
+      el catálogo, 8 hs de más son "Espera entre 6 y 12 hs", 2 módulos, y menos de 1 h no se cobra).
+    - [ ] **Textos (después, Rocío 28/10):** la ayuda del bloque Adicionales de Gestionar viajes ("La espera corre después de
+      12 hs de iniciado el servicio…") y la del campo en Gestionar tarifas ("De iniciado el servicio, hasta…") dicen "de
+      iniciado el servicio"; lo correcto es "desde la citación".
 - [x] **12 y 13. Textos de para quién es la tabla.** Hechos (27/10), subidos, pendientes de probar en la VM (§40, punto
   7, paso 2). "Solo algunos clientes" → "Clientes en particular". En lugar de
   "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los
