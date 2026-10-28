@@ -270,8 +270,13 @@ El porcentaje de la vuelta vacía lo decide **administración**, tomando como re
 lectura) en Cierre Reparto y su detalle, en la lista de adicionales, en Control Tráfico (sus estados son Planeados,
 Ingresados, Despachado, Salidos y Finalizados), en Control Proformas, en los sobres y en los tickets: ningún estado,
 adicional ni texto de falso flete, viaje sin carga, frustrado o anulado por falta de carga. Lo más probable (Rocío): QUICKFOOD
-programa los viajes sabiendo que tiene la carga, así que no pasa. Preguntarle a Claudia si alguna vez pasó con QUICKFOOD y
-cómo se pagó.
+programa los viajes sabiendo que tiene la carga, así que no pasa.
+
+**Respuesta de Claudia (28/10, por Rocío):** con Rukas nunca le pasó. Si pasara, lo coordinarían en la proforma: un valor
+para ese viaje, acordado con ellos. Por eso en SGTL "Sin carga" queda solo para los clientes directos (con el porcentaje de
+la tabla de tarifas) y con plataforma queda pendiente: para tenerlo, esos viajes tendrían que pasar por En viaje y
+Entregado (punto 10 de la §41 de `docs/PENDIENTES-SISTEMA.md`). La vuelta vacía sigue como adicional aparte de los
+directos (§60).
 
 ---
 

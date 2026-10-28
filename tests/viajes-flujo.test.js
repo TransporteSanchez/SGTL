@@ -7,6 +7,7 @@
 //   F. En viaje se cambian el camión y el chofer, con motivo y sin cambiar el precio.
 //   G. Administración no inicia un viaje de un día futuro (uno atrasado sí).
 //   Punto 10 de la §41: "Sin carga" (antes "falso flete") es un estado, desde En viaje, y se cobra el porcentaje de la tabla.
+//   Solo en los directos (Rocío, 28/10): con plataforma queda pendiente.
 const assert = require('assert');
 const fs = require('fs');
 const path = require('path');
@@ -143,7 +144,10 @@ assert.ok(/estado-azul">Sin carga</.test(SGTL.estadoViaje('Sin_carga')), '10: Si
 assert.strictEqual(SGTL.estadosViaje().Sin_carga, 'Sin carga', '10: y está en el filtro de estado');
 const sinCargaApi = api.slice(api.indexOf('private IHttpActionResult CambiarSinCarga('), api.indexOf('// POST: api/Viajes/{id}/Evidencia'));
 assert.ok(/string anterior = conPlataforma \? EstadoRegistrado : EstadoEnViaje;/.test(sinCargaApi),
-    '10: desde En viaje (con plataforma, desde Registrado) y vuelve al de antes');
+    '10: desde En viaje y vuelve al de antes (uno con plataforma que ya estaba sin carga, a Registrado)');
+assert.ok(/if \(conPlataforma\) return ErrorEstado\("Estado", "No se puede marcar sin carga: lo sigue la plataforma del cliente\."\);/.test(sinCargaApi)
+    && /if \(esDirecto\(v\) && v\.Estado === 'En_viaje'\) posibles = posibles\.concat\('Sin_carga'\);/.test(pantalla),
+    '10: solo en los directos: con plataforma, la API lo rechaza y Cambiar estado no lo ofrece');
 assert.ok(/"La fecha no puede ser posterior a hoy\."/.test(sinCargaApi) && /"La fecha no puede ser anterior al inicio del viaje\."/.test(sinCargaApi),
     '10: la fecha entre el inicio y hoy');
 assert.ok(/new ViajeDto \{ Falso_Flete = sinCarga, Estadia_Modulos = guardada\.Estadia_Modulos,\s*Adicionales = guardada\.Adicionales, Vuelta_Vacia_Porcentaje = guardada\.Vuelta_Vacia_Porcentaje \}/.test(sinCargaApi) && /GuardarImporte\(db, id, datos, calculo\)/.test(sinCargaApi),

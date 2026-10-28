@@ -3949,6 +3949,15 @@ como presentación). Los números son los del listado de Rocío.
   - [ ] **Avisarle a Facu (Rocío):** el cambio de la nota de crédito está en su módulo (`ComprobantesController`, la nota
     de crédito cancelatoria de la factura de una proforma): un viaje con `Falso_Flete` y sin resultado de entrega vuelve
     a `Sin_carga` en lugar de `Entregado`. Lo hizo Claude el 27/10 a pedido de Rocío.
+  - **28/10: solo en los clientes directos (Rocío, con la respuesta de Claudia).** En Rukas nunca pasó; si pasara, el
+    valor se acuerda con ellos en la proforma. Con plataforma queda **pendiente**: para tener Sin carga, esos viajes
+    tendrían que pasar por En viaje (y después por Entregado), y eso es definir de nuevo su flujo. Cambiar estado ya no
+    ofrece Sin carga en un viaje con plataforma y la API lo rechaza ("No se puede marcar sin carga: lo sigue la plataforma
+    del cliente."); uno que ya estaba sin carga puede volver a Registrado. La hoja de ruta del chofer ya no lo ofrecía con
+    plataforma. Se sigue cobrando el porcentaje de la tabla de tarifas, que es obligatorio en cada tabla. La vuelta vacía
+    queda como adicional aparte (§60). Subido, pendiente de probar en la VM: en Gestionar viajes, Cambiar estado de un
+    viaje con plataforma Registrado ofrece Listo para facturar y Cancelado, sin Sin carga; el de un directo En viaje,
+    Registrado, Entregado y Sin carga.
 - [ ] **11. Los demás adicionales (estadía).** Hoy la estadía se carga a mano en módulos y se suma al importe. Los datos de
   la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
   Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos
@@ -3973,7 +3982,8 @@ como presentación). Los números son los del listado de Rocío.
   - **Falso flete en Rukas: no aparece en ningún lado** de lo que ve Transporte Sánchez (Cierre Reparto, adicionales, Control
     Tráfico, Control Proformas, sobres, tickets; recorrida del 28/10). Lo más probable es que con QUICKFOOD no pase, porque
     programa los viajes con la carga asegurada. Preguntarle a Claudia si pasó alguna vez y cómo se pagó; según eso, ver si
-    en SGTL "Sin carga" sigue disponible para los viajes con plataforma.
+    en SGTL "Sin carga" sigue disponible para los viajes con plataforma. **Respuesta de Claudia (28/10):** nunca pasó; si
+    pasara, el valor se acuerda con Rukas en la proforma. Sin carga queda solo para los directos (punto 10, nota del 28/10).
   - **Directos, versión reducida hecha el 28/10 (§60)** para mostrarla el 29/10 (pedido de Rocío): la lista de Rukas fija
     en el código, cargada a mano en el viaje y sumada a su importe. Lo demás de la propuesta (la lista en la tabla de
     tarifas, la línea aparte en la proforma y la espera con las horas del chofer) sigue para después.

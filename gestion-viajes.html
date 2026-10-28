@@ -1974,14 +1974,14 @@
         function antesDeLaEntrega(v, e) { var flujo = flujoDeViaje(v); return !!e && flujo.indexOf(e) < flujo.indexOf(estadoDeEntrega(v)); }
 
         // Cancelado (caso E de docs/diseno/viajes-diseno.md): desde Registrado; un cancelado solo vuelve a Registrado.
-        // Sin carga (punto 10 de la §41): desde En viaje (con plataforma, que no pasa por En viaje, desde Registrado); vuelve atrás
-        // si fue un error.
+        // Sin carga (punto 10 de la §41): desde En viaje, solo en los directos (con plataforma queda pendiente, Rocío 28/10); vuelve
+        // atrás si fue un error (uno con plataforma que ya estaba sin carga, a Registrado).
         function estadosPosibles(v) {
             if (v.Estado === 'Cancelado') return ['Registrado'];
             if (v.Estado === 'Sin_carga') return [esDirecto(v) ? 'En_viaje' : 'Registrado'];
             var flujo = flujoDeViaje(v), i = flujo.indexOf(v.Estado);
             var posibles = flujo.filter(function (e, j) { return e !== 'Facturado' && e !== v.Estado && (i < 0 || Math.abs(j - i) <= 1); });
-            if (esDirecto(v) ? v.Estado === 'En_viaje' : viajeRegistrado(v.Estado)) posibles = posibles.concat('Sin_carga');
+            if (esDirecto(v) && v.Estado === 'En_viaje') posibles = posibles.concat('Sin_carga');
             return viajeRegistrado(v.Estado) ? posibles.concat('Cancelado') : posibles;
         }
 

@@ -310,7 +310,8 @@ lo que crees, para la limpieza). Con tarifa fija y recorridos de hasta 130 km pa
    - El aviso por WhatsApp al cancelar y la hoja de ruta al reactivar ya están hechos: se miran en la ronda 6. Acá alcanza
      con que la opción Cancelado diga "Se le avisa al chofer por WhatsApp." si el viaje tiene chofer.
 3. **§41, punto 10 (Sin carga)**, pasos 2 a 7 (el 1 es el script, ya corrido). El 4 (hoja de ruta) puede quedar para la
-   ronda 4 y el 7 (nota de crédito) para la ronda 3, con OK de Rocío: anotá dónde se hizo cada uno.
+   ronda 4 y el 7 (nota de crédito) para la ronda 3, con OK de Rocío: anotá dónde se hizo cada uno. Desde el 28/10, solo en
+   los directos: en un viaje con plataforma Registrado, Cambiar estado no ofrece Sin carga (la nota del 28/10 del punto 10).
 4. **§41, punto 22, D, F y G**, pasos 1 a 3. En F, al cambiar el chofer de un viaje En viaje, el aviso del formulario
    dice además "y a … se le avisa que ya no tiene el viaje." (§58).
 5. **[cruce] El flujo completo, para adelante y para atrás** (el profe prueba casos borde): un viaje directo Registrado →

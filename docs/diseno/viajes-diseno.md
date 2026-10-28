@@ -17,7 +17,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | **Directo** | Registrado → En viaje → Entregado → Facturado | De a un paso: Entregado → En viaje → Registrado. Facturado → Entregado solo con la nota de crédito |
 | **Con plataforma (Rukas)** | Registrado → Listo para facturar → Facturado | Listo para facturar → Registrado. Facturado → Listo para facturar solo con la nota de crédito |
 | **Los dos** | Registrado → **Cancelado** (no se hizo; con motivo, fuera de una proforma) | Cancelado → Registrado, si el camión y el chofer están libres y el presupuesto del que salió no generó otro viaje |
-| **Sin carga** (punto 10) | En viaje → **Sin carga** (con plataforma, desde Registrado): llegó al origen y no había carga; se cobra el % de la tabla y sigue a la proforma como un entregado | Sin carga → En viaje (o Registrado), y se cobra completo |
+| **Sin carga** (punto 10) | En viaje → **Sin carga**, solo en los directos (con plataforma, pendiente desde el 28/10): llegó al origen y no había carga; se cobra el % de la tabla y sigue a la proforma como un entregado | Sin carga → En viaje (uno con plataforma que ya estaba sin carga, a Registrado), y se cobra completo |
 
 - **Quién mueve cada paso:**
   - Registrado → En viaje: el chofer desde su hoja de ruta, **solo el día del viaje** (punto 33), o administración desde
@@ -36,7 +36,7 @@ de **qué hace hoy el sistema** en cada caso y **qué falta resolver**.
 | Situación | Editar | Eliminar | Gastos (chofer / administración) |
 |---|---|---|---|
 | **Registrado** sin proforma | Todo. Cambiar chofer, recorrido o fecha reenvía la hoja de ruta por WhatsApp. Camión y chofer no pueden estar ocupados (§43). La vuelta y el precio los decide el orden del día (§43) | Sí, con la confirmación de lo que pasa con los otros viajes del día | No / No |
-| **En viaje** | Los números (remito, transporte, entrega), falso flete y estadía; el camión y el chofer, con motivo y sin cambiar el precio (caso F) | No | Sí / No |
+| **En viaje** | Los números (remito, transporte, entrega) y los adicionales (§60 de `docs/PENDIENTES-SISTEMA.md`); el camión y el chofer, con motivo y sin cambiar el precio (caso F) | No | Sí / No |
 | **Entregado** | Igual que En viaje | No | Hasta 2 días después de la entrega / Sí |
 | **Listo para facturar** (Rukas) | Además, la tarifa y los km (para que coincidan con Rukas), si no está en una proforma generada | No | Hasta 2 días después del fin / Sí |
 | En un **borrador** de proforma | Según su estado | No (primero se quita del borrador) | Según su estado |

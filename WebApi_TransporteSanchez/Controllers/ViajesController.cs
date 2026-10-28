@@ -1048,8 +1048,9 @@ SELECT CAST(CASE WHEN EXISTS (
         }
 
         // Viaje sin carga (punto 10 de la §41; antes "falso flete", Rocío 27/10): el camión llegó al origen y no había carga.
-        // Desde En viaje (con plataforma, que no pasa por En viaje, desde Registrado) y fuera de una proforma, con la fecha y una
-        // observación opcional. Se cobra el porcentaje de la tabla (Falso_Flete = 1) y sigue a la proforma como un entregado; la
+        // Desde En viaje y fuera de una proforma, con la fecha y una observación opcional. Solo directos (Rocío, 28/10): con
+        // plataforma queda pendiente, porque esos viajes no pasan por En viaje y, según Claudia, en Rukas nunca pasó (si pasara,
+        // el valor se acuerda con ellos en la proforma); uno que ya estaba sin carga puede volver a Registrado. Se cobra el porcentaje de la tabla (Falso_Flete = 1) y sigue a la proforma como un entregado; la
         // fecha va en Fecha_Entrega. Si fue un error vuelve al estado de antes y se cobra completo. Para volver a ir, otro viaje.
         private IHttpActionResult CambiarSinCarga(SGTLAuditContext db, EstadoViajeRow v, string nuevo, CambioEstadoViajeDto body,
             ProformaDelViaje proforma)
@@ -1065,7 +1066,8 @@ SELECT CAST(CASE WHEN EXISTS (
             if (sinCarga)
             {
                 if (v.Estado == EstadoSinCarga) return ErrorEstado("Estado", "El viaje ya está sin carga.");
-                if (conPlataforma ? !EsRegistrado(v.Estado) : v.Estado != EstadoEnViaje)
+                if (conPlataforma) return ErrorEstado("Estado", "No se puede marcar sin carga: lo sigue la plataforma del cliente.");
+                if (v.Estado != EstadoEnViaje)
                     return ErrorEstado("Estado", "No se puede marcar sin carga: el viaje está " + (v.Estado ?? EstadoRegistrado).Replace('_', ' ').ToLowerInvariant() + ".");
                 if (!body.Fecha_Entrega.HasValue) return ErrorEstado("Fecha_Entrega", "Elegí la fecha.");
                 fecha = body.Fecha_Entrega.Value.Date;
