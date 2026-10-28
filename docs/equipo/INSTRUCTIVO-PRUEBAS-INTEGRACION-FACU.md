@@ -39,8 +39,8 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   Claude la tercera tabla del diagnóstico antes de correr nada. El `cuenta-corriente/18` (corrige
   acentos de recibos viejos) y `documentacion/02` (manual) son de datos y terminan en ROLLBACK: se deciden aparte (el
   diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
-  decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 tiene 1 recibo y 1 movimiento
-  para corregir.
+  decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 ya se aplicó (recibo 49 y su
+  movimiento).
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
 - **Usuarios** (el login lo hace Rocío):

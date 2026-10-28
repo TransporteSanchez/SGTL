@@ -71,7 +71,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 51 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Incluido en `facugodoy` (27/10) | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§51) |
 | 52 | Imputar recibos después de emitirlos | Hecho en código (27/10); pruebas locales OK | Incluido en `facugodoy` (27/10) | Emitir un recibo sin deudas y usar «Imputar recibo» parcial y sucesivamente (§52) |
 | 53 | Vincular un débito interno con un FC | Hecho en código (27/10); migración 17 pendiente de aplicar | Incluido en `facugodoy` (27/10) | Aplicar el script 17 y emitir un D relacionado con un FC del mismo cliente (§53) |
-| 54 | Acentos en el concepto de recibos sin imputar | Texto de emisión corregido; script 18 preparado para datos anteriores, sin ejecutar | Incluido en `facugodoy` (27/10) | Recompilar y emitir un recibo; Rocío debe revisar y aplicar 18 para los ya guardados (§54) |
+| 54 | Acentos en el concepto de recibos sin imputar | Texto de emisión corregido; script 18 aplicado el 28/10 (recibo 49) | Incluido en `facugodoy` (27/10) | Recompilar, emitir un recibo y revisar el 49 (§54) |
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
@@ -4477,7 +4477,7 @@ mismo D sin duplicar deuda; con otro vínculo y la misma clave, debe rechazar.
 
 ---
 
-## 54. Corregir los acentos del concepto de recibos sin imputar — Código y propuesta SQL listos (27/10)
+## 54. Corregir los acentos del concepto de recibos sin imputar — Código listo (27/10), datos corregidos (28/10)
 
 La versión anterior de `RecibosController` tenía mal escrito el literal generado de «Cobranza sin imputación».
 La fuente actual contiene el acento correcto; la página ya declara UTF-8. Recompilar la API evita volver a guardar
@@ -4486,15 +4486,15 @@ el texto incorrecto, pero no cambia los conceptos persistidos por versiones ante
 `database/cuenta-corriente/18_corregir_concepto_recibos.sql` propone corregir únicamente ese texto exacto en recibos
 y sus movimientos de emisión. Utiliza caracteres Unicode por código, comparación binaria y largo exacto; conserva
 conceptos personalizados, otros tipos de comprobante, reversos e importes. Muestra los registros afectados y sus
-cantidades y termina con ROLLBACK. **No se ejecutó contra la base compartida.** Rocío debe revisar los resultados y,
-para aplicarlo, reemplazar el ROLLBACK final del bloque TRY por COMMIT y ejecutar el script completo.
+cantidades y termina con ROLLBACK. **Aplicado el 28/10 por Rocío:** corrigió el recibo 49 y su movimiento 47, y el
+diagnóstico (`database/verificacion/01_scripts_corridos.sql`) da 0 y 0.
 
 **Verificación local:** expresión C# real compilada para recibos con cero, una y dos aplicaciones; UPDATE reales
 adaptados a SQLite en memoria con casos protegidos, idempotencia y reversión. Sin consultar la base compartida.
 
 **Probar en la VM:** recompilar la API y emitir un recibo sin imputar: debe decir «Cobranza sin imputación». Después
-de aplicar la corrección de datos, revisar el recibo anterior, la cuenta corriente, el detalle, PDF y Excel. Los
-nombres de clientes y los conceptos ingresados a mano deben conservarse.
+revisar el recibo 49, ya corregido, en la cuenta corriente, el detalle, el PDF y el Excel. Los nombres de clientes y
+los conceptos ingresados a mano deben conservarse.
 
 ---
 
