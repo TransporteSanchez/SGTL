@@ -4042,6 +4042,10 @@ como presentación). Los números son los del listado de Rocío.
   el resto de esta limpieza: choferes con nombres del equipo (Montenegro Federico, Godoy Facundo y dos Pai), el cliente
   distribuidora-powerful, Distribuidora del Sur con plataforma (punto 16) y los viajes con fecha pasada que siguen
   Registrados o En viaje.
+  **Paso a paso (28/10):** `docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md`, con la consulta de solo lectura
+  `database/limpieza/05_relevar_viajes_para_la_demo.sql` (viajes pasados sin cerrar, chofer o camión que no corresponde,
+  viajes sin importe, clientes con plataforma, clientes, choferes, camiones con lo que les falta y el precio del gasoil;
+  incluye el punto 37). Se hace después de la prueba de viajes en la VM y sin el token de WhatsApp del día.
 - [ ] **16. Distribuidora del Sur S.A. figura con plataforma (Rukas).** Solo QUICKFOOD tiene que tenerla. Ver qué viajes
   tiene y si conviene pasarlos a otro cliente o a QUICKFOOD; después, sacar el cliente o dejarlo como cliente común.
 - [ ] **22. Toda la lógica del flujo de viajes, en todos los escenarios:** cambios de estado, edición y el proceso completo
