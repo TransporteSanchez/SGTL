@@ -3,136 +3,140 @@ const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
 
-const fuente = fs.readFileSync(
-    path.join(__dirname, '..', 'gestion-gruposypermisos.html'),
-    'utf8'
-);
-
-const inicio = fuente.indexOf('function cargarUsuariosDeGrupo(');
+const fuente = fs.readFileSync(path.join(__dirname, '..', 'gestion-gruposypermisos.html'), 'utf8');
+const inicio = fuente.indexOf('let usuariosGrupoCache');
 const fin = fuente.indexOf('\n        $(function () {', inicio);
-
-assert.notStrictEqual(inicio, -1, 'debe existir la carga de usuarios por grupo');
-assert.notStrictEqual(fin, -1, 'debe poder ejecutarse el bloque de usuarios sin cargar la página completa');
+assert.ok(inicio >= 0 && fin > inicio, 'debe poder ejecutarse la lógica de asignación');
 
 const usuarios = [
-    { Usuario_ID: 1, Nombre_Usuario: 'mruiz', NombreCompleto: 'María Ruiz', Rol: 'operador', EsAdministrador: false, Asignado: true },
-    { Usuario_ID: 2, Nombre_Usuario: 'lsoto', NombreCompleto: 'Lucas Soto', Rol: 'operador', EsAdministrador: false, Asignado: false },
-    { Usuario_ID: 3, Nombre_Usuario: 'admin', NombreCompleto: 'Administrador General', Rol: 'admin', EsAdministrador: true, Asignado: false }
+    { Usuario_ID: 1, Nombre_Usuario: 'mruiz', NombreCompleto: 'María Ruiz', Rol: 'user', EsAdministrador: false, Asignado: true, PuedeQuitar: true },
+    { Usuario_ID: 2, Nombre_Usuario: 'lsoto', NombreCompleto: 'Lucas Soto', Rol: 'user', EsAdministrador: false, Asignado: false, PuedeQuitar: false },
+    { Usuario_ID: 3, Nombre_Usuario: 'amolina', NombreCompleto: 'Ana Molina', Rol: 'user', EsAdministrador: false, Asignado: false, PuedeQuitar: false },
+    { Usuario_ID: 4, Nombre_Usuario: 'admin', NombreCompleto: 'Administrador', Rol: 'admin', EsAdministrador: true, Asignado: false, PuedeQuitar: false },
+    { Usuario_ID: 5, Nombre_Usuario: 'jlopez', NombreCompleto: 'Juan López', Rol: 'user', EsAdministrador: false, Asignado: true, PuedeQuitar: false }
 ];
 
-let htmlRenderizado = '';
-let solicitudGuardado = null;
-let mensajeToast = '';
-function crearJQueryDePrueba(selector) {
-    const coleccion = {
-        prop: function () { return coleccion; },
-        val: function () { return '1'; },
-        empty: function () {
-            if (selector === '#contenedorUsuariosGrupo') htmlRenderizado = '';
-            return coleccion;
-        },
-        html: function (contenido) {
-            if (arguments.length && selector === '#contenedorUsuariosGrupo') htmlRenderizado = contenido;
-            return coleccion;
-        },
-        off: function () { return coleccion; },
-        on: function () { return coleccion; },
-        text: function () { return coleccion; }
-    };
-    return coleccion;
-}
-
-// SGTL.ajax devuelve una promesa; acá responde en el momento para poder revisar el resultado.
-function respuestaInmediata(datos) {
-    return {
-        then: function (alResolver) {
-            alResolver(datos);
-            return { finally: function (alTerminar) { alTerminar(); } };
-        }
-    };
-}
-
-const sandbox = {
-    $: crearJQueryDePrueba,
-    API: 'http://localhost:50222/api',
-    SGTL: {
-        ajax: function (opciones) {
-            if (opciones.type === 'POST') {
-                solicitudGuardado = opciones;
-                return respuestaInmediata({});
-            }
-            return respuestaInmediata(usuarios);
-        },
-        escapar: function (texto) { return String(texto); },
-        estado: function (valor, texto) { return '<span class="badge">' + texto + '</span>'; },
-        procesando: function () { return function () {}; },
-        toastExito: function (mensaje) { mensajeToast = mensaje; },
-        toastError: function () {}
-    },
-    String: String,
-    Array: Array,
-    Object: Object,
-    Set: Set,
-    usuariosGrupoCache: [],
-    usuariosSeleccionadosGrupo: new Set(),
-    grupoUsuariosCargadoId: null
+const selector = {
+    html() { return this; },
+    text() { return this; },
+    prop() { return this; },
+    addClass() { return this; },
+    removeClass() { return this; },
+    val() { return ''; }
 };
+const valores = { '#selectGrupoUsuarios': '1', '#buscarDisponiblesGrupo': '', '#buscarAsignadosGrupo': '' };
+const contexto = vm.createContext({
+    $: (id) => Object.assign({}, selector, {
+        val: function (valor) {
+            if (arguments.length) { valores[id] = valor; return this; }
+            return valores[id] || '';
+        }
+    }),
+    SGTL: { escapar: String },
+    API: 'http://localhost:50222/api',
+    localStorage: { getItem: () => 'token-de-prueba' }
+});
+vm.runInContext(fuente.slice(inicio, fin), contexto, { filename: 'gestion-gruposypermisos.html' });
+vm.runInContext(`
+    usuariosGrupoCache = ${JSON.stringify(usuarios)};
+    usuariosGrupoOriginalIds = new Set([1, 5]);
+    usuariosGrupoEdicionIds = new Set([1, 5]);
+    grupoUsuariosCargadoId = '1';
+    busquedasUsuariosGrupo = { disponibles: '', asignados: '' };
+`, contexto);
 
-vm.runInNewContext(fuente.slice(inicio, fin), sandbox, { filename: 'gestion-gruposypermisos.html' });
-sandbox.cargarUsuariosDeGrupo(1);
+function ejecutar(codigo) {
+    return JSON.parse(vm.runInContext('JSON.stringify(' + codigo + ')', contexto));
+}
 
-assert.deepStrictEqual(Array.from(sandbox.usuariosSeleccionadosGrupo), [],
-    'los integrantes actuales no deben quedar seleccionados para volver a enviarse');
+assert.deepStrictEqual(
+    ejecutar("usuariosVisiblesGrupo('disponibles').map(u => u.Usuario_ID)"),
+    [2, 3],
+    'los disponibles excluyen a asignados y administradores'
+);
+assert.deepStrictEqual(
+    ejecutar("usuariosVisiblesGrupo('asignados').map(u => u.Usuario_ID)"),
+    [1, 5],
+    'la lista de asignados muestra solo integrantes del grupo'
+);
 
-const htmlUsuarioAsignado = sandbox.crearHtmlListaUsuariosGrupo([usuarios[0]]);
-assert.ok(htmlUsuarioAsignado.includes('En el grupo'),
-    'un integrante actual debe identificarse como asignado');
-assert.ok(!htmlUsuarioAsignado.includes('id="usr_1"'),
-    'un integrante actual no debe ofrecer un check para volver a agregarlo');
+vm.runInContext("busquedasUsuariosGrupo.disponibles = 'lucas'", contexto);
+valores['#buscarDisponiblesGrupo'] = 'lucas';
+assert.deepStrictEqual(
+    ejecutar("usuariosVisiblesGrupo('disponibles').map(u => u.Usuario_ID)"),
+    [2],
+    'la búsqueda de disponibles limita únicamente esa lista'
+);
+vm.runInContext("moverUsuariosVisiblesGrupo('agregar')", contexto);
+assert.deepStrictEqual(
+    ejecutar('Array.from(usuariosGrupoEdicionIds).sort((a, b) => a - b)'),
+    [1, 2, 5],
+    'agregar todos los visibles no incorpora usuarios ocultos por el filtro'
+);
 
-const htmlUsuarioParaAgregar = sandbox.crearHtmlListaUsuariosGrupo([usuarios[1]]);
-assert.ok(htmlUsuarioParaAgregar.includes('lista-usuarios-item'),
-    'cada registro debe usar una fila que mantiene el check dentro del área con scroll');
-assert.ok(htmlUsuarioParaAgregar.includes('id="usr_2"'),
-    'un usuario no asignado debe conservar su check de incorporación');
+vm.runInContext("busquedasUsuariosGrupo.asignados = 'maria'", contexto);
+valores['#buscarAsignadosGrupo'] = 'maria';
+assert.deepStrictEqual(
+    ejecutar("usuariosVisiblesGrupo('asignados').map(u => u.Usuario_ID)"),
+    [1],
+    'la búsqueda de asignados ignora tildes y no cambia la de disponibles'
+);
+vm.runInContext("moverUsuariosVisiblesGrupo('quitar')", contexto);
+assert.deepStrictEqual(
+    ejecutar('cambiosUsuariosGrupo()'),
+    { AgregarIds: [2], QuitarIds: [1] },
+    'el guardado prepara solo las altas y bajas pendientes'
+);
 
-const htmlUsuarioAdministrador = sandbox.crearHtmlListaUsuariosGrupo([usuarios[2]]);
-assert.ok(htmlUsuarioAdministrador.includes('>admin</span>'),
-    'el administrador debe mostrarse con su etiqueta de rol');
-assert.ok(!htmlUsuarioAdministrador.includes('id="usr_3"'),
-    'el administrador no debe ofrecer un check: ve todo por su rol');
+vm.runInContext('cambiarAsignacionUsuarioGrupo(5, false)', contexto);
+assert.deepStrictEqual(
+    ejecutar('Array.from(usuariosGrupoEdicionIds).sort((a, b) => a - b)'),
+    [2, 5],
+    'no se puede quitar al usuario de su único grupo'
+);
+vm.runInContext('cambiarAsignacionUsuarioGrupo(2, false)', contexto);
+assert.deepStrictEqual(
+    ejecutar('cambiosUsuariosGrupo()'),
+    { AgregarIds: [], QuitarIds: [1] },
+    'un alta pendiente se puede deshacer antes de guardar'
+);
 
-assert.ok(htmlRenderizado.includes('txtBuscarUsuarioGrupo'),
-    'la lista de usuarios debe tener un buscador predictivo');
-assert.ok(htmlRenderizado.includes('lista-usuarios-grupo'),
-    'la lista de usuarios debe estar contenida en un área con scroll');
+vm.runInContext("usuariosGrupoEdicionIds = new Set([1, 5]); busquedasUsuariosGrupo = { disponibles: '', asignados: '' }", contexto);
+valores['#buscarDisponiblesGrupo'] = 'lucas';
+vm.runInContext("moverUsuariosVisiblesGrupo('agregar')", contexto);
+assert.deepStrictEqual(
+    ejecutar('Array.from(usuariosGrupoEdicionIds).sort((a, b) => a - b)'),
+    [1, 2, 5],
+    'el lote aplica lo escrito en el buscador aunque todavía no se haya pulsado Buscar'
+);
 
-assert.strictEqual(typeof sandbox.filtrarUsuariosGrupo, 'function',
-    'la pantalla debe filtrar usuarios por lo que se escribe');
-const coincidenciaPorNombre = sandbox.filtrarUsuariosGrupo(usuarios, 'maria');
-assert.deepStrictEqual(Array.from(coincidenciaPorNombre, function (usuario) { return usuario.Usuario_ID; }), [1],
-    'la búsqueda debe ignorar mayúsculas y tildes en el nombre');
-const coincidenciaPorUsuario = sandbox.filtrarUsuariosGrupo(usuarios, 'lsoto');
-assert.deepStrictEqual(Array.from(coincidenciaPorUsuario, function (usuario) { return usuario.Usuario_ID; }), [2],
-    'la búsqueda debe encontrar coincidencias por nombre de usuario');
+async function probarGuardado() {
+    vm.runInContext('cambiarAsignacionUsuarioGrupo(1, false)', contexto);
+    let solicitudGuardado = null;
+    contexto.SGTL.procesando = () => () => {};
+    contexto.SGTL.toastExito = () => {};
+    contexto.SGTL.ajax = (opciones) => {
+        if (opciones.type === 'POST') {
+            solicitudGuardado = opciones;
+            return Promise.resolve({ UsuariosAgregados: 1, UsuariosQuitados: 1 });
+        }
+        return Promise.resolve(usuarios.map(usuario => Object.assign({}, usuario, {
+            Asignado: usuario.Usuario_ID === 2 || usuario.Usuario_ID === 5
+        })));
+    };
+    await vm.runInContext('guardarUsuariosDeGrupo()', contexto);
+    assert.strictEqual(solicitudGuardado.url, 'http://localhost:50222/api/Grupos/1/Usuarios/Cambios');
+    assert.deepStrictEqual(JSON.parse(solicitudGuardado.data), { AgregarIds: [2], QuitarIds: [1] },
+        'guardar envía solo los movimientos pendientes');
+    assert.strictEqual(solicitudGuardado.headers.Authorization, 'Bearer token-de-prueba',
+        'el guardado acredita la sesión');
+    assert.deepStrictEqual(ejecutar('cambiosUsuariosGrupo()'), { AgregarIds: [], QuitarIds: [] },
+        'tras guardar se recarga la asignación real y se limpian los cambios');
+}
 
-assert.strictEqual(typeof sandbox.actualizarSeleccionUsuariosGrupo, 'function',
-    'la selección debe mantenerse separada de los usuarios visibles');
-const seleccionInicial = new Set([2]);
-const seleccionLuegoDeFiltrar = sandbox.actualizarSeleccionUsuariosGrupo(seleccionInicial, 2, true);
-assert.deepStrictEqual(Array.from(seleccionLuegoDeFiltrar).sort(function (a, b) { return a - b; }), [2],
-    'seleccionar un usuario filtrado no debe quitar los seleccionados que ya no se ven');
-
-sandbox.usuariosSeleccionadosGrupo = seleccionLuegoDeFiltrar;
-sandbox.grupoUsuariosCargadoId = '1';
-sandbox.guardarUsuariosDeGrupo();
-assert.deepStrictEqual(Array.from(sandbox.usuariosSeleccionadosGrupo), [],
-    'al confirmar las incorporaciones se debe limpiar la selección pendiente');
-assert.strictEqual(sandbox.usuariosGrupoCache[1].Asignado, true,
-    'al confirmar las incorporaciones el usuario debe pasar a mostrarse como asignado');
-assert.ok(mensajeToast.includes('1 usuario'),
-    'el aviso de éxito debe informar cuántos usuarios se agregaron');
-assert.deepStrictEqual(JSON.parse(solicitudGuardado.data).UsuarioIds.sort(function (a, b) { return a - b; }), [2],
-    'al guardar se deben enviar también los usuarios que quedaron fuera de la búsqueda');
-
-console.log('OK: la búsqueda de usuarios conserva las selecciones del grupo');
+probarGuardado().then(() => {
+    console.log('OK: usuarios por grupo mueve y guarda solo los usuarios visibles elegidos');
+}).catch(error => {
+    console.error(error);
+    process.exitCode = 1;
+});

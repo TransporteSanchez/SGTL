@@ -46,7 +46,8 @@ JOIN dbo.COMPROBANTES cr ON cr.Comprobante_ID = a.ComprobanteCreditoID
 JOIN dbo.COMPROBANTES de ON de.Comprobante_ID = a.ComprobanteDeudaID
 WHERE a.Vigente = 1 AND (cr.Estado <> 'EMITIDO' OR de.Estado <> 'EMITIDO');
 
--- Deudas sobreaplicadas y créditos no completamente aplicados (MVP).
+-- Deudas y créditos sobreaplicados. Un crédito corriente puede quedar
+-- disponible para imputarlo después de su emisión.
 SELECT c.Comprobante_ID, c.Tipo, c.Total,
        COALESCE(SUM(a.Importe),0) AS Aplicado
 FROM dbo.COMPROBANTES c
@@ -63,7 +64,7 @@ LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a
  ON a.ComprobanteCreditoID = c.Comprobante_ID AND a.Vigente = 1
 WHERE c.Estado = 'EMITIDO' AND c.Impacto = 'C'
 GROUP BY c.Comprobante_ID, c.Tipo, c.Total
-HAVING COALESCE(SUM(a.Importe),0) <> c.Total;
+HAVING COALESCE(SUM(a.Importe),0) > c.Total;
 
 SELECT c.Comprobante_ID, c.Total, COALESCE(SUM(p.Importe),0) AS TotalFormasPago
 FROM dbo.COMPROBANTES c
@@ -88,25 +89,15 @@ SELECT c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total,
        MIN(CASE WHEN a.Vigente=1 THEN a.ComprobanteDeudaID END) AS ComprobanteDeudaID
 FROM dbo.COMPROBANTES c
 LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID = c.Comprobante_ID
-WHERE c.Tipo = 'NC' AND c.ComprobanteReferenciaID IS NOT NULL
+WHERE c.Estado = 'EMITIDO' AND c.Impacto = 'C' AND c.ComprobanteReferenciaID IS NOT NULL
 GROUP BY c.Comprobante_ID, c.ComprobanteReferenciaID, c.Total
 HAVING COUNT(CASE WHEN a.Vigente=1 THEN 1 END) <> 1
     OR COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) <> c.Total
     OR MIN(CASE WHEN a.Vigente=1 THEN a.ComprobanteDeudaID END) <> c.ComprobanteReferenciaID;
-
-SELECT c.Comprobante_ID FROM dbo.COMPROBANTES c
-LEFT JOIN dbo.CUENTA_CORRIENTE_APLICACIONES a ON a.ComprobanteCreditoID = c.Comprobante_ID
-WHERE c.Tipo = 'NC' AND c.ComprobanteReferenciaID IS NULL
-GROUP BY c.Comprobante_ID,c.Total
-HAVING COALESCE(SUM(CASE WHEN a.Vigente=1 THEN a.Importe ELSE 0 END),0) <> c.Total;
 
 SELECT pv.ProformaID, pv.ViajeID FROM dbo.PROFORMAS_VIAJES pv
 JOIN dbo.PROFORMAS p ON p.Proforma_ID = pv.ProformaID
 JOIN dbo.VIAJES v ON v.Viaje_ID = pv.ViajeID
 WHERE p.ClienteID <> v.ClienteID;
 
-SELECT ClienteID,
-       SUM(CASE WHEN Impacto = 'D' THEN Importe ELSE -Importe END) AS Saldo
-FROM dbo.CUENTA_CORRIENTE_MOVIMIENTOS
-GROUP BY ClienteID
-HAVING SUM(CASE WHEN Impacto = 'D' THEN Importe ELSE -Importe END) < 0;
+-- Un saldo a favor del cliente es válido si aún tiene créditos sin imputar.

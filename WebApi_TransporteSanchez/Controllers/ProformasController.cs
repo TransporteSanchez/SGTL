@@ -479,14 +479,14 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                     where.Append(@" AND EXISTS (SELECT 1
                         FROM COMPROBANTES_PROFORMAS cp
                         INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
-                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC') ");
+                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO') ");
                 }
                 else
                 {
                     where.Append(@" AND Estado=@est AND NOT EXISTS (SELECT 1
                         FROM COMPROBANTES_PROFORMAS cp
                         INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
-                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC') ");
+                        WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO') ");
                     ps.Add(P("@est", estado.Trim()));
                 }
             }
@@ -510,7 +510,8 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
         [Route("")]
         public IHttpActionResult Listar(string numero = null, int? clienteId = null, string estado = null,
             string desde = null, string hasta = null, string usuario = null,
-            bool soloGeneradas = false, string tipo = null, int page = 1, int pageSize = 15)
+            bool soloGeneradas = false, string tipo = null, int page = 1, int pageSize = 15,
+            string orden = null, string direccion = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 0 || pageSize > 200) pageSize = 15;
@@ -544,11 +545,11 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
                         "sit.PlataformaLineas, sit.PlataformaPorCorregir, sit.PlataformaPorRevisar, sit.PlataformaPorReclamar, sit.PlataformaEsperando " +
                         "FROM PROFORMAS " +
                         "OUTER APPLY (SELECT TOP (1) c.Comprobante_ID AS FacturaID, " +
-                        "'FAC-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
+                        "c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS FacturaNumero,c.Estado AS FacturaEstado " +
                         "FROM COMPROBANTES_PROFORMAS cp JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID " +
-                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
+                        "WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO' ORDER BY cp.ComprobanteProforma_ID DESC) fac " +
                         ProformasPlataformaController.SqlSituacionBorrador() +
-                        where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
+                        where + ProformasOrdenSql.Obtener(orden, direccion) + " OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
                     var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
                     return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
                 }
@@ -562,7 +563,8 @@ WHERE reservados.ViajeID IS NOT NULL;", P("@proforma", proformaId)).ToList();
         [HttpGet]
         [Route("Reporte")]
         public IHttpActionResult Reporte(string numero = null, int? clienteId = null, string estado = null,
-            string desde = null, string hasta = null, string usuario = null, bool soloGeneradas = false, string tipo = null)
+            string desde = null, string hasta = null, string usuario = null, bool soloGeneradas = false, string tipo = null,
+            string orden = null, string direccion = null)
         {
             List<SqlParameter> ps;
             var where = CrearFiltroListado(numero, clienteId, estado, desde, hasta, usuario, soloGeneradas, tipo, out ps);
@@ -583,10 +585,10 @@ SELECT Proforma_ID,
        CASE WHEN EXISTS (SELECT 1
                          FROM COMPROBANTES_PROFORMAS cp
                          INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
-                         WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Tipo='FAC')
+                         WHERE cp.ProformaID=PROFORMAS.Proforma_ID AND cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO')
             THEN 'Facturada' ELSE Estado END AS Estado,
        Usu_Alta AS Usuario
-FROM PROFORMAS " + where + " ORDER BY Proforma_ID DESC";
+FROM PROFORMAS " + where + ProformasOrdenSql.Obtener(orden, direccion);
                     var proformas = db.Database.SqlQuery<ReporteProformaItem>(sqlProformas,
                         ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).ToList();
 
@@ -718,7 +720,7 @@ ORDER BY d.Proforma_ID, d.Orden";
 SELECT COUNT(*)
 FROM COMPROBANTES_PROFORMAS cp
 INNER JOIN COMPROBANTES c ON c.Comprobante_ID=cp.ComprobanteID
-WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)).FirstOrDefault() > 0;
+WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Impacto='D' AND c.Estado='EMITIDO'", P("@id", proformaId)).FirstOrDefault() > 0;
         }
 
         [HttpPost]
@@ -919,7 +921,7 @@ WHERE cp.ProformaID=@id AND cp.Vigente=1 AND c.Tipo='FAC'", P("@id", proformaId)
                     if (TieneFacturaVigente(db, id))
                         return Content(HttpStatusCode.Conflict, new
                         {
-                            error = "No se puede borrar una proforma que tiene una Factura vinculada."
+                            error = "No se puede borrar una proforma que tiene un comprobante vinculado."
                         });
 
                     db.Database.ExecuteSqlCommand("DELETE FROM PROFORMAS_VIAJES WHERE ProformaID=@id", P("@id", id));
@@ -957,7 +959,7 @@ WHERE Proforma_ID=@id AND Estado='Borrador';", P("@id", id));
                     var est = db.Database.SqlQuery<string>("SELECT Estado FROM PROFORMAS WITH (UPDLOCK) WHERE Proforma_ID=@id", P("@id", id)).FirstOrDefault();
                     if (est == null) return NotFound();
                     if (TieneFacturaVigente(db, id) || est == "Facturada")
-                        return Content(HttpStatusCode.Conflict, new { error = "La proforma tiene una Factura: para anularla emití la Nota de Crédito cancelatoria desde Cuenta corriente." });
+                        return Content(HttpStatusCode.Conflict, new { error = "La proforma tiene un comprobante vinculado. Para anularlo, emití una nota de crédito cancelatoria." });
                     if (est == "Borrador")
                         return Content(HttpStatusCode.BadRequest, new { error = "Un borrador no se anula: eliminalo." });
                     if (est != "Generada" && est != "Aceptada")

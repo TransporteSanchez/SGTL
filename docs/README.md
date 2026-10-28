@@ -43,6 +43,12 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 - `docs/PENDIENTES-SISTEMA.md` — lista única de pendientes y estado de cada uno.
 
+### Archivos del manual de usuario
+
+- `docs/Manual_SGTL_actualizado.docx` — versión de trabajo del manual de usuario.
+- `docs/Manual_SGTL_portada_nueva.docx` — versión de trabajo con la portada nueva.
+- El script para proponer la actualización del PDF está en `database/documentacion/02_reemplazar_manual_version_0003.sql`; termina con ROLLBACK para revisar antes de aplicarlo.
+
 ### Equipo
 
 - `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md` — cómo se trabaja entre la Mac y la VM Windows.
@@ -71,7 +77,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/diseno/proforma-rukas-diseno.md` — proforma de plataforma (Rukas): base de datos, API, pantallas y plan de desarrollo por etapas.
 - `docs/diseno/vuelta-del-dia-diseno.md` — primer y segundo viaje del día (1ª y 2ª vuelta): la regla, dónde se ve y todos los casos, normales y borde.
 - `docs/diseno/viajes-diseno.md` — el flujo completo de los viajes como está hoy (estados, qué se puede hacer en cada situación, qué se controla) y los huecos encontrados en la revisión del 27/10, para corregir o decidir.
-- `docs/diseno/seguridad-contrasenas-diseno.md` — diseño del cambio de contraseña y migración a hashes seguros, sin segundo factor.
+- `docs/diseno/seguridad-contrasenas-diseno.md` — cambio de contraseña, hashes seguros y recupero desde el login por e-mail, sin segundo factor.
 - `docs/diseno/seguridad-contrasenas-plan.md` — plan de implementación y verificación del cambio seguro de contraseña.
 
 ### Design system

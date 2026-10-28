@@ -31,7 +31,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Cambiar estado (§1.4) | `SGTL.opcionesEstado`, `SGTL.estadoElegido` |
 | Etiquetas de estado (§4) | `SGTL.estado(valor, texto, color)`; lo que acompaña al estado: `SGTL.conInfo(estado, SGTL.botonInfo(nivel, contenido, etiqueta))` |
 | Estado de un viaje (§4.1) | `SGTL.estadoViaje(estado)` (con su texto: "En_viaje" → "En viaje"; Cancelado en rojo, Sin carga en azul); los textos para un filtro: `SGTL.estadosViaje()` |
-| Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar y paginación) |
+| Tablas (§2) | `SGTL.tabla` (cargando, vacía, llenar, paginación y `habilitarOrden`) |
 | Cruz de los filtros (§1.3) | `SGTL.filtros(campos, alBorrar)` |
 | Fechas (§7.1, §7.2) | `SGTL.selectorFecha`, `SGTL.rangoFechas`, `SGTL.valorRango`, `SGTL.fecha`, `SGTL.leerFecha`, `SGTL.fechaISO` |
 | Montos y km (§7.3) | `SGTL.monto`, `SGTL.km`; los que se escriben: `SGTL.enlazarMascaraMonto`, `SGTL.montoCentavos`, `SGTL.formatearMontoCentavos` |
@@ -104,22 +104,42 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Ver detalle | `bi-eye` | `btn-outline-secondary` |
 | Editar | `bi-pencil` | `btn-outline-primary` |
 | Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
+| Enviar por e-mail (comprobantes y proformas) | `bi-envelope` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
-| Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
+| Siguiente paso del circuito (Marcar aceptada, Emitir comprobante, Generar viaje) | el de cada acción | `btn-outline-success` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
-- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Inactivar", "Eliminar".
+- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Enviar por e-mail", "Inactivar", "Eliminar".
 - **El ojo de un documento** (proforma, factura, recibo, nota de crédito o débito) abre el documento completo en
   solo lectura: título "Ver proforma 0001-00000017", "Ver factura FAC-00000012"; solo "Cerrar" en el pie
   (gestionar proformas, listar proformas y cuenta corriente, 22/10).
 - **"Ver PDF"** abre la vista previa del PDF dentro del sistema (no en una pestaña nueva): título "Ver PDF del
-  presupuesto" / "Ver PDF del comprobante FAC-00000012", y el pie **Cerrar · Enviar por e-mail · Imprimir ·
-  Descargar PDF** (este último, el principal). **"Enviar por e-mail" va en ese pie, no como botón de la fila**:
-  así se ve lo que se manda y la fila no se llena de botones (presupuestos, cuenta corriente y proformas, 22/10).
-  Si el módulo no envía por e-mail (proformas, por ahora), el pie es Cerrar · Imprimir · Descargar PDF.
+  presupuesto" / "Ver PDF del comprobante FAC-00000012". Descargar PDF es el botón principal del pie.
+- **En todos los comprobantes**, incluidos los tipos directos configurables y los recibos asociados, "Enviar por e-mail"
+  va en la columna Acciones, después de "Ver PDF" (27/10). Abre el envío de ese comprobante. El pie de su vista previa
+  es **Cerrar · Imprimir · Descargar PDF**; no incluye el envío.
+- **En presupuestos**, "Enviar por e-mail" permanece en el pie de la vista previa:
+  **Cerrar · Enviar por e-mail · Imprimir · Descargar PDF**.
+- **En proformas**, "Enviar por e-mail" va después de "Ver PDF" en la columna Acciones de Listar y Gestionar
+  proformas (27/10). Se puede enviar una proforma generada, aceptada o facturada; los borradores y las anuladas
+  conservan la acción deshabilitada con el motivo. El pie del PDF sigue siendo **Cerrar · Imprimir · Descargar PDF**.
+- **Al enviar un comprobante vinculado a una proforma**, el formulario muestra "Incluir proforma", marcado al abrir
+  (27/10). Marcado, envía dos PDF separados; desmarcado, solo el comprobante. También contempla el vínculo histórico
+  cuando se canceló el comprobante con un crédito y se anuló su proforma. Sin una proforma de origen vinculada,
+  la casilla no aparece. La confirmación indica el destinatario y los documentos que se enviarán. El envío independiente
+  de proformas utiliza el perfil de e-mail de Facturación y un asunto y cuerpo que identifican la proforma.
 - **Si una acción no se puede hacer en esa fila, aparece deshabilitada y el tooltip dice por
   qué.** No se oculta: así todas las filas tienen los mismos botones en el mismo lugar.
+- **Excepción en cuenta corriente (27/10):** «Imputar» solo aparece en créditos internos (tipos configurables de
+  impacto crédito) y recibos. Se oculta en los demás tipos, incluidas facturas, débitos y notas de crédito.
+  En créditos internos y recibos sin saldo, anulados o cancelatorios, permanece deshabilitada con el motivo.
+- **Tooltip de Editar en cuenta corriente (27/10):** para los comprobantes que no son recibos dice únicamente
+  «No se puede editar el comprobante». Los recibos anulados conservan «No se puede editar el recibo: está anulado».
+- **Excepción en Gestionar tipos de comprobante (26/10):** en las tablas de sucursales,
+  numeradores y tipos de comprobante, **Eliminar** solo aparece si el registro no tiene relaciones
+  que impidan borrarlo. Cuando ya las tiene, el botón se oculta. La API vuelve a comprobar las
+  relaciones al eliminar. Activar/Inactivar sigue siendo una acción distinta.
 - **Cómo se escribe ese motivo** (23/10, Rocío, después de relevar los 28 textos que había, escritos de seis maneras:
   `docs/design-system/05-relevamiento-motivos-deshabilitados.md`). Una sola frase con la misma forma en todo el
   sistema, también en un botón del pie de un modal (§6.2) y en un enlace deshabilitado ("Editar cliente"):
@@ -127,13 +147,13 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   **"No se puede {acción} {sobre qué}: {qué le pasa a esta fila}"**, por ejemplo "No se puede eliminar el chofer: está activo".
 
   - **"No se puede" va primero:** se entiende de entrada que la acción no se va a poder hacer.
-  - **La acción, con el verbo del botón y su objeto** ("eliminar el chofer", "emitir la factura", "cambiar el
+  - **La acción, con el verbo del botón y su objeto** ("eliminar el chofer", "emitir el comprobante", "cambiar el
     estado"): muchos botones son solo un ícono y la frase tiene que decir qué hacen. En el lugar del siguiente paso,
-    aunque el circuito ya terminó, se nombra la acción de su ícono ("No se puede emitir la factura: ya se emitió
+    aunque el circuito ya terminó, se nombra la acción de su ícono ("No se puede emitir el comprobante: ya se emitió
     FAC-00000012"); nunca un motivo suelto como "Primero generá la proforma" o "Sin pasos pendientes".
   - **El porqué dice qué le pasa a esa fila** (su estado, el documento en el que está, lo que le falta), no la regla
     general: "está activo", no "solo se eliminan los inactivos". Solo cuando el motivo es el tipo de la fila se dice
-    la regla ("No se puede editar la factura: solo se editan los recibos").
+    la regla, salvo la excepción de Editar en cuenta corriente indicada arriba.
   - **No da órdenes** ("anulá la proforma", "emití una nota de crédito", "inactivalo"): destrabar algo puede tener
     consecuencias, y la persona lo decide sabiendo qué implica, desde la acción que corresponde. Lo que falta se dice
     como un hecho ("falta cargar N° entrega Rukas"). Los avisos que dejan algo pendiente sí dicen qué hace falta, con
@@ -148,7 +168,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 |---|---|
 | Choferes, camiones | No se puede eliminar el chofer: está activo |
 | Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado |
-| Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
+| Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir el comprobante: la proforma todavía no está aceptada |
 | Proforma de Rukas (pie) | No se puede generar la proforma: hay 3 diferencias sin resolver |
 | Presupuestos | No se puede generar el viaje: el presupuesto todavía no está aceptado |
 | Cuenta corriente | No se puede editar el recibo: está anulado · No se puede anular la factura: se corrige con una nota de crédito |
@@ -156,7 +176,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 - **Cambiar estado** (banderita, desde el 22/10): **mismo ícono, mismo color, mismo significado en todo el
   sistema.** Es gris porque es una acción de gestión: abre una ventana para elegir entre varios estados (para
   adelante, para atrás o rechazado). El **verde** queda solo para el paso puntual del circuito que se hace con un
-  clic (Marcar aceptada, Emitir factura, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
+  clic (Marcar aceptada, Emitir comprobante, Generar viaje), así hay uno solo por fila. Va antes del siguiente paso.
   Abre siempre la misma ventana "Cambiar estado del … #N" (`SGTL.opcionesEstado`): resumen, estado actual y
   los estados a los que puede pasar como tarjetas, cada una con su explicación; Cancelar + Guardar; si no se
   elige ninguno, "Elegí el estado nuevo.". Una tarjeta que no se puede elegir aparece gris con el motivo en rojo
@@ -167,7 +187,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   elegir un estado es opcional: volver a tocar la tarjeta elegida la desmarca. Si la fila no admite cambios
   (facturado, en una proforma emitida), la banderita queda deshabilitada con el motivo.
 - El "siguiente paso" ocupa un solo lugar y cambia según el estado (en proformas: Marcar
-  aceptada → Emitir factura). Si no hay siguiente paso, ese lugar queda deshabilitado con el
+  aceptada → Emitir comprobante). Si no hay siguiente paso, ese lugar queda deshabilitado con el
   motivo.
 - No se usan: la "i" azul ni "Más detalles" (es el ojo), las flechas, el muñequito amarillo ni "Inactivar"
   con texto (es el interruptor o el siguiente paso, según corresponda).
@@ -240,6 +260,29 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   orígenes y destinos y grupos. Las tablas de configuración (facturación, e-mail) no se paginan.
 - **Columnas:** si la pantalla filtra por estado, la tabla muestra la columna Estado. La columna
   de acciones siempre se titula "Acciones".
+- **Ordenación de tablas (26/10):** cuando una tabla permite ordenar, se elige con un clic o toque en el botón del
+  encabezado de cada columna ordenable, con el texto de la columna y una flecha de Bootstrap Icons. No se agrega un
+  selector de orden aparte. El primer clic ordena ascendente, el segundo descendente; al elegir otra columna empieza
+  ascendente. `SGTL.tabla.habilitarOrden` actualiza la flecha y deja `aria-sort` solo en el encabezado activo; el
+  `aria-label` del botón indica qué orden aplicará el siguiente clic. El orden se aplica a todos los resultados
+  filtrados antes de paginar y se conserva al filtrar, cambiar de página y exportar. Hasta elegir una columna, se
+  conserva el orden inicial de la pantalla.
+  En Listar y Gestionar choferes se puede ordenar por DNI, apellido y nombre, o fecha de alta; en Listar y Gestionar
+  camiones, por marca o fecha de alta. En Gestionar orígenes y destinos, ambas pestañas permiten ordenar por
+  descripción, cliente, provincia o localidad. En Gestionar presupuestos, por número, fecha, cliente, ruta, km o
+  importe. En Listar y Gestionar viajes, por número de viaje, cliente, fecha de inicio, fecha de fin, origen,
+  destino, número de remito o cantidad de km. En Listar y Gestionar clientes, por CUIT, razón social o fecha de alta.
+  En Listar y Gestionar proformas, por número, cliente, total, fecha o usuario; sus columnas se muestran en el orden
+  Número, Cliente, Total, Fecha, Usuario, Estado, Acciones.
+  En Gestionar cuenta corriente, la vista de movimientos permite ordenar por Cliente, Comprobante, Concepto, Fecha,
+  Total, Cancelado o Saldo (27/10); Fecha va entre Concepto y Total. La API ordena los comprobantes principales antes
+  de paginar; las aplicaciones permanecen debajo de su comprobante, en orden cronológico, para conservar el saldo
+  progresivo. El mismo orden se usa en PDF y Excel. Con un cliente elegido, la columna Cliente no se muestra.
+  Los recibos y los créditos internos emitidos con saldo disponible ofrecen el siguiente paso «Imputar recibo» o
+  «Imputar crédito», con `bi-diagram-3` (27/10). El formulario tiene el mismo título que la acción y permite aplicar
+  el saldo en partes a comprobantes del mismo cliente. En recibos, «Saldo sin imputar» muestra el remanente y la ayuda
+  aclara que se puede emitir sin seleccionar deudas e imputar después.
+  Las demás pantallas incorporan columnas ordenables cuando se definan.
 
 ---
 
@@ -261,8 +304,8 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Hojas de ruta | (ítem principal, nuevo 24/10, en plural desde el 27/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio, que en la base sigue llamándose "Hoja de ruta", y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
-| Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Clientes | Listar clientes · Gestionar clientes |
+| Viajes | Listar viajes · Gestionar viajes · Gestionar orígenes y destinos · Gestionar tarifas · Gestionar presupuestos |
 | Facturación | Listar proformas · Gestionar proformas · Gestionar cuenta corriente · Gestionar tipos de comprobante (solo administradores; se mudó desde Configuración el 22/10) |
 | Configuración | Gestionar e-mail · Gestionar integración de WhatsApp · Gestionar empresa (nueva, 23/10) · Gestionar contenido (toda la sección, solo administradores) |
 | Usuarios | Listar usuarios · Gestionar usuarios · Gestionar grupos y permisos |
@@ -390,6 +433,14 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   probá de nuevo."
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
   **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
+- **Error del login** (28/10, pedido del usuario): dentro del formulario, arriba de los campos, con
+  `SGTL.avisoFormulario` y `alert alert-danger`, ícono y texto en negrita. La clase compartida
+  `sgtl-aviso-animado` hace una sacudida de 380 ms al aparecer, una sola vez por intento; queda quieto
+  después. Con `prefers-reduced-motion: reduce` se muestra sin animación. Lleva `role="alert"`.
+  **Un error no se va solo** (Rocío, 28/10): queda hasta que se corrige el usuario o la contraseña (se va al escribir en
+  cualquiera de los dos) y, si el próximo intento vuelve a fallar, aparece de nuevo. Solo se van solos los avisos de éxito.
+  (`SGTL.avisoFormulario` todavía acepta `data-sgtl-duracion`, pero no se usa para errores.) El aviso de campos marcados
+  conserva su comportamiento de validación, indicado abajo.
 - **"Revisá los campos marcados." se va solo** cuando ya no queda ningún campo en rojo (25/10, `SGTL.avisoFormulario`).
   Un error de la API que es de un campo va debajo de ese campo, no arriba (por ejemplo, una fecha repetida).
 - **Error que alcanza a varias cosas** (25/10, tarifas): una línea general con el total y, debajo, la lista agrupada por lo
@@ -456,14 +507,17 @@ menú (§3.1). El título del modal es el mismo texto que el botón que lo abri�
 | Botón de alta y título de su modal | "Registrar chofer", "Registrar camión", "Registrar viaje", "Registrar cliente", "Registrar usuario", "Registrar grupo", "Registrar origen" / "Registrar destino", "Registrar tabla de tarifas", "Registrar proforma", "Registrar recibo", "Registrar configuración de e-mail" |
 | Editar (tooltip y título del modal) | "Editar camión" |
 | Ver detalle | tooltip "Ver detalle"; título del modal "Ver detalle del camión"; en un documento, "Ver factura FAC-00000012" (§1.4) |
-| Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir factura directa", "Emitir factura desde proforma", "Emitir nota de crédito", "Emitir nota de débito"; el título de la ventana es la opción elegida; el pie, "Emitir factura" / "Emitir nota de crédito" |
+| Emitir comprobantes (cuenta corriente) | menú "Emitir comprobante": "Emitir comprobante directo", "Emitir comprobante desde proforma", "Emitir crédito", "Emitir Débito". Directo, crédito y débito abren formularios con ese mismo título y botón principal; desde proforma lleva a Gestionar proformas, cuya acción y ventana dicen "Emitir comprobante" |
 | Pie de los modales | "Cancelar", "Guardar", "Eliminar", "Generar", "Emitir recibo", "Cerrar" |
-| Acciones de la fila | "Inactivar", "Activar", "Ver PDF", "Editar recibo", "Anular recibo", "Marcar como aceptada", "Emitir factura", "Exportar" |
+| Acciones de la fila | "Inactivar", "Activar", "Ver PDF", "Editar recibo", "Anular recibo", "Marcar como aceptada", "Emitir comprobante", "Exportar" |
 | Confirmación | "¿Eliminar el camión ABC123?" |
 
 - "Registrar proforma" crea el borrador; "Generar" le asigna el número. "Registrar recibo" abre el
-  formulario; el botón del pie es "Emitir recibo". "Emitir factura" (siguiente paso de una proforma) abre la
-  ventana "Emitir factura".
+  formulario; el botón del pie es "Emitir recibo". "Emitir comprobante" (siguiente paso de una proforma) abre la
+  ventana "Emitir comprobante".
+- **Emitir Débito interno (27/10):** ofrece «Comprobante interno relacionado» como selector opcional del mismo
+  cliente, con «Sin vincular». Elegir un FC conserva los importes nuevos del débito; el vínculo se muestra en el
+  detalle como dato de texto y en el PDF. Las fechas y la referencia se validan con las funciones compartidas.
 - **Nada de sustantivos solos en botones ni títulos** ("Recibo", "Factura directa", "Tipos de comprobantes") ni
   de "Nuevo…" / "Nueva…".
 
@@ -653,7 +707,8 @@ Esto define solo cómo se muestran y cómo se cargan.
 - **Mayúscula solo al principio** ("Cuenta corriente de clientes", "Cambiar contraseña") y con
   tildes ("Razón social", "Sánchez", "Ocurrió"). **Los documentos van en minúscula dentro de un texto:** "la
   factura", "el recibo", "la nota de crédito", "la proforma", "el presupuesto" (no "la Factura" ni "la Nota de
-  Crédito").
+  Crédito"). La acción "Emitir Débito" de Cuenta corriente conserva la mayúscula pedida el 26/10,
+  también en el título y el botón del formulario.
 - **Títulos, botones y etiquetas sin punto final; los mensajes, con punto.**
 - **Sin inglés a la vista:** "Alta" (no "Alta (INSERT)"), "Inicio de sesión" (no "Login"). En WhatsApp:
   "Token de acceso" e "ID del número de teléfono", con el nombre que usa Meta ("Access Token", "Phone Number ID") en la

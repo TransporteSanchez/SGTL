@@ -38,17 +38,23 @@ Revisá cada punto contra tus cambios (pedile a tu IA: "Revisá los cambios con 
 AGENTS.md"):
 
 1. **Botones de la fila:** solo ícono con tooltip y `aria-label`, con `SGTL.botonFila` / `SGTL.accionesFila`,
-   en el orden Ver detalle · Editar · Ver PDF · Cambiar estado · Siguiente paso · Activar/Inactivar ·
-   Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.** El motivo es siempre
+   en el orden Ver detalle · Editar · Ver PDF · Enviar por e-mail (en comprobantes y proformas) · Cambiar estado ·
+   Siguiente paso · Activar/Inactivar ·
+   Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.**
+   Excepción: en Gestionar tipos de comprobante, Eliminar se oculta para sucursales, numeradores y tipos
+   que ya tienen relaciones (§1.4). En cuenta corriente, Imputar solo se muestra en créditos internos y recibos;
+   en los demás tipos se oculta. En esa pantalla, Editar en los comprobantes que no son recibos dice únicamente
+   "No se puede editar el comprobante"; los recibos anulados conservan su motivo específico. Para las demás acciones, el motivo es siempre
    "No se puede {acción} {sobre qué}: {qué le pasa a esta fila}" ("No se puede eliminar el chofer: está activo"), sin
-   órdenes ni reglas sueltas como "Primero…" o "Solo se…" (la regla va solo si el motivo es el tipo de la fila: "No se
-   puede editar la factura: solo se editan los recibos"); vale también para el pie de un modal. Fuera de las filas,
+   órdenes ni reglas sueltas como "Primero…" o "Solo se…" (la regla va solo si el motivo es el tipo de la fila);
+   vale también para el pie de un modal. Fuera de las filas,
    los botones llevan texto ("Editar cliente", "Reemplazar Excel"), no solo un ícono. (§1.4, §1.6)
-2. **"Ver PDF"** abre la vista previa dentro del sistema con el pie Cerrar · Enviar por e-mail · Imprimir ·
-   Descargar PDF. "Enviar por e-mail" va ahí, no como botón de la fila. **El ojo** de un documento lo abre
-   completo, en solo lectura. (§1.4)
+2. **"Ver PDF"** abre la vista previa dentro del sistema. En los comprobantes, el pie es Cerrar · Imprimir ·
+   Descargar PDF y "Enviar por e-mail" va en la columna Acciones, después de "Ver PDF". En presupuestos, el pie
+   sigue siendo Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; en proformas, Cerrar · Imprimir · Descargar PDF.
+   **El ojo** de un documento lo abre completo, en solo lectura. (§1.4)
 3. **Verbos en infinitivo:** el botón que abre un modal y el título del modal dicen lo mismo ("Registrar
-   recibo", "Emitir factura directa"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
+   recibo", "Emitir comprobante directo"). Nada de "Nuevo…", "Alta" ni sustantivos solos. Las opciones del menú
    empiezan con verbo ("Gestionar…", "Listar…") y el título de la pantalla es igual a la opción. (§3.1, §6.1)
 4. **Pie de los modales:** Cancelar + el verbo ("Guardar", "Eliminar", "Emitir recibo"). **Nunca
    "Confirmar".** Los formularios llevan `data-bs-backdrop="static"`; los de detalle, solo "Cerrar", armados con los
@@ -56,7 +62,10 @@ AGENTS.md"):
 5. **Avisos con `SGTL.toastExito` / `SGTL.toastError`**; el error de un modal abierto, dentro del modal con
    `SGTL.avisoFormulario` (si alcanza a varias cosas, una línea con el total y la lista agrupada como `detalle`, no "el
    primero y N más"). El que deja algo pendiente dice qué pasa, por qué no se resuelve solo y "es necesario que…"
-   ("Como está entregado no se cambia solo, es necesario que revises ese viaje."). **Nunca `alert()`.** (§5.1)
+   ("Como está entregado no se cambia solo, es necesario que revises ese viaje."). En el login, el error va dentro del
+   formulario con el aviso rojo y `sgtl-aviso-animado` (movimiento breve al aparecer, desactivado si se prefiere reducir
+   movimiento) y **no se va solo**: queda hasta que se corrige el usuario o la contraseña. Solo los avisos de éxito se van
+   solos. **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)
 7. **Formularios con `SGTL.validador`:** asterisco rojo en lo obligatorio, `form-label` con `for`, el error
    debajo de cada campo, corto y empezando por el dato ("Camión ocupado: viaje #45, de 08:00 hs a 11:30 hs.") y
@@ -66,7 +75,7 @@ AGENTS.md"):
 8. **Textos:** voseo ("Completá", "Seleccioná", "Probá de nuevo"), **mayúscula solo al principio** (también
    "la factura", "el recibo", "la nota de crédito", "la proforma" dentro de un texto), títulos y botones sin
    punto, mensajes con punto, sin inglés a la vista, "km" en minúscula y sin "s" ("130 km", §7.3). **Nunca un error
-   técnico** en pantalla ni en los mensajes de la API. (§9)
+   técnico** en pantalla ni en los mensajes de la API. Excepción: "Emitir Débito" en Cuenta corriente. (§9)
 9. **Estados con `SGTL.estado`** (etiqueta de color según su significado); no inventes colores. Lo que acompaña al
    estado en una tabla (en qué proforma está, qué falta resolver) va en el ícono que abre un globito
    (`SGTL.botonInfo`), no en más etiquetas. (§4)
@@ -76,7 +85,9 @@ AGENTS.md"):
     `type="text" inputmode="decimal"` con `SGTL.enlazarMascaraMonto` y se leen con `SGTL.montoCentavos`. Nunca
     `type="number"` para plata. (§7.3)
 12. **Tablas con `SGTL.tabla`:** rayadas, alineadas por tipo de dato, "Cargando…" mientras busca y el texto de
-    sin resultados del sistema. (§2)
+    sin resultados del sistema. Si una tabla permite ordenar, se hace clic en el encabezado con
+    `SGTL.tabla.habilitarOrden`: primer clic ascendente, segundo descendente. El orden se aplica antes de paginar y
+    también al exportar. (§2)
 13. **Filtros:** cada uno con su cruz (`SGTL.filtros`), "Buscar" siempre, Enter busca. (§1.3, §3.3)
 14. **Íconos solo de Bootstrap Icons**, con `aria-hidden="true"`. Sin estilos propios de botones, avisos ni
     tablas en la pantalla. (§11, §12)

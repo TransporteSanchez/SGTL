@@ -261,7 +261,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Choferes/Buscar
         [HttpGet]
         [Route("api/Choferes/Buscar")]
-        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string busqueda = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8)
+        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string dni = null, string busqueda = null, string estadoChofer = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 8, string orden = null, string direccion = null)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -327,8 +327,32 @@ namespace WebApi_TransporteSanchez.Controllers
                         pageSize = 8;
                     }
 
-                    var results = query
-                        .OrderByDescending(c => c.Chofer_ID)
+                    var direccionOrden = string.IsNullOrWhiteSpace(direccion) ? "asc" : direccion.Trim().ToLowerInvariant();
+                    var descendente = direccionOrden == "desc";
+                    IOrderedQueryable<CHOFERES> queryOrdenada;
+                    switch (direccionOrden == "asc" || descendente ? (orden ?? "").Trim().ToLowerInvariant() : "")
+                    {
+                        case "apellidonombre":
+                            queryOrdenada = descendente
+                                ? query.OrderByDescending(c => c.Apellido).ThenByDescending(c => c.Nombre).ThenByDescending(c => c.Chofer_ID)
+                                : query.OrderBy(c => c.Apellido).ThenBy(c => c.Nombre).ThenBy(c => c.Chofer_ID);
+                            break;
+                        case "dni":
+                            queryOrdenada = descendente
+                                ? query.OrderByDescending(c => c.DNI.Length).ThenByDescending(c => c.DNI).ThenByDescending(c => c.Chofer_ID)
+                                : query.OrderBy(c => c.DNI.Length).ThenBy(c => c.DNI).ThenBy(c => c.Chofer_ID);
+                            break;
+                        case "fechaalta":
+                            queryOrdenada = descendente
+                                ? query.OrderByDescending(c => c.Fecha_Alta).ThenByDescending(c => c.Chofer_ID)
+                                : query.OrderBy(c => c.Fecha_Alta).ThenBy(c => c.Chofer_ID);
+                            break;
+                        default:
+                            queryOrdenada = query.OrderByDescending(c => c.Chofer_ID);
+                            break;
+                    }
+
+                    var results = queryOrdenada
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
                         .Select(c => new ChoferDto

@@ -62,6 +62,21 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
 | 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | Commit del 27/10, sin pushear | **Pendiente:** correr `06` y `07` antes de recompilar; pasos en §43 |
+| 44 | Emitir comprobantes directos con tipos de deuda configurados, como FC | Hecho en código (26/10); falta aplicar la migración y probar en VM | Incluido en `facugodoy` (27/10) | Correr `database/cuenta-corriente/13_comprobantes_directos_configurables.sql`, recompilar y probar (§44) |
+| 46 | Emitir comprobantes internos desde proformas y cancelarlos con un crédito interno | Migraciones 14 y 15 aplicadas y crédito cancelatorio emitido desde proforma según el usuario (27/10); faltan los otros recorridos en VM | Incluido en `facugodoy` (27/10) | Probar una factura y un recibo, y revisar el resto de §46 |
+| 47 | Editar la identidad de tipos de comprobante y marcar los electrónicos | Migración 16 aplicada según el usuario (27/10); falta probar en VM | Incluido en `facugodoy` (27/10) | Corregir una sigla y una letra con historial, y comprobar el bloqueo electrónico (§47) |
+| 48 | Emitir créditos y débitos internos directos desde cuenta corriente | Corregido en código (27/10); falta desplegar y probar en VM | Incluido en `facugodoy` (27/10) | Recompilar la API, recargar y emitir con C y D activos, aunque NC y ND estén inactivos (§48) |
+| 49 | Emitir créditos internos sin imputar e imputarlos después | Hecho en código (27/10); falta desplegar y probar en VM | Incluido en `facugodoy` (27/10) | Emitir C con saldo libre e imputarlo parcial y sucesivamente a comprobantes internos de deuda (§49) |
+| 50 | Enviar comprobantes con su proforma y enviar proformas por e-mail | Hecho en código (27/10); falta probar entrega real por SMTP | Incluido en `facugodoy` (27/10) | Recompilar, recargar y comprobar uno o dos PDF según la casilla, y el envío desde Listar y Gestionar proformas (§50) |
+| 51 | Ordenar las columnas de cuenta corriente | Hecho en código (27/10); pruebas locales OK | Incluido en `facugodoy` (27/10) | Recargar y alternar las siete columnas; comprobar filtros, paginación, aplicaciones, PDF y Excel (§51) |
+| 52 | Imputar recibos después de emitirlos | Hecho en código (27/10); pruebas locales OK | Incluido en `facugodoy` (27/10) | Emitir un recibo sin deudas y usar «Imputar recibo» parcial y sucesivamente (§52) |
+| 53 | Vincular un débito interno con un FC | Hecho en código (27/10); migración 17 pendiente de aplicar | Incluido en `facugodoy` (27/10) | Aplicar el script 17 y emitir un D relacionado con un FC del mismo cliente (§53) |
+| 54 | Acentos en el concepto de recibos sin imputar | Texto de emisión corregido; script 18 preparado para datos anteriores, sin ejecutar | Incluido en `facugodoy` (27/10) | Recompilar y emitir un recibo; Rocío debe revisar y aplicar 18 para los ya guardados (§54) |
+| 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
+| 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
+| 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
+
+**Tanda de `facugodoy` del 27/10:** cambios pendientes incluidos en commits por tema; API compilada y 76 pruebas Node correctas. Los scripts SQL se versionaron sin ejecutarlos; las pruebas en VM y las aplicaciones de base indicadas en cada sección siguen pendientes.
 
 **Cómo aplicar en la VM lo ya subido:** `git pull` en `rocionuvoli` → recompilar la API en Visual Studio → hard refresh del navegador.  
 **Para 1.4:** primero `git push` desde la Mac, después pull en la VM y reiniciar Live Server.
@@ -791,7 +806,7 @@ Orden acordado con Rocío el 19/10: push de `rocionuvoli` → prueba mínima en 
 
 Tres commits de Facu (`a9a9d4c`, `e64d127`, `e701a4f`) sobre nuestro `ec177a1`. Conflictos en dos archivos:
 - `cuenta-corriente-clientes.html`: queda nuestro ícono de SGTL + el `sgtl.css` que agregó Facu.
-- `gestion-gruposypermisos.html`: Facu la cambió sobre la pantalla vieja mientras la rediseñábamos (`76f611f`). Queda **nuestro diseño** (`SGTL.ajax`, toasts, sin `alert()` ni modal de éxito) con **lo de Facu adentro**: permisos agrupados por menú con una casilla que marca todo el grupo, buscador de usuarios, y la pestaña Usuarios **solo agrega** (como su API). Botón "Agregar al grupo". Los estilos de la lista pasaron de `sgtl.css` a la página. Sus tests `tests/usuarios-por-grupo.test.js` y `tests/permisos-agrupados.test.js` se adaptaron (no se pudieron correr: en la Mac no hay Node).
+- `gestion-gruposypermisos.html`: Facu la cambió sobre la pantalla vieja mientras la rediseñábamos (`76f611f`). En ese merge quedó **nuestro diseño** (`SGTL.ajax`, toasts, sin `alert()` ni modal de éxito) con **lo de Facu adentro**: permisos agrupados por menú con una casilla que marca todo el grupo y un buscador de usuarios. En ese momento la pestaña Usuarios solo agregaba integrantes; se amplió el 26/10 (ver pendiente resuelto abajo). Sus tests `tests/usuarios-por-grupo.test.js` y `tests/permisos-agrupados.test.js` se adaptaron (no se pudieron correr: en la Mac no hay Node).
 
 **La base — aplicado el 20/10:** `database/menu/02_presupuestos_para_grupos_con_viajes.sql`. Diagnóstico: ningún menú fuera del catálogo de la API, ninguno del catálogo faltante (Presupuestos ya existía); solo el grupo **Administradores** (ID 1) tenía Gestión de viajes sin Presupuestos. Se le dio el permiso y la verificación dio 0. Facu sacó la regla del menú lateral que dejaba entrar a Presupuestos con Gestión de viajes; el script le da el permiso Presupuestos a esos grupos. El diagnóstico también lista los menús que la API no reconoce (ver el último pendiente).
 
@@ -807,12 +822,12 @@ Tres commits de Facu (`a9a9d4c`, `e64d127`, `e701a4f`) sobre nuestro `ec177a1`. 
 - [ ] Cuenta corriente: emitir un recibo y un comprobante → el modal se cierra y aparece el toast "Se generó el Recibo …" / "Se generó la Factura …".
 - [ ] Cuenta corriente con "Solo pendientes": un recibo sin imputar aparece al final como "Sin imputar"; al abrir una factura, las aplicaciones de recibos y NC se ven en celeste.
 - [ ] Grupos y permisos → Permisos: los permisos salen en tarjetas por menú (General, Choferes, …); la casilla del menú marca y desmarca todo, y queda a medias si hay algunos. Guardar y volver a elegir el grupo.
-- [ ] Grupos y permisos → Usuarios: los que ya están salen con "En el grupo" y sin casilla; los admin, sin casilla. Buscar, tildar alguno, borrar la búsqueda (sigue tildado) y "Agregar al grupo" → toast "Se agregó 1 usuario al grupo." y pasa a "En el grupo". Sin nada tildado, el botón queda deshabilitado.
+- [ ] Grupos y permisos → Usuarios: elegí un grupo, buscá en Disponibles y usá "Agregar todos"; comprobá que los ocultos por el filtro no se mueven. Repetí con "Quitar todos" en Asignados. Deshacé y repetí con acciones individuales; Guardar debe conservar los cambios al volver a elegir el grupo. Un usuario cuyo único grupo es el elegido debe mostrar Quitar deshabilitado con el motivo. Los administradores no aparecen en las listas.
 - [ ] Un usuario (no admin) de un grupo con Gestión de viajes sigue viendo Presupuestos (después del script).
 - [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada test de `tests/` (tienen que imprimir `OK`).
 
 **Para la ronda con Facu (decisiones de Rocío del 20/10: queda su versión mientras ande; analizar a futuro si se cambia):**
-- [ ] **Usuarios por grupo solo agrega** (`POST api/Grupos/{id}/Usuarios` ya no saca a nadie). Para sacar a alguien hay que editar el usuario en Gestionar usuarios. Ver si conviene que la pestaña también permita sacar.
+- [x] **Usuarios por grupo permite agregar y quitar** (26/10): dos listas con búsquedas independientes, acciones individuales y por todos los visibles, Deshacer cambios y Guardar. `POST api/Grupos/{id}/Usuarios/Cambios` aplica las altas y bajas pendientes; el `POST /Usuarios` conserva su semántica aditiva y ambos requieren sesión y permiso. La API impide quitar el último grupo de un usuario común, también al eliminar un grupo. Probar con el paso "Grupos y permisos → Usuarios" de arriba y `node tests/usuarios-por-grupo.test.js`.
 - [ ] **La API crea menús sola** (`AsegurarCatalogoMenuPermisos`): al abrir Permisos por grupo da de alta en `MENU` cada nombre de su catálogo que no encuentra. Si en la base un menú tiene otro nombre (Facu agregó alias como "Gestionar viajes" y "Consultar auditoría" en `sidebar-loader.js`), queda duplicado. Diagnóstico del 20/10 (script `02`): hoy todos los menús de la base coinciden con el catálogo, así que no se crea ningún duplicado. Queda para analizar si conviene un script fijo en lugar de que lo haga la API.
 - [ ] Preguntarle a Facu: el vencimiento de la factura ya no usa `FechaVencimientoSugerida` de la API (que puede venir de las condiciones del cliente) sino emisión + 10 días fijo. ¿Fue a propósito?
 - [ ] En "Solo pendientes", el saldo de un recibo sin imputar sale en rojo como si fuera deuda: ¿mostrarlo distinto?
@@ -968,25 +983,25 @@ funcionando (`sgtl-ui.js`).
 22/10):** Registrar proforma en verde, Exportar solo ícono, filtros en una fila con su cruz y sin Limpiar, un solo
 filtro "Fecha" (Desde y hasta) en lugar de Desde / Hasta en AAAA-MM-DD, sin el contador "N resultados" aparte.
 Acciones de cada fila con los botones del design system, en el mismo orden y deshabilitadas con el motivo cuando
-no aplican: ver, editar, PDF, siguiente paso (Marcar aceptada → Emitir factura) y anular / eliminar. Los 14 + 5
+no aplican: ver, editar, PDF, siguiente paso (Marcar aceptada → Emitir comprobante) y anular / eliminar. Los 14 + 5
 `alert()` / `confirm()` y los modales propios ("Operación realizada", "Confirmar eliminación", "Cambiar estado")
 pasan a los avisos y la confirmación del sistema. Fechas del modal (período, carga, entrega) en DD/MM/AAAA con
-calendario (siguen guardando AAAA-MM-DD). Modales "Emitir factura" y "Anular factura": calendario del sistema,
+calendario (siguen guardando AAAA-MM-DD). Modales "Emitir comprobante" y "Anular factura": calendario del sistema,
 textos con mayúscula solo al principio y con tildes. PDF: errores con el aviso del sistema.
 - [ ] Gestionar proformas: cada fila muestra 5 botones; en un borrador, Editar y Eliminar habilitados y el siguiente
   paso deshabilitado ("Primero generá la proforma"); en una Generada, Marcar aceptada → confirmación → toast.
-- [ ] Una Aceptada → Emitir factura: modal "Emitir factura", fechas DD/MM/AAAA, vencimiento a 10 días. **Solo con
+- [ ] Una Aceptada → Emitir comprobante: modal "Emitir comprobante", fechas DD/MM/AAAA, vencimiento a 10 días. **Solo con
   datos de prueba: consume numeración real.**
 - [ ] Anular una proforma Generada: confirmación con el texto de qué pasa → toast "Proforma anulada.".
 - [ ] Eliminar un borrador: confirmación → toast "Borrador eliminado.".
 - [ ] Registrar proforma: guardar sin cliente → aviso rojo dentro del modal; fechas con calendario.
 - [ ] Proforma de Rukas (cliente con plataforma): el período se ve en DD/MM/AAAA después de importar el Excel.
 - [ ] Filtro Fecha: elegir un rango busca; la cruz lo borra. Exportar (ícono) abre el modal de Excel / PDF.
-- [ ] Listar proformas: ver, PDF y Emitir factura (solo en Aceptadas); el detalle se titula "Ver proforma …".
+- [ ] Listar proformas: ver, PDF y Emitir comprobante (solo en Aceptadas); el detalle se titula "Ver proforma …".
 
 **Cuenta corriente (commit "Cuenta corriente: design system en la pantalla y sus modales", pantalla de Facu, con
-el OK de Rocío del 22/10):** encabezado con Exportar solo ícono, "Emitir comprobante" gris (con "Emitir factura
-directa", "Emitir nota de crédito", etc.) y "Registrar recibo" en verde. Filtros con su cruz y sin Limpiar; un solo
+el OK de Rocío del 22/10):** encabezado con Exportar solo ícono, "Emitir comprobante" gris (con "Emitir comprobante
+directo", "Emitir comprobante desde proforma", "Emitir crédito" y "Emitir Débito") y "Registrar recibo" en verde. Filtros con su cruz y sin Limpiar; un solo
 filtro "Fecha" (Desde y hasta, entra con los últimos 30 días; la cruz lo deja sin límite) en lugar de los dos
 `type="date"`; Buscar gris. Tabla rayada, fechas y estado centrados, estados con las etiquetas del sistema (§4),
 ojo gris de "Ver detalle" y Acciones fija a la derecha. Sin el modo oscuro suelto (§10). Los `prompt()`, `confirm()`
@@ -1010,9 +1025,9 @@ También: el paginador compartido no se ocultaba sin resultados en ninguna panta
 - [ ] Ojo de un recibo emitido → Anular recibo: confirmación encima del detalle con "Motivo de la anulación";
   Anular sin motivo → "Completá el motivo."; con motivo → toast "Recibo anulado." (solo datos de prueba).
 - [ ] Un recibo anulado → Eliminar recibo: confirmación → toast "Recibo eliminado." (solo datos de prueba).
-- [ ] Emitir comprobante → Emitir nota de crédito: título y botón dicen "Emitir nota de crédito"; sin cliente, la
+- [ ] Emitir comprobante → Emitir crédito: título y botón dicen "Emitir crédito"; sin cliente, la
   factura relacionada dice "Seleccioná un cliente primero".
-- [ ] Ojo de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
+- [ ] Sobre de una factura → Enviar por e-mail: el botón muestra "Generando PDF…" y "Enviando…"; al terminar se cierra
   y avisa "Comprobante enviado a …" (con un correo de prueba).
 - [ ] Exportar (ícono): modal "Exportar" con Vista previa, Excel y PDF; los tres bajan lo filtrado.
 
@@ -1026,8 +1041,46 @@ cargadas." y errores sin textos técnicos.
 - [ ] Guardar una sucursal sin datos: Código y Nombre en rojo con su mensaje; el cursor va a Código.
 - [ ] Interruptor de una sucursal activa → toast "Sucursal inactivada." y la etiqueta pasa a Inactivo; otra vez →
   "Sucursal activada.". Igual con un numerador y un tipo de comprobante (con datos de prueba).
-- [ ] Lápiz de un tipo de comprobante: carga el formulario con el código bloqueado; la cruz gris lo limpia.
-- [ ] Guardar con un código repetido: toast rojo con el mensaje de la API.
+- [ ] Lápiz de un tipo no electrónico: carga sigla y letra para editar, aunque ya tenga comprobantes; el impacto solo se puede corregir si no hay comprobantes. Los datos fijos muestran el motivo. Cancelar limpia el formulario.
+- [ ] Guardar con el mismo código y la misma letra: toast rojo con el mensaje de la API; con otra letra, se registra una segunda configuración.
+
+**Eliminar configuraciones sin relaciones (26/10):** en Gestionar tipos de comprobante, las filas de sucursales,
+numeradores y tipos muestran Eliminar solo cuando la API permite el borrado físico. Inactivar conserva el registro.
+Una sucursal no se borra si está asignada a un tipo o figura por código en un comprobante; un numerador no se borra
+si está asignado a un tipo; un tipo con comprobantes tampoco se borra. La configuración propia del tipo y su
+fila en `COMPROBANTES_NUMERADORES` se eliminan junto con él cuando no tiene comprobantes. La API vuelve a
+comprobar las relaciones al recibir Eliminar; si aparecieron mientras la pantalla estaba abierta, responde con un
+motivo y la lista se actualiza.
+El código de una sucursal que figura en comprobantes ya no se puede cambiar, para conservar esa relación histórica.
+La base actual no guarda el ID del numerador en cada comprobante: una asignación pasada que ya se quitó no se puede
+reconstruir desde esos documentos.
+- [x] Prueba local de la pantalla: visibilidad de Eliminar, Inactivar con PUT y conflicto por relación nueva
+  (`node tests/configuracion-facturacion-eliminar.test.js`).
+- [x] Compilación de la API y 32 pruebas de Node sin errores. El interruptor usa una ruta de estado que no cambia
+  los demás campos: inactivar un numerador no retrocede su último número si hubo una emisión después de cargar la lista.
+- [ ] Probar en VM con registros de prueba: crear una sucursal y un numerador sin uso (ambos muestran Eliminar);
+  crear un tipo que los use (desaparece Eliminar de ambos y aparece en el tipo); eliminar el tipo sin comprobantes
+  (vuelve Eliminar en la sucursal y el numerador); eliminar ambos y comprobar que no reaparezcan al recargar.
+- [ ] Verificar con un tipo que ya tenga comprobantes: no muestra Eliminar. Inactivar y reactivar siguen cambiando
+  solo el estado. Una sucursal que figure en un comprobante no ofrece Eliminar ni permite cambiar su código.
+- [ ] Riesgo anterior, separado de este cambio: al guardar el formulario completo de un numerador abierto antes
+  de una emisión, se puede enviar un `UltimoNumero` viejo. Proteger el correlativo sin impedir su edición deliberada.
+
+**Tipos de comprobante por letra (26/10):** un mismo código puede tener configuraciones A y B separadas. La
+descripción y el impacto pertenecen al código; cada letra tiene su propia sucursal, numerador y estado. La emisión
+usa la configuración y el próximo número de la letra elegida. `TIPOS_COMPROBANTE` conserva un código único y sus
+relaciones históricas; la nueva migración `database/cuenta-corriente/12_tipos_por_letra.sql` cambia la clave de
+`FACTURACION_TIPOS_COMPROBANTE` y la unicidad del número visible. **No se ejecuta automáticamente contra la base
+compartida.** Las pantallas, el PDF, los correos y las respuestas de la API muestran el identificador completo,
+por ejemplo `FAC-B-0002-00000012`, para distinguir correlativos iguales.
+- [ ] Rocío: revisar y ejecutar `12_tipos_por_letra.sql` en la base compartida antes de probar la pantalla nueva.
+- [ ] En VM: registrar FAC B con el código FAC existente, la misma descripción e impacto, y otro numerador;
+  comprobar que FAC A y FAC B aparecen en filas distintas. Repetir FAC B debe mostrar el error de código y letra.
+- [ ] Editar, inactivar y eliminar una variante sin comprobantes: solo debe cambiar esa letra. Una variante con
+  comprobantes propios no ofrece Eliminar; la otra sí, salvo comprobantes históricos sin letra.
+- [ ] Emitir comprobantes de prueba A y B: el formulario debe mostrar el próximo número del numerador elegido para
+  cada letra y la API debe registrarlos sin mezclar configuraciones, aun si ambos correlativos coinciden. Al asignar
+  un numerador, comprobar que su próximo correlativo no exista ya para ese código, letra y sucursal.
 
 **Gestionar e-mail (commit "Configuración: design system en Gestionar e-mail", pantalla de Facu):** "Registrar
 configuración de e-mail" en verde (antes "Nueva configuración"), mismo título en el modal. Filas con lápiz, "Probar
@@ -1188,7 +1241,7 @@ siga la misma estructura que las demás. Rocío lo simuló en la Mac con la API 
   generar el viaje y verde después, Rechazado rojo; el viaje generado va como etiqueta "Viaje #N" debajo del estado
   (antes había un desplegable de estado dentro de la tabla y una columna Viaje).
 - **Botones de cada fila:** Editar · Ver PDF · Cambiar estado (banderita, nuevo) · Generar viaje · Eliminar.
-  "Enviar por e-mail" pasa al pie de "Ver PDF" (como en el detalle de cuenta corriente), así son cinco botones
+  "Enviar por e-mail" pasa al pie de "Ver PDF", así son cinco botones
   como en proformas y la tabla entra a 1366 px. Origen y destino van en una columna "Ruta".
 - **Ventana "Cambiar estado":** resumen del presupuesto, estado actual y los estados posibles como tarjetas con
   su explicación; Cancelar + Guardar; si no se elige ninguno, "Elegí el estado nuevo.". Usa el mismo
@@ -1347,10 +1400,11 @@ pasar el merge a las ramas del equipo juntas.
    es la nuestra** (cierra la sesión al cambiarla), adaptada a su API: no manda el usuario y con la sesión vencida va al
    login. Se sacó la de Facu de `views/header.html`.
 2. **Cuenta corriente:** de Facu, "Distribuir" en recibo y NC (por vencimiento), NC sobre varias facturas, montos
-   1.234,56 (`SGTL.montoCentavos` y compañía en `sgtl-ui.js`), arreglo del menú lateral. **Botones de la fila: cuatro
-   en todas** (Ver detalle · Editar · Ver PDF · Anular o Eliminar), deshabilitados con el motivo; "Enviar por e-mail"
-   en el pie de Ver PDF, como en presupuestos. **El ojo abre la vista completa de Facu** en solo lectura, sin agregarle
-   nada (el detalle chico queda solo para tipos que no sean factura, recibo o nota). Textos y títulos nuestros (§6.1);
+   1.234,56 (`SGTL.montoCentavos` y compañía en `sgtl-ui.js`), arreglo del menú lateral. **Botones de la fila: cinco
+   en todas** (Ver detalle · Editar · Ver PDF · Enviar por e-mail · Anular o Eliminar), deshabilitados con el motivo;
+   la ubicación del envío se actualizó el 27/10 (§42). **El ojo abre la vista completa de Facu** en solo lectura,
+   sin agregarle nada (el detalle chico queda solo para tipos que no sean factura, recibo o nota). Textos y títulos
+   nuestros (§6.1);
    ventanas de emisión extra grandes y con el alto del recibo, como las dejó Facu; anular y eliminar con la
    confirmación del sistema; sus mensajes nuevos, en pantalla y en la API, con minúscula ("factura", "nota de crédito").
 3. **Presupuestos:** mapa de Google y km automáticos (de Facu). **Sin la distancia de Google no se guarda** (opción A),
@@ -1381,18 +1435,20 @@ pudo compilar en la Mac.**
   en el campo; bien → toast "Contraseña cambiada. Volvé a iniciar sesión con la nueva." y vuelve al login; entra con la nueva.
 - [ ] Gestionar usuarios: alta con contraseña "abc" → mensaje de 8 a 20 caracteres con letras y números; editar sin
   tocar la contraseña → la conserva.
-- [ ] Cuenta corriente, botones de la fila: en una factura, Ver detalle y Ver PDF activos, Editar y Anular grises con el
-  motivo; en un recibo emitido, los cuatro activos; en uno anulado, Eliminar en lugar de Anular. Mismo lugar en todas
-  las filas, también en las aplicaciones desplegadas.
+- [ ] Cuenta corriente, botones de la fila: en una factura, Ver detalle, Ver PDF y Enviar por e-mail activos, Editar y
+  Anular grises con el motivo; en un recibo emitido, los cinco activos; en uno anulado, Enviar por e-mail deshabilitado
+  y Eliminar en lugar de Anular. Mismo lugar en todas las filas, también en las aplicaciones desplegadas.
 - [ ] El ojo de una factura, una NC y un recibo → la vista completa en solo lectura ("Ver factura FAC-…"), fechas
-  DD/MM/AAAA, solo Cerrar. Después, "Emitir factura directa" abre el formulario vacío y editable.
-- [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Enviar por e-mail · Imprimir · Descargar PDF; "Enviar por
-  e-mail" cierra el PDF y abre el envío.
+  DD/MM/AAAA, solo Cerrar. Después, "Emitir comprobante directo" abre el formulario vacío y editable.
+- [ ] Comparar las descripciones de FAC, NC, ND y REC en Gestionar tipos de comprobante con el campo "Tipo de
+  comprobante" de Emitir comprobante directo, Emitir crédito, Emitir Débito y Registrar recibo. También deben coincidir
+  al ver un comprobante o recibo existente y al editar un recibo con REC activo; no hace falta emitir para comprobarlo.
+- [ ] Ver PDF → "Ver PDF del comprobante FAC-…" con Cerrar · Imprimir · Descargar PDF; el sobre de la fila abre el envío.
 - [ ] Editar recibo desde la fila → abre el recibo. Anular → confirmación del sistema con motivo → "Recibo anulado.".
   Eliminar uno anulado → "Recibo eliminado.".
 - [ ] Registrar recibo de un cliente de prueba con varias facturas: importe 500000 → al salir del campo "500.000,00";
   Distribuir → reparte desde la que vence primero; se puede corregir a mano.
-- [ ] Emitir nota de crédito → grilla de facturas con saldo e importe total; Distribuir y emitir sobre dos facturas → baja
+- [ ] Emitir crédito → grilla de facturas con saldo e importe total; Distribuir y emitir sobre dos facturas → baja
   el saldo de las dos. La NC que anula la factura de una proforma sigue como antes (una factura, por el total).
 - [ ] Menú lateral en Cuenta corriente y Gestionar tipos de comprobante: tocar "Choferes" abre el submenú y otra vez lo
   cierra (es el mismo punto de §20).
@@ -1404,7 +1460,7 @@ pudo compilar en la Mac.**
 - [ ] Proforma propia y de Rukas: Condiciones comerciales con Forma de pago, Plazo, Validez y Observaciones; guardar y
   ver el PDF. Una proforma vieja con observaciones comerciales las muestra en Observaciones.
 - [ ] PDF de una factura de varias proformas: lista las proformas.
-- [ ] Emitir factura desde una proforma: ventana extra grande con el título "Emitir factura".
+- [ ] Emitir comprobante desde una proforma: ventana extra grande con el título "Emitir comprobante".
 - [ ] Si hay Node en la VM: `node tests/<archivo>.test.js` para cada archivo de `tests/` (tienen que imprimir `OK`).
 - [ ] PowerShell: `tests/contrasenas-seguras.test.ps1` (hash y verificación de contraseñas).
 
@@ -1520,8 +1576,9 @@ pudo compilar: es el riesgo principal.
   errores rojos de JavaScript. Anotar cualquiera con la pantalla y el texto.
 - [ ] 6. Dashboard: el período se ve como selector; elegir Trimestre → cambian el texto de abajo y los números.
   Personalizar → Widgets → bajar con la rueda hasta "Calendario de viajes"; Cancelar.
-- [ ] 7. Cuenta corriente: cuatro botones por fila (los que no aplican, grises con el motivo); el ojo de una factura
-  abre la vista completa; Ver PDF de una factura abre la vista previa con "Enviar por e-mail" en el pie (no enviar);
+- [ ] 7. Cuenta corriente: cinco botones por fila (los que no aplican, grises con el motivo); el ojo de una factura
+  abre la vista completa; Ver PDF de una factura abre la vista previa sin "Enviar por e-mail" en el pie; el sobre está
+  en Acciones (no enviar);
   desplegar una factura con aplicados → grupo con la barra azul.
 - [ ] 8. **Con OK de Rocío (consume un número de recibo):** Registrar recibo a un cliente de prueba con facturas
   pendientes, importe y Distribuir → reparte desde la que vence primero; Emitir → toast. Anotar el recibo.
@@ -2050,7 +2107,7 @@ con su línea abajo y con aire arriba:
   *"), tarifa fija y por km, origen o destino.
 - [ ] 2. Registrar proforma (Detalle de conceptos con sus dos botones, Totales, Condiciones comerciales), una de Rukas
   (los títulos que se ocultan siguen ocultos) y el ojo de Listar proformas.
-- [ ] 3. Cuenta corriente: Registrar recibo (1 · Datos generales, 2 · Forma de pago, 3 · Imputación con su botón), el
+- [ ] 3. Cuenta corriente: Registrar recibo (Datos generales, Forma de pago, Imputación a comprobantes con su botón), el
   ojo de una factura con conceptos y comprobantes aplicados, y el detalle con "Trazabilidad".
 - [ ] 4. Gestionar e-mail (Registrar configuración), Gestionar integración de WhatsApp y el detalle de un registro de
   auditoría (Valores anteriores / Valores nuevos).
@@ -3439,9 +3496,9 @@ sale con `FAC` y los textos de hoy. Pasos:
 
 **Después del cambio de Facu:**
 4. Pasar el cambio de Facu a `rocionuvoli` (conflictos de a uno con Rocío).
-5. Ajustar `02_documentos_afectados_por_tarifas.sql` a los tipos y nombres nuevos y volver a relevar. Lo mismo en
-   `Tarifas/TarifarioImpacto.cs` (§33): busca el comprobante de un viaje con `Tipo = 'FAC'` y arma el número con el tipo
-   ("FAC-00000015").
+5. Ajustar `02_documentos_afectados_por_tarifas.sql` a los tipos y nombres nuevos y volver a relevar. La búsqueda
+   de `Tarifas/TarifarioImpacto.cs` (§33) ya reconoce los comprobantes de deuda vinculados a la proforma, incluido FC;
+   conserva la búsqueda histórica de FAC por el código del viaje.
 5b. **Aviso en el comprobante (§33):** el ícono rojo en su fila y el aviso en su detalle con los viajes y "Corresponde
    una nota de crédito por $ X" (módulo de Facu: lo hace él o se coordina). Hoy el aviso está en el viaje y en la tarjeta
    del dashboard. Y que **emitir la nota de crédito o de débito sobre ese comprobante lo resuelva solo** (como reenviar
@@ -3694,7 +3751,7 @@ cierren las pruebas de la §39**, antes que lo demás.
   - Del juego de demo (25/10, `docs/pruebas/2026-10-25-demo-facturacion.md`): F1, "Ver la cuenta corriente del cliente"
     (`?clienteId=`) no filtra por el cliente ni lo elige en Registrar recibo; confirmación con `SGTL.confirmar` al generar
     una proforma propia (la de Rukas ya la tiene); la nota de crédito, que se pueda escribir el neto; "Factura emitida:
-    FAC-…" arriba y el modal de emitir con `data-bs-backdrop="static"`, "Cancelar" + "Emitir factura" y lo fijo como texto;
+    FAC-…" arriba y el modal de emitir con `data-bs-backdrop="static"`, "Cancelar" + "Emitir comprobante" y lo fijo como texto;
     el aviso de "Traer viajes" con el éxito aparte y la lista ordenada; en cuenta corriente, "—" en el saldo de las filas
     aplicadas; "Ver" de los comprobantes como detalle (§6.2); campos fijos como texto en recibo y nota de crédito (§6.3);
     sin `type="number"` en el detalle de la proforma (§7.3); el CUIT del selector de clientes con el mismo formato en
@@ -4215,3 +4272,298 @@ eliminar), una consulta nueva con los viajes del día del cliente y recorrido, `
 en el módulo de Facu, `PresupuestosController` (la reserva, generar el viaje, cambiar estado y eliminar) y
 `presupuestos.js` ("Vuelta del día" pasa a texto y el bloque del día): **avisarle a Facu**. La §34 (y el design system,
 si lo nombra) se corrige con la definición nueva.
+
+---
+
+## 44. Emisión directa con tipos de comprobante configurados — Hecho en código (26/10)
+
+La emisión directa consultaba siempre FAC, aunque hubiera otro tipo de deuda activo, como FC. El formulario ahora permite elegir un tipo de deuda con configuración, sucursal y numerador activos; conserva las letras y la numeración de la variante elegida. El permiso para emitir estos tipos es `FAC_EMITIR`. La API comprueba el impacto del catálogo antes de guardar.
+
+El comprobante emitido puede consultarse en cuenta corriente, imprimirse en PDF, enviarse por e-mail, imputarse con un recibo y acreditarse con una nota de crédito corriente. Los indicadores de facturación incluyen los tipos de deuda configurados. La emisión desde proforma también admite los tipos configurados desde el 27/10 (§46).
+
+**Base:** Rocío debe ejecutar `database/cuenta-corriente/13_comprobantes_directos_configurables.sql` después de las migraciones previas. El script amplía la restricción de los movimientos de cuenta corriente; no se ejecutó contra la base compartida. Para usar un mismo código con letras A y B, aplicar también las migraciones 11 y 12 en su orden.
+
+**Probar en la VM:** recompilar la API y recargar el navegador; con FC activo y sin FAC activo, abrir «Emitir comprobante directo», elegir FC y su letra, emitir y verificar número y movimiento. Revisar el detalle, PDF, envío por e-mail, saldo, ranking y tablero. Aplicar un recibo y una nota de crédito corriente sobre FC. Confirmar que un tipo de crédito, un numerador inactivo y una sucursal inactiva no se ofrecen en el selector.
+
+---
+
+## 45. Enviar comprobantes por e-mail desde la columna Acciones — Hecho en código (27/10)
+
+En Gestionar cuenta corriente, "Enviar por e-mail" aparece después de "Ver PDF" en las acciones de todos los comprobantes, también en los tipos directos configurables y en los recibos asociados. La vista previa del comprobante queda con Cerrar · Imprimir · Descargar PDF. Los presupuestos conservan el envío en el pie de su vista previa. El envío de proformas se incorporó después (§50). Se actualizaron `AGENTS.md` y la §1.4 del design system con esta decisión.
+
+El formulario de envío ya no muestra el servicio ni el nombre del perfil SMTP (27/10). Sigue comprobando la configuración antes de habilitar Enviar y avisa dentro del formulario si no hay un perfil asignado o falla la consulta.
+
+**Probar en la VM:** recargar Gestionar cuenta corriente y revisar una factura, un recibo, una nota de crédito, una nota de débito y un tipo directo configurable (por ejemplo, FC), además de un recibo asociado dentro de una factura. En cada fila, comprobar que el sobre aparece después de Ver PDF, con tooltip y `aria-label`; abrir Ver PDF y verificar que su pie no tiene el envío. Tocar el sobre y comprobar que abre el formulario del comprobante elegido sin la leyenda del servicio o perfil SMTP; cancelar sin enviar. Si falta la configuración, comprobar que Enviar queda deshabilitado y aparece el aviso. Abrir un presupuesto y una proforma para verificar sus pies respectivos.
+
+---
+
+## 46. Emitir comprobantes internos desde proformas y cancelarlos — Hecho en código (27/10)
+
+En el listado de Gestionar proformas, «Emitir comprobante» abre el modal con un selector de tipos de deuda configurados. Si FC está activo, aparece preseleccionado aunque FAC esté inactivo. El modal carga la letra, sucursal y próximo número de ese tipo. Si la configuración falla, muestra el motivo dentro del modal en vez de un aviso de conexión incorrecto.
+
+La API de emisión vinculada recibe la sigla elegida, conserva los renglones, importes y datos de la proforma, registra el comprobante y el movimiento de cuenta corriente con esa sigla, y marca la proforma y sus viajes como facturados en una transacción. Las listas, la anulación cancelatoria, el PDF y la revisión de tarifas reconocen el comprobante interno vinculado. Los clientes anteriores que omiten la sigla siguen solicitando FAC.
+
+La anulación consulta los tipos de crédito con configuración activa y permite elegir cuál emitir. Si solo hay uno (por ejemplo, crédito interno), lo propone; si hay varios, pide elegir. El crédito cancelatorio aplica **el total original** del comprobante de la proforma: el importe se ve como dato fijo, y la API rechaza importes parciales o alterados, aplicaciones previas y referencias a otro comprobante. Al emitirlo, registra una única aplicación, anula la proforma y libera los viajes. El ranking de facturación descuenta los créditos configurados, sin tratar los recibos como facturación.
+
+**Base:** ejecutar `database/cuenta-corriente/14_comprobantes_desde_proforma_configurables.sql` después de 13 y luego `database/cuenta-corriente/15_credito_interno_cancelatorio.sql`. Amplían las restricciones de vínculo, referencia cancelatoria e impacto de los movimientos. El usuario informó que aplicó los scripts el 27/10; no se consultó ni modificó la base desde este trabajo.
+
+**Corrección del 27/10:** la migración 16 incorpora un disparador `AFTER INSERT` en `COMPROBANTES`. SQL Server rechaza `OUTPUT INSERTED.Comprobante_ID` sin `INTO` al insertar en una tabla con ese disparador. La API ahora captura el identificador con `OUTPUT ... INTO` en la emisión directa, desde proforma y de recibos. Esta corrección requiere recompilar y desplegar la API; no necesita otra migración.
+
+El usuario confirmó el 27/10 que pudo emitir el crédito cancelatorio desde la proforma después de aplicar los scripts y actualizar la API.
+
+**Probar en la VM:** con FC activo y FAC inactivo, recompilar la API y recargar el navegador. Abrir una proforma aceptada y tocar «Emitir comprobante»: debe mostrar FC, su letra, sucursal y próximo número, el total de la proforma y las fechas. Emitir; comprobar número FC, todos los renglones, vínculo y estado Facturada en ambas pantallas de proformas, estado Facturado de sus viajes, movimiento en cuenta corriente y número de proforma en el PDF. Con crédito interno activo y NC inactiva, abrir «Anular comprobante»: debe mostrar el FC vinculado y su total fijo, proponer crédito interno, cargar su letra, sucursal y número, y emitir el crédito por el total exacto. Verificar que el crédito aparece aplicado al FC en cuenta corriente y en su PDF, que el PDF del FC conserva el número de proforma después de la anulación, que el ranking descuenta el crédito, que la proforma queda Anulada y que los viajes se liberan para otra proforma. Emitir también un recibo para comprobar las tres rutas de inserción. Con dos tipos de crédito activos, comprobar que pide elegir; sin ninguno, que muestra el motivo con los datos del FC visibles y no deja emitir. Si no hay tipos de deuda activos, el modal de emisión debe avisarlo sin mostrar un error de conexión. Revisar los cambios de tarifa de un viaje asociado a ese FC.
+
+---
+
+## 47. Editar tipos de comprobante y marcar los electrónicos — Hecho en código (27/10)
+
+En Gestionar tipos de comprobante se pueden editar descripción, sigla, letra, sucursal, numerador y estado de un tipo no electrónico. La descripción y el impacto pertenecen a la sigla y se comparten entre sus letras A y B. Cambiar una sigla configurable actualiza todas sus letras, el numerador legado y la sigla de todos sus comprobantes históricos, movimientos y vínculos. Conserva los identificadores de catálogo, configuraciones y comprobantes. Cambiar la letra afecta solo la variante elegida y sus comprobantes, incluso los emitidos; la nueva combinación debe estar libre en la configuración y no puede tener comprobantes históricos propios, para conservar la secuencia del numerador. La API comprueba los conflictos dentro de la transacción y rechaza un formulario cuya identidad original cambió.
+
+El indicador «Es comprobante electrónico» pertenece a la sigla y se comparte entre sus letras. Los tipos existentes comienzan sin marcar. Al marcarlo y guardar, quedan bloqueadas todas las modificaciones posteriores del tipo, incluida la incorporación de otra letra, el cambio de estado y la eliminación. La pantalla muestra el motivo en las acciones deshabilitadas. Esta preparación deja fijos los tipos que en el futuro se emitan mediante el WebService de ARCA; no conecta todavía con ARCA.
+
+Las siglas FAC, ND, NC y REC tienen circuitos propios y permanecen fijas. FAC y ND son de deuda; NC y REC, de crédito. REC usa la letra X; los demás tipos usan A o B. El impacto de una sigla con comprobantes permanece fijo porque reclasificarlo cambiaría saldos, movimientos y aplicaciones históricas. Los datos que no se pueden editar se muestran como texto con el motivo.
+
+**Base:** ejecutar `database/cuenta-corriente/16_editar_identidad_tipos_comprobante.sql` después de 15. Agrega el indicador electrónico y las cascadas necesarias para propagar la sigla conservando IDs. No se ejecutó contra la base compartida.
+
+**Probar en la VM:** recompilar la API y recargar la pantalla. Con una sigla configurable que ya tenga comprobantes, cambiarla y comprobar ambas letras, el mismo identificador, la sigla en comprobantes emitidos y anulados, movimientos, vínculos con proformas y referencias de cancelación. Cambiar la letra de una variante con comprobantes y comprobar esos comprobantes, la numeración y los PDF. Intentar una letra ya configurada, una sigla existente y una letra con comprobantes anteriores: debe explicar el conflicto sin perder lo escrito. Con una sigla sin comprobantes, corregir también Impacto; con historial, Impacto queda fijo. Comprobar que FAC, ND, NC y REC mantienen sus reglas. Marcar un tipo de prueba como electrónico: todas sus letras deben mostrar la marca y bloquear edición, cambio de estado, eliminación y alta de otra letra, tanto en pantalla como en la API. Al agregar otra letra a una sigla no electrónica, el impacto debe conservar el valor de esa sigla.
+
+---
+
+## 48. Emitir créditos y débitos internos directos — Hecho en código (27/10)
+
+«Emitir crédito» consulta los tipos de crédito activos y propone C si está disponible. «Emitir Débito» consulta los tipos de deuda activos, incluida ND, y propone D si está disponible. El catálogo todavía no distingue facturas internas de débitos internos: ambos tienen impacto de deuda. La API usa el impacto configurado: los créditos corrientes pueden aplicarse a comprobantes de deuda y requieren `NC_EMITIR`; D usa `FAC_EMITIR`, mientras ND conserva `ND_EMITIR`. No hace falta otro script SQL para este ajuste.
+
+**Probar en la VM:** con C y D activos y NC y ND inactivos, recompilar la API y recargar Gestionar cuenta corriente. Emitir un comprobante de deuda para un cliente; abrir «Emitir crédito», comprobar que propone C con su letra, sucursal y próximo número, distribuir el importe sobre la deuda y emitir. Verificar el número C, el movimiento de crédito y la aplicación. Abrir «Emitir Débito», comprobar que propone D, cargar cliente, concepto, importe y vencimiento, emitir y verificar el número D y el nuevo saldo deudor. Con solo ND activo, comprobar que aparece en «Emitir Débito». Sin ningún tipo de crédito activo, el formulario de crédito debe mostrar el motivo y mantener «Emitir» deshabilitado; repetir sin ningún tipo de deuda activo para el débito.
+
+---
+
+## 49. Emitir créditos internos sin imputar e imputarlos después — Hecho en código (27/10)
+
+«Emitir crédito» permite emitir el comprobante interno sin seleccionar una deuda. Para ese crédito se ingresan el neto, la alícuota de IVA y otros impuestos; el IVA y el total se calculan con esos datos y quedan fijos al emitir. El crédito queda con saldo disponible por su total y se muestra en cuenta corriente y en «Comprobantes sin relacionar». Desde su acción «Imputar crédito» se puede aplicarlo después, en partes y sobre uno o varios comprobantes internos de deuda del mismo cliente, hasta agotar el saldo de cada lado. El crédito cancelatorio de una proforma conserva su aplicación única por el total y no participa de esta imputación posterior.
+
+La API guarda las imputaciones posteriores mediante `PUT /api/comprobantes/{id}/aplicaciones`: cada importe solicitado es el **total acumulado** del crédito aplicado a esa deuda, por lo que repetir exactamente la petición no duplica la aplicación. Rechaza deudas de otro cliente, importes que excedan el saldo del crédito o de la deuda, y modificaciones de aplicaciones ya registradas. El script de solo lectura `database/cuenta-corriente/03_verificacion_posterior.sql` ahora considera válido un crédito corriente sin aplicar o parcialmente aplicado; sigue denunciando sobreaplicaciones y exige que un cancelatorio emitido tenga una sola aplicación por su total. No se requiere migración nueva de la base.
+
+**Probar en la VM:** recompilar la API y recargar Gestionar cuenta corriente. Con C activo, emitir un crédito sin deuda seleccionada con neto $ 1.000,00, IVA 21 % ($ 210,00) y otros impuestos $ 50,00; verificar el total $ 1.260,00, su desglose, número, movimiento, detalle, PDF y saldo disponible en ambas vistas de cuenta corriente. Crear dos comprobantes internos de deuda para el mismo cliente, cada uno con saldo suficiente. Imputar $ 400,00 al primero, volver a abrir «Imputar crédito» y agregar $ 200,00 para que esa deuda acumule $ 600,00; aplicar los $ 660,00 restantes al segundo. Verificar que el crédito pasa de «Sin aplicar» a «Parcialmente aplicado» y luego a «Aplicado», y que los saldos de ambas deudas bajan una sola vez. Repetir el mismo `PUT` y comprobar que no agrega otra aplicación; intentar exceder cualquiera de los saldos y usar una deuda de otro cliente: la API debe rechazarlo sin guardar cambios. Confirmar que una anulación de proforma sigue emitiendo su crédito cancelatorio por el total y con una sola aplicación.
+
+---
+
+## 50. Enviar el comprobante y su proforma por e-mail — Hecho en código (27/10)
+
+Al enviar un comprobante desde cuenta corriente, si tiene una proforma vinculada (vigente o histórica), el formulario ofrece
+«Incluir proforma», marcado al abrir, e identifica su número. Marcado envía dos PDF separados, comprobante y proforma;
+desmarcado envía solo el comprobante. Sin vínculo, no se muestra la casilla. La API vuelve a comprobar el vínculo y el
+estado antes del envío; si falla la generación o validación de alguno de los PDF, no envía el correo. El máximo total
+de adjuntos es 10 MB. El historial conserva el comprobante y la auditoría registra también la proforma y su huella.
+
+Listar y Gestionar proformas incorporan «Enviar por e-mail» después de «Ver PDF». Envía el PDF de la proforma generada,
+aceptada o facturada con el perfil de Facturación, asunto y cuerpo propios de proforma, y registra la entrega en auditoría.
+En borradores y anuladas, la acción queda deshabilitada. Ambos envíos sugieren el e-mail actual del cliente, permiten
+cambiarlo y piden confirmación con el destinatario y los documentos. No requiere migración SQL.
+
+**Verificación local:** API compilada con MSBuild; pruebas Node de acciones, adjuntos MIME reales, cancelación,
+doble clic, respuestas tardías y error de PDF. No se enviaron correos ni se ejecutó SQL contra la base compartida.
+
+**Probar en la VM:** recargar las tres pantallas con Ctrl+F5. Con un comprobante vinculado, abrir el sobre y comprobar
+la casilla marcada y el número; enviar a un buzón de prueba y abrir los dos PDF recibidos. Repetir desmarcando la casilla
+y con un comprobante sin proforma: llega solo el comprobante. Cancelar la confirmación: no se envía. Desde Listar y
+Gestionar proformas, enviar una propia y una de plataforma: llega un PDF de proforma con su número y detalle completos.
+Comprobar el bloqueo de borradores y anuladas, destinatario vacío o inválido, falta de perfil y fallo SMTP sin perder lo
+escrito. Probar como admin y con un usuario con acceso a proformas; sin ese acceso, la API rechaza el envío independiente.
+La entrega real por SMTP queda pendiente de esa prueba.
+
+**Corrección del 27/10:** el envío inicialmente buscaba solo vínculos vigentes y excluía proformas anuladas, por eso
+«Incluir proforma» no aparecía en un comprobante cancelado con un crédito. Ahora consulta el documento de origen
+conservado en el vínculo histórico, igual que el detalle y el PDF del comprobante. El envío independiente de una
+proforma anulada sigue bloqueado. Se agregó una prueba de la consulta real con datos locales: vínculo histórico con
+proforma anulada, vínculo vigente y comprobante sin proforma. **Probar:** abrir el envío del comprobante cancelado;
+debe aparecer la casilla marcada con la proforma original. Repetir con el comprobante nuevo y verificar que muestra
+su propia proforma; en uno directo sin proforma, no debe aparecer.
+
+---
+
+## 51. Ordenar las columnas de cuenta corriente — Hecho en código (27/10)
+
+La vista de movimientos de Gestionar cuenta corriente permite ordenar por Cliente, Comprobante, Concepto, Fecha,
+Total, Cancelado y Saldo desde sus encabezados, con `SGTL.tabla.habilitarOrden`: primer clic ascendente, segundo
+descendente y una columna nueva empieza ascendente. Conserva las flechas y el criterio al reconstruir los encabezados,
+filtrar, cambiar de cliente y paginar. La API ordena todos los resultados antes de paginar, con un desempate estable;
+los importes se ordenan como números y las fechas por su valor. Las aplicaciones permanecen debajo de su comprobante
+en orden cronológico. PDF y Excel usan el mismo criterio sobre todos los resultados filtrados. Fecha permanece entre
+Concepto y Total. No requiere migración SQL.
+
+**Verificación local:** pruebas Node del orden de las siete columnas, direcciones, flechas, filtros, paginación,
+exportaciones, respuestas tardías, SQL permitido y recibos anulados, con datos locales y sin consultar la base compartida.
+
+**Probar en la VM:** recompilar la API y recargar con Ctrl+F5. Con todos los clientes, alternar dos veces cada encabezado;
+probar importes como 2, 10 y 100 y fechas que crucen de mes. Cambiar de columna y comprobar que arranca ascendente.
+Ir a la segunda página, filtrar y exportar PDF y Excel: deben conservar el criterio y considerar todos los resultados.
+Elegir un cliente: se oculta su columna y se conserva el orden. Desplegar un comprobante con varias aplicaciones y
+comprobar que siguen juntas y en orden cronológico, con sus saldos progresivos. Volver de Comprobantes sin relacionar
+a Cuenta corriente y verificar que se mantiene el criterio.
+
+---
+
+## 52. Emitir recibos sin imputar e imputarlos después — Hecho en código (27/10)
+
+El recibo se puede emitir sin elegir una deuda o aplicándolo parcialmente. La búsqueda de comprobantes no borra el
+importe ingresado y el formulario identifica el «Saldo sin imputar». Los recibos emitidos con saldo aparecen en
+Comprobantes y Comprobantes sin relacionar, con «Imputar recibo» como siguiente paso. La misma operación de créditos
+internos admite agregar aplicaciones en partes a una o varias deudas del cliente, hasta agotar el saldo. Al agotarlo,
+el recibo deja de mostrarse como disponible y permanece en las aplicaciones de las deudas.
+
+`PUT /api/comprobantes/{id}/aplicaciones` exige `REC_EMITIR` para recibos y `NC_EMITIR` para otros créditos. Conserva
+la transacción serializable, las validaciones de saldo y cliente y el contrato acumulativo: repetir exactamente la
+petición no duplica importes. No modifica el total, la forma de pago ni los movimientos del documento emitido. Editar
+el recibo conserva las fechas de sus aplicaciones; su emisión no puede quedar después de una imputación. Reintentar
+la emisión de un recibo originalmente sin aplicar sigue reconociéndolo después de imputarlo. No requiere migración SQL.
+
+**Verificación local:** pruebas de interfaz, consultas reales con SQLite local y método C# de imputación ejecutado
+con persistencia y permisos simulados: aplicación parcial y sucesiva, reintento idempotente, recibo anulado, saldo
+insuficiente, cliente distinto, fechas inválidas y reversión completa ante un error. Sin acceso a la base compartida.
+
+**Probar en la VM:** emitir un recibo por $ 1.000,00 sin marcar comprobantes y verificar saldo disponible por ese total.
+Desde «Imputar recibo», aplicar $ 400,00 a un comprobante interno, luego agregar $ 200,00 a la misma deuda y $ 400,00
+a otra del mismo cliente. Verificar saldos parciales y finales, el recibo dentro de cada deuda y sus PDF. Repetir el
+mismo `PUT`: no debe duplicar la aplicación. Probar deuda de otro cliente, recibo anulado, fecha anterior al recibo o
+a la deuda y exceso de cualquiera de los saldos: debe rechazar sin guardar nada. Emitir también un recibo parcialmente
+aplicado y completar después su saldo. Editar la referencia u observaciones de un recibo con imputaciones posteriores:
+debe conservar sus fechas. Probar con un usuario con `REC_EMITIR` y sin `NC_EMITIR`, y verificar el rechazo inverso.
+
+**Visibilidad de la acción (27/10):** por pedido del usuario, «Imputar» solo aparece en créditos internos y recibos.
+En los demás tipos se oculta; dentro de esos dos circuitos, sigue deshabilitada con el motivo cuando no se puede
+usar. Se actualizó la excepción en `AGENTS.md` y el design system. **Probar:** comparar un recibo y un crédito interno
+con una factura y un débito; el ícono de imputación solo debe estar en los dos primeros, después del sobre.
+
+---
+
+## 53. Vincular el débito interno con un comprobante interno — Hecho en código (27/10)
+
+Emitir Débito permite elegir opcionalmente un «Comprobante interno relacionado», como FC, del mismo cliente. La
+opción vacía es «Sin vincular». No limita la selección al saldo pendiente del origen: el débito puede documentar un
+cargo posterior sobre un comprobante ya pagado. Conserva los importes nuevos ingresados, suma su propio movimiento
+de deuda y no modifica ni imputa el total del comprobante de origen. El vínculo queda en el detalle y el PDF.
+
+La API vuelve a comprobar que ambos sean tipos internos, que el origen tenga impacto de deuda y esté emitido, que
+sea del mismo cliente y que la fecha del débito no sea anterior. Usa la referencia existente por ID y su copia de
+sigla, manteniendo los reintentos idempotentes y el permiso de emisión de deuda configurada. No cambia los circuitos
+de crédito cancelatorio, recibos ni emisión directa sin referencia. La clasificación usa tipos configurables para
+que corregir la sigla de FC no rompa la posibilidad de referenciarlo.
+
+**Base:** Rocío debe aplicar `database/cuenta-corriente/17_debito_interno_referencia.sql` después de la migración 16.
+Es idempotente; amplía el CHECK de referencias y conserva las FK y el disparador de la sigla. No modifica datos ni
+importes existentes. El script no se ejecutó contra la base compartida.
+
+**Verificación local:** API compilada y pruebas de referencia opcional, clientes, fechas, estado, tipos, respuestas
+tardías, importes independientes, validaciones C# y restricción SQL ejecutada con SQLite local.
+
+**Probar en la VM:** aplicar 17, recargar con Ctrl+F5 y abrir Emitir Débito. Con D activo, elegir cliente y FC relacionado,
+cargar neto $ 100,00 e IVA 21 % y emitir. Verificar D por $ 121,00, referencia al FC en el detalle y PDF, aumento de
+la deuda total del cliente en $ 121,00 y total original del FC sin cambios. Repetir «Sin vincular». Cambiar de cliente
+y comprobar que no quedan opciones del anterior. Intentar un FC de otro cliente, un origen anulado o fiscal y una
+fecha anterior al FC: debe rechazar sin emitir ni consumir número. Reintentar con la misma clave: debe devolver el
+mismo D sin duplicar deuda; con otro vínculo y la misma clave, debe rechazar.
+
+---
+
+## 54. Corregir los acentos del concepto de recibos sin imputar — Código y propuesta SQL listos (27/10)
+
+La versión anterior de `RecibosController` tenía mal escrito el literal generado de «Cobranza sin imputación».
+La fuente actual contiene el acento correcto; la página ya declara UTF-8. Recompilar la API evita volver a guardar
+el texto incorrecto, pero no cambia los conceptos persistidos por versiones anteriores.
+
+`database/cuenta-corriente/18_corregir_concepto_recibos.sql` propone corregir únicamente ese texto exacto en recibos
+y sus movimientos de emisión. Utiliza caracteres Unicode por código, comparación binaria y largo exacto; conserva
+conceptos personalizados, otros tipos de comprobante, reversos e importes. Muestra los registros afectados y sus
+cantidades y termina con ROLLBACK. **No se ejecutó contra la base compartida.** Rocío debe revisar los resultados y,
+para aplicarlo, reemplazar el ROLLBACK final del bloque TRY por COMMIT y ejecutar el script completo.
+
+**Verificación local:** expresión C# real compilada para recibos con cero, una y dos aplicaciones; UPDATE reales
+adaptados a SQLite en memoria con casos protegidos, idempotencia y reversión. Sin consultar la base compartida.
+
+**Probar en la VM:** recompilar la API y emitir un recibo sin imputar: debe decir «Cobranza sin imputación». Después
+de aplicar la corrección de datos, revisar el recibo anterior, la cuenta corriente, el detalle, PDF y Excel. Los
+nombres de clientes y los conceptos ingresados a mano deben conservarse.
+
+---
+
+## 55. Ordenar columnas de choferes y camiones — Hecho en código (27/10)
+
+Gestionar y Listar choferes muestran DNI, Apellido y nombre, Fecha de alta, Estado y Acciones, sin ID. Las tres
+primeras columnas permiten ordenar antes de paginar y exportar. Gestionar y Listar camiones ocultan ID, ubican Fecha
+de alta después de Modelo y permiten ordenar Marca y Fecha de alta. Usan `SGTL.tabla.habilitarOrden` y los criterios
+permitidos por la API. La compilación de la API y las 76 pruebas Node finalizaron correctamente.
+
+**Probar en la VM:** en ambas vistas de cada módulo, alternar cada encabezado, cambiar de página y exportar CSV.
+Verificar que se conserva el criterio, que DNI se ordena por su valor y que no aparece la columna ID.
+
+---
+
+## 56. Versionar los archivos del manual de usuario (27/10)
+
+Se incluyen `docs/Manual_SGTL_actualizado.docx`, `docs/Manual_SGTL_portada_nueva.docx` y el script
+`database/documentacion/02_reemplazar_manual_version_0003.sql`, que contiene el PDF propuesto para el manual.
+El script termina con ROLLBACK: no se ejecutó ni se reemplazó el PDF de la base compartida durante esta sincronización.
+
+**Probar:** revisar las dos variantes Word y, antes de aplicar el script por decisión de Rocío, verificar el tamaño,
+la huella y la vista previa del PDF propuesto. Subir los archivos al repositorio no publica el manual en la aplicación.
+
+---
+
+## 57. Recuperar contraseña desde el login por e-mail — Hecho en código (27/10)
+
+El login incorpora «Olvidé mi contraseña», que pide el e-mail registrado y envía un enlace de un solo uso,
+válido por 20 minutos. La solicitud siempre devuelve la misma respuesta general y tiene límites por IP
+y por cuenta. La contraseña actual sigue vigente hasta completar el recupero. Se guarda únicamente la
+huella del enlace; al usarlo se aplica la política vigente, se guarda PBKDF2, se invalidan los demás enlaces
+y las sesiones anteriores y se envía un aviso del cambio sin incluir la contraseña. Una pestaña abierta
+comprueba la sesión al cargar, recuperar el foco y cada minuto.
+
+Gestionar usuarios incorpora E-mail obligatorio al registrar o editar, válido y único; las cuentas existentes
+sin correo conservan su acceso habitual. Listar usuarios lo muestra en el detalle. La API controla los
+permisos de lectura y gestión. El correo se asigna desde gestión: quien lo carga debe verificar que la
+casilla pertenece al usuario y que no es compartida. Cambiarlo invalida los enlaces y sesiones previos.
+Gestionar e-mail permite asignar un perfil exclusivo de recupero, con conexión segura y la dirección real
+del login. La API y la base impiden compartir ese perfil con Facturación o Presupuestos.
+
+**Base:** Rocío debe aplicar `database/seguridad/02_recupero_contrasena.sql` después de seguridad 01 y
+`database/email/07_perfil_recupero_contrasena.sql` después de e-mail 06. Son scripts idempotentes de
+esquema; no cargan datos ni credenciales. **No se ejecutaron contra la base compartida.** No se regeneró el EDMX.
+Recompilar la API y desplegarla junto con los archivos estáticos después de aplicar las migraciones.
+
+**Configuración:** registrar un perfil SMTP nuevo en Gestionar e-mail y asignarlo a recupero. Cargar la URL
+completa y accesible del login con HTTPS; solo en pruebas locales se acepta HTTP en localhost. La casilla
+y las credenciales se cargan desde la pantalla, nunca en el código. El asunto, las instrucciones y el enlace
+se generan automáticamente; la plantilla general del perfil no los reemplaza.
+
+**Verificación local:** compilación de la API y pruebas del coordinador C# real con repositorio y correo
+simulados; consultas reales adaptadas a SQLite local; pruebas de formularios, doble clic, política, correos
+inválidos, fallo SMTP, consumo único, vencimiento, cuenta inactiva, permisos, exclusividad y versión de sesión.
+Las 78 pruebas Node finalizaron correctamente. Se revisó la lista de control de AGENTS.md.
+Sin consultar la base compartida ni enviar correos. La revisión visual no pudo ejecutarse porque no hay
+navegador ni servicio de control de ventanas disponibles en este entorno.
+
+**Probar en la VM:** después de aplicar los scripts, registrar el perfil seguro y su URL. Con un administrador,
+registrar o editar un usuario con una casilla de prueba propia; comprobar el rechazo de correo inválido y
+duplicado. Con un usuario que solo puede listar, abrir el detalle y comprobar que no puede cambiar el e-mail
+desde la API. Con uno sin permiso de usuarios, comprobar el rechazo de la lectura del detalle y de la escritura.
+Intentar asignar el perfil de Facturación a recupero y viceversa: debe rechazarlos sin cambiar asignaciones.
+Solicitar el recupero desde el login: llega el enlace, conserva la contraseña actual hasta usarlo y no informa
+si existe un e-mail desconocido. Probar claves que no coinciden y una que no cumple la política. Completar
+con una válida: la anterior ya no entra, la nueva sí y llega el aviso. Una sesión de otro navegador debe volver
+al login al recuperar el foco o dentro de un minuto; su Bearer anterior debe recibir 401. Volver a usar el
+enlace, probar uno vencido, cambiar el e-mail y probar uno anterior, e inactivar la cuenta antes de usarlo:
+ninguno debe permitir el cambio. Comprobar formularios en 1920, 1366, 768 y 390 px. La entrega SMTP real,
+la ejecución de las migraciones y esta prueba en VM siguen pendientes.
+
+**Unificación del 28/10:** los botones de los perfiles de Facturación, Presupuestos y recupero de contraseña
+dicen «Guardar», siguiendo el criterio de configuración del design system. **Probar:** recargar Gestionar e-mail
+con Ctrl+F5 y comprobar el mismo texto en los tres perfiles; al guardar, el botón muestra «Guardando…».
+
+**Aviso del login (28/10):** el error de credenciales usa el aviso rojo compartido, con ícono y texto en negrita.
+Una sacudida breve de 380 ms lo destaca al aparecer y respeta la preferencia de reducir movimiento. La regla queda
+documentada en el design system y AGENTS.md. **Probar:** recargar el login con Ctrl+F5 e ingresar credenciales
+incorrectas: el aviso debe aparecer arriba de los campos, animarse una vez y quedar quieto. Repetir el intento:
+debe volver a animarse. El error de credenciales **no se va solo** (Rocío, 28/10, al integrar esta rama en
+rocionuvoli: solo los avisos de éxito se van solos): queda hasta que se escribe en el usuario o la contraseña, y si el
+próximo intento vuelve a fallar aparece de nuevo. Con movimiento reducido activado, debe aparecer sin animación. Los campos vacíos conservan
+sus errores de validación y el aviso «Revisá los campos marcados.».

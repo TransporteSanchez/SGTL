@@ -88,10 +88,14 @@
                                 </div>
                             </form>
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover tbl-prof">
+                                <table class="table table-striped table-hover tbl-prof" id="tablaProformas">
                                     <thead><tr>
-                                        <th>Número</th><th class="text-center">Fecha</th><th>Cliente</th>
-                                        <th class="text-end">Total</th><th class="text-center">Estado</th><th>Usuario</th><th class="text-center">Acciones</th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="numero">Número<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="cliente">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-end"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="total">Total<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center text-nowrap"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="fecha">Fecha<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="usuario">Usuario<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center">Estado</th><th class="text-center">Acciones</th>
                                     </tr></thead>
                                     <tbody id="cuerpoProformas"><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
@@ -244,6 +248,7 @@
     <script src="assets/static/js/reportes-proformas.js"></script>
     <script src="assets/static/js/empresa-datos.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
+    <script src="assets/static/js/proforma-email.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-configuracion.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
@@ -280,6 +285,8 @@
         const IVA_OPCIONES = [0, 10.5, 21];
         var estadoActual = 'Borrador';
         var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
+        var ordenProformas;
+        var ultimaBusquedaProformas = 0;
         var clientesMap = {};
         var proformaIdEliminar = null;
 
@@ -534,10 +541,13 @@
             var rango = SGTL.valorRango('#fFecha');
             if (rango) { p.append('desde', rango.desde); p.append('hasta', rango.hasta); }
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            var orden = ordenProformas ? ordenProformas.parametros() : {};
+            if (orden.orden) { p.append('orden', orden.orden); p.append('direccion', orden.direccion); }
             p.append('page', page || 1); p.append('pageSize', pageSize == null ? profState.pageSize : pageSize);
             return p;
         }
         function buscarProformas(page) {
+            var busqueda = ++ultimaBusquedaProformas;
             profState.page = page || 1;
             var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
@@ -547,13 +557,14 @@
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); }),
                 window.SGTLCambiosTarifa ? SGTLCambiosTarifa.cargar() : []])
                 .then(function (r) {
+                    if (busqueda !== ultimaBusquedaProformas) return;
                     var res = r[0];
                     cambiosTarifa = r[1] || [];
                     cambiosTarifaCargados = true;
                     if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
-                .catch(function () { errorGrilla(); });
+                .catch(function () { if (busqueda === ultimaBusquedaProformas) errorGrilla(); });
         }
         function errorGrilla(mensaje) {
             SGTL.tabla.vacia('#cuerpoProformas', 7, 'No se pudieron cargar las proformas.');
@@ -641,18 +652,18 @@
                 proformasPagina[x.Proforma_ID] = x;
                 return '<tr>' +
                     '<td>' + esc(x.Numero || (x.Tipo_Proforma === 'Plataforma' ? '' : '—')) + (window.ProformaPlataforma ? ProformaPlataforma.etiquetaListado(x) : '') + '</td>' +
-                    '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), iconoCambioTarifa(x) || (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '')) + '</td>' +
+                    '<td class="text-center text-nowrap">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center">' + SGTL.conInfo(badgeEstado(x.Estado), iconoCambioTarifa(x) || (window.ProformaPlataforma ? ProformaPlataforma.avisosListado(x) : '')) + '</td>' +
                     '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
             }).join(''));
             renderPag();
         }
         var proformasPagina = {};
         function nombreProforma(x) { return x.Numero ? 'la proforma ' + x.Numero : 'el borrador #' + x.Proforma_ID; }
-        // Orden de §1.4: ver, editar, PDF, siguiente paso (marcar aceptada → emitir factura), anular o eliminar.
+        // Orden de §1.4: ver, editar, PDF, e-mail, siguiente paso (marcar aceptada → emitir comprobante), anular o eliminar.
         // Deshabilitados con "No se puede {acción}: {qué le pasa a la proforma}" (§1.4).
         function accionesProforma(x) {
             var estado = x.Estado || '';
@@ -661,14 +672,16 @@
                 SGTL.botonFila('ver', { id: id }),
                 SGTL.botonFila('editar', { id: id, deshabilitado: estado !== 'Borrador',
                     motivo: 'No se puede editar la proforma: ' + (estado === 'Anulada' ? 'está anulada' : 'ya se generó') }),
-                SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' })
+                SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }),
+                SGTL.botonFila('enviar', { id: id, deshabilitado: estado === 'Borrador' || estado === 'Anulada',
+                    motivo: estado === 'Borrador' ? 'No se puede enviar la proforma: todavía es un borrador' : 'No se puede enviar la proforma: está anulada' })
             ];
-            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') }));
+            if (x.FacturaID) botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir el comprobante: ya se emitió ' + (x.FacturaNumero || '') }));
             else if (estado === 'Generada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Marcar aceptada', icono: 'bi-check2-circle', datos: { paso: 'aceptar' } }));
-            else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
+            else if (estado === 'Aceptada') botones.push(SGTL.botonFila('siguiente', { id: id, texto: 'Emitir comprobante', icono: 'bi-receipt', datos: { paso: 'facturar' } }));
             else botones.push(SGTL.botonFila('siguiente', { icono: 'bi-check2-circle', deshabilitado: true,
                 motivo: 'No se puede marcar como aceptada: la proforma ' + (estado === 'Borrador' ? 'todavía es un borrador' : 'está ' + estado.toLowerCase()) }));
-            if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular factura', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));
+            if (x.FacturaID) botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular comprobante', icono: 'bi-file-earmark-minus', datos: { tipo: 'factura' } }));
             else if (estado === 'Generada' || estado === 'Aceptada') botones.push(SGTL.botonFila('anular', { id: id, texto: 'Anular proforma', datos: { tipo: 'proforma' } }));
             else if (estado === 'Borrador') botones.push(SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar borrador' }));
             else botones.push(SGTL.botonFila('anular', { deshabilitado: true, motivo: 'No se puede anular la proforma: ya está ' + estado.toLowerCase() }));
@@ -1039,6 +1052,7 @@
             var estadoUrl = new URLSearchParams(window.location.search).get('estado');
             if (estadoUrl && ESTADOS.indexOf(estadoUrl) >= 0) setVal('fEstado', estadoUrl);
             cargarClientes();
+            ordenProformas = SGTL.tabla.habilitarOrden('#tablaProformas', function () { buscarProformas(1); });
             buscarProformas(1);
             // gestion-facturacion.html?proforma=N abre su detalle (desde la tarjeta "Cambios para revisar" del
             // dashboard). Se usa una vez: el parámetro se saca de la dirección.
@@ -1063,6 +1077,7 @@
                 .on('click', '[data-accion="ver"]', function () { verProforma($(this).data('id')); })
                 .on('click', '[data-accion="editar"]', function () { editarProforma($(this).data('id')); })
                 .on('click', '[data-accion="pdf"]', function () { verProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="enviar"]', function () { enviarProformaPorEmail($(this).data('id')); })
                 .on('click', '[data-accion="siguiente"]', function () {
                     if ($(this).data('paso') === 'aceptar') marcarAceptada($(this).data('id'));
                     else facturarProforma($(this).data('id'));

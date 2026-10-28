@@ -168,9 +168,16 @@
 
                             <div class="sgtl-bloque-titulo">Acceso</div>
                             <div class="row g-3 mb-4">
+                                <div class="col-12">
+                                    <label for="usuarioEmail" class="form-label">E-mail <span class="text-danger">*</span></label>
+                                    <input type="email" id="usuarioEmail" class="form-control" maxlength="254" placeholder="usuario@empresa.com" autocomplete="email" aria-describedby="ayudaUsuarioEmail">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text" id="ayudaUsuarioEmail">Usá un e-mail individual al que pueda acceder el usuario. Se utiliza para recuperar su contraseña.</div>
+                                </div>
                                 <div class="col-12 col-md-6">
                                     <label for="usuarioNombreUsuario" class="form-label">Nombre de usuario <span class="text-danger" id="marcaNombreUsuario">*</span></label>
                                     <input type="text" id="usuarioNombreUsuario" class="form-control" placeholder="fgodoy" autocomplete="off">
+                                    <div id="usuarioNombreFijo" class="sgtl-dato-fijo d-none"></div>
                                     <div class="invalid-feedback"></div>
                                     <div class="form-text" id="ayudaNombreUsuario">Letras, números y guion bajo</div>
                                 </div>
@@ -420,7 +427,7 @@
             const listo = SGTL.procesando(boton);
 
             SGTL.ajax({
-                url: `${API}/Usuarios/EstadoUsuario/${id}`,
+                url: `${API}/Usuarios/EstadoUsuario/${id}`, headers: encabezadosSesion(),
                 type: 'PUT',
                 contentType: 'application/json',
                 data: JSON.stringify({ EstadoUsuario: nuevoEstado })
@@ -442,7 +449,7 @@
                 verbo: 'Eliminar',
                 peligro: true,
                 accion: function () {
-                    return SGTL.ajax({ url: `${API}/Usuarios/${id}`, type: 'DELETE' },
+                    return SGTL.ajax({ url: `${API}/Usuarios/${id}`, headers: encabezadosSesion(), type: 'DELETE' },
                         'No se pudo eliminar el usuario. Probá de nuevo.');
                 }
             }).then(function (eliminado) {
@@ -477,6 +484,7 @@
                 regex: /^[A-Za-z0-9_]+$/, mensaje: 'Usá solo letras, números y guion bajo.'
             },
             { id: 'usuarioContrasenia', max: 20 },
+            { id: 'usuarioEmail', requerido: 'Completá el e-mail.', max: 254, regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, mensaje: 'Escribí un e-mail válido.' },
             { id: 'usuarioRol', requerido: 'Seleccioná un rol.' }
         ];
 
@@ -521,6 +529,7 @@
                     data-grupo="${SGTL.escapar(grupo.Grupo_ID)}" data-grupo-accion="${accion}"
                     data-bs-toggle="tooltip" title="${texto}" aria-label="${texto} ${SGTL.escapar(grupo.Grupo_Nombre)}">
                     <i class="bi ${asignar ? 'bi-plus-lg' : 'bi-x-lg'}" aria-hidden="true"></i>
+                    ${texto}
                 </button>
             </li>`;
         }
@@ -626,7 +635,8 @@
         function pasarAEdicion(id) {
             usuarioEnEdicion = id;
             $('#modalUsuarioTitulo').text('Editar usuario');
-            $('#usuarioNombreUsuario').prop('disabled', true);
+            $('#usuarioNombreUsuario').prop('disabled', true).addClass('d-none');
+            $('#usuarioNombreFijo').removeClass('d-none').text($('#usuarioNombreUsuario').val());
             $('#marcaNombreUsuario, #marcaContrasenia').addClass('d-none');
             $('#ayudaNombreUsuario').text('No se puede cambiar');
             $('#ayudaContrasenia').text('Dejala vacía para conservar la actual');
@@ -643,7 +653,8 @@
             ponerEstado(true);
             $('#usuarioContrasenia').attr('type', 'password');
             $('#modalUsuarioTitulo').text(esAlta ? 'Registrar usuario' : 'Editar usuario');
-            $('#usuarioNombreUsuario').prop('disabled', !esAlta);
+            $('#usuarioNombreUsuario').prop('disabled', !esAlta).toggleClass('d-none', !esAlta);
+            $('#usuarioNombreFijo').toggleClass('d-none', esAlta).text('');
             $('#marcaNombreUsuario, #marcaContrasenia').toggleClass('d-none', !esAlta);
             $('#ayudaNombreUsuario').text(esAlta ? 'Letras, números y guion bajo' : 'No se puede cambiar');
             $('#ayudaContrasenia').text(esAlta ? 'Hasta 20 caracteres' : 'Dejala vacía para conservar la actual');
@@ -654,15 +665,17 @@
 
             const carga = esAlta ? cargarRoles() : cargarRoles().then(function () {
                 return Promise.all([
-                    SGTL.ajax({ url: `${API}/Usuarios/${id}`, type: 'GET' }),
-                    SGTL.ajax({ url: `${API}/Usuarios/${id}/Detalles`, type: 'GET' })
+                    SGTL.ajax({ url: `${API}/Usuarios/${id}`, headers: encabezadosSesion(), type: 'GET' }),
+                    SGTL.ajax({ url: `${API}/Usuarios/${id}/Detalles`, headers: encabezadosSesion(), type: 'GET' })
                 ]);
             }).then(function (respuestas) {
                 const data = respuestas[0];
                 const detalle = respuestas[1] || {};
                 $('#usuarioNombreUsuario').val(data.Nombre_Usuario);
+                $('#usuarioNombreFijo').text(data.Nombre_Usuario || '—');
                 $('#usuarioNombre').val(data.Nombre);
                 $('#usuarioApellido').val(data.Apellido);
+                $('#usuarioEmail').val(data.Email || '');
                 if (data.Rol) $('#usuarioRol').val(data.Rol);
                 ponerEstado((data.EstadoUsuario || '').trim().toLowerCase() === 'activo');
                 gruposAsignados = (detalle.Grupos || []).map(function (g) {
@@ -711,8 +724,9 @@
             const usuario = {
                 Nombre_Usuario: $('#usuarioNombreUsuario').val().trim(),
                 Nombre: $('#usuarioNombre').val().trim(),
+                Email: $('#usuarioEmail').val().trim(),
                 Apellido: $('#usuarioApellido').val().trim(),
-                Contraseña: $('#usuarioContrasenia').val().trim(),
+                Contraseña: $('#usuarioContrasenia').val(),
                 Rol: rol,
                 EstadoUsuario: $('#usuarioActivo').is(':checked') ? 'Activo' : 'Inactivo'
             };
@@ -730,7 +744,7 @@
             let respuesta = null;
             try {
                 respuesta = await SGTL.ajax({
-                    url: esAlta ? API + '/Usuarios' : `${API}/Usuarios/${usuarioEnEdicion}`,
+                    url: esAlta ? API + '/Usuarios' : `${API}/Usuarios/${usuarioEnEdicion}`, headers: encabezadosSesion(),
                     type: esAlta ? 'POST' : 'PUT',
                     contentType: 'application/json',
                     data: JSON.stringify(usuario)
@@ -741,6 +755,9 @@
                 const datos = (error.xhr && error.xhr.responseJSON) || {};
                 if (datos.code === 'usuario_duplicado') {
                     SGTL.marcarError('#usuarioNombreUsuario', 'Ya existe un usuario con ese nombre de usuario.');
+                    SGTL.revisarFormulario('#formUsuario', '#avisoUsuario');
+                } else if (/^(email_duplicado|email_invalido)$/.test(datos.code)) {
+                    SGTL.marcarError('#usuarioEmail', datos.message);
                     SGTL.revisarFormulario('#formUsuario', '#avisoUsuario');
                 } else {
                     SGTL.avisoFormulario('#avisoUsuario', error.mensajeUsuario || 'No se pudo guardar el usuario. Probá de nuevo.');

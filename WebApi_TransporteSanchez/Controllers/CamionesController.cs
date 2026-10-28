@@ -104,7 +104,7 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Camiones/Buscar
         [HttpGet]
         [Route("api/Camiones/Buscar")]
-        public IHttpActionResult Buscar(string dominio = null, string estadoCamion = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string dominio = null, string estadoCamion = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6, string orden = null, string direccion = null)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -157,8 +157,27 @@ namespace WebApi_TransporteSanchez.Controllers
                         pageSize = 6;
                     }
 
-                    var results = query
-                        .OrderByDescending(c => c.Camion_ID)
+                    var direccionOrden = string.IsNullOrWhiteSpace(direccion) ? "asc" : direccion.Trim().ToLowerInvariant();
+                    var descendente = direccionOrden == "desc";
+                    IOrderedQueryable<CAMIONES> queryOrdenada;
+                    switch (direccionOrden == "asc" || descendente ? (orden ?? "").Trim().ToLowerInvariant() : "")
+                    {
+                        case "marca":
+                            queryOrdenada = descendente
+                                ? query.OrderByDescending(c => c.Marca).ThenByDescending(c => c.Camion_ID)
+                                : query.OrderBy(c => c.Marca).ThenBy(c => c.Camion_ID);
+                            break;
+                        case "fechaalta":
+                            queryOrdenada = descendente
+                                ? query.OrderByDescending(c => c.Fecha_Alta).ThenByDescending(c => c.Camion_ID)
+                                : query.OrderBy(c => c.Fecha_Alta).ThenBy(c => c.Camion_ID);
+                            break;
+                        default:
+                            queryOrdenada = query.OrderByDescending(c => c.Camion_ID);
+                            break;
+                    }
+
+                    var results = queryOrdenada
                         .Skip((page - 1) * pageSize)
                         .Take(pageSize)
                         .Select(c => new

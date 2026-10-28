@@ -11,7 +11,7 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 - Una Factura por una Proforma completa en estado `Aceptada`.
 - NC siempre asociada y totalmente aplicada a una Factura pendiente.
 - ND independiente o referenciada a una Factura; constituye su propia deuda cobrable.
-- Recibo con una o varias formas de pago, completamente aplicado a Facturas/ND.
+- Recibo con una o varias formas de pago, sin aplicar, parcialmente aplicado o aplicado por completo a comprobantes de deuda; admite imputaciones posteriores (§10).
 - Sin anticipos, saldo a favor, facturación parcial ni combinación de Proformas.
 - Fecha de vencimiento obligatoria para deudas emitidas: FAC y ND.
 - La Proforma no modifica Cuenta Corriente. No facturar automáticamente Proformas históricas.
@@ -22,8 +22,8 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 
 | Tabla | Clave primaria | Relaciones y función |
 |---|---|---|
-| TIPOS_COMPROBANTE | Tipo | FAC/ND = D; NC/REC = C. Catálogo cerrado para MVP. |
-| COMPROBANTES_NUMERADORES | Tipo | Último correlativo confirmado por tipo. |
+| TIPOS_COMPROBANTE | TipoComp_ID (script 11) | `Tipo` único; FAC/ND = D; NC/REC = C. Catálogo cerrado para MVP. |
+| COMPROBANTES_NUMERADORES | CompNum_ID (script 11) | `Tipo` único y FK a tipos; último correlativo confirmado por tipo. |
 | COMPROBANTES | Comprobante_ID | FK Cliente, Tipo, usuarios y Factura de referencia opcional; NC requiere referencia. |
 | COMPROBANTES_DETALLE | Detalle_ID | FK Comprobante y línea original de Proforma opcional. Copia histórica de conceptos. |
 | COMPROBANTES_PROFORMAS | ComprobanteProforma_ID | FK compuestas garantizan misma cuenta y tipo FAC. Una Proforma por Factura. |
@@ -36,6 +36,10 @@ No incluye integración con ARCA ni autoriza cambios sobre una base compartida.
 
 Tipos e impacto redundantes en ciertas FK son discriminadores controlados por CHECK/FK:
 no deben recibirse libremente del navegador ni representar dos fuentes independientes de negocio.
+
+El script `database/cuenta-corriente/11_ids_tipos_y_numeradores.sql` migra las dos primeras tablas.
+Los nuevos IDs son `int IDENTITY` y `Tipo` sigue siendo único para las relaciones y consultas existentes.
+Hasta aplicar el script, la base conserva las PK originales sobre `Tipo`.
 
 ### Cambios en tablas existentes
 
@@ -123,11 +127,11 @@ La estructura no constituye un backend operativo. Nunca emitir mediante INSERT m
 - Vincular detalle original a la Proforma efectivamente facturada y no a otra.
 - Referencia NC debe coincidir con la Factura destino de su aplicación.
 - Aplicaciones solo entre comprobantes EMITIDOS; suma por deuda <= Total.
-- Suma por crédito <= Total y, al emitir REC/NC, exactamente igual a Total.
+- Suma por crédito o recibo <= Total: pueden emitirse con saldo disponible e imputarse después. Un cancelatorio de proforma se aplica por el total a su única deuda.
 - Suma de formas de pago = Total REC; REC no tiene detalle de venta ni impuestos.
 - Total movimiento de emisión = Total comprobante; reverso mismo importe que original.
 - Un comprobante no se puede anular dos veces ni quedar sin su reverso.
-- Ninguna emisión/anulación puede dejar saldo negativo en MVP.
+- Un saldo a favor del cliente es válido cuando tiene créditos o recibos sin imputar; ninguna aplicación puede superar el saldo de la deuda o del crédito.
 - Guardar auditoría esencial en la misma transacción: un fallo revierte la operación.
   El contexto actual de auditoría tolera fallos; no reutilizarlo sin revisar este requisito.
 
@@ -315,3 +319,30 @@ Estado: aprobada funcional y técnicamente (21/10/2026).
 - Recorrido manual en la VM: una cobranza de $500.000 sobre tres Facturas de $200.000
   y una NC corriente distribuida sobre más de una Factura; además, la anulación de una
   Factura de Proforma.
+
+## 10. Recibos e imputaciones posteriores (27/10/2026)
+
+Los recibos emitidos pueden conservar todo o parte de su total sin imputar. Los importes de la forma de pago y del
+movimiento de emisión siguen siendo iguales al total del recibo. El saldo para imputar es el total menos la suma de
+sus aplicaciones vigentes; aparece como disponible en ambas vistas de cuenta corriente mientras sea mayor que cero.
+
+`PUT /api/comprobantes/{id}/aplicaciones` recibe fecha e importes acumulados por deuda. Usa `REC_EMITIR` para recibos
+y `NC_EMITIR` para otros créditos. Dentro de una transacción serializable valida cliente, estados, fechas y saldos,
+agrupa lo ya aplicado por deuda e inserta solo los incrementos. Un reintento idéntico no agrega aplicaciones ni
+auditorías. Los cancelatorios de proforma conservan su aplicación única por el total y no admiten esta operación.
+
+Editar un recibo no reescribe las fechas de sus aplicaciones. La fecha de emisión puede anteceder a la deuda cuando
+se cobró a cuenta; la fecha de cada imputación debe ser igual o posterior tanto al recibo como a la deuda. La emisión
+no puede moverse a una fecha posterior a la primera imputación vigente.
+
+## 11. Referencia del débito interno (27/10/2026)
+
+Los débitos internos de impacto D pueden guardar opcionalmente `ComprobanteReferenciaID` hacia un comprobante
+interno de deuda emitido del mismo cliente, como FC. `TipoReferencia` conserva la sigla real de ese documento.
+El vínculo identifica el origen del cargo, no es una aplicación de crédito: el nuevo débito aporta su propio
+movimiento de deuda por el importe ingresado y el comprobante original conserva sus importes.
+
+La fecha del débito debe ser igual o posterior a la del origen. La API valida tipo, impacto, estado y cliente bajo
+la transacción de emisión, y el reintento compara también la referencia. La migración idempotente
+`database/cuenta-corriente/17_debito_interno_referencia.sql` amplía `CK_CC_COMP_Referencia` sin alterar datos, FK ni
+el disparador de identidad de la migración 16. El detalle y el PDF muestran el número del comprobante relacionado.

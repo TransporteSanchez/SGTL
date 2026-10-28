@@ -40,7 +40,7 @@ function crearCampo() {
     };
 }
 
-function probarFacturaConProformasSinDetalle() {
+function probarComprobantesConProformasSinDetalle() {
     const sandbox = {};
     vm.runInNewContext(
         extraerFuncion(fuentePdf, 'texto') + '\n' + extraerFuncion(fuentePdf, 'proformasFactura') + '\n' + extraerFuncion(fuentePdf, 'contenidoImpresionComprobante'),
@@ -61,6 +61,24 @@ function probarFacturaConProformasSinDetalle() {
         'el contenido de la Factura no debe exponer filas de detalle de viajes');
     assert.deepStrictEqual(JSON.parse(JSON.stringify(sandbox.proformasFactura({ Tipo: 'FAC', ProformaNumero: 'PF-00000009' }))), ['PF-00000009'],
         'las Facturas histÃ³ricas con un Ãºnico vÃ­nculo deben seguir mostrando su Proforma');
+    const interno = sandbox.contenidoImpresionComprobante({
+        Tipo: 'FC', Proformas: [{ Numero: 'PF-00000057' }],
+        Detalle: [{ Concepto: 'Viaje 57' }]
+    });
+    assert.strictEqual(interno.tipo, 'proformas',
+        'un comprobante interno vinculado debe mostrar proformas en lugar del detalle de viajes');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(interno.lineas)), ['PF-00000057']);
+
+    const otroTipo = sandbox.contenidoImpresionComprobante({
+        Tipo: 'FZ', ProformaNumero: 'PF-00000058', Detalle: [{ Concepto: 'Viaje 58' }]
+    });
+    assert.strictEqual(otroTipo.tipo, 'proformas',
+        'otro tipo configurable vinculado debe conservar el bloque de proformas');
+    assert.deepStrictEqual(JSON.parse(JSON.stringify(otroTipo.lineas)), ['PF-00000058']);
+
+    assert.strictEqual(sandbox.contenidoImpresionComprobante({
+        Tipo: 'FC', Proformas: [], Detalle: [{ Concepto: 'Servicio directo' }]
+    }).tipo, 'detalle', 'un FC directo debe seguir mostrando sus conceptos');
 }
 
 async function probarVistaPreviaSinPestanaNueva() {
@@ -114,7 +132,7 @@ async function probarVistaPreviaSinPestanaNueva() {
 }
 
 async function ejecutar() {
-    probarFacturaConProformasSinDetalle();
+    probarComprobantesConProformasSinDetalle();
     await probarVistaPreviaSinPestanaNueva();
     console.log('OK: impresiÃ³n de comprobantes sin pestaÃ±a nueva y Facturas por Proforma');
 }

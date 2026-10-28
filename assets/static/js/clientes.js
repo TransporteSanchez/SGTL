@@ -1,6 +1,11 @@
 // Funciones compartidas por Gestionar clientes y Listar clientes.
 // Va después de sgtl-ui.js. Usa los filtros #filtroCuit, #filtroRazonSocial, #fechaRango y #filtroEstado.
 var API_CLIENTES = 'http://localhost:50222/api';
+var ordenClientes = null;
+
+function parametrosOrdenClientes() {
+    return ordenClientes ? ordenClientes.parametros() : {};
+}
 
 var CONDICIONES_IVA = { 1: 'Responsable inscripto', 2: 'Monotributista', 3: 'Exento' };
 
@@ -73,7 +78,7 @@ async function exportarClientes() {
         var data = await SGTL.ajax({
             url: API_CLIENTES + '/Clientes/Buscar',
             type: 'GET',
-            data: Object.assign(filtrosBusquedaClientes(), { page: 1, pageSize: 0 })
+            data: Object.assign(filtrosBusquedaClientes(), parametrosOrdenClientes(), { page: 1, pageSize: 0 })
         }, 'No se pudo exportar. Revisá la conexión y probá de nuevo.');
         var registros = data.Results || [];
         if (!registros.length) {

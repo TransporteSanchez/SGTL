@@ -11,13 +11,11 @@
             display: none;
         }
 
-        /* Pestaña Usuarios: lista con scroll y casilla alineada con el texto */
-        .lista-usuarios-grupo { max-height: 360px; overflow-y: auto; }
-        .lista-usuarios-item { display: flex; align-items: flex-start; gap: .5rem; padding: .5rem .75rem; }
-        .lista-usuarios-item:last-child { border-bottom: 0 !important; }
-        .lista-usuarios-check { float: none; flex: 0 0 auto; margin: .25rem 0 0; }
-        .lista-usuarios-control { flex: 0 0 1rem; }
-        .lista-usuarios-etiqueta { min-width: 0; margin: 0; }
+        /* Las dos listas de asignación conservan un alto manejable en escritorio y celular. */
+        .lista-usuarios-grupo { max-height: clamp(150px, 20vh, 200px); overflow-y: auto; }
+        @media (min-width: 1500px) and (min-height: 760px) {
+            .lista-usuarios-grupo { height: clamp(180px, 24vh, 230px); max-height: none; }
+        }
 
     </style>
 
@@ -113,14 +111,13 @@
                                         <table class="table table-striped table-hover" id="tablaGrupos">
                                             <thead>
                                                 <tr>
-                                                    <th>ID</th>
                                                     <th>Grupo</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td colspan="3" class="text-center text-muted py-4">Cargando…</td>
+                                                    <td colspan="2" class="text-center text-muted py-4">Cargando…</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -146,17 +143,67 @@
                                 </div>
 
                                 <div class="tab-pane fade" id="pane-usuarios" role="tabpanel" aria-labelledby="tab-usuarios">
-                                    <div class="row g-3 align-items-end">
+                                    <div class="row g-2 align-items-end">
                                         <div class="col-12 col-md-6 col-lg-4">
                                             <label for="selectGrupoUsuarios" class="form-label">Grupo</label>
                                             <select id="selectGrupoUsuarios" class="form-select"></select>
                                         </div>
-                                        <div class="col-12 col-md-6 col-lg-8 d-flex justify-content-end">
-                                            <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Agregar al grupo</button>
+                                        <div class="col-12 col-md-6 col-lg-8 d-flex flex-wrap justify-content-end align-items-center gap-2">
+                                            <span id="resumenUsuariosGrupo" class="form-text mb-0" aria-live="polite"></span>
+                                            <button type="button" class="btn btn-light-secondary" id="btnDeshacerUsuariosGrupo" disabled>Deshacer cambios</button>
+                                            <button type="button" class="btn btn-primary" id="btnGuardarUsuariosGrupo" disabled>Guardar</button>
                                         </div>
                                     </div>
-                                    <p class="form-text mt-3 mb-2">Tildá los usuarios que querés sumar al grupo. Para sacar a alguien, editalo en Gestionar usuarios. Los usuarios con rol admin ven todo por su rol: no hace falta sumarlos a un grupo.</p>
-                                    <div id="contenedorUsuariosGrupo"></div>
+                                    <p class="form-text mt-2 mb-1">Agregá o quitá usuarios y guardá. Los botones “Todos” afectan solo los resultados de cada búsqueda. Los administradores ya tienen acceso por su rol.</p>
+                                    <section id="contenedorUsuariosGrupo" class="sgtl-bloque mt-2">
+                                        <div class="sgtl-bloque-titulo">Asignación de usuarios</div>
+                                        <p id="estadoCargaUsuariosGrupo" class="text-muted mb-0" role="status" aria-live="polite">Cargando…</p>
+                                        <button type="button" class="btn btn-light mt-2 d-none" id="btnReintentarUsuariosGrupo">Reintentar</button>
+                                        <div id="listasUsuariosGrupo" class="d-none">
+                                            <div class="row g-2">
+                                                <div class="col-12 col-lg-6">
+                                                    <div class="border rounded p-2 h-100">
+                                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                            <span class="form-label mb-0">Usuarios disponibles</span>
+                                                            <button type="button" class="btn btn-sm btn-outline-primary" id="btnAgregarVisiblesGrupo" disabled>Agregar todos</button>
+                                                        </div>
+                                                        <form id="buscarDisponiblesGrupoForm" class="row g-2 align-items-end mb-2" novalidate>
+                                                            <div class="col">
+                                                                <label for="buscarDisponiblesGrupo" class="form-label">Buscar usuario disponible</label>
+                                                                <input id="buscarDisponiblesGrupo" type="text" class="form-control" placeholder="Usuario, nombre o apellido" autocomplete="off">
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                                            </div>
+                                                        </form>
+                                                        <div class="lista-usuarios-grupo border rounded" role="region" aria-label="Usuarios disponibles">
+                                                            <ul id="listaUsuariosDisponiblesGrupo" class="list-group list-group-flush mb-0"></ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-12 col-lg-6">
+                                                    <div class="border rounded p-2 h-100">
+                                                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                                            <span class="form-label mb-0">Usuarios asignados</span>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="btnQuitarVisiblesGrupo" disabled>Quitar todos</button>
+                                                        </div>
+                                                        <form id="buscarAsignadosGrupoForm" class="row g-2 align-items-end mb-2" novalidate>
+                                                            <div class="col">
+                                                                <label for="buscarAsignadosGrupo" class="form-label">Buscar usuario asignado</label>
+                                                                <input id="buscarAsignadosGrupo" type="text" class="form-control" placeholder="Usuario, nombre o apellido" autocomplete="off">
+                                                            </div>
+                                                            <div class="col-auto">
+                                                                <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                                            </div>
+                                                        </form>
+                                                        <div class="lista-usuarios-grupo border rounded" role="region" aria-label="Usuarios asignados">
+                                                            <ul id="listaUsuariosAsignadosGrupo" class="list-group list-group-flush mb-0"></ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </section>
                                 </div>
                             </div>
                         </div>
@@ -307,11 +354,10 @@
             currentPage = Math.min(page, paginas);
             const visibles = filas.slice((currentPage - 1) * pageSize, currentPage * pageSize);
             if (!visibles.length) {
-                SGTL.tabla.vacia(tbody, 3, $('#filtroGrupo').val().trim() ? undefined : 'Todavía no hay grupos cargados.');
+                SGTL.tabla.vacia(tbody, 2, $('#filtroGrupo').val().trim() ? undefined : 'Todavía no hay grupos cargados.');
             } else {
                 SGTL.tabla.llenar(tbody, visibles.map(function (g) {
                     return `<tr>
-                        <td>${SGTL.escapar(g.Grupo_ID)}</td>
                         <td>${SGTL.escapar(g.Grupo_Nombre)}</td>
                         <td class="text-center">${SGTL.accionesFila([
                             SGTL.botonFila('editar', { id: g.Grupo_ID }),
@@ -330,14 +376,14 @@
         }
 
         function cargarGrupos() {
-            SGTL.tabla.cargando('#tablaGrupos tbody', 3);
+            SGTL.tabla.cargando('#tablaGrupos tbody', 2);
             return SGTL.ajax({ url: API + '/Grupos', type: 'GET' },
                 'No se pudieron cargar los grupos. Revisá la conexión y probá de nuevo.').then(function (data) {
                     gruposCache = Array.isArray(data) ? data : [];
                     dibujarGrupos(currentPage);
                     cargarCombosGrupos();
                 }, function (error) {
-                    SGTL.tabla.vacia('#tablaGrupos tbody', 3, 'No se pudieron cargar los grupos.');
+                    SGTL.tabla.vacia('#tablaGrupos tbody', 2, 'No se pudieron cargar los grupos.');
                     SGTL.tabla.paginacion('#pagination', { total: 0 });
                     SGTL.toastError(error.mensajeUsuario);
                 });
@@ -430,7 +476,16 @@
             selects.empty();
             if (!gruposCache.length) {
                 selects.append(new Option('Todavía no hay grupos cargados', ''));
-                $('#contenedorMenusGrupo, #contenedorUsuariosGrupo').html('<p class="text-muted mb-0">Registrá un grupo en la pestaña Grupos.</p>');
+                $('#contenedorMenusGrupo').html('<p class="text-muted mb-0">Registrá un grupo en la pestaña Grupos.</p>');
+                grupoUsuariosSeleccionadoId = null;
+                grupoUsuariosCargadoId = null;
+                ++secuenciaCargaUsuariosGrupo;
+                usuariosGrupoCache = [];
+                usuariosGrupoOriginalIds = new Set();
+                usuariosGrupoEdicionIds = new Set();
+                $('#estadoCargaUsuariosGrupo').text('Registrá un grupo en la pestaña Grupos.').removeClass('d-none text-danger').addClass('text-muted');
+                $('#btnReintentarUsuariosGrupo').addClass('d-none');
+                $('#listasUsuariosGrupo').addClass('d-none');
                 $('#btnGuardarPermisos, #btnGuardarUsuariosGrupo').prop('disabled', true);
                 return;
             }
@@ -440,7 +495,9 @@
             if (anteriores[0] && grupoPorId(anteriores[0]).Grupo_ID) $('#selectGrupoPermisos').val(anteriores[0]);
             if (anteriores[1] && grupoPorId(anteriores[1]).Grupo_ID) $('#selectGrupoUsuarios').val(anteriores[1]);
             cargarMenusDeGrupo($('#selectGrupoPermisos').val());
-            cargarUsuariosDeGrupo($('#selectGrupoUsuarios').val());
+            if (grupoUsuariosCargadoId !== String($('#selectGrupoUsuarios').val()) || !tieneCambiosUsuariosGrupo()) {
+                cargarUsuariosDeGrupo($('#selectGrupoUsuarios').val());
+            }
         }
 
         // ---------------------------------------------------------------- Permisos
@@ -470,7 +527,7 @@
         function crearHtmlPermisos(gruposMenu) {
             return '<div class="row g-3">' + gruposMenu.map(function (grupo, indice) {
                 const idGrupo = 'grupo_menu_' + indice;
-                return `<div class="col-12 col-md-6 col-xl-4">
+                return `<div class="col-12 col-md-6 col-xl-3">
                     <div class="card border h-100 mb-0 grupo-permisos">
                         <div class="card-header py-2">
                             <div class="form-check mb-0">
@@ -490,7 +547,7 @@
         }
 
         function agruparMenusPorPrincipal(menus) {
-            const orden = ['General', 'Choferes', 'Camiones', 'Viajes', 'Clientes', 'Facturación', 'Configuración', 'Usuarios'];
+            const orden = ['General', 'Choferes', 'Camiones', 'Clientes', 'Viajes', 'Facturación', 'Configuración', 'Usuarios'];
             const grupos = [];
             (menus || []).forEach(function (menu) {
                 const nombre = String(menu.Menu_Principal || 'General').trim() || 'General';
@@ -572,51 +629,24 @@
         }
 
         // ---------------------------------------------------------------- Usuarios
-        // Esta pestaña solo agrega usuarios al grupo (la API no saca a nadie). Para sacar a un usuario
-        // de un grupo se edita el usuario en Gestionar usuarios.
 
         let usuariosGrupoCache = [];
-        let usuariosSeleccionadosGrupo = new Set();
+        let usuariosGrupoOriginalIds = new Set();
+        let usuariosGrupoEdicionIds = new Set();
         let grupoUsuariosCargadoId = null;
-
-        function cargarUsuariosDeGrupo(grupoId) {
-            const contenedor = $('#contenedorUsuariosGrupo');
-            $('#btnGuardarUsuariosGrupo').prop('disabled', true);
-            grupoUsuariosCargadoId = null;
-            usuariosGrupoCache = [];
-            usuariosSeleccionadosGrupo = new Set();
-            if (!grupoId) return;
-            contenedor.html('<p class="text-muted mb-0">Cargando…</p>');
-            SGTL.ajax({ url: `${API}/Grupos/${grupoId}/Usuarios`, type: 'GET' }).then(function (data) {
-                if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
-                grupoUsuariosCargadoId = String(grupoId);
-                usuariosGrupoCache = Array.isArray(data) ? data : [];
-                if (!usuariosGrupoCache.length) {
-                    contenedor.html('<p class="text-muted mb-0">Todavía no hay usuarios cargados.</p>');
-                    return;
-                }
-                contenedor.html(
-                    '<div class="mb-2">' +
-                    '<label class="form-label" for="txtBuscarUsuarioGrupo">Buscar usuario</label>' +
-                    '<input type="search" class="form-control" id="txtBuscarUsuarioGrupo" placeholder="Usuario, nombre o apellido" autocomplete="off">' +
-                    '<div id="resumenUsuariosGrupo" class="form-text"></div>' +
-                    '</div>' +
-                    '<div id="listaUsuariosGrupo" class="lista-usuarios-grupo border rounded" role="list"></div>'
-                );
-                renderizarUsuariosGrupo('');
-                vincularListaUsuariosGrupo(contenedor);
-            }, function () {
-                if (String($('#selectGrupoUsuarios').val()) !== String(grupoId)) return;
-                contenedor.html('<p class="text-danger mb-0">No se pudieron cargar los usuarios. Elegí el grupo de nuevo para reintentar.</p>');
-            });
-        }
+        let grupoUsuariosSeleccionadoId = null;
+        let secuenciaCargaUsuariosGrupo = 0;
+        let guardandoUsuariosGrupo = false;
+        let busquedasUsuariosGrupo = { disponibles: '', asignados: '' };
+        let filtrosDisponiblesGrupo = null;
+        let filtrosAsignadosGrupo = null;
 
         function esAdministradorUsuarioGrupo(usuario) {
             return usuario.EsAdministrador === true || String(usuario.Rol || '').trim().toLowerCase() === 'admin';
         }
 
         function normalizarBusquedaUsuariosGrupo(texto) {
-            return String(texto || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+            return String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
         }
 
         function filtrarUsuariosGrupo(usuarios, texto) {
@@ -628,111 +658,242 @@
             });
         }
 
-        // La selección vive aparte de la lista visible: filtrar no pierde a los que ya estaban tildados.
-        function actualizarSeleccionUsuariosGrupo(seleccionados, usuarioId, seleccionado) {
-            const siguiente = new Set(seleccionados || []);
-            if (seleccionado) siguiente.add(usuarioId);
-            else siguiente.delete(usuarioId);
-            return siguiente;
-        }
-
-        // Los que ya están en el grupo y los admin se muestran sin casilla: solo se tilda a quien se puede agregar.
-        function crearHtmlListaUsuariosGrupo(usuarios) {
-            if (!usuarios.length) {
-                return '<p class="text-muted text-center py-3 mb-0">No hay usuarios que coincidan con la búsqueda.</p>';
+        function cargarUsuariosDeGrupo(grupoId, opciones) {
+            opciones = opciones || {};
+            const id = String(grupoId || '');
+            const solicitud = ++secuenciaCargaUsuariosGrupo;
+            grupoUsuariosSeleccionadoId = id || null;
+            grupoUsuariosCargadoId = null;
+            usuariosGrupoCache = [];
+            usuariosGrupoOriginalIds = new Set();
+            usuariosGrupoEdicionIds = new Set();
+            $('#btnGuardarUsuariosGrupo, #btnDeshacerUsuariosGrupo, #btnAgregarVisiblesGrupo, #btnQuitarVisiblesGrupo').prop('disabled', true);
+            $('#listasUsuariosGrupo').addClass('d-none');
+            $('#btnReintentarUsuariosGrupo').addClass('d-none');
+            if (!opciones.conservarBusquedas) {
+                busquedasUsuariosGrupo = { disponibles: '', asignados: '' };
+                $('#buscarDisponiblesGrupo, #buscarAsignadosGrupo').val('');
+                if (filtrosDisponiblesGrupo) filtrosDisponiblesGrupo.actualizar();
+                if (filtrosAsignadosGrupo) filtrosAsignadosGrupo.actualizar();
             }
-            return usuarios.map(function (usuario) {
-                const id = SGTL.escapar(usuario.Usuario_ID);
-                const esAdmin = esAdministradorUsuarioGrupo(usuario);
-                const asignado = !esAdmin && usuario.Asignado === true;
-                const puedeAgregarse = !esAdmin && !asignado;
-                const texto = `<strong>${SGTL.escapar(usuario.Nombre_Usuario)}</strong> · ${SGTL.escapar(usuario.NombreCompleto)}`;
-                const etiqueta = esAdmin
-                    ? ' <span class="badge rounded-pill bg-white text-dark border ms-1">admin</span>'
-                    : (asignado ? ' ' + SGTL.estado('activo', 'En el grupo') : '');
-                if (!puedeAgregarse) {
-                    return `<div class="lista-usuarios-item border-bottom" role="listitem">
-                        <span class="lista-usuarios-control" aria-hidden="true"></span>
-                        <div class="lista-usuarios-etiqueta ${esAdmin ? 'text-muted' : ''}">${texto}${etiqueta}</div>
-                    </div>`;
-                }
-                return `<div class="lista-usuarios-item border-bottom" role="listitem">
-                    <input class="form-check-input chk-usuario lista-usuarios-check" type="checkbox" value="${id}" id="usr_${id}" ${usuariosSeleccionadosGrupo.has(usuario.Usuario_ID) ? 'checked' : ''}>
-                    <label class="lista-usuarios-etiqueta" for="usr_${id}">${texto}</label>
-                </div>`;
-            }).join('');
-        }
-
-        function actualizarResumenUsuariosGrupo(usuariosVisibles) {
-            const total = usuariosGrupoCache.length;
-            const seleccionados = usuariosSeleccionadosGrupo.size;
-            const asignados = usuariosGrupoCache.filter(function (usuario) {
-                return !esAdministradorUsuarioGrupo(usuario) && usuario.Asignado === true;
-            }).length;
-            $('#resumenUsuariosGrupo').text(
-                `Mostrando ${usuariosVisibles.length} de ${total}. ` +
-                `${asignados} ${asignados === 1 ? 'está' : 'están'} en el grupo; ` +
-                `${seleccionados} ${seleccionados === 1 ? 'tildado' : 'tildados'} para agregar.`
-            );
-            $('#btnGuardarUsuariosGrupo').prop('disabled', seleccionados === 0);
-        }
-
-        function renderizarUsuariosGrupo(texto) {
-            const usuariosVisibles = filtrarUsuariosGrupo(usuariosGrupoCache, texto);
-            $('#listaUsuariosGrupo').html(crearHtmlListaUsuariosGrupo(usuariosVisibles));
-            actualizarResumenUsuariosGrupo(usuariosVisibles);
-        }
-
-        function vincularListaUsuariosGrupo(contenedor) {
-            contenedor
-                .off('input.usuariosGrupo', '#txtBuscarUsuarioGrupo')
-                .on('input.usuariosGrupo', '#txtBuscarUsuarioGrupo', function () {
-                    renderizarUsuariosGrupo($(this).val());
-                })
-                .off('change.usuariosGrupo', '.chk-usuario')
-                .on('change.usuariosGrupo', '.chk-usuario', function () {
-                    usuariosSeleccionadosGrupo = actualizarSeleccionUsuariosGrupo(
-                        usuariosSeleccionadosGrupo, parseInt($(this).val(), 10), $(this).prop('checked') === true);
-                    actualizarResumenUsuariosGrupo(filtrarUsuariosGrupo(usuariosGrupoCache, $('#txtBuscarUsuarioGrupo').val()));
+            $('#estadoCargaUsuariosGrupo').text(id ? 'Cargando…' : 'Registrá un grupo en la pestaña Grupos.')
+                .removeClass('d-none text-danger').addClass('text-muted');
+            if (!id) return Promise.resolve();
+            return SGTL.ajax({
+                url: `${API}/Grupos/${id}/Usuarios`, type: 'GET',
+                headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') }
+            }, 'No se pudieron cargar los usuarios. Probá de nuevo.').then(function (data) {
+                if (solicitud !== secuenciaCargaUsuariosGrupo || String($('#selectGrupoUsuarios').val()) !== id) return;
+                grupoUsuariosCargadoId = id;
+                usuariosGrupoCache = (Array.isArray(data) ? data : []).filter(function (usuario) {
+                    return !esAdministradorUsuarioGrupo(usuario);
                 });
-        }
-
-        function marcarUsuariosAgregadosGrupo(usuarioIds) {
-            const idsAgregados = new Set(usuarioIds || []);
-            usuariosGrupoCache = usuariosGrupoCache.map(function (usuario) {
-                return idsAgregados.has(usuario.Usuario_ID) ? Object.assign({}, usuario, { Asignado: true }) : usuario;
+                usuariosGrupoOriginalIds = new Set(usuariosGrupoCache.filter(function (usuario) {
+                    return usuario.Asignado === true;
+                }).map(function (usuario) { return Number(usuario.Usuario_ID); }));
+                usuariosGrupoEdicionIds = new Set(usuariosGrupoOriginalIds);
+                $('#estadoCargaUsuariosGrupo').addClass('d-none');
+                $('#listasUsuariosGrupo').removeClass('d-none');
+                renderizarUsuariosGrupo();
+            }, function (error) {
+                if (solicitud !== secuenciaCargaUsuariosGrupo || String($('#selectGrupoUsuarios').val()) !== id) return;
+                $('#estadoCargaUsuariosGrupo').text('No se pudieron cargar los usuarios del grupo. Probá de nuevo.')
+                    .removeClass('text-muted').addClass('text-danger');
+                $('#btnReintentarUsuariosGrupo').removeClass('d-none');
+                SGTL.toastError(error.mensajeUsuario);
             });
         }
 
-        function guardarUsuariosDeGrupo() {
-            const grupoId = $('#selectGrupoUsuarios').val();
-            const ids = Array.from(usuariosSeleccionadosGrupo);
-            if (grupoUsuariosCargadoId !== String(grupoId) || !ids.length) return;
-            const listo = SGTL.procesando('#btnGuardarUsuariosGrupo', 'Agregando…');
-            SGTL.ajax({
-                url: `${API}/Grupos/${grupoId}/Usuarios`,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({ UsuarioIds: ids })
-            }, 'No se pudieron agregar los usuarios al grupo. Probá de nuevo.').then(function () {
-                SGTL.toastExito(ids.length === 1 ? 'Se agregó 1 usuario al grupo.' : `Se agregaron ${ids.length} usuarios al grupo.`);
-                if (grupoUsuariosCargadoId !== String(grupoId)) return;
-                marcarUsuariosAgregadosGrupo(ids);
-                usuariosSeleccionadosGrupo = new Set();
-                renderizarUsuariosGrupo($('#txtBuscarUsuarioGrupo').val());
-            }, function (error) {
-                SGTL.toastError(error.mensajeUsuario);
-            }).finally(function () {
+        function usuariosVisiblesGrupo(tipo) {
+            const asignados = tipo === 'asignados';
+            return filtrarUsuariosGrupo(usuariosGrupoCache.filter(function (usuario) {
+                return !esAdministradorUsuarioGrupo(usuario) &&
+                    usuariosGrupoEdicionIds.has(Number(usuario.Usuario_ID)) === asignados;
+            }), busquedasUsuariosGrupo[tipo]);
+        }
+
+        function puedeQuitarUsuarioGrupo(usuario) {
+            const id = Number(usuario.Usuario_ID);
+            return !usuariosGrupoOriginalIds.has(id) || usuario.PuedeQuitar !== false;
+        }
+
+        function crearHtmlListaUsuariosGrupo(usuarios, tipo) {
+            if (!usuarios.length) {
+                const mensaje = busquedasUsuariosGrupo[tipo]
+                    ? 'No hay usuarios que coincidan con la búsqueda.'
+                    : (tipo === 'asignados' ? 'Todavía no hay usuarios asignados.' : 'No hay usuarios disponibles.');
+                return `<li class="list-group-item text-muted text-center py-3">${mensaje}</li>`;
+            }
+            return usuarios.map(function (usuario) {
+                const id = SGTL.escapar(usuario.Usuario_ID);
+                const nombre = SGTL.escapar(usuario.Nombre_Usuario || '');
+                const nombreCompleto = String(usuario.NombreCompleto || '').trim();
+                const asignado = tipo === 'asignados';
+                const puedeQuitar = !asignado || puedeQuitarUsuarioGrupo(usuario);
+                const accion = asignado ? 'Quitar' : 'Agregar';
+                const motivo = 'No se puede quitar el usuario: es su único grupo';
+                return `<li class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2 py-2">
+                    <span class="flex-grow-1 text-break"><strong>${nombre}</strong>${nombreCompleto ? `<small class="text-muted d-block">${SGTL.escapar(nombreCompleto)}</small>` : ''}${!puedeQuitar ? `<small class="text-danger d-block">${motivo}.</small>` : ''}</span>
+                    <button type="button" class="btn btn-sm ${asignado ? 'btn-outline-danger' : 'btn-outline-primary'}"
+                        data-accion-usuario="${asignado ? 'quitar' : 'agregar'}" data-usuario-id="${id}"
+                        aria-label="${puedeQuitar ? accion + ' ' + nombre : motivo}" ${!puedeQuitar || guardandoUsuariosGrupo ? 'disabled' : ''}>
+                        <i class="bi ${asignado ? 'bi-dash-lg' : 'bi-plus-lg'} me-1" aria-hidden="true"></i>${accion}
+                    </button>
+                </li>`;
+            }).join('');
+        }
+
+        function cambiosUsuariosGrupo() {
+            const AgregarIds = Array.from(usuariosGrupoEdicionIds).filter(function (id) {
+                return !usuariosGrupoOriginalIds.has(id);
+            }).sort(function (a, b) { return a - b; });
+            const QuitarIds = Array.from(usuariosGrupoOriginalIds).filter(function (id) {
+                return !usuariosGrupoEdicionIds.has(id);
+            }).sort(function (a, b) { return a - b; });
+            return { AgregarIds: AgregarIds, QuitarIds: QuitarIds };
+        }
+
+        function tieneCambiosUsuariosGrupo() {
+            const cambios = cambiosUsuariosGrupo();
+            return cambios.AgregarIds.length + cambios.QuitarIds.length > 0;
+        }
+
+        function renderizarUsuariosGrupo() {
+            if (!grupoUsuariosCargadoId) return;
+            const disponibles = usuariosVisiblesGrupo('disponibles');
+            const asignados = usuariosVisiblesGrupo('asignados');
+            $('#listaUsuariosDisponiblesGrupo').html(crearHtmlListaUsuariosGrupo(disponibles, 'disponibles'));
+            $('#listaUsuariosAsignadosGrupo').html(crearHtmlListaUsuariosGrupo(asignados, 'asignados'));
+            const cambios = cambiosUsuariosGrupo();
+            const totalCambios = cambios.AgregarIds.length + cambios.QuitarIds.length;
+            $('#resumenUsuariosGrupo').text(totalCambios
+                ? `${totalCambios} ${totalCambios === 1 ? 'cambio' : 'cambios'} sin guardar.`
+                : 'No hay cambios sin guardar.');
+            $('#btnAgregarVisiblesGrupo').prop('disabled', guardandoUsuariosGrupo || disponibles.length === 0);
+            $('#btnQuitarVisiblesGrupo').prop('disabled', guardandoUsuariosGrupo || !asignados.some(puedeQuitarUsuarioGrupo));
+            $('#btnDeshacerUsuariosGrupo, #btnGuardarUsuariosGrupo').prop('disabled', guardandoUsuariosGrupo || totalCambios === 0);
+        }
+
+        function cambiarAsignacionUsuarioGrupo(usuarioId, asignar, sinRender) {
+            if (guardandoUsuariosGrupo || !grupoUsuariosCargadoId) return false;
+            const id = Number(usuarioId);
+            const usuario = usuariosGrupoCache.find(function (item) { return Number(item.Usuario_ID) === id; });
+            if (!usuario || !Number.isInteger(id) || esAdministradorUsuarioGrupo(usuario)) return false;
+            if (!asignar && !puedeQuitarUsuarioGrupo(usuario)) return false;
+            if (asignar) usuariosGrupoEdicionIds.add(id);
+            else usuariosGrupoEdicionIds.delete(id);
+            if (!sinRender) renderizarUsuariosGrupo();
+            return true;
+        }
+
+        function moverUsuariosVisiblesGrupo(accion) {
+            if (guardandoUsuariosGrupo || !grupoUsuariosCargadoId) return;
+            const agregar = accion === 'agregar';
+            const tipo = agregar ? 'disponibles' : 'asignados';
+            const buscador = agregar ? '#buscarDisponiblesGrupo' : '#buscarAsignadosGrupo';
+            // Al usar la acción masiva, aplicá también lo que se acaba de escribir en el buscador.
+            busquedasUsuariosGrupo[tipo] = $(buscador).val();
+            const visibles = usuariosVisiblesGrupo(tipo);
+            visibles.forEach(function (usuario) {
+                cambiarAsignacionUsuarioGrupo(usuario.Usuario_ID, agregar, true);
+            });
+            renderizarUsuariosGrupo();
+        }
+
+        function deshacerCambiosUsuariosGrupo() {
+            if (guardandoUsuariosGrupo || !grupoUsuariosCargadoId) return;
+            usuariosGrupoEdicionIds = new Set(usuariosGrupoOriginalIds);
+            renderizarUsuariosGrupo();
+        }
+
+        async function guardarUsuariosDeGrupo() {
+            const grupoId = String($('#selectGrupoUsuarios').val() || '');
+            if (guardandoUsuariosGrupo || grupoUsuariosCargadoId !== grupoId) return;
+            const cambios = cambiosUsuariosGrupo();
+            if (!cambios.AgregarIds.length && !cambios.QuitarIds.length) return;
+            guardandoUsuariosGrupo = true;
+            $('#selectGrupoUsuarios').prop('disabled', true);
+            renderizarUsuariosGrupo();
+            const listo = SGTL.procesando('#btnGuardarUsuariosGrupo', 'Guardando…');
+            try {
+                const resultado = await SGTL.ajax({
+                    url: `${API}/Grupos/${grupoId}/Usuarios/Cambios`,
+                    type: 'POST',
+                    contentType: 'application/json',
+                    headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') },
+                    data: JSON.stringify(cambios)
+                }, 'No se pudieron guardar los usuarios del grupo. Probá de nuevo.');
+                const agregados = Number(resultado && resultado.UsuariosAgregados) || 0;
+                const quitados = Number(resultado && resultado.UsuariosQuitados) || 0;
+                const partes = [];
+                if (agregados) partes.push(`${agregados} ${agregados === 1 ? 'usuario agregado' : 'usuarios agregados'}`);
+                if (quitados) partes.push(`${quitados} ${quitados === 1 ? 'usuario quitado' : 'usuarios quitados'}`);
+                SGTL.toastExito(partes.length ? `Asignación guardada: ${partes.join(' y ')}.` : 'Asignación guardada.');
+                await cargarUsuariosDeGrupo(grupoId, { conservarBusquedas: true });
+            } catch (error) {
+                SGTL.toastError(error.xhr && error.xhr.status === 403
+                    ? 'No tenés permiso para gestionar los usuarios del grupo.'
+                    : (error.mensajeUsuario || 'No se pudieron guardar los usuarios del grupo. Probá de nuevo.'));
+            } finally {
+                guardandoUsuariosGrupo = false;
+                $('#selectGrupoUsuarios').prop('disabled', false);
                 listo();
-                $('#btnGuardarUsuariosGrupo').prop('disabled', usuariosSeleccionadosGrupo.size === 0);
+                renderizarUsuariosGrupo();
+            }
+        }
+
+        function cambiarGrupoUsuarios(grupoId) {
+            const anterior = grupoUsuariosSeleccionadoId;
+            if (!tieneCambiosUsuariosGrupo()) {
+                cargarUsuariosDeGrupo(grupoId);
+                return;
+            }
+            $('#selectGrupoUsuarios').val(anterior);
+            $('#selectGrupoUsuarios').prop('disabled', true);
+            SGTL.confirmar({
+                titulo: '¿Cambiar de grupo?',
+                mensaje: 'Se perderán los cambios sin guardar del grupo actual.',
+                verbo: 'Descartar cambios',
+                peligro: true
+            }).then(function (descartar) {
+                $('#selectGrupoUsuarios').prop('disabled', false);
+                if (!descartar) return;
+                $('#selectGrupoUsuarios').val(grupoId);
+                cargarUsuariosDeGrupo(grupoId);
             });
         }
 
         $(function () {
             $('#selectGrupoPermisos').on('change', function () { cargarMenusDeGrupo(this.value); });
-            $('#selectGrupoUsuarios').on('change', function () { cargarUsuariosDeGrupo(this.value); });
+            $('#selectGrupoUsuarios').on('change', function () { cambiarGrupoUsuarios(this.value); });
             $('#btnGuardarPermisos').on('click', guardarMenusDeGrupo);
             $('#btnGuardarUsuariosGrupo').on('click', guardarUsuariosDeGrupo);
+            $('#btnReintentarUsuariosGrupo').on('click', function () {
+                cargarUsuariosDeGrupo($('#selectGrupoUsuarios').val(), { conservarBusquedas: true });
+            });
+            $('#btnDeshacerUsuariosGrupo').on('click', deshacerCambiosUsuariosGrupo);
+            $('#btnAgregarVisiblesGrupo').on('click', function () { moverUsuariosVisiblesGrupo('agregar'); });
+            $('#btnQuitarVisiblesGrupo').on('click', function () { moverUsuariosVisiblesGrupo('quitar'); });
+            $('#contenedorUsuariosGrupo').on('click', '[data-accion-usuario]', function () {
+                cambiarAsignacionUsuarioGrupo($(this).attr('data-usuario-id'), $(this).attr('data-accion-usuario') === 'agregar');
+            });
+            filtrosDisponiblesGrupo = SGTL.filtros(['#buscarDisponiblesGrupo'], function () {
+                busquedasUsuariosGrupo.disponibles = $('#buscarDisponiblesGrupo').val();
+                renderizarUsuariosGrupo();
+            });
+            filtrosAsignadosGrupo = SGTL.filtros(['#buscarAsignadosGrupo'], function () {
+                busquedasUsuariosGrupo.asignados = $('#buscarAsignadosGrupo').val();
+                renderizarUsuariosGrupo();
+            });
+            $('#buscarDisponiblesGrupoForm, #buscarAsignadosGrupoForm').on('submit', function (evento) {
+                evento.preventDefault();
+                if (this.id === 'buscarDisponiblesGrupoForm') {
+                    busquedasUsuariosGrupo.disponibles = $('#buscarDisponiblesGrupo').val();
+                } else {
+                    busquedasUsuariosGrupo.asignados = $('#buscarAsignadosGrupo').val();
+                }
+                renderizarUsuariosGrupo();
+            });
         });
     </script>
 

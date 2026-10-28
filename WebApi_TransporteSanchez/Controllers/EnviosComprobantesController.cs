@@ -29,6 +29,9 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public string Destinatario { get; set; }
             public string PdfBase64 { get; set; }
+            public bool IncluirProforma { get; set; }
+            public int? ProformaID { get; set; }
+            public string ProformaPdfBase64 { get; set; }
         }
 
         private class UsuarioSesion
@@ -41,11 +44,14 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             public int ComprobanteID { get; set; }
             public string Tipo { get; set; }
+            public string Impacto { get; set; }
             public string Numero { get; set; }
             public string Estado { get; set; }
             public string Cliente { get; set; }
             public string EmailCliente { get; set; }
             public DateTime FechaEmision { get; set; }
+            public int? ProformaID { get; set; }
+            public string ProformaNumero { get; set; }
         }
 
         private class PerfilSmtp
@@ -89,7 +95,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     var comprobante = LeerComprobante(connection, id);
                     if (comprobante == null) return NotFound();
 
-                    ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo));
+                    ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo, comprobante.Impacto));
                     if (!string.Equals(comprobante.Estado, "EMITIDO", StringComparison.OrdinalIgnoreCase))
                         return BadRequest("Solo se pueden enviar comprobantes emitidos.");
 
@@ -97,6 +103,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     return Ok(new
                     {
                         DestinatarioSugerido = comprobante.EmailCliente,
+                        comprobante.ProformaID,
+                        comprobante.ProformaNumero,
                         Configurado = perfil != null,
                         Service = perfil == null ? (short?)null : perfil.Service,
                         Perfil = perfil == null ? null : perfil.NombrePerfil,
@@ -130,9 +138,13 @@ namespace WebApi_TransporteSanchez.Controllers
             if (!EsEmailValido(destinatario)) return BadRequest("Indicá una dirección de destino válida.");
 
             byte[] pdf;
+            byte[] pdfProforma;
             try
             {
                 pdf = DecodificarPdf(request.PdfBase64);
+                pdfProforma = request.IncluirProforma ? DecodificarPdf(request.ProformaPdfBase64) : null;
+                if (pdfProforma != null && pdf.Length + pdfProforma.Length > MaximoBytesPdf)
+                    throw new ArgumentException("Los PDF adjuntos superan el tamaño máximo total de 10 MB.");
             }
             catch (ArgumentException ex)
             {
@@ -151,9 +163,13 @@ namespace WebApi_TransporteSanchez.Controllers
                     comprobante = LeerComprobante(connection, id);
                     if (comprobante == null) return NotFound();
 
-                    usuario = ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo));
+                    usuario = ValidarAcceso(connection, PermisoEnvio(comprobante.Tipo, comprobante.Impacto));
                     if (!string.Equals(comprobante.Estado, "EMITIDO", StringComparison.OrdinalIgnoreCase))
                         return BadRequest("Solo se pueden enviar comprobantes emitidos.");
+
+                    if (request.IncluirProforma && (!comprobante.ProformaID.HasValue ||
+                        request.ProformaID != comprobante.ProformaID))
+                        return BadRequest("La proforma ya no está vinculada al comprobante. Volvé a abrir el envío.");
 
                     perfil = LeerPerfilFacturacion(connection);
                     if (perfil == null)
@@ -183,10 +199,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 try
                 {
                     string messageId = EnviarPorSmtp(perfil, password, comprobante, destinatario, asunto,
-                        nombreAdjunto, pdf);
+                        nombreAdjunto, pdf, pdfProforma);
                     ActualizarHistorial(historialId, "ENVIADO", messageId, null);
                     RegistrarAuditoria(usuario.NombreUsuario, "EMAIL_SEND", comprobante.ComprobanteID,
                         "Comprobante " + comprobante.Numero + " enviado a " + destinatario +
+                        (pdfProforma == null ? "" : " con proforma " + comprobante.ProformaNumero +
+                            " (SHA256=" + CalcularSha256(pdfProforma) + ")") +
                         " mediante Service=" + perfil.Service + ".");
                     return Ok(new
                     {
@@ -218,6 +236,125 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 return Content(HttpStatusCode.InternalServerError,
                     new { error = "No se pudo iniciar el envío del comprobante." });
+            }
+        }
+
+        [HttpGet, Route("~/api/Proformas/{id:int}/email")]
+        public IHttpActionResult PrepararEnvioProforma(int id)
+        {
+            try
+            {
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    ValidarAccesoProforma(connection);
+                    var proforma = LeerProforma(connection, id);
+                    if (proforma == null) return NotFound();
+                    ValidarProforma(proforma);
+                    return Ok(new { DestinatarioSugerido = proforma.EmailCliente,
+                        Configurado = LeerPerfilFacturacion(connection) != null, proforma.Numero });
+                }
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch { return Content(HttpStatusCode.InternalServerError,
+                new { error = "No se pudo preparar el envío de la proforma. Probá de nuevo." }); }
+        }
+
+        [HttpPost, Route("~/api/Proformas/{id:int}/email")]
+        public IHttpActionResult EnviarProforma(int id, [FromBody] EnviarComprobanteRequest request)
+        {
+            if (request == null) return BadRequest("Faltan los datos del envío.");
+            string destinatario = (request.Destinatario ?? string.Empty).Trim();
+            if (!EsEmailValido(destinatario)) return BadRequest("Indicá una dirección de destino válida.");
+            byte[] pdf;
+            try { pdf = DecodificarPdf(request.PdfBase64); }
+            catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            try
+            {
+                ComprobanteCorreo proforma;
+                PerfilSmtp perfil;
+                UsuarioSesion usuario;
+                using (var connection = new SqlConnection(SqlConnectionString()))
+                {
+                    connection.Open();
+                    usuario = ValidarAccesoProforma(connection);
+                    proforma = LeerProforma(connection, id);
+                    if (proforma == null) return NotFound();
+                    ValidarProforma(proforma);
+                    perfil = LeerPerfilFacturacion(connection);
+                    ValidarPerfil(perfil);
+                }
+                string password = DesprotegerSecreto(perfil.PasswordProtegida);
+                if (string.IsNullOrWhiteSpace(password))
+                    return BadRequest("No se pudo leer la contraseña del perfil SMTP. Volvé a guardarla en Configuración > Gestionar e-mail.");
+                string asunto = LimpiarCabecera("Proforma " + proforma.Numero);
+                EnviarPorSmtp(perfil, password, proforma, destinatario, asunto,
+                    NombreArchivo("Proforma_", proforma.Numero), pdf, esProforma: true);
+                try
+                {
+                    SGTLAuditContext.RegistrarEvento(ConnectionStringHelper.GetConnectionString("SGTLEntities"),
+                        usuario.NombreUsuario, "EMAIL_SEND", "PROFORMAS", "Proforma_ID=" + id,
+                        "Proforma " + proforma.Numero + " enviada a " + destinatario +
+                        " (SHA256=" + CalcularSha256(pdf) + ") mediante Service=" + perfil.Service + ".", "Facturación");
+                }
+                catch { /* Un error de auditoría no debe provocar un reenvío de un correo ya entregado. */ }
+                return Ok(new { mensaje = "Proforma enviada a " + destinatario + "." });
+            }
+            catch (AccesoException ex) { return Content(ex.StatusCode, new { error = ex.Message }); }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch { return Content(HttpStatusCode.BadGateway,
+                new { error = "No se pudo enviar la proforma. Revisá la conexión y el perfil de e-mail de facturación." }); }
+        }
+
+        private static void ValidarProforma(ComprobanteCorreo proforma)
+        {
+            if (string.Equals(proforma.Estado, "Anulada", StringComparison.OrdinalIgnoreCase))
+                throw new InvalidOperationException("No se puede enviar la proforma: está anulada.");
+            if (string.IsNullOrWhiteSpace(proforma.Numero) ||
+                !new[] { "Generada", "Aceptada", "Facturada" }.Contains(proforma.Estado, StringComparer.OrdinalIgnoreCase))
+                throw new InvalidOperationException("No se puede enviar la proforma: todavía no se generó.");
+        }
+
+        private UsuarioSesion ValidarAccesoProforma(SqlConnection connection)
+        {
+            string nombreUsuario = ObtenerNombreUsuarioToken();
+            using (var command = new SqlCommand(@"
+SELECT u.Usuario_ID, CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(u.Rol,''))))='admin' OR EXISTS (
+    SELECT 1 FROM dbo.GRUPOS_USUARIOS gu
+    JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID=gu.GrupoID JOIN dbo.MENU m ON m.Menu_ID=gm.MenuID
+    WHERE gu.UsuarioID=u.Usuario_ID AND m.Menu_Nombre COLLATE Latin1_General_CI_AI
+        IN ('Gestion de proformas','Listado de proformas')) THEN 1 ELSE 0 END AS Autorizado
+FROM dbo.USUARIOS u WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';", connection))
+            {
+                command.Parameters.Add(P("@usuario", nombreUsuario));
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) throw new AccesoException(HttpStatusCode.Unauthorized,
+                        "El usuario no existe o está inactivo.");
+                    if (reader.GetInt32(1) != 1) throw new AccesoException(HttpStatusCode.Forbidden,
+                        "No tenés permiso para enviar proformas.");
+                    return new UsuarioSesion { UsuarioID = reader.GetInt32(0), NombreUsuario = nombreUsuario };
+                }
+            }
+        }
+
+        private static ComprobanteCorreo LeerProforma(SqlConnection connection, int id)
+        {
+            using (var command = new SqlCommand(@"
+SELECT p.Numero,p.Estado,p.FechaEmision,p.Cli_RazonSocial AS Cliente,cl.Email AS EmailCliente
+FROM dbo.PROFORMAS p JOIN dbo.CLIENTES cl ON cl.Cliente_ID=p.ClienteID
+WHERE p.Proforma_ID=@id;", connection))
+            {
+                command.Parameters.Add(P("@id", id));
+                using (var reader = command.ExecuteReader())
+                {
+                    if (!reader.Read()) return null;
+                    return new ComprobanteCorreo { Numero = reader["Numero"] as string,
+                        Estado = reader["Estado"] as string, Cliente = reader["Cliente"] as string,
+                        EmailCliente = reader["EmailCliente"] as string,
+                        FechaEmision = reader["FechaEmision"] == DBNull.Value ? DateTime.MinValue : (DateTime)reader["FechaEmision"] };
+                }
             }
         }
 
@@ -296,11 +433,17 @@ WHERE u.Nombre_Usuario=@usuario AND u.EstadoUsuario='Activo';";
         private static ComprobanteCorreo LeerComprobante(SqlConnection connection, int comprobanteId)
         {
             const string sql = @"
-SELECT c.Comprobante_ID,c.Tipo,
-       c.Tipo+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
-       c.Estado,c.FechaEmision,c.RazonSocial AS Cliente,cl.Email AS EmailCliente
+SELECT c.Comprobante_ID,c.Tipo,c.Impacto,
+       c.Tipo+'-'+c.Letra+'-'+c.Sucursal+'-'+RIGHT('00000000'+CONVERT(varchar(8),c.NumeroCorrelativo),8) AS Numero,
+       c.Estado,c.FechaEmision,c.RazonSocial AS Cliente,cl.Email AS EmailCliente,
+       pf.ProformaID,pf.ProformaNumero
 FROM dbo.COMPROBANTES c
 INNER JOIN dbo.CLIENTES cl ON cl.Cliente_ID=c.ClienteID
+OUTER APPLY (SELECT TOP (1) p.Proforma_ID AS ProformaID,p.Numero AS ProformaNumero
+    FROM dbo.COMPROBANTES_PROFORMAS cp JOIN dbo.PROFORMAS p ON p.Proforma_ID=cp.ProformaID
+    -- Cancelar con un crédito libera la proforma, pero conserva el documento de origen para su envío.
+    WHERE cp.ComprobanteID=c.Comprobante_ID
+    ORDER BY cp.ComprobanteProforma_ID DESC) pf
 WHERE c.Comprobante_ID=@id;";
             using (var command = new SqlCommand(sql, connection))
             {
@@ -312,11 +455,14 @@ WHERE c.Comprobante_ID=@id;";
                     {
                         ComprobanteID = (int)reader["Comprobante_ID"],
                         Tipo = (string)reader["Tipo"],
+                        Impacto = (string)reader["Impacto"],
                         Numero = (string)reader["Numero"],
                         Estado = (string)reader["Estado"],
                         FechaEmision = (DateTime)reader["FechaEmision"],
                         Cliente = reader["Cliente"] as string,
-                        EmailCliente = reader["EmailCliente"] as string
+                        EmailCliente = reader["EmailCliente"] as string,
+                        ProformaID = reader["ProformaID"] == DBNull.Value ? (int?)null : (int)reader["ProformaID"],
+                        ProformaNumero = reader["ProformaNumero"] as string
                     };
                 }
             }
@@ -423,11 +569,28 @@ WHERE HistorialEnvio_ID=@id;", connection))
         }
 
         private static string EnviarPorSmtp(PerfilSmtp perfil, string password, ComprobanteCorreo comprobante,
-            string destinatario, string asunto, string nombreAdjunto, byte[] pdf)
+            string destinatario, string asunto, string nombreAdjunto, byte[] pdf, byte[] pdfProforma = null,
+            bool esProforma = false)
         {
             if (perfil.UsaTLS12 == true)
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 
+            var mensaje = ConstruirMensaje(perfil, comprobante, destinatario, asunto, nombreAdjunto, pdf,
+                pdfProforma, esProforma);
+            using (var cliente = new MailKit.Net.Smtp.SmtpClient())
+            {
+                cliente.Timeout = 30000;
+                cliente.Connect(perfil.SmtpHost, perfil.SmtpPort.Value, ResolverOpcionSeguridad(perfil));
+                cliente.Authenticate(perfil.Remitente, password);
+                cliente.Send(mensaje);
+                try { cliente.Disconnect(true); } catch { }
+                return mensaje.MessageId;
+            }
+        }
+
+        private static MimeMessage ConstruirMensaje(PerfilSmtp perfil, ComprobanteCorreo comprobante,
+            string destinatario, string asunto, string nombreAdjunto, byte[] pdf, byte[] pdfProforma, bool esProforma)
+        {
             var mensaje = new MimeMessage();
             mensaje.From.Add(new MailboxAddress(
                 string.IsNullOrWhiteSpace(perfil.NombreRemitente) ? perfil.NombrePerfil : perfil.NombreRemitente,
@@ -439,23 +602,18 @@ WHERE HistorialEnvio_ID=@id;", connection))
             var cuerpo = new BodyBuilder
             {
                 HtmlBody = AplicarPlantilla(
-                    string.IsNullOrWhiteSpace(perfil.CuerpoHtml)
+                    esProforma ? "<p>Hola {{CLIENTE}},</p><p>Adjuntamos la proforma {{NUMERO_COMPROBANTE}}.</p>" : string.IsNullOrWhiteSpace(perfil.CuerpoHtml)
                         ? "<p>Hola {{CLIENTE}},</p><p>Adjuntamos el comprobante {{NUMERO_COMPROBANTE}}.</p>"
                         : perfil.CuerpoHtml,
                     comprobante, true)
             };
             cuerpo.Attachments.Add(nombreAdjunto, pdf, new ContentType("application", "pdf"));
+            if (pdfProforma != null)
+                cuerpo.Attachments.Add(NombreArchivo("Proforma_", comprobante.ProformaNumero), pdfProforma,
+                    new ContentType("application", "pdf"));
             mensaje.Body = cuerpo.ToMessageBody();
 
-            using (var cliente = new MailKit.Net.Smtp.SmtpClient())
-            {
-                cliente.Timeout = 30000;
-                cliente.Connect(perfil.SmtpHost, perfil.SmtpPort.Value, ResolverOpcionSeguridad(perfil));
-                cliente.Authenticate(perfil.Remitente, password);
-                cliente.Send(mensaje);
-                cliente.Disconnect(true);
-                return mensaje.MessageId;
-            }
+            return mensaje;
         }
 
         private static void ValidarPerfil(PerfilSmtp perfil)
@@ -478,7 +636,7 @@ WHERE HistorialEnvio_ID=@id;", connection))
                 : (perfil.UsaSsl.GetValueOrDefault(true) ? SecureSocketOptions.StartTls : SecureSocketOptions.None);
         }
 
-        private static string PermisoEnvio(string tipo)
+        private static string PermisoEnvio(string tipo, string impacto)
         {
             switch ((tipo ?? string.Empty).Trim().ToUpperInvariant())
             {
@@ -486,14 +644,17 @@ WHERE HistorialEnvio_ID=@id;", connection))
                 case "NC": return "NC_EMITIR";
                 case "ND": return "ND_EMITIR";
                 case "REC": return "REC_EMITIR";
-                default: throw new InvalidOperationException("El tipo de comprobante no admite envío por correo.");
+                default:
+                    if (string.Equals(impacto, "D", StringComparison.OrdinalIgnoreCase)) return "FAC_EMITIR";
+                    if (string.Equals(impacto, "C", StringComparison.OrdinalIgnoreCase)) return "NC_EMITIR";
+                    throw new InvalidOperationException("El tipo de comprobante no admite envío por correo.");
             }
         }
 
         private static byte[] DecodificarPdf(string base64)
         {
             if (string.IsNullOrWhiteSpace(base64))
-                throw new ArgumentException("No se recibió el PDF del comprobante.");
+                throw new ArgumentException("Falta uno de los PDF del envío. Volvé a generar los documentos.");
             if (base64.Length > ((MaximoBytesPdf * 4 / 3) + 8))
                 throw new ArgumentException("El PDF supera el tamaño máximo permitido de 10 MB.");
 
@@ -543,8 +704,13 @@ WHERE HistorialEnvio_ID=@id;", connection))
 
         private static string NombreAdjunto(ComprobanteCorreo comprobante)
         {
-            var builder = new StringBuilder("Comprobante_");
-            foreach (char caracter in comprobante.Numero ?? string.Empty)
+            return NombreArchivo("Comprobante_", comprobante.Numero);
+        }
+
+        private static string NombreArchivo(string prefijo, string numero)
+        {
+            var builder = new StringBuilder(prefijo);
+            foreach (char caracter in numero ?? string.Empty)
                 builder.Append(char.IsLetterOrDigit(caracter) || caracter == '-' || caracter == '_' ? caracter : '_');
             builder.Append(".pdf");
             return builder.ToString();

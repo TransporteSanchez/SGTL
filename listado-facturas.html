@@ -83,10 +83,14 @@
                                 </div>
                             </form>
                             <div class="table-responsive">
-                                <table class="table table-striped table-hover tbl-prof">
+                                <table class="table table-striped table-hover tbl-prof" id="tablaProformas">
                                     <thead><tr>
-                                        <th>Número</th><th class="text-center">Fecha</th><th>Cliente</th>
-                                        <th class="text-end">Total</th><th class="text-center">Estado</th><th>Usuario</th><th class="text-center">Acciones</th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="numero">Número<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="cliente">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-end"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="total">Total<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="fecha">Fecha<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="usuario">Usuario<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                        <th class="text-center">Estado</th><th class="text-center">Acciones</th>
                                     </tr></thead>
                                     <tbody id="cuerpoProformas"><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                 </table>
@@ -200,6 +204,7 @@
     <script src="assets/static/js/reportes-proformas.js"></script>
     <script src="assets/static/js/empresa-datos.js"></script>
     <script src="assets/static/js/proforma-pdf.js"></script>
+    <script src="assets/static/js/proforma-email.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
     <script src="assets/static/js/facturacion-proforma.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
@@ -228,6 +233,8 @@
         const API_FAC = 'http://localhost:50222/api';
         const ESTADOS_GEN = ['Generada', 'Aceptada', 'Facturada', 'Anulada'];
         var profState = { page: 1, pageSize: 15, totalPages: 1, total: 0 };
+        var ordenListadoProformas = null;
+        var ultimaBusquedaProformas = 0;
 
         function esc(s) { if (s == null) return ''; return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
         function money(n) { n = Number(n) || 0; return '$ ' + n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -268,21 +275,25 @@
             var rango = SGTL.valorRango('#fFecha');
             if (rango) { p.append('desde', rango.desde); p.append('hasta', rango.hasta); }
             if (val('fUsuario').trim()) p.append('usuario', val('fUsuario').trim());
+            var orden = ordenListadoProformas ? ordenListadoProformas.parametros() : {};
+            if (orden.orden) { p.append('orden', orden.orden); p.append('direccion', orden.direccion); }
             p.append('page', page || 1); p.append('pageSize', pageSize == null ? profState.pageSize : pageSize);
             return p;
         }
         function buscarProformas(page) {
             profState.page = page || 1;
+            var busqueda = ++ultimaBusquedaProformas;
             var p = parametrosBusquedaProformas(profState.page, profState.pageSize);
             var cuerpo = document.getElementById('cuerpoProformas');
             SGTL.tabla.cargando(cuerpo, 7);
             fetch(API_FAC + '/Proformas?' + p.toString())
                 .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
                 .then(function (res) {
+                    if (busqueda !== ultimaBusquedaProformas) return;
                     if (!res.ok) { errorGrilla(res.j.error); return; }
                     renderGrid(res.j);
                 })
-                .catch(function () { errorGrilla(); });
+                .catch(function () { if (busqueda === ultimaBusquedaProformas) errorGrilla(); });
         }
         function errorGrilla(mensaje) {
             SGTL.tabla.vacia('#cuerpoProformas', 7, 'No se pudieron cargar las proformas.');
@@ -359,26 +370,28 @@
             SGTL.tabla.llenar(cuerpo, items.map(function (x) {
                 return '<tr>' +
                     '<td>' + esc(x.Numero || '—') + '</td>' +
-                    '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.Cliente || '—') + '</td>' +
                     '<td class="text-end">' + money(x.Total) + '</td>' +
-                    '<td class="text-center">' + badgeEstado(x.Estado) + '</td>' +
+                    '<td class="text-center">' + esc(fdate(x.Fecha)) + '</td>' +
                     '<td>' + esc(x.UsuarioCreador || '—') + '</td>' +
+                    '<td class="text-center">' + badgeEstado(x.Estado) + '</td>' +
                     '<td class="text-center">' + accionesProforma(x) + '</td></tr>';
             }).join(''));
             renderPag();
         }
-        // Orden de §1.4: ver, PDF y el siguiente paso (emitir factura), igual que en Gestionar proformas.
+        // Orden de §1.4: ver, PDF, e-mail y el siguiente paso (emitir comprobante), igual que en Gestionar proformas.
         function accionesProforma(x) {
             var id = x.Proforma_ID;
             var siguiente;
             // Deshabilitado con "No se puede {acción}: {qué le pasa a la proforma}" (§1.4).
             var estado = x.Estado || '';
-            if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir la factura: ya se emitió ' + (x.FacturaNumero || '') });
-            else if (estado === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir factura', icono: 'bi-receipt' });
+            if (x.FacturaID) siguiente = SGTL.botonFila('siguiente', { icono: 'bi-check-circle', deshabilitado: true, motivo: 'No se puede emitir el comprobante: ya se emitió ' + (x.FacturaNumero || '') });
+            else if (estado === 'Aceptada') siguiente = SGTL.botonFila('siguiente', { id: id, texto: 'Emitir comprobante', icono: 'bi-receipt' });
             else siguiente = SGTL.botonFila('siguiente', { icono: 'bi-receipt', deshabilitado: true,
-                motivo: 'No se puede emitir la factura: la proforma ' + (estado === 'Generada' ? 'todavía no está aceptada' : 'está ' + estado.toLowerCase()) });
-            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }), siguiente]);
+                motivo: 'No se puede emitir el comprobante: la proforma ' + (estado === 'Generada' ? 'todavía no está aceptada' : 'está ' + estado.toLowerCase()) });
+            return SGTL.accionesFila([SGTL.botonFila('ver', { id: id }), SGTL.botonFila('pdf', { id: id, texto: 'Ver PDF' }),
+                SGTL.botonFila('enviar', { id: id, deshabilitado: estado === 'Borrador' || estado === 'Anulada',
+                    motivo: estado === 'Borrador' ? 'No se puede enviar la proforma: todavía es un borrador' : 'No se puede enviar la proforma: está anulada' }), siguiente]);
         }
         function renderPag() {
             SGTL.tabla.paginacion('#paginacion', {
@@ -422,6 +435,7 @@
         document.addEventListener('DOMContentLoaded', function () {
             initEstados();
             cargarClientes();
+            ordenListadoProformas = SGTL.tabla.habilitarOrden('#tablaProformas', function () { buscarProformas(1); });
             buscarProformas(1);
             SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) buscarProformas(1); } });
             SGTL.filtros(['#fNumero', '#fCliente', '#fFecha', '#fEstado', '#fTipo', '#fUsuario'], function () {
@@ -433,6 +447,7 @@
             $('#cuerpoProformas')
                 .on('click', '[data-accion="ver"]', function () { verDetalle($(this).data('id')); })
                 .on('click', '[data-accion="pdf"]', function () { verProformaPDF($(this).data('id')); })
+                .on('click', '[data-accion="enviar"]', function () { enviarProformaPorEmail($(this).data('id')); })
                 .on('click', '[data-accion="siguiente"]', function () { facturarProforma($(this).data('id')); });
         });
     </script>

@@ -101,12 +101,15 @@
                                         <table class="table table-striped table-hover" id="tabla_origen">
                                             <thead>
                                                 <tr>
-                                                    <th>ID</th><th>Descripción</th><th>Cliente</th>
-                                                    <th>Provincia</th><th>Localidad</th><th>Dirección</th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="descripcion">Descripción<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="cliente">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="provincia">Provincia<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="localidad">Localidad<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th>Dirección</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
-                                            <tbody><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                            <tbody><tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                         </table>
                                     </div>
                                     <nav aria-label="Paginación de orígenes">
@@ -136,12 +139,15 @@
                                         <table class="table table-striped table-hover" id="tabla_destino">
                                             <thead>
                                                 <tr>
-                                                    <th>ID</th><th>Descripción</th><th>Cliente</th>
-                                                    <th>Provincia</th><th>Localidad</th><th>Dirección</th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="descripcion">Descripción<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="cliente">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="provincia">Provincia<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="localidad">Localidad<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th>Dirección</th>
                                                     <th class="text-center">Acciones</th>
                                                 </tr>
                                             </thead>
-                                            <tbody><tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
+                                            <tbody><tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr></tbody>
                                         </table>
                                     </div>
                                     <nav aria-label="Paginación de destinos">
@@ -309,9 +315,16 @@
         const API = 'http://localhost:50222/api';
         const NOMBRES = { origen: 'origen', destino: 'destino' };
         const tablas = {
-            origen: { datos: [], pagina: 1, tamanio: 15, filtros: {} },
-            destino: { datos: [], pagina: 1, tamanio: 15, filtros: {} }
+            origen: { datos: [], pagina: 1, tamanio: 15, filtros: {}, orden: null },
+            destino: { datos: [], pagina: 1, tamanio: 15, filtros: {}, orden: null }
         };
+        const camposOrdenOD = {
+            descripcion: 'Descripcion',
+            cliente: 'ClienteRazon',
+            provincia: 'NombreProvincia',
+            localidad: 'NombreLocalidad'
+        };
+        const comparadorOD = new Intl.Collator('es', { sensitivity: 'base', numeric: true });
         let odTipo = 'origen';
         let odEnEdicion = null;
         let formularioOD = null;
@@ -335,7 +348,6 @@
         function filaOD(tipo, o) {
             const id = idOD(tipo, o);
             return `<tr>
-                <td>${SGTL.escapar(id)}</td>
                 <td>${SGTL.escapar(o.Descripcion || '')}</td>
                 <td>${SGTL.escapar(o.ClienteRazon || '')}</td>
                 <td>${SGTL.escapar(o.NombreProvincia || '')}</td>
@@ -366,12 +378,20 @@
             const t = tablas[tipo];
             const tbody = '#tabla_' + tipo + ' tbody';
             const lista = t.datos.filter(function (o) { return cumpleFiltros(o, t.filtros); });
+            const orden = t.orden ? t.orden.parametros() : {};
+            const campoOrden = camposOrdenOD[orden.orden];
+            if (campoOrden) {
+                const sentido = orden.direccion === 'desc' ? -1 : 1;
+                lista.sort(function (a, b) {
+                    return comparadorOD.compare(limpio(a[campoOrden]), limpio(b[campoOrden])) * sentido;
+                });
+            }
             const paginas = Math.max(1, Math.ceil(lista.length / (t.tamanio || lista.length || 1)));
             t.pagina = Math.min(pagina || t.pagina, paginas);
             const visibles = t.tamanio ? lista.slice((t.pagina - 1) * t.tamanio, t.pagina * t.tamanio) : lista;
             if (visibles.length) SGTL.tabla.llenar(tbody, visibles.map(function (o) { return filaOD(tipo, o); }).join(''));
-            else if (t.datos.length) SGTL.tabla.vacia(tbody, 7);
-            else SGTL.tabla.vacia(tbody, 7, tipo === 'origen' ? 'Todavía no hay orígenes cargados.' : 'Todavía no hay destinos cargados.');
+            else if (t.datos.length) SGTL.tabla.vacia(tbody, 6);
+            else SGTL.tabla.vacia(tbody, 6, tipo === 'origen' ? 'Todavía no hay orígenes cargados.' : 'Todavía no hay destinos cargados.');
             SGTL.tabla.paginacion('#paginacion_' + tipo, {
                 total: lista.length,
                 tamanioPagina: t.tamanio,
@@ -383,14 +403,14 @@
 
         function listar(tipo) {
             const tbody = '#tabla_' + tipo + ' tbody';
-            SGTL.tabla.cargando(tbody, 7);
+            SGTL.tabla.cargando(tbody, 6);
             return SGTL.ajax({ url: API + rutaOD(tipo), type: 'GET' },
                 'No se pudieron cargar los ' + (tipo === 'origen' ? 'orígenes' : 'destinos') + '. Revisá la conexión y probá de nuevo.').then(function (data) {
                     tablas[tipo].datos = Array.isArray(data) ? data : [];
                     dibujar(tipo);
                 }, function (error) {
                     tablas[tipo].datos = [];
-                    SGTL.tabla.vacia(tbody, 7, 'No se pudieron cargar los datos.');
+                    SGTL.tabla.vacia(tbody, 6, 'No se pudieron cargar los datos.');
                     SGTL.tabla.paginacion('#paginacion_' + tipo, { total: 0 });
                     SGTL.toastError(error.mensajeUsuario);
                 });
@@ -536,6 +556,7 @@
                 .on('click', '[data-accion="eliminar"]', function () { eliminarOD($(this).data('tipo'), $(this).data('id')); });
             ['origen', 'destino'].forEach(function (tipo) {
                 const T = tipo === 'origen' ? 'Origen' : 'Destino';
+                tablas[tipo].orden = SGTL.tabla.habilitarOrden('#tabla_' + tipo, function () { dibujar(tipo, 1); });
                 SGTL.filtros(['#fCliente' + T, '#fTexto' + T], function () { aplicarFiltros(tipo); });
                 SelectClientePredictivo.inicializar('fCliente' + T, { placeholder: 'Todos los clientes' });
                 $('#fCliente' + T).on('change', function () { aplicarFiltros(tipo); });

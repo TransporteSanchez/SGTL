@@ -2,8 +2,7 @@
     'use strict';
 
     var API = 'http://localhost:50222/api/facturacion-config';
-    var NOMBRES_TIPO = { FAC: 'Factura', NC: 'Nota de crédito', ND: 'Nota de débito', REC: 'Recibo' };
-
+    var cambiosLetra = new WeakMap();
     function token() {
         try { return localStorage.getItem('token') || ''; } catch (e) { return ''; }
     }
@@ -32,34 +31,69 @@
 
     function campo(id) { return id ? document.getElementById(id) : null; }
 
-    function cargar(tipo, controles) {
+    function cargar(tipo, controles, vigente) {
         controles = controles || {};
         return fetch(API + '/emision/' + encodeURIComponent(tipo), { headers: encabezados() })
             .then(mensajeError)
             .then(function (datos) {
+                if (typeof vigente === 'function' && !vigente()) return datos;
+                var descripcion = datos && typeof datos.Descripcion === 'string' ? datos.Descripcion.trim() : '';
+                if (!descripcion) throw new Error('No se pudo cargar el tipo de comprobante. Probá de nuevo.');
                 var tipoControl = campo(controles.tipo);
                 var letra = campo(controles.letra);
                 var sucursal = campo(controles.sucursal);
                 var numero = campo(controles.numero);
+                var sucursales = datos.Sucursales || [];
+                var mostrarSucursales = function (lista, seleccionada) {
+                    if (!sucursal) return;
+                    sucursal.innerHTML = lista.map(function (item) {
+                        return '<option value="' + escapar(item.Codigo) + '">' +
+                            escapar(item.Codigo) + ' · ' + escapar(item.Nombre) + '</option>';
+                    }).join('');
+                    sucursal.value = seleccionada || '';
+                };
 
-                if (tipoControl) tipoControl.value = NOMBRES_TIPO[datos.Tipo || tipo] || datos.Descripcion || datos.Tipo || tipo;
+                if (tipoControl) {
+                    if ('value' in tipoControl) tipoControl.value = descripcion;
+                    else tipoControl.textContent = descripcion;
+                }
                 if (letra) {
                     letra.innerHTML = (datos.Letras || ['A', 'B']).map(function (valor) {
                         var seleccionada = valor === datos.LetraPredeterminada ? ' selected' : '';
                         return '<option value="' + escapar(valor) + '"' + seleccionada + '>' + escapar(valor) + '</option>';
                     }).join('');
+                    letra.value = datos.LetraPredeterminada || '';
                     letra.disabled = datos.Tipo === 'REC';
-                }
-                if (sucursal) {
-                    sucursal.innerHTML = (datos.Sucursales || []).map(function (item) {
-                        var seleccionada = item.Codigo === datos.SucursalPredeterminada ? ' selected' : '';
-                        return '<option value="' + escapar(item.Codigo) + '"' + seleccionada + '>' +
-                            escapar(item.Codigo) + ' · ' + escapar(item.Nombre) + '</option>';
-                    }).join('');
                 }
                 if (numero) {
                     numero.value = datos.ProximoNumero || '';
                     numero.readOnly = true;
+                }
+                if (letra) {
+                    var anterior = cambiosLetra.get(letra);
+                    if (anterior) letra.removeEventListener('change', anterior);
+                    cambiosLetra.delete(letra);
+                    if (Array.isArray(datos.Configuraciones) && datos.Configuraciones.length) {
+                        var aplicarLetra = function () {
+                            var configuracion = datos.Configuraciones.filter(function (item) { return item.Letra === letra.value; })[0];
+                            if (!configuracion) {
+                                mostrarSucursales([], '');
+                                if (numero) numero.value = '';
+                                return;
+                            }
+                            mostrarSucursales(sucursales.filter(function (item) {
+                                return item.Codigo === configuracion.SucursalPredeterminada;
+                            }), configuracion.SucursalPredeterminada);
+                            if (numero) numero.value = configuracion.ProximoNumero || '';
+                        };
+                        letra.addEventListener('change', aplicarLetra);
+                        cambiosLetra.set(letra, aplicarLetra);
+                        aplicarLetra();
+                    } else {
+                        mostrarSucursales(sucursales, datos.SucursalPredeterminada);
+                    }
+                } else {
+                    mostrarSucursales(sucursales, datos.SucursalPredeterminada);
                 }
                 return datos;
             });

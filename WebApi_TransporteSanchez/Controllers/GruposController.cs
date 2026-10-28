@@ -2,6 +2,8 @@
 
 using System.Collections.Generic;
 
+using System.Data;
+
 using System.Data.Entity;
 
 using System.Data.Entity.Infrastructure;
@@ -10,13 +12,19 @@ using System.Data.Entity.Validation;
 
 using System.Globalization;
 
+using System.IdentityModel.Tokens.Jwt;
+
 using System.Linq;
 
 using System.Net;
 
+using System.Security.Claims;
+
 using System.Text;
 
 using System.Web.Http;
+
+using Microsoft.IdentityModel.Tokens;
 
 
 
@@ -207,6 +215,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public bool Asignado { get; set; }
 
+            public bool PuedeQuitar { get; set; }
+
         }
 
 
@@ -243,12 +253,62 @@ namespace WebApi_TransporteSanchez.Controllers
 
         }
 
+        public class CambiosUsuariosGrupoDto
+        {
+            public List<int> AgregarIds { get; set; }
+            public List<int> QuitarIds { get; set; }
+        }
+
         private static bool EsAdministrador(string rol)
 
         {
 
             return string.Equals((rol ?? string.Empty).Trim(), "admin", StringComparison.OrdinalIgnoreCase);
 
+        }
+
+        private static bool RequiereGrupo(string rol)
+        {
+            return string.Equals((rol ?? string.Empty).Trim(), "user", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private string NombreUsuarioDelToken()
+        {
+            var autorizacion = Request == null ? null : Request.Headers.Authorization;
+            if (autorizacion == null || !string.Equals(autorizacion.Scheme, "Bearer", StringComparison.OrdinalIgnoreCase)
+                || string.IsNullOrWhiteSpace(autorizacion.Parameter)) return null;
+
+            try
+            {
+                SecurityToken tokenValidado;
+                var principal = new JwtSecurityTokenHandler().ValidateToken(autorizacion.Parameter, new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey)),
+                    ValidateIssuer = true,
+                    ValidIssuer = JwtConfig.Issuer,
+                    ValidateAudience = true,
+                    ValidAudience = JwtConfig.Audience,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(1)
+                }, out tokenValidado);
+                var nombre = principal.FindFirst(ClaimTypes.NameIdentifier);
+                return nombre == null || string.IsNullOrWhiteSpace(nombre.Value) ? null : nombre.Value;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        private static bool TienePermisoGrupos(SGTLAuditContext db, int usuarioId)
+        {
+            var nombres = (from usuarioGrupo in db.Set<GRUPOS_USUARIOS>()
+                           join grupoMenu in db.Set<GRUPOS_MENU>() on usuarioGrupo.GrupoID equals grupoMenu.GrupoID
+                           join menu in db.Set<MENU>() on grupoMenu.MenuID equals menu.Menu_ID
+                           where usuarioGrupo.UsuarioID == usuarioId
+                           select menu.Menu_Nombre).ToList();
+            return nombres.Any(nombre => string.Equals(NormalizarNombreMenu(nombre), "Grupos y permisos", StringComparison.OrdinalIgnoreCase));
         }
 
 
@@ -651,6 +711,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
 
                 using (var db = new SGTLAuditContext(connectionString))
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
 
                 {
 
@@ -673,6 +734,31 @@ namespace WebApi_TransporteSanchez.Controllers
                     var permisos = db.Set<GRUPOS_MENU>().Where(x => x.GrupoID == id).ToList();
 
                     var usuariosGrupo = db.Set<GRUPOS_USUARIOS>().Where(x => x.GrupoID == id).ToList();
+
+                    var idsUsuariosGrupo = usuariosGrupo.Select(asignacion => asignacion.UsuarioID).Distinct().ToList();
+                    var usuariosQueRequierenGrupo = db.Set<USUARIOS>()
+                        .Where(usuario => idsUsuariosGrupo.Contains(usuario.Usuario_ID))
+                        .Select(usuario => new { usuario.Usuario_ID, usuario.Rol })
+                        .ToList()
+                        .Where(usuario => RequiereGrupo(usuario.Rol))
+                        .Select(usuario => usuario.Usuario_ID)
+                        .ToList();
+                    if (usuariosQueRequierenGrupo.Count > 0)
+                    {
+                        var idsConOtroGrupo = new HashSet<int>(db.Set<GRUPOS_USUARIOS>()
+                            .Where(asignacion => usuariosQueRequierenGrupo.Contains(asignacion.UsuarioID) && asignacion.GrupoID != id)
+                            .Select(asignacion => asignacion.UsuarioID)
+                            .Distinct()
+                            .ToList());
+                        var sinOtroGrupo = usuariosQueRequierenGrupo.Count(usuarioId => !idsConOtroGrupo.Contains(usuarioId));
+                        if (sinOtroGrupo > 0)
+                        {
+                            var mensaje = sinOtroGrupo == 1
+                                ? "No se puede eliminar el grupo: un usuario se quedaría sin grupos."
+                                : "No se puede eliminar el grupo: " + sinOtroGrupo + " usuarios se quedarían sin grupos.";
+                            return Content(HttpStatusCode.Conflict, new { message = mensaje });
+                        }
+                    }
 
 
 
@@ -700,6 +786,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.Set<GRUPOS>().Remove(grupo);
 
                     db.SaveChanges();
+                    transaccion.Commit();
 
 
 
@@ -944,6 +1031,15 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         .ToList());
 
+                    var cantidadGruposPorUsuario = db.Set<GRUPOS_USUARIOS>()
+                        .Where(gu => db.Set<GRUPOS_USUARIOS>().Any(asignacion =>
+                            asignacion.GrupoID == id && asignacion.UsuarioID == gu.UsuarioID))
+                        .Select(gu => new { gu.UsuarioID, gu.GrupoID })
+                        .Distinct()
+                        .ToList()
+                        .GroupBy(gu => gu.UsuarioID)
+                        .ToDictionary(grupo => grupo.Key, grupo => grupo.Count());
+
                     var usuarios = db.Set<USUARIOS>()
 
                         .OrderBy(u => u.Nombre_Usuario)
@@ -969,6 +1065,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         {
 
                             var esAdministrador = EsAdministrador(u.Rol);
+                            int cantidadGrupos;
+                            cantidadGruposPorUsuario.TryGetValue(u.Usuario_ID, out cantidadGrupos);
 
                             return new UsuarioAsignacionDto
 
@@ -986,7 +1084,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                                 // Un administrador tiene acceso total por su rol, nunca por un grupo.
 
-                                Asignado = !esAdministrador && usuariosAsignados.Contains(u.Usuario_ID)
+                                Asignado = !esAdministrador && usuariosAsignados.Contains(u.Usuario_ID),
+
+                                PuedeQuitar = !esAdministrador && usuariosAsignados.Contains(u.Usuario_ID) &&
+                                    (!RequiereGrupo(u.Rol) || cantidadGrupos > 1)
 
                             };
 
@@ -1016,11 +1117,118 @@ namespace WebApi_TransporteSanchez.Controllers
 
         [HttpPost]
 
+        [Route("{id:int}/Usuarios/Cambios")]
+
+        public IHttpActionResult GuardarCambiosUsuariosPorGrupo(int id, [FromBody] CambiosUsuariosGrupoDto value)
+        {
+            var nombreAutenticado = NombreUsuarioDelToken();
+            if (nombreAutenticado == null)
+                return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión." });
+
+            if (value == null)
+                return Content(HttpStatusCode.BadRequest, new { message = "Indicá los usuarios que querés agregar o quitar." });
+
+            var agregarIds = (value.AgregarIds ?? new List<int>()).Distinct().ToList();
+            var quitarIds = (value.QuitarIds ?? new List<int>()).Distinct().ToList();
+            if (agregarIds.Any(usuarioId => usuarioId <= 0) || quitarIds.Any(usuarioId => usuarioId <= 0))
+                return Content(HttpStatusCode.BadRequest, new { message = "Seleccioná usuarios válidos." });
+            if (agregarIds.Intersect(quitarIds).Any())
+                return Content(HttpStatusCode.BadRequest, new { message = "Un usuario no puede agregarse y quitarse del mismo grupo a la vez." });
+
+            try
+            {
+                using (var db = new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities")))
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
+                {
+                    var operador = db.Set<USUARIOS>()
+                        .Where(u => u.Nombre_Usuario == nombreAutenticado && u.EstadoUsuario == "Activo")
+                        .Select(u => new { u.Usuario_ID, u.Nombre_Usuario, u.Rol })
+                        .FirstOrDefault();
+                    if (operador == null)
+                        return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión." });
+                    if (!EsAdministrador(operador.Rol) && !TienePermisoGrupos(db, operador.Usuario_ID))
+                        return Content(HttpStatusCode.Forbidden, new { message = "No tenés permiso para gestionar los usuarios del grupo." });
+                    if (!db.Set<GRUPOS>().Any(grupo => grupo.Grupo_ID == id)) return NotFound();
+
+                    var usuariosAgregar = db.Set<USUARIOS>()
+                        .Where(u => agregarIds.Contains(u.Usuario_ID))
+                        .Select(u => new { u.Usuario_ID, u.Rol })
+                        .ToList();
+                    if (usuariosAgregar.Count != agregarIds.Count)
+                        return Content(HttpStatusCode.BadRequest, new { message = "Uno o más usuarios para agregar ya no existen. Actualizá la lista y probá de nuevo." });
+                    if (usuariosAgregar.Any(u => EsAdministrador(u.Rol)))
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se puede agregar un administrador al grupo: ya tiene acceso por su rol." });
+
+                    var asignacionesActuales = db.Set<GRUPOS_USUARIOS>()
+                        .Where(asignacion => asignacion.GrupoID == id)
+                        .ToList();
+                    var idsActuales = new HashSet<int>(asignacionesActuales.Select(asignacion => asignacion.UsuarioID));
+                    var asignacionesQuitar = asignacionesActuales
+                        .Where(asignacion => quitarIds.Contains(asignacion.UsuarioID))
+                        .ToList();
+                    var idsQuitarActuales = asignacionesQuitar.Select(asignacion => asignacion.UsuarioID).Distinct().ToList();
+
+                    if (idsQuitarActuales.Count > 0)
+                    {
+                        var usuariosQuitar = db.Set<USUARIOS>()
+                            .Where(u => idsQuitarActuales.Contains(u.Usuario_ID))
+                            .Select(u => new { u.Usuario_ID, u.Nombre_Usuario, u.Rol })
+                            .ToList()
+                            .Where(u => RequiereGrupo(u.Rol))
+                            .ToList();
+                        if (usuariosQuitar.Count > 0)
+                        {
+                            var idsConOtroGrupo = new HashSet<int>(db.Set<GRUPOS_USUARIOS>()
+                                .Where(asignacion => idsQuitarActuales.Contains(asignacion.UsuarioID) && asignacion.GrupoID != id)
+                                .Select(asignacion => asignacion.UsuarioID)
+                                .Distinct()
+                                .ToList());
+                            var sinOtroGrupo = usuariosQuitar.Where(u => !idsConOtroGrupo.Contains(u.Usuario_ID)).ToList();
+                            if (sinOtroGrupo.Count > 0)
+                            {
+                                var mensaje = sinOtroGrupo.Count == 1
+                                    ? "No se puede quitar a " + sinOtroGrupo[0].Nombre_Usuario + " del grupo: es su único grupo."
+                                    : "No se pueden quitar " + sinOtroGrupo.Count + " usuarios del grupo: se quedarían sin grupos.";
+                                return Content(HttpStatusCode.BadRequest, new { message = mensaje });
+                            }
+                        }
+                    }
+
+                    if (asignacionesQuitar.Count > 0)
+                        db.Set<GRUPOS_USUARIOS>().RemoveRange(asignacionesQuitar);
+
+                    var idsNuevos = agregarIds.Where(usuarioId => !idsActuales.Contains(usuarioId)).ToList();
+                    foreach (var usuarioId in idsNuevos)
+                        db.Set<GRUPOS_USUARIOS>().Add(new GRUPOS_USUARIOS { GrupoID = id, UsuarioID = usuarioId });
+
+                    db.UsuarioAuditoria = operador.Nombre_Usuario;
+                    db.SaveChanges();
+                    transaccion.Commit();
+                    return Ok(new
+                    {
+                        message = "Usuarios del grupo guardados.",
+                        UsuariosAgregados = idsNuevos.Count,
+                        UsuariosQuitados = idsQuitarActuales.Count
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudieron guardar los usuarios del grupo. Probá de nuevo." });
+            }
+        }
+
+        [HttpPost]
+
         [Route("{id:int}/Usuarios")]
 
         public IHttpActionResult GuardarUsuariosPorGrupo(int id, [FromBody] GuardarUsuariosGrupoDto value)
 
         {
+
+            var nombreAutenticado = NombreUsuarioDelToken();
+            if (nombreAutenticado == null)
+                return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión." });
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -1029,8 +1237,18 @@ namespace WebApi_TransporteSanchez.Controllers
             {
 
                 using (var db = new SGTLAuditContext(connectionString))
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
 
                 {
+
+                    var operador = db.Set<USUARIOS>()
+                        .Where(u => u.Nombre_Usuario == nombreAutenticado && u.EstadoUsuario == "Activo")
+                        .Select(u => new { u.Usuario_ID, u.Nombre_Usuario, u.Rol })
+                        .FirstOrDefault();
+                    if (operador == null)
+                        return Content(HttpStatusCode.Unauthorized, new { message = "Tu sesión venció. Volvé a iniciar sesión." });
+                    if (!EsAdministrador(operador.Rol) && !TienePermisoGrupos(db, operador.Usuario_ID))
+                        return Content(HttpStatusCode.Forbidden, new { message = "No tenés permiso para gestionar los usuarios del grupo." });
 
                     if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
 
@@ -1096,7 +1314,9 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    db.UsuarioAuditoria = operador.Nombre_Usuario;
                     db.SaveChanges();
+                    transaccion.Commit();
 
                     return Ok(new { message = "Usuarios agregados al grupo correctamente.", UsuariosAgregados = idsNuevos.Count });
 
@@ -1104,11 +1324,11 @@ namespace WebApi_TransporteSanchez.Controllers
 
             }
 
-            catch (Exception ex)
+            catch (Exception)
 
             {
 
-                return InternalServerError(ex);
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudieron agregar los usuarios al grupo. Probá de nuevo." });
 
             }
 

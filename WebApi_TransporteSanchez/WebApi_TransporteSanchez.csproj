@@ -406,6 +406,7 @@
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="Controllers\ProformasController.cs" />
+    <Compile Include="Controllers\ProformasOrdenSql.cs" />
     <Compile Include="Controllers\ProformasPlataformaController.cs" />
     <Compile Include="Plataformas\LectoresPlataforma.cs" />
     <Compile Include="Controllers\PresupuestosController.cs" />
@@ -419,7 +420,9 @@
     <Compile Include="Controllers\CamionesController.cs" />
     <Compile Include="Controllers\ChoferesController.cs" />
     <Compile Include="Controllers\ClientesController.cs" />
+    <Compile Include="Controllers\ClientesOrden.cs" />
     <Compile Include="Controllers\CuentaCorrienteController.cs" />
+    <Compile Include="Controllers\CuentaCorrienteOrdenSql.cs" />
     <Compile Include="Controllers\ComprobantesController.cs" />
     <Compile Include="Controllers\FacturasController.cs" />
     <Compile Include="Controllers\FacturacionConfiguracionController.cs" />
@@ -436,7 +439,13 @@
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Security\ContrasenasSeguras.cs" />
+    <Compile Include="Security\RecuperoContrasena.cs" />
+    <Compile Include="Security\RepositorioRecuperoSql.cs" />
+    <Compile Include="Security\CorreoRecupero.cs" />
+    <Compile Include="Security\SesionesRecupero.cs" />
+    <Compile Include="Controllers\RecuperoContrasenaController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
+    <Compile Include="Controllers\ViajesOrdenSql.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
     <Compile Include="Controllers\TarifarioController.cs" />
     <Compile Include="Tarifas\TarifarioCalculo.cs" />

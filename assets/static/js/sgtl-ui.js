@@ -398,7 +398,7 @@
 
   var COLORES_ESTADO = {
     gris: ['registrado', 'borrador', 'inactivo', 'deshabilitado', 'login', 'logout', 'inicio de sesion', 'cierre de sesion'],
-    azul: ['en viaje', 'entregado', 'generada', 'generado', 'update', 'modificacion'],
+    azul: ['en viaje', 'entregado', 'generada', 'generado', 'update', 'modificacion', 'recupero contrasena'],
     amarillo: ['listo para facturar', 'aceptada', 'parcial', 'km manual', 'atrasado', 'sin salir', 'sin cerrar', 'sin proforma', 'sin evidencia', 'por vencer'],
     verde: ['activo', 'habilitado', 'facturado', 'facturada', 'cancelado', 'cancelada', 'aplicado', 'aplicada', 'insert', 'alta', 'completa'],
     rojo: ['anulada', 'anulado', 'baja', 'delete', 'pendiente', 'rechazo', 'vencida']
@@ -411,6 +411,7 @@
     'logout': 'Cierre de sesión',
     'insert': 'Alta',
     'update': 'Modificación',
+    'recupero contrasena': 'Recupero de contraseña',
     'delete': 'Baja',
     'km manual': 'Km manual'
   };
@@ -557,6 +558,46 @@
     cuerpo.innerHTML = '<tr><td colspan="' + columnas + '" class="text-center text-muted py-4">' + escapar(texto) + '</td></tr>';
   }
 
+  // Encabezados ordenables: la pantalla aplica el orden antes de paginar.
+  function habilitarOrden(tablaObjetivo, alCambiar, ordenInicial) {
+    var tablaElemento = elemento(tablaObjetivo);
+    // Una tabla que reconstruye sus encabezados puede conservar el criterio y las flechas.
+    var campo = ordenInicial && ordenInicial.orden || '';
+    var direccion = ordenInicial && ordenInicial.direccion || '';
+    if (!tablaElemento) return { parametros: function () { return {}; } };
+
+    var botones = tablaElemento.querySelectorAll('th button[data-sgtl-orden]');
+    function actualizar() {
+      Array.prototype.forEach.call(botones, function (boton) {
+        var activo = boton.getAttribute('data-sgtl-orden') === campo;
+        var siguiente = activo && direccion === 'asc' ? 'descendente' : 'ascendente';
+        var encabezado = boton.closest('th');
+        if (encabezado) {
+          if (activo) encabezado.setAttribute('aria-sort', direccion === 'asc' ? 'ascending' : 'descending');
+          else encabezado.removeAttribute('aria-sort');
+        }
+        var icono = boton.querySelector('i');
+        if (icono) icono.className = 'bi ' + (activo ? (direccion === 'asc' ? 'bi-arrow-up' : 'bi-arrow-down') : 'bi-arrow-down-up') + ' ms-1';
+        boton.setAttribute('aria-label', 'Ordenar por ' + boton.textContent.trim() + ' en orden ' + siguiente);
+      });
+    }
+
+    Array.prototype.forEach.call(botones, function (boton) {
+      boton.addEventListener('click', function () {
+        var nuevoCampo = boton.getAttribute('data-sgtl-orden');
+        direccion = nuevoCampo === campo && direccion === 'asc' ? 'desc' : 'asc';
+        campo = nuevoCampo;
+        actualizar();
+        if (typeof alCambiar === 'function') alCambiar();
+      });
+    });
+    actualizar();
+
+    return {
+      parametros: function () { return campo ? { orden: campo, direccion: direccion } : {}; }
+    };
+  }
+
   var tabla = {
     cargando: function (tbody, columnas) { filaMensaje(tbody, columnas, TEXTOS.cargando); },
     vacia: function (tbody, columnas, texto) { filaMensaje(tbody, columnas, texto || TEXTOS.sinResultados); },
@@ -566,6 +607,7 @@
       ocultarTooltips();
       cuerpo.innerHTML = html;
     },
+    habilitarOrden: habilitarOrden,
     // PaginacionSGTL, que no se muestra cuando no hay resultados.
     paginacion: function (contenedor, opciones) {
       var el = elemento(contenedor);
@@ -885,6 +927,8 @@
   function avisoFormulario(objetivo, texto, detalle) {
     var aviso = elemento(objetivo);
     if (!aviso) return;
+    clearTimeout(aviso._sgtlTemporizadorAviso);
+    aviso._sgtlTemporizadorAviso = null;
     if (texto === REVISA_CAMPOS) seVaSinCamposMarcados(aviso);
     aviso.textContent = texto || '';
     if (texto && detalle && detalle.length) {
@@ -899,6 +943,11 @@
     }
     aviso.style.display = texto ? '' : 'none';
     aviso.classList.toggle('d-none', !texto);
+    // Duración opcional del contenedor; la validación se conserva hasta corregir los campos.
+    var duracion = Number(aviso.dataset.sgtlDuracion);
+    if (texto && texto !== REVISA_CAMPOS && Number.isFinite(duracion) && duracion > 0) {
+      aviso._sgtlTemporizadorAviso = setTimeout(function () { avisoFormulario(aviso, ''); }, duracion);
+    }
   }
 
   // Después de validar: si hay campos marcados, muestra "Revisá los campos marcados." y lleva el

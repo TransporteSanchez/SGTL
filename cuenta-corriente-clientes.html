@@ -119,10 +119,10 @@
                                         <i class="bi bi-file-earmark-plus me-1" aria-hidden="true"></i>Emitir comprobante
                                     </button>
                                     <ul class="dropdown-menu dropdown-menu-end">
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura directa"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Emitir factura directa</button></li>
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura desde proforma"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Emitir factura desde proforma</button></li>
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de crédito"><i class="bi bi-file-earmark-minus me-2" aria-hidden="true"></i>Emitir nota de crédito</button></li>
-                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de débito"><i class="bi bi-file-earmark-plus me-2" aria-hidden="true"></i>Emitir nota de débito</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura directa"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Emitir comprobante directo</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Factura desde proforma"><i class="bi bi-file-earmark-check me-2" aria-hidden="true"></i>Emitir comprobante desde proforma</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de crédito"><i class="bi bi-file-earmark-minus me-2" aria-hidden="true"></i>Emitir crédito</button></li>
+                                        <li><button class="dropdown-item cc-future-action" type="button" data-action="Nota de débito"><i class="bi bi-file-earmark-plus me-2" aria-hidden="true"></i>Emitir Débito</button></li>
                                     </ul>
                                 </div>
 
@@ -241,27 +241,30 @@
                         <div class="col-md-6"><label class="form-label" for="cmpCliente">Cliente <span class="text-danger">*</span></label><select id="cmpCliente" class="form-select" required><option value="">Seleccioná un cliente</option></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpFechaEmision">Fecha de emisión <span class="text-danger">*</span></label><input id="cmpFechaEmision" class="form-control" placeholder="DD/MM/AAAA"></div>
                         <div class="col-md-3" id="cmpVencimientoGrupo"><label class="form-label" for="cmpFechaVencimiento">Fecha de vencimiento <span class="text-danger">*</span></label><input id="cmpFechaVencimiento" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="col-md-3"><label class="form-label" for="cmpTipoComprobante">Tipo de comprobante</label><input id="cmpTipoComprobante" class="form-control" readonly></div>
+                        <div class="col-md-3 d-none" id="cmpTipoSeleccionGrupo"><label class="form-label" for="cmpTipoSeleccion">Tipo de comprobante <span class="text-danger">*</span></label><select id="cmpTipoSeleccion" class="form-select" required><option value="">Seleccioná un tipo</option></select></div>
+                        <div class="col-md-3" id="cmpTipoFijoGrupo"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">Tipo de comprobante</span><span id="cmpTipoComprobante" class="sgtl-dato-valor" aria-live="polite"></span></div></div>
                         <div class="col-md-3"><label class="form-label" for="cmpLetra">Letra</label><select id="cmpLetra" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpSucursal">Sucursal</label><select id="cmpSucursal" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="cmpNumeroComprobante">N° comprobante</label><input id="cmpNumeroComprobante" class="form-control" readonly></div>
                         <div class="col-12 d-none" id="cmpReferenciaGrupo">
-                            <label class="form-label" for="cmpReferencia" id="cmpReferenciaEtiqueta">Factura relacionada <span class="text-danger">*</span></label>
+                            <label class="form-label" for="cmpReferencia" id="cmpReferenciaEtiqueta">Comprobante relacionado <span class="text-danger">*</span></label>
                             <select id="cmpReferencia" class="form-select"></select>
                             <div class="form-text" id="cmpReferenciaAyuda"></div>
                         </div>
                         <div class="col-12 d-none" id="cmpAplicacionesGrupo">
+                            <div class="form-check mb-2"><input id="cmpSinImputar" class="form-check-input" type="checkbox"><label class="form-check-label" for="cmpSinImputar">Emitir sin imputar</label></div>
+                            <div class="form-text mb-2">Si lo emitís sin imputar, cargá el neto, elegí el IVA e ingresá otros impuestos abajo. Podés aplicarlo a comprobantes internos después.</div>
                             <div class="row g-3 align-items-end justify-content-end mb-2">
-                                <div class="col-md-4"><label class="form-label" for="cmpImporteTotalNC">Importe total a acreditar <span class="text-danger">*</span></label><input id="cmpImporteTotalNC" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
-                                <div class="col-md-auto"><button type="button" class="btn btn-outline-secondary" id="btnDistribuirNC"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
+                                <div class="col-md-4" id="cmpImporteTotalGrupo"><label class="form-label" for="cmpImporteTotalNC">Importe total a acreditar <span class="text-danger">*</span></label><input id="cmpImporteTotalNC" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
+                                <div class="col-md-auto" id="cmpDistribuirGrupo"><button type="button" class="btn btn-outline-secondary" id="btnDistribuirNC"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
                             </div>
-                            <div class="table-responsive">
+                            <div class="table-responsive" id="cmpImputacionInicialGrupo">
                                 <table class="table table-sm table-striped table-hover mb-2">
                                     <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante</th><th class="text-center">Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
                                     <tbody id="cmpFacturasNC"></tbody>
                                 </table>
                             </div>
-                            <div class="cc-total-row"><span>Total de la nota de crédito: <strong id="cmpResumenNCTotal">$ 0,00</strong></span><span>Total aplicado: <strong id="cmpResumenNCAplicado">$ 0,00</strong></span><span>Diferencia: <strong id="cmpResumenNCDiferencia">$ 0,00</strong></span></div>
+                            <div class="cc-total-row"><span>Total del crédito: <strong id="cmpResumenNCTotal">$ 0,00</strong></span><span>Total aplicado: <strong id="cmpResumenNCAplicado">$ 0,00</strong></span><span>Saldo sin imputar: <strong id="cmpResumenNCDiferencia">$ 0,00</strong></span></div>
                         </div>
                         <div class="col-12 d-none" id="cmpSoloLecturaRelacion"></div>
                         <div class="col-12 d-none" id="cmpDetalleLectura">
@@ -289,29 +292,67 @@
         </div>
     </div>
 
+    <div class="modal fade" id="modalImputarCredito" tabindex="-1" aria-labelledby="imputarTitulo" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <div>
+                        <h5 class="modal-title" id="imputarTitulo">Imputar crédito</h5>
+                        <small class="text-muted">Aplicá el saldo disponible a comprobantes internos del mismo cliente.</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-light-danger color-danger py-2 cc-error-modal" id="imputarError" role="alert"></div>
+                    <div class="sgtl-bloque-titulo">Crédito disponible</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-4"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Comprobante</span><span class="sgtl-dato-valor" id="imputarNumero"></span></div></div>
+                        <div class="col-md-5"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Cliente</span><span class="sgtl-dato-valor" id="imputarCliente"></span></div></div>
+                        <div class="col-md-3"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Saldo sin imputar</span><span class="sgtl-dato-valor" id="imputarSaldo"></span></div></div>
+                    </div>
+                    <div class="sgtl-bloque-titulo">Imputación a comprobantes</div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3"><label class="form-label" for="imputarFecha">Fecha de imputación <span class="text-danger">*</span></label><input id="imputarFecha" class="form-control" placeholder="DD/MM/AAAA" required></div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped table-hover mb-2">
+                            <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante interno</th><th class="text-center">Vencimiento</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar ahora</th></tr></thead>
+                            <tbody id="imputarFacturas"></tbody>
+                        </table>
+                    </div>
+                    <div class="cc-total-row"><span>Imputar ahora: <strong id="imputarTotal">$ 0,00</strong></span><span>Saldo restante: <strong id="imputarRestante">$ 0,00</strong></span></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="btnGuardarImputacion"><i class="bi bi-check-circle me-1" aria-hidden="true"></i>Imputar crédito</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modalNuevoRecibo" tabindex="-1" aria-labelledby="modalNuevoReciboTitulo" aria-hidden="true" data-bs-backdrop="static">
         <div class="modal-dialog modal-xl modal-dialog-scrollable sgtl-modal-formulario">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
                         <h5 class="modal-title" id="modalNuevoReciboTitulo">Registrar recibo</h5>
-                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputar facturas pendientes.</small>
+                        <small class="text-muted" id="modalNuevoReciboSubtitulo">Registrar cobranza e imputarla ahora o después.</small>
                     </div>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-light-danger color-danger py-2 cc-error-modal" id="reciboError" role="alert"></div>
-                    <div class="alert alert-info py-2" id="reciboMensaje">El recibo se registra y se aplica a los comprobantes elegidos.</div>
+                    <div class="alert alert-info py-2" id="reciboMensaje">Podés emitir el recibo sin imputar y aplicarlo después a los comprobantes del cliente.</div>
 
-                    <div class="sgtl-bloque-titulo">1 · Datos generales</div>
+                    <div class="sgtl-bloque-titulo">Datos generales</div>
                     <div class="row g-2">
                         <div class="col-md-6"><label class="form-label" for="reciboCliente">Cliente <span class="text-danger">*</span></label><select id="reciboCliente" class="form-select" required><option value="">Seleccioná un cliente</option></select></div>
                         <div class="col-md-6"><label class="form-label" for="reciboFecha">Fecha <span class="text-danger">*</span></label><input id="reciboFecha" class="form-control" placeholder="DD/MM/AAAA"></div>
                     </div>
 
-                    <div class="sgtl-bloque-titulo mt-4">2 · Forma de pago</div>
+                    <div class="sgtl-bloque-titulo mt-4">Forma de pago</div>
                     <div class="row g-2">
-                        <div class="col-md-3"><label class="form-label" for="reciboTipoComprobante">Tipo de comprobante</label><input id="reciboTipoComprobante" class="form-control" value="Recibo" disabled></div>
+                        <div class="col-md-3"><div class="sgtl-dato mb-0"><span class="sgtl-dato-etiqueta">Tipo de comprobante</span><span id="reciboTipoComprobante" class="sgtl-dato-valor" aria-live="polite"></span></div></div>
                         <div class="col-md-3"><label class="form-label" for="reciboLetra">Letra</label><select id="reciboLetra" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="reciboSucursal">Sucursal</label><select id="reciboSucursal" class="form-select"></select></div>
                         <div class="col-md-3"><label class="form-label" for="reciboNumeroComprobante">N° comprobante</label><input id="reciboNumeroComprobante" class="form-control" readonly></div>
@@ -320,7 +361,7 @@
                         <div class="col-md-4"><label class="form-label" for="reciboFormaImporte">Importe <span class="text-danger">*</span></label><input id="reciboFormaImporte" type="text" inputmode="decimal" class="form-control text-end" value="0,00"></div>
                     </div>
 
-                    <div class="sgtl-bloque-titulo mt-4 d-flex align-items-center justify-content-between"><span>3 · Imputación a comprobantes</span><button type="button" class="btn btn-sm btn-outline-secondary" id="btnDistribuirRecibo"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
+                    <div class="sgtl-bloque-titulo mt-4 d-flex align-items-center justify-content-between"><span>Imputación a comprobantes</span><button type="button" class="btn btn-sm btn-outline-secondary" id="btnDistribuirRecibo"><i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Distribuir</button></div>
                     <div class="table-responsive">
                         <table class="table table-sm table-striped table-hover">
                             <thead><tr><th><span class="visually-hidden">Seleccionar</span></th><th>Comprobante</th><th class="text-center">Vencimiento</th><th class="text-end">Importe original</th><th class="text-end">Saldo pendiente</th><th class="text-end">Aplicar</th></tr></thead>
@@ -331,7 +372,7 @@
                     <div class="cc-total-row mt-2">
                         <span>Total recibo: <strong id="reciboResumenTotal">$ 0,00</strong></span>
                         <span>Total aplicado: <strong id="reciboResumenAplicado">$ 0,00</strong></span>
-                        <span>Diferencia: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
+                        <span>Saldo sin imputar: <strong id="reciboResumenDiferencia">$ 0,00</strong></span>
                     </div>
                     <div class="mt-2"><label class="form-label" for="reciboObservaciones">Observaciones</label><textarea id="reciboObservaciones" class="form-control" rows="2" maxlength="2000"></textarea></div>
                 </div>
@@ -358,7 +399,7 @@
         </div>
     </div>
 
-    <!-- Ver PDF (§1.4): igual que en presupuestos; Enviar por e-mail va en este pie. -->
+    <!-- Ver PDF (§1.4): Enviar por e-mail está en las acciones de cada comprobante. -->
     <div class="modal fade" id="modalVistaPreviaComprobante" tabindex="-1" aria-labelledby="tituloVistaPreviaComprobante" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
@@ -372,7 +413,6 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="button" class="btn btn-outline-secondary" id="enviarVistaPreviaComprobante"><i class="bi bi-envelope me-1" aria-hidden="true"></i>Enviar por e-mail</button>
                     <button type="button" class="btn btn-outline-secondary" id="imprimirVistaPreviaComprobante" disabled><i class="bi bi-printer me-1" aria-hidden="true"></i>Imprimir</button>
                     <a id="descargarVistaPreviaComprobante" class="btn btn-primary disabled" aria-disabled="true"><i class="bi bi-file-earmark-pdf me-1" aria-hidden="true"></i>Descargar PDF</a>
                 </div>
@@ -389,10 +429,15 @@
                 </div>
                 <div class="modal-body">
                     <div id="envioComprobanteFeedback" class="alert d-none" role="status"></div>
-                    <div id="envioComprobantePerfil" class="small text-muted mb-2">Verificando el perfil SMTP de facturación…</div>
                     <label class="form-label" for="envioComprobanteDestino">Destinatario <span class="text-danger">*</span></label>
                     <input id="envioComprobanteDestino" type="email" maxlength="320" class="form-control" placeholder="cliente@empresa.com" autocomplete="email">
+                    <div class="invalid-feedback"></div>
                     <div class="form-text">Se adjuntará el PDF del comprobante. Podés modificar el e-mail sugerido del cliente.</div>
+                    <div id="envioComprobanteProforma" class="form-check mt-3 d-none">
+                        <input id="envioComprobanteIncluirProforma" class="form-check-input" type="checkbox">
+                        <label class="form-check-label" for="envioComprobanteIncluirProforma">Incluir proforma</label>
+                        <div id="envioComprobanteProformaNumero" class="form-text"></div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -459,6 +504,7 @@
     <script src="assets/extensions/sheetjs/xlsx.full.min.js"></script>
     <script src="assets/static/js/empresa-datos.js"></script>
     <script src="assets/static/js/factura-pdf.js"></script>
+    <script src="assets/static/js/proforma-pdf.js"></script>
     <script src="assets/static/js/facturacion-configuracion.js"></script>
     <script src="assets/static/js/select-cliente-predictivo.js"></script>
     <script src="assets/static/js/cuenta-corriente-clientes.js"></script>

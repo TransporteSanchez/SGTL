@@ -57,27 +57,76 @@ function probarFlujosYDependencias() {
     const recibo = extraerFuncion('emitirRecibo');
     const comprobante = extraerFuncion('emitirComprobante');
     const altaRecibo = extraerFuncion('abrirNuevoRecibo');
-    const altaComprobante = extraerFuncion('abrirNuevoComprobante');
     assert.match(recibo, /cerrarModalYNotificar\('modalNuevoRecibo'/,
         'al emitir un Recibo debe cerrar su formulario y mostrar el aviso flotante');
     assert.match(recibo, /recibo\.Numero/,
         'el aviso del Recibo debe informar el número generado');
     assert.match(comprobante, /cerrarModalYNotificar\('modalNuevoComprobante'/,
         'al emitir Factura, NC o ND debe cerrar su formulario y mostrar el aviso flotante');
-    assert.match(comprobante, /'Factura'[\s\S]*'Nota de crédito'[\s\S]*'Nota de débito'[\s\S]*comprobante\.Numero/,
-        'el aviso debe identificar Factura, NC o ND e informar su número generado');
+    assert.match(comprobante, /'Crédito emitido'[\s\S]*'Débito emitido'[\s\S]*'Comprobante emitido'[\s\S]*comprobante\.Numero/,
+        'el aviso debe identificar la operación emitida e informar su número generado');
     assert.match(altaRecibo, /modalNuevoReciboTitulo'\)\.textContent = 'Registrar recibo'/,
         'el formulario de recibo se titula igual que su botón (§6.1)');
-    assert.match(altaComprobante, /cmpTitulo'\)\.textContent = tipo === 'FAC' \? 'Emitir factura directa' : 'Emitir ' \+ nombreTipoComprobante\(tipo\)/,
-        'los formularios de factura, NC y ND se titulan igual que su opción del menú (§6.1)');
     assert.match(pagina, /assets\/static\/css\/sgtl\.css/,
         'Cuenta Corriente debe cargar los estilos de los avisos flotantes');
     assert.match(pagina, /assets\/static\/js\/sgtl-ui\.js[\s\S]*assets\/static\/js\/cuenta-corriente-clientes\.js/,
         'Cuenta Corriente debe cargar SGTL antes de usar el aviso flotante');
 }
 
+function probarNombresDeEmision() {
+    const opciones = [...pagina.matchAll(/<button\b[^>]*class="dropdown-item cc-future-action"[^>]*>([\s\S]*?)<\/button>/g)]
+        .map(function (coincidencia) { return coincidencia[1].replace(/<[^>]+>/g, '').trim(); });
+    assert.deepStrictEqual(opciones, [
+        'Emitir comprobante directo',
+        'Emitir comprobante desde proforma',
+        'Emitir crédito',
+        'Emitir Débito'
+    ], 'Cuenta corriente muestra los cuatro nombres elegidos');
+
+    ['directo', 'credito', 'debito'].forEach(function (tipo, indice) {
+        const campos = {};
+        const configuraciones = [];
+        let consultasTiposDirectos = 0;
+        function campo(id) {
+            if (!campos[id]) campos[id] = {
+                value: '', textContent: '', innerHTML: '', className: '', disabled: false,
+                classList: { add: function () {}, remove: function () {}, toggle: function () {} },
+                querySelectorAll: function () { return []; }
+            };
+            return campos[id];
+        }
+        const sandbox = {
+            porId: campo,
+            clienteActual: function () { return null; },
+            nuevaClave: function () { return 'prueba'; },
+            hoyIso: function () { return '2026-10-26'; },
+            poblarClientesComprobante: function () {},
+            ponerFecha: function () {},
+            limitarFecha: function () {},
+            actualizarVencimientoPredeterminado: function () {},
+            recalcularComprobante: function () {},
+            cargarConfiguracionEmision: function (codigo) { configuraciones.push(codigo); return new Promise(function () {}); },
+            cargarTiposComprobanteDirecto: function () { consultasTiposDirectos += 1; return new Promise(function () {}); },
+            window: { SelectClientePredictivo: { establecerDeshabilitado: function () {} } },
+            bootstrap: { Modal: { getOrCreateInstance: function () { return { show: function () {} }; } } },
+            Promise
+        };
+        vm.runInNewContext(extraerFuncion('nombreTipoComprobante') + '\n' + extraerFuncion('nombreAccionEmision') + '\n' + extraerFuncion('abrirNuevoComprobante'),
+            sandbox, { filename: 'cuenta-corriente-clientes.js' });
+        sandbox.abrirNuevoComprobante(tipo);
+        const esperado = ['Emitir comprobante directo', 'Emitir crédito', 'Emitir Débito'][indice];
+        assert.strictEqual(campos.cmpTitulo.textContent, esperado, tipo + ': el título coincide con el menú');
+        assert.strictEqual(campos.btnEmitirComprobante.innerHTML.replace(/<[^>]+>/g, '').trim(), esperado,
+            tipo + ': el botón del formulario coincide con el título');
+        assert.deepStrictEqual(configuraciones, [],
+            tipo + ': la configuración se consulta después de elegir un tipo activo');
+        assert.strictEqual(consultasTiposDirectos, 1,
+            tipo + ': la emisión consulta el catálogo de tipos elegibles');
+    });
+}
+
 function probarAccionesPorTipoDeComprobante() {
-    // Botones de cada fila (§1.4 del design system): los mismos cuatro en todas, en este orden;
+    // Botones de cada fila: Enviar por e-mail sigue a Ver PDF en todos los comprobantes;
     // lo que no se puede hacer queda deshabilitado con el motivo.
     const sandbox = {
         window: {
@@ -98,22 +147,25 @@ function probarAccionesPorTipoDeComprobante() {
     }
 
     assert.deepStrictEqual(botones({ Tipo: 'FAC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'anular (deshabilitado)'],
-    'una factura se ve y tiene PDF; editar y anular quedan deshabilitados');
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+    'una factura se ve, tiene PDF y se puede enviar; editar y anular quedan deshabilitados');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'EMITIDO' }),
-        ['ver', 'editar', 'pdf', 'anular'],
-    'un recibo emitido se puede editar y anular');
+        ['ver', 'editar', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular'],
+    'un recibo emitido se puede editar, enviar y anular');
     assert.deepStrictEqual(botones({ Tipo: 'REC', EstadoComprobante: 'ANULADO' }),
-        ['ver', 'editar (deshabilitado)', 'pdf', 'eliminar'],
-    'un recibo anulado no se edita ni se vuelve a anular: se elimina');
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar (deshabilitado)', 'siguiente (deshabilitado)', 'eliminar'],
+    'un recibo anulado no se edita ni envía: se elimina');
     ['NC', 'ND'].forEach(function (tipo) {
         assert.deepStrictEqual(botones({ Tipo: tipo, EstadoComprobante: 'EMITIDO' }),
-            ['ver', 'editar (deshabilitado)', 'pdf', 'anular (deshabilitado)'],
-        tipo + ' no se edita ni se anula');
+            ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'anular (deshabilitado)'],
+        tipo + ' se puede enviar, pero no editar ni anular');
     });
     assert.deepStrictEqual(botones({ Comprobante: 'REC-00000004', Estado: 'Aplicado' }),
-        ['ver', 'editar', 'pdf', 'anular'],
+        ['ver', 'editar', 'pdf', 'enviar', 'siguiente (deshabilitado)', 'anular'],
     'un recibo aplicado a una factura conserva sus acciones');
+    assert.deepStrictEqual(botones({ Tipo: 'C', Impacto: 'C', SaldoPendiente: 600, EstadoComprobante: 'EMITIDO' }),
+        ['ver', 'editar (deshabilitado)', 'pdf', 'enviar', 'siguiente', 'anular (deshabilitado)'],
+        'un crédito interno con saldo tiene la acción de imputarlo');
 }
 
 function crearClase() {
@@ -133,6 +185,7 @@ function crearCampo() {
 function probarFormularioDeFacturaSoloLectura() {
     const ids = [
         'cmpTitulo', 'cmpMensaje', 'cmpCliente', 'cmpFechaEmision', 'cmpFechaVencimiento', 'cmpTipoComprobante',
+        'cmpTipoSeleccionGrupo', 'cmpTipoFijoGrupo',
         'cmpLetra', 'cmpSucursal', 'cmpNumeroComprobante', 'cmpConcepto', 'cmpNeto', 'cmpIvaPct',
         'cmpIvaImporte', 'cmpOtros', 'cmpTotal', 'cmpObservaciones', 'cmpVencimientoGrupo',
         'cmpReferenciaGrupo', 'cmpAplicacionesGrupo', 'cmpSoloLecturaRelacion', 'cmpDetalleLectura',
@@ -275,6 +328,7 @@ function probarDistribucionDeNotaCredito() {
         porId: function (id) {
             if (id === 'cmpImporteTotalNC') return importe;
             if (id === 'cmpError') return error;
+            if (id === 'cmpSinImputar') return { checked: false };
             return null;
         },
         document: { querySelectorAll: function () { return filas; } },
@@ -331,6 +385,7 @@ function filaNotaCredito(id, vencimiento, emision, saldoCentavos) {
 
 probarCierreYAviso();
 probarFlujosYDependencias();
+probarNombresDeEmision();
 probarAccionesPorTipoDeComprobante();
 probarFormularioDeFacturaSoloLectura();
 probarDistribucionDeRecibo();

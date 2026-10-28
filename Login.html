@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>SGTL · Sistema de Gestión de Transporte y Logística</title>
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <!-- Estilos reutilizados -->
@@ -93,36 +94,39 @@
                     <h5 class="text-center mb-4">Iniciar sesión</h5>
                     <p class="login-subtitle text-center">Ingresá tus credenciales para continuar.</p>
                     <!-- Formulario -->
-                    <form id="loginForm">
+                    <form id="loginForm" novalidate>
+                        <div id="avisoLogin" class="alert alert-danger sgtl-aviso-animado fw-bold mb-3 d-none" role="alert" aria-atomic="true"></div>
                         <div class="mb-3">
-                            <label for="username" class="form-label">Usuario</label>
+                            <label for="username" class="form-label">Usuario <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-person" aria-hidden="true"></i></span>
                                 <input type="text" class="form-control" id="username" name="username"
                                     placeholder="Ingresá tu usuario">
                             </div>
-                            <small id="userError" class="error-message"></small>
                         </div>
 
                         <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
+                            <label for="password" class="form-label">Contraseña <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
                                 <input type="password" class="form-control" id="password" name="password"
                                     placeholder="Ingresá tu contraseña">
-                                <span class="input-group-text" id="togglePassword" onclick="togglePassword()">
+                                <button type="button" class="input-group-text" id="togglePassword"
+                                    aria-label="Mantener presionado para ver la contraseña">
                                     <i class="bi bi-eye" id="eyeIcon" aria-hidden="true"></i>
-                                </span>
+                                </button>
                             </div>
-                            <small id="passError" class="error-message"></small>
                         </div>
 
-                        <small id="generalError" class="error-message text-center mb-3 d-block" style="display: none;"></small>
 
                         <div class="d-grid login-submit">
                             <button type="submit" class="btn btn-primary" id="btnEntrar">Entrar</button>
                         </div>
                     </form>
+
+                    <div class="text-center mt-3">
+                        <button type="button" class="btn btn-link" id="btnOlvideContrasena">Olvidé mi contraseña</button>
+                    </div>
 
                     <!-- Loading Spinner -->
                     <div class="loading-spinner" id="loadingSpinner">
@@ -139,25 +143,104 @@
         </div>
     </div>
 
-    <!-- Avisos del sistema (§5.1): no dependen de Bootstrap. -->
+    <div class="modal fade" id="modalRecupero" tabindex="-1" aria-labelledby="tituloRecupero" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down"><div class="modal-content">
+            <form id="formRecupero" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloRecupero">Olvidé mi contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="avisoRecupero" class="d-none" role="alert"></div>
+                    <p>Ingresá el e-mail que tenés registrado en tu usuario. Vas a recibir un enlace para elegir una contraseña nueva.</p>
+                    <label for="recuperoEmail" class="form-label">E-mail <span class="text-danger">*</span></label>
+                    <input type="email" id="recuperoEmail" class="form-control" maxlength="254" autocomplete="email" placeholder="usuario@empresa.com" aria-describedby="ayudaRecupero">
+                    <div class="invalid-feedback"></div>
+                    <div id="ayudaRecupero" class="form-text">Si no tenés un e-mail registrado o no podés acceder a él, comunicate con el área que administra tus accesos.</div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnEnviarRecupero">Enviar enlace</button>
+                </div>
+            </form>
+        </div></div>
+    </div>
+
+    <div class="modal fade" id="modalRestablecer" tabindex="-1" aria-labelledby="tituloRestablecer" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-fullscreen-sm-down"><div class="modal-content">
+            <form id="formRestablecer" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloRestablecer">Restablecer contraseña</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="avisoRestablecer" class="d-none" role="alert"></div>
+                    <div class="mb-3">
+                        <label for="recuperoNueva" class="form-label">Contraseña nueva <span class="text-danger">*</span></label>
+                        <input type="password" id="recuperoNueva" class="form-control" maxlength="20" autocomplete="new-password" aria-describedby="ayudaRecuperoNueva">
+                        <div class="invalid-feedback"></div>
+                        <div id="ayudaRecuperoNueva" class="form-text">Entre 8 y 20 caracteres, con al menos una letra y un número.</div>
+                    </div>
+                    <label for="recuperoRepetir" class="form-label">Repetir contraseña nueva <span class="text-danger">*</span></label>
+                    <input type="password" id="recuperoRepetir" class="form-control" maxlength="20" autocomplete="new-password">
+                    <div class="invalid-feedback"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnRestablecerContrasena">Restablecer contraseña</button>
+                </div>
+            </form>
+        </div></div>
+    </div>
+
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+    <!-- Avisos, formularios y modales compartidos. -->
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/login-recupero.js"></script>
 
     <script>
-        // Función para alternar visibilidad de la contraseña
-        function togglePassword() {
+        // La contraseña solo se muestra mientras se mantiene presionado el ojo.
+        (function () {
+            const boton = document.getElementById('togglePassword');
             const passwordInput = document.getElementById('password');
             const eyeIcon = document.getElementById('eyeIcon');
 
-            if (passwordInput.type === 'password') {
+            function mostrarPassword() {
                 passwordInput.type = 'text';
                 eyeIcon.classList.remove('bi-eye');
                 eyeIcon.classList.add('bi-eye-slash');
-            } else {
+            }
+
+            function ocultarPassword() {
                 passwordInput.type = 'password';
                 eyeIcon.classList.remove('bi-eye-slash');
                 eyeIcon.classList.add('bi-eye');
             }
-        }
+
+            boton.addEventListener('pointerdown', function (evento) {
+                if (evento.button === 0) mostrarPassword();
+            });
+            boton.addEventListener('pointerleave', ocultarPassword);
+            boton.addEventListener('blur', ocultarPassword);
+            window.addEventListener('pointerup', ocultarPassword);
+            window.addEventListener('pointercancel', ocultarPassword);
+            window.addEventListener('blur', ocultarPassword);
+            document.addEventListener('visibilitychange', function () {
+                if (document.hidden) ocultarPassword();
+            });
+
+            boton.addEventListener('keydown', function (evento) {
+                if (evento.key !== ' ' && evento.key !== 'Enter') return;
+                evento.preventDefault();
+                mostrarPassword();
+            });
+            boton.addEventListener('keyup', function (evento) {
+                if (evento.key !== ' ' && evento.key !== 'Enter') return;
+                evento.preventDefault();
+                ocultarPassword();
+            });
+        })();
 
         // Mostrar u ocultar el spinner de carga
         function showLoadingSpinner(show) {
@@ -248,13 +331,6 @@
             SGTL.toastError(texto || 'No se pudo iniciar sesión. Probá de nuevo.');
         }
 
-        // Error de un campo: borde rojo y el mensaje debajo (§6.3).
-        function marcarCampo(id, idMensaje, texto) {
-            document.getElementById(id).classList.toggle('is-invalid', !!texto);
-            document.getElementById(idMensaje).textContent = texto || '';
-            document.getElementById(idMensaje).style.display = texto ? 'block' : 'none';
-        }
-
         // La pantalla que se pidió antes de iniciar sesión (Login.html?volver=hoja-de-ruta.html%3Fviaje%3D48, la arma
         // sidebar-loader.js): solo una pantalla del sistema, nunca otra dirección.
         function pantallaDeVuelta() {
@@ -302,19 +378,23 @@
             })
             .catch(function () { /* El login funciona aunque no se pueda consultar la versión. */ });
 
+        // El error del login queda a la vista hasta que se corrige el usuario o la contraseña (Rocío, 28/10): al escribir en
+        // cualquiera de los dos se va; si el próximo intento vuelve a fallar, aparece de nuevo.
+        ['username', 'password'].forEach(function (id) {
+            document.getElementById(id).addEventListener('input', function () {
+                const aviso = document.getElementById('avisoLogin');
+                if (aviso && !aviso.classList.contains('d-none')) SGTL.avisoFormulario(aviso, '');
+            });
+        });
+
         // Gestión del formulario de login
         document.getElementById('loginForm').addEventListener('submit', function (event) {
             event.preventDefault();
+            if (document.getElementById('btnEntrar').disabled || !window.validarFormularioLogin()) return;
 
             // Obtener los valores ingresados
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value;
-
-            // Limpiar mensajes de error previos
-            marcarCampo('username', 'userError', '');
-            marcarCampo('password', 'passError', '');
-            document.getElementById('generalError').style.display = 'none';
-            document.getElementById('generalError').textContent = '';
 
             if (username && password) {
                 const listo = SGTL.procesando('#btnEntrar', 'Entrando…');
@@ -344,8 +424,7 @@
                         } else if (xhrLogin.status === 401) {  // Credenciales inválidas (o un chofer inactivo: la API dice por qué)
                             let mensaje = 'Usuario o contraseña incorrectos.';
                             try { mensaje = JSON.parse(xhrLogin.responseText).General || mensaje; } catch (e) { }
-                            document.getElementById('generalError').textContent = mensaje;
-                            document.getElementById('generalError').style.display = 'block';
+                            SGTL.avisoFormulario('#avisoLogin', mensaje);
                         } else {  // Otros errores
                             console.error("Error al iniciar sesión. Estado HTTP:", xhrLogin.status);
                             mostrarToastError();
@@ -354,6 +433,7 @@
                 };
 
                 xhrLogin.onerror = function () {
+                    listo();
                     console.error("Error de red al intentar conectar con la API de login.");
                     mostrarToastError(SIN_CONEXION);
                 };
@@ -364,11 +444,6 @@
                 });
 
                 xhrLogin.send(requestBody);
-            } else {
-                // Mostrar mensajes de error si los campos están vacíos
-                if (!username) marcarCampo('username', 'userError', 'Completá el usuario.');
-                if (!password) marcarCampo('password', 'passError', 'Completá la contraseña.');
-                document.getElementById(!username ? 'username' : 'password').focus();
             }
         });
     </script>

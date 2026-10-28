@@ -111,18 +111,16 @@
                                 <table class="table table-striped table-hover" id="tablaChoferes">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
-                                            <th class="text-center">Fecha de alta</th>
-                                            <th>Nombre</th>
-                                            <th>Apellido</th>
-                                            <th>DNI</th>
+                                            <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="dni">DNI<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                            <th><button type="button" class="sgtl-orden-boton" data-sgtl-orden="apellidoNombre">Apellido y nombre<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                            <th class="text-center"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="fechaAlta">Fecha de alta<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
                                             <th class="text-center">Estado</th>
                                             <th class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td colspan="7" class="text-center text-muted py-4">Cargando…</td>
+                                            <td colspan="5" class="text-center text-muted py-4">Cargando…</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -463,10 +461,11 @@
     <!-- Buscar y listar -->
     <script>
         const API = 'http://localhost:50222/api';
-        const COLUMNAS_CHOFERES = 7;
+        const COLUMNAS_CHOFERES = 5;
         let pageSize = 15;
         let currentPage = 1;
         let ultimaBusqueda = 0;
+        let ordenChoferes;
         let choferesPagina = {};
 
         // Fecha_Alta y Fecha_Modi se guardan con la hora UTC del navegador: se muestran 3 h antes
@@ -492,6 +491,10 @@
 
         function filaChofer(chofer) {
             choferesPagina[chofer.Chofer_ID] = chofer;
+            const apellidoYNombre = [chofer.Apellido, chofer.Nombre]
+                .map(function (parte) { return String(parte || '').trim(); })
+                .filter(Boolean)
+                .join(', ');
             const activo = chofer.EstadoChofer === 'Activo';
             const acciones = SGTL.accionesFila([
                 SGTL.botonFila('editar', { id: chofer.Chofer_ID }),
@@ -503,11 +506,9 @@
                 })
             ]);
             return `<tr>
-                <td>${SGTL.escapar(chofer.Chofer_ID)}</td>
-                <td class="text-center text-nowrap">${fechaChofer(chofer.Fecha_Alta)}</td>
-                <td>${SGTL.escapar(chofer.Nombre)}</td>
-                <td>${SGTL.escapar(chofer.Apellido)}</td>
                 <td>${SGTL.escapar(chofer.DNI)}</td>
+                <td>${SGTL.escapar(apellidoYNombre)}</td>
+                <td class="text-center text-nowrap">${fechaChofer(chofer.Fecha_Alta)}</td>
                 <td class="text-center">${SGTL.estado(chofer.EstadoChofer)}</td>
                 <td class="text-center">${acciones}</td>
             </tr>`;
@@ -522,7 +523,7 @@
             SGTL.ajax({
                 url: API + '/Choferes/Buscar',
                 type: 'GET',
-                data: Object.assign(filtrosBusqueda(), { page: page, pageSize: pageSize })
+                data: Object.assign(filtrosBusqueda(), ordenChoferes.parametros(), { page: page, pageSize: pageSize })
             }, 'No se pudieron cargar los choferes. Revisá la conexión y probá de nuevo.').then(function (data) {
                 if (busqueda !== ultimaBusqueda) return;
                 const registros = data.Results || [];
@@ -550,6 +551,7 @@
         }
 
         $(function () {
+            ordenChoferes = SGTL.tabla.habilitarOrden('#tablaChoferes', function () { buscarChoferes(1); });
             $('#txtdni').on('input', function () {
                 this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8);
             });
@@ -1023,7 +1025,7 @@
                 const data = await SGTL.ajax({
                     url: API + '/Choferes/Buscar',
                     type: 'GET',
-                    data: Object.assign(filtrosBusqueda(), { page: 1, pageSize: 0 })
+                    data: Object.assign(filtrosBusqueda(), ordenChoferes.parametros(), { page: 1, pageSize: 0 })
                 }, 'No se pudo exportar. Revisá la conexión y probá de nuevo.');
                 const registros = data.Results || [];
                 if (!registros.length) {
@@ -1036,7 +1038,7 @@
                         nombreProvincia(r.ProvID), nombreLocalidad(r.ProvID, r.LocID)
                     ]);
                     return [
-                        r.Chofer_ID, r.DNI, r.CUIL, r.Nombre, r.Apellido,
+                        r.DNI, r.CUIL, r.Nombre, r.Apellido,
                         r.TelefonoFijo, r.TelefonoCelular, r.Email,
                         provincia, localidad, r.Calle, r.AlturaCalle,
                         r.EstadoChofer, fechaChofer(r.Fecha_Alta), r.Usu_Alta,
@@ -1045,7 +1047,7 @@
                 }));
 
                 SGTL.descargarCSV('Listado_Choferes.csv', [
-                    'ID', 'DNI', 'CUIL', 'Nombre', 'Apellido',
+                    'DNI', 'CUIL', 'Nombre', 'Apellido',
                     'Teléfono particular', 'Teléfono celular', 'E-mail',
                     'Provincia', 'Localidad', 'Calle', 'Altura',
                     'Estado', 'Fecha de alta', 'Usuario de alta',
