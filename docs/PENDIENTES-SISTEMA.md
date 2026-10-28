@@ -58,7 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
-| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) y los gastos del chofer en un viaje que no se hace (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas), los gastos del chofer en un viaje que no se hace (28/10) y los textos y la estética de Restablecer contraseña (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
 | 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | **Pusheado** (27/10) | `06` aplicado y `07` relevado (28/10): solo el viaje 40 cambia de vuelta y se actualiza al editarlo. Ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§43) |
@@ -3830,6 +3830,20 @@ cierren las pruebas de la §39**, antes que lo demás.
   Ver detalle (sin margen) y que la confirmación de cancelar avise que el viaje tiene gastos del chofer. Vías según lo que
   pasó: salió y no había carga, **Sin carga** (los gastos cuentan); se marcó En viaje por error, (a); no se hace pero el
   chofer ya gastó, cancelar con (b).
+- [ ] **10. Restablecer contraseña: textos y estética (Rocío, 28/10, al verlo en la prueba de la VM).** El modal
+  "Restablecer contraseña" del login (`Login.html`, `assets/static/js/login-recupero.js`; módulo de Facu, §57) no le
+  parece lindo: lo siente chocante y distinto del resto. Revisar con la lista de control de `AGENTS.md` y el §12 del
+  design system (estilo visual), compararlo con un modal de adentro del sistema (por ejemplo, Cambiar contraseña del
+  encabezado, `assets/static/js/header.js`) y proponer cómo mejorarlo. Lo que vio:
+  - **El tamaño del título** del modal ("subtítulo"), que no se ve como en los demás.
+  - **"Repetir contraseña nueva"** suena raro. Además no coincide con Cambiar contraseña, que dice "Repetí la contraseña
+    nueva": unificar los dos con un texto que se entienda (propuesta a decidir).
+  - **El botón** "Restablecer contraseña": revisar que cumpla el design system y si se puede mejorar.
+  Pista para revisar primero: `Login.html` carga `css/login.css` después de `sgtl.css` y tiene estilos propios en la
+  página (los de la tarjeta del login); puede que alcancen también a los dos modales del recupero ("Olvidé mi
+  contraseña" y "Restablecer contraseña") y por eso no se vean como los de adentro. Revisar también los dos modales
+  juntos (lo mismo en "Olvidé mi contraseña") y el ojo para ver la contraseña, que el login tiene y el modal no. Como es
+  del módulo de Facu, avisarle antes de cambiarlo.
 
 ---
 
