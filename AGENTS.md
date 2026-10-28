@@ -61,7 +61,9 @@ AGENTS.md"):
    bloques de su formulario (`.sgtl-dato`, estado en el título). (§6.2)
 5. **Avisos con `SGTL.toastExito` / `SGTL.toastError`**; el error de un modal abierto, dentro del modal con
    `SGTL.avisoFormulario` (si alcanza a varias cosas, una línea con el total y la lista agrupada como `detalle`, no "el
-   primero y N más"). **Nunca `alert()`.** (§5.1)
+   primero y N más"). En el login, el error va dentro del formulario con el aviso rojo y `sgtl-aviso-animado`:
+   movimiento breve al aparecer, desactivado si se prefiere reducir movimiento. El error de credenciales
+   desaparece a los 5 segundos; cada intento fallido reinicia ese tiempo. **Nunca `alert()`.** (§5.1)
 6. **Confirmaciones con `SGTL.confirmar`** (con motivo si hace falta). **Nunca `confirm()` ni `prompt()`.** (§5.2)
 7. **Formularios con `SGTL.validador`:** asterisco rojo en lo obligatorio, `form-label` con `for`, el error
    debajo de cada campo y "Revisá los campos marcados." arriba. Los largos, en bloques con `.sgtl-bloque-titulo`

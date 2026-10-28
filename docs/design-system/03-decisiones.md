@@ -427,6 +427,13 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
   probá de nuevo."
 - **Error con un modal abierto** (por ejemplo, el servidor rechaza el guardado): el mensaje va
   **dentro del modal**, arriba, en rojo, sin cerrarlo, para no perder lo cargado.
+- **Error del login** (28/10, pedido del usuario): dentro del formulario, arriba de los campos, con
+  `SGTL.avisoFormulario` y `alert alert-danger`, ícono y texto en negrita. La clase compartida
+  `sgtl-aviso-animado` hace una sacudida de 380 ms al aparecer, una sola vez por intento; queda quieto
+  después. Con `prefers-reduced-motion: reduce` se muestra sin animación. Lleva `role="alert"`.
+  El error de credenciales desaparece a los 5 segundos; cada intento fallido reinicia ese tiempo
+  (`data-sgtl-duracion="5000"`, gestionado por `SGTL.avisoFormulario`). El aviso de campos marcados
+  conserva su comportamiento de validación, indicado abajo.
 - **"Revisá los campos marcados." se va solo** cuando ya no queda ningún campo en rojo (25/10, `SGTL.avisoFormulario`).
   Un error de la API que es de un campo va debajo de ese campo, no arriba (por ejemplo, una fecha repetida).
 - **Error que alcanza a varias cosas** (25/10, tarifas): una línea general con el total y, debajo, la lista agrupada por lo

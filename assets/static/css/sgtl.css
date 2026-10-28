@@ -836,6 +836,24 @@ body .alert.alert-danger,
 body .alert.alert-light-danger { border-color: #f7d4d8; background-color: #fdf1f2; color: #b42318 !important; }
 body .alert.alert-danger::before,
 body .alert.alert-light-danger::before { content: "\f332"; color: #dc3545; }
+
+/* Énfasis al aparecer, sin movimiento continuo. Se usa en el error del login (§5.1). */
+.alert.sgtl-aviso-animado:not(.d-none) {
+    animation: sgtl-aviso-entrada 380ms ease-out 1;
+}
+
+@keyframes sgtl-aviso-entrada {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .alert.sgtl-aviso-animado:not(.d-none) { animation: none; }
+}
+
 /* El detalle de un error que alcanza a varias cosas (SGTL.avisoFormulario con detalle, §5.1). */
 body .alert .sgtl-aviso-lista { margin: .35rem 0 0; padding-left: 1.1rem; }
 body .alert.alert-light { padding-left: 1rem; border-color: var(--sgtl-borde); background-color: #f8f9fb; color: #344054; }

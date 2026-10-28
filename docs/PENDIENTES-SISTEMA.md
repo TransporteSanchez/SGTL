@@ -3973,3 +3973,12 @@ la ejecución de las migraciones y esta prueba en VM siguen pendientes.
 **Unificación del 28/10:** los botones de los perfiles de Facturación, Presupuestos y recupero de contraseña
 dicen «Guardar», siguiendo el criterio de configuración del design system. **Probar:** recargar Gestionar e-mail
 con Ctrl+F5 y comprobar el mismo texto en los tres perfiles; al guardar, el botón muestra «Guardando…».
+
+**Aviso del login (28/10):** el error de credenciales usa el aviso rojo compartido, con ícono y texto en negrita.
+Una sacudida breve de 380 ms lo destaca al aparecer y respeta la preferencia de reducir movimiento. La regla queda
+documentada en el design system y AGENTS.md. **Probar:** recargar el login con Ctrl+F5 e ingresar credenciales
+incorrectas: el aviso debe aparecer arriba de los campos, animarse una vez y quedar quieto. Repetir el intento:
+debe volver a animarse. El error de credenciales desaparece a los 5 segundos y cada nuevo intento fallido reinicia
+el tiempo; un temporizador anterior no debe ocultar un aviso nuevo. Con movimiento reducido activado, debe aparecer
+sin animación. Los campos vacíos conservan
+sus errores de validación y el aviso «Revisá los campos marcados.».

@@ -905,6 +905,8 @@
   function avisoFormulario(objetivo, texto, detalle) {
     var aviso = elemento(objetivo);
     if (!aviso) return;
+    clearTimeout(aviso._sgtlTemporizadorAviso);
+    aviso._sgtlTemporizadorAviso = null;
     if (texto === REVISA_CAMPOS) seVaSinCamposMarcados(aviso);
     aviso.textContent = texto || '';
     if (texto && detalle && detalle.length) {
@@ -919,6 +921,11 @@
     }
     aviso.style.display = texto ? '' : 'none';
     aviso.classList.toggle('d-none', !texto);
+    // Duración opcional del contenedor; la validación se conserva hasta corregir los campos.
+    var duracion = Number(aviso.dataset.sgtlDuracion);
+    if (texto && texto !== REVISA_CAMPOS && Number.isFinite(duracion) && duracion > 0) {
+      aviso._sgtlTemporizadorAviso = setTimeout(function () { avisoFormulario(aviso, ''); }, duracion);
+    }
   }
 
   // Después de validar: si hay campos marcados, muestra "Revisá los campos marcados." y lleva el
