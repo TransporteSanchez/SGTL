@@ -3897,6 +3897,8 @@ como presentación). Los números son los del listado de Rocío.
 - [ ] **1. Vuelta vacío en la tarifa por km.** Ya no existe: era de las tarifas de prueba de antes (ruta + vuelta vacío,
   §31). En la tabla nueva la tarifa por km es km de ida × precio por km (la "larga distancia" del PDF). **Preguntarle a
   Claudia** si ese precio ya contempla la vuelta; si no, la tabla dinámica puede tener "cobrar la vuelta vacía" por tabla.
+  **28/10 (recorrida de Rukas y audios de Claudia):** en Rukas la vuelta vacía es un **adicional aparte**, un porcentaje
+  del flete (10 % a 70 %), que normalmente ya viene cargado y Claudia puede corregir. Para los directos, ver el punto 11.
 - [x] **2. Tarjeta "Cambios de tarifa para revisar".** Hecho con la §43 (27/10): se llama "Cambios para revisar", aparece
   solo si hay algo y a quien lo puede resolver; subido, pendiente de probar en la VM (§43, paso 6). Era: hoy está siempre en el dashboard (vacía dice "No hay nada para
   revisar por cambios de tarifa.") y ya se muestra según los permisos. Pedido: que aparezca solo cuando hay algo para
@@ -3950,6 +3952,23 @@ como presentación). Los números son los del listado de Rocío.
   la tabla "desde cuántas horas" (viajes cortos y largos) y "horas por módulo" se guardan pero **ningún cálculo los usa**.
   Propuesta: el chofer registra en su hoja de ruta la llegada y la salida del destino, y los módulos salen solos con esos
   datos de la tabla (el operador los puede corregir).
+  **28/10, recorrida de Rukas (solo lectura) y audios de Claudia** (detalle en `docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md`,
+  paso 12): para QUICKFOOD los adicionales se cargan en Rukas (Cierre Reparto), Marfrig los aprueba y llegan en el Excel de
+  la proforma; Claudia agrega o corrige los que faltan. La lista es la misma tarifa de nuestra tabla: esperas por franja de
+  horas (1 a 16 módulos de $ 96.577, un módulo cada 6 hs), descarga (1 módulo), descarga + espera y repaletizado (2),
+  repaletizado + estadía (3), todos fijos × cantidad, y vuelta vacía del 10 % al 70 % del flete. Para los directos,
+  Claudia trabaja igual y usa Rukas como parámetro.
+  - **QUICKFOOD: no hace falta nada nuevo.** SGTL ya toma los adicionales del Excel tal como vienen, sin compararlos, en
+    una línea aparte de la proforma, y en un viaje con plataforma no deja cargar la estadía (así no se cobra dos veces).
+    Mejora posible: mostrar en Ver detalle del viaje el adicional que vino de Rukas.
+  - **Directos: propuesta para después del 29/10.** Reemplazar la "estadía en módulos" por **adicionales del viaje como en
+    Rukas**: la tabla de tarifas tiene la lista (nombre, fijo o porcentaje, valor; por defecto la de arriba, en módulos de
+    estadía), y en el viaje se agregan uno o varios (adicional, cantidad, comentario) que se suman al importe, se ven en
+    Ver detalle y van a la proforma en una línea aparte, como los de Rukas. La espera puede salir sola con las horas del
+    chofer (la propuesta de arriba). Se junta con la tabla dinámica (§42).
+  - **Preguntas para Claudia:** cómo paga Rukas un viaje sin carga (no hay "falso flete" en la lista; ¿es una vuelta vacía
+    del 60 %?); si a los directos les cobra los mismos adicionales y valores; y quién decide el porcentaje de la vuelta
+    vacía.
 - [x] **12 y 13. Textos de para quién es la tabla.** Hechos (27/10), subidos, pendientes de probar en la VM (§40, punto
   7, paso 2). "Solo algunos clientes" → "Clientes en particular". En lugar de
   "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los

@@ -238,6 +238,32 @@ Transporte Sanchez carga/confirma; Marfrig aprueba/controla.
 ¿Qué tan seguido usan adicionales y reclamos de tarifa?  
 [ ] Siempre  [ ] A veces  [ ] Casi nunca  
 
+**Respuesta de Claudia (audios, 28/10):** normalmente Rukas ya le manda cargados los adicionales cuando el viaje tiene
+pago de vuelta vacía o alguna espera; ella también puede cargar uno que se olvidaron, corregir un porcentaje mal puesto o
+agregar uno que falte. Para los clientes directos trabaja muy parecido: usa lo de Rukas como parámetro.
+
+**Recorrida del 28/10 (solo lectura, con la sesión de Transporte Sánchez; Rocío y Claude).** En **Cierre Reparto** cada
+transporte pendiente tiene, en la columna "$ Ad", el detalle del costo: arriba, **Costo Transporte** (fecha de salida,
+clase de transporte, unidad, antigüedad, ruta y km; por ejemplo "Balancín · Viejo · CD Córdoba hasta 130 km · 129 km", el
+mismo importe que da nuestra tabla), y abajo, **Adicionales** con su total, la tabla (adicional, tipo, valor, cantidad,
+costo, notas, reclamos, aprobación) y los botones "+ Adicional" y "Confirmar" (conformidad sin adicionales). "+ Adicional"
+abre un formulario con: **Adicional** (lista), **Tipo**, **Valor**, **Cant.**, **Flete** (el costo del transporte), **Total
+adicional** y **Comentarios**. Marfrig aprueba cada adicional.
+
+La lista de adicionales de QUICKFOOD (agosto 2026), con el tipo de cálculo de Rukas:
+
+| Adicional | Tipo | Cómo se calcula |
+|---|---|---|
+| Espera entre 1 y 6 hs · 6 y 12 · 12 y 18 · 18 y 24 · 24 y 36 · 36 y 48 · 48 y 72 · 72 y 96 hs | Fijo | $ 96.577, 193.154, 289.730, 386.307, 579.461, 772.614, 1.158.921 y 1.545.228 × cantidad: **1, 2, 3, 4, 6, 8, 12 y 16 módulos de $ 96.577** (un módulo cada 6 hs, por el tope de la franja) |
+| Adicional por Descarga | Fijo | $ 96.577 (1 módulo) × cantidad |
+| Descarga + Espera · Repaletizado | Fijo | $ 193.154 (2 módulos) × cantidad |
+| Repaletizado + Estadía | Fijo | $ 289.731 (3 módulos) × cantidad |
+| QF-Vuelta Vacío 10 %, 20 %, 23 %, 30 %, 40 %, 45 %, 50 %, 60 % y 70 % | Porcentaje | el porcentaje × el flete (el costo del transporte); la cantidad no cuenta |
+
+En el código de la página: fijo (o variable) = valor × cantidad; porcentaje = flete × porcentaje. El módulo de $ 96.577 y
+las 6 hs por módulo son los mismos de nuestra tabla "Tarifas a agosto 2026" (estadía; `database/tarifas/03_…`). En la
+lista no hay un "falso flete" (nuestro "Sin carga", 60 %): preguntarle a Claudia cómo lo paga Rukas.
+
 ---
 
 ## PASO 13 — Después: liquidación Marfrig vs proforma interna
