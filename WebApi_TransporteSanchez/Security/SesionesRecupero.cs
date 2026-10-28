@@ -75,16 +75,27 @@ OR (@permiso='Listado de usuarios' AND m.Menu_Nombre COLLATE Latin1_General_CI_A
                 try
                 {
                     if (!SesionesRecupero.Vigente(SesionesRecupero.Leer(request)))
-                        return request.CreateResponse(HttpStatusCode.Unauthorized, new { error = "Tu sesión venció. Volvé a iniciar sesión." });
+                        return Rechazo(request, HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión.");
                 }
                 catch (SecurityTokenException)
-                { return request.CreateResponse(HttpStatusCode.Unauthorized, new { error = "Tu sesión venció. Volvé a iniciar sesión." }); }
+                { return Rechazo(request, HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión."); }
                 catch (ArgumentException)
-                { return request.CreateResponse(HttpStatusCode.Unauthorized, new { error = "Tu sesión venció. Volvé a iniciar sesión." }); }
+                { return Rechazo(request, HttpStatusCode.Unauthorized, "Tu sesión venció. Volvé a iniciar sesión."); }
                 catch
-                { return request.CreateResponse(HttpStatusCode.ServiceUnavailable, new { error = "No se pudo verificar la sesión. Probá de nuevo." }); }
+                { return Rechazo(request, HttpStatusCode.ServiceUnavailable, "No se pudo verificar la sesión. Probá de nuevo."); }
             }
             return await base.SendAsync(request, cancellationToken);
+        }
+
+        // El permiso de CORS lo agrega un handler que Web API suma al final, cuando arranca: este rechazo sale antes y sin él, el
+        // navegador lo bloquea y la pantalla cree que se cortó la conexión, así que la sesión no se cierra (reporte de la VM
+        // del 28/10, F1). Se agrega acá, con la misma política de WebApiConfig (cualquier origen).
+        private static HttpResponseMessage Rechazo(HttpRequestMessage request, HttpStatusCode estado, string mensaje)
+        {
+            var respuesta = request.CreateResponse(estado, new { error = mensaje });
+            if (request.Headers.Contains("Origin"))
+                respuesta.Headers.Add("Access-Control-Allow-Origin", "*");
+            return respuesta;
         }
     }
 
@@ -98,7 +109,12 @@ OR (@permiso='Listado de usuarios' AND m.Menu_Nombre COLLATE Latin1_General_CI_A
             {
                 var principal = SesionesRecupero.Leer(actionContext.Request);
                 if (!SesionesRecupero.Vigente(principal, permiso))
-                    actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Forbidden, new { error = "No tenés permiso para acceder a los usuarios." });
+                    actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Forbidden, new
+                    {
+                        // Un cambio (alta, edición, baja) dice "modificar" (reporte de la VM del 28/10, M11).
+                        error = actionContext.Request.Method == HttpMethod.Get
+                            ? "No tenés permiso para acceder a los usuarios." : "No tenés permiso para modificar usuarios."
+                    });
             }
             catch (SecurityTokenException)
             { actionContext.Response = actionContext.Request.CreateResponse(HttpStatusCode.Unauthorized, new { error = "Tu sesión venció. Volvé a iniciar sesión." }); }
