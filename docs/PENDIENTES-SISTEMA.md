@@ -61,7 +61,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) y los gastos del chofer en un viaje que no se hace (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
-| 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | Commit del 27/10, sin pushear | **Pendiente:** correr `06` y `07` antes de recompilar; pasos en §43 |
+| 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | **Pusheado** (27/10) | **Pendiente:** correr `06` y `07` antes de recompilar; pasos en §43 |
 | 44 | Emitir comprobantes directos con tipos de deuda configurados, como FC | Hecho en código (26/10); falta aplicar la migración y probar en VM | Incluido en `facugodoy` (27/10) | Correr `database/cuenta-corriente/13_comprobantes_directos_configurables.sql`, recompilar y probar (§44) |
 | 46 | Emitir comprobantes internos desde proformas y cancelarlos con un crédito interno | Migraciones 14 y 15 aplicadas y crédito cancelatorio emitido desde proforma según el usuario (27/10); faltan los otros recorridos en VM | Incluido en `facugodoy` (27/10) | Probar una factura y un recibo, y revisar el resto de §46 |
 | 47 | Editar la identidad de tipos de comprobante y marcar los electrónicos | Migración 16 aplicada según el usuario (27/10); falta probar en VM | Incluido en `facugodoy` (27/10) | Corregir una sigla y una letra con historial, y comprobar el bloqueo electrónico (§47) |
@@ -75,7 +75,9 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
-| 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 4 del instructivo, aparte y después del resto (§58) |
+| 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
+
+**Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
 **Tanda de `facugodoy` del 27/10:** cambios pendientes incluidos en commits por tema; API compilada y 76 pruebas Node correctas. Los scripts SQL se versionaron sin ejecutarlos; las pruebas en VM y las aplicaciones de base indicadas en cada sección siguen pendientes.
 
@@ -3696,6 +3698,8 @@ pidió: los errores se van solos, el aviso concuerda en singular y plural, Audit
   Logística Pampeana" (tabla 7, sin viajes), o con el SQL del reporte. **No correr el SQL de limpieza de la tanda 1**: borra
   el cliente 7 (Alimentos La Serena) con los viajes 43 y 44, que son parte de la demo.
 
+**28/10:** las tandas 3, 5 y 6 pasan a `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (rondas 4 y 3); la 2 sigue esperando la §38.
+
 **Tandas 3, 5, 6 y 2 en pausa (Rocío, 26/10):** después de Tableros surgieron cambios y mejoras de tarifas que van
 primero. La hoja de ruta (§36), el control interno (§37) y las dos mejoras de cuenta corriente (§29) ya están en `main`
 sin probar; se retoman después de los cambios de tarifas, antes del 29/10.
@@ -4626,6 +4630,6 @@ plantillas `viaje_cancelado` y `viaje_desasignado` (6 variables) tienen que esta
 eliminar y cambiar el chofer funcionan, pero el WhatsApp no sale y queda en `App_Data/whatsapp.log`. Avisarle a Fede lo que
 cambió de su commit (el Cancelado, el lugar y los estados de Reenviar WhatsApp, el aviso después de borrar y el script).
 
-**Probar en la VM:** la ronda 4 de `docs/equipo/INSTRUCTIVO-PRUEBAS-INTEGRACION-FACU.md`, aparte y cuando el resto esté
+**Probar en la VM:** la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y cuando el resto esté
 OK (Rocío, 28/10), con el token del día, las plantillas aprobadas y choferes con celulares del equipo. En la Mac no se
 compiló la API; las pruebas de Node de viajes dan OK.

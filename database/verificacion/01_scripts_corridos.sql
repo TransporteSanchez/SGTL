@@ -3,7 +3,8 @@
 
    Para saber, antes de una tanda de pruebas, si están corridos los scripts de la integración del 28/10: los de Facu
    (cuenta corriente 11 a 18, seguridad 02, e-mail 07 y documentación 02), los nuestros del 27/10 (viajes 02 y 03, hoja de
-   ruta 01 y 02) y el de Fede (whatsapp 02, integrado el 28/10). No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
+   ruta 01 y 02), el de Fede (whatsapp 02, integrado el 28/10) y los nuestros del 24 al 27/10 sin probar todavía (tarifas
+   02, 05 y 06, tableros 01 y costos 01 y 02). Tarifas 03 y 04 cargan datos y 07 es de solo lectura: no se miran acá. No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
    columna, una restricción, un disparador). Al sumar scripts nuevos, agregar su fila acá.
 
    Cómo correrlo (SSMS, base Transporte_Sanchez): ejecutar entero. Devuelve tres tablas:
@@ -98,7 +99,36 @@ UNION ALL SELECT 13, N'viajes/03_viaje_sin_carga (nuestro)',
 UNION ALL SELECT 14, N'whatsapp/02_plantillas_cancelado_y_desasignado (Fede)',
     CASE WHEN COL_LENGTH(N'dbo.WHATSAPP_CONFIG', N'TemplateCancelado') IS NOT NULL THEN 1 ELSE 0 END +
     CASE WHEN COL_LENGTH(N'dbo.WHATSAPP_CONFIG', N'TemplateDesasignado') IS NOT NULL THEN 1 ELSE 0 END,
-    2, N'WHATSAPP_CONFIG.TemplateCancelado y TemplateDesasignado (sin ellas no abre Configuración de WhatsApp)';
+    2, N'WHATSAPP_CONFIG.TemplateCancelado y TemplateDesasignado (sin ellas no abre Configuración de WhatsApp)'
+-- Los nuestros del 24 al 27/10 que necesitan las pruebas de viajes, hoja de ruta y control interno (28/10).
+UNION ALL SELECT 15, N'tarifas/02_tarifario_por_vehiculo (nuestro)',
+    CASE WHEN OBJECT_ID(N'dbo.TARIFARIOS', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_VALORES', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'TarifarioID') IS NOT NULL THEN 1 ELSE 0 END,
+    3, N'TARIFARIOS, TARIFARIO_VALORES y VIAJES.TarifarioID'
+UNION ALL SELECT 16, N'tarifas/05_cambios_de_tarifa (nuestro)',
+    CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_CAMBIOS', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN OBJECT_ID(N'dbo.TARIFARIO_REVISAR', N'U') IS NOT NULL THEN 1 ELSE 0 END,
+    2, N'TARIFARIO_CAMBIOS y TARIFARIO_REVISAR'
+UNION ALL SELECT 17, N'tarifas/06_precio_por_orden_del_dia (nuestro)',
+    CASE WHEN COL_LENGTH(N'dbo.TARIFARIO_REVISAR', N'Vuelta_Nueva') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = N'CK_TARIFARIO_CAMBIOS_Tipo'
+                      AND CHARINDEX(N'Orden del d', definition) > 0) THEN 1 ELSE 0 END,
+    2, N'TARIFARIO_REVISAR.Vuelta_Nueva y que los cambios admitan el tipo "Orden del día"'
+UNION ALL SELECT 18, N'tableros/01_crear_tableros_favoritos (nuestro)',
+    CASE WHEN OBJECT_ID(N'dbo.TABLEROS_USUARIO', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN OBJECT_ID(N'dbo.TABLEROS_FAVORITOS', N'U') IS NOT NULL THEN 1 ELSE 0 END,
+    2, N'TABLEROS_USUARIO y TABLEROS_FAVORITOS'
+UNION ALL SELECT 19, N'costos/01_galpon_kilometraje_y_gastos (nuestro)',
+    CASE WHEN OBJECT_ID(N'dbo.GALPON', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN COL_LENGTH(N'dbo.CAMIONES', N'Km_Inicial') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN OBJECT_ID(N'dbo.VIAJE_GASTOS', N'U') IS NOT NULL THEN 1 ELSE 0 END,
+    3, N'GALPON, CAMIONES.Km_Inicial y VIAJE_GASTOS'
+UNION ALL SELECT 20, N'costos/02_galpones_por_fecha (nuestro)',
+    CASE WHEN COL_LENGTH(N'dbo.GALPON', N'Vigente_Desde') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN OBJECT_ID(N'dbo.GALPON_KM', N'U') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'GalponID') IS NOT NULL THEN 1 ELSE 0 END,
+    3, N'GALPON.Vigente_Desde, GALPON_KM y VIAJES.GalponID';
 
 SELECT Script,
        CASE WHEN Encontrado = Esperado THEN N'Corrido'

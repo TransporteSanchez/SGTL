@@ -1,33 +1,44 @@
-# Instructivo de pruebas de la integración con Facu (para la VM)
+# Instructivo de pruebas del 28/10 (para la VM)
 
-Para la sesión de Claude Code que prueba en la VM. El 28/10 se integró `facugodoy` (39 commits del 26 al 28/10) en
-`rocionuvoli`, encima de lo de viajes, tarifas, hoja de ruta y choferes de esos días. Ese mismo día se integró también la
-rama de Fede (`fedemontenegro`: WhatsApp en viajes, §58 de `docs/PENDIENTES-SISTEMA.md`), que se prueba aparte, en la
-ronda 4, cuando el resto ya esté OK (Rocío, 28/10). Antes
-de pasar todo a `main` y a las ramas de Facu y Fede, esta tanda tiene que confirmar tres cosas:
+Para la sesión de Claude Code que prueba en la VM. Junta **todo lo que está subido a `rocionuvoli` y todavía no tiene un
+reporte de prueba** (Rocío, 28/10):
 
-1. **Que lo de Facu funciona**, incluidos los casos que no figuran en su "Probar": errores, permisos, doble clic, datos
+- **La integración de Facu** (`facugodoy`, 39 commits del 26 al 28/10): §44 a §57 de `docs/PENDIENTES-SISTEMA.md`.
+- **La integración de Fede** (`fedemontenegro`, WhatsApp en viajes): §58. Va aparte y al final.
+- **Lo nuestro del 24 al 28/10 que no se probó:** el flujo de viajes con Cancelado y Sin carga (§41, puntos 10 y 22), el
+  precio por orden del día con los camiones y choferes ocupados (§43), los textos y avisos de tarifas (§40, punto 7, y
+  §41, puntos 12 a 14), el tiempo estimado de Google (§41, punto 36), la hoja de ruta del chofer (§36 y §41, puntos 4,
+  30, 31, 33 y 35), el control interno y el galpón (§37 y §41, punto 28), las dos mejoras de cuenta corriente (§29) y los
+  arreglos de la demo (§38).
+
+**Queda afuera:** la parte C de `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` (lo que ya vio el cliente, tanda 2 de la §39),
+que espera la limpieza y los documentos de demo de la §38.
+
+Antes de pasar todo a `main` y a las ramas de Facu y Fede, esta tanda tiene que confirmar tres cosas:
+
+1. **Que cada tema funciona**, incluidos los casos que no figuran en su "Probar": errores, permisos, doble clic, datos
    que faltan, lo que pasa en otra pantalla.
-2. **Que las dos partes funcionan juntas**: los cruces entre lo de Facu y lo nuestro están en la parte H y marcados con
-   **[cruce]** en las demás.
+2. **Que las partes funcionan juntas**: los cruces entre temas están marcados con **[cruce]**.
 3. **Que todo cumple el design system** (`docs/design-system/03-decisiones.md` y la lista de control de `AGENTS.md`), con
    la mirada de usabilidad de la sección 1.
 
 **Las reglas de la sesión, los datos de prueba y el formato del reporte son los de `docs/equipo/PRUEBAS-VM-CLAUDE.md`:
-leelo antes.** Lo que Facu ya escribió para probar cada tema está en las §44 a §57 de `docs/PENDIENTES-SISTEMA.md`; acá se
-remite a esas secciones y se agrega lo que falta.
+leelo antes.** Lo que cada sección de `docs/PENDIENTES-SISTEMA.md` dice para probar se hace completo; acá se remite a esas
+secciones y se agrega lo que falta.
 
-La tanda es larga: se hace en **tres rondas**, cada una con su reporte. Si una ronda no termina en una sesión, el reporte
-dice hasta dónde llegó.
+Son **seis rondas**, cada una con su reporte, en orden de prioridad para la reunión del jueves 29/10 (Rocío puede
+cambiarlo). Si una ronda no termina en una sesión, el reporte dice hasta dónde llegó.
 
 | Ronda | Partes | Toca la base |
 |---|---|---|
-| 1 | A (compilación y pruebas automáticas), B (login, sesión y recupero), C (usuarios, grupos y permisos) | Usuarios y un grupo de prueba |
-| 2 | D (orden de las tablas), H (cruces con lo nuestro), I (recorrida general) | Casi nada (lo de H, con OK de Rocío) |
-| 3 | E (tipos de comprobante), F (cuenta corriente), G (proformas) | **Emite comprobantes y cambia la configuración de facturación: con OK de Rocío** |
-| 4 | J (WhatsApp en viajes, de Fede), aparte y después de las otras tres | **Registra, cancela y elimina viajes de prueba y manda WhatsApp reales: con Rocío** |
+| 1 | A (compilación y pruebas automáticas), B (login, sesión y recupero), C (usuarios, grupos, permisos y el usuario del chofer) | Usuarios, un grupo y un chofer de prueba |
+| 2 | K (flujo de viajes), L (precio por orden del día y ocupados), M (tarifas: textos y avisos; tiempo estimado) | Viajes y presupuestos de prueba; corrige la tabla de prueba |
+| 3 | E (tipos de comprobante), F (cuenta corriente), G (proformas), P (lo que quedó de cuenta corriente y de la demo) | **Emite comprobantes y cambia la configuración de facturación: con OK de Rocío** |
+| 4 | N (hoja de ruta del chofer), O (control interno y galpón) | Viajes de prueba, gastos y un cambio de galpón que se anula al final |
+| 5 | D (orden de las tablas), H (cruces), I (recorrida general) | Casi nada (lo de H, con OK de Rocío) |
+| 6 | J (WhatsApp en viajes, de Fede), aparte y al final | **Manda WhatsApp reales: con Rocío** |
 
-Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
+Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
 
 ---
 
@@ -44,10 +55,16 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
   decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 ya se aplicó (recibo 49 y su
   movimiento).
-- **Script de Fede (para la ronda 4):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
+- **Scripts nuestros y de Fede.** Desde el 28/10 el diagnóstico mira también `whatsapp/02` (fila 14, ya corrido) y los
+  nuestros del 24 al 27/10 que necesitan las rondas 2 y 4 (filas 15 a 20: `tarifas/02`, `05` y `06`, `tableros/01` y
+  `costos/01` y `02`). Si alguno dice "Falta correrlo", se corre como dice su encabezado, **antes de recompilar**.
+- **Antes de la ronda 2 (§43, paso 1):** Rocío corre `database/tarifas/07_relevar_vueltas_por_recorrido.sql` (solo
+  lectura) y le pasa el resultado a Claude en la Mac. Los viajes guardados que tendrían otra vuelta con la regla nueva no
+  se cambian solos: se decide qué hacer antes de la ronda 2.
+- **Script de Fede (para la ronda 6):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
   mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). **Al
   28/10 ya está corrido** (las tres plantillas cargadas, en `es_AR`). En Meta
-  tienen que estar aprobadas `viaje_cancelado` y `viaje_desasignado`: se revisa antes de la ronda 4 (sección 5).
+  tienen que estar aprobadas `viaje_cancelado` y `viaje_desasignado`: se revisa antes de la ronda 6 (sección 7).
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
 - **Usuarios** (el login lo hace Rocío):
@@ -56,7 +73,7 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   - uno con rol Usuario sin ningún permiso de usuarios;
   - uno con acceso a proformas y sin cuenta corriente;
   - la cuenta del chofer de prueba de `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`, si ya existe (si no, se crea en la
-    parte H).
+    parte C, punto 6).
 - **Recupero de contraseña:** el recupero manda el correo con un perfil propio, que no puede ser el mismo de Facturación
   ni de Presupuestos (la API y la base lo impiden). Al 28/10 ya está asignado el perfil 3 ("Recupero contraseña"), que
   manda desde la cuenta de siempre (Integra Analistas, por Gmail), con SSL y con la contraseña guardada: **se usa ese**. El
@@ -75,9 +92,17 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
     `nombre+lista@gmail.com`): llegan todos a la misma casilla.
   - Al 28/10, solo 1 de los 14 usuarios activos tiene e-mail. Los que no tienen entran igual, pero no pueden recuperar la
     contraseña y, al editarlos en Gestionar usuarios, el e-mail es obligatorio.
+- **Google (km de un recorrido nuevo, tiempo estimado, mapas y km al galpón):** la clave de Google acepta
+  `localhost:5502`, que en la VM no existe. Si en el 5500 no responde (los km no se calculan o la consola dice
+  `RefererNotAllowedMapError`), anotalo una vez como NO PROBADO, seguí con los km a mano y no lo repitas en cada paso: esos
+  pasos se prueban en la Mac.
+- **WhatsApp en las rondas 1 a 5:** registrar o editar un viaje con chofer intenta mandarle la hoja de ruta. Si el token
+  del día no está, el aviso dice que no se pudo enviar: no es una falla, anotalo una vez. WhatsApp se prueba en la ronda 6.
 - **Ronda 3:** Rocío dice qué tipos de comprobante se pueden activar o desactivar, con qué cliente de prueba se emite y
   si los números que se consuman (FC, C, D, recibos) le sirven. Anotá **el estado inicial de cada tipo** que toques: al
   final tiene que quedar igual. Facu y Fede, avisados de que durante la ronda 3 cambia la configuración de facturación.
+- **Ronda 4:** Rocío dice qué kilometraje, fecha y consumo cargar en un camión y el precio del gasoil (§37, paso 3), y
+  avisa al equipo que se va a probar un cambio de galpón que se anula al final.
 
 ---
 
@@ -109,7 +134,7 @@ Por cada pantalla o modal que toques, recorré la lista de control de `AGENTS.md
 que más se escapan:
 
 - **Botones de la fila:** solo ícono, con tooltip y `aria-label`, en el orden Ver detalle · Editar · Ver PDF · Enviar por
-  e-mail · Cambiar estado · Siguiente paso · Activar/Inactivar · Eliminar/Anular. Lo que no se puede hacer queda
+  e-mail (o Reenviar WhatsApp, en viajes) · Cambiar estado · Siguiente paso · Activar/Inactivar · Eliminar/Anular. Lo que no se puede hacer queda
   **deshabilitado con el motivo**, que dice "No se puede {acción} {sobre qué}: {qué le pasa a esta fila}". Las excepciones
   vigentes (Eliminar oculto en Gestionar tipos de comprobante; Imputar solo en créditos internos y recibos) están en
   `AGENTS.md`: cualquier otro botón escondido es un desvío.
@@ -138,15 +163,17 @@ primera, si es largo, si es confuso o si falta algo, pensando en la persona admi
 
 ### Parte A — Compilación y pruebas automáticas
 
-1. Recompilar la solución: **cero errores**. Copiá las advertencias nuevas que mencionen archivos de esta integración
+1. Recompilar la solución: **cero errores**. Copiá las advertencias nuevas que mencionen archivos de esta tanda
    (`UsuariosController`, `AutenticacionController`, `ComprobantesController`, `RecuperoContrasenaController`,
-   `Security\*Recupero*`, `ChoferesController`, `HojaDeRutaController`). En la Mac no se pueden compilar: **si hay
+   `Security\*Recupero*`, `ChoferesController`, `HojaDeRutaController`, `ViajesController`, `CostosController`,
+   `TarifarioController`, `WhatsAppConfigController`, `Services\WhatsApp\*`). En la Mac no se pueden compilar: **si hay
    errores, pará y pasáselos a Rocío.**
 2. En una terminal, en `C:\Repo\SGTL`, correr cada `node tests\<archivo>.test.js`: todos tienen que imprimir `OK`. En la
    Mac no se pudieron correr estos once, que usan PowerShell y son de Facu: `comprobantes-tipos-directos-email`,
    `debito-interno-referencia-api`, `envio-proforma-adjuntos`, `orden-clientes-backend`, `orden-cuenta-corriente-backend`,
    `orden-proformas-backend`, `orden-viajes-backend`, `recibos-concepto-codificacion`, `recibos-imputacion-api`,
-   `recupero-contrasena`, `reintento-credito-cancelatorio`. Por cada uno que falle, el mensaje completo.
+   `recupero-contrasena`, `reintento-credito-cancelatorio`. Por cada uno que falle, el mensaje completo. Los demás (69,
+   entre ellos `viajes-flujo`, `orden-del-dia`, `hoja-de-ruta` y `control-interno`) dieron OK en la Mac el 28/10.
 3. `tests\contrasenas-seguras.test.ps1`, si existe, con PowerShell.
 
 ### Parte B — Login, sesión y recupero de contraseña (§57 y lo nuestro)
@@ -168,7 +195,7 @@ primera, si es largo, si es confuso o si falta algo, pensando en la persona admi
    contraseña desde el primero (o completar un recupero): el segundo vuelve al login al recuperar el foco o en menos de
    un minuto, con "Tu sesión venció. Volvé a iniciar sesión." o equivalente, y **después de entrar vuelve a la pantalla
    donde estaba** (`?volver=`).
-6. **Chofer [cruce]:** con la cuenta del chofer, entrar desde el celular (390 px): va directo a Hojas de ruta. Con la
+6. **Chofer [cruce]:** con la cuenta del chofer (si no existe, hacé antes el punto 6 de la parte C), entrar desde el celular (390 px): va directo a Hojas de ruta. Con la
    sesión abierta:
    - Inactivar su chofer en Gestionar choferes (como admin, en otra ventana) y tocar "Hoy y próximos": "Tu chofer quedó
      inactivo, así que se cerró tu sesión. Es necesario que hables con administración." y después el login. Volver a
@@ -212,72 +239,69 @@ primera, si es largo, si es confuso o si falta algo, pensando en la persona admi
    - Las listas a 1366 y a 390 px.
 5. **Menú:** Clientes entre Camiones y Viajes. En Grupos y permisos y en Ver detalle del usuario, los permisos se ven con
    el texto del menú.
-6. Datos creados: el usuario de prueba y el grupo, con ID y nombre para la limpieza.
-
----
-
-## 3. Ronda 2
-
-### Parte D — Ordenar desde los encabezados
-
-En cada tabla: alternar dos veces cada encabezado ordenable (primer clic ascendente, segundo descendente, la flecha
-cambia), cambiar de columna (arranca ascendente), ir a la página 2, filtrar y exportar (CSV, PDF o Excel, lo que tenga):
-**el orden se conserva y abarca todos los resultados**, no solo la página. Con el lector de pantalla del navegador (o
-mirando `aria-label` y `aria-sort`), el encabezado dice cómo se va a ordenar.
-
-| Pantalla | Columnas ordenables | Además |
-|---|---|---|
-| Gestionar y Listar clientes | Las tres que tenga | Sin ID |
-| Orígenes y destinos | Las que tenga | Sin ID, los filtros por separado |
-| Gestionar presupuestos | Las seis | **[cruce]** un presupuesto cuyo viaje está cancelado sigue mostrando el ícono de info con el motivo |
-| Gestionar y Listar viajes | Las ocho | **[cruce]** con viajes Cancelado y Sin carga: se ordenan bien, se ven con su color (rojo y azul) y el filtro de estado los trae. Km: 2, 10 y 100 ordenados como números, los vacíos al final |
-| Gestionar y Listar proformas | Las cinco | Número vacío (borradores) al final |
-| Gestionar cuenta corriente | Las siete | §51: las aplicaciones siguen debajo de su comprobante |
-| Gestionar y Listar choferes | DNI, Apellido y nombre, Fecha de alta | §55: DNI por valor (7 y 8 dígitos) |
-| Gestionar y Listar camiones | Marca, Fecha de alta | Sin ID |
-
-### Parte H — Cruces con lo nuestro
-
-1. **Gestionar choferes, el usuario del chofer** (`docs/PENDIENTES-SISTEMA.md`, §41, puntos 30 y 31, pasos 6 a 8 del
-   "Cómo probarlo"):
+6. **Gestionar choferes, el usuario del chofer** (§41, puntos 30 y 31: el "Cómo probarlo" completo, pasos 1 a 8; el 5b
+   es el punto 4 de esta parte):
    - Registrar chofer: el E-mail con asterisco. Sin e-mail: "Completá el e-mail.". Con el de otro usuario: "Ese e-mail ya
      está registrado en otro usuario." debajo del campo.
    - Guardar con un e-mail nuevo: en Listar usuarios → Ver detalle, el usuario nuevo tiene ese e-mail, rol Chofer y su
      chofer. En Auditoría: "…, Email: ninguno -> …".
    - Editar un chofer viejo sin usuario: sin completar el acceso guarda aunque no tenga e-mail; completando el acceso,
      pide el e-mail.
-   - Es el chofer de la demo: preguntale a Rocío qué celular usar y si este reemplaza al de
-     `INSTRUCTIVO-CUENTAS-CHOFERES.md`.
-2. **Viajes y facturación (ronda 3 o con OK de Rocío):**
-   - Un viaje **Sin carga** en una proforma: al emitir el comprobante (FC u otro tipo de deuda configurado) pasa a
-     Facturado.
-   - Con el **crédito interno cancelatorio** de la §46 (no solo con la nota de crédito), vuelve a **Sin carga**, no a
-     Entregado.
-   - Un viaje Cancelado no aparece para traer a una proforma.
-3. **Cambios para revisar con comprobantes que no son FAC:** si un viaje facturado con FC (o con otro tipo de deuda)
-   queda para revisar por un cambio de tarifa, el aviso dice "Como está facturado en FC-A-…" con el número completo
-   (letra y sucursal), en el viaje, en el dashboard y en el presupuesto. Se ajustó al integrar (`OrdenDelDia.cs`): conviene
-   verlo una vez.
-4. **Hojas de ruta** con la sesión de Facu: el chequeo de cada minuto no tiene que sacar al chofer mientras carga una
-   entrega o un gasto con la sesión vigente. Dejala abierta 3 minutos en medio de un formulario y guardá.
-5. **Presupuestos:** "Generar viaje" vuelve cuando el viaje del presupuesto está cancelado, también con la tabla ordenada
-   por otra columna.
-
-### Parte I — Recorrida general
-
-La recorrida de `docs/equipo/PRUEBAS-VM-CLAUDE.md` §4 (todas las pantallas del menú) con tres usuarios: administrador,
-usuario con algunos grupos y chofer. En cada pantalla: abre sin errores en la consola, busca, filtra, pagina y abre sus
-modales. Además:
-
-- El menú de cada usuario muestra solo lo que le corresponde, y escribir a mano la dirección de una pantalla que no tiene
-  lo devuelve al inicio (al chofer, a Hojas de ruta).
-- La tarjeta "Cambios para revisar" del dashboard y los tableros cargan con los tipos de comprobante configurados.
-- Gestionar e-mail: los tres perfiles (Facturación, Presupuestos y recupero de contraseña) dicen "Guardar" y, al guardar,
-  "Guardando…". No deja asignar el mismo perfil a recupero y a otro uso.
+   - Es el chofer de la demo y el de las rondas 4 y 6: preguntale a Rocío qué celular usar y si este reemplaza al de
+     `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`.
+7. Datos creados: el usuario de prueba, el grupo y el chofer, con ID y nombre para la limpieza.
 
 ---
 
-## 4. Ronda 3 (con OK de Rocío en cada paso que emite o envía)
+## 3. Ronda 2 — Viajes
+
+Con viajes de prueba de un cliente directo y de uno con plataforma (Rukas), y con nombres creíbles (anotá ID y nombre de
+lo que crees, para la limpieza). Con tarifa fija y recorridos de hasta 130 km para lo de la vuelta del día.
+
+### Parte K — Flujo de viajes (§41, puntos 10 y 22)
+
+1. **§41, punto 22, A a C** (el "Cómo probarlo" completo): la fecha de entrega no puede ser futura; un viaje con gastos
+   del chofer que volvió a Registrado tiene Eliminar gris con "No se puede eliminar el viaje: tiene gastos cargados"; la
+   evidencia de un directo no se adjunta en Registrado.
+2. **§41, punto 22, E (Cancelado)**, pasos 2 a 7 (el 1 es el script, ya corrido). Además, con lo que cambió al integrar
+   a Fede (§58):
+   - En la fila no hay un botón "Cancelar": se cancela desde Cambiar estado (la banderita), con motivo.
+   - Un viaje que viene de un presupuesto: Eliminar gris con "No se puede eliminar el viaje: viene del presupuesto #N". Desde
+     la consola, `DELETE api/Viajes/{id}` de ese viaje responde "No se puede eliminar el viaje: viene del presupuesto
+     #N.", y el de uno En viaje, "No se puede eliminar el viaje: está en viaje.".
+   - El aviso por WhatsApp al cancelar y la hoja de ruta al reactivar ya están hechos: se miran en la ronda 6. Acá alcanza
+     con que la opción Cancelado diga "Se le avisa al chofer por WhatsApp." si el viaje tiene chofer.
+3. **§41, punto 10 (Sin carga)**, pasos 2 a 7 (el 1 es el script, ya corrido). El 4 (hoja de ruta) puede quedar para la
+   ronda 4 y el 7 (nota de crédito) para la ronda 3, con OK de Rocío: anotá dónde se hizo cada uno.
+4. **§41, punto 22, D, F y G**, pasos 1 a 3. En F, al cambiar el chofer de un viaje En viaje, el aviso del formulario
+   dice además "y a … se le avisa que ya no tiene el viaje." (§58).
+5. **[cruce] El flujo completo, para adelante y para atrás** (el profe prueba casos borde): un viaje directo Registrado →
+   En viaje → Entregado (con evidencia) → Traer viajes en un borrador de proforma, y volver atrás paso a paso donde se
+   pueda. Lo mismo con uno de Rukas (Registrado → Listo para facturar). En cada estado, anotá qué botones de la fila
+   quedan habilitados y el motivo de los deshabilitados (orden: Ver detalle · Editar · Reenviar WhatsApp · Cambiar estado
+   · Eliminar; Reenviar WhatsApp solo con chofer y en Registrado o En viaje).
+
+### Parte L — Precio por orden del día y camiones y choferes ocupados (§43)
+
+1. **§43, "Cómo probarlo en la VM", pasos 3 a 11** (el 1 y el 2 son de la preparación y la parte A).
+2. **[cruce] Con Cancelado:** cancelar el primer viaje del día (en lugar de eliminarlo): la tarjeta Cancelado dice qué
+   pasa con el precio del otro y, al guardar, el otro pasa a primero como al eliminarlo. Reactivar el cancelado: vuelve a
+   su lugar y el otro, a segundo (o queda para revisar si ya salió).
+3. **§41, punto 2 (la tarjeta "Cambios para revisar"):** con algo para revisar, la ven el administrador y quien puede
+   resolverlo; un usuario sin Gestionar viajes no la ve. Sin nada para revisar, no aparece.
+
+### Parte M — Tarifas: textos y avisos; tiempo estimado de Google
+
+1. **§40, punto 7, pasos 1 a 6** (M1, M2, M3, M11 y M14, con los textos 12 a 14 de la §41). Con la tabla de prueba, no
+   con las reales; si hace falta corregir una tabla con viajes, Rocío dice cuál.
+2. **§41, punto 36 (tiempo estimado de Google)**, en Registrar viaje y en Registrar presupuesto. Si Google no responde en
+   el 5500, NO PROBADO (sección 0).
+3. Montos: escribir "12x" en un monto de Gestionar tarifas y en uno de cuenta corriente → "Escribí el importe como
+   1.234,56." debajo, sin borrar lo escrito (F5 de la tanda 1).
+
+---
+
+## 4. Ronda 3 — Facturación (con OK de Rocío en cada paso que emite o envía)
 
 ### Parte E — Tipos de comprobante (Facturación → Gestionar tipos de comprobante)
 
@@ -316,18 +340,113 @@ Hacé el "Probar en la VM" de cada sección, en este orden, y sumá lo de la sec
 
 1. **§46, emitir el comprobante desde la proforma y anularlo con el crédito cancelatorio.** Es el circuito más largo:
    anotá cada número y cada estado en una tabla del reporte (proforma, comprobante, crédito, viajes, antes y después).
-2. **[cruce]** La proforma tiene que incluir **un viaje Sin carga** (si no hay uno de prueba, preguntale a Rocío). Ver
-   la parte H, punto 2.
+2. **[cruce]** La proforma tiene que incluir **un viaje Sin carga** (si no hay uno de prueba, preguntale a Rocío). Lo que
+   tiene que pasar está en la parte H, punto 1: hacelo acá, con esta proforma.
 3. **§50, enviar la proforma por e-mail** desde Listar y Gestionar proformas: deshabilitado en borradores y anuladas con
    el motivo, y con un usuario sin acceso a proformas la API lo rechaza.
 4. Una **proforma de plataforma** (Rukas): emitir y anular pasa igual que con una propia.
 5. Ranking y tableros: el comprobante y el crédito se reflejan una sola vez.
 
+### Parte P — Lo que quedó de cuenta corriente y de la demo
+
+1. **§29, "Probar en la VM (cuando Rocío lo pida)", pasos 1 a 3:** Ver recibo con solo "Cerrar" en el pie; Editar recibo
+   con el título "Editar recibo REC-…" (sin " · ") y el pie Cancelar · Guardar; Registrar recibo con Cancelar · Emitir
+   recibo, también después de haber abierto un Ver recibo. Si el REC-00000004 ya no existe, con otro recibo.
+2. **§38, arreglos de la demo:** una proforma de Rukas nueva (con un Excel de `docs/pruebas/datos/` que Rocío elija) con
+   el adicional en una línea aparte ("Adicional transporte …", sin código de viaje) y el total igual; el comprobante de esa
+   proforma con las dos líneas; los textos del control de Rukas con centavos ("$ 429.101,00"); Tableros → Facturación
+   con centavos y la tarjeta "Importe promedio por viaje".
+3. **[cruce] Sin carga y Cancelado en la facturación:** si no se hizo en la ronda 2, el paso 7 del punto 10 de la §41 (la
+   nota de crédito de una factura con un viaje sin carga lo devuelve a Sin carga). Un viaje Cancelado no aparece en Traer
+   viajes.
+
 ---
 
-## 5. Ronda 4 — WhatsApp en viajes (aparte, después de las otras tres)
+## 5. Ronda 4 — Hoja de ruta del chofer y control interno
 
-Se hace cuando las rondas 1 a 3 están OK (Rocío, 28/10), con Rocío presente: los mensajes son reales y el número de prueba
+Con la cuenta del chofer de prueba de la parte C (rol Chofer) y viajes de prueba para ese chofer: uno de un cliente
+directo para hoy, otro para mañana, uno de ayer sin iniciar y uno de Rukas. El chofer, desde el celular emulado (390 px);
+administración, en la computadora.
+
+### Parte N — Hoja de ruta del chofer (§36 y §41)
+
+1. **§36, "Probar en la VM", pasos 4 a 11**, con lo que cambió desde que se escribió: el chofer no va en un grupo (tiene
+   el rol Chofer y su usuario se crea desde Gestionar choferes: los pasos 2 y 3 son la parte C), el menú dice "Hojas de
+   ruta" y el paso 11 es en el 5500. El 0 (script) y el 1 (compilar) ya están.
+2. **Los ajustes A a F de la §36.**
+3. **§41, punto 4 (Hojas de ruta para administración, en solo lectura):** pasos 1 a 4.
+4. **§41, punto 33 (iniciar solo el día del viaje; gastos hasta 2 días después de la entrega; "Cargar gasto" de
+   administración):** el "Cómo probarlo en la VM" completo.
+5. **§41, punto 35 (el recorrido arranca en el galpón).** Si Google no responde en el 5500, NO PROBADO (sección 0).
+6. **[cruce]** Un viaje cancelado en la ronda 2: en Anteriores, rojo, con "Este viaje se canceló." y sin botones. Uno
+   En viaje → "Registrar sin carga" (§41, punto 10, paso 4), si no se hizo en la ronda 2.
+7. **[cruce] La sesión de Facu:** el chequeo de cada minuto no tiene que sacar al chofer mientras carga una entrega o un
+   gasto con la sesión vigente. Dejala abierta 3 minutos en medio de un formulario y guardá.
+
+### Parte O — Control interno y galpón (§37 y §41, punto 28)
+
+1. **§37, "Probar en la VM", pasos 3 a 8** (el 0 y el 1 ya están; el 2 lo hizo Rocío). En el 3, los valores que diga
+   Rocío.
+2. **§41, punto 28 (cambiar el galpón)**, pasos 2 y 3 (el 1 es el script). **Al final, "Anular cambio":** el galpón real
+   queda como estaba.
+3. **[cruce] Gastos y viajes que no se hacen:** un viaje directo con un gasto del chofer que volvió a Registrado tiene
+   Eliminar gris; se puede cancelar, pero en Ver detalle del cancelado no se ven sus gastos. Es un hueco conocido
+   (§40, punto 9): confirmalo, no es una falla nueva.
+
+---
+
+## 6. Ronda 5 — Orden de las tablas, cruces y recorrida
+
+### Parte D — Ordenar desde los encabezados
+
+En cada tabla: alternar dos veces cada encabezado ordenable (primer clic ascendente, segundo descendente, la flecha
+cambia), cambiar de columna (arranca ascendente), ir a la página 2, filtrar y exportar (CSV, PDF o Excel, lo que tenga):
+**el orden se conserva y abarca todos los resultados**, no solo la página. Con el lector de pantalla del navegador (o
+mirando `aria-label` y `aria-sort`), el encabezado dice cómo se va a ordenar.
+
+| Pantalla | Columnas ordenables | Además |
+|---|---|---|
+| Gestionar y Listar clientes | Las tres que tenga | Sin ID |
+| Orígenes y destinos | Las que tenga | Sin ID, los filtros por separado |
+| Gestionar presupuestos | Las seis | **[cruce]** un presupuesto cuyo viaje está cancelado sigue mostrando el ícono de info con el motivo |
+| Gestionar y Listar viajes | Las ocho | **[cruce]** con viajes Cancelado y Sin carga: se ordenan bien, se ven con su color (rojo y azul) y el filtro de estado los trae. Km: 2, 10 y 100 ordenados como números, los vacíos al final |
+| Gestionar y Listar proformas | Las cinco | Número vacío (borradores) al final |
+| Gestionar cuenta corriente | Las siete | §51: las aplicaciones siguen debajo de su comprobante |
+| Gestionar y Listar choferes | DNI, Apellido y nombre, Fecha de alta | §55: DNI por valor (7 y 8 dígitos) |
+| Gestionar y Listar camiones | Marca, Fecha de alta | Sin ID |
+
+### Parte H — Cruces con lo nuestro
+
+1. **Viajes y facturación (si no se vio en la ronda 3, con OK de Rocío):**
+   - Un viaje **Sin carga** en una proforma: al emitir el comprobante (FC u otro tipo de deuda configurado) pasa a
+     Facturado.
+   - Con el **crédito interno cancelatorio** de la §46 (no solo con la nota de crédito), vuelve a **Sin carga**, no a
+     Entregado.
+   - Un viaje Cancelado no aparece para traer a una proforma.
+2. **Cambios para revisar con comprobantes que no son FAC:** si un viaje facturado con FC (o con otro tipo de deuda)
+   queda para revisar por un cambio de tarifa, el aviso dice "Como está facturado en FC-A-…" con el número completo
+   (letra y sucursal), en el viaje, en el dashboard y en el presupuesto. Se ajustó al integrar (`OrdenDelDia.cs`): conviene
+   verlo una vez.
+3. **Presupuestos:** "Generar viaje" vuelve cuando el viaje del presupuesto está cancelado, también con la tabla ordenada
+   por otra columna.
+
+### Parte I — Recorrida general
+
+La recorrida de `docs/equipo/PRUEBAS-VM-CLAUDE.md` §4 (todas las pantallas del menú) con tres usuarios: administrador,
+usuario con algunos grupos y chofer. En cada pantalla: abre sin errores en la consola, busca, filtra, pagina y abre sus
+modales. Además:
+
+- El menú de cada usuario muestra solo lo que le corresponde, y escribir a mano la dirección de una pantalla que no tiene
+  lo devuelve al inicio (al chofer, a Hojas de ruta).
+- La tarjeta "Cambios para revisar" del dashboard y los tableros cargan con los tipos de comprobante configurados.
+- Gestionar e-mail: los tres perfiles (Facturación, Presupuestos y recupero de contraseña) dicen "Guardar" y, al guardar,
+  "Guardando…". No deja asignar el mismo perfil a recupero y a otro uso.
+
+---
+
+## 7. Ronda 6 — WhatsApp en viajes (aparte y al final)
+
+Se hace cuando las rondas 1 a 5 están OK (Rocío, 28/10), con Rocío presente: los mensajes son reales y el número de prueba
 de Meta tiene un límite de mensajes por día, así que cada paso se hace una vez.
 
 **Antes de empezar (Rocío, en Meta y en el sistema):**
@@ -371,11 +490,11 @@ Cada envío queda en ese archivo con su plantilla.
 
 ---
 
-## 6. Reporte
+## 8. Reporte
 
 Con el formato de `docs/equipo/PRUEBAS-VM-CLAUDE.md` §5, uno por ronda, más:
 
-- En "Resultados", una fila por punto de cada parte, con la sección de PENDIENTES (§44…§57) o **[cruce]**.
+- En "Resultados", una fila por punto de cada parte, con la sección de PENDIENTES (§29, §36, §37, §40, §41, §43, §44 a §58) o **[cruce]**.
 - Una sección **"Design system"** con los desvíos de la sección 1.2: pantalla, qué punto de la lista de control, qué se
   ve y qué pide la regla. Separada de "Fallas" y de "Mejoras sugeridas".
 - En "Datos de prueba creados o modificados", también **la configuración de facturación que se tocó**, con su estado
