@@ -3974,7 +3974,12 @@ como presentación). Los números son los del listado de Rocío.
   inactivo). Registrar chofer tiene el bloque "Acceso al sistema" (nombre de usuario y contraseña, obligatorios): el chofer
   y su usuario (rol Chofer, vinculado) se guardan en la misma transacción. El nombre se propone solo (inicial y apellido,
   sin tildes; si existe, con un número). En Editar chofer, si ya tiene usuario se ve como dato fijo; si no, se le puede
-  crear. Ver detalle del chofer muestra su usuario. Cómo probarlo:
+  crear. Ver detalle del chofer muestra su usuario. **El e-mail del chofer es el de su usuario (28/10, al integrar la
+  rama de Facu)**: desde esa integración todo usuario tiene e-mail, que es con el que recupera la contraseña desde el
+  login. Al crearle el usuario, el e-mail del chofer es obligatorio ("Completá el e-mail."), tiene que ser válido y no
+  puede ser el de otro usuario ("Ese e-mail ya está registrado en otro usuario."), y se copia al usuario (Auditoría:
+  "…, Email: ninguno -> …"). Al editar un chofer que ya tiene usuario, el e-mail sigue siendo opcional y no se copia.
+  Cómo probarlo:
   1. Recompilar y correr `database/hoja-de-ruta/02_rol_chofer.sql` (diagnóstico; después el bloque de cambios y COMMIT):
      las cuentas de choferes (rol user con chofer) pasan al rol Chofer, sin grupos.
   2. Gestionar usuarios → Registrar usuario: el rol dice Administrador, Usuario y Chofer. Usuario pide grupos; Chofer
@@ -3988,11 +3993,13 @@ como presentación). Los números son los del listado de Rocío.
   5. Editar el chofer y pasarlo a Usuario con un grupo: se le quita el chofer (Auditoría: "ChoferID: … -> ninguno").
   6. Gestionar choferes → Registrar chofer: al completar nombre y apellido se propone el usuario (por ejemplo "rjuarez";
      si existe, "rjuarez2"). Sin contraseña: "Completá la contraseña." debajo; con una corta: "Tiene que tener de 8 a 20
-     caracteres, con letras y números.". Con un usuario que ya existe: "Ya existe un usuario con ese nombre.". Guardar:
-     "Chofer registrado con el usuario …" y entrar con él: directo a Hojas de ruta.
-  7. Editar un chofer de antes, sin usuario: "Todavía no tiene usuario…" con los dos campos (si se dejan vacíos, guarda
-     igual). Completarlos: "Chofer guardado. Se creó el usuario …". Editar uno con usuario: "Usuario … Activo" como dato
-     fijo.
+     caracteres, con letras y números.". Con un usuario que ya existe: "Ya existe un usuario con ese nombre.". El e-mail
+     tiene asterisco: sin él, "Completá el e-mail."; con el de otro usuario (mirarlo en Listar usuarios → Ver detalle),
+     "Ese e-mail ya está registrado en otro usuario." debajo del campo. Guardar: "Chofer registrado con el usuario …";
+     en Listar usuarios → Ver detalle, el usuario nuevo tiene ese e-mail. Entrar con él: directo a Hojas de ruta.
+  7. Editar un chofer de antes, sin usuario: "Todavía no tiene usuario… También hace falta su e-mail…" con los dos
+     campos (si se dejan vacíos, guarda igual aunque no tenga e-mail). Completarlos sin e-mail: "Completá el e-mail.".
+     Con e-mail: "Chofer guardado. Se creó el usuario …". Editar uno con usuario: "Usuario … Activo" como dato fijo.
   8. Listar choferes → Ver detalle: "Acceso al sistema" con el usuario y su estado ("Todavía no tiene usuario." si no
      tiene). Inactivar y eliminar un chofer de prueba con usuario: en Gestionar usuarios, su usuario queda Inactivo.
 - [ ] **32.** El chofer marca la entrega y sube el remito en nuestro sistema aunque el viaje sea de Rukas: ver si trae un

@@ -9,7 +9,8 @@ var camposChofer = [
     { id: 'CUIL', requerido: 'Completá el CUIL.', regex: /^[0-9]{11}$/, mensaje: 'El CUIL tiene que tener 11 números.', max: 11, soloNumeros: true },
     { id: 'Celular', requerido: 'Completá el teléfono celular.', regex: /^[0-9]{10}$/, mensaje: 'El teléfono celular tiene que tener 10 números.', max: 10, soloNumeros: true },
     { id: 'Telefono', regex: /^[0-9]{10}$/, mensaje: 'El teléfono particular tiene que tener 10 números.', max: 10, soloNumeros: true },
-    { id: 'Email', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, mensaje: 'Revisá el e-mail: tiene que tener @ y un dominio, como nombre@correo.com.' },
+    // Obligatorio cuando se le crea el usuario (Rocío, 28/10): el usuario lleva este e-mail para recuperar su contraseña.
+    { id: 'Email', requeridoConAcceso: 'Completá el e-mail.', regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, mensaje: 'Revisá el e-mail: tiene que tener @ y un dominio, como nombre@correo.com.' },
     { id: 'Provincia', requerido: 'Seleccioná una provincia.' },
     { id: 'Localidad', requerido: 'Seleccioná una localidad.' },
     { id: 'Calle', requerido: 'Completá la calle.' },

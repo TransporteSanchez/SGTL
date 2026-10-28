@@ -280,16 +280,25 @@ assert.ok(validaciones.camposAcceso[1].regex.test('chofer2026') && !validaciones
     !validaciones.camposAcceso[1].regex.test('sinnumeros'), 'la contraseña, con la regla de siempre');
 const choferesApi = leer('WebApi_TransporteSanchez/Controllers/ChoferesController.cs');
 const altaChofer = choferesApi.slice(choferesApi.indexOf('public IHttpActionResult Post([FromBody] ChoferDto'), choferesApi.indexOf('// PUT: api/Choferes/{id}'));
-assert.ok(/ValidarAcceso\(db, choferDto\.Acceso, true\)/.test(altaChofer) && /db\.Database\.BeginTransaction\(\)/.test(altaChofer) &&
+assert.ok(/ValidarAcceso\(db, choferDto\.Acceso, choferDto\.Email, true, out emailUsuario\)/.test(altaChofer) && /db\.Database\.BeginTransaction\(\)/.test(altaChofer) &&
     /CrearUsuario\(db, chofer, choferDto\.Acceso/.test(altaChofer) && /tx\.Commit\(\);/.test(altaChofer),
     'al registrar, el chofer y su usuario van juntos');
-assert.ok(/Rol = "chofer",/.test(choferesApi) && /UPDATE dbo\.USUARIOS SET ChoferID = @chofer WHERE Usuario_ID = @usuario/.test(choferesApi),
-    'el usuario, con el rol Chofer y vinculado a su chofer');
+assert.ok(/Rol = "chofer",/.test(choferesApi) && /UPDATE dbo\.USUARIOS SET ChoferID = @chofer, Email = @email WHERE Usuario_ID = @usuario/.test(choferesApi),
+    'el usuario, con el rol Chofer, vinculado a su chofer y con su e-mail');
+// El e-mail del chofer es el de su usuario (Rocío, 28/10): obligatorio al crearlo, válido y sin repetir entre usuarios.
+assert.ok(/"Completá el e-mail\."/.test(choferesApi) && /RecuperoContrasena\.NormalizarEmail\(emailChofer\)/.test(choferesApi) &&
+    /SELECT COUNT\(\*\) FROM dbo\.USUARIOS WHERE Email = @email/.test(choferesApi) && /"Ese e-mail ya está registrado en otro usuario\."/.test(choferesApi),
+    'el e-mail del usuario: obligatorio, válido y sin repetir');
+const reglaEmail = validaciones.camposChofer.find(function (regla) { return regla.id === 'Email'; });
+assert.ok(!reglaEmail.requerido && reglaEmail.requeridoConAcceso === 'Completá el e-mail.', 'en pantalla, obligatorio solo cuando se crea el usuario');
 assert.ok(/"Ya existe un usuario con ese nombre\."/.test(choferesApi) && /ContrasenasSeguras\.CumplePolitica/.test(choferesApi), 'sin repetir y con la regla de contraseñas');
 assert.ok(/UPDATE dbo\.USUARIOS SET EstadoUsuario = 'Inactivo'.*WHERE ChoferID = @id/.test(choferesApi), 'al eliminar el chofer, su usuario queda inactivo');
 const pantallaChoferes = leer('gestion-choferes.html');
 assert.ok(/id="altaNombreUsuario"/.test(pantallaChoferes) && /id="altaContrasena"/.test(pantallaChoferes) && /id="editarUsuarioFijo"/.test(pantallaChoferes),
     'Gestionar choferes: Acceso al sistema al registrar y al editar');
+assert.ok(/<label for="altaEmail" class="form-label">E-mail <span class="text-danger">\*<\/span><\/label>/.test(pantallaChoferes) &&
+    /regla\.requeridoConAcceso && pideAcceso\(prefijo\)/.test(pantallaChoferes) && /const campos = \{ Email: 'Email',/.test(pantallaChoferes),
+    'el e-mail con asterisco al registrar, obligatorio si se crea el usuario y el repetido debajo del campo');
 const getHoja = api.slice(api.indexOf('public IHttpActionResult Get(string vista'), api.indexOf('// POST api/HojaDeRuta/Viajes/{id}/Iniciar'));
 assert.ok(/if \(!sesion\.PuedeVerTodas\) throw new AccesoDenegadoException\("No tenés permiso para ver la hoja de ruta de otro chofer\."\);/.test(getHoja),
     'el chofer no pide la de otro');

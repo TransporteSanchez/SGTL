@@ -13,7 +13,8 @@ quedan para otro día, a partir del relevamiento de la parte 1.
 ## 0. Antes de empezar
 
 - `git log --oneline -1` y anotalo. La API y Five Server levantados; Ctrl+F5. El login como admin lo hace Rocío.
-- Tienen que estar corridos `database/hoja-de-ruta/01_usuario_chofer.sql`, `database/hoja-de-ruta/02_rol_chofer.sql` y
+- Tienen que estar corridos `database/hoja-de-ruta/01_usuario_chofer.sql`, `database/hoja-de-ruta/02_rol_chofer.sql`,
+  `database/seguridad/02_recupero_contrasena.sql` (el e-mail de los usuarios) y
   `database/costos/01_galpon_kilometraje_y_gastos.sql` (preparación de la §39). Si Gestionar usuarios no muestra el campo
   "Chofer" al elegir el rol Chofer en Registrar usuario, o dice que no se pudieron cargar los choferes, pará y avisale a
   Rocío.
@@ -53,7 +54,8 @@ Configuración → Gestionar grupos y permisos.
    que se le asigne en la tanda 3: tiene que ser uno del equipo.
 2. Gestionar choferes → Registrar chofer, con datos verosímiles (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`): un nombre y un
    apellido comunes que no estén ya en la lista de la parte 1, DNI y CUIL inventados que cumplan el formato, el celular de
-   Rocío, e-mail `@example.com` y un domicilio que exista. En "Acceso al sistema", el nombre de usuario se propone solo
+   Rocío, e-mail `@example.com` (es obligatorio: se copia a su usuario y no puede ser el de otro usuario) y un domicilio que
+   exista. En "Acceso al sistema", el nombre de usuario se propone solo
    (dejalo así, salvo que Rocío diga otro) y la contraseña **la escribe Rocío**. Guardar → "Chofer registrado con el
    usuario …". Anotá el ID del chofer y el usuario.
 

@@ -54,11 +54,19 @@ namespace WebApi_TransporteSanchez.Controllers
         private static readonly Regex NombreUsuarioValido = new Regex("^[A-Za-z0-9_]{1,50}$");
 
         // null si está bien; si no, el error de su campo. Sin datos: error si es obligatorio, null si no (no se crea).
-        private static object ValidarAcceso(SGTLAuditContext db, AccesoDto acceso, bool obligatorio)
+        // El usuario lleva el e-mail del chofer (Rocío, 28/10): con él recupera su contraseña desde el login, así que es
+        // obligatorio y no puede ser el de otro usuario, como en Gestionar usuarios. Sale normalizado en email.
+        private static object ValidarAcceso(SGTLAuditContext db, AccesoDto acceso, string emailChofer, bool obligatorio, out string email)
         {
+            email = null;
             var nombre = acceso == null ? "" : (acceso.Nombre_Usuario ?? "").Trim();
             var contrasena = acceso == null ? "" : (acceso.Contraseña ?? "");
             if (nombre.Length == 0 && contrasena.Length == 0 && !obligatorio) return null;
+            if (string.IsNullOrWhiteSpace(emailChofer)) return new { PropertyName = "Email", ErrorMessage = "Completá el e-mail." };
+            try { email = RecuperoContrasena.NormalizarEmail(emailChofer); }
+            catch (ArgumentException) { return new { PropertyName = "Email", ErrorMessage = "Revisá el e-mail: tiene que tener @ y un dominio, como nombre@correo.com." }; }
+            if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.USUARIOS WHERE Email = @email", new SqlParameter("@email", email)).Single() > 0)
+                return new { PropertyName = "Email", ErrorMessage = "Ese e-mail ya está registrado en otro usuario." };
             if (nombre.Length == 0) return new { PropertyName = "Nombre_Usuario", ErrorMessage = "Completá el nombre de usuario." };
             if (!NombreUsuarioValido.IsMatch(nombre)) return new { PropertyName = "Nombre_Usuario", ErrorMessage = "Usá solo letras, números y guion bajo." };
             var minuscula = nombre.ToLower();
@@ -75,8 +83,9 @@ namespace WebApi_TransporteSanchez.Controllers
             return acceso != null && (!string.IsNullOrWhiteSpace(acceso.Nombre_Usuario) || !string.IsNullOrEmpty(acceso.Contraseña));
         }
 
-        // Dentro de la transacción del chofer: el usuario Chofer, activo y vinculado (USUARIOS.ChoferID, fuera del EDMX).
-        private static USUARIOS CrearUsuario(SGTLAuditContext db, CHOFERES chofer, AccesoDto acceso, string quien)
+        // Dentro de la transacción del chofer: el usuario Chofer, activo, vinculado y con el e-mail del chofer
+        // (USUARIOS.ChoferID y USUARIOS.Email, fuera del EDMX).
+        private static USUARIOS CrearUsuario(SGTLAuditContext db, CHOFERES chofer, AccesoDto acceso, string email, string quien)
         {
             var ahora = DateTime.Now;
             var fecha = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second);
@@ -95,8 +104,8 @@ namespace WebApi_TransporteSanchez.Controllers
             };
             db.Set<USUARIOS>().Add(usuario);
             db.SaveChanges();
-            db.Database.ExecuteSqlCommand("UPDATE dbo.USUARIOS SET ChoferID = @chofer WHERE Usuario_ID = @usuario",
-                new SqlParameter("@chofer", chofer.Chofer_ID), new SqlParameter("@usuario", usuario.Usuario_ID));
+            db.Database.ExecuteSqlCommand("UPDATE dbo.USUARIOS SET ChoferID = @chofer, Email = @email WHERE Usuario_ID = @usuario",
+                new SqlParameter("@chofer", chofer.Chofer_ID), new SqlParameter("@email", email), new SqlParameter("@usuario", usuario.Usuario_ID));
             return usuario;
         }
 
@@ -637,7 +646,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         }); // Retorna 400 si el DNI ya existe con un código específico
                     }
 
-                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, true);
+                    string emailUsuario;
+                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, choferDto.Email, true, out emailUsuario);
                     if (errorAcceso != null) return Content(HttpStatusCode.BadRequest, new List<object> { errorAcceso });
 
                     // Crear una nueva entidad CHOFERES y asignar valores desde ChoferDto
@@ -671,11 +681,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         using (var tx = db.Database.BeginTransaction())
                         {
                             db.SaveChanges();
-                            usuario = CrearUsuario(db, chofer, choferDto.Acceso, choferDto.Usu_Alta);
+                            usuario = CrearUsuario(db, chofer, choferDto.Acceso, emailUsuario, choferDto.Usu_Alta);
                             tx.Commit();
                         }
                         SGTLAuditContext.RegistrarEvento(connectionString, Recortar(choferDto.Usu_Alta, 20), "UPDATE", "USUARIOS",
-                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + " (usuario creado al registrar el chofer)");
+                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + ", Email: ninguno -> " + emailUsuario +
+                            " (usuario creado al registrar el chofer)");
                         return Ok(new { chofer.Chofer_ID, Usuario_Nombre = usuario.Nombre_Usuario });
                     }
                     catch (DbEntityValidationException ex)
@@ -744,9 +755,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 // Sin usuario todavía (los de antes): si completaron el acceso, se le crea con el chofer.
                 bool crearUsuario = PideAcceso(choferDto.Acceso) && UsuarioDelChofer(db, id) == null;
+                string emailUsuario = null;
                 if (crearUsuario)
                 {
-                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, true);
+                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, choferDto.Email, true, out emailUsuario);
                     if (errorAcceso != null) return Content(HttpStatusCode.BadRequest, new List<object> { errorAcceso });
                 }
 
@@ -774,12 +786,13 @@ namespace WebApi_TransporteSanchez.Controllers
                     using (var tx = db.Database.BeginTransaction())
                     {
                         db.SaveChanges(); // Guardar cambios en la base de datos
-                        if (crearUsuario) usuario = CrearUsuario(db, chofer, choferDto.Acceso, choferDto.Usu_Modi);
+                        if (crearUsuario) usuario = CrearUsuario(db, chofer, choferDto.Acceso, emailUsuario, choferDto.Usu_Modi);
                         tx.Commit();
                     }
                     if (usuario != null)
                         SGTLAuditContext.RegistrarEvento(connectionString, Recortar(choferDto.Usu_Modi, 20), "UPDATE", "USUARIOS",
-                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + " (usuario creado al editar el chofer)");
+                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + ", Email: ninguno -> " + emailUsuario +
+                            " (usuario creado al editar el chofer)");
                     return Ok(new { chofer.Chofer_ID, Usuario_Nombre = usuario == null ? null : usuario.Nombre_Usuario });
                 }
                 catch (DbEntityValidationException ex)

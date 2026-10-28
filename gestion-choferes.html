@@ -200,9 +200,10 @@
                                     <div class="form-text">Código de área sin 0</div>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label for="altaEmail" class="form-label">E-mail</label>
+                                    <label for="altaEmail" class="form-label">E-mail <span class="text-danger">*</span></label>
                                     <input type="email" id="altaEmail" class="form-control" placeholder="nombre@correo.com" autocomplete="off">
                                     <div class="invalid-feedback"></div>
+                                    <div class="form-text">Con este e-mail recupera la contraseña de su usuario.</div>
                                 </div>
                             </div>
 
@@ -349,7 +350,8 @@
                             <div class="sgtl-bloque-titulo mt-4">Acceso al sistema</div>
                             <div class="sgtl-dato-fijo d-none" id="editarUsuarioFijo"></div>
                             <div id="editarAccesoCampos">
-                                <p class="form-text mt-0">Todavía no tiene usuario: completalo para que pueda entrar a Hojas de ruta.</p>
+                                <p class="form-text mt-0">Todavía no tiene usuario: completalo para que pueda entrar a Hojas de ruta. También hace
+                                    falta su e-mail: con él recupera la contraseña.</p>
                                 <div class="row g-3">
                                     <div class="col-12 col-md-6">
                                         <label for="editarNombreUsuario" class="form-label">Nombre de usuario</label>
@@ -636,7 +638,7 @@
         function errorCampoChofer(prefijo, regla) {
             const campo = campoChofer(prefijo, regla.id);
             const valor = campo.value.trim();
-            if (!valor) return regla.requerido || '';
+            if (!valor) return regla.requerido || (regla.requeridoConAcceso && pideAcceso(prefijo) ? regla.requeridoConAcceso : '');
             if (regla.regex && !regla.regex.test(valor)) return regla.mensaje;
             return campo.dataset.errorRemoto || '';
         }
@@ -957,9 +959,9 @@
                 }, 'No se pudo guardar el chofer. Revisá la conexión y probá de nuevo.');
                 guardado = true;
             } catch (error) {
-                // El acceso que rechaza la API (usuario repetido, contraseña): debajo de su campo (§6.3).
+                // El acceso que rechaza la API (usuario o e-mail repetido, contraseña): debajo de su campo (§6.3).
                 const lista = error.xhr && Array.isArray(error.xhr.responseJSON) ? error.xhr.responseJSON : [];
-                const campos = { Nombre_Usuario: 'NombreUsuario', 'Contraseña': 'Contrasena' };
+                const campos = { Email: 'Email', Nombre_Usuario: 'NombreUsuario', 'Contraseña': 'Contrasena' };
                 const deAcceso = lista.filter(function (e) { return e && campos[e.PropertyName]; });
                 if (deAcceso.length) {
                     deAcceso.forEach(function (e) {
