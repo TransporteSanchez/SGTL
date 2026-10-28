@@ -69,6 +69,9 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
   tienen que estar aprobadas `viaje_cancelado` y `viaje_desasignado`: se revisa antes de la ronda 6 (sección 7).
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
+- **Five Server en el 5502** (desde el 28/10, como en la Mac y en la máquina de Facu): después del `pull`, cerrarlo y
+  volverlo a abrir; abajo, en la barra de VS Code, tiene que decir 5502. El sistema se abre en `http://localhost:5502`
+  y hay que volver a iniciar sesión una vez (la sesión se guarda por puerto).
 - **Usuarios** (el login lo hace Rocío):
   - un administrador;
   - uno con rol Usuario que solo tenga "Listar usuarios";
@@ -83,10 +86,9 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
   - Si algún día falta, Rocío registra en Configuración → Gestionar e-mail **un perfil nuevo con los mismos datos del que
     ya usan** (servidor, puerto, remitente, usuario y contraseña, que escribe ella), con "Conexión segura (SSL)" tildada, y
     lo elige en "Perfil SMTP asignado".
-  - **En la VM el front está en el puerto 5500**: en el bloque "Perfil para recupero de contraseña", "Dirección del login"
-    tiene que decir `http://localhost:5500/Login.html` (con HTTP solo se acepta localhost), y Guardar. Con la de 5502, el
-    enlace del correo no abre nada en la VM. Es una sola dirección para todo el equipo: avisarle a Facu, que la usa desde
-    su máquina.
+  - **La "Dirección del login" queda como está**, `http://127.0.0.1:5502/Login.html`: con la VM en el 5502, el enlace
+    del correo abre su login (pide iniciar sesión aparte, porque `127.0.0.1` y `localhost` son dos direcciones para el
+    navegador). Es una sola dirección para todo el equipo y es la que usa Facu.
   - El correo se abre **en la VM**: el enlace lleva a localhost y desde el celular no abre.
   - Una casilla real del equipo para recibir los enlaces (`@example.com` no recibe), que no sea la de Integra Analistas: un
     correo que Gmail se manda a sí mismo puede no aparecer en la bandeja de entrada. Rocío dice cuál. Cada usuario
@@ -95,9 +97,9 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
   - Al 28/10, solo 1 de los 14 usuarios activos tiene e-mail. Los que no tienen entran igual, pero no pueden recuperar la
     contraseña y, al editarlos en Gestionar usuarios, el e-mail es obligatorio.
 - **Google (km de un recorrido nuevo, tiempo estimado, mapas y km al galpón):** la clave de Google acepta
-  `localhost:5502`, que en la VM no existe. Si en el 5500 no responde (los km no se calculan o la consola dice
-  `RefererNotAllowedMapError`), anotalo una vez como NO PROBADO, seguí con los km a mano y no lo repitas en cada paso: esos
-  pasos se prueban en la Mac.
+  `localhost:5502`. Con la VM en el 5502 y el sistema abierto como `http://localhost:5502`, tiene que andar. Si igual no
+  responde (los km no se calculan o la consola dice `RefererNotAllowedMapError`), anotalo una vez como falla, seguí con
+  los km a mano y no lo repitas en cada paso.
 - **WhatsApp en las rondas 1 a 5:** registrar o editar un viaje con chofer intenta mandarle la hoja de ruta. Si el token
   del día no está, el aviso dice que no se pudo enviar: no es una falla, anotalo una vez. WhatsApp se prueba en la ronda 6.
 - **Ronda 3:** Rocío dice qué tipos de comprobante se pueden activar o desactivar, con qué cliente de prueba se emite y
@@ -296,8 +298,8 @@ lo que crees, para la limpieza). Con tarifa fija y recorridos de hasta 130 km pa
 
 1. **§40, punto 7, pasos 1 a 6** (M1, M2, M3, M11 y M14, con los textos 12 a 14 de la §41). Con la tabla de prueba, no
    con las reales; si hace falta corregir una tabla con viajes, Rocío dice cuál.
-2. **§41, punto 36 (tiempo estimado de Google)**, en Registrar viaje y en Registrar presupuesto. Si Google no responde en
-   el 5500, NO PROBADO (sección 0).
+2. **§41, punto 36 (tiempo estimado de Google)**, en Registrar viaje y en Registrar presupuesto. Si Google no responde, ver
+   la sección 0.
 3. Montos: escribir "12x" en un monto de Gestionar tarifas y en uno de cuenta corriente → "Escribí el importe como
    1.234,56." debajo, sin borrar lo escrito (F5 de la tanda 1).
 
@@ -374,12 +376,12 @@ administración, en la computadora.
 
 1. **§36, "Probar en la VM", pasos 4 a 11**, con lo que cambió desde que se escribió: el chofer no va en un grupo (tiene
    el rol Chofer y su usuario se crea desde Gestionar choferes: los pasos 2 y 3 son la parte C), el menú dice "Hojas de
-   ruta" y el paso 11 es en el 5500. El 0 (script) y el 1 (compilar) ya están.
+   ruta" y el paso 11 es con `localhost:5502`. El 0 (script) y el 1 (compilar) ya están.
 2. **Los ajustes A a F de la §36.**
 3. **§41, punto 4 (Hojas de ruta para administración, en solo lectura):** pasos 1 a 4.
 4. **§41, punto 33 (iniciar solo el día del viaje; gastos hasta 2 días después de la entrega; "Cargar gasto" de
    administración):** el "Cómo probarlo en la VM" completo.
-5. **§41, punto 35 (el recorrido arranca en el galpón).** Si Google no responde en el 5500, NO PROBADO (sección 0).
+5. **§41, punto 35 (el recorrido arranca en el galpón).** Si Google no responde, ver la sección 0.
 6. **[cruce]** Un viaje cancelado en la ronda 2: en Anteriores, rojo, con "Este viaje se canceló." y sin botones. Uno
    En viaje → "Registrar sin carga" (§41, punto 10, paso 4), si no se hizo en la ronda 2.
 7. **[cruce] La sesión de Facu:** el chequeo de cada minuto no tiene que sacar al chofer mientras carga una entrega o un

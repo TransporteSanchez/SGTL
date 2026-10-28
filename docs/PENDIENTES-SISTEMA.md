@@ -21,7 +21,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 1.7 | Camiones / Choferes: jQuery local en lugar de jsdelivr `latest` (3.2.1) | Hecho | **Pusheado** (`19a0ea4`) | **OK en VM (17/10)** |
 | 1.8 | API: Newtonsoft.Json 12.0.2 → 13.0.1 | Hecho | **Pusheado** (`11d2489`) | **OK en VM (17/10)**: compila, login y guardado de viajes |
 | 2 | Hora UTC / Argentina (`GETDATE`) | **No hecho** | — | — |
-| 3.2 | Puerto Live Server 5500 vs 5502 | **No hecho** | — | — |
+| 3.2 | Puerto Live Server 5500 vs 5502 | **Hecho (28/10):** la VM pasa al 5502 (`port` en `fiveserver.config.js`), como Live Server en la Mac y en la máquina de Facu | **Pusheado** (28/10) | Reabrir Five Server después del `pull`: tiene que decir 5502; el enlace del recupero y Google andan en la VM |
 | 3.3 | Password de DB en `Web.config` en git | **No hecho** | — | Coordinar equipo |
 | 3.4 | Direcciones mal geocodificadas | **Corregido el 17/10** (ver F14 en §8) | — | Corregir en Orígenes/destinos |
 | 3.5 | `bin`/`obj` untracked en la VM | **No hecho** | — | Diagnosticar en VM |
@@ -208,7 +208,7 @@ Facturación ya usa `FechaArgentina()` para comprobantes.
 
 | # | Qué | Qué hacer | Criticidad demo |
 |---|---|---|---|
-| 3.2 | Puerto 5500 vs 5502 | Unificar; limpiar referrers de la clave Maps | Baja (funciona con 5500) |
+| 3.2 | Puerto 5500 vs 5502 | **Hecho (28/10):** todos en el 5502 (`fiveserver.config.js`). Queda limpiar los referrers de la clave Maps | Baja |
 | 3.3 | Password DB en `Web.config` en git | Sacar del repo + **rotar password Azure**. Repo GitHub **privado** → no urgente para demo | Media (seguridad) |
 | 3.4 | “claros del bosque” → Córdoba; “Sede Temperley” → Paso del Rey | Corregir datos en Orígenes y destinos | Alta si se demuestran esos lugares |
 | 3.5 | `bin`/`obj` como untracked en VM | En VM: `git check-ignore -v WebApi_TransporteSanchez/bin`. No commitear esas carpetas | Baja |

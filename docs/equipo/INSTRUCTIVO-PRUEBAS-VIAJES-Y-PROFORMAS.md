@@ -14,7 +14,7 @@ Al final hay un **guion para la presentación** con el orden sugerido y qué con
 
 1. `git pull` de tu rama (las cuatro están iguales).
 2. Compilar la API en Visual Studio y levantarla (IIS Express, `http://localhost:50222/api`).
-3. Abrir el front con Live Server (en la VM es el puerto 5500) e iniciar sesión.
+3. Abrir el front con Live Server (en la VM, Five Server en el puerto 5502) e iniciar sesión.
 4. Hacer **Ctrl+F5** en cada pantalla la primera vez, para que tome el JS nuevo.
 
 ### Reglas para no romper datos (la base es compartida)
