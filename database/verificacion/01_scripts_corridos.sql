@@ -6,19 +6,26 @@
    ruta 01 y 02). No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
    columna, una restricción, un disparador). Al sumar scripts nuevos, agregar su fila acá.
 
-   Cómo correrlo (SSMS, base Transporte_Sanchez): ejecutar entero. Devuelve dos tablas:
+   Cómo correrlo (SSMS, base Transporte_Sanchez): ejecutar entero. Devuelve tres tablas:
      1. Un renglón por script: "Corrido", "Falta correrlo" o "A medias" (está una parte: revisar antes de seguir).
      2. Datos que ayudan a decidir: recibos con el acento mal escrito (script 18), qué manual está publicado
-        (documentación 02), si hay un perfil de recupero de contraseña asignado y cuántos usuarios tienen e-mail.
-   Los scripts de cada módulo se corren en orden (11 antes que 12, y así): si uno falta, los siguientes también.
+        (documentación 02), qué perfil manda el recupero de contraseña y cuántos usuarios tienen e-mail.
+     3. Cómo están guardadas las restricciones de cuenta corriente, para revisarlas si algo da "A medias".
+   Cuenta corriente 13, 14, 15 y 17 reescriben las mismas restricciones, cada uno sobre el anterior: correr solo los que
+   dicen "Falta correrlo", en orden, y NUNCA volver a correr uno anterior a otro que ya está (el 13 o el 14 después del 15,
+   el 15 después del 17): deja la versión vieja y deshace lo que agregó el posterior.
 */
 SET NOCOUNT ON;
 
 IF DB_NAME() <> N'Transporte_Sanchez'
     THROW 54900, 'Conectarse a la base Transporte_Sanchez antes de ejecutar.', 1;
 
--- Las definiciones de las restricciones que cambian de un script a otro (SQL Server las guarda normalizadas: un
--- NOT IN ('A','B') queda como [x]<>'A' AND [x]<>'B').
+-- Las definiciones de las restricciones que cambian de un script a otro. SQL Server las guarda reescritas (un NOT IN
+-- puede quedar como NOT (... OR ...) o como <> ... AND <>): por eso se buscan los tipos que nombra cada versión
+-- ('FAC', 'REC', 'ND') y no los operadores. Lo que nombra cada una:
+--   CK_CC_MOV_Impacto     02: 'FAC' sin negar · 13: NOT/<> sin 'FAC' · 15: NOT/<> y 'FAC'
+--   CK_CC_CP_Tipo         02: 'FAC' · 14: 'ND' sin 'FAC'
+--   CK_CC_COMP_Referencia 02 y 10: sin 'REC' · 14: 'REC' sin Impacto · 15: Impacto sin 'FAC' · 17: Impacto y 'FAC'
 DECLARE @MovImpacto nvarchar(max) = (SELECT definition FROM sys.check_constraints
     WHERE parent_object_id = OBJECT_ID(N'dbo.CUENTA_CORRIENTE_MOVIMIENTOS') AND name = N'CK_CC_MOV_Impacto');
 DECLARE @CpTipo nvarchar(max) = (SELECT definition FROM sys.check_constraints
@@ -41,16 +48,16 @@ UNION ALL SELECT 2, N'cuenta-corriente/12_tipos_por_letra',
                       AND name = N'UQ_FACTURACION_TIPOS_COMPROBANTE_TipoLetra') THEN 1 ELSE 0 END,
     2, N'FACTURACION_TIPOS_COMPROBANTE.FactTipo_ID y la clave única por tipo y letra'
 UNION ALL SELECT 3, N'cuenta-corriente/13_comprobantes_directos_configurables',
-    CASE WHEN CHARINDEX(N'<>', @MovImpacto) > 0 OR CHARINDEX(N'NOT IN', @MovImpacto) > 0 THEN 1 ELSE 0 END,
+    CASE WHEN CHARINDEX(N'NOT', @MovImpacto) > 0 OR CHARINDEX(N'<>', @MovImpacto) > 0 THEN 1 ELSE 0 END,
     1, N'CK_CC_MOV_Impacto admite tipos de deuda que no son FAC ni ND (el 15 la vuelve a cambiar)'
 UNION ALL SELECT 4, N'cuenta-corriente/14_comprobantes_desde_proforma_configurables',
-    CASE WHEN CHARINDEX(N'<>', @CpTipo) > 0 OR CHARINDEX(N'NOT IN', @CpTipo) > 0 THEN 1 ELSE 0 END +
-    CASE WHEN CHARINDEX(N'<>''REC''', @CompReferencia) > 0 OR CHARINDEX(N'NOT IN', @CompReferencia) > 0 THEN 1 ELSE 0 END,
+    CASE WHEN CHARINDEX(N'''ND''', @CpTipo) > 0 AND CHARINDEX(N'''FAC''', @CpTipo) = 0 THEN 1 ELSE 0 END +
+    CASE WHEN CHARINDEX(N'''REC''', @CompReferencia) > 0 THEN 1 ELSE 0 END,
     2, N'CK_CC_CP_Tipo admite otros tipos además de FAC y CK_CC_COMP_Referencia, referencias a otros tipos'
 UNION ALL SELECT 5, N'cuenta-corriente/15_credito_interno_cancelatorio',
     CASE WHEN EXISTS (SELECT 1 FROM sys.triggers WHERE object_id = OBJECT_ID(N'dbo.TR_CC_MOV_ImpactoComprobante', N'TR') AND is_disabled = 0) THEN 1 ELSE 0 END +
     CASE WHEN EXISTS (SELECT 1 FROM sys.triggers WHERE object_id = OBJECT_ID(N'dbo.TR_CC_COMP_ImpactoMovimientos', N'TR') AND is_disabled = 0) THEN 1 ELSE 0 END +
-    CASE WHEN CHARINDEX(N'<>''FAC''', @MovImpacto) > 0 OR CHARINDEX(N'NOT IN (''NC'',''REC'',''FAC''', @MovImpacto) > 0 THEN 1 ELSE 0 END +
+    CASE WHEN CHARINDEX(N'''FAC''', @MovImpacto) > 0 AND (CHARINDEX(N'NOT', @MovImpacto) > 0 OR CHARINDEX(N'<>', @MovImpacto) > 0) THEN 1 ELSE 0 END +
     CASE WHEN CHARINDEX(N'Impacto', @CompReferencia) > 0 THEN 1 ELSE 0 END,
     4, N'Los disparadores TR_CC_MOV_ImpactoComprobante y TR_CC_COMP_ImpactoMovimientos, y las restricciones de impacto y referencia'
 UNION ALL SELECT 6, N'cuenta-corriente/16_editar_identidad_tipos_comprobante',
@@ -58,7 +65,7 @@ UNION ALL SELECT 6, N'cuenta-corriente/16_editar_identidad_tipos_comprobante',
     CASE WHEN EXISTS (SELECT 1 FROM sys.triggers WHERE object_id = OBJECT_ID(N'dbo.TR_CC_COMP_TipoReferencia', N'TR') AND is_disabled = 0) THEN 1 ELSE 0 END,
     2, N'TIPOS_COMPROBANTE.EsElectronico y el disparador TR_CC_COMP_TipoReferencia'
 UNION ALL SELECT 7, N'cuenta-corriente/17_debito_interno_referencia',
-    CASE WHEN CHARINDEX(N'<>''FAC''', @CompReferencia) > 0 OR CHARINDEX(N'NOT IN (''FAC''', @CompReferencia) > 0 THEN 1 ELSE 0 END,
+    CASE WHEN CHARINDEX(N'Impacto', @CompReferencia) > 0 AND CHARINDEX(N'''FAC''', @CompReferencia) > 0 THEN 1 ELSE 0 END,
     1, N'CK_CC_COMP_Referencia admite un débito interno con referencia a otro comprobante interno'
 UNION ALL SELECT 8, N'seguridad/02_recupero_contrasena',
     CASE WHEN COL_LENGTH(N'dbo.USUARIOS', N'Email') IS NOT NULL THEN 1 ELSE 0 END +
@@ -98,7 +105,7 @@ FROM @Scripts
 ORDER BY Orden;
 
 -- Los datos se leen con SQL dinámico: si falta una columna o una tabla, no se rompe todo el diagnóstico.
-DECLARE @Datos TABLE (Orden int, Dato nvarchar(120), Valor nvarchar(400));
+DECLARE @Datos TABLE (Orden int, Dato nvarchar(120), Valor nvarchar(max));
 
 -- Script 18: recibos con "Cobranza sin imputación" mal escrito (el texto exacto que corrige ese script).
 INSERT INTO @Datos
@@ -121,13 +128,22 @@ SELECT 2, N''documentacion/02: manual publicado'',
                            ELSE N''Otro PDF, de '' + CAST(DATALENGTH(Pdf) AS nvarchar(20)) + N'' bytes (el script no está aplicado)'' END
                FROM dbo.MANUAL_USUARIO WHERE ManualUsuario_ID = 1), N''Ninguno'');';
 
--- E-mail 07: el perfil de recupero de contraseña (sin datos del servidor ni credenciales).
+-- E-mail 07: qué perfil manda el recupero de contraseña, desde qué casilla y a qué login lleva el enlace. Dice si tiene
+-- contraseña guardada, nunca cuál es.
 IF COL_LENGTH(N'dbo.CONFIGURACION_EMAIL_MODULO', N'UrlLogin') IS NOT NULL
+   AND COL_LENGTH(N'dbo.EmailServidor', N'CredentialFromMailPassProtegida') IS NOT NULL
     INSERT INTO @Datos
     EXEC sys.sp_executesql N'
 SELECT 3, N''Perfil de recupero de contraseña'',
-       ISNULL((SELECT TOP (1) N''Asignado al perfil '' + CAST([Service] AS nvarchar(10)) + N'', con el login '' + ISNULL(UrlLogin, N''(sin dirección)'')
-               FROM dbo.CONFIGURACION_EMAIL_MODULO WHERE Modulo = ''RECUPERO_CONTRASENA''),
+       ISNULL((SELECT TOP (1) N''Perfil '' + CAST(m.[Service] AS nvarchar(10)) + N'' ('' + ISNULL(s.[Name], N''sin nombre'')
+                   + N''): manda desde '' + ISNULL(s.CredentialFromMailAddres, N''(sin remitente)'')
+                   + N'' por '' + ISNULL(s.SmtpHost, N''(sin servidor)'') + N'':'' + ISNULL(CAST(s.SmtpPort AS nvarchar(10)), N''?'')
+                   + CASE WHEN s.UsaSsl = 1 THEN N'', con SSL'' ELSE N'', SIN SSL (el recupero no lo acepta)'' END
+                   + CASE WHEN s.CredentialFromMailPassProtegida IS NULL THEN N'', SIN CONTRASEÑA GUARDADA'' ELSE N'''' END
+                   + N''. El enlace lleva a '' + ISNULL(m.UrlLogin, N''(sin dirección)'')
+               FROM dbo.CONFIGURACION_EMAIL_MODULO m
+               LEFT JOIN dbo.EmailServidor s ON s.[Service] = m.[Service]
+               WHERE m.Modulo = ''RECUPERO_CONTRASENA''),
               N''Sin asignar: hay que registrar un perfil y asignarlo en Gestionar e-mail'');';
 
 -- Seguridad 02: cuántos usuarios activos tienen e-mail (sin e-mail no pueden recuperar la contraseña).
@@ -147,3 +163,9 @@ SELECT 5, N''hoja-de-ruta/02: cuentas de choferes con rol user'',
 FROM dbo.USUARIOS WHERE ChoferID IS NOT NULL AND LOWER(LTRIM(RTRIM(ISNULL(Rol, '''')))) = ''user'';';
 
 SELECT Dato, Valor FROM @Datos ORDER BY Orden;
+
+-- Cómo quedaron guardadas las restricciones que reescriben 13, 14, 15 y 17 (si algo da "A medias", pasar esta tabla).
+SELECT OBJECT_NAME(parent_object_id) AS Tabla, name AS Restriccion, definition AS Definicion
+FROM sys.check_constraints
+WHERE name IN (N'CK_CC_MOV_Impacto', N'CK_CC_CP_Tipo', N'CK_CC_COMP_Referencia')
+ORDER BY name;

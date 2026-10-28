@@ -32,8 +32,11 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
 
 - **Scripts de Facu en la base.** La API integrada ya lee `USUARIOS.Email` y `USUARIOS.VersionSesion`: si
   `database/seguridad/02_recupero_contrasena.sql` no está corrido, **el login falla**. Rocío corre
-  `database/verificacion/01_scripts_corridos.sql` (solo lectura): dice script por script si está corrido. Los que falten se
-  corren en este orden: `cuenta-corriente/11` a `17`, `seguridad/02` y `email/07`. El `cuenta-corriente/18` (corrige
+  `database/verificacion/01_scripts_corridos.sql` (solo lectura): dice script por script si está corrido. Se corren
+  **solo los que dicen "Falta correrlo"**, en este orden: `cuenta-corriente/11` a `17`, `seguridad/02` y `email/07`. **Nunca
+  se vuelve a correr uno que ya está**: el 13, el 14, el 15 y el 17 reescriben las mismas restricciones, y correr uno viejo
+  encima de uno nuevo (el 13 o el 14 después del 15) deshace lo que agregó el nuevo. Si alguno da "A medias", se le pasa a
+  Claude la tercera tabla del diagnóstico antes de correr nada. El `cuenta-corriente/18` (corrige
   acentos de recibos viejos) y `documentacion/02` (manual) son de datos y terminan en ROLLBACK: se deciden aparte (el
   diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
   decir "Corrido" en todos.
@@ -47,13 +50,22 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   - la cuenta del chofer de prueba de `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`, si ya existe (si no, se crea en la
     parte H).
 - **Recupero de contraseña:** el recupero manda el correo con un perfil propio, que no puede ser el mismo de Facturación
-  ni de Presupuestos (la API y la base lo impiden). Se usa la misma cuenta de siempre: Rocío registra en Configuración →
-  Gestionar e-mail **un perfil nuevo con los mismos datos del que ya usan** (servidor, puerto, remitente, usuario y
-  contraseña, que escribe ella) y con "Conexión segura (SSL)" tildada. Después, en el bloque "Perfil para recupero de
-  contraseña", lo elige en "Perfil SMTP asignado" y en "Dirección del login" pone la de la VM,
-  `http://localhost:5500/Login.html` (con HTTP solo se acepta localhost), y Guardar. El diagnóstico de arriba dice si quedó
-  asignado. Además, una casilla real del equipo para recibir los enlaces (`@example.com` no recibe):
-  Rocío dice cuál.
+  ni de Presupuestos (la API y la base lo impiden). Al 28/10 ya hay uno asignado (el perfil 3, con el enlace a
+  `http://127.0.0.1:5502/Login.html`, el Live Server de una Mac). El diagnóstico dice desde qué casilla manda, si tiene SSL
+  y si tiene la contraseña guardada.
+  - Si manda desde la cuenta de siempre (Integra Analistas), con SSL y con contraseña, se usa ese. Si no, Rocío registra en
+    Configuración → Gestionar e-mail **un perfil nuevo con los mismos datos del que ya usan** (servidor, puerto, remitente,
+    usuario y contraseña, que escribe ella), con "Conexión segura (SSL)" tildada, y lo elige en "Perfil SMTP asignado".
+  - **En la VM el front está en el puerto 5500**: en el bloque "Perfil para recupero de contraseña", "Dirección del login"
+    tiene que decir `http://localhost:5500/Login.html` (con HTTP solo se acepta localhost), y Guardar. Con la de 5502, el
+    enlace del correo no abre nada en la VM. Es una sola dirección para todo el equipo: avisarle a Facu, que la usa desde
+    su máquina.
+  - El correo se abre **en la VM**: el enlace lleva a localhost y desde el celular no abre.
+  - Una casilla real del equipo para recibir los enlaces (`@example.com` no recibe): Rocío dice cuál. Cada usuario necesita
+    un e-mail distinto; si es de Gmail, sirve agregarle `+algo` antes de la arroba (`nombre+admin@gmail.com`,
+    `nombre+lista@gmail.com`): llegan todos a la misma casilla.
+  - Al 28/10, solo 1 de los 14 usuarios activos tiene e-mail. Los que no tienen entran igual, pero no pueden recuperar la
+    contraseña y, al editarlos en Gestionar usuarios, el e-mail es obligatorio.
 - **Ronda 3:** Rocío dice qué tipos de comprobante se pueden activar o desactivar, con qué cliente de prueba se emite y
   si los números que se consuman (FC, C, D, recibos) le sirven. Anotá **el estado inicial de cada tipo** que toques: al
   final tiene que quedar igual. Facu y Fede, avisados de que durante la ronda 3 cambia la configuración de facturación.
