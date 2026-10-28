@@ -34,7 +34,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 12 | Merge de presupuestos de Facu (`4a84bb2`) en `rocionuvoli` + botones "+" | Hecho (18/10); F1 corregida | **Pusheado** (`4635408`) | **OK en VM (18/10)**, F1 verificada (ver §12) |
 | 13 | Mejoras de la ronda del 18/10 (viajes, presupuestos, proformas) | Primera tanda **OK en VM**; segunda tanda (C4 y mejoras del reporte) hecha | **Pusheado** (`bb418bc`) | Segunda tanda: en la ronda única (ver §13 y §14) |
 | 14 | Merge de Documentación de Facu (`04a394b`): manual de usuario e informes de versión | Hecho (19/10); base verificada | **Pusheado** (`e3359ea`) | En la ronda única (ver §14) |
-| 15 | Mejoras de la meet del 18/10: reenviar WhatsApp, aviso al eliminar viaje, cambiar contraseña con código por WhatsApp, sacar `repositorio.zip` | **No hecho** (solo anotado) | — | Ver §15 |
+| 15 | Mejoras de la meet del 18/10: reenviar WhatsApp, cancelar/eliminar con WA, cambio de chofer con WA, cambiar contraseña con código por WhatsApp, sacar `repositorio.zip` | Parcial: lo de WhatsApp en viajes lo hizo Fede y se integró el 28/10 (§58); faltan las plantillas en Meta, el código por WhatsApp y el zip | Merge de `fedemontenegro` (28/10) | Ver §15 y §58 |
 | 16 | Diagramas de los flujos para que Facu y Fede prueben y para la presentación con la profesora | **Primera versión hecha (19/10):** viajes y proformas (propia y Rukas) + instructivo de prueba y guion | Commit del 19/10 | Ver §16 |
 | 17 | Pasar `rocionuvoli` a `facugodoy`, `fedemontenegro` y `main` | **Hecho (19/10):** las cuatro ramas iguales. `fedemontenegro` se pisó con el OK de Fede | **Pusheado** | Fede tiene que resetear su copia local (ver §17) |
 | 18 | Merge de Facu del 20/10 (`e701a4f`): concepto obligatorio en proformas, recibos y comprobantes, permisos agrupados y usuarios por grupo | Hecho (20/10); Grupos y permisos con nuestro diseño y el comportamiento de Facu | **Pusheado** a las cuatro ramas (`2a23274`, 20/10, antes de terminar la prueba) | Script `database/menu/02_…` **aplicado (20/10)**. **Probado en parte (20/10):** lo probado OK; falla el modo oscuro de cuenta corriente (de antes); falta lo que genera numeración (ver §18) |
@@ -58,7 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
-| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos y las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) | Anotado | — | Ver §40 |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas) y los gastos del chofer en un viaje que no se hace (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
 | 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | Commit del 27/10, sin pushear | **Pendiente:** correr `06` y `07` antes de recompilar; pasos en §43 |
@@ -75,6 +75,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
+| 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | Correr `whatsapp/02`, recompilar y la parte J de la ronda 2 del instructivo (§58) |
 
 **Tanda de `facugodoy` del 27/10:** cambios pendientes incluidos en commits por tema; API compilada y 76 pruebas Node correctas. Los scripts SQL se versionaron sin ejecutarlos; las pruebas en VM y las aplicaciones de base indicadas en cada sección siguen pendientes.
 
@@ -763,12 +764,12 @@ Si `TablaManual` o `TablaVersiones` dan `NULL`, correr `database/documentacion/0
 
 ---
 
-## 15. Mejoras de la meet del 18/10 — NO HECHAS (solo anotadas, 19/10)
+## 15. Mejoras de la meet del 18/10 — LAS DE WHATSAPP EN VIAJES, INTEGRADAS (28/10, §58); EL RESTO, ANOTADO
 
 Surgieron en la meet del equipo para ver cómo quedó el proyecto. Las de WhatsApp tocan el módulo de Fede: **avisarle antes de hacerlas**.
 
-- [ ] **Viajes: acción "Reenviar WhatsApp"** (`gestion-viajes.html`, `ViajesController.cs`; módulo de Fede). Botón de fila en Gestionar viajes que le vuelve a mandar al chofer del viaje el mismo WhatsApp que se manda al confirmarlo. Sirve si el envío original falló o si hay que recordárselo. A definir: en qué estados se habilita (¿solo con chofer asignado y viaje no finalizado?), confirmación antes de mandar ("¿Reenviar el WhatsApp a <chofer>?") y que quede registrado el reenvío. Usa la plantilla que ya existe.
-- [ ] **Viajes: avisar al chofer por WhatsApp cuando se elimina el viaje** (módulo de Fede). **No es para hacer ya.** Al eliminar un viaje que ya se le había avisado al chofer, mandarle automáticamente un mensaje de que el viaje no se hace. Necesita una **plantilla nueva aprobada en Meta** (los mensajes iniciados por la empresa solo salen con plantilla). Ver también qué pasa si se cambia el chofer de un viaje ya avisado (¿avisar al anterior?).
+- [x] **Viajes: acción "Reenviar WhatsApp"** (Fede, 27/10; `gestion-viajes.html`, `ViajesController.cs`). Botón de fila al lado de los envíos; confirma, nombra al chofer y llama a `POST /api/Viajes/{id}/WhatsApp`. Solo con chofer y con el viaje Registrado o En viaje (Rocío, 28/10). Integrado el 28/10: ver §58.
+- [x] **Viajes: WhatsApp al cancelar, eliminar y cambiar el chofer** (Fede, 27/10). El Cancelado es el nuestro del 27/10 (desde Cambiar estado, con motivo y reactivación): Fede había hecho otro en paralelo y al integrar quedó el nuestro con sus avisos. Plantilla `viaje_cancelado` al cancelar o eliminar; al reactivar, la hoja de ruta de nuevo; al cambiar el chofer, `viaje_desasignado` al anterior y `viaje_asignado` al nuevo. Script `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`. **Falta en Meta:** crear y aprobar las plantillas `viaje_cancelado` y `viaje_desasignado`, con **6 variables** cada una (nombre del chofer, N° de viaje, origen, destino, fecha y hora de inicio, como dice Configuración de WhatsApp), y que Rocío corra el script. Ver §58.
 - [x] **Cambio de contraseña básico seguro, sin WhatsApp.** Resuelto el 22/10: el usuario autenticado cambia su propia contraseña desde el encabezado con contraseña actual, nueva y confirmación. La API toma la identidad del JWT, guarda hashes PBKDF2 y migra valores heredados al iniciar sesión correctamente. El script `database/seguridad/01_ampliar_contrasena_usuarios.sql` **ya está corrido** en `sql-tesis` (verificado por Rocío el 22/10). Con el merge (§21) queda nuestra ventana de cambiar contraseña, adaptada a esta API. Diseño: `docs/diseno/seguridad-contrasenas-diseno.md`.
 - [ ] **Sacar `repositorio.zip` de la raíz del repo.** Revisado el 19/10: pesa ~50 MB, entró en el **primer commit (`62e45b5`, 20/07, autor "Agus")** y está en todas las ramas (`main`, `rocionuvoli`, `facugodoy`, `fedemontenegro`). Es una copia vieja del proyecto (6751 archivos: páginas, `assets/`, API con `bin/` y `obj/`) del 20/07; parece la versión inicial que después se subió suelta, pero no se comparó archivo por archivo con el repo actual. **Trae un `Web.config` con la cadena de conexión con contraseña** (y `models/appsettings.json` con una clave). Pasos:
   1. Confirmar con el equipo que nadie lo necesita.
@@ -3802,13 +3803,29 @@ cierren las pruebas de la §39**, antes que lo demás.
   - M16, Listar viajes: "Km" en lugar de "Cantidad de KM" (§7.3).
   - De Facu (sumar a su lista del punto 5): M6, el importe mal escrito en Registrar recibo, con "Escribí el importe como
     1.234,56." debajo del campo; M15, un saldo negativo dice "Saldo a favor del cliente" y no "Saldo deudor".
-- [ ] **8. Pedido a Fede: avisarle al chofer por WhatsApp que se canceló su viaje (27/10).** Rocío lo deja pendiente: hace
+- [x] **8. Pedido a Fede: avisarle al chofer por WhatsApp que se canceló su viaje (27/10).** **Hecho por Fede e integrado el
+  28/10 (§58):** se avisa desde `CambiarCancelado` y, al reactivar, se le reenvía la hoja de ruta. Falta dar de alta en Meta
+  `viaje_cancelado` y `viaje_desasignado`. Lo que sigue es lo anotado el 27/10. Rocío lo deja pendiente: hace
   falta dar de alta en Meta una plantilla nueva para la cancelación (hoy hay una sola, `viaje_asignado`, y Gestionar
   integración de WhatsApp guarda un solo nombre de plantilla) y administrarla desde la integración de WhatsApp. Después,
   mandarla al cancelar un viaje si el chofer ya tenía la hoja de ruta. Texto de la maqueta: "Se canceló el viaje #47 del
   28/10/2026 (Planta Córdoba Norte → Depósito Villa Carlos Paz)." Del lado de viajes se llamaría desde `CambiarCancelado`
   (`ViajesController`); no se dejó nada armado. Con esto, ver también si al volverlo a Registrado se le reenvía la hoja de
   ruta. Mientras tanto, el chofer lo ve en su hoja de ruta (en Anteriores, en rojo, "Este viaje se canceló.").
+- [ ] **9. Gastos del chofer en un viaje que no se hace (Rocío, 28/10, al integrar a Fede).** Hoy un gasto lo borra solo el
+  chofer y en su período (directo: En viaje y hasta 2 días después de la entrega; Rukas: desde el día del viaje hasta 2 días
+  después del fin, `Viajes/GastosDelViaje.cs`); administración puede cargar, no borrar. Quedan dos huecos:
+  - Un viaje directo que estuvo En viaje, tiene gastos y volvió a Registrado **no se puede eliminar** ("tiene gastos
+    cargados") y **nadie puede borrar esos gastos** (al chofer le dice "el viaje todavía no se inició"). La única vuelta es
+    pasarlo a En viaje, que el chofer los borre y volverlo a Registrado.
+  - **Se puede cancelar con gastos**, pero quedan guardados y nadie los ve: el cancelado no muestra costo en Ver detalle ni
+    cuenta en costos, y nadie puede cargarlos ni borrarlos. Si eran reales, la plata desaparece de la vista.
+
+  Propuesta para decidir después de las pruebas: (a) que administración pueda borrar un gasto desde Ver detalle con el viaje
+  Registrado, con motivo y en la auditoría, para después poder eliminarlo; (b) que un cancelado siga mostrando sus gastos en
+  Ver detalle (sin margen) y que la confirmación de cancelar avise que el viaje tiene gastos del chofer. Vías según lo que
+  pasó: salió y no había carga, **Sin carga** (los gastos cuentan); se marcó En viaje por error, (a); no se hace pero el
+  chofer ya gastó, cancelar con (b).
 
 ---
 
@@ -4579,3 +4596,34 @@ debe volver a animarse. El error de credenciales **no se va solo** (Rocío, 28/1
 rocionuvoli: solo los avisos de éxito se van solos): queda hasta que se escribe en el usuario o la contraseña, y si el
 próximo intento vuelve a fallar aparece de nuevo. Con movimiento reducido activado, debe aparecer sin animación. Los campos vacíos conservan
 sus errores de validación y el aviso «Revisá los campos marcados.».
+
+---
+
+## 58. WhatsApp en viajes (rama de Fede) — INTEGRADO EL 28/10, PENDIENTE DE PROBAR EN LA VM
+
+Fede subió a `fedemontenegro` un commit (`aae91a7`, 28/10) con el reenvío de la hoja de ruta y los avisos al chofer al
+cancelar, eliminar y cambiar el chofer. Partió de la rama del 25/10, sin nuestro Cancelado del 27/10, e hizo uno propio: el
+merge dio 19 trozos en conflicto (viajes, design system y `AGENTS.md`), que Rocío decidió uno por uno. Quedó:
+
+- **Cancelado:** el nuestro (Cambiar estado, con motivo, reactivación y presupuesto). Sin el botón "Cancelar" de Fede.
+  Al cancelar se le avisa al chofer (`viaje_cancelado`); al reactivar, se le reenvía la hoja de ruta (Rocío, 28/10).
+- **Reenviar WhatsApp:** en la fila, en el lugar de los envíos (Ver detalle · Editar · Reenviar WhatsApp · Cambiar estado ·
+  Eliminar), solo con chofer y con el viaje Registrado o En viaje; la API controla lo mismo. La confirmación nombra al
+  chofer y el error queda dentro de ella. La regla del orden cambió en `AGENTS.md` y en el §1.4 del design system.
+- **Cambio de chofer:** al anterior, `viaje_desasignado`; al nuevo, la hoja de ruta. También con el viaje en curso. El
+  formulario lo dice antes de guardar.
+- **Eliminar:** el aviso sale después de borrar (como lo mezcló git, salía antes del control de gastos). Los textos de la
+  API, con el formato del design system ("No se puede eliminar el viaje: viene del presupuesto #12.").
+- **Avisos que fallan:** terminan con "Avisale por otro medio.", como el que ya había.
+- **Script de Fede:** el `UPDATE` del final pasó a `sp_executesql`: tal como estaba, la primera vez fallaba entero ("Invalid
+  column name"), porque SQL Server compila el lote antes de agregar las columnas. El diagnóstico
+  (`database/verificacion/01_scripts_corridos.sql`) lo mira en la fila 14.
+
+**Antes de probar (Rocío):** correr `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql` (sin él no abre
+Configuración de WhatsApp; el alta del viaje sigue mandando la hoja de ruta igual), recompilar la API y Ctrl+F5. Las
+plantillas `viaje_cancelado` y `viaje_desasignado` (6 variables) tienen que estar aprobadas en Meta: sin ellas cancelar,
+eliminar y cambiar el chofer funcionan, pero el WhatsApp no sale y queda en `App_Data/whatsapp.log`. Avisarle a Fede lo que
+cambió de su commit (el Cancelado, el lugar y los estados de Reenviar WhatsApp, el aviso después de borrar y el script).
+
+**Probar en la VM:** la parte J de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-INTEGRACION-FACU.md`. En la Mac no se
+compiló la API; las pruebas de Node de viajes dan OK.

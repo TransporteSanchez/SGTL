@@ -458,6 +458,8 @@
     activar: { icono: 'bi-toggle-off', clase: 'btn-outline-secondary', texto: 'Activar' },
     // Cambiar el estado a mano (presupuestos; después, viajes): abre la ventana con los estados posibles.
     estado: { icono: 'bi-flag', clase: 'btn-outline-secondary', texto: 'Cambiar estado' },
+    // Reenviar la hoja de ruta al chofer (viajes). Pide confirmación (§5.2).
+    whatsapp: { icono: 'bi-whatsapp', clase: 'btn-outline-secondary', texto: 'Reenviar WhatsApp' },
     eliminar: { icono: 'bi-trash', clase: 'btn-outline-danger', texto: 'Eliminar' },
     anular: { icono: 'bi-x-circle', clase: 'btn-outline-danger', texto: 'Anular' }
   };

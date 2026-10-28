@@ -637,13 +637,31 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // El envio nunca impide guardar el viaje: si falla queda registrado en App_Data/whatsapp.log.
+        private static object ResultadoWhatsApp(WhatsAppNotifyResult wa)
+        {
+            if (wa == null) return null;
+            return new { wa.Sent, wa.Status, wa.Detail, wa.To };
+        }
+
         private object NotificarChofer(SGTLAuditContext db, VIAJES viaje)
         {
-            if (viaje.ChoferID <= 0)
+            if (viaje == null || viaje.ChoferID <= 0)
                 return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje));
+        }
 
-            var wa = _whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje);
-            return new { wa.Sent, wa.Status, wa.Detail, wa.To };
+        private object NotificarCancelacion(SGTLAuditContext db, VIAJES viaje)
+        {
+            if (viaje == null || viaje.ChoferID <= 0)
+                return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeCancelado(db, viaje));
+        }
+
+        private object NotificarDesasignacion(SGTLAuditContext db, VIAJES viaje, int choferAnteriorId)
+        {
+            if (viaje == null || choferAnteriorId <= 0)
+                return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeDesasignado(db, viaje, choferAnteriorId));
         }
 
         // Se contemplan tanto los vínculos normalizados como las líneas históricas
@@ -844,6 +862,36 @@ SELECT CAST(CASE WHEN EXISTS (
             }
         }
 
+        // POST: api/Viajes/{id}/WhatsApp
+        // Reenvía la hoja de ruta al chofer (manual desde Gestionar viajes). No cambia el viaje.
+        // Solo con el viaje Registrado o En viaje, que es cuando la hoja de ruta le sirve al chofer (Rocío, 28/10).
+        // Si Meta falla, responde igual con WhatsApp.Sent=false; el error queda en App_Data/whatsapp.log.
+        [HttpPost]
+        [Route("api/Viajes/{id:int}/WhatsApp")]
+        public IHttpActionResult ReenviarWhatsApp(int id)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var viaje = db.Set<VIAJES>().FirstOrDefault(v => v.Viaje_ID == id);
+                    if (viaje == null) return NotFound();
+                    var estado = EstadoActual(db, id);
+                    if (!EsRegistrado(estado) && estado != EstadoEnViaje)
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se puede reenviar el WhatsApp: el viaje está " + estado.Replace('_', ' ').ToLowerInvariant() + "." });
+                    if (viaje.ChoferID <= 0)
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se puede reenviar el WhatsApp: el viaje no tiene chofer asignado." });
+
+                    var whatsApp = NotificarChofer(db, viaje);
+                    return Ok(new { Viaje_ID = id, WhatsApp = whatsApp });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(new Exception("Error al reenviar el WhatsApp del viaje.", ex));
+            }
+        }
+
         // POST: api/Viajes/{id}/Estado
         // Avanza/retrocede un paso del ciclo y registra el resultado de entrega
         // (opcional con plataforma; obligatorio en clientes directos para pasar a Entregado, con la evidencia).
@@ -935,7 +983,9 @@ SELECT CAST(CASE WHEN EXISTS (
                 // Si su precio estaba para revisar (§33, §43), ya no hay nada que decidir: no se cobra.
                 TarifarioRevisar.Resolver(db, usuario, "Se canceló el viaje.", viajeId: id);
                 var orden = AplicarOrden(db, plan, "se canceló el viaje #" + id, usuario);
-                return Ok(new { Viaje_ID = id, Estado = EstadoCancelado, Message = "Viaje #" + id + " cancelado.", Orden = orden });
+                // Se le avisa al chofer por WhatsApp que el viaje no se hace (plantilla de viaje cancelado).
+                var whatsApp = NotificarCancelacion(db, db.Set<VIAJES>().Find(id));
+                return Ok(new { Viaje_ID = id, Estado = EstadoCancelado, Message = "Viaje #" + id + " cancelado.", Orden = orden, WhatsApp = whatsApp });
             }
 
             if (nuevo != EstadoRegistrado) return ErrorEstado("Estado", "Un viaje cancelado solo puede volver a Registrado.");
@@ -969,7 +1019,9 @@ SELECT CAST(CASE WHEN EXISTS (
                 ordenReactivado = AplicarOrden(db, plan, "se reactivó el viaje #" + id, usuario);
             }
             SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id, "Estado=" + EstadoCancelado + " -> " + EstadoRegistrado);
-            return Ok(new { Viaje_ID = id, Estado = EstadoRegistrado, Message = "Viaje #" + id + " reactivado.", Orden = ordenReactivado });
+            // El último WhatsApp que tuvo el chofer fue el de cancelado: se le reenvía la hoja de ruta (Rocío, 28/10).
+            var whatsAppReactivado = NotificarChofer(db, viaje);
+            return Ok(new { Viaje_ID = id, Estado = EstadoRegistrado, Message = "Viaje #" + id + " reactivado.", Orden = ordenReactivado, WhatsApp = whatsAppReactivado });
         }
 
         // Viaje sin carga (punto 10 de la §41; antes "falso flete", Rocío 27/10): el camión llegó al origen y no había carga.
@@ -1490,6 +1542,8 @@ SELECT CAST(CASE WHEN EXISTS (
                 // Camión o chofer nuevos con el viaje en curso: se aplican después de calcular el importe (el precio no cambia).
                 int? camionNuevo = null, choferNuevo = null;
                 string cambioAsignacion = null;
+                // Si cambia el chofer (Registrado o en curso), al que lo tenía se le avisa que ya no tiene el viaje (Fede).
+                int choferAnteriorId = viaje.ChoferID;
                 if (EsRegistrado(estado))
                 {
                     var erroresChofer = ValidarChofer(db, viajeDto);
@@ -1612,8 +1666,14 @@ SELECT CAST(CASE WHEN EXISTS (
                     if (cambioAsignacion != null)
                         SGTLAuditContext.RegistrarEvento(Cn(), UsuarioCorto(viajeDto.Usu_Modi), "UPDATE", "VIAJES", "Viaje_ID=" + id, cambioAsignacion);
                     var orden = AplicarOrden(db, plan, "se modificó el viaje #" + id, viajeDto.Usu_Modi);
-                    var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
-                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp, Orden = orden });
+                    object whatsApp = null, whatsAppDesasignado = null;
+                    if (cambioHojaDeRuta)
+                    {
+                        if (choferAnteriorId > 0 && choferAnteriorId != viaje.ChoferID)
+                            whatsAppDesasignado = NotificarDesasignacion(db, viaje, choferAnteriorId);
+                        whatsApp = NotificarChofer(db, viaje);
+                    }
+                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp, WhatsAppDesasignado = whatsAppDesasignado, Orden = orden });
                 }
                 catch (DbEntityValidationException ex)
                 {
@@ -1640,7 +1700,8 @@ SELECT CAST(CASE WHEN EXISTS (
         }
 
         // DELETE: api/Viajes/{id}
-        // Eliminacion fisica. Estado es operativo (no de baja logica); solo se elimina un viaje que todavia no salio.
+        // Eliminacion fisica. Solo mientras el viaje sigue Registrado (antes de En viaje).
+        // Si tiene chofer, después de borrarlo se le avisa con la plantilla de viaje cancelado (el viaje ya no se hace).
         public IHttpActionResult Delete(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -1672,14 +1733,16 @@ SELECT CAST(CASE WHEN EXISTS (
                         return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje: está cancelado." });
                     if (!EsRegistrado(estado))
                     {
+                        // Los motivos son los mismos que dice el botón deshabilitado (§1.4 del design system).
                         return Content(HttpStatusCode.BadRequest, new List<object>
                         {
-                            new { PropertyName = "Estado", ErrorMessage = "El viaje está " + estado.Replace('_', ' ') + ": solo se pueden eliminar viajes en estado Registrado." }
+                            new { PropertyName = "Estado", ErrorMessage = "No se puede eliminar el viaje: está " + estado.Replace('_', ' ').ToLowerInvariant() + "." }
                         });
                     }
 
-                    if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0)
-                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado." });
+                    var presupuestoId = db.Database.SqlQuery<int>("SELECT TOP (1) Presupuesto_ID FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).FirstOrDefault();
+                    if (presupuestoId > 0)
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar el viaje: viene del presupuesto #" + presupuestoId + "." });
 
                     // Con gastos del chofer (los cargó en viaje y después se volvió atrás) no se elimina: son de la rendición.
                     bool hayGastos = db.Database.SqlQuery<int?>("SELECT OBJECT_ID(N'dbo.VIAJE_GASTOS', N'U')").First().HasValue;
@@ -1699,7 +1762,11 @@ SELECT CAST(CASE WHEN EXISTS (
                         db.Configuration.ValidateOnSaveEnabled = false;
                         db.SaveChanges();
                         var orden = AplicarOrden(db, plan, "se eliminó el viaje #" + id, null);
-                        return Ok(new { Message = "Viaje eliminado correctamente.", Orden = orden });
+                        // Recién con el viaje borrado se le avisa al chofer que no se hace (Fede): si los controles de arriba
+                        // lo rechazan o falla el borrado, no le llega un aviso falso. El mensaje se arma con los datos que
+                        // quedan en memoria y con el chofer y los lugares, que no se borran.
+                        var whatsApp = NotificarCancelacion(db, viaje);
+                        return Ok(new { Message = "Viaje eliminado correctamente.", Orden = orden, WhatsApp = whatsApp });
                     }
                     catch (DbUpdateConcurrencyException)
                     {

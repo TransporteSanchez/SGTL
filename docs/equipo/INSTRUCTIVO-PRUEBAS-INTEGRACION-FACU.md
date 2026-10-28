@@ -1,8 +1,9 @@
 # Instructivo de pruebas de la integración con Facu (para la VM)
 
 Para la sesión de Claude Code que prueba en la VM. El 28/10 se integró `facugodoy` (39 commits del 26 al 28/10) en
-`rocionuvoli`, encima de lo de viajes, tarifas, hoja de ruta y choferes de esos días. Antes de pasar todo a `main` y a las
-ramas de Facu y Fede, esta tanda tiene que confirmar tres cosas:
+`rocionuvoli`, encima de lo de viajes, tarifas, hoja de ruta y choferes de esos días. Ese mismo día se integró también la
+rama de Fede (`fedemontenegro`: WhatsApp en viajes, §58 de `docs/PENDIENTES-SISTEMA.md`), que se prueba en la parte J. Antes
+de pasar todo a `main` y a las ramas de Facu y Fede, esta tanda tiene que confirmar tres cosas:
 
 1. **Que lo de Facu funciona**, incluidos los casos que no figuran en su "Probar": errores, permisos, doble clic, datos
    que faltan, lo que pasa en otra pantalla.
@@ -21,7 +22,7 @@ dice hasta dónde llegó.
 | Ronda | Partes | Toca la base |
 |---|---|---|
 | 1 | A (compilación y pruebas automáticas), B (login, sesión y recupero), C (usuarios, grupos y permisos) | Usuarios y un grupo de prueba |
-| 2 | D (orden de las tablas), H (cruces con lo nuestro), I (recorrida general) | Casi nada (lo de H, con OK de Rocío) |
+| 2 | D (orden de las tablas), H (cruces con lo nuestro), J (WhatsApp en viajes, de Fede), I (recorrida general) | Lo de H y J, con OK de Rocío (J registra, cancela y elimina viajes de prueba y le manda WhatsApp al chofer de la demo) |
 | 3 | E (tipos de comprobante), F (cuenta corriente), G (proformas) | **Emite comprobantes y cambia la configuración de facturación: con OK de Rocío** |
 
 Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
@@ -41,6 +42,10 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
   decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 ya se aplicó (recibo 49 y su
   movimiento).
+- **Script de Fede (para la parte J):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
+  mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). En Meta
+  tienen que estar aprobadas `viaje_cancelado` y `viaje_desasignado`; si no, la parte J se prueba igual y el WhatsApp de
+  esos avisos sale con error (Fede dice en qué están).
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
 - **Usuarios** (el login lo hace Rocío):
@@ -255,6 +260,35 @@ mirando `aria-label` y `aria-sort`), el encabezado dice cómo se va a ordenar.
    entrega o un gasto con la sesión vigente. Dejala abierta 3 minutos en medio de un formulario y guardá.
 5. **Presupuestos:** "Generar viaje" vuelve cuando el viaje del presupuesto está cancelado, también con la tabla ordenada
    por otra columna.
+
+### Parte J — WhatsApp en viajes (rama de Fede, §58)
+
+Con la VM en el commit del merge de Fede, la API recompilada y `whatsapp/02` corrido. Viajes de prueba nuevos con el chofer
+de la demo (Rocío dice qué celular) y con su OK antes de cada envío. Si una plantilla no está aprobada en Meta, el viaje se
+guarda igual y el aviso dice "… Avisale por otro medio.": anotalo y seguí. Cada envío queda en `App_Data/whatsapp.log` con
+su plantilla.
+
+1. **Configuración → Integración de WhatsApp:** abre y muestra las tres plantillas (`viaje_asignado`, `viaje_cancelado`,
+   `viaje_desasignado`), con sus variables abajo (7, 6 y 6). Guardar conserva lo que había.
+2. **La fila de Gestionar viajes:** Ver detalle · Editar · Reenviar WhatsApp · Cambiar estado · Eliminar. No hay botón
+   "Cancelar". Reenviar WhatsApp habilitado solo con chofer y el viaje Registrado o En viaje; si no, deshabilitado con
+   "No se puede reenviar el WhatsApp: el viaje está entregado" (o el estado que tenga) o "…: el viaje no tiene chofer
+   asignado" (un viaje de Rukas sin chofer).
+3. **Reenviar:** la confirmación nombra al chofer ("Se le envía a … la hoja de ruta del viaje #N."). Cancelar no manda
+   nada; Reenviar dice "Se le envió la hoja de ruta al chofer por WhatsApp." y llega al celular.
+4. **Cancelar** desde Cambiar estado: la opción Cancelado agrega "Se le avisa al chofer por WhatsApp."; con el motivo, "Viaje
+   #N cancelado." y "Se le avisó al chofer por WhatsApp que el viaje se canceló.". Llega el mensaje de cancelado.
+5. **Reactivar** ese viaje (Cambiar estado → Registrado): la opción dice "Se le reenvía la hoja de ruta al chofer por
+   WhatsApp." y al guardar llega la hoja de ruta.
+6. **Cambiar el chofer** de un viaje Registrado: antes de guardar, "Al guardar, … recibe la hoja de ruta por WhatsApp y a …
+   se le avisa que ya no tiene el viaje."; al guardar, "Viaje guardado.", "Se avisó al chofer anterior por WhatsApp." y la
+   hoja de ruta al nuevo. Repetir con un viaje En viaje (pide motivo). Para esto hace falta un segundo chofer con celular:
+   preguntale a Rocío.
+7. **Eliminar** un viaje Registrado con chofer: la confirmación dice "No se puede deshacer. Se le avisa al chofer por
+   WhatsApp que el viaje no se hace."; después de "Viaje eliminado." llega el aviso. **[cruce]** Un viaje con gastos del
+   chofer (directo, que estuvo En viaje y volvió a Registrado) no se elimina y al chofer **no** le llega nada.
+8. Lo que no cambió: registrar un viaje con chofer sigue mandando la hoja de ruta, y cancelar un viaje de un presupuesto
+   sigue dejando "Generar viaje" habilitado en el presupuesto.
 
 ### Parte I — Recorrida general
 

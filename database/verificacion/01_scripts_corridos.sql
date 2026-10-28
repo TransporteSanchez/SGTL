@@ -2,8 +2,8 @@
    Qué scripts están corridos en la base (28/10/2026, Rocío): SOLO LECTURA, no cambia nada.
 
    Para saber, antes de una tanda de pruebas, si están corridos los scripts de la integración del 28/10: los de Facu
-   (cuenta corriente 11 a 18, seguridad 02, e-mail 07 y documentación 02) y los nuestros del 27/10 (viajes 02 y 03, hoja de
-   ruta 01 y 02). No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
+   (cuenta corriente 11 a 18, seguridad 02, e-mail 07 y documentación 02), los nuestros del 27/10 (viajes 02 y 03, hoja de
+   ruta 01 y 02) y el de Fede (whatsapp 02, integrado el 28/10). No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
    columna, una restricción, un disparador). Al sumar scripts nuevos, agregar su fila acá.
 
    Cómo correrlo (SSMS, base Transporte_Sanchez): ejecutar entero. Devuelve tres tablas:
@@ -94,7 +94,11 @@ UNION ALL SELECT 13, N'viajes/03_viaje_sin_carga (nuestro)',
     CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'Sin_Carga_Observacion') IS NOT NULL THEN 1 ELSE 0 END +
     CASE WHEN NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID(N'dbo.VIAJES')
                           AND definition LIKE N'%Estado%' AND CHARINDEX(N'Sin_carga', definition) = 0) THEN 1 ELSE 0 END,
-    2, N'VIAJES.Sin_Carga_Observacion y que la restricción de estados admita Sin_carga';
+    2, N'VIAJES.Sin_Carga_Observacion y que la restricción de estados admita Sin_carga'
+UNION ALL SELECT 14, N'whatsapp/02_plantillas_cancelado_y_desasignado (Fede)',
+    CASE WHEN COL_LENGTH(N'dbo.WHATSAPP_CONFIG', N'TemplateCancelado') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN COL_LENGTH(N'dbo.WHATSAPP_CONFIG', N'TemplateDesasignado') IS NOT NULL THEN 1 ELSE 0 END,
+    2, N'WHATSAPP_CONFIG.TemplateCancelado y TemplateDesasignado (sin ellas no abre Configuración de WhatsApp)';
 
 SELECT Script,
        CASE WHEN Encontrado = Esperado THEN N'Corrido'

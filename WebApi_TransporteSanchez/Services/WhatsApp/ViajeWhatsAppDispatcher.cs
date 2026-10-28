@@ -17,16 +17,33 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
             _notifier = notifier ?? throw new ArgumentNullException(nameof(notifier));
         }
 
-        /// <summary>
-        /// Intenta notificar. Nunca lanza: el alta del viaje no debe fallar por WhatsApp.
-        /// </summary>
         public WhatsAppNotifyResult TryNotifyViajeAsignado(SGTLAuditContext db, VIAJES viaje)
+        {
+            return TryNotify(db, viaje, null, WhatsAppMensaje.Asignado);
+        }
+
+        public WhatsAppNotifyResult TryNotifyViajeCancelado(SGTLAuditContext db, VIAJES viaje)
+        {
+            return TryNotify(db, viaje, null, WhatsAppMensaje.Cancelado);
+        }
+
+        /// <summary>Avisa al chofer que ya no tiene el viaje (antes de reasignarlo o al quitarlo).</summary>
+        public WhatsAppNotifyResult TryNotifyViajeDesasignado(SGTLAuditContext db, VIAJES viaje, int choferId)
+        {
+            if (choferId <= 0)
+                return WhatsAppNotifyResult.Fail("payload_error", "Sin chofer para desasignar.");
+            return TryNotify(db, viaje, choferId, WhatsAppMensaje.Desasignado);
+        }
+
+        private enum WhatsAppMensaje { Asignado, Cancelado, Desasignado }
+
+        private WhatsAppNotifyResult TryNotify(SGTLAuditContext db, VIAJES viaje, int? choferIdFijo, WhatsAppMensaje mensaje)
         {
             if (db == null || viaje == null)
                 return WhatsAppNotifyResult.Fail("invalid_input", "Contexto o viaje nulo.");
 
             var settings = WhatsAppSettings.Load();
-            if (!settings.IsConfigured())
+            if (!settings.IsConfiguredBase())
             {
                 var msg = "omitido (no configurado). Viaje " + viaje.Viaje_ID;
                 Trace.TraceInformation("WhatsApp: {0}", msg);
@@ -36,7 +53,8 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
 
             try
             {
-                var payload = BuildPayload(db, viaje, settings);
+                var choferId = choferIdFijo ?? viaje.ChoferID;
+                var payload = BuildPayload(db, viaje, choferId, settings);
                 if (payload == null)
                 {
                     var msg = "No se pudo armar payload (chofer/teléfono). Viaje " + viaje.Viaje_ID;
@@ -44,7 +62,29 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
                     return WhatsAppNotifyResult.Fail("payload_error", msg);
                 }
 
-                return _notifier.NotifyViajeAsignadoAsync(payload).ConfigureAwait(false).GetAwaiter().GetResult();
+                string plantilla;
+                string[] parametros;
+                switch (mensaje)
+                {
+                    case WhatsAppMensaje.Cancelado:
+                        plantilla = settings.TemplateCancelado;
+                        parametros = ParametrosCancelado(payload);
+                        break;
+                    case WhatsAppMensaje.Desasignado:
+                        plantilla = settings.TemplateDesasignado;
+                        // Mismas 6 variables que cancelado (nombre, N°, origen, destino, fecha, hora).
+                        parametros = ParametrosCancelado(payload);
+                        break;
+                    default:
+                        plantilla = settings.TemplateName;
+                        parametros = ParametrosAsignado(payload);
+                        break;
+                }
+
+                if (string.IsNullOrWhiteSpace(plantilla))
+                    return WhatsAppNotifyResult.Fail("not_configured", "Falta el nombre de la plantilla.");
+
+                return _notifier.NotifyTemplateAsync(payload, plantilla, parametros).ConfigureAwait(false).GetAwaiter().GetResult();
             }
             catch (Exception ex)
             {
@@ -55,14 +95,58 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
             }
         }
 
+        private static string[] ParametrosAsignado(ViajeWhatsAppPayload p)
+        {
+            return new[]
+            {
+                p.NombreChofer,
+                p.ViajeId.ToString(),
+                p.Origen,
+                p.Destino,
+                p.FechaInicio,
+                p.RemitoOCarga,
+                p.MapsUrl
+            };
+        }
+
+        // viaje_cancelado y viaje_desasignado: nombre, N° viaje, origen, destino, fecha (dd/MM/yyyy), hora (HH:mm).
+        private static string[] ParametrosCancelado(ViajeWhatsAppPayload p)
+        {
+            string fecha = "-", hora = "-";
+            var inicio = (p.FechaInicio ?? "").Trim();
+            if (!string.IsNullOrEmpty(inicio))
+            {
+                var partes = inicio.Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+                if (partes.Length >= 1) fecha = partes[0];
+                if (partes.Length >= 2) hora = partes[1];
+            }
+            return new[]
+            {
+                p.NombreChofer,
+                p.ViajeId.ToString(),
+                p.Origen,
+                p.Destino,
+                fecha,
+                hora
+            };
+        }
+
         public ViajeWhatsAppPayload BuildPayload(SGTLAuditContext db, VIAJES viaje, WhatsAppSettings settings = null)
         {
+            return BuildPayload(db, viaje, viaje != null ? viaje.ChoferID : 0, settings);
+        }
+
+        public ViajeWhatsAppPayload BuildPayload(SGTLAuditContext db, VIAJES viaje, int choferId, WhatsAppSettings settings = null)
+        {
+            if (db == null || viaje == null || choferId <= 0)
+                return null;
+
             settings = settings ?? WhatsAppSettings.Load();
 
-            var chofer = db.Set<CHOFERES>().FirstOrDefault(c => c.Chofer_ID == viaje.ChoferID);
+            var chofer = db.Set<CHOFERES>().FirstOrDefault(c => c.Chofer_ID == choferId);
             if (chofer == null)
             {
-                Trace.TraceWarning("WhatsApp: chofer {0} no encontrado para viaje {1}", viaje.ChoferID, viaje.Viaje_ID);
+                Trace.TraceWarning("WhatsApp: chofer {0} no encontrado para viaje {1}", choferId, viaje.Viaje_ID);
                 return null;
             }
 

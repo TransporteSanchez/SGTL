@@ -38,8 +38,8 @@ Revisá cada punto contra tus cambios (pedile a tu IA: "Revisá los cambios con 
 AGENTS.md"):
 
 1. **Botones de la fila:** solo ícono con tooltip y `aria-label`, con `SGTL.botonFila` / `SGTL.accionesFila`,
-   en el orden Ver detalle · Editar · Ver PDF · Enviar por e-mail (en comprobantes y proformas) · Cambiar estado ·
-   Siguiente paso · Activar/Inactivar ·
+   en el orden Ver detalle · Editar · Ver PDF · Enviar por e-mail (en comprobantes y proformas) o Reenviar WhatsApp (en
+   viajes) · Cambiar estado · Siguiente paso · Activar/Inactivar ·
    Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.**
    Excepción: en Gestionar tipos de comprobante, Eliminar se oculta para sucursales, numeradores y tipos
    que ya tienen relaciones (§1.4). En cuenta corriente, Imputar solo se muestra en créditos internos y recibos;
