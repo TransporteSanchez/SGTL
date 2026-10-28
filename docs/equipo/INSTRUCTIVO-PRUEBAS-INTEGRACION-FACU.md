@@ -31,9 +31,12 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
 ## 0. Antes de empezar (lo hace o lo confirma Rocío)
 
 - **Scripts de Facu en la base.** La API integrada ya lee `USUARIOS.Email` y `USUARIOS.VersionSesion`: si
-  `database/seguridad/02_recupero_contrasena.sql` no está corrido, **el login falla**. Rocío confirma con Facu cuáles corrió y
-  corre los que falten, en este orden: `cuenta-corriente/11` a `17`, `seguridad/02` y `email/07`. El `cuenta-corriente/18`
-  (corrige acentos de recibos viejos) y `documentacion/02` (manual) son de datos y terminan en ROLLBACK: se deciden aparte.
+  `database/seguridad/02_recupero_contrasena.sql` no está corrido, **el login falla**. Rocío corre
+  `database/verificacion/01_scripts_corridos.sql` (solo lectura): dice script por script si está corrido. Los que falten se
+  corren en este orden: `cuenta-corriente/11` a `17`, `seguridad/02` y `email/07`. El `cuenta-corriente/18` (corrige
+  acentos de recibos viejos) y `documentacion/02` (manual) son de datos y terminan en ROLLBACK: se deciden aparte (el
+  diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
+  decir "Corrido" en todos.
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
 - **Usuarios** (el login lo hace Rocío):
@@ -43,8 +46,14 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   - uno con acceso a proformas y sin cuenta corriente;
   - la cuenta del chofer de prueba de `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`, si ya existe (si no, se crea en la
     parte H).
-- **Recupero de contraseña:** un perfil SMTP de prueba cargado por Rocío en Gestionar e-mail (las credenciales las escribe
-  ella) y una casilla real del equipo para recibir los enlaces (`@example.com` no recibe). Rocío dice cuál.
+- **Recupero de contraseña:** el recupero manda el correo con un perfil propio, que no puede ser el mismo de Facturación
+  ni de Presupuestos (la API y la base lo impiden). Se usa la misma cuenta de siempre: Rocío registra en Configuración →
+  Gestionar e-mail **un perfil nuevo con los mismos datos del que ya usan** (servidor, puerto, remitente, usuario y
+  contraseña, que escribe ella) y con "Conexión segura (SSL)" tildada. Después, en el bloque "Perfil para recupero de
+  contraseña", lo elige en "Perfil SMTP asignado" y en "Dirección del login" pone la de la VM,
+  `http://localhost:5500/Login.html` (con HTTP solo se acepta localhost), y Guardar. El diagnóstico de arriba dice si quedó
+  asignado. Además, una casilla real del equipo para recibir los enlaces (`@example.com` no recibe):
+  Rocío dice cuál.
 - **Ronda 3:** Rocío dice qué tipos de comprobante se pueden activar o desactivar, con qué cliente de prueba se emite y
   si los números que se consuman (FC, C, D, recibos) le sirven. Anotá **el estado inicial de cada tipo** que toques: al
   final tiene que quedar igual. Facu y Fede, avisados de que durante la ronda 3 cambia la configuración de facturación.
