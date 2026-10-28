@@ -58,7 +58,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 36 | Hoja de ruta del chofer: entra con su usuario desde el celular, ve sus viajes, inicia el viaje y registra la entrega con la evidencia; el chofer de cada usuario se elige en Gestionar usuarios | Hecho en la Mac (24/10) con API simulada, con las decisiones de Rocío | **Pusheado** (`4ab8e02` a `53c388c` y los ajustes del 24/10: menú del chofer, tarjetas cortas, recorrido completo, Anteriores por año) | **Correr antes `database/hoja-de-ruta/01_usuario_chofer.sql`**, recompilar y probar (ver §36, también los ajustes A a F). Antes, el grupo y la cuenta del chofer de prueba con `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`; las cuentas de los choferes reales, el 26/10 |
 | 37 | Control interno de los viajes: recorrido completo desde el galpón, kilometraje de los camiones, combustible estimado, margen y los gastos que rinde el chofer con su ticket | Hecho en la Mac (24/10) con API simulada (y Google Maps de verdad), con las decisiones de Rocío | **Pusheado** (24/10) | **Correr antes `database/costos/01_galpon_kilometraje_y_gastos.sql`**, recompilar y probar (ver §37). **Galpón cargado por Rocío (25/10)** |
 | 38 | Documentos de prueba y tabla de tarifas "como si siempre hubiera estado": `database/tarifas/04_…` rehecho (todos los viajes y presupuestos con la tabla de su fecha, sin leyendas) y tabla de enero 2026 para los viajes viejos; falta limpiar la facturación de prueba y regenerar los documentos de la demo; tesis al modelo de la tabla | **Tabla de enero y `04` hechos (25/10).** La limpieza y los documentos, **después del cambio de Facu** ("comprobante" en lugar de "factura") | **Pusheado** (25/10) | Correr los scripts con la §34; la limpieza, después de Facu (ver §38) |
-| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas), los gastos del chofer en un viaje que no se hace (28/10) y los textos y la estética de Restablecer contraseña (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
+| 40 | Después de la ronda de pruebas, con prioridad (Rocío, 25/10): seguridad de la API y del JWT, e-mail desde la VM, hoja de ruta al generar un viaje desde un presupuesto, texto de la plantilla de WhatsApp (Fede), mejoras de presupuestos y proformas para cuando Facu suba lo suyo, limpieza de textos de prueba viejos, las dudas y mejoras del reporte de Tableros (26/10, después de los cambios de tarifas), los gastos del chofer en un viaje que no se hace (28/10), los textos y la estética de Restablecer contraseña y dónde va el precio del gasoil (28/10) | Anotado; el WhatsApp al cancelar (punto 8) quedó hecho con Fede (§58) | — | Ver §40 |
 | 41 | Listado de Rocío del 26/10: lo de tarifas (vuelta vacío, 1ª y 2ª vuelta automáticas y camión ocupado, importar el Excel, falso flete como estado, estadía con las horas, textos), lo de antes del jueves 29/10 (datos como reales, flujo de viajes, menú) y lo de después | Anotado | — | Ver §41 |
 | 42 | Tabla de tarifas dinámica (tipos de camión, modelos y bandas por tabla), con `main` como plan B | **Propuesta con maqueta (26/10)**, guardada: va al final, después de las mejoras | — | Ver §42 |
 | 43 | Precio por orden del día (primer y segundo viaje del mismo cliente y recorrido, 1ª y 2ª vuelta automáticas), "Precio para revisar" y camión o chofer ocupado | **Hecho en la Mac (27/10)** con API simulada, como la maqueta aprobada; toca presupuestos (Facu) | **Pusheado** (27/10) | `06` aplicado y `07` relevado (28/10): solo el viaje 40 cambia de vuelta y se actualiza al editarlo. Ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§43) |
@@ -3844,6 +3844,30 @@ cierren las pruebas de la §39**, antes que lo demás.
   contraseña" y "Restablecer contraseña") y por eso no se vean como los de adentro. Revisar también los dos modales
   juntos (lo mismo en "Olvidé mi contraseña") y el ojo para ver la contraseña, que el login tiene y el modal no. Como es
   del módulo de Facu, avisarle antes de cambiarlo.
+- [ ] **11. Precio del gasoil: dónde va y cómo se carga (Rocío, 28/10).** Hoy está en Gestionar camiones, entre los filtros
+  y la tabla: "Precio del gasoil: todavía no se cargó" y el botón "Cambiar precio del gasoil", separado de Reportes y
+  Registrar camión. A Rocío le parece raro el lugar (es de los camiones, pero no es un camión), muy simple, y no sabía si
+  después de cargarlo se ve el precio (sí: "Precio del gasoil: $ 1.250,00 el litro desde el 28/10/2026").
+  **Cómo funciona hoy** (`CostosController.cs`, `PRECIOS_GASOIL`, §37): cada carga es un precio "desde" una fecha y no
+  borra ni cambia los anteriores. Cada viaje usa el que valía en su fecha de inicio (el último "desde" hasta ese día; si
+  hay dos con el mismo día, el último que se cargó), y Ver detalle lo dice ("… y el gasoil a $ … el litro desde el …").
+  El combustible estimado no se guarda: se calcula al abrir el detalle. Por eso:
+  - un precio nuevo desde hoy o desde una fecha futura no cambia nada de los viajes anteriores;
+  - un precio con fecha pasada cambia el combustible y el margen estimados de los viajes desde esa fecha (sin avisar);
+  - no se puede borrar ni editar un precio mal cargado: se corrige cargando otro con la misma fecha (queda el último).
+  Lo puede cargar quien tiene Gestionar camiones; queda en Auditoría. La pantalla muestra el vigente hoy y el modal, los
+  últimos 10 en una lista.
+  **Propuesta para decidir:**
+  - **Lugar:** pasarlo a Configuración → Gestionar empresa, junto al Galpón, en un bloque "Control interno": son los dos
+    datos con los que se estima el costo de cada viaje y los dos funcionan "desde una fecha". Se vería como dato fijo
+    (el vigente y, si hay, el que viene) con "Cambiar precio del gasoil", y los precios cargados en una tabla (desde,
+    precio por litro, quién y cuándo). Ojo: Gestionar empresa es solo de administradores; hoy lo cambia también quien
+    gestiona camiones (decidir quién). Ver detalle del viaje diría dónde cargarlo ("Falta el precio del gasoil…").
+  - **Fecha pasada:** avisar antes de guardar cuántos viajes cambian su costo estimado ("Cambia el combustible estimado
+    de 12 viajes desde el 01/10/2026."), como al cambiar el galpón.
+  - **Corregir:** "Corregir" el último precio cargado (precio o fecha, con motivo y en Auditoría) en lugar de cargar otro
+    con la misma fecha.
+  Va con la ronda 4 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§37, paso 3), que por ahora lo prueba donde está.
 
 ---
 
