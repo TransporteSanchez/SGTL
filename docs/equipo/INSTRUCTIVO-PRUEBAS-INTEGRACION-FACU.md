@@ -39,7 +39,8 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   Claude la tercera tabla del diagnóstico antes de correr nada. El `cuenta-corriente/18` (corrige
   acentos de recibos viejos) y `documentacion/02` (manual) son de datos y terminan en ROLLBACK: se deciden aparte (el
   diagnóstico dice cuántos recibos tienen el acento mal y qué manual está publicado). Al final, el diagnóstico tiene que
-  decir "Corrido" en todos.
+  decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 tiene 1 recibo y 1 movimiento
+  para corregir.
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
   (no alcanza con ejecutar) y Ctrl+F5 en el navegador.
 - **Usuarios** (el login lo hace Rocío):
@@ -50,19 +51,20 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   - la cuenta del chofer de prueba de `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md`, si ya existe (si no, se crea en la
     parte H).
 - **Recupero de contraseña:** el recupero manda el correo con un perfil propio, que no puede ser el mismo de Facturación
-  ni de Presupuestos (la API y la base lo impiden). Al 28/10 ya hay uno asignado (el perfil 3, con el enlace a
-  `http://127.0.0.1:5502/Login.html`, el Live Server de una Mac). El diagnóstico dice desde qué casilla manda, si tiene SSL
-  y si tiene la contraseña guardada.
-  - Si manda desde la cuenta de siempre (Integra Analistas), con SSL y con contraseña, se usa ese. Si no, Rocío registra en
-    Configuración → Gestionar e-mail **un perfil nuevo con los mismos datos del que ya usan** (servidor, puerto, remitente,
-    usuario y contraseña, que escribe ella), con "Conexión segura (SSL)" tildada, y lo elige en "Perfil SMTP asignado".
+  ni de Presupuestos (la API y la base lo impiden). Al 28/10 ya está asignado el perfil 3 ("Recupero contraseña"), que
+  manda desde la cuenta de siempre (Integra Analistas, por Gmail), con SSL y con la contraseña guardada: **se usa ese**. El
+  diagnóstico lo vuelve a mostrar.
+  - Si algún día falta, Rocío registra en Configuración → Gestionar e-mail **un perfil nuevo con los mismos datos del que
+    ya usan** (servidor, puerto, remitente, usuario y contraseña, que escribe ella), con "Conexión segura (SSL)" tildada, y
+    lo elige en "Perfil SMTP asignado".
   - **En la VM el front está en el puerto 5500**: en el bloque "Perfil para recupero de contraseña", "Dirección del login"
     tiene que decir `http://localhost:5500/Login.html` (con HTTP solo se acepta localhost), y Guardar. Con la de 5502, el
     enlace del correo no abre nada en la VM. Es una sola dirección para todo el equipo: avisarle a Facu, que la usa desde
     su máquina.
   - El correo se abre **en la VM**: el enlace lleva a localhost y desde el celular no abre.
-  - Una casilla real del equipo para recibir los enlaces (`@example.com` no recibe): Rocío dice cuál. Cada usuario necesita
-    un e-mail distinto; si es de Gmail, sirve agregarle `+algo` antes de la arroba (`nombre+admin@gmail.com`,
+  - Una casilla real del equipo para recibir los enlaces (`@example.com` no recibe), que no sea la de Integra Analistas: un
+    correo que Gmail se manda a sí mismo puede no aparecer en la bandeja de entrada. Rocío dice cuál. Cada usuario
+    necesita un e-mail distinto; si es de Gmail, sirve agregarle `+algo` antes de la arroba (`nombre+admin@gmail.com`,
     `nombre+lista@gmail.com`): llegan todos a la misma casilla.
   - Al 28/10, solo 1 de los 14 usuarios activos tiene e-mail. Los que no tienen entran igual, pero no pueden recuperar la
     contraseña y, al editarlos en Gestionar usuarios, el e-mail es obligatorio.
