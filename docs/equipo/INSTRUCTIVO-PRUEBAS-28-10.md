@@ -57,10 +57,12 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
   movimiento).
 - **Scripts nuestros y de Fede.** Desde el 28/10 el diagnóstico mira también `whatsapp/02` (fila 14, ya corrido) y los
   nuestros del 24 al 27/10 que necesitan las rondas 2 y 4 (filas 15 a 20: `tarifas/02`, `05` y `06`, `tableros/01` y
-  `costos/01` y `02`). Si alguno dice "Falta correrlo", se corre como dice su encabezado, **antes de recompilar**.
-- **Antes de la ronda 2 (§43, paso 1):** Rocío corre `database/tarifas/07_relevar_vueltas_por_recorrido.sql` (solo
-  lectura) y le pasa el resultado a Claude en la Mac. Los viajes guardados que tendrían otra vuelta con la regla nueva no
-  se cambian solos: se decide qué hacer antes de la ronda 2.
+  `costos/01` y `02`). Si alguno dice "Falta correrlo", se corre como dice su encabezado, **antes de recompilar**. Al
+  28/10 están todos corridos (`tarifas/06` y `costos/02`, ese mismo día).
+- **§43, paso 1 (hecho el 28/10):** `database/tarifas/07_relevar_vueltas_por_recorrido.sql` dio un solo caso, el viaje
+  #40 (Servicios Ambientales S.A.), guardado como 2ª vuelta y que con la regla nueva es 1ª. Rocío lo edita y lo guarda
+  después de recompilar: pasa a 1ª y cambia su importe. Si en la ronda 2 aparece con otro importe que antes, es eso y no
+  una falla.
 - **Script de Fede (para la ronda 6):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
   mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). **Al
   28/10 ya está corrido** (las tres plantillas cargadas, en `es_AR`). En Meta
