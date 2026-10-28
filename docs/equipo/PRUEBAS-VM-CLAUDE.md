@@ -15,8 +15,10 @@ problemas y dejarlos documentados. **No corregís nada.**
 
 - Modificar, crear o borrar archivos dentro del repo (`C:\Repo\SGTL`), aunque el arreglo
   parezca obvio. Si encontrás la causa de un error, la escribís en el reporte.
-- Cualquier comando de git que cambie algo: `commit`, `push`, `pull`, `merge`, `checkout`,
-  `switch`, `restore`, `reset`, `stash`. Solo lectura: `git status`, `git log`, `git diff`.
+- Cualquier comando de git que cambie algo: `commit`, `push`, `merge`, `checkout`,
+  `switch`, `restore`, `reset`, `stash`. Solo lectura: `git status`, `git log`, `git diff`. La excepción es
+  `git pull` en `rocionuvoli`, cuando lo pide Rocío o el instructivo de la tanda (trae lo último de la Mac); si el
+  `pull` da un conflicto o un cambio local, pará y avisale.
 - Correr SQL que modifique la base (`INSERT`, `UPDATE`, `DELETE`, `ALTER`, `DROP`…).
   La base `Transporte_Sanchez` en `sql-tesis` es **compartida con el equipo**.
   Consultas `SELECT` solo si Rocío lo pide.
@@ -41,6 +43,9 @@ Si para seguir probando hace falta alguna de estas cosas, **pará y preguntale a
    en el 5500, cerralo y volvelo a abrir después del `pull`; si igual no cambia, avisale a Rocío.
 4. **El login lo hace Rocío** en el navegador integrado. No escribas contraseñas.
 5. Recargá sin caché (Ctrl+F5) antes de probar, para no ver JS viejo.
+6. Las pruebas de Node (`node tests\<archivo>.test.js`): en la VM Node no está en el PATH; usá el que trae Visual Studio,
+   en `C:\Program Files\Microsoft Visual Studio\18\Community\MSBuild\Microsoft\VisualStudio\NodeJs` (reporte de la
+   ronda 1 del 28/10).
 
 ---
 

@@ -75,6 +75,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
+| 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 | Commits del 28/10 | Reprueba corta antes de la ronda 2 (instructivo del 28/10, §3) y lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -3730,14 +3731,25 @@ cierren las pruebas de la §39**, antes que lo demás.
     de conexión, y cambiarla;
   - cuánto dura la sesión (en la VM venció a la hora) y que al vencer el login diga "Tu sesión venció. Volvé a iniciar
     sesión." (F7 de la tanda 1);
-  - que un error 500 no devuelva la excepción completa (F6 de la tanda 1: se ve en la red).
+  - que un error 500 no devuelva la excepción completa (F6 de la tanda 1: se ve en la red). **Hecho el 28/10** para toda la
+    API (`IncludeErrorDetailPolicy.Never`, F4 de la ronda 1 del 28/10, §59).
   Toca los controllers de todos: **coordinar con Facu y Fede** antes de cambiarlos.
+  **Ronda 1 del 28/10 (§59):** F3, `api/Usuarios`, `Usuarios/Buscar`, `Usuarios/{id}/Detalles` y
+  `Usuarios/MenusPermitidos?username=` responden sin token (la lista de usuarios, sus grupos y quién es administrador);
+  arreglarlo pide mandar el token desde Gestionar y Listar usuarios y desde el menú de todas las pantallas
+  (`sidebar-loader.js`), y que `MenusPermitidos` tome el usuario del token. DS4 y M7: al vencer la sesión (30 minutos,
+  aunque se esté usando) va al login sin avisar; avisar "Tu sesión venció. Volvé a iniciar sesión." y renovarla mientras
+  hay actividad.
 - [ ] **2. E-mail desde la VM (D5 de la tanda 1; F1 del 23/10).** En la VM, enviar un presupuesto dice "No se pudo leer la
   contraseña del perfil SMTP. Volvé a guardarla en Configuración > Gestionar e-mail.". Causa conocida: la API cifra la
   contraseña con la clave de la PC que la guardó (`MachineKey`) y la base es compartida. Rocío pide **resolverlo o
   investigarlo de nuestro lado** para que funcione en cualquier PC del equipo (una clave común fuera de git, o la que
   proponga Facu, que es el módulo de e-mail). Sin esto no se puede probar que reenviar un presupuesto resuelva lo
-  pendiente por un cambio de tarifa (B3 de la tanda 1).
+  pendiente por un cambio de tarifa (B3 de la tanda 1). **El 28/10 volvió a pasar con el recupero de contraseña** (F2 de
+  la ronda 1, §59): el perfil 3 lo guardó Facu desde su máquina y la VM no puede leerlo, así que el correo no sale (y la
+  pantalla dice igual que se envió). Mientras tanto, la contraseña de los tres perfiles se vuelve a guardar desde la
+  máquina que va a mandar los correos. Sumar M2: avisar cuando un envío falla (Auditoría o Gestionar e-mail) y un botón
+  "Enviar correo de prueba" por perfil (`api/EmailServidor/{id}/probar` ya existe).
 - [ ] **3. Generar un viaje desde un presupuesto le manda la hoja de ruta al chofer (D6 de la tanda 1).** Hoy no la manda
   ni la ventana "Generar viaje" avisa nada; registrar el viaje desde Gestionar viajes sí. Decisión de Rocío: tiene que
   ser igual que registrarlo a mano, con el aviso azul "Al guardar, … recibe la hoja de ruta por WhatsApp." (§5.1 del
@@ -3844,6 +3856,11 @@ cierren las pruebas de la §39**, antes que lo demás.
   contraseña" y "Restablecer contraseña") y por eso no se vean como los de adentro. Revisar también los dos modales
   juntos (lo mismo en "Olvidé mi contraseña") y el ojo para ver la contraseña, que el login tiene y el modal no. Como es
   del módulo de Facu, avisarle antes de cambiarlo.
+  **Del reporte de la ronda 1 (28/10, §59):** DS1, el error de cada campo del login queda dentro del recuadro y el borde
+  no se pone rojo (`css/login.css`); DS3, el ojo de la contraseña sin globito; M1, con un enlace inválido o vencido,
+  mostrar solo el aviso y "Solicitar otro enlace" en lugar de los campos; M3, un solo texto para la regla de la contraseña
+  (hoy hay cuatro: "Usá de 8 a 20 caracteres, con letras y números.", validado en la pantalla). DS2 (los avisos de los
+  dos modales sin rojo) ya se arregló el 28/10.
 - [ ] **11. Precio del gasoil: dónde va y cómo se carga (Rocío, 28/10).** Hoy está en Gestionar camiones, entre los filtros
   y la tabla: "Precio del gasoil: todavía no se cargó" y el botón "Cambiar precio del gasoil", separado de Reportes y
   Registrar camión. A Rocío le parece raro el lugar (es de los camiones, pero no es un camión), muy simple, y no sabía si
@@ -4714,3 +4731,56 @@ cambió de su commit (el Cancelado, el lugar y los estados de Reenviar WhatsApp,
 **Probar en la VM:** la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y cuando el resto esté
 OK (Rocío, 28/10), con el token del día, las plantillas aprobadas y choferes con celulares del equipo. En la Mac no se
 compiló la API; las pruebas de Node de viajes dan OK.
+
+---
+
+## 59. Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios y el chofer) — PROBADA; ARREGLOS HECHOS, FALTA REPROBAR
+
+Reporte: `docs/pruebas/2026-10-28-pruebas-ronda-1.md` (VM sobre `3c37749`). 52 controles: 38 OK, 7 fallas y 7 no probados.
+La API compila sin errores y pasan las 80 pruebas de Node y la de PowerShell. Usuarios, roles, grupos, los permisos de
+`GET`/`PUT` y el alta del chofer con su usuario funcionan. El chofer de la demo pasa a ser **dquiroga** (chofer 12),
+con el celular de Rocío, en lugar de rjuarez.
+
+**Arreglado el 28/10** (Rocío: "hacé los arreglos de 'hacer ya'"; ella le avisa a Facu de lo que toca de su módulo):
+- **F1 (alta):** una sesión invalidada (cambio de e-mail o de contraseña, usuario inactivo) no volvía al login en el otro
+  navegador. El rechazo del control de sesiones de Facu (`Security/SesionesRecupero.cs`) salía antes de que Web API sume el
+  permiso de CORS (su handler se agrega al final), así que el navegador lo bloqueaba y la pantalla lo tomaba como un corte
+  de conexión. Ahora el rechazo agrega `Access-Control-Allow-Origin` (la misma política de `WebApiConfig`). De paso, M11:
+  un cambio sin permiso dice "No tenés permiso para modificar usuarios.".
+- **F4:** un error 500 devolvía el detalle técnico (excepción, SQL, rutas del servidor). Ahora ninguno lo devuelve
+  (`IncludeErrorDetailPolicy.Never` en `WebApiConfig.cs`). En Registrar o Editar chofer, si las localidades no cargan,
+  el error va debajo de Localidad ("Localidades sin cargar: volvé a elegir la provincia.").
+- **F6:** Ver detalle del usuario chofer (Listar usuarios) dice qué chofer tiene ("Chofer: Quiroga, Darío (DNI …)");
+  `GET api/Usuarios/{id}` lo trae.
+- **F7:** con el chofer inactivado, la hoja de ruta muestra solo el aviso (sin "No se pudo cargar tu hoja de ruta.") y
+  cualquier sesión que la API rechaza (401) se borra del navegador antes de ir al login (`SGTL.mensajeError`).
+- **DS2:** los avisos de "Olvidé mi contraseña" y "Restablecer contraseña" en rojo, como los de los demás modales.
+- **DS5:** "El rol Usuario necesita al menos un grupo…" (decía "rol user").
+- **DS8:** en Editar chofer, al completar el acceso, el E-mail muestra el asterisco.
+- Docs: `docs/equipo/PRUEBAS-VM-CLAUDE.md` (la VM puede hacer `git pull`, M15; Node es el de Visual Studio, M14) y
+  `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md` (dquiroga).
+
+**F2 (alta), sin código:** el correo del recupero no sale desde la VM porque la contraseña SMTP la guardó otra máquina
+(§40, punto 2). Para el 29/10, Rocío guarda la contraseña de los tres perfiles de e-mail desde la máquina que va a mostrar
+el sistema. De fondo: una clave común fuera del repo, con Facu.
+
+**Queda pendiente (después de las pruebas):**
+- F3 (usuarios sin token), DS4 y M7 (vencimiento de la sesión): §40, punto 1.
+- F5: Auditoría de grupos: el alta del grupo no se registra, los cambios de permisos y miembros figuran como "sistema" y
+  cada guardado borra y vuelve a crear todo (`GruposController.cs`; con Facu).
+- DS1, DS3, M1 y M3 (login y recupero): §40, punto 10.
+- DS6 y DS7 (Gestionar usuarios): todos los campos con problema marcados juntos, el error de la contraseña debajo del
+  campo (validado en la pantalla) y "Tenés cambios sin guardar" al cancelar.
+- M4 (avisar al pasar un chofer a Usuario: "Al guardar, deja de estar vinculado a …"), M5 (la lista "Chofer" de Gestionar
+  usuarios ofrece choferes inactivos), M6 (Localidad con 504 opciones: el buscador compartido), M8 (dos textos para el
+  e-mail inválido), M9 (Editar chofer no propone el nombre de usuario), M12 (la ruedita del login queda girando mientras
+  carga la apariencia) y M13 (dos pruebas imprimen acentos rotos).
+- M10 (ejemplos con nombres del equipo): con los placeholders (§41, Para más adelante).
+- Hora en UTC en Auditoría y en `CHOFERES.Fecha_Alta`: §2.
+
+**Probar en la VM:** la reprueba corta del principio de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, y los
+puntos del correo (7, 12, 13, 14, 17, 24 y 26) cuando la contraseña SMTP esté guardada desde la VM.
+
+**Limpieza:** mferreyra (usuario 18) y el grupo "Coordinación de tráfico" (9) quedan hasta terminar todas las rondas (sirven
+para probar permisos); después, con el SQL del reporte. El grupo viejo "PRUEBA-CLAUDE 20/10" (7) se borra antes del 29/10,
+mirando primero qué tiene (consulta del reporte). El chofer 12 y dquiroga quedan: son los de la demo.

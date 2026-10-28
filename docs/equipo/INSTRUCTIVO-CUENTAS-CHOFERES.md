@@ -5,6 +5,11 @@ Para la sesión de Claude Code que trabaja en la VM. Las reglas de la sesión y 
 grupo, un chofer y un usuario, y **quedan en la base** (no se limpian al final): son el chofer de la demo de la hoja de
 ruta (§36 de `docs/PENDIENTES-SISTEMA.md`).
 
+**Hecho el 28/10, en la ronda 1 de las pruebas** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): el chofer de la demo es
+**Darío Quiroga** (chofer 12, usuario `dquiroga`, rol Chofer), con el celular de Rocío y el e-mail de la casilla de Integra
+Analistas con `+dquiroga`. **Reemplaza a `rjuarez`** como chofer de la demo y de las rondas 4 y 6. La parte 3 no hace
+falta repetirla.
+
 El chofer usa el sistema con una cuenta de usuario propia, con el **rol Chofer**, que apunta a su ficha de Gestionar
 choferes y solo abre Hojas de ruta (desde el 27/10: antes era rol user con el grupo "Choferes"; ver
 `database/hoja-de-ruta/02_rol_chofer.sql`). Hoy se hace **una sola cuenta, de prueba**; las de los choferes reales
@@ -54,7 +59,8 @@ Configuración → Gestionar grupos y permisos.
    que se le asigne en la tanda 3: tiene que ser uno del equipo.
 2. Gestionar choferes → Registrar chofer, con datos verosímiles (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`): un nombre y un
    apellido comunes que no estén ya en la lista de la parte 1, DNI y CUIL inventados que cumplan el formato, el celular de
-   Rocío, e-mail `@example.com` (es obligatorio: se copia a su usuario y no puede ser el de otro usuario) y un domicilio que
+   Rocío, el e-mail de la casilla de Integra Analistas con `+` y el usuario antes de la arroba (es obligatorio: se copia a
+   su usuario, no puede ser el de otro usuario y con él recupera la contraseña; `@example.com` no recibe) y un domicilio que
    exista. En "Acceso al sistema", el nombre de usuario se propone solo
    (dejalo así, salvo que Rocío diga otro) y la contraseña **la escribe Rocío**. Guardar → "Chofer registrado con el
    usuario …". Anotá el ID del chofer y el usuario.

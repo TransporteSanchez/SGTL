@@ -264,6 +264,30 @@ primera, si es largo, si es confuso o si falta algo, pensando en la persona admi
 
 ## 3. Ronda 2 — Viajes
 
+### Antes de la ronda 2: reprueba corta de la ronda 1 (§59)
+
+Con la API recompilada (los arreglos del 28/10 tocan C#) y las dos sesiones de la ronda 1 (admin en `localhost:5502`,
+mferreyra o dquiroga en `127.0.0.1:5502`):
+
+1. **F1:** cambiarle el e-mail a mferreyra con su sesión abierta en la otra pestaña: en menos de un minuto vuelve al
+   login, y después de entrar, a la pantalla donde estaba. Lo mismo inactivando el usuario de dquiroga (activarlo
+   después). En la consola, ningún error de CORS.
+2. **F7:** inactivar el chofer 12 con la sesión de dquiroga abierta y tocar "Hoy y próximos": solo el aviso del chofer
+   inactivo, sin "No se pudo cargar tu hoja de ruta.". Después del login, en `localStorage` ya no está el token. Activarlo.
+3. **F6:** Listar usuarios → Ver detalle de dquiroga: "Chofer: Quiroga, Darío (DNI …)". El de un usuario que no es chofer
+   no muestra esa línea.
+4. **M11:** con mferreyra (solo "Listar usuarios"), un `PUT api/Usuarios/18` desde la consola responde "No tenés permiso
+   para modificar usuarios.".
+5. **DS2:** Olvidé mi contraseña → Enviar enlace con el e-mail vacío: "Revisá los campos marcados." en rojo. Abrir
+   `Login.html#recupero=abc`: el aviso del enlace inválido, en rojo.
+6. **DS5:** Registrar usuario con rol Usuario: "El rol Usuario necesita al menos un grupo…".
+7. **DS8:** Editar el chofer 5 (sin usuario): al escribir el nombre de usuario, E-mail muestra el asterisco; al borrarlo,
+   se va. Cancelar.
+8. **F4:** si en cualquier momento de la tanda una llamada da error 500, la respuesta no trae `ExceptionMessage` ni
+   `StackTrace`. Si las localidades no cargan en Registrar chofer, el error va debajo de Localidad.
+9. **F2:** si Rocío guardó la contraseña SMTP desde la VM, los puntos del correo de la ronda 1 (7, 12, 13, 14, 17, 24 y
+   26). Si no, NO PROBADO.
+
 Con viajes de prueba de un cliente directo y de uno con plataforma (Rukas), y con nombres creíbles (anotá ID y nombre de
 lo que crees, para la limpieza). Con tarifa fija y recorridos de hasta 130 km para lo de la vuelta del día.
 
