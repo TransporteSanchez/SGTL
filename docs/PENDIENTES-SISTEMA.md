@@ -3906,17 +3906,37 @@ como presentación). Los números son los del listado de Rocío.
 ### Antes del jueves 29/10 (pedido de Rocío)
 - [ ] **21 y 34. Datos como reales para el profe.** Limpiar todo lo que esté mal, sin sentido o con datos al azar (se suma
   a la §40, punto 6, y al cliente "distribuidora-powerful S.A." de la §38) y dejar cerrados los viajes pasados.
-  **Viajes superpuestos (relevado por Rocío el 28/10):** cargados antes del control de camión y chofer ocupados (§43),
-  tienen el mismo camión o el mismo chofer en horarios que se pisan; al editarlos, la pantalla da "Camión ocupado" o
-  "Chofer ocupado". El #40 ya se corrigió (otro camión, 28/10). Quedan:
-  - #5 (Entregado) y #6 (Listo para facturar), 21 y 22/07, camión 2: los dos cerrados.
-  - #11 (Listo para facturar, del 06/10 al 10/10: ¿cuatro días o la fecha de fin mal cargada?) con #45 (Registrado) y #46
-    (En viaje), camión 2, y con #12 (Listo para facturar), chofer 9.
-  - #36 y #47 (Registrados), 20/10, chofer 4. #41 y #51 (Registrados), 23/10, camión 2. #33 (En viaje) y #35 (Registrado),
-    26/10, camión 1. #37 y #42 (Registrados), 27/10, chofer 11.
-  Para cada uno, Rocío decide si se cambia el camión o el chofer, se corrigen las fechas, o se cierra (los Registrados con
-  fecha pasada: se hicieron o se cancelan). Para volver a listarlos: `database/verificacion/02_viajes_superpuestos.sql`
-  (solo lectura).
+  **Viajes superpuestos — corregir antes del jueves 29/10 (Rocío, 28/10).** Cargados antes del control de camión y chofer
+  ocupados (§43): el mismo camión o el mismo chofer en horarios que se pisan, y al editarlos la pantalla da "Camión
+  ocupado" o "Chofer ocupado". El #40 ya se corrigió (otro camión, 28/10). Lo que se propuso con el detalle de cada viaje
+  (la mayoría son datos de prueba repartidos al azar: el camión ERS783 el mismo día en Córdoba y en Quilmes):
+
+  | Par | Qué hacer | Dónde |
+  |---|---|---|
+  | #11 con #46 (camión ERS783) y #12 (chofer Montenegro) | El fin del #11 (Sede Quilmes → Sede Banfield, del 06/10 12:00 al 10/10 12:00) está mal: pasa a 06/10/2026 16:00 (o el horario real) | SQL de abajo (es Listo para facturar: la pantalla no deja cambiar fechas) |
+  | #11 con #45 | Al #45 (Alimentos La Serena, Registrado, 06/10 de 07:00 a 15:00) otro camión libre | Editar viaje |
+  | #36 y #47 (chofer Juárez, 20/10) | Al #36 (distribuidora-powerful) otro chofer | Editar viaje |
+  | #41 y #51 (camión ERS783, 23/10) | Al #41 (Distribuidora del Sur) otro camión; el #51 viene del presupuesto #11 y no se toca | Editar viaje |
+  | #33 y #35 (camión ABC123, 26/10) | Al #35 (QUICKFOOD) otro camión; el #33 viene del presupuesto #3 y está En viaje | Editar viaje |
+  | #37 y #42 (chofer Godoy, 27/10) | Al #37 (QUICKFOOD) otro chofer; el #42 viene del presupuesto #9 | Editar viaje |
+  | #5 y #6 (julio, cerrados) | Nada: el #5 es de distribuidora-powerful y se va con su limpieza (§38) | — |
+
+  Al cambiar el camión, el importe puede cambiar (la tarifa depende del tipo y el modelo). Si alguno no se hizo, en vez de
+  cambiarle el camión o el chofer se cancela con motivo (un cancelado no cuenta como ocupado). SQL del #11 (no cambia el
+  importe; no queda en Auditoría):
+  ```sql
+  BEGIN TRAN;
+  UPDATE dbo.VIAJES
+  SET Fecha_Fin = '2026-10-06T16:00:00', Usu_Modi = N'RNUVOLI', Fecha_Modi = GETDATE()
+  WHERE Viaje_ID = 11 AND Fecha_Fin = '2026-10-10T12:00:00';
+  SELECT @@ROWCOUNT AS Filas;   -- tiene que dar 1
+  SELECT Viaje_ID, Fecha_Inicio, Fecha_Fin, Estado FROM dbo.VIAJES WHERE Viaje_ID = 11;
+  -- COMMIT; o ROLLBACK;
+  ```
+  Al terminar, `database/verificacion/02_viajes_superpuestos.sql` (solo lectura) tiene que dar solo el par #5 y #6. Va con
+  el resto de esta limpieza: choferes con nombres del equipo (Montenegro Federico, Godoy Facundo y dos Pai), el cliente
+  distribuidora-powerful, Distribuidora del Sur con plataforma (punto 16) y los viajes con fecha pasada que siguen
+  Registrados o En viaje.
 - [ ] **16. Distribuidora del Sur S.A. figura con plataforma (Rukas).** Solo QUICKFOOD tiene que tenerla. Ver qué viajes
   tiene y si conviene pasarlos a otro cliente o a QUICKFOOD; después, sacar el cliente o dejarlo como cliente común.
 - [ ] **22. Toda la lógica del flujo de viajes, en todos los escenarios:** cambios de estado, edición y el proceso completo
