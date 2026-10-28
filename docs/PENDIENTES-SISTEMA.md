@@ -3906,6 +3906,17 @@ como presentación). Los números son los del listado de Rocío.
 ### Antes del jueves 29/10 (pedido de Rocío)
 - [ ] **21 y 34. Datos como reales para el profe.** Limpiar todo lo que esté mal, sin sentido o con datos al azar (se suma
   a la §40, punto 6, y al cliente "distribuidora-powerful S.A." de la §38) y dejar cerrados los viajes pasados.
+  **Viajes superpuestos (relevado por Rocío el 28/10):** cargados antes del control de camión y chofer ocupados (§43),
+  tienen el mismo camión o el mismo chofer en horarios que se pisan; al editarlos, la pantalla da "Camión ocupado" o
+  "Chofer ocupado". El #40 ya se corrigió (otro camión, 28/10). Quedan:
+  - #5 (Entregado) y #6 (Listo para facturar), 21 y 22/07, camión 2: los dos cerrados.
+  - #11 (Listo para facturar, del 06/10 al 10/10: ¿cuatro días o la fecha de fin mal cargada?) con #45 (Registrado) y #46
+    (En viaje), camión 2, y con #12 (Listo para facturar), chofer 9.
+  - #36 y #47 (Registrados), 20/10, chofer 4. #41 y #51 (Registrados), 23/10, camión 2. #33 (En viaje) y #35 (Registrado),
+    26/10, camión 1. #37 y #42 (Registrados), 27/10, chofer 11.
+  Para cada uno, Rocío decide si se cambia el camión o el chofer, se corrigen las fechas, o se cierra (los Registrados con
+  fecha pasada: se hicieron o se cancelan). Para volver a listarlos: `database/verificacion/02_viajes_superpuestos.sql`
+  (solo lectura).
 - [ ] **16. Distribuidora del Sur S.A. figura con plataforma (Rukas).** Solo QUICKFOOD tiene que tenerla. Ver qué viajes
   tiene y si conviene pasarlos a otro cliente o a QUICKFOOD; después, sacar el cliente o dejarlo como cliente común.
 - [ ] **22. Toda la lógica del flujo de viajes, en todos los escenarios:** cambios de estado, edición y el proceso completo

@@ -62,7 +62,12 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
 - **§43, paso 1 (hecho el 28/10):** `database/tarifas/07_relevar_vueltas_por_recorrido.sql` dio un solo caso, el viaje
   #40 (Servicios Ambientales S.A.), guardado como 2ª vuelta y que con la regla nueva es 1ª. Rocío lo edita y lo guarda
   después de recompilar: pasa a 1ª y cambia su importe. Si en la ronda 2 aparece con otro importe que antes, es eso y no
-  una falla.
+  una falla. **Hecho el 28/10:** quedó como 1ª, con otro camión (el suyo estaba ocupado en ese horario).
+- **Viajes superpuestos de antes del 27/10** (cargados antes del control de camión y chofer ocupados, §43): el mismo
+  camión o el mismo chofer en dos viajes que se pisan. Al 28/10: #5 y #6 (julio, camión 2), #11 con #45, #46 (camión 2)
+  y #12 (chofer 9), #36 y #47 (chofer 4), #41 y #51 (camión 2), #33 y #35 (camión 1) y #37 y #42 (chofer 11). Si al
+  editar uno de esos aparece "Camión ocupado" o "Chofer ocupado", es el dato viejo y no una falla: anotalo y probá con
+  otro viaje o con uno nuevo. Se corrigen con la limpieza de datos (§41, punto 21).
 - **Script de Fede (para la ronda 6):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
   mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). **Al
   28/10 ya está corrido** (las tres plantillas cargadas, en `es_AR`). En Meta
