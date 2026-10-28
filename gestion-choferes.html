@@ -316,7 +316,7 @@
                                     <div class="form-text">Código de área sin 0</div>
                                 </div>
                                 <div class="col-12 col-md-4">
-                                    <label for="editarEmail" class="form-label">E-mail</label>
+                                    <label for="editarEmail" class="form-label">E-mail <span class="text-danger d-none" id="editarEmailObligatorio">*</span></label>
                                     <input type="email" id="editarEmail" class="form-control" placeholder="nombre@correo.com" autocomplete="off">
                                     <div class="invalid-feedback"></div>
                                 </div>
@@ -679,6 +679,7 @@
                 campo.addEventListener('input', function () {
                     if (regla.soloUsuario) campo.value = campo.value.replace(/[^A-Za-z0-9_]/g, '');
                     if (regla.id === 'NombreUsuario') usuarioEscrito[prefijo] = true;
+                    if (prefijo === 'editar') marcarEmailObligatorio();
                     delete campo.dataset.errorRemoto;
                     if (campo.classList.contains('is-invalid') && !errorAcceso(prefijo, regla, true)) SGTL.limpiarError(campo);
                 });
@@ -702,8 +703,11 @@
 
             const provincia = campoChofer(prefijo, 'Provincia');
             provincia.addEventListener('change', function () {
-                cargarLocalidades(campoChofer(prefijo, 'Localidad'), provincia.value).catch(function (error) {
-                    SGTL.avisoFormulario(avisoChofer(prefijo), error.mensajeUsuario);
+                const localidad = campoChofer(prefijo, 'Localidad');
+                SGTL.limpiarError(localidad);
+                // Debajo de Localidad, donde se está mirando: arriba del formulario no se veía (reporte de la VM del 28/10, F4).
+                cargarLocalidades(localidad, provincia.value).catch(function () {
+                    SGTL.marcarError(localidad, 'Localidades sin cargar: volvé a elegir la provincia.');
                 });
             });
         }
@@ -735,6 +739,12 @@
 
         function pideAcceso(prefijo) {
             return prefijo === 'alta' || (!choferTieneUsuario && accesoCompletado(prefijo));
+        }
+
+        // Al editar, el e-mail pasa a ser obligatorio si se completa el acceso: el asterisco lo dice (reporte de la VM del
+        // 28/10, DS8).
+        function marcarEmailObligatorio() {
+            $('#editarEmailObligatorio').toggleClass('d-none', !pideAcceso('editar'));
         }
 
         // Resuelve false si el nombre de usuario ya existe (y lo marca debajo del campo).
@@ -874,6 +884,7 @@
                     $('#FechaAltaChofer').text(fechaChofer(data.Fecha_Alta));
                     // Ya tiene usuario: como dato fijo (la contraseña y el estado de la cuenta, en Gestionar usuarios).
                     choferTieneUsuario = !!data.Usuario_Nombre;
+                    marcarEmailObligatorio();
                     $('#editarAccesoCampos').toggleClass('d-none', choferTieneUsuario);
                     $('#editarUsuarioFijo').toggleClass('d-none', !choferTieneUsuario).html(choferTieneUsuario
                         ? '<div><span class="suave">Usuario</span> ' + SGTL.escapar(data.Usuario_Nombre) + ' ' + SGTL.estado(data.Usuario_Estado) + '</div>' +
