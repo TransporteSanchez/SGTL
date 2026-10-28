@@ -38,8 +38,8 @@ Revisá cada punto contra tus cambios (pedile a tu IA: "Revisá los cambios con 
 AGENTS.md"):
 
 1. **Botones de la fila:** solo ícono con tooltip y `aria-label`, con `SGTL.botonFila` / `SGTL.accionesFila`,
-   en el orden Ver detalle · Editar · Ver PDF · Cambiar estado · Siguiente paso · Activar/Inactivar ·
-   Eliminar/Anular. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.** El motivo es siempre
+   en el orden Ver detalle · Editar · Ver PDF · Cambiar estado · Siguiente paso · Reenviar WhatsApp · Activar/Inactivar ·
+   Cancelar/Anular · Eliminar. **Lo que no se puede hacer queda deshabilitado con el motivo, no se esconde.** El motivo es siempre
    "No se puede {acción} {sobre qué}: {qué le pasa a esta fila}" ("No se puede eliminar el chofer: está activo"), sin
    órdenes ni reglas sueltas como "Primero…" o "Solo se…" (la regla va solo si el motivo es el tipo de la fila: "No se
    puede editar la factura: solo se editan los recibos"); vale también para el pie de un modal. Fuera de las filas,

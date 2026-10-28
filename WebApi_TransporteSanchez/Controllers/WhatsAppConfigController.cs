@@ -23,6 +23,8 @@ namespace WebApi_TransporteSanchez.Controllers
             public string PhoneNumberId { get; set; }
             public string ApiVersion { get; set; }
             public string TemplateName { get; set; }
+            public string TemplateCancelado { get; set; }
+            public string TemplateDesasignado { get; set; }
             public string TemplateLanguage { get; set; }
             public string DefaultCountryCode { get; set; }
             public DateTime? Fecha_Modi { get; set; }
@@ -37,10 +39,22 @@ namespace WebApi_TransporteSanchez.Controllers
             public string PhoneNumberId { get; set; }
             public string ApiVersion { get; set; }
             public string TemplateName { get; set; }
+            public string TemplateCancelado { get; set; }
+            public string TemplateDesasignado { get; set; }
             public string TemplateLanguage { get; set; }
             public string DefaultCountryCode { get; set; }
             public DateTime? Fecha_Modi { get; set; }
             public string Usu_Modi { get; set; }
+        }
+
+        private static string SelectConfigSql()
+        {
+            return "SELECT WhatsAppConfig_ID, Enabled, AccessToken, PhoneNumberId, ApiVersion, " +
+                "TemplateName, " +
+                "ISNULL(TemplateCancelado, N'viaje_cancelado') AS TemplateCancelado, " +
+                "ISNULL(TemplateDesasignado, N'viaje_desasignado') AS TemplateDesasignado, " +
+                "TemplateLanguage, DefaultCountryCode, Fecha_Modi, Usu_Modi " +
+                "FROM WHATSAPP_CONFIG WHERE WhatsAppConfig_ID = @id";
         }
 
         // GET: api/WhatsAppConfig/1
@@ -59,9 +73,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     EnsureRowExists(db);
 
                     var row = db.Database.SqlQuery<WhatsAppConfigRow>(
-                        "SELECT WhatsAppConfig_ID, Enabled, AccessToken, PhoneNumberId, ApiVersion, " +
-                        "TemplateName, TemplateLanguage, DefaultCountryCode, Fecha_Modi, Usu_Modi " +
-                        "FROM WHATSAPP_CONFIG WHERE WhatsAppConfig_ID = @id",
+                        SelectConfigSql(),
                         new SqlParameter("@id", id)).FirstOrDefault();
 
                     if (row == null)
@@ -74,7 +86,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 return Content(HttpStatusCode.InternalServerError, new
                 {
-                    Message = "No se pudo leer la configuración de WhatsApp. Verificá que exista la tabla WHATSAPP_CONFIG.",
+                    Message = "No se pudo leer la configuración de WhatsApp. Verificá que exista la tabla WHATSAPP_CONFIG y el script 02_plantillas_cancelado_y_desasignado.sql.",
                     Detail = ex.Message
                 });
             }
@@ -99,9 +111,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     EnsureRowExists(db);
 
                     var actual = db.Database.SqlQuery<WhatsAppConfigRow>(
-                        "SELECT WhatsAppConfig_ID, Enabled, AccessToken, PhoneNumberId, ApiVersion, " +
-                        "TemplateName, TemplateLanguage, DefaultCountryCode, Fecha_Modi, Usu_Modi " +
-                        "FROM WHATSAPP_CONFIG WHERE WhatsAppConfig_ID = @id",
+                        SelectConfigSql(),
                         new SqlParameter("@id", id)).FirstOrDefault();
 
                     if (actual == null)
@@ -111,6 +121,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var apiVersion = string.IsNullOrWhiteSpace(value.ApiVersion) ? "v21.0" : value.ApiVersion.Trim();
                     var templateName = string.IsNullOrWhiteSpace(value.TemplateName) ? "viaje_asignado" : value.TemplateName.Trim();
+                    var templateCancelado = string.IsNullOrWhiteSpace(value.TemplateCancelado) ? "viaje_cancelado" : value.TemplateCancelado.Trim();
+                    var templateDesasignado = string.IsNullOrWhiteSpace(value.TemplateDesasignado) ? "viaje_desasignado" : value.TemplateDesasignado.Trim();
                     var templateLang = string.IsNullOrWhiteSpace(value.TemplateLanguage) ? "es_AR" : value.TemplateLanguage.Trim();
                     var country = string.IsNullOrWhiteSpace(value.DefaultCountryCode) ? "54" : value.DefaultCountryCode.Trim();
                     var phoneId = (value.PhoneNumberId ?? "").Trim();
@@ -119,13 +131,16 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     int filas = db.Database.ExecuteSqlCommand(
                         "UPDATE WHATSAPP_CONFIG SET Enabled = @en, AccessToken = @tok, PhoneNumberId = @pid, " +
-                        "ApiVersion = @ver, TemplateName = @tn, TemplateLanguage = @tl, DefaultCountryCode = @cc, " +
+                        "ApiVersion = @ver, TemplateName = @tn, TemplateCancelado = @tc, TemplateDesasignado = @td, " +
+                        "TemplateLanguage = @tl, DefaultCountryCode = @cc, " +
                         "Fecha_Modi = @fecha, Usu_Modi = @usu WHERE WhatsAppConfig_ID = @id",
                         new SqlParameter("@en", value.Enabled),
                         new SqlParameter("@tok", (object)token ?? DBNull.Value),
                         new SqlParameter("@pid", string.IsNullOrEmpty(phoneId) ? (object)DBNull.Value : phoneId),
                         new SqlParameter("@ver", apiVersion),
                         new SqlParameter("@tn", templateName),
+                        new SqlParameter("@tc", templateCancelado),
+                        new SqlParameter("@td", templateDesasignado),
                         new SqlParameter("@tl", templateLang),
                         new SqlParameter("@cc", country),
                         new SqlParameter("@fecha", fecha),
@@ -143,6 +158,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         AgregarCambio(antes, despues, "PhoneNumberId", actual.PhoneNumberId, phoneId);
                         AgregarCambio(antes, despues, "ApiVersion", actual.ApiVersion, apiVersion);
                         AgregarCambio(antes, despues, "TemplateName", actual.TemplateName, templateName);
+                        AgregarCambio(antes, despues, "TemplateCancelado", actual.TemplateCancelado, templateCancelado);
+                        AgregarCambio(antes, despues, "TemplateDesasignado", actual.TemplateDesasignado, templateDesasignado);
                         AgregarCambio(antes, despues, "TemplateLanguage", actual.TemplateLanguage, templateLang);
                         AgregarCambio(antes, despues, "DefaultCountryCode", actual.DefaultCountryCode, country);
                         if (!string.Equals(actual.AccessToken ?? "", token ?? "", StringComparison.Ordinal))
@@ -165,9 +182,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     catch { }
 
                     var updated = db.Database.SqlQuery<WhatsAppConfigRow>(
-                        "SELECT WhatsAppConfig_ID, Enabled, AccessToken, PhoneNumberId, ApiVersion, " +
-                        "TemplateName, TemplateLanguage, DefaultCountryCode, Fecha_Modi, Usu_Modi " +
-                        "FROM WHATSAPP_CONFIG WHERE WhatsAppConfig_ID = @id",
+                        SelectConfigSql(),
                         new SqlParameter("@id", id)).FirstOrDefault();
 
                     return Ok(new
@@ -181,7 +196,7 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 return Content(HttpStatusCode.InternalServerError, new
                 {
-                    Message = "No se pudo guardar la configuración de WhatsApp.",
+                    Message = "No se pudo guardar la configuración de WhatsApp. Si faltan columnas, ejecutá database/whatsapp/02_plantillas_cancelado_y_desasignado.sql.",
                     Detail = ex.Message
                 });
             }
@@ -198,6 +213,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 PhoneNumberId = row.PhoneNumberId ?? "",
                 ApiVersion = row.ApiVersion ?? "v21.0",
                 TemplateName = row.TemplateName ?? "viaje_asignado",
+                TemplateCancelado = row.TemplateCancelado ?? "viaje_cancelado",
+                TemplateDesasignado = row.TemplateDesasignado ?? "viaje_desasignado",
                 TemplateLanguage = row.TemplateLanguage ?? "es_AR",
                 DefaultCountryCode = row.DefaultCountryCode ?? "54",
                 Fecha_Modi = row.Fecha_Modi,

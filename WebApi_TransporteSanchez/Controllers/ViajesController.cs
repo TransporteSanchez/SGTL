@@ -169,6 +169,7 @@ namespace WebApi_TransporteSanchez.Controllers
         public const string EstadoEntregado = "Entregado";
         public const string EstadoListoParaFacturar = "Listo_para_facturar";
         public const string EstadoFacturado = "Facturado";
+        public const string EstadoCancelado = "Cancelado";
 
         // Con plataforma (Rukas): el seguimiento fino queda en Rukas; en SGTL solo la puerta a la proforma.
         private static readonly string[] FlujoConPlataforma = { EstadoRegistrado, EstadoListoParaFacturar, EstadoFacturado };
@@ -472,13 +473,37 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // El envio nunca impide guardar el viaje: si falla queda registrado en App_Data/whatsapp.log.
+        private static object ResultadoWhatsApp(WhatsAppNotifyResult wa)
+        {
+            if (wa == null) return null;
+            return new { wa.Sent, wa.Status, wa.Detail, wa.To };
+        }
+
         private object NotificarChofer(SGTLAuditContext db, VIAJES viaje)
         {
-            if (viaje.ChoferID <= 0)
+            if (viaje == null || viaje.ChoferID <= 0)
                 return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje));
+        }
 
-            var wa = _whatsAppDispatcher.TryNotifyViajeAsignado(db, viaje);
-            return new { wa.Sent, wa.Status, wa.Detail, wa.To };
+        private object NotificarCancelacion(SGTLAuditContext db, VIAJES viaje)
+        {
+            if (viaje == null || viaje.ChoferID <= 0)
+                return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeCancelado(db, viaje));
+        }
+
+        private object NotificarDesasignacion(SGTLAuditContext db, VIAJES viaje, int choferAnteriorId)
+        {
+            if (viaje == null || choferAnteriorId <= 0)
+                return null;
+            return ResultadoWhatsApp(_whatsAppDispatcher.TryNotifyViajeDesasignado(db, viaje, choferAnteriorId));
+        }
+
+        // Cancelar o eliminar solo mientras el viaje no salió (sigue en Registrado).
+        private static bool PuedeCancelarOEliminar(string estado)
+        {
+            return EsRegistrado(estado);
         }
 
         // Se contemplan tanto los vínculos normalizados como las líneas históricas
@@ -677,6 +702,32 @@ SELECT CAST(CASE WHEN EXISTS (
             }
         }
 
+        // POST: api/Viajes/{id}/WhatsApp
+        // Reenvía la hoja de ruta al chofer (manual desde Gestionar viajes). No cambia el viaje.
+        // Si Meta falla, responde igual con WhatsApp.Sent=false; el error queda en App_Data/whatsapp.log.
+        [HttpPost]
+        [Route("api/Viajes/{id:int}/WhatsApp")]
+        public IHttpActionResult ReenviarWhatsApp(int id)
+        {
+            try
+            {
+                using (var db = new SGTLAuditContext(Cn()))
+                {
+                    var viaje = db.Set<VIAJES>().FirstOrDefault(v => v.Viaje_ID == id);
+                    if (viaje == null) return NotFound();
+                    if (viaje.ChoferID <= 0)
+                        return Content(HttpStatusCode.BadRequest, new { message = "No se puede reenviar el WhatsApp: el viaje no tiene chofer asignado." });
+
+                    var whatsApp = NotificarChofer(db, viaje);
+                    return Ok(new { Viaje_ID = id, WhatsApp = whatsApp });
+                }
+            }
+            catch (Exception ex)
+            {
+                return InternalServerError(new Exception("Error al reenviar el WhatsApp del viaje.", ex));
+            }
+        }
+
         // POST: api/Viajes/{id}/Estado
         // Avanza/retrocede un paso del ciclo y registra el resultado de entrega
         // (opcional con plataforma; obligatorio en clientes directos para pasar a Entregado, con la evidencia).
@@ -702,16 +753,32 @@ SELECT CAST(CASE WHEN EXISTS (
                     var errores = ValidarCambioEstado(v, FlujoEstados(v.Tipo_Cliente), nuevo, resultado, body.Fecha_Entrega);
                     if (errores.Any()) return Content(HttpStatusCode.BadRequest, errores);
 
+                    if (nuevo == EstadoCancelado)
+                    {
+                        var proformaParaCancelar = ProformaQueIncluye(db, id);
+                        if (proformaParaCancelar != null)
+                            return Content(HttpStatusCode.Conflict, new { error = "No se puede cancelar el viaje porque está en la proforma " + TextoProforma(proformaParaCancelar) + ". Quitalo de la proforma o anulala primero." });
+                    }
+
                     var usuario = UsuarioCorto(body.Usuario);
+                    var resultadoGuardar = nuevo == EstadoCancelado ? null : resultado;
+                    var fechaGuardar = nuevo == EstadoCancelado ? (DateTime?)null : body.Fecha_Entrega;
                     db.Database.ExecuteSqlCommand(
                         "UPDATE VIAJES SET Estado=@e, Resultado_Entrega=@r, Fecha_Entrega=@f, Usu_Modi=@u, Fecha_Modi=GETDATE() WHERE Viaje_ID=@id",
-                        P("@e", nuevo), P("@r", resultado), P("@f", body.Fecha_Entrega), P("@u", usuario), P("@id", id));
+                        P("@e", nuevo), P("@r", resultadoGuardar), P("@f", fechaGuardar), P("@u", usuario), P("@id", id));
 
                     SGTLAuditContext.RegistrarEvento(Cn(), usuario, "ESTADO", "VIAJES", "Viaje_ID=" + id,
-                        "Estado=" + v.Estado + " -> " + nuevo + "; Resultado_Entrega=" + (resultado ?? "") +
-                        "; Fecha_Entrega=" + (body.Fecha_Entrega.HasValue ? body.Fecha_Entrega.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : ""));
+                        "Estado=" + v.Estado + " -> " + nuevo + "; Resultado_Entrega=" + (resultadoGuardar ?? "") +
+                        "; Fecha_Entrega=" + (fechaGuardar.HasValue ? fechaGuardar.Value.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) : ""));
 
-                    return Ok(new { Viaje_ID = id, Estado = nuevo, Message = "Estado del viaje actualizado." });
+                    object whatsApp = null;
+                    if (nuevo == EstadoCancelado)
+                    {
+                        var viajeEntidad = db.Set<VIAJES>().Find(id);
+                        whatsApp = NotificarCancelacion(db, viajeEntidad);
+                    }
+
+                    return Ok(new { Viaje_ID = id, Estado = nuevo, Message = "Estado del viaje actualizado.", WhatsApp = whatsApp });
                 }
             }
             catch (Exception ex)
@@ -849,9 +916,21 @@ SELECT CAST(CASE WHEN EXISTS (
                 errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está facturado: para corregirlo emití la nota de crédito de su factura desde Cuenta corriente." });
                 return errores;
             }
+            if (v.Estado == EstadoCancelado)
+            {
+                errores.Add(new { PropertyName = "Estado", ErrorMessage = "El viaje está cancelado: no se puede cambiar su estado." });
+                return errores;
+            }
             if (nuevo == EstadoFacturado)
             {
                 errores.Add(new { PropertyName = "Estado", ErrorMessage = "El estado Facturado se asigna solo al emitir la factura." });
+                return errores;
+            }
+            // Cancelado: solo desde Registrado (antes de En viaje / Listo para facturar). Queda en el historial.
+            if (nuevo == EstadoCancelado)
+            {
+                if (!PuedeCancelarOEliminar(v.Estado))
+                    errores.Add(new { PropertyName = "Estado", ErrorMessage = "Solo se puede cancelar un viaje en estado Registrado (antes de que salga)." });
                 return errores;
             }
 
@@ -1115,6 +1194,13 @@ SELECT CAST(CASE WHEN EXISTS (
                         new { PropertyName = "Estado", ErrorMessage = "El viaje ya está facturado: no se puede editar. Si hay que corregirlo, emití la nota de crédito de su factura desde Cuenta corriente." }
                     });
                 }
+                if (estado == EstadoCancelado)
+                {
+                    return Content(HttpStatusCode.BadRequest, new List<object>
+                    {
+                        new { PropertyName = "Estado", ErrorMessage = "El viaje está cancelado: no se puede editar." }
+                    });
+                }
 
                 bool desdePresupuesto = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0;
                 if (desdePresupuesto && (viaje.ClienteID != viajeDto.ClienteID || viaje.OrigenID != viajeDto.OrigenID || viaje.DestinoID != viajeDto.DestinoID ||
@@ -1127,6 +1213,7 @@ SELECT CAST(CASE WHEN EXISTS (
                 bool cambiaTarifa = false, tarifaEditable = false;
 
                 bool cambioHojaDeRuta = false, cambioKm = false;
+                int choferAnteriorId = viaje.ChoferID;
                 if (EsRegistrado(estado))
                 {
                     var erroresChofer = ValidarChofer(db, viajeDto);
@@ -1202,8 +1289,18 @@ SELECT CAST(CASE WHEN EXISTS (
                     GuardarNumTransporte(db, id, viajeDto.Num_Transporte);
                     if (calculo.Ok) GuardarImporte(db, id, DatosParaImporte(viaje, viajeDto, tarifaGuardada, tarifaEditable), calculo);
                     if (cambioKm) AuditarKmManual(id, viajeDto, viajeDto.Usu_Modi);
-                    var whatsApp = cambioHojaDeRuta ? NotificarChofer(db, viaje) : null;
-                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp });
+
+                    object whatsAppDesasignado = null;
+                    object whatsApp = null;
+                    if (cambioHojaDeRuta)
+                    {
+                        var cambioChofer = choferAnteriorId != viaje.ChoferID;
+                        if (cambioChofer && choferAnteriorId > 0)
+                            whatsAppDesasignado = NotificarDesasignacion(db, viaje, choferAnteriorId);
+                        if (viaje.ChoferID > 0)
+                            whatsApp = NotificarChofer(db, viaje);
+                    }
+                    return Ok(new { Message = "Viaje actualizado correctamente.", WhatsApp = whatsApp, WhatsAppDesasignado = whatsAppDesasignado });
                 }
                 catch (DbEntityValidationException ex)
                 {
@@ -1230,7 +1327,8 @@ SELECT CAST(CASE WHEN EXISTS (
         }
 
         // DELETE: api/Viajes/{id}
-        // Eliminacion fisica. Estado es operativo (no de baja logica); solo se elimina un viaje que todavia no salio.
+        // Eliminacion fisica. Solo mientras el viaje sigue Registrado (antes de En viaje).
+        // Si tiene chofer, se le avisa con la plantilla de viaje cancelado (el viaje ya no se hace).
         public IHttpActionResult Delete(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -1258,16 +1356,20 @@ SELECT CAST(CASE WHEN EXISTS (
                     }
 
                     var estado = EstadoActual(db, id);
-                    if (!EsRegistrado(estado))
+                    if (!PuedeCancelarOEliminar(estado))
                     {
+                        var etiqueta = string.IsNullOrEmpty(estado) ? EstadoRegistrado : estado.Replace('_', ' ');
                         return Content(HttpStatusCode.BadRequest, new List<object>
                         {
-                            new { PropertyName = "Estado", ErrorMessage = "El viaje está " + estado.Replace('_', ' ') + ": solo se pueden eliminar viajes en estado Registrado." }
+                            new { PropertyName = "Estado", ErrorMessage = "El viaje está " + etiqueta + ": solo se pueden eliminar viajes en estado Registrado (antes de que salgan)." }
                         });
                     }
 
                     if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.PRESUPUESTOS WHERE ViajeID=@id", new SqlParameter("@id", id)).First() > 0)
-                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado." });
+                        return Content(HttpStatusCode.Conflict, new { error = "No se puede eliminar un viaje generado desde un presupuesto aceptado. Si no se hace, cancelalo." });
+
+                    // Avisar antes de borrar: después ya no está el viaje ni el vínculo con el chofer.
+                    var whatsApp = NotificarCancelacion(db, viaje);
 
                     db.Set<VIAJES>().Remove(viaje);
 
@@ -1275,7 +1377,7 @@ SELECT CAST(CASE WHEN EXISTS (
                     {
                         db.Configuration.ValidateOnSaveEnabled = false;
                         db.SaveChanges();
-                        return Ok(new { Message = "Viaje eliminado correctamente." });
+                        return Ok(new { Message = "Viaje eliminado correctamente.", WhatsApp = whatsApp });
                     }
                     catch (DbUpdateConcurrencyException)
                     {

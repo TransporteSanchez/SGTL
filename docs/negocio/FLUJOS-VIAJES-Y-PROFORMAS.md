@@ -112,17 +112,18 @@ stateDiagram-v2
 
 ### 2.3 Qué se puede hacer con un viaje según dónde está
 
-| Situación del viaje | Editar | Cambiar estado | Eliminar |
-|---|---|---|---|
-| **Registrado**, sin proforma | Todo. Si cambian chofer, origen, destino o fecha, se le reenvía la hoja de ruta al chofer por WhatsApp | Sí | Sí, salvo que venga de un presupuesto aceptado |
-| **Ya salió** (En viaje, Entregado, Listo para facturar) | Solo los números (remito, transporte SAP, entrega) | Sí | No |
-| **Rukas en Listo para facturar**, sin proforma o en un borrador | Además, la **tarifa y los km**, para que coincida con Rukas | Sí | No |
-| En una proforma **borrador** | Igual que según su estado | Sí | No |
-| En una proforma **Generada o Aceptada** | No: para corregir, se anula la proforma | No | No |
-| **Facturado** | No: para corregir, nota de crédito | No | No |
-| **Generado desde un presupuesto aceptado** | Cliente, recorrido, km y tarifa quedan fijos (son los del presupuesto) | Sí | No |
+| Situación del viaje | Editar | Cambiar estado | Cancelar | Eliminar |
+|---|---|---|---|---|
+| **Registrado**, sin proforma | Todo. Si cambian chofer, origen, destino o fecha: WhatsApp (y al anterior si cambió el chofer) | Sí | Sí (queda Cancelado + WhatsApp) | Sí, salvo presupuesto (ahí cancelá) |
+| **Cancelado** | No | No | No | No |
+| **Ya salió** (En viaje, Entregado, Listo para facturar) | Solo los números (remito, transporte SAP, entrega) | Sí | No | No |
+| **Rukas en Listo para facturar**, sin proforma o en un borrador | Además, la **tarifa y los km**, para que coincida con Rukas | Sí | No | No |
+| En una proforma **borrador** | Igual que según su estado | Sí | No | No |
+| En una proforma **Generada o Aceptada** | No: para corregir, se anula la proforma | No | No | No |
+| **Facturado** | No: para corregir, nota de crédito | No | No | No |
+| **Generado desde un presupuesto aceptado** | Cliente, recorrido, km y tarifa quedan fijos (son los del presupuesto) | Sí | Sí si sigue Registrado | No |
 
-**WhatsApp al chofer:** al registrar el viaje con chofer asignado, y cuando cambia la hoja de ruta (chofer, origen, destino o fecha) mientras está Registrado. Si la integración no está configurada, el viaje se guarda igual y avisa.
+**WhatsApp al chofer:** al registrar con chofer; al reenviar desde la grilla; al cambiar recorrido/fecha; al cambiar chofer (desasignado al anterior + asignado al nuevo); al cancelar o eliminar en Registrado (plantilla de cancelado). Si la integración no está configurada, el viaje se guarda igual y avisa.
 
 **Tarifa:** fija (la de la ruta: cliente + origen + destino) o por km (según el período y la distancia, que se calcula con el mapa; a mano solo si falla Google). Con presupuesto aceptado, manda el importe del presupuesto.
 

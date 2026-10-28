@@ -5,9 +5,9 @@ namespace WebApi_TransporteSanchez.Services.WhatsApp
     public interface IWhatsAppNotifier
     {
         /// <summary>
-        /// Envía plantilla de viaje asignado. No debe lanzar: fallos se registran y se ignoran
-        /// para no afectar el alta del viaje.
+        /// Envía una plantilla de WhatsApp. No debe lanzar: fallos se registran y se ignoran
+        /// para no afectar el guardado del viaje.
         /// </summary>
-        Task<WhatsAppNotifyResult> NotifyViajeAsignadoAsync(ViajeWhatsAppPayload payload);
+        Task<WhatsAppNotifyResult> NotifyTemplateAsync(ViajeWhatsAppPayload payload, string templateName, string[] bodyParameters);
     }
 }

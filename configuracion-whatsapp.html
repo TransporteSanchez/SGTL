@@ -62,13 +62,24 @@
                                     <input type="text" class="form-control" id="waCountryCode" placeholder="54">
                                     <div class="form-text">Sin +. Argentina = 54. Se antepone al celular del chofer.</div>
                                 </div>
-                                <div class="col-12"><div class="sgtl-bloque-titulo mb-0 mt-2">Plantilla aprobada</div></div>
-                                <div class="col-md-8">
-                                    <label for="waTemplateName" class="form-label">Nombre de plantilla</label>
+                                <div class="col-12"><div class="sgtl-bloque-titulo mb-0 mt-2">Plantillas aprobadas en Meta</div></div>
+                                <div class="col-md-4">
+                                    <label for="waTemplateName" class="form-label">Viaje asignado</label>
                                     <input type="text" class="form-control" id="waTemplateName" placeholder="viaje_asignado">
+                                    <div class="form-text">Alta, reenvío y cambio de recorrido.</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <label for="waTemplateLanguage" class="form-label">Idioma de plantilla</label>
+                                    <label for="waTemplateCancelado" class="form-label">Viaje cancelado</label>
+                                    <input type="text" class="form-control" id="waTemplateCancelado" placeholder="viaje_cancelado">
+                                    <div class="form-text">Cancelar o eliminar el viaje.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="waTemplateDesasignado" class="form-label">Chofer desasignado</label>
+                                    <input type="text" class="form-control" id="waTemplateDesasignado" placeholder="viaje_desasignado">
+                                    <div class="form-text">Al cambiar el chofer del viaje.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="waTemplateLanguage" class="form-label">Idioma de las plantillas</label>
                                     <input type="text" class="form-control" id="waTemplateLanguage" placeholder="es_AR">
                                 </div>
                                 <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3">
@@ -85,9 +96,12 @@
                         </div>
                         <div class="card-body">
                             <div class="alert alert-light">
-                                Se envía al registrar un viaje con chofer asignado y al editar un viaje si se cambia el chofer. En los viajes de clientes con plataforma (Rukas) el chofer es opcional: si se carga sin chofer, el mensaje sale cuando se le asigna. Si el envío falla, el viaje se guarda igual y el error queda en <code>App_Data/whatsapp.log</code>.
+                                <strong>Viaje asignado:</strong> al registrar con chofer, al reenviar desde la grilla, al cambiar recorrido o fecha, y al chofer nuevo si se cambia el chofer.
+                                <strong>Viaje cancelado:</strong> al cancelar o eliminar un viaje en Registrado (antes de En viaje).
+                                <strong>Chofer desasignado:</strong> al chofer anterior cuando se cambia el chofer.
+                                En Rukas el chofer es opcional: el asignado sale cuando se le carga. Si el envío falla, el viaje se guarda igual y el error queda en <code>App_Data/whatsapp.log</code>.
                             </div>
-                            <p class="mb-2">La plantilla tiene que tener 7 variables en el cuerpo, en este orden:</p>
+                            <p class="mb-2"><strong>Viaje asignado</strong> — 7 variables, en este orden:</p>
                             <ol class="mb-3">
                                 <li>Nombre del chofer</li>
                                 <li>N° de viaje</li>
@@ -97,7 +111,25 @@
                                 <li>Remito / N° de entrega</li>
                                 <li>Enlace de la ruta en Google Maps</li>
                             </ol>
-                            <div class="form-label">Formato del enlace de ruta</div>
+                            <p class="mb-2"><strong>Viaje cancelado</strong> — 6 variables, en este orden:</p>
+                            <ol class="mb-3">
+                                <li>Nombre del chofer</li>
+                                <li>N° de viaje</li>
+                                <li>Origen</li>
+                                <li>Destino</li>
+                                <li>Fecha de inicio (dd/MM/aaaa)</li>
+                                <li>Hora de inicio (HH:mm)</li>
+                            </ol>
+                            <p class="mb-2"><strong>Chofer desasignado</strong> — 6 variables, mismo orden que cancelado:</p>
+                            <ol class="mb-3">
+                                <li>Nombre del chofer</li>
+                                <li>N° de viaje</li>
+                                <li>Origen</li>
+                                <li>Destino</li>
+                                <li>Fecha de inicio (dd/MM/aaaa)</li>
+                                <li>Hora de inicio (HH:mm)</li>
+                            </ol>
+                            <div class="form-label">Formato del enlace de ruta (solo asignado)</div>
                             <code class="d-block p-3 rounded bg-light text-break">https://www.google.com/maps/dir/?api=1&amp;origin={origen}&amp;destination={destino}&amp;travelmode=driving</code>
                         </div>
                     </div>
@@ -128,6 +160,8 @@
                 campo('waPhoneNumberId').value = data.PhoneNumberId || '';
                 campo('waApiVersion').value = data.ApiVersion || 'v21.0';
                 campo('waTemplateName').value = data.TemplateName || 'viaje_asignado';
+                campo('waTemplateCancelado').value = data.TemplateCancelado || 'viaje_cancelado';
+                campo('waTemplateDesasignado').value = data.TemplateDesasignado || 'viaje_desasignado';
                 campo('waTemplateLanguage').value = data.TemplateLanguage || 'es_AR';
                 campo('waCountryCode').value = data.DefaultCountryCode || '54';
                 var meta = '—';
@@ -167,6 +201,8 @@
                     PhoneNumberId: campo('waPhoneNumberId').value.trim(),
                     ApiVersion: campo('waApiVersion').value.trim(),
                     TemplateName: campo('waTemplateName').value.trim(),
+                    TemplateCancelado: campo('waTemplateCancelado').value.trim(),
+                    TemplateDesasignado: campo('waTemplateDesasignado').value.trim(),
                     TemplateLanguage: campo('waTemplateLanguage').value.trim(),
                     DefaultCountryCode: campo('waCountryCode').value.trim(),
                     Usu_Modi: localStorage.getItem('username') || 'UsuarioDesconocido'

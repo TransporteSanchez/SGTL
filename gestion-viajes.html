@@ -543,18 +543,14 @@
             En_viaje: 'En viaje',
             Entregado: 'Entregado',
             Listo_para_facturar: 'Listo para facturar',
-            Facturado: 'Facturado'
-        };
-        const ESTADO_BADGE = {
-            Registrado: 'bg-secondary',
-            En_viaje: 'bg-info',
-            Entregado: 'bg-primary',
-            Listo_para_facturar: 'bg-warning text-dark',
-            Facturado: 'bg-success'
+            Facturado: 'Facturado',
+            Cancelado: 'Cancelado'
         };
         function etiquetaEstado(e) { return ESTADO_LABEL[e] || e || '—'; }
-        // Colores del design system (§4): Registrado gris, En viaje / Entregado azul, Listo para facturar amarillo, Facturado verde.
+        // Colores del design system (§4): Registrado gris, En viaje / Entregado azul, Listo para facturar amarillo,
+        // Facturado verde. Cancelado del viaje va en rojo (en cuenta corriente "Cancelado" es verde: §4.1).
         function badgeEstadoViaje(e) {
+            if (e === 'Cancelado') return SGTL.estado(e, 'Cancelado', 'rojo');
             return SGTL.estado(e || '', etiquetaEstado(e));
         }
 
@@ -602,27 +598,42 @@
         function accionesViaje(viaje) {
             // Facturado (estado del viaje) o con Factura vigente en Cuenta corriente.
             const facturado = viaje.Estado === 'Facturado' || viaje.Facturada === true;
+            const cancelado = viaje.Estado === 'Cancelado';
             const registrado = viajeRegistrado(viaje.Estado);
             // En una proforma Generada o Aceptada el viaje no se modifica; en un borrador sí (pero no se elimina).
             const enProforma = !!viaje.EnProforma_ID;
             const proformaEmitida = viaje.EnProforma_Estado === 'Generada' || viaje.EnProforma_Estado === 'Aceptada';
-            const bloqueado = facturado || proformaEmitida;
+            const bloqueado = facturado || proformaEmitida || cancelado;
             // Motivo del botón deshabilitado (§1.4): "No se puede {acción}: {qué le pasa al viaje}", sin decir qué hacer.
-            const situacion = facturado ? 'está facturado'
-                : 'está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID));
+            const situacion = cancelado ? 'está cancelado'
+                : (facturado ? 'está facturado'
+                : 'está en la proforma ' + (viaje.EnProforma_Numero || ('#' + viaje.EnProforma_ID)));
             const tituloEditar = registrado ? 'Editar' : TITULO_COMPLETAR_NUMEROS;
             const desdePresupuesto = !!viaje.Presupuesto_ID;
             const motivoEliminar = 'No se puede eliminar el viaje: ' + (bloqueado ? situacion
                 : (enProforma ? 'está en el borrador de proforma #' + viaje.EnProforma_ID
                 : (desdePresupuesto ? 'viene del presupuesto #' + viaje.Presupuesto_ID
                 : 'está ' + etiquetaEstado(viaje.Estado).toLowerCase())));
+            const motivoCancelar = 'No se puede cancelar el viaje: ' + (cancelado ? 'ya está cancelado'
+                : (facturado ? 'está facturado'
+                : (enProforma ? (proformaEmitida ? situacion : ('está en el borrador de proforma #' + viaje.EnProforma_ID))
+                : (registrado ? '' : 'ya ' + (viaje.Estado === 'En_viaje' ? 'está en viaje' : 'no está registrado')))));
+            // Cancelar y eliminar solo en Registrado (antes de En viaje / Listo para facturar).
+            const puedeCancelar = registrado && !facturado && !enProforma;
             const puedeEliminar = registrado && !bloqueado && !enProforma && !desdePresupuesto;
-            // Orden del design system (§1.4): ver detalle, editar, cambiar estado, eliminar.
+            const sinChofer = !(viaje.ChoferID > 0);
+            const waDeshabilitado = cancelado || sinChofer;
+            const motivoWhatsApp = cancelado
+                ? 'No se puede reenviar el WhatsApp: el viaje está cancelado'
+                : 'No se puede reenviar el WhatsApp: el viaje no tiene chofer asignado';
+            // Orden del design system (§1.4): ver · editar · estado · WhatsApp · cancelar · eliminar.
             return SGTL.accionesFila([
                 SGTL.botonFila('ver', { id: viaje.Viaje_ID }),
                 SGTL.botonFila('editar', { id: viaje.Viaje_ID, texto: tituloEditar, deshabilitado: bloqueado, motivo: 'No se puede editar el viaje: ' + situacion }),
                 // Banderita gris, igual que en presupuestos (§1.4): abre "Cambiar estado", con los datos de la entrega.
                 SGTL.botonFila('estado', { id: viaje.Viaje_ID, deshabilitado: bloqueado, motivo: 'No se puede cambiar el estado: el viaje ' + situacion }),
+                SGTL.botonFila('whatsapp', { id: viaje.Viaje_ID, deshabilitado: waDeshabilitado, motivo: motivoWhatsApp }),
+                SGTL.botonFila('anular', { id: viaje.Viaje_ID, texto: 'Cancelar', deshabilitado: !puedeCancelar, motivo: motivoCancelar }),
                 SGTL.botonFila('eliminar', { id: viaje.Viaje_ID, deshabilitado: !puedeEliminar, motivo: motivoEliminar })
             ]);
         }
@@ -634,6 +645,8 @@
                 .on('click', '[data-accion="ver"]', function () { SGTLDetalleViaje.abrir(viajesPagina[String($(this).data('id'))]); })
                 .on('click', '[data-accion="editar"]', function () { abrirModalEditarViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="estado"]', function () { abrirModalEstadoViaje(String($(this).data('id'))); })
+                .on('click', '[data-accion="whatsapp"]', function () { reenviarWhatsApp(String($(this).data('id'))); })
+                .on('click', '[data-accion="anular"]', function () { abrirModalCancelarViaje(String($(this).data('id'))); })
                 .on('click', '[data-accion="eliminar"]', function () { abrirModalEliminarViaje(String($(this).data('id'))); });
         });
 
@@ -1545,13 +1558,52 @@
                 Usu_Modi: usuarioActual()
             };
         }
-        // El backend solo devuelve WhatsApp cuando intentó avisarle al chofer (alta o cambio en la hoja de ruta).
-        function avisarWhatsApp(wa) {
+        // El backend solo devuelve WhatsApp cuando intentó avisarle al chofer (alta, cambio, cancelación, eliminación o reenvío).
+        function avisarWhatsApp(wa, textos) {
             if (!wa) return;
-            if (wa.Sent) { SGTL.toastExito('Se le envió la hoja de ruta al chofer por WhatsApp.'); return; }
+            textos = textos || {};
+            var ok = textos.exito || 'Se le envió la hoja de ruta al chofer por WhatsApp.';
+            if (wa.Sent) { SGTL.toastExito(ok); return; }
             if (wa.Status === 'not_configured') { SGTL.toastError('No se envió WhatsApp: la integración no está configurada.'); return; }
-            if (wa.Status === 'payload_error') { SGTL.toastError('No se envió WhatsApp: revisá el teléfono del chofer.'); return; }
-            SGTL.toastError('No se pudo enviar el WhatsApp al chofer. Avisale por otro medio.');
+            if (wa.Status === 'payload_error' || wa.Status === 'invalid_phone') {
+                SGTL.toastError('No se envió WhatsApp: revisá el teléfono del chofer.');
+                return;
+            }
+            SGTL.toastError(textos.error || 'No se pudo enviar el WhatsApp al chofer. Avisale por otro medio.');
+        }
+
+        function avisarWhatsAppsRespuesta(r) {
+            if (!r) return;
+            if (r.WhatsAppDesasignado) {
+                avisarWhatsApp(r.WhatsAppDesasignado, {
+                    exito: 'Se avisó al chofer anterior por WhatsApp.',
+                    error: 'No se pudo avisar al chofer anterior por WhatsApp.'
+                });
+            }
+            avisarWhatsApp(r.WhatsApp);
+        }
+
+        // Reenvío manual (§5.2): confirma y llama a POST /Viajes/{id}/WhatsApp. Sirve si el alta falló o para mandarlo de nuevo.
+        function reenviarWhatsApp(id) {
+            SGTL.confirmar({
+                titulo: '¿Reenviar la hoja de ruta por WhatsApp?',
+                mensaje: 'Se le envía al chofer asignado al viaje #' + id + '.',
+                verbo: 'Reenviar',
+                accion: function () {
+                    return new Promise(function (resolver, rechazar) {
+                        $.ajax({
+                            url: API_VIAJES + '/Viajes/' + id + '/WhatsApp',
+                            type: 'POST'
+                        }).done(function (r) {
+                            avisarWhatsApp(r && r.WhatsApp);
+                            resolver(r);
+                        }).fail(function (xhr) {
+                            SGTL.toastError(SGTL.mensajeError(xhr, 'No se pudo reenviar el WhatsApp. Probá de nuevo.'));
+                            rechazar(xhr);
+                        });
+                    });
+                }
+            });
         }
 
         // Campos del formulario (§6.3): cada uno con su mensaje debajo. Cliente y chofer se validan en el campo que
@@ -1609,24 +1661,72 @@
                     listo();
                     SGTL.modal('#ModalAltaViaje', 'hide');
                     SGTL.toastExito(esEdicion ? 'Viaje guardado.' : 'Viaje registrado.');
-                    avisarWhatsApp(r && r.WhatsApp);
+                    avisarWhatsAppsRespuesta(r);
                     buscarViajes(1);
                 },
                 error: function (xhr) { listo(); mostrarAlertaModal(parsearError(xhr)); }
             });
         }
 
-        // ===================== ELIMINAR / ESTADO =====================
+        // ===================== CANCELAR / ELIMINAR / ESTADO =====================
+        // Cancelar: deja el viaje en historial como Cancelado. Eliminar: lo borra. Ambos solo en Registrado y avisan por WhatsApp.
+        function abrirModalCancelarViaje(id) {
+            var viaje = viajesPagina[String(id)] || {};
+            var conChofer = viaje.ChoferID > 0;
+            SGTL.confirmar({
+                titulo: '¿Cancelar el viaje #' + id + '?',
+                mensaje: conChofer
+                    ? 'El viaje queda cancelado y se le avisa al chofer por WhatsApp.'
+                    : 'El viaje queda cancelado. No se puede deshacer el estado.',
+                verbo: 'Cancelar',
+                peligro: true,
+                accion: function () {
+                    return new Promise(function (resolver, rechazar) {
+                        $.ajax({
+                            url: API_VIAJES + '/Viajes/' + id + '/Estado',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ Estado: 'Cancelado', Usuario: usuarioActual() })
+                        }).done(function (r) {
+                            avisarWhatsApp(r && r.WhatsApp, {
+                                exito: 'Se le avisó al chofer por WhatsApp que el viaje se canceló.',
+                                error: 'El viaje se canceló, pero no se pudo avisar al chofer por WhatsApp.'
+                            });
+                            resolver(r);
+                        }).fail(function (xhr) {
+                            var e = new Error('CANCELAR');
+                            e.mensajeUsuario = parsearError(xhr);
+                            rechazar(e);
+                        });
+                    });
+                }
+            }).then(function (ok) {
+                if (!ok) return;
+                SGTL.toastExito('Viaje cancelado.');
+                buscarViajes(1);
+            });
+        }
+
         function abrirModalEliminarViaje(id) {
+            var viaje = viajesPagina[String(id)] || {};
+            var conChofer = viaje.ChoferID > 0;
             SGTL.confirmar({
                 titulo: '¿Eliminar el viaje #' + id + '?',
-                mensaje: 'No se puede deshacer.',
+                mensaje: conChofer
+                    ? 'No se puede deshacer. Se le avisa al chofer por WhatsApp que el viaje no se hace.'
+                    : 'No se puede deshacer.',
                 verbo: 'Eliminar',
                 peligro: true,
                 accion: function () {
                     return new Promise(function (resolver, rechazar) {
                         $.ajax({ url: API_VIAJES + '/Viajes/' + id, type: 'DELETE' })
-                            .done(resolver)
+                            .done(function (r) {
+                                avisarWhatsApp(r && r.WhatsApp, {
+                                    exito: 'Se le avisó al chofer por WhatsApp que el viaje no se hace.',
+                                    error: 'El viaje se eliminó, pero no se pudo avisar al chofer por WhatsApp.'
+                                });
+                                resolver(r);
+                            })
                             .fail(function (xhr) { var e = new Error('DELETE'); e.mensajeUsuario = parsearError(xhr); rechazar(e); });
                     });
                 }

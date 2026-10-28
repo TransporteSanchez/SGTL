@@ -103,10 +103,14 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Ver PDF | `bi-file-earmark-pdf` | `btn-outline-secondary` |
 | Cambiar estado (presupuestos, viajes) | `bi-flag` | `btn-outline-secondary` |
 | Siguiente paso del circuito (Marcar aceptada, Emitir factura, Generar viaje) | el de cada acción | `btn-outline-success` |
+| Reenviar WhatsApp (viajes) | `bi-whatsapp` | `btn-outline-secondary` |
 | Activar / Inactivar | `bi-toggle-on` (está activo) / `bi-toggle-off` (está inactivo) | `btn-outline-secondary` |
 | Eliminar / Anular | `bi-trash` / `bi-x-circle` | `btn-outline-danger`, siempre la última |
 
-- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Inactivar", "Eliminar".
+- El tooltip dice la acción con verbo: "Ver detalle", "Editar", "Ver PDF", "Reenviar WhatsApp", "Inactivar", "Eliminar".
+- **Reenviar WhatsApp** (26/10, viajes): en Gestionar viajes, después de Cambiar estado y antes de Eliminar. Siempre
+  visible; si el viaje no tiene chofer, deshabilitado con el motivo. Pide confirmación (§5.2) y reenvía la hoja de
+  ruta aunque el envío automático del alta haya salido bien o haya fallado.
 - **El ojo de un documento** (proforma, factura, recibo, nota de crédito o débito) abre el documento completo en
   solo lectura: título "Ver proforma 0001-00000017", "Ver factura FAC-00000012"; solo "Cerrar" en el pie
   (gestionar proformas, listar proformas y cuenta corriente, 22/10).
@@ -143,7 +147,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Pantalla | Ejemplos |
 |---|---|
 | Choferes, camiones | No se puede eliminar el chofer: está activo |
-| Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado |
+| Viajes | No se puede editar el viaje: está en la proforma PF-0001-00000012 · No se puede eliminar el viaje: viene del presupuesto #12 · No se puede eliminar el viaje: está entregado · No se puede cancelar el viaje: ya está en viaje · No se puede reenviar el WhatsApp: el viaje no tiene chofer asignado |
 | Proformas | No se puede editar la proforma: ya se generó (o "está anulada") · No se puede marcar como aceptada: la proforma todavía es un borrador · No se puede emitir la factura: la proforma todavía no está aceptada |
 | Proforma de Rukas (pie) | No se puede generar la proforma: hay 3 diferencias sin resolver |
 | Presupuestos | No se puede generar el viaje: el presupuesto todavía no está aceptado |
@@ -325,13 +329,17 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Gris | Inicial, borrador o inactivo | Registrado, Borrador, Inactivo, Inicio de sesión, Cierre de sesión; en la tabla de tarifas (24/10): Anterior, Próxima |
 | Azul | En curso | En viaje, Entregado, Generada, Modificación (auditoría) |
 | Amarillo | Falta algo para cerrar | Listo para facturar, Aceptada (lista para facturar), Parcial, Km manual; en el dashboard (21/10): Atrasado, Sin salir, Sin cerrar, Sin proforma, Sin evidencia, Por vencer (ITV) |
-| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado, Aplicado, Alta, Completa (resultado de la entrega, 22/10), Vigente (tabla de tarifas, 24/10) |
-| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10) |
+| Verde | Terminado bien o activo | Activo, Facturado / Facturada, Cancelado (cuenta corriente: comprobante cancelado), Aplicado, Alta, Completa (resultado de la entrega, 22/10), Vigente (tabla de tarifas, 24/10) |
+| Rojo | Anulado, dado de baja, deuda o entrega rechazada | Anulada, Baja, Pendiente (deuda), Rechazo (resultado de la entrega, 21/10), Vencida (ITV, 21/10); **Cancelado del viaje** (27/10) |
 
 - Un estado nuevo se ubica en una de estas filas por lo que significa; no se inventan colores.
 - **Presupuestos:** Pendiente es esperar la respuesta del cliente, no una deuda: va en gris.
   Aceptado va en amarillo mientras falta generar el viaje y en verde cuando ya se generó (con la etiqueta
   informativa "Viaje #N"); Rechazado, en rojo. Para estos casos `SGTL.estado(valor, texto, color)` recibe el color.
+- **Viajes — Cancelado** (27/10): mismo nombre que el Cancelado de cuenta corriente, pero otro significado (el viaje
+  no se hace). Va en **rojo** con `SGTL.estado('Cancelado', 'Cancelado', 'rojo')`. Solo se puede cancelar o eliminar
+  mientras el viaje está **Registrado** (antes de En viaje / Listo para facturar). Cancelar deja el registro;
+  eliminar lo borra. Ambos pueden avisar al chofer por WhatsApp. En la fila: Cancelar (`anular`) antes de Eliminar.
 - El mapa vive en el JS compartido (una sola función que recibe el estado y devuelve la
   etiqueta); las pantallas no arman su propio mapa de colores.
 
