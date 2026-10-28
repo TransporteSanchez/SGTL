@@ -95,10 +95,10 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
     del correo abre su login (pide iniciar sesión aparte, porque `127.0.0.1` y `localhost` son dos direcciones para el
     navegador). Es una sola dirección para todo el equipo y es la que usa Facu.
   - El correo se abre **en la VM**: el enlace lleva a localhost y desde el celular no abre.
-  - Una casilla real del equipo para recibir los enlaces (`@example.com` no recibe), que no sea la de Integra Analistas: un
-    correo que Gmail se manda a sí mismo puede no aparecer en la bandeja de entrada. Rocío dice cuál. Cada usuario
-    necesita un e-mail distinto; si es de Gmail, sirve agregarle `+algo` antes de la arroba (`nombre+admin@gmail.com`,
-    `nombre+lista@gmail.com`): llegan todos a la misma casilla.
+  - Los enlaces llegan a la casilla de Integra Analistas, que es la real del equipo (Rocío, 28/10; `@example.com` no
+    recibe). Cada usuario necesita un e-mail distinto: se le agrega `+algo` antes de la arroba (`integraanalistas+admin@…`,
+    `integraanalistas+lista@…`) y llegan todos a la misma casilla. Como el correo sale de esa misma cuenta, Gmail puede
+    no ponerlo en Recibidos: si no aparece, buscalo en Enviados o en Todos, por el asunto o por el `+algo`.
   - Al 28/10, solo 1 de los 14 usuarios activos tiene e-mail. Los que no tienen entran igual, pero no pueden recuperar la
     contraseña y, al editarlos en Gestionar usuarios, el e-mail es obligatorio.
 - **Google (km de un recorrido nuevo, tiempo estimado, mapas y km al galpón):** la clave de Google acepta
