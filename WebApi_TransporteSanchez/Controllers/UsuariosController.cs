@@ -58,6 +58,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public string Nombre_Usuario { get; set; }
 
+            public string Email { get; set; }
+
             public DateTime Fecha_Alta { get; set; }
 
             public string Rol { get; set; }
@@ -447,6 +449,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         [Route("EstadoUsuario/{id}")]
 
+        [AccesoUsuarios(true)]
         public IHttpActionResult PutEstadoUsuario(int id, [FromBody] EstadoUsuarioUpdateModel model)
 
         {
@@ -506,6 +509,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     // Intentar guardar los cambios en la base de datos
 
                     db.SaveChanges();
+                    db.Database.ExecuteSqlCommand("UPDATE dbo.USUARIOS SET VersionSesion=VersionSesion+1 WHERE Usuario_ID=@p0", id);
 
                     return Ok(); // Retorna 200 OK si la actualización fue exitosa
 
@@ -587,6 +591,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // GET: api/Usuarios/{id}
 
+        [AccesoUsuarios(false)]
         public IHttpActionResult Get(int id)
 
         {
@@ -643,47 +648,18 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    usuario.Email = db.Database.SqlQuery<string>("SELECT Email FROM dbo.USUARIOS WHERE Usuario_ID=@p0", id).FirstOrDefault();
                     return Ok(usuario);
 
                 }
 
             }
 
-            catch (DbEntityValidationException ex)
-
+            catch
             {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudo cargar el usuario. Probá de nuevo." });
             }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
         }
-
-
 
         /// <summary>DTO para el modal de detalles: estado, grupos asignados y permisos (menús) por grupo.</summary>
 
@@ -831,6 +807,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public string Nombre_Usuario { get; set; }
 
+            public string Email { get; set; }
+
             public string Contraseña { get; set; }
 
             public string Rol { get; set; }
@@ -853,6 +831,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // POST: api/Usuarios
 
+        [AccesoUsuarios(true)]
         public IHttpActionResult Post([FromBody] UsuarioAltaDto value)
 
         {
@@ -875,7 +854,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return BadRequest("Nombre, Apellido, Nombre_Usuario y Contraseña son campos requeridos.");
+                return BadRequest("Completá el nombre, el apellido, el nombre de usuario y la contraseña.");
 
             }
 
@@ -907,11 +886,14 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 if (value.GrupoIds == null || !value.GrupoIds.Any())
 
-                    return Content(HttpStatusCode.BadRequest, new { message = "El rol user requiere al menos un grupo asignado." });
+                    return Content(HttpStatusCode.BadRequest, new { message = "Asigná al menos un grupo al usuario." });
 
             }
 
 
+
+            try { value.Email = RecuperoContrasena.NormalizarEmail(value.Email); }
+            catch (ArgumentException) { return Content(HttpStatusCode.BadRequest, new { code = "email_invalido", message = "Completá un e-mail válido para el usuario." }); }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -922,8 +904,10 @@ namespace WebApi_TransporteSanchez.Controllers
             {
 
                 using (var db = new SGTLAuditContext(connectionString))
-
+                using (var transaccion = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
+                    if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.USUARIOS WITH (UPDLOCK,HOLDLOCK) WHERE Email=@p0 AND Usuario_ID<>@p1", value.Email, 0).Single() > 0)
+                        return Content(HttpStatusCode.Conflict, new { code = "email_duplicado", message = "Ese e-mail ya está registrado en otro usuario." });
 
                     // Verificar si el Nombre_Usuario ya existe
 
@@ -939,7 +923,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                             code = "usuario_duplicado",
 
-                            message = "Ya existe un usuario con ese Nombre_Usuario."
+                            message = "Ya existe un usuario con ese nombre de usuario."
 
                         });
 
@@ -951,7 +935,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var fechaSinMs = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second);
 
-                    var usuLogueado = (value.UsuarioLogueado ?? "").Trim();
+                    var usuLogueado = ObtenerNombreUsuarioToken();
 
                     if (string.IsNullOrEmpty(usuLogueado)) usuLogueado = "sistema";
 
@@ -1017,6 +1001,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    GuardarEmail(db, usuario.Usuario_ID, value.Email);
+                    transaccion.Commit();
                     return CreatedAtRoute("DefaultApi", new { id = usuario.Usuario_ID }, new UsuariosDto
 
                     {
@@ -1033,7 +1019,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         EstadoUsuario = usuario.EstadoUsuario,
 
-                        Fecha_Alta = usuario.Fecha_Alta
+                        Fecha_Alta = usuario.Fecha_Alta,
+                        Email = value.Email
 
                     });
 
@@ -1041,84 +1028,11 @@ namespace WebApi_TransporteSanchez.Controllers
 
             }
 
-            catch (DbEntityValidationException ex)
-
+            catch
             {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudo guardar el usuario. Revisá los datos y probá de nuevo." });
             }
-
-            catch (DbUpdateException ex)
-
-            {
-
-                // Extraer mensaje real de SQL/DB para depuración
-
-                var inner = ex.InnerException;
-
-                while (inner?.InnerException != null) inner = inner.InnerException;
-
-                var innerMsg = inner?.Message ?? ex.InnerException?.Message ?? ex.Message;
-
-                // Devolver error como JSON para que el frontend muestre el mensaje real
-
-                return Content(HttpStatusCode.InternalServerError, new
-
-                {
-
-                    message = "Error al guardar el usuario en la base de datos",
-
-                    detail = innerMsg,
-
-                    type = ex.GetType().Name
-
-                });
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                var inner = ex.InnerException;
-
-                while (inner?.InnerException != null) inner = inner.InnerException;
-
-                var innerMsg = inner?.Message ?? ex.InnerException?.Message ?? ex.Message;
-
-                return Content(HttpStatusCode.InternalServerError, new
-
-                {
-
-                    message = "Error inesperado",
-
-                    detail = innerMsg,
-
-                    type = ex.GetType().Name
-
-                });
-
-            }
-
         }
-
 
 
         // DTO para la edición de usuarios
@@ -1128,6 +1042,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
 
             public string Nombre_Usuario { get; set; }
+
+            public string Email { get; set; }
 
             public string Nombre { get; set; }
 
@@ -1151,6 +1067,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // PUT: api/Usuarios/{id}
 
+        [AccesoUsuarios(true)]
         public IHttpActionResult Put(int id, [FromBody] UsuarioEdicionDto value)
 
         {
@@ -1173,7 +1090,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             {
 
-                return BadRequest("Nombre, Apellido y Nombre_Usuario son campos requeridos.");
+                return BadRequest("Completá el nombre, el apellido y el nombre de usuario.");
 
             }
 
@@ -1199,11 +1116,14 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 if (value.GrupoIds == null || !value.GrupoIds.Any())
 
-                    return Content(HttpStatusCode.BadRequest, new { message = "El rol user requiere al menos un grupo asignado." });
+                    return Content(HttpStatusCode.BadRequest, new { message = "Asigná al menos un grupo al usuario." });
 
             }
 
 
+
+            try { value.Email = RecuperoContrasena.NormalizarEmail(value.Email); }
+            catch (ArgumentException) { return Content(HttpStatusCode.BadRequest, new { code = "email_invalido", message = "Completá un e-mail válido para el usuario." }); }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -1214,9 +1134,12 @@ namespace WebApi_TransporteSanchez.Controllers
             {
 
                 using (var db = new SGTLAuditContext(connectionString))
-
+                using (var transaccion = db.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
                 {
+                    if (db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.USUARIOS WITH (UPDLOCK,HOLDLOCK) WHERE Email=@p0 AND Usuario_ID<>@p1", value.Email, id).Single() > 0)
+                        return Content(HttpStatusCode.Conflict, new { code = "email_duplicado", message = "Ese e-mail ya está registrado en otro usuario." });
 
+                    db.Database.SqlQuery<int>("SELECT Usuario_ID FROM dbo.USUARIOS WITH (UPDLOCK,HOLDLOCK) WHERE Usuario_ID=@p0", id).ToList();
                     var usuario = db.Set<USUARIOS>().Find(id);
 
 
@@ -1233,6 +1156,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     // Actualizar solo los campos editables (Nombre_Usuario NO se modifica)
 
+                    var invalidarSesiones = !string.IsNullOrWhiteSpace(value.Contraseña) || !string.Equals(usuario.EstadoUsuario, value.EstadoUsuario.Trim(), StringComparison.OrdinalIgnoreCase) || !string.Equals(usuario.Rol, value.Rol, StringComparison.OrdinalIgnoreCase);
                     usuario.Nombre = value.Nombre.Trim();
 
                     usuario.Apellido = value.Apellido.Trim();
@@ -1260,7 +1184,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     usuario.Fecha_Modi = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second);
 
-                    usuario.Usu_Modi = string.IsNullOrWhiteSpace(value.Usu_Modi) ? "sistema" : value.Usu_Modi.Trim();
+                    usuario.Usu_Modi = ObtenerNombreUsuarioToken();
 
 
 
@@ -1302,6 +1226,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
 
+                    GuardarEmail(db, usuario.Usuario_ID, value.Email, invalidarSesiones);
+                    transaccion.Commit();
                     return Ok(new UsuariosDto
 
                     {
@@ -1318,7 +1244,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         EstadoUsuario = usuario.EstadoUsuario,
 
-                        Fecha_Alta = usuario.Fecha_Alta
+                        Fecha_Alta = usuario.Fecha_Alta,
+                        Email = value.Email
 
                     });
 
@@ -1326,81 +1253,26 @@ namespace WebApi_TransporteSanchez.Controllers
 
             }
 
-            catch (DbEntityValidationException ex)
-
+            catch
             {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
+                return Content(HttpStatusCode.InternalServerError, new { message = "No se pudo guardar el usuario. Revisá los datos y probá de nuevo." });
             }
-
-            catch (DbUpdateException ex)
-
-            {
-
-                var inner = ex.InnerException;
-
-                while (inner?.InnerException != null) inner = inner.InnerException;
-
-                var innerMsg = inner?.Message ?? ex.InnerException?.Message ?? ex.Message;
-
-                return Content(HttpStatusCode.InternalServerError, new
-
-                {
-
-                    message = "Error al actualizar el usuario en la base de datos",
-
-                    detail = innerMsg,
-
-                    type = ex.GetType().Name
-
-                });
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                var inner = ex.InnerException;
-
-                while (inner?.InnerException != null) inner = inner.InnerException;
-
-                var innerMsg = inner?.Message ?? ex.InnerException?.Message ?? ex.Message;
-
-                return Content(HttpStatusCode.InternalServerError, new
-
-                {
-
-                    message = "Error inesperado",
-
-                    detail = innerMsg,
-
-                    type = ex.GetType().Name
-
-                });
-
-            }
-
         }
 
 
+        private static void GuardarEmail(SGTLAuditContext db, int id, string email, bool invalidar = false)
+        {
+            var anterior = db.Database.SqlQuery<string>("SELECT Email FROM dbo.USUARIOS WHERE Usuario_ID=@p0", id).FirstOrDefault();
+            if (!string.Equals(anterior, email, StringComparison.OrdinalIgnoreCase))
+                db.Database.ExecuteSqlCommand(@"INSERT INTO dbo.AUDITORIA
+(Fecha,Usuario,Accion,Entidad,Clave,Valores_Anteriores,Valores_Nuevos)
+SELECT GETDATE(),Usu_Modi,'UPDATE','USUARIOS',@p0,@p1,@p2 FROM dbo.USUARIOS WHERE Usuario_ID=@p3",
+                    "Usuario_ID=" + id,
+                    Newtonsoft.Json.JsonConvert.SerializeObject(new { Email = anterior }),
+                    Newtonsoft.Json.JsonConvert.SerializeObject(new { Email = email }), id);
+            db.Database.ExecuteSqlCommand(@"UPDATE dbo.USUARIOS SET
+VersionSesion=VersionSesion+CASE WHEN ISNULL(Email,'')<>@p0 OR @p2=1 THEN 1 ELSE 0 END, Email=@p0 WHERE Usuario_ID=@p1", email, id, invalidar);
+        }
 
         // DTO para cambio de contraseña
 
@@ -1559,6 +1431,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // DELETE: api/Usuarios/{id}
 
+        [AccesoUsuarios(true)]
         public IHttpActionResult Delete(int id)
 
         {

@@ -71,6 +71,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 51 | Acentos en el concepto de recibos sin imputar | Texto de emisión corregido; script 18 preparado para datos anteriores, sin ejecutar | Incluido en `facugodoy` (27/10) | Recompilar y emitir un recibo; Rocío debe revisar y aplicar 18 para los ya guardados (§51) |
 | 52 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§52) |
 | 53 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§53) |
+| 54 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§54) |
 
 **Tanda de `facugodoy` del 27/10:** cambios pendientes incluidos en commits por tema; API compilada y 76 pruebas Node correctas. Los scripts SQL se versionaron sin ejecutarlos; las pruebas en VM y las aplicaciones de base indicadas en cada sección siguen pendientes.
 
@@ -3920,3 +3921,51 @@ El script termina con ROLLBACK: no se ejecutó ni se reemplazó el PDF de la bas
 
 **Probar:** revisar las dos variantes Word y, antes de aplicar el script por decisión de Rocío, verificar el tamaño,
 la huella y la vista previa del PDF propuesto. Subir los archivos al repositorio no publica el manual en la aplicación.
+
+---
+
+## 54. Recuperar contraseña desde el login por e-mail — Hecho en código (27/10)
+
+El login incorpora «Olvidé mi contraseña», que pide el e-mail registrado y envía un enlace de un solo uso,
+válido por 20 minutos. La solicitud siempre devuelve la misma respuesta general y tiene límites por IP
+y por cuenta. La contraseña actual sigue vigente hasta completar el recupero. Se guarda únicamente la
+huella del enlace; al usarlo se aplica la política vigente, se guarda PBKDF2, se invalidan los demás enlaces
+y las sesiones anteriores y se envía un aviso del cambio sin incluir la contraseña. Una pestaña abierta
+comprueba la sesión al cargar, recuperar el foco y cada minuto.
+
+Gestionar usuarios incorpora E-mail obligatorio al registrar o editar, válido y único; las cuentas existentes
+sin correo conservan su acceso habitual. Listar usuarios lo muestra en el detalle. La API controla los
+permisos de lectura y gestión. El correo se asigna desde gestión: quien lo carga debe verificar que la
+casilla pertenece al usuario y que no es compartida. Cambiarlo invalida los enlaces y sesiones previos.
+Gestionar e-mail permite asignar un perfil exclusivo de recupero, con conexión segura y la dirección real
+del login. La API y la base impiden compartir ese perfil con Facturación o Presupuestos.
+
+**Base:** Rocío debe aplicar `database/seguridad/02_recupero_contrasena.sql` después de seguridad 01 y
+`database/email/07_perfil_recupero_contrasena.sql` después de e-mail 06. Son scripts idempotentes de
+esquema; no cargan datos ni credenciales. **No se ejecutaron contra la base compartida.** No se regeneró el EDMX.
+Recompilar la API y desplegarla junto con los archivos estáticos después de aplicar las migraciones.
+
+**Configuración:** registrar un perfil SMTP nuevo en Gestionar e-mail y asignarlo a recupero. Cargar la URL
+completa y accesible del login con HTTPS; solo en pruebas locales se acepta HTTP en localhost. La casilla
+y las credenciales se cargan desde la pantalla, nunca en el código. El asunto, las instrucciones y el enlace
+se generan automáticamente; la plantilla general del perfil no los reemplaza.
+
+**Verificación local:** compilación de la API y pruebas del coordinador C# real con repositorio y correo
+simulados; consultas reales adaptadas a SQLite local; pruebas de formularios, doble clic, política, correos
+inválidos, fallo SMTP, consumo único, vencimiento, cuenta inactiva, permisos, exclusividad y versión de sesión.
+Las 78 pruebas Node finalizaron correctamente. Se revisó la lista de control de AGENTS.md.
+Sin consultar la base compartida ni enviar correos. La revisión visual no pudo ejecutarse porque no hay
+navegador ni servicio de control de ventanas disponibles en este entorno.
+
+**Probar en la VM:** después de aplicar los scripts, registrar el perfil seguro y su URL. Con un administrador,
+registrar o editar un usuario con una casilla de prueba propia; comprobar el rechazo de correo inválido y
+duplicado. Con un usuario que solo puede listar, abrir el detalle y comprobar que no puede cambiar el e-mail
+desde la API. Con uno sin permiso de usuarios, comprobar el rechazo de la lectura del detalle y de la escritura.
+Intentar asignar el perfil de Facturación a recupero y viceversa: debe rechazarlos sin cambiar asignaciones.
+Solicitar el recupero desde el login: llega el enlace, conserva la contraseña actual hasta usarlo y no informa
+si existe un e-mail desconocido. Probar claves que no coinciden y una que no cumple la política. Completar
+con una válida: la anterior ya no entra, la nueva sí y llega el aviso. Una sesión de otro navegador debe volver
+al login al recuperar el foco o dentro de un minuto; su Bearer anterior debe recibir 401. Volver a usar el
+enlace, probar uno vencido, cambiar el e-mail y probar uno anterior, e inactivar la cuenta antes de usarlo:
+ninguno debe permitir el cambio. Comprobar formularios en 1920, 1366, 768 y 390 px. La entrega SMTP real,
+la ejecución de las migraciones y esta prueba en VM siguen pendientes.

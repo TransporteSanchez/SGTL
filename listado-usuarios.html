@@ -152,6 +152,7 @@
                                     <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Nombre</span><div class="sgtl-dato-valor" id="detalleNombre"></div></div></div>
                                     <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
                                 </div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div>
                             </section>
                             <section class="sgtl-bloque">
                                 <div class="sgtl-bloque-titulo">Grupos y pantallas que ve</div>
@@ -320,7 +321,7 @@
         function verDetalleUsuario(usuarioId, boton) {
             const listo = SGTL.procesando(boton);
             Promise.all([
-                SGTL.ajax({ url: `${API}/Usuarios/${usuarioId}`, type: 'GET' }),
+                SGTL.ajax({ url: `${API}/Usuarios/${usuarioId}`, type: 'GET', headers: { Authorization: 'Bearer ' + (localStorage.getItem('token') || '') } }),
                 SGTL.ajax({ url: `${API}/Usuarios/${usuarioId}/Detalles`, type: 'GET' })
             ]).then(function (respuestas) {
                 const usuario = respuestas[0] || {};
@@ -332,6 +333,7 @@
                 $('#detalleUsuario').text(usuario.Nombre_Usuario || '');
                 $('#detalleNombre').text(usuario.Nombre || '');
                 $('#detalleApellido').text(usuario.Apellido || '');
+                $('#detalleEmail').text(usuario.Email || '—');
                 // El alta la guarda la API con su hora (UsuariosController); quién lo registró y la última modificación
                 // todavía no los manda (reporte de la VM del 23/10, F4).
                 const alta = usuario.Fecha_Alta && !/^0001/.test(usuario.Fecha_Alta) ? SGTL.fecha(usuario.Fecha_Alta, { hora: true }) : '';

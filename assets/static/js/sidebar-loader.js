@@ -41,6 +41,30 @@
   if (paginasConfiguracion.indexOf(page) !== -1 && rol.trim().toLowerCase() !== 'admin') {
     window.location.replace('index.html');
   }
+
+  // El vencimiento local del JWT no alcanza cuando se recuperó la contraseña en otro navegador.
+  var verificandoSesion = false;
+  function verificarSesionActual() {
+    if (verificandoSesion || document.hidden) return;
+    verificandoSesion = true;
+    var actual = '';
+    try { actual = localStorage.getItem('token') || ''; } catch (e) { }
+    fetch('http://localhost:50222/api/sesion', { headers: { Authorization: 'Bearer ' + actual }, cache: 'no-store' })
+      .then(function (respuesta) {
+        // Si la sesión cambió durante la consulta, la respuesta anterior ya no le corresponde.
+        if (respuesta.status !== 401 || localStorage.getItem('token') !== actual) return;
+        ['token', 'username', 'userRole', 'nombre', 'apellido', 'sgtlSoloHojaDeRuta'].forEach(function (clave) {
+          try { localStorage.removeItem(clave); } catch (e) { }
+        });
+        window.location.replace('Login.html?volver=' + encodeURIComponent(page + window.location.search));
+      })
+      .catch(function () { /* Un corte de conexión no cierra la sesión. */ })
+      .finally(function () { verificandoSesion = false; });
+  }
+  verificarSesionActual();
+  window.addEventListener('focus', verificarSesionActual);
+  document.addEventListener('visibilitychange', verificarSesionActual);
+  window.setInterval(verificarSesionActual, 60000);
 })();
 
 function markActiveSidebarItem() {

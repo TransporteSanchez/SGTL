@@ -439,6 +439,11 @@
     <Compile Include="Controllers\ProvinciasController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Security\ContrasenasSeguras.cs" />
+    <Compile Include="Security\RecuperoContrasena.cs" />
+    <Compile Include="Security\RepositorioRecuperoSql.cs" />
+    <Compile Include="Security\CorreoRecupero.cs" />
+    <Compile Include="Security\SesionesRecupero.cs" />
+    <Compile Include="Controllers\RecuperoContrasenaController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Controllers\ViajesOrdenSql.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />

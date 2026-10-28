@@ -16,6 +16,7 @@ namespace WebApi_TransporteSanchez
 
 
             config.EnableCors(cors);
+            config.MessageHandlers.Add(new Security.SesionesRecuperoHandler());
 
             // Rutas de API web
             config.MapHttpAttributeRoutes();

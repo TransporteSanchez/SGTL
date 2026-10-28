@@ -36,7 +36,7 @@
                         <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-3">
                             <div>
                                 <h5 class="card-title mb-1"><i class="bi bi-gear me-2" aria-hidden="true"></i>Gestionar e-mail</h5>
-                                <small class="text-muted">Administrá los perfiles SMTP que se usan para enviar comprobantes y presupuestos.</small>
+                                <small class="text-muted">Administrá los perfiles SMTP para comprobantes, presupuestos y recupero de contraseña.</small>
                             </div>
                             <button type="button" id="btnNuevaConfiguracion" class="btn btn-success"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar configuración de e-mail</button>
                         </div>
@@ -71,6 +71,29 @@
                                 <div class="col-md-auto"><button type="button" id="btnGuardarEmailPresupuestos" class="btn btn-primary">Asignar a presupuestos</button></div>
                             </div>
                             <div class="form-text mt-2">Podés registrar un perfil SMTP en esta pantalla y asignarlo acá.</div>
+                        </div>
+                    </div>
+                    <div class="card email-card rounded mx-4 mt-4">
+                        <div class="card-header"><h6 class="card-title mb-1">Perfil para recupero de contraseña</h6><small class="text-muted">Registrá un perfil exclusivo para enviar los enlaces y avisos de recupero de contraseña.</small></div>
+                        <div class="card-body">
+                            <form id="formAsignacionRecupero" novalidate>
+                                <div id="emailRecuperoFeedback" class="alert d-none mb-3" role="status"></div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="emailRecuperoService">Perfil SMTP asignado <span class="text-danger">*</span></label>
+                                        <select id="emailRecuperoService" class="form-select"><option value="">Cargando…</option></select>
+                                        <div class="invalid-feedback"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label" for="emailRecuperoUrl">Dirección del login <span class="text-danger">*</span></label>
+                                        <input type="url" id="emailRecuperoUrl" class="form-control" maxlength="1024" placeholder="https://gestion.empresa.com/Login.html" aria-describedby="ayudaRecuperoUrl">
+                                        <div class="invalid-feedback"></div>
+                                        <div id="ayudaRecuperoUrl" class="form-text">La dirección que pueden abrir los usuarios, con HTTPS. En pruebas locales se permite HTTP en localhost.</div>
+                                    </div>
+                                    <div class="col-12 d-flex flex-wrap align-items-center justify-content-between gap-2"><small id="registroEmailRecupero" class="text-muted"></small><button type="submit" id="btnGuardarEmailRecupero" class="btn btn-primary">Guardar</button></div>
+                                </div>
+                                <div class="form-text mt-2">El perfil requiere conexión segura y no se puede asignar a otros módulos. El asunto, las instrucciones y el enlace se generan automáticamente para este circuito.</div>
+                            </form>
                         </div>
                     </div>
                 </section>
@@ -138,6 +161,8 @@
             var idAProbar = null;
             var configuracionesCargadas = [];
             var formulario = null;
+            var formularioRecupero = null;
+            var asignaciones = {};
             // La contraseña es obligatoria solo al registrar: al editar, vacía conserva la guardada.
             var reglaClave = { id: 'emailClave', requerido: 'Completá la contraseña.' };
 
@@ -263,10 +288,19 @@
                     opcion.value = String(configuracion.Service);
                     opcion.textContent = 'Servicio ' + configuracion.Service + ' · ' + (configuracion.Name || configuracion.CredentialFromMailAddres || 'Sin nombre') + ' · ' + (configuracion.CredentialFromMailAddres || 'sin remitente');
                     opcion.selected = Number(configuracion.Service) === Number(serviceSeleccionado);
+                    var esRecupero = selectorId === 'emailRecuperoService';
+                    var asignadoRecupero = asignaciones['recupero-contrasena'];
+                    var asignadoOtro = ['facturacion', 'presupuestos'].some(function (m) {
+                        return asignaciones[m] && Number(asignaciones[m].Service) === Number(configuracion.Service);
+                    });
+                    if ((esRecupero && asignadoOtro) || (!esRecupero && asignadoRecupero && Number(asignadoRecupero.Service) === Number(configuracion.Service))) {
+                        opcion.disabled = true;
+                        opcion.textContent += ' · Asignado a otro módulo';
+                    }
                     selector.appendChild(opcion);
                 });
-                selector.disabled = configuracionesCargadas.length === 0;
-                campo(botonId).disabled = configuracionesCargadas.length === 0;
+                selector.disabled = selectorId !== 'emailRecuperoService' && configuracionesCargadas.length === 0;
+                campo(botonId).disabled = selectorId !== 'emailRecuperoService' && configuracionesCargadas.length === 0;
             }
             function cargarConfiguraciones() {
                 return fetch(API, { headers: encabezados() }).then(function (respuesta) {
@@ -278,6 +312,7 @@
                     renderizarConfiguraciones(configuracionesCargadas);
                     cargarOpciones('emailFacturacionService', 'btnGuardarEmailFacturacion', campo('emailFacturacionService').value);
                     cargarOpciones('emailPresupuestosService', 'btnGuardarEmailPresupuestos', campo('emailPresupuestosService').value);
+                    cargarOpciones('emailRecuperoService', 'btnGuardarEmailRecupero', campo('emailRecuperoService').value);
                     return configuracionesCargadas;
                 }, function (error) {
                     if (!(error instanceof Error) || error instanceof TypeError) throw new Error('No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.');
@@ -287,11 +322,21 @@
             // Asignación de un perfil a facturación o presupuestos: la nota muestra cuál está asignado.
             var MODULOS = {
                 facturacion: { nombre: 'facturación', Nombre: 'Facturación', selector: 'emailFacturacionService', boton: 'btnGuardarEmailFacturacion', nota: 'emailFacturacionFeedback' },
-                presupuestos: { nombre: 'presupuestos', Nombre: 'Presupuestos', selector: 'emailPresupuestosService', boton: 'btnGuardarEmailPresupuestos', nota: 'emailPresupuestosFeedback' }
+                presupuestos: { nombre: 'presupuestos', Nombre: 'Presupuestos', selector: 'emailPresupuestosService', boton: 'btnGuardarEmailPresupuestos', nota: 'emailPresupuestosFeedback' },
+                'recupero-contrasena': { nombre: 'recupero de contraseña', Nombre: 'Recupero de contraseña', selector: 'emailRecuperoService', boton: 'btnGuardarEmailRecupero', nota: 'emailRecuperoFeedback' }
             };
             function mostrarAsignacion(modulo, asignacion) {
                 var m = MODULOS[modulo];
+                asignaciones[modulo] = asignacion;
+                if (modulo === 'recupero-contrasena') {
+                    campo('emailRecuperoUrl').value = asignacion ? asignacion.UrlLogin || '' : '';
+                    campo('registroEmailRecupero').textContent = asignacion && asignacion.FechaModificacion
+                        ? 'Última modificación: ' + (asignacion.UsuarioModificacion || '—') + ' · ' + SGTL.fecha(asignacion.FechaModificacion, { hora: true }) : '';
+                }
                 cargarOpciones(m.selector, m.boton, asignacion ? asignacion.Service : null);
+                Object.keys(MODULOS).forEach(function (otro) {
+                    if (otro !== modulo) cargarOpciones(MODULOS[otro].selector, MODULOS[otro].boton, campo(MODULOS[otro].selector).value);
+                });
                 if (!asignacion) nota(m.nota, 'warning', 'Todavía no hay un perfil SMTP asignado a ' + m.nombre + '.');
                 else nota(m.nota, 'info', m.Nombre + ' usa el servicio ' + asignacion.Service + ' · ' + (asignacion.Perfil || asignacion.Remitente || 'perfil SMTP asignado') + '.');
             }
@@ -304,11 +349,15 @@
             }
             function guardarAsignacion(modulo) {
                 var m = MODULOS[modulo];
+                if (modulo === 'recupero-contrasena') {
+                    formularioRecupero.validarTodo();
+                    if (!SGTL.revisarFormulario('#formAsignacionRecupero', '#emailRecuperoFeedback')) return;
+                }
                 var service = Number(campo(m.selector).value || 0);
                 if (!service) { SGTL.marcarError(campo(m.selector), 'Seleccioná un perfil SMTP.'); campo(m.selector).focus(); return; }
                 SGTL.limpiarError(campo(m.selector));
                 var listo = SGTL.procesando('#' + m.boton);
-                pedir(API + '/asignaciones/' + modulo, { method: 'PUT', headers: encabezados(), body: JSON.stringify({ Service: service }) },
+                pedir(API + '/asignaciones/' + modulo, { method: 'PUT', headers: encabezados(), body: JSON.stringify({ Service: service, UrlLogin: modulo === 'recupero-contrasena' ? campo('emailRecuperoUrl').value.trim() : null }) },
                     'No se pudo asignar el perfil a ' + m.nombre + '. Probá de nuevo.')
                     .then(function (respuesta) { return respuesta.json(); })
                     .then(function (asignacion) {
@@ -388,7 +437,7 @@
                         SGTL.modal('#emailConfigModal', 'hide');
                         SGTL.toastExito('Configuración de e-mail guardada.');
                         return cargarConfiguraciones().then(function () {
-                            return Promise.all([cargarAsignacion('facturacion'), cargarAsignacion('presupuestos')]);
+                            return Promise.all([cargarAsignacion('facturacion'), cargarAsignacion('presupuestos'), cargarAsignacion('recupero-contrasena')]);
                         }).catch(function (error) { SGTL.toastError(error.message); });
                     }, function (error) {
                         listo();
@@ -406,6 +455,18 @@
                 });
             }
 
+            formularioRecupero = SGTL.validador([
+                { id: 'emailRecuperoService', requerido: 'Seleccioná un perfil SMTP.' },
+                { id: 'emailRecuperoUrl', requerido: 'Completá la dirección del login.', max: 1024,
+                    validar: function (valor) {
+                        try {
+                            var url = new URL(valor);
+                            var local = ['localhost', '127.0.0.1', '[::1]'].indexOf(url.hostname.toLowerCase()) !== -1;
+                            if ((url.protocol === 'https:' || (url.protocol === 'http:' && local)) && !url.username && !url.password && !url.search && !url.hash && /\/Login\.html$/i.test(url.pathname)) return '';
+                        } catch (error) { }
+                        return 'Indicá la dirección completa del login con HTTPS. Para pruebas locales podés usar HTTP en localhost.';
+                    } }
+            ]);
             formulario = SGTL.validador([
                 { id: 'emailNombre', requerido: 'Completá el nombre del perfil.' },
                 { id: 'emailServidor', requerido: 'Completá el servidor SMTP.' },
@@ -434,6 +495,7 @@
                     await cargarConfiguraciones();
                     await cargarAsignacion('facturacion');
                     await cargarAsignacion('presupuestos');
+                    await cargarAsignacion('recupero-contrasena');
                 } catch (error) {
                     SGTL.tabla.vacia('#emailConfigTableBody', 8, 'No se pudieron cargar las configuraciones de e-mail.');
                     SGTL.toastError(error.message || 'No se pudieron cargar las configuraciones de e-mail. Probá de nuevo.');
@@ -455,6 +517,7 @@
             campo('emailPrueba').addEventListener('keydown', function (evento) { if (evento.key === 'Enter') { evento.preventDefault(); enviarPrueba(); } });
             campo('btnGuardarEmailFacturacion').addEventListener('click', function () { guardarAsignacion('facturacion'); });
             campo('btnGuardarEmailPresupuestos').addEventListener('click', function () { guardarAsignacion('presupuestos'); });
+            campo('formAsignacionRecupero').addEventListener('submit', function (evento) { evento.preventDefault(); guardarAsignacion('recupero-contrasena'); });
         })();
     </script>
 </body>

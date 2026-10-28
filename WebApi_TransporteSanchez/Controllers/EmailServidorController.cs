@@ -13,6 +13,7 @@ using System.Web.Security;
 using MailKit.Security;
 using Microsoft.IdentityModel.Tokens;
 using MimeKit;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -58,6 +59,7 @@ namespace WebApi_TransporteSanchez.Controllers
         public class AsignacionModuloRequestDto
         {
             public short? Service { get; set; }
+            public string UrlLogin { get; set; }
         }
 
         public class AsignacionModuloResponseDto
@@ -67,6 +69,9 @@ namespace WebApi_TransporteSanchez.Controllers
             public short EmailServidorID { get; set; }
             public string Perfil { get; set; }
             public string Remitente { get; set; }
+            public string UrlLogin { get; set; }
+            public DateTimeOffset FechaModificacion { get; set; }
+            public string UsuarioModificacion { get; set; }
         }
 
         private class EmailServidorInterno
@@ -166,6 +171,18 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        [HttpGet, Route("asignaciones/recupero-contrasena")]
+        public IHttpActionResult ObtenerAsignacionRecupero()
+        {
+            return ObtenerAsignacionModulo("RECUPERO_CONTRASENA");
+        }
+
+        [HttpPut, Route("asignaciones/recupero-contrasena")]
+        public IHttpActionResult GuardarAsignacionRecupero([FromBody] AsignacionModuloRequestDto value)
+        {
+            return GuardarAsignacionModulo("RECUPERO_CONTRASENA", value);
+        }
+
         [HttpPut]
         [Route("asignaciones/facturacion")]
         public IHttpActionResult GuardarAsignacionFacturacion([FromBody] AsignacionModuloRequestDto value)
@@ -188,10 +205,16 @@ namespace WebApi_TransporteSanchez.Controllers
             if (value == null || !value.Service.HasValue || value.Service.Value <= 0)
                 return BadRequest("Seleccioná un perfil SMTP válido.");
 
+            if (modulo == "RECUPERO_CONTRASENA")
+            {
+                try { value.UrlLogin = RecuperoContrasena.ValidarUrlLogin(value.UrlLogin); }
+                catch (ArgumentException ex) { return BadRequest(ex.Message); }
+            }
+
             try
             {
                 using (var db = CrearContexto())
-                using (var transaccion = db.Database.BeginTransaction())
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
                     var perfil = db.Database.SqlQuery<EmailServidorResponseDto>(
                         ConsultaConfiguracion + " WHERE [Service] = @service;",
@@ -202,18 +225,27 @@ namespace WebApi_TransporteSanchez.Controllers
                         return BadRequest("El perfil SMTP seleccionado ya no existe.");
                     }
 
+                    var conflictos = db.Database.SqlQuery<int>(
+                        "SELECT COUNT(*) FROM dbo.CONFIGURACION_EMAIL_MODULO WITH (UPDLOCK,HOLDLOCK) " +
+                        "WHERE [Service]=@service AND Modulo<>@modulo AND (@modulo='RECUPERO_CONTRASENA' OR Modulo='RECUPERO_CONTRASENA');",
+                        P("@service", value.Service.Value), P("@modulo", modulo)).Single();
+                    if (conflictos > 0)
+                        return BadRequest("El perfil de recupero de contraseña debe ser exclusivo. Registrá otro perfil para asignarlo.");
+                    if (modulo == "RECUPERO_CONTRASENA" && (!perfil.TienePassword || perfil.UsaSsl != true))
+                        return BadRequest("El perfil de recupero necesita una contraseña guardada y una conexión SMTP segura.");
+
                     int actualizados = db.Database.ExecuteSqlCommand(
                         "UPDATE dbo.CONFIGURACION_EMAIL_MODULO " +
-                        "SET [Service] = @service, FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario " +
+                        "SET [Service] = @service, UrlLogin=@url, FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario " +
                         "WHERE Modulo = @modulo;",
-                        P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo));
+                        P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo), P("@url", modulo == "RECUPERO_CONTRASENA" ? value.UrlLogin : null));
                     if (actualizados == 0)
                     {
                         db.Database.ExecuteSqlCommand(
                             "INSERT INTO dbo.CONFIGURACION_EMAIL_MODULO " +
-                            "(Modulo, [Service], FechaModificacion, UsuarioModificacion) " +
-                            "VALUES (@modulo, @service, SYSUTCDATETIME(), @usuario);",
-                            P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo));
+                            "(Modulo, [Service], UrlLogin, FechaModificacion, UsuarioModificacion) " +
+                            "VALUES (@modulo, @service, @url, SYSUTCDATETIME(), @usuario);",
+                            P("@service", value.Service.Value), P("@usuario", usuario), P("@modulo", modulo), P("@url", modulo == "RECUPERO_CONTRASENA" ? value.UrlLogin : null));
                     }
 
                     transaccion.Commit();
@@ -294,6 +326,11 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var actual = BuscarConfiguracionInterna(db, id);
                     if (actual == null) return NotFound();
+
+                    if (value.UsaSsl != true && db.Database.SqlQuery<int>(
+                        "SELECT COUNT(*) FROM dbo.CONFIGURACION_EMAIL_MODULO WHERE Modulo='RECUPERO_CONTRASENA' AND [Service]=@service",
+                        P("@service", actual.Service)).Single() > 0)
+                        return BadRequest("El perfil de recupero de contraseña requiere una conexión SMTP segura.");
 
                     string passwordProtegida = actual.CredentialFromMailPassProtegida;
                     if (!string.IsNullOrWhiteSpace(value.CredentialFromMailPass))
@@ -541,7 +578,8 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             return db.Database.SqlQuery<AsignacionModuloResponseDto>(
                 "SELECT m.Modulo, e.[Service], e.Es_id AS EmailServidorID, e.[Name] AS Perfil, " +
-                "e.CredentialFromMailAddres AS Remitente " +
+                "e.CredentialFromMailAddres AS Remitente, m.UrlLogin, " +
+                "m.FechaModificacion AT TIME ZONE 'UTC' AS FechaModificacion, m.UsuarioModificacion " +
                 "FROM dbo.CONFIGURACION_EMAIL_MODULO m " +
                 "INNER JOIN dbo.EmailServidor e ON e.[Service] = m.[Service] " +
                 "WHERE m.Modulo = @modulo;", P("@modulo", modulo)).FirstOrDefault();

@@ -74,10 +74,16 @@ namespace WebApi_TransporteSanchez.Controllers
                         usuario.Contraseña = hash;
                     }
 
+                    // No emitir una sesión con la contraseña anterior si se restableció durante el login.
+                    var versionSesion = db.Database.SqlQuery<long?>(
+                        "SELECT VersionSesion FROM dbo.USUARIOS WHERE Usuario_ID=@p0 AND Contraseña=@p1 AND EstadoUsuario='Activo'",
+                        usuario.Usuario_ID, usuario.Contraseña).FirstOrDefault();
+                    if (!versionSesion.HasValue)
+                        return Content(HttpStatusCode.Unauthorized, new { General = "Usuario o contraseña incorrectos." });
                     RegistrarInicioSesion(db, usuario);
                     return Ok(new LoginResponseDTO
                     {
-                        Token = Generate(usuario),
+                        Token = Generate(usuario, versionSesion.Value),
                         Nombre_Usuario = usuario.Nombre_Usuario,
                         Nombre = usuario.Nombre,
                         Apellido = usuario.Apellido,
@@ -111,7 +117,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        private string Generate(USUARIOS user)
+        private string Generate(USUARIOS user, long versionSesion)
         {
             if (string.IsNullOrEmpty(JwtConfig.SecretKey))
                 throw new ArgumentException("La clave JWT no está configurada.");
@@ -123,7 +129,9 @@ namespace WebApi_TransporteSanchez.Controllers
                 new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
                 new Claim(ClaimTypes.Name, user.Nombre),
                 new Claim(ClaimTypes.Surname, user.Apellido),
-                new Claim(ClaimTypes.Role, user.Rol)
+                new Claim(ClaimTypes.Role, user.Rol),
+                new Claim(SesionesRecupero.ClaimUsuarioId, user.Usuario_ID.ToString(System.Globalization.CultureInfo.InvariantCulture)),
+                new Claim(SesionesRecupero.ClaimVersion, versionSesion.ToString(System.Globalization.CultureInfo.InvariantCulture))
             };
 
             var token = new JwtSecurityToken(
