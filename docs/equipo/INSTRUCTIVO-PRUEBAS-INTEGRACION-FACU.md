@@ -43,7 +43,8 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-integracion-facu-ronda-N.md`.
   decir "Corrido" en todos. Al 28/10 ya lo dice, el manual 0003 está publicado y el 18 ya se aplicó (recibo 49 y su
   movimiento).
 - **Script de Fede (para la parte J):** `database/whatsapp/02_plantillas_cancelado_y_desasignado.sql`; el diagnóstico lo
-  mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). En Meta
+  mira en la fila 14. Sin él no abre Configuración de WhatsApp (el alta de un viaje sigue mandando la hoja de ruta). **Al
+  28/10 ya está corrido** (las tres plantillas cargadas, en `es_AR`). En Meta
   tienen que estar aprobadas `viaje_cancelado` y `viaje_desasignado`; si no, la parte J se prueba igual y el WhatsApp de
   esos avisos sale con error (Fede dice en qué están).
 - La VM en `rocionuvoli` con el último commit (`git log --oneline -1`), la API **recompilada con Recompilar solución**
