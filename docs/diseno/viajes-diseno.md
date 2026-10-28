@@ -117,3 +117,63 @@ Los cambios del 27/10 (orden del día, camión ocupado, iniciar en su día, gast
 sus pasos de prueba en la §43 y en los puntos 28, 33, 35 y 36 de la §41 de `docs/PENDIENTES-SISTEMA.md`, y pruebas de Node
 en `tests/orden-del-dia.test.js`, `tests/hoja-de-ruta.test.js`, `tests/control-interno.test.js` y
 `tests/presupuestos-mapa-horarios.test.js`. Los huecos A–G, en `tests/viajes-flujo.test.js`.
+
+---
+
+## 7. Estadía y adicionales: clientes directos y Rukas (28/10)
+
+Cómo se manejan hoy, con lo que respondió Claudia (detalle en `docs/negocio/RELEVAMIENTO-RUKAS-CLAUDIA.md`, paso 12) y lo
+que se hizo el 28/10 (§60 de `docs/PENDIENTES-SISTEMA.md`).
+
+### Qué está en la tabla de tarifas y qué está en el código
+
+- **En la tabla de tarifas** (Gestionar tarifas, cada tabla con su vigencia, general o propia de un cliente): el **módulo
+  de estadía** ($ 96.577 en "Tarifas a agosto 2026"), las **horas por módulo** (6), **después de cuántas horas corre** (12;
+  en larga distancia, 18) y el **porcentaje del viaje sin carga** (60 %). Si cambia el módulo, se carga una tabla nueva o
+  se corrige la actual; si ya la usan viajes, se recalcula lo que el cliente no vio y lo demás queda para revisar (§33).
+  Cada viaje usa la tabla vigente en su fecha de inicio.
+- **En el código** (`TarifarioCalculo.AdicionalesFijos` y `ADICIONALES` en `gestion-viajes.html`): la **lista de
+  adicionales** y **cuántos módulos vale cada uno**, y los **porcentajes de la vuelta vacía** (10 a 70 %). Si Rukas cambia
+  su catálogo, hay que tocar el código; pasarlo a la tabla de tarifas va con la tabla dinámica (§42).
+
+### Clientes directos
+
+- **La decide administración**, viaje por viaje: se carga a mano, el sistema no la calcula.
+- **Dónde:** Registrar o Editar viaje, bloque **Adicionales** ("Agregar adicional"): adicional, cantidad y comentario.
+  Espera por franja (de 1 a 6 hs, 1 módulo; de 6 a 12, 2; de 12 a 18, 3; de 18 a 24, 4; de 24 a 36, 6; de 36 a 48, 8; de
+  48 a 72, 12; de 72 a 96, 16), adicional por descarga (1), descarga + espera y repaletizado (2), repaletizado + estadía
+  (3) y "Estadía (módulos de 6 hs)" para los viajes de antes. Vuelta vacía: un porcentaje del flete, uno por viaje.
+- **Cuándo:** después del viaje, aunque la tarifa haya quedado fija, hasta que el viaje entra en una proforma generada o
+  aceptada (o se factura).
+- **Cómo se cobra:** se suma al importe del viaje ("adicionales (N módulos)"), se ve en Ver detalle y va a la proforma
+  dentro del importe del viaje, en su misma línea.
+- **Viaje sin carga:** se cobra el porcentaje de la tabla y los adicionales fijos siguen; la vuelta vacía no (no llegó al
+  destino): al pasar a Sin carga sale de la lista.
+- **Referencia para decidir:** la regla de QUICKFOOD (12 hs desde la citación, 18 hs con más de 250 km; después, un módulo
+  cada 6 hs). En la práctica casi nunca se cobra (viajes en el día; a veces algo "de onda") y el dueño la cuenta desde que
+  llega a descargar.
+
+### Rukas (QUICKFOOD, clientes con plataforma)
+
+- **La decide Rukas** con la regla de QUICKFOOD: 12 o 18 hs incluidas desde la citación (si llega antes, la citación; si
+  llega tarde, la llegada) y después un módulo cada 6 hs. Se carga en Rukas (Cierre Reparto, "+ Adicional") y la aprueba
+  Marfrig. Si falta o está mal, Claudia la agrega o la corrige **en Rukas**.
+- **En el viaje de SGTL no se carga:** el bloque Adicionales no se ve y la API lo rechaza, para no cobrarla dos veces.
+  Tampoco hay Sin carga (pendiente: esos viajes no pasan por En viaje).
+- **Al subir el Excel de la proforma de plataforma** (`docs/diseno/proforma-rukas-diseno.md`): por cada línea se controla
+  que el viaje exista, que no esté cancelado ni en otra proforma, que tenga los números y la tarifa, y **se compara solo el
+  importe del viaje** con el importe guardado en SGTL, redondeado a pesos. Si no coincide, "Importe distinto": se corrige
+  la tarifa en SGTL o se reclama en Rukas, y hasta resolverlo no se genera. **Los adicionales se toman como vienen, sin
+  validar** (Rukas los calcula con las horas reales y Marfrig los aprueba; SGTL no tiene esas horas). Al generar, cada
+  viaje con adicionales lleva una línea aparte, "Adicional transporte …".
+- **Cuidado:** un viaje viejo con plataforma que tenga estadía cargada en SGTL guarda el importe con la estadía y, al
+  compararlo con el Excel, da "Importe distinto" aunque la tarifa esté bien. Los nuevos ya no la dejan cargar.
+
+### Lo que queda (punto 11 de la §41 de `docs/PENDIENTES-SISTEMA.md`)
+
+- Preguntarle a Claudia hasta cuándo corre, si la citación es la hora de carga en el origen y si las franjas de la espera
+  son las horas que pasan de las 12 o 18 incluidas.
+- Los textos que dicen "de iniciado el servicio" (ayuda de Adicionales y de Gestionar tarifas) tienen que decir "desde la
+  citación".
+- Más adelante: que el sistema proponga la espera con las horas que registre el chofer (llegada al origen y fin de la
+  descarga) y que Ver detalle del viaje muestre el adicional que vino de Rukas.

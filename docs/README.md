@@ -77,7 +77,7 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/diseno/auditoria-integracion.md` — cómo se registra la auditoría de altas, bajas y modificaciones.
 - `docs/diseno/proforma-rukas-diseno.md` — proforma de plataforma (Rukas): base de datos, API, pantallas y plan de desarrollo por etapas.
 - `docs/diseno/vuelta-del-dia-diseno.md` — primer y segundo viaje del día (1ª y 2ª vuelta): la regla, dónde se ve y todos los casos, normales y borde.
-- `docs/diseno/viajes-diseno.md` — el flujo completo de los viajes como está hoy (estados, qué se puede hacer en cada situación, qué se controla) y los huecos encontrados en la revisión del 27/10, para corregir o decidir.
+- `docs/diseno/viajes-diseno.md` — el flujo completo de los viajes como está hoy (estados, qué se puede hacer en cada situación, qué se controla), los huecos encontrados en la revisión del 27/10, para corregir o decidir, y cómo se manejan la estadía y los adicionales en los clientes directos y en Rukas (§7).
 - `docs/diseno/seguridad-contrasenas-diseno.md` — cambio de contraseña, hashes seguros y recupero desde el login por e-mail, sin segundo factor.
 - `docs/diseno/seguridad-contrasenas-plan.md` — plan de implementación y verificación del cambio seguro de contraseña.
 

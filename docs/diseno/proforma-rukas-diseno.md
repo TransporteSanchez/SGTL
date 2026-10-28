@@ -94,9 +94,9 @@ Rocío corre el script en la base compartida. La base es una sola, así que avis
 
 El controller elige el lector según `PLATAFORMAS.Codigo` del cliente. **Sumar una plataforma** = un registro en `PLATAFORMAS` + su lector (+ un campo en el viaje, si se cruza por un dato que hoy no existe).
 
-**Cómo se arman los conceptos (`PROFORMA_DETALLE`):** al generar, una línea por cada línea del archivo, con precio = importe del viaje + adicionales (netos) e `IvaPct = 21` (1-B). El código es `V{Viaje_ID}`: como solo se genera con todo OK, cada línea tiene su viaje en SGTL. Así la reserva, el control de "ya facturado" y el paso a `Facturado` al emitir la factura funcionan sin cambios.
+**Cómo se arman los conceptos (`PROFORMA_DETALLE`):** al generar, una línea por cada línea del archivo, con precio = importe del viaje (neto) e `IvaPct = 21` (1-B); si el archivo trae adicionales, una línea aparte "Adicional transporte …" con ese importe y sin código (desde el 25/10, para que el cliente vea el viaje y el adicional por separado). El código es `V{Viaje_ID}`: como solo se genera con todo OK, cada línea tiene su viaje en SGTL. Así la reserva, el control de "ya facturado" y el paso a `Facturado` al emitir la factura funcionan sin cambios.
 
-**Qué se compara:** el importe del viaje del archivo contra el importe de SGTL (tarifa del viaje, o presupuesto si lo hay, igual que "Traer viajes"), redondeado a pesos enteros y exacto. Los adicionales no se comparan. La respuesta incluye la tarifa usada por cada viaje (tipo, número, ruta o km × valor).
+**Qué se compara:** el importe del viaje del archivo contra el importe de SGTL (tarifa del viaje, o presupuesto si lo hay, igual que "Traer viajes"), redondeado a pesos enteros y exacto. Los adicionales no se comparan: se toman como vienen (los calcula Rukas con las horas reales y los aprueba Marfrig). Cómo se manejan la estadía y los adicionales en los directos y en Rukas: `docs/diseno/viajes-diseno.md`, §7. La respuesta incluye la tarifa usada por cada viaje (tipo, número, ruta o km × valor).
 
 **Lectura del archivo:** la página de facturación **ya carga SheetJS** (`xlsx@0.18.5`), así que el navegador solo extrae las celdas como texto y las manda. **Las reglas** (encabezados, formatos, repetidos) **las aplica el lector en la API**. No hace falta agregar paquetes NuGet.
 
