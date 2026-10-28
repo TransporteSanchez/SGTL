@@ -66,6 +66,9 @@ namespace WebApi_TransporteSanchez.Controllers
 
             public string EstadoUsuario { get; set; }
 
+            // El chofer del usuario con rol Chofer, para Ver detalle ("Quiroga, Darío (DNI 31478259)"); solo lo completa Get(id).
+            public string Chofer { get; set; }
+
         }
 
 
@@ -613,6 +616,12 @@ namespace WebApi_TransporteSanchez.Controllers
 
 
                     usuario.Email = db.Database.SqlQuery<string>("SELECT Email FROM dbo.USUARIOS WHERE Usuario_ID=@p0", id).FirstOrDefault();
+
+                    // Ver detalle dice qué chofer tiene (reporte de la VM del 28/10, F6). USUARIOS.ChoferID está fuera del EDMX.
+                    usuario.Chofer = db.Database.SqlQuery<string>(
+                        "SELECT LTRIM(RTRIM(ISNULL(c.Apellido, ''))) + ', ' + LTRIM(RTRIM(ISNULL(c.Nombre, ''))) + " +
+                        "' (DNI ' + LTRIM(RTRIM(ISNULL(c.DNI, ''))) + ')' " +
+                        "FROM dbo.USUARIOS u JOIN dbo.CHOFERES c ON c.Chofer_ID = u.ChoferID WHERE u.Usuario_ID = @p0", id).FirstOrDefault();
                     return Ok(usuario);
 
                 }

@@ -153,6 +153,7 @@
                                     <div class="col-6"><div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Apellido</span><div class="sgtl-dato-valor" id="detalleApellido"></div></div></div>
                                 </div>
                                 <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div>
+                                <div class="sgtl-dato d-none" id="detalleChoferDato"><span class="sgtl-dato-etiqueta">Chofer</span><div class="sgtl-dato-valor" id="detalleChofer"></div></div>
                             </section>
                             <section class="sgtl-bloque">
                                 <div class="sgtl-bloque-titulo">Grupos y pantallas que ve</div>
@@ -335,6 +336,9 @@
                 $('#detalleNombre').text(usuario.Nombre || '');
                 $('#detalleApellido').text(usuario.Apellido || '');
                 $('#detalleEmail').text(usuario.Email || '—');
+                // El chofer del usuario con rol Chofer (reporte de la VM del 28/10, F6).
+                $('#detalleChoferDato').toggleClass('d-none', !esChofer);
+                $('#detalleChofer').text(usuario.Chofer || '—');
                 // El alta la guarda la API con su hora (UsuariosController); quién lo registró y la última modificación
                 // todavía no los manda (reporte de la VM del 23/10, F4).
                 const alta = usuario.Fecha_Alta && !/^0001/.test(usuario.Fecha_Alta) ? SGTL.fecha(usuario.Fecha_Alta, { hora: true }) : '';
