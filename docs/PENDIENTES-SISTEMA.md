@@ -75,7 +75,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
-| 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la parte J de la ronda 2 del instructivo (§58) |
+| 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 4 del instructivo, aparte y después del resto (§58) |
 
 **Tanda de `facugodoy` del 27/10:** cambios pendientes incluidos en commits por tema; API compilada y 76 pruebas Node correctas. Los scripts SQL se versionaron sin ejecutarlos; las pruebas en VM y las aplicaciones de base indicadas en cada sección siguen pendientes.
 
@@ -4626,5 +4626,6 @@ plantillas `viaje_cancelado` y `viaje_desasignado` (6 variables) tienen que esta
 eliminar y cambiar el chofer funcionan, pero el WhatsApp no sale y queda en `App_Data/whatsapp.log`. Avisarle a Fede lo que
 cambió de su commit (el Cancelado, el lugar y los estados de Reenviar WhatsApp, el aviso después de borrar y el script).
 
-**Probar en la VM:** la parte J de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-INTEGRACION-FACU.md`. En la Mac no se
+**Probar en la VM:** la ronda 4 de `docs/equipo/INSTRUCTIVO-PRUEBAS-INTEGRACION-FACU.md`, aparte y cuando el resto esté
+OK (Rocío, 28/10), con el token del día, las plantillas aprobadas y choferes con celulares del equipo. En la Mac no se
 compiló la API; las pruebas de Node de viajes dan OK.
