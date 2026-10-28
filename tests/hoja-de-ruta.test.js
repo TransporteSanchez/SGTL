@@ -269,6 +269,27 @@ vm.runInNewContext(leer('assets/static/js/permisos-menu.js'), { window: permisos
 assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('admin'), 'Administrador');
 assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('user'), 'Usuario');
 assert.strictEqual(permisosMenu.SGTLPermisos.textoRol('chofer'), 'Chofer');
+
+// El usuario del chofer (Rocío, 28/10): se registra con el chofer, con el rol Chofer y vinculado, en la misma transacción;
+// al editar uno que no tiene, se le puede crear; al eliminar el chofer, su usuario queda inactivo.
+const validaciones = {};
+vm.runInNewContext(leer('assets/static/js/validacionesChofer.js'), validaciones);
+assert.strictEqual(validaciones.sugerirUsuarioChofer('Raúl', 'Juárez'), 'rjuarez', 'se propone la inicial y el apellido');
+assert.strictEqual(validaciones.sugerirUsuarioChofer('María José', 'De la Fuente'), 'mdelafuente', 'sin tildes ni espacios');
+assert.ok(validaciones.camposAcceso[1].regex.test('chofer2026') && !validaciones.camposAcceso[1].regex.test('corta1') &&
+    !validaciones.camposAcceso[1].regex.test('sinnumeros'), 'la contraseña, con la regla de siempre');
+const choferesApi = leer('WebApi_TransporteSanchez/Controllers/ChoferesController.cs');
+const altaChofer = choferesApi.slice(choferesApi.indexOf('public IHttpActionResult Post([FromBody] ChoferDto'), choferesApi.indexOf('// PUT: api/Choferes/{id}'));
+assert.ok(/ValidarAcceso\(db, choferDto\.Acceso, true\)/.test(altaChofer) && /db\.Database\.BeginTransaction\(\)/.test(altaChofer) &&
+    /CrearUsuario\(db, chofer, choferDto\.Acceso/.test(altaChofer) && /tx\.Commit\(\);/.test(altaChofer),
+    'al registrar, el chofer y su usuario van juntos');
+assert.ok(/Rol = "chofer",/.test(choferesApi) && /UPDATE dbo\.USUARIOS SET ChoferID = @chofer WHERE Usuario_ID = @usuario/.test(choferesApi),
+    'el usuario, con el rol Chofer y vinculado a su chofer');
+assert.ok(/"Ya existe un usuario con ese nombre\."/.test(choferesApi) && /ContrasenasSeguras\.CumplePolitica/.test(choferesApi), 'sin repetir y con la regla de contraseñas');
+assert.ok(/UPDATE dbo\.USUARIOS SET EstadoUsuario = 'Inactivo'.*WHERE ChoferID = @id/.test(choferesApi), 'al eliminar el chofer, su usuario queda inactivo');
+const pantallaChoferes = leer('gestion-choferes.html');
+assert.ok(/id="altaNombreUsuario"/.test(pantallaChoferes) && /id="altaContrasena"/.test(pantallaChoferes) && /id="editarUsuarioFijo"/.test(pantallaChoferes),
+    'Gestionar choferes: Acceso al sistema al registrar y al editar');
 const getHoja = api.slice(api.indexOf('public IHttpActionResult Get(string vista'), api.indexOf('// POST api/HojaDeRuta/Viajes/{id}/Iniciar'));
 assert.ok(/if \(!sesion\.PuedeVerTodas\) throw new AccesoDenegadoException\("No tenés permiso para ver la hoja de ruta de otro chofer\."\);/.test(getHoja),
     'el chofer no pide la de otro');

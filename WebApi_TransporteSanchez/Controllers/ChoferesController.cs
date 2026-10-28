@@ -4,10 +4,13 @@ using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -32,6 +35,95 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Alta { get; set; }
             public DateTime Fecha_Modi { get; set; } 
             public string Usu_Modi { get; set; }
+            // Al registrar o editar: el usuario que se le crea (Acceso). Al leer un chofer: el que tiene (Usuario_*).
+            public AccesoDto Acceso { get; set; }
+            public string Usuario_Nombre { get; set; }
+            public string Usuario_Estado { get; set; }
+        }
+
+        // El usuario del chofer (Rocío, 28/10, puntos 30 y 31 de la §41): todo chofer nuevo se registra con su usuario, con el
+        // rol Chofer y vinculado a su ficha, en la misma transacción (si algo falla, no se guarda ninguno de los dos). Al
+        // editar un chofer que no tiene, se le puede crear. Lo hace quien gestiona choferes: solo crea usuarios Chofer de ese
+        // chofer. La contraseña y el estado de la cuenta se cambian en Gestionar usuarios.
+        public class AccesoDto
+        {
+            public string Nombre_Usuario { get; set; }
+            public string Contraseña { get; set; }
+        }
+
+        private static readonly Regex NombreUsuarioValido = new Regex("^[A-Za-z0-9_]{1,50}$");
+
+        // null si está bien; si no, el error de su campo. Sin datos: error si es obligatorio, null si no (no se crea).
+        private static object ValidarAcceso(SGTLAuditContext db, AccesoDto acceso, bool obligatorio)
+        {
+            var nombre = acceso == null ? "" : (acceso.Nombre_Usuario ?? "").Trim();
+            var contrasena = acceso == null ? "" : (acceso.Contraseña ?? "");
+            if (nombre.Length == 0 && contrasena.Length == 0 && !obligatorio) return null;
+            if (nombre.Length == 0) return new { PropertyName = "Nombre_Usuario", ErrorMessage = "Completá el nombre de usuario." };
+            if (!NombreUsuarioValido.IsMatch(nombre)) return new { PropertyName = "Nombre_Usuario", ErrorMessage = "Usá solo letras, números y guion bajo." };
+            var minuscula = nombre.ToLower();
+            if (db.Set<USUARIOS>().Any(u => u.Nombre_Usuario.ToLower() == minuscula))
+                return new { PropertyName = "Nombre_Usuario", ErrorMessage = "Ya existe un usuario con ese nombre." };
+            string mensaje;
+            if (contrasena.Length == 0) return new { PropertyName = "Contraseña", ErrorMessage = "Completá la contraseña." };
+            if (!ContrasenasSeguras.CumplePolitica(contrasena, out mensaje)) return new { PropertyName = "Contraseña", ErrorMessage = mensaje };
+            return null;
+        }
+
+        private static bool PideAcceso(AccesoDto acceso)
+        {
+            return acceso != null && (!string.IsNullOrWhiteSpace(acceso.Nombre_Usuario) || !string.IsNullOrEmpty(acceso.Contraseña));
+        }
+
+        // Dentro de la transacción del chofer: el usuario Chofer, activo y vinculado (USUARIOS.ChoferID, fuera del EDMX).
+        private static USUARIOS CrearUsuario(SGTLAuditContext db, CHOFERES chofer, AccesoDto acceso, string quien)
+        {
+            var ahora = DateTime.Now;
+            var fecha = new DateTime(ahora.Year, ahora.Month, ahora.Day, ahora.Hour, ahora.Minute, ahora.Second);
+            var usuario = new USUARIOS
+            {
+                Nombre = (chofer.Nombre ?? "").Trim(),
+                Apellido = (chofer.Apellido ?? "").Trim(),
+                Nombre_Usuario = acceso.Nombre_Usuario.Trim(),
+                Contraseña = ContrasenasSeguras.CrearHash(acceso.Contraseña),
+                Rol = "chofer",
+                EstadoUsuario = "Activo",
+                Fecha_Alta = fecha,
+                Usu_Alta = quien,
+                Fecha_Modi = fecha,
+                Usu_Modi = quien
+            };
+            db.Set<USUARIOS>().Add(usuario);
+            db.SaveChanges();
+            db.Database.ExecuteSqlCommand("UPDATE dbo.USUARIOS SET ChoferID = @chofer WHERE Usuario_ID = @usuario",
+                new SqlParameter("@chofer", chofer.Chofer_ID), new SqlParameter("@usuario", usuario.Usuario_ID));
+            return usuario;
+        }
+
+        private class UsuarioDelChoferRow
+        {
+            public string Nombre_Usuario { get; set; }
+            public string EstadoUsuario { get; set; }
+        }
+
+        private static UsuarioDelChoferRow UsuarioDelChofer(SGTLAuditContext db, int choferId)
+        {
+            return db.Database.SqlQuery<UsuarioDelChoferRow>(
+                "SELECT TOP (1) Nombre_Usuario, EstadoUsuario FROM dbo.USUARIOS WHERE ChoferID = @id ORDER BY Usuario_ID",
+                new SqlParameter("@id", choferId)).FirstOrDefault();
+        }
+
+        // GET: api/Choferes/UsuarioLibre?nombre=rjuarez — para avisar debajo del campo antes de guardar.
+        [HttpGet]
+        [Route("api/Choferes/UsuarioLibre")]
+        public IHttpActionResult UsuarioLibre(string nombre)
+        {
+            var buscado = (nombre ?? "").Trim().ToLower();
+            if (buscado.Length == 0) return Ok(new { Libre = false });
+            using (var db = new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities")))
+            {
+                return Ok(new { Libre = !db.Set<USUARIOS>().Any(u => u.Nombre_Usuario.ToLower() == buscado) });
+            }
         }
 
         // GET: api/Choferes
@@ -134,6 +226,12 @@ namespace WebApi_TransporteSanchez.Controllers
                         return NotFound();
                     }
 
+                    var usuario = UsuarioDelChofer(db, id);
+                    if (usuario != null)
+                    {
+                        chofer.Usuario_Nombre = usuario.Nombre_Usuario;
+                        chofer.Usuario_Estado = usuario.EstadoUsuario;
+                    }
                     return Ok(chofer);
                 }
             }
@@ -515,6 +613,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         }); // Retorna 400 si el DNI ya existe con un código específico
                     }
 
+                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, true);
+                    if (errorAcceso != null) return Content(HttpStatusCode.BadRequest, new List<object> { errorAcceso });
+
                     // Crear una nueva entidad CHOFERES y asignar valores desde ChoferDto
                     var chofer = new CHOFERES
                     {
@@ -541,8 +642,17 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     try
                     {
-                        db.SaveChanges(); // Guardar cambios en la base de datos
-                        return Ok(); // Retorna 200 OK si la inserción fue exitosa
+                        // El chofer y su usuario, juntos.
+                        USUARIOS usuario;
+                        using (var tx = db.Database.BeginTransaction())
+                        {
+                            db.SaveChanges();
+                            usuario = CrearUsuario(db, chofer, choferDto.Acceso, choferDto.Usu_Alta);
+                            tx.Commit();
+                        }
+                        SGTLAuditContext.RegistrarEvento(connectionString, Recortar(choferDto.Usu_Alta, 20), "UPDATE", "USUARIOS",
+                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + " (usuario creado al registrar el chofer)");
+                        return Ok(new { chofer.Chofer_ID, Usuario_Nombre = usuario.Nombre_Usuario });
                     }
                     catch (DbEntityValidationException ex)
                     {
@@ -608,6 +718,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     return Content(HttpStatusCode.BadRequest, validationErrors);
                 }
 
+                // Sin usuario todavía (los de antes): si completaron el acceso, se le crea con el chofer.
+                bool crearUsuario = PideAcceso(choferDto.Acceso) && UsuarioDelChofer(db, id) == null;
+                if (crearUsuario)
+                {
+                    var errorAcceso = ValidarAcceso(db, choferDto.Acceso, true);
+                    if (errorAcceso != null) return Content(HttpStatusCode.BadRequest, new List<object> { errorAcceso });
+                }
+
                 // Actualizar propiedades del chofer
                 chofer.DNI = choferDto.DNI;
                 chofer.CUIL = choferDto.CUIL;
@@ -628,8 +746,17 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 try
                 {
-                    db.SaveChanges(); // Guardar cambios en la base de datos
-                    return Ok(); // Retorna 200 OK si la actualización fue exitosa
+                    USUARIOS usuario = null;
+                    using (var tx = db.Database.BeginTransaction())
+                    {
+                        db.SaveChanges(); // Guardar cambios en la base de datos
+                        if (crearUsuario) usuario = CrearUsuario(db, chofer, choferDto.Acceso, choferDto.Usu_Modi);
+                        tx.Commit();
+                    }
+                    if (usuario != null)
+                        SGTLAuditContext.RegistrarEvento(connectionString, Recortar(choferDto.Usu_Modi, 20), "UPDATE", "USUARIOS",
+                            "Usuario_ID=" + usuario.Usuario_ID, "ChoferID: ninguno -> " + chofer.Chofer_ID + " (usuario creado al editar el chofer)");
+                    return Ok(new { chofer.Chofer_ID, Usuario_Nombre = usuario == null ? null : usuario.Nombre_Usuario });
                 }
                 catch (DbEntityValidationException ex)
                 {
@@ -709,6 +836,14 @@ namespace WebApi_TransporteSanchez.Controllers
                     db.Configuration.ValidateOnSaveEnabled = false;
                     db.SaveChanges();
 
+                    // Su usuario queda inactivo (Rocío, 28/10): no queda una cuenta suelta.
+                    var inactivados = db.Database.ExecuteSqlCommand(
+                        "UPDATE dbo.USUARIOS SET EstadoUsuario = 'Inactivo', Fecha_Modi = GETDATE(), Usu_Modi = @u WHERE ChoferID = @id AND EstadoUsuario <> 'Inactivo'",
+                        new SqlParameter("@u", Recortar(model.Usu_Modi, 50)), new SqlParameter("@id", id));
+                    if (inactivados > 0)
+                        SGTLAuditContext.RegistrarEvento(connectionString, Recortar(model.Usu_Modi, 20), "UPDATE", "USUARIOS", "ChoferID=" + id,
+                            "EstadoUsuario: Activo -> Inactivo (se eliminó su chofer)");
+
                     return Ok("El chofer fue eliminado correctamente.");
                 }
             }
@@ -740,6 +875,12 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+
+        private static string Recortar(string s, int max)
+        {
+            s = (s ?? "").Trim();
+            return s.Length > max ? s.Substring(0, max) : s;
+        }
 
         // Modelo para la actualización de eliminación de chofer
         public class EliminarChoferModel

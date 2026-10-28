@@ -231,6 +231,23 @@
                                     <div class="invalid-feedback"></div>
                                 </div>
                             </div>
+
+                            <!-- El usuario del chofer (puntos 30 y 31 de la §41): se registra con él, con el rol Chofer. -->
+                            <div class="sgtl-bloque-titulo mt-4">Acceso al sistema</div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="altaNombreUsuario" class="form-label">Nombre de usuario <span class="text-danger">*</span></label>
+                                    <input type="text" id="altaNombreUsuario" class="form-control" placeholder="rjuarez" maxlength="50" autocomplete="off">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">Con este usuario entra a Hojas de ruta. Letras, números y guion bajo.</div>
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="altaContrasena" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                                    <input type="password" id="altaContrasena" class="form-control" placeholder="Letras y números" maxlength="20" autocomplete="new-password">
+                                    <div class="invalid-feedback"></div>
+                                    <div class="form-text">De 8 a 20 caracteres, con letras y números. Pasásela al chofer: después la puede cambiar.</div>
+                                </div>
+                            </div>
                         </form>
                     </div>
                     <div class="modal-footer">
@@ -327,6 +344,27 @@
                                     <label for="editarCalleAltura" class="form-label">Altura</label>
                                     <input type="text" id="editarCalleAltura" class="form-control" placeholder="1234" autocomplete="off">
                                     <div class="invalid-feedback"></div>
+                                </div>
+                            </div>
+
+                            <!-- Si ya tiene usuario, como dato fijo; si no (los de antes), para crearle uno. -->
+                            <div class="sgtl-bloque-titulo mt-4">Acceso al sistema</div>
+                            <div class="sgtl-dato-fijo d-none" id="editarUsuarioFijo"></div>
+                            <div id="editarAccesoCampos">
+                                <p class="form-text mt-0">Todavía no tiene usuario: completalo para que pueda entrar a Hojas de ruta.</p>
+                                <div class="row g-3">
+                                    <div class="col-12 col-md-6">
+                                        <label for="editarNombreUsuario" class="form-label">Nombre de usuario</label>
+                                        <input type="text" id="editarNombreUsuario" class="form-control" placeholder="rjuarez" maxlength="50" autocomplete="off">
+                                        <div class="invalid-feedback"></div>
+                                        <div class="form-text">Letras, números y guion bajo.</div>
+                                    </div>
+                                    <div class="col-12 col-md-6">
+                                        <label for="editarContrasena" class="form-label">Contraseña</label>
+                                        <input type="password" id="editarContrasena" class="form-control" placeholder="Letras y números" maxlength="20" autocomplete="new-password">
+                                        <div class="invalid-feedback"></div>
+                                        <div class="form-text">De 8 a 20 caracteres, con letras y números.</div>
+                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -631,6 +669,28 @@
                 });
             });
 
+            // Acceso: valida al salir; el nombre de usuario, solo letras, números y guion bajo, y si ya existe.
+            camposAcceso.forEach(function (regla) {
+                const campo = campoChofer(prefijo, regla.id);
+                campo.addEventListener('input', function () {
+                    if (regla.soloUsuario) campo.value = campo.value.replace(/[^A-Za-z0-9_]/g, '');
+                    if (regla.id === 'NombreUsuario') usuarioEscrito[prefijo] = true;
+                    delete campo.dataset.errorRemoto;
+                    if (campo.classList.contains('is-invalid') && !errorAcceso(prefijo, regla, true)) SGTL.limpiarError(campo);
+                });
+                campo.addEventListener('blur', function () {
+                    if (!campo.value.trim() && !campo.classList.contains('is-invalid')) return;
+                    validarCampoAcceso(prefijo, regla, prefijo === 'alta' || accesoCompletado(prefijo));
+                    if (regla.id === 'NombreUsuario' && !campo.classList.contains('is-invalid')) verificarUsuario(prefijo).catch(function () { });
+                });
+            });
+            // Al registrar, el nombre de usuario se propone solo con el nombre y el apellido, mientras no lo escriban a mano.
+            if (prefijo === 'alta') {
+                ['Nombre', 'Apellido'].forEach(function (id) {
+                    campoChofer('alta', id).addEventListener('blur', function () { proponerUsuario().catch(function () { }); });
+                });
+            }
+
             const dni = campoChofer(prefijo, 'DNI');
             dni.addEventListener('blur', function () {
                 if (!dni.classList.contains('is-invalid')) verificarDNI(prefijo).catch(function () { });
@@ -642,6 +702,68 @@
                     SGTL.avisoFormulario(avisoChofer(prefijo), error.mensajeUsuario);
                 });
             });
+        }
+
+        // ---------------------------------------------------------------- Acceso al sistema (puntos 30 y 31 de la §41)
+        const usuarioEscrito = { alta: false, editar: false };
+        let choferTieneUsuario = false;
+
+        function errorAcceso(prefijo, regla, obligatorio) {
+            const campo = campoChofer(prefijo, regla.id);
+            const valor = regla.id === 'Contrasena' ? campo.value : campo.value.trim();
+            if (!valor) return obligatorio ? regla.requerido : '';
+            if (!regla.regex.test(valor)) return regla.mensaje;
+            return campo.dataset.errorRemoto || '';
+        }
+
+        function validarCampoAcceso(prefijo, regla, obligatorio) {
+            const campo = campoChofer(prefijo, regla.id);
+            const mensaje = errorAcceso(prefijo, regla, obligatorio);
+            if (mensaje) SGTL.marcarError(campo, mensaje);
+            else SGTL.limpiarError(campo);
+            return !mensaje;
+        }
+
+        // Al editar, el acceso es opcional: si completan uno, piden los dos.
+        function accesoCompletado(prefijo) {
+            return camposAcceso.some(function (regla) { return campoChofer(prefijo, regla.id).value.trim() !== ''; });
+        }
+
+        function pideAcceso(prefijo) {
+            return prefijo === 'alta' || (!choferTieneUsuario && accesoCompletado(prefijo));
+        }
+
+        // Resuelve false si el nombre de usuario ya existe (y lo marca debajo del campo).
+        function verificarUsuario(prefijo) {
+            const campo = campoChofer(prefijo, 'NombreUsuario');
+            const nombre = campo.value.trim();
+            if (!nombre) return Promise.resolve(true);
+            return SGTL.ajax({ url: API + '/Choferes/UsuarioLibre', type: 'GET', data: { nombre: nombre } },
+                'No se pudo verificar el nombre de usuario. Probá de nuevo.').then(function (r) {
+                    if (campo.value.trim() !== nombre || (r && r.Libre)) return true;
+                    campo.dataset.errorRemoto = 'Ya existe un usuario con ese nombre.';
+                    SGTL.marcarError(campo, campo.dataset.errorRemoto);
+                    return false;
+                });
+        }
+
+        // "rjuarez" o, si ya existe, "rjuarez2" … "rjuarez9".
+        async function proponerUsuario() {
+            if (usuarioEscrito.alta) return;
+            const base = sugerirUsuarioChofer(campoChofer('alta', 'Nombre').value, campoChofer('alta', 'Apellido').value);
+            const campo = campoChofer('alta', 'NombreUsuario');
+            if (!base) return;
+            for (let i = 1; i <= 9; i++) {
+                const propuesto = i === 1 ? base : base + i;
+                const r = await SGTL.ajax({ url: API + '/Choferes/UsuarioLibre', type: 'GET', data: { nombre: propuesto } });
+                if (usuarioEscrito.alta) return;
+                if (r && r.Libre) {
+                    campo.value = propuesto;
+                    delete campo.dataset.errorRemoto;
+                    SGTL.limpiarError(campo);
+                    return;
+                }
+            }
         }
 
         function avisoChofer(prefijo) {
@@ -706,10 +828,11 @@
 
         function prepararApertura(prefijo) {
             SGTL.reiniciarFormulario(formularioChofer(prefijo), avisoChofer(prefijo));
-            camposChofer.forEach(function (regla) {
+            camposChofer.concat(camposAcceso).forEach(function (regla) {
                 const campo = campoChofer(prefijo, regla.id);
                 if (campo) delete campo.dataset.errorRemoto;
             });
+            usuarioEscrito[prefijo] = false;
         }
 
         function abrirModalAltaChofer() {
@@ -725,6 +848,9 @@
             choferEnEdicion = id;
             prepararApertura('editar');
             $('#EstadoActualChofer, #FechaAltaChofer').empty();
+            choferTieneUsuario = false;
+            $('#editarUsuarioFijo').addClass('d-none').empty();
+            $('#editarAccesoCampos').removeClass('d-none');
             const guardar = document.getElementById('confirmarEdicion');
             guardar.disabled = true;
             SGTL.modal('#editarChoferModal', 'show');
@@ -742,6 +868,13 @@
                     $('#editarCalleAltura').val(data.AlturaCalle ? String(data.AlturaCalle).trim() : '');
                     $('#EstadoActualChofer').html(SGTL.estado(data.EstadoChofer));
                     $('#FechaAltaChofer').text(fechaChofer(data.Fecha_Alta));
+                    // Ya tiene usuario: como dato fijo (la contraseña y el estado de la cuenta, en Gestionar usuarios).
+                    choferTieneUsuario = !!data.Usuario_Nombre;
+                    $('#editarAccesoCampos').toggleClass('d-none', choferTieneUsuario);
+                    $('#editarUsuarioFijo').toggleClass('d-none', !choferTieneUsuario).html(choferTieneUsuario
+                        ? '<div><span class="suave">Usuario</span> ' + SGTL.escapar(data.Usuario_Nombre) + ' ' + SGTL.estado(data.Usuario_Estado) + '</div>' +
+                          '<div class="suave">La contraseña y el estado de la cuenta se cambian en Gestionar usuarios.</div>'
+                        : '');
 
                     const provincia = campoChofer('editar', 'Provincia');
                     const localidad = campoChofer('editar', 'Localidad');
@@ -782,12 +915,18 @@
             const boton = document.getElementById(esAlta ? 'confirmarBtn' : 'confirmarEdicion');
 
             camposChofer.forEach(function (regla) { validarCampoChofer(prefijo, regla); });
+            const conAcceso = pideAcceso(prefijo);
+            camposAcceso.forEach(function (regla) {
+                if (conAcceso) validarCampoAcceso(prefijo, regla, true);
+                else SGTL.limpiarError(campoChofer(prefijo, regla.id));
+            });
             if (!SGTL.revisarFormulario(form, aviso)) return;
 
             const listo = SGTL.procesando(boton, 'Guardando…');
             let guardado = false;
+            let respuesta = null;
             try {
-                if (!(await verificarDNI(prefijo))) {
+                if (!(await verificarDNI(prefijo)) || (conAcceso && !(await verificarUsuario(prefijo)))) {
                     SGTL.revisarFormulario(form, aviso);
                     return;
                 }
@@ -805,7 +944,10 @@
                 } else {
                     Object.assign(chofer, { Fecha_Modi: ahora, Usu_Modi: usuario });
                 }
-                await SGTL.ajax({
+                if (conAcceso) {
+                    chofer.Acceso = { Nombre_Usuario: campoChofer(prefijo, 'NombreUsuario').value.trim(), Contraseña: campoChofer(prefijo, 'Contrasena').value };
+                }
+                respuesta = await SGTL.ajax({
                     url: esAlta ? API + '/Choferes' : `${API}/Choferes/${choferEnEdicion}`,
                     type: esAlta ? 'POST' : 'PUT',
                     contentType: 'application/json',
@@ -813,13 +955,28 @@
                 }, 'No se pudo guardar el chofer. Revisá la conexión y probá de nuevo.');
                 guardado = true;
             } catch (error) {
-                SGTL.avisoFormulario(aviso, error.mensajeUsuario || 'No se pudo guardar el chofer. Probá de nuevo.');
+                // El acceso que rechaza la API (usuario repetido, contraseña): debajo de su campo (§6.3).
+                const lista = error.xhr && Array.isArray(error.xhr.responseJSON) ? error.xhr.responseJSON : [];
+                const campos = { Nombre_Usuario: 'NombreUsuario', 'Contraseña': 'Contrasena' };
+                const deAcceso = lista.filter(function (e) { return e && campos[e.PropertyName]; });
+                if (deAcceso.length) {
+                    deAcceso.forEach(function (e) {
+                        const campo = campoChofer(prefijo, campos[e.PropertyName]);
+                        campo.dataset.errorRemoto = e.ErrorMessage;
+                        SGTL.marcarError(campo, e.ErrorMessage);
+                    });
+                    SGTL.revisarFormulario(form, aviso);
+                } else {
+                    SGTL.avisoFormulario(aviso, error.mensajeUsuario || 'No se pudo guardar el chofer. Probá de nuevo.');
+                }
             } finally {
                 listo();
             }
 
             if (!guardado) return;
-            SGTL.toastExito(esAlta ? 'Chofer registrado.' : 'Chofer guardado.');
+            const usuarioCreado = respuesta && respuesta.Usuario_Nombre;
+            SGTL.toastExito(esAlta ? 'Chofer registrado con el usuario ' + (usuarioCreado || '') + '.'
+                : usuarioCreado ? 'Chofer guardado. Se creó el usuario ' + usuarioCreado + '.' : 'Chofer guardado.');
             buscarChoferes(esAlta ? 1 : currentPage);
             setTimeout(function () {
                 SGTL.modal(esAlta ? '#ModalAltaChofer' : '#editarChoferModal', 'hide');

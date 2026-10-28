@@ -47,13 +47,23 @@ Configuración → Gestionar grupos y permisos.
 
 ## 3. Un chofer de prueba con su cuenta
 
-### 3.1 El chofer
+### 3.1 El chofer (con su usuario, desde el 28/10)
 
 1. **Pará y preguntale a Rocío qué celular usar** (código de área y número). Ese número recibe el WhatsApp de cada viaje
    que se le asigne en la tanda 3: tiene que ser uno del equipo.
 2. Gestionar choferes → Registrar chofer, con datos verosímiles (§3 de `docs/equipo/PRUEBAS-VM-CLAUDE.md`): un nombre y un
    apellido comunes que no estén ya en la lista de la parte 1, DNI y CUIL inventados que cumplan el formato, el celular de
-   Rocío, e-mail `@example.com` y un domicilio que exista. Guardar → aviso verde. Anotá el ID.
+   Rocío, e-mail `@example.com` y un domicilio que exista. En "Acceso al sistema", el nombre de usuario se propone solo
+   (dejalo así, salvo que Rocío diga otro) y la contraseña **la escribe Rocío**. Guardar → "Chofer registrado con el
+   usuario …". Anotá el ID del chofer y el usuario.
+
+### 3.2 La cuenta (ya no hace falta)
+
+Desde el 28/10 la cuenta se crea con el chofer (3.1). Este paso queda para revisar que quedó bien: Gestionar usuarios →
+Editar ese usuario → rol Chofer, con su chofer y sin grupos. Cancelar. Si el chofer se registró antes del 28/10 sin
+usuario, se le crea desde Gestionar choferes → Editar chofer → "Acceso al sistema".
+
+### 3.2.1 La cuenta como se hacía antes (solo si Rocío lo pide)
 
 ### 3.2 La cuenta
 

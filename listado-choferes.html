@@ -183,6 +183,10 @@
                                 <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">E-mail</span><div class="sgtl-dato-valor" id="detalleEmail"></div></div>
                             </section>
                             <section class="sgtl-bloque">
+                                <div class="sgtl-bloque-titulo">Acceso al sistema</div>
+                                <div class="sgtl-dato"><span class="sgtl-dato-etiqueta">Usuario</span><div class="sgtl-dato-valor" id="detalleUsuario"></div></div>
+                            </section>
+                            <section class="sgtl-bloque">
                                 <div class="sgtl-bloque-titulo">Camión asignado</div>
                                 <div class="table-responsive">
                                     <table class="table table-sm table-striped mb-0" id="tablaCamionesAsignados">
@@ -409,6 +413,10 @@
                         $('#detalleCelular').text(chofer.TelefonoCelular || '');
                         $('#detalleTelefono').text(chofer.TelefonoFijo || '');
                         $('#detalleEmail').text(chofer.Email || '');
+                        // Su usuario (puntos 30 y 31 de la §41), con el estado de la cuenta.
+                        $('#detalleUsuario').html(chofer.Usuario_Nombre
+                            ? SGTL.escapar(chofer.Usuario_Nombre) + ' ' + SGTL.estado(chofer.Usuario_Estado)
+                            : '<span class="text-muted">Todavía no tiene usuario.</span>');
                         $('#detalleProvincia').text(nombres[0]);
                         $('#detalleLocalidad').text(nombres[1]);
                         $('#detalleCalle').text(chofer.Calle || '');
