@@ -3966,9 +3966,13 @@ como presentación). Los números son los del listado de Rocío.
     estadía), y en el viaje se agregan uno o varios (adicional, cantidad, comentario) que se suman al importe, se ven en
     Ver detalle y van a la proforma en una línea aparte, como los de Rukas. La espera puede salir sola con las horas del
     chofer (la propuesta de arriba). Se junta con la tabla dinámica (§42).
-  - **Preguntas para Claudia:** cómo paga Rukas un viaje sin carga (no hay "falso flete" en la lista; ¿es una vuelta vacía
-    del 60 %?); si a los directos les cobra los mismos adicionales y valores; y quién decide el porcentaje de la vuelta
-    vacía.
+  - **Respuestas de Rocío (28/10):** a los directos se les cobran los mismos adicionales con los mismos valores, así que la
+    lista de la tabla puede ser la de Rukas tal cual; el porcentaje de la vuelta vacía lo elige administración en cada
+    viaje, tomando como referencia cómo lo pone Rukas.
+  - **Falso flete en Rukas: no aparece en ningún lado** de lo que ve Transporte Sánchez (Cierre Reparto, adicionales, Control
+    Tráfico, Control Proformas, sobres, tickets; recorrida del 28/10). Lo más probable es que con QUICKFOOD no pase, porque
+    programa los viajes con la carga asegurada. Preguntarle a Claudia si pasó alguna vez y cómo se pagó; según eso, ver si
+    en SGTL "Sin carga" sigue disponible para los viajes con plataforma.
 - [x] **12 y 13. Textos de para quién es la tabla.** Hechos (27/10), subidos, pendientes de probar en la VM (§40, punto
   7, paso 2). "Solo algunos clientes" → "Clientes en particular". En lugar de
   "Vale…" y "Para estos clientes, esta tabla reemplaza a la de todos los clientes.", propuesta: "Se aplica a todos los

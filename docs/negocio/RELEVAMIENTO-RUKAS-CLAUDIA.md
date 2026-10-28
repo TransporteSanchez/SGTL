@@ -261,8 +261,17 @@ La lista de adicionales de QUICKFOOD (agosto 2026), con el tipo de cálculo de R
 | QF-Vuelta Vacío 10 %, 20 %, 23 %, 30 %, 40 %, 45 %, 50 %, 60 % y 70 % | Porcentaje | el porcentaje × el flete (el costo del transporte); la cantidad no cuenta |
 
 En el código de la página: fijo (o variable) = valor × cantidad; porcentaje = flete × porcentaje. El módulo de $ 96.577 y
-las 6 hs por módulo son los mismos de nuestra tabla "Tarifas a agosto 2026" (estadía; `database/tarifas/03_…`). En la
-lista no hay un "falso flete" (nuestro "Sin carga", 60 %): preguntarle a Claudia cómo lo paga Rukas.
+las 6 hs por módulo son los mismos de nuestra tabla "Tarifas a agosto 2026" (estadía; `database/tarifas/03_…`).
+
+**Respuestas de Rocío (28/10):** a los clientes directos se les cobran **los mismos adicionales, con los mismos valores**.
+El porcentaje de la vuelta vacía lo decide **administración**, tomando como referencia cómo lo pone Rukas.
+
+**Falso flete ("Sin carga" en SGTL): en lo que ve Transporte Sánchez en Rukas no hay nada.** Se buscó (28/10, solo
+lectura) en Cierre Reparto y su detalle, en la lista de adicionales, en Control Tráfico (sus estados son Planeados,
+Ingresados, Despachado, Salidos y Finalizados), en Control Proformas, en los sobres y en los tickets: ningún estado,
+adicional ni texto de falso flete, viaje sin carga, frustrado o anulado por falta de carga. Lo más probable (Rocío): QUICKFOOD
+programa los viajes sabiendo que tiene la carga, así que no pasa. Preguntarle a Claudia si alguna vez pasó con QUICKFOOD y
+cómo se pagó.
 
 ---
 
