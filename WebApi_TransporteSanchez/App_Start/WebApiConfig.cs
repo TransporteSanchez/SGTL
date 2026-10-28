@@ -18,6 +18,10 @@ namespace WebApi_TransporteSanchez
             config.EnableCors(cors);
             config.MessageHandlers.Add(new Security.SesionesRecuperoHandler());
 
+            // Un error 500 no devuelve el detalle técnico (excepción, SQL, rutas del servidor), tampoco a las llamadas desde
+            // la misma máquina: la pantalla muestra su propio mensaje (§9 del design system; reporte de la VM del 28/10, F4).
+            config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Never;
+
             // Rutas de API web
             config.MapHttpAttributeRoutes();
 
