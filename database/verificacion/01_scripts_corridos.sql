@@ -4,7 +4,7 @@
    Para saber, antes de una tanda de pruebas, si están corridos los scripts de la integración del 28/10: los de Facu
    (cuenta corriente 11 a 18, seguridad 02, e-mail 07 y documentación 02), los nuestros del 27/10 (viajes 02 y 03, hoja de
    ruta 01 y 02), el de Fede (whatsapp 02, integrado el 28/10) y los nuestros del 24 al 27/10 sin probar todavía (tarifas
-   02, 05 y 06, tableros 01 y costos 01 y 02). Tarifas 03 y 04 cargan datos y 07 es de solo lectura: no se miran acá. No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
+   02, 05 y 06, tableros 01 y costos 01 y 02), más los adicionales del viaje (viajes 04, 28/10). Tarifas 03 y 04 cargan datos y 07 es de solo lectura: no se miran acá. No mira una tabla de "scripts aplicados" (no existe): busca en la base lo que deja cada uno (una
    columna, una restricción, un disparador). Al sumar scripts nuevos, agregar su fila acá.
 
    Cómo correrlo (SSMS, base Transporte_Sanchez): ejecutar entero. Devuelve tres tablas:
@@ -128,7 +128,11 @@ UNION ALL SELECT 20, N'costos/02_galpones_por_fecha (nuestro)',
     CASE WHEN COL_LENGTH(N'dbo.GALPON', N'Vigente_Desde') IS NOT NULL THEN 1 ELSE 0 END +
     CASE WHEN OBJECT_ID(N'dbo.GALPON_KM', N'U') IS NOT NULL THEN 1 ELSE 0 END +
     CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'GalponID') IS NOT NULL THEN 1 ELSE 0 END,
-    3, N'GALPON.Vigente_Desde, GALPON_KM y VIAJES.GalponID';
+    3, N'GALPON.Vigente_Desde, GALPON_KM y VIAJES.GalponID'
+UNION ALL SELECT 21, N'viajes/04_adicionales_del_viaje (nuestro)',
+    CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'Vuelta_Vacia_Porcentaje') IS NOT NULL THEN 1 ELSE 0 END +
+    CASE WHEN COL_LENGTH(N'dbo.VIAJES', N'Adicionales') IS NOT NULL THEN 1 ELSE 0 END,
+    2, N'VIAJES.Vuelta_Vacia_Porcentaje y VIAJES.Adicionales (sin ellas, Gestionar viajes no carga)';
 
 SELECT Script,
        CASE WHEN Encontrado = Esperado THEN N'Corrido'
