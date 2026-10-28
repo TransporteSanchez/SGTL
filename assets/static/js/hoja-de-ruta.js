@@ -502,7 +502,9 @@
         irAlViajePedido();
       }, function (error) {
         if (busqueda !== estado.busqueda) return;
-        mostrarLista('<p class="text-muted text-center my-5">No se pudo cargar tu hoja de ruta.</p>');
+        // Con la sesión cerrada (por ejemplo, el chofer quedó inactivo) va solo el aviso de por qué, sin "No se pudo cargar"
+        // (reporte de la VM del 28/10, F7).
+        if (!(error.xhr && error.xhr.status === 401)) mostrarLista('<p class="text-muted text-center my-5">No se pudo cargar tu hoja de ruta.</p>');
         SGTL.toastError(error.mensajeUsuario);
       });
   }

@@ -214,6 +214,11 @@
   // API cuando rechaza un dato (400 o 409): los demás errores traen detalles técnicos (§9).
   function mensajeError(xhr, porDefecto) {
     if (xhr && xhr.status === 401) {
+      // La sesión que la API rechazó se borra ya, como en sidebar-loader.js: si no, al volver a entrar seguía guardada
+      // (reporte de la VM del 28/10, F7).
+      ['token', 'username', 'userRole', 'nombre', 'apellido', 'sgtlSoloHojaDeRuta'].forEach(function (clave) {
+        try { localStorage.removeItem(clave); } catch (e) { }
+      });
       setTimeout(function () { window.location.href = 'Login.html'; }, 2500);
       // Motivo: por qué se cerró la sesión, si la API lo dice (un chofer que quedó inactivo, HojaDeRutaController).
       var motivo = (xhr.responseJSON || {}).Motivo;
