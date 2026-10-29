@@ -194,6 +194,7 @@
             enviando: false,
             configuracionLista: false,
             proformaLista: false,
+            tiposListos: false,
             cargaConfiguracion: 0
         };
         porId('facProformaNumero').textContent = 'Proforma #' + id;
@@ -225,6 +226,16 @@
         porId('btnConfirmarFactura').disabled = !(operacion.proformaLista && operacion.configuracionLista);
         if (!porId('btnConfirmarFactura').disabled)
             mostrarMensaje('La proforma está lista. Revisá el tipo y las fechas antes de emitir el comprobante.', 'success');
+        else if (operacion.proformaLista && operacion.tiposListos && !porId('facTipoComprobante').value)
+            mostrarMensaje('La proforma está lista. Seleccioná el tipo de comprobante para emitir.', 'info');
+    }
+
+    // El tipo que se propone al abrir: el comprobante interno (FC) o el único que haya. Como la sigla se puede
+    // renombrar (§47), si FC no está no se propone otro, para no elegir un débito por error (§62).
+    function tipoPropuesto(tipos) {
+        var interno = tipos.filter(function (item) { return item.Tipo === 'FC'; })[0];
+        if (interno) return interno.Tipo;
+        return tipos.length === 1 ? tipos[0].Tipo : '';
     }
 
     function seleccionarTipo() {
@@ -237,7 +248,10 @@
         porId('facLetra').innerHTML = '';
         porId('facSucursal').innerHTML = '';
         porId('facNumeroComprobante').value = '';
-        if (!tipo) return Promise.resolve();
+        if (!tipo) {
+            habilitarEmision(operacion);
+            return Promise.resolve();
+        }
         if (operacion.proformaLista) mostrarMensaje('Cargando la configuración del comprobante…', 'info');
         if (!window.ConfiguracionFacturacion || !window.ConfiguracionFacturacion.cargar) {
             mostrarMensaje('No se pudo cargar la configuración del comprobante. Probá de nuevo.', 'danger');
@@ -288,9 +302,8 @@
                 return '<option value="' + escapar(item.Tipo) + '">' +
                     escapar(item.Tipo + ' · ' + (item.Descripcion || item.Tipo)) + '</option>';
             }).join('');
-            var preferido = tipos.filter(function (item) { return item.Tipo === 'FC'; })[0] ||
-                tipos.filter(function (item) { return item.Tipo !== 'FAC'; })[0] || tipos[0];
-            porId('facTipoComprobante').value = preferido.Tipo;
+            operacion.tiposListos = true;
+            porId('facTipoComprobante').value = tipoPropuesto(tipos);
             seleccionarTipo();
         }).catch(function () {
             if (estado === operacion)

@@ -283,7 +283,22 @@ function probarAccionEmitirComprobante() {
     });
 }
 
+// La sigla se puede renombrar (§47): sin FC, el modal no propone otro tipo de deuda, salvo que haya uno solo (§62).
+function probarTipoPropuesto() {
+    const fuente = fs.readFileSync(path.join(__dirname, '..', 'assets', 'static', 'js', 'facturacion-proforma.js'), 'utf8');
+    const sandbox = {};
+    vm.runInNewContext(extraerFuncion(fuente, 'tipoPropuesto'), sandbox, { filename: 'facturacion-proforma.js' });
+    const tipos = function () {
+        return Array.prototype.map.call(arguments, function (tipo) { return { Tipo: tipo, Impacto: 'D' }; });
+    };
+    assert.strictEqual(sandbox.tipoPropuesto(tipos('FZ', 'FC')), 'FC', 'con FC activo lo propone');
+    assert.strictEqual(sandbox.tipoPropuesto(tipos('D', 'FI')), '', 'con FC renombrado no propone el débito');
+    assert.strictEqual(sandbox.tipoPropuesto(tipos('FAC', 'D')), '', 'sin FC tampoco elige otro entre varios');
+    assert.strictEqual(sandbox.tipoPropuesto(tipos('FI')), 'FI', 'si hay un solo tipo, lo propone');
+}
+
 ejecutarPrueba().then(function () {
+    probarTipoPropuesto();
     probarConceptoObligatorioEnProforma();
     probarObservacionesUnificadasEnProforma();
     probarAccionEmitirComprobante();

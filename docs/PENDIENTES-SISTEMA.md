@@ -79,7 +79,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
-| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío | — | Lo que falta de la ronda 3, cuando Facu confirme las siglas (§62) |
+| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **La proforma sin FC no propone otro tipo: hecho en la Mac (28/10)** | Commit del 28/10, sin push | La proforma sin FC (§62, "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -4971,10 +4971,16 @@ entera: emisión directa, crédito, débito, crédito y recibo sin imputar, impu
 los rechazos de la API y la anulación de un recibo imputado.
 
 **Lo urgente para el 29/10:**
-- **Las siglas que cambió Facu:** preguntarle si FI queda (el cambio de "factura" a "comprobante" de la §38) o era una
-  prueba. Si queda, emitir el comprobante desde una proforma preselecciona "D · Débito interno":
-  `facturacion-proforma.js` (al cargar los tipos) prefiere la sigla `FC`, escrita en el código. Si vuelve a FC, no hay que
-  tocar nada.
+- **Las siglas que cambió Facu:** fue una prueba (Rocío, 28/10), pero renombrar una sigla es un caso real. Facu vuelve
+  FI a FC antes de la reunión. Emitir el comprobante desde una proforma preseleccionaba "D · Débito interno" porque
+  `facturacion-proforma.js` busca la sigla `FC` y, si no estaba, elegía otro tipo de deuda.
+  **Arreglo chico hecho en la Mac (28/10), falta probar en la VM:** sin FC no propone ninguno (salvo que haya uno solo) y
+  el mensaje dice "La proforma está lista. Seleccioná el tipo de comprobante para emitir."; con FC, como antes. El
+  arreglo de fondo, que no dependa de la sigla, es la §63.
+  **Cómo probarlo:** Ctrl+F5 (es solo el front). Gestionar proformas → una aceptada → Emitir comprobante: FC elegido y
+  Emitir habilitado, como siempre. Con el OK de Rocío, inactivar FC A y FC B un momento (como en la ronda 3, fila 24):
+  el tipo queda en "Seleccioná un tipo", Emitir deshabilitado y el mensaje de arriba; al elegir otro tipo carga su letra,
+  sucursal y número. Cancelar sin emitir y volver a activar FC.
 - Que nadie cambie la configuración de facturación hasta la reunión (M9).
 - La contraseña SMTP guardada desde la máquina que va a mostrar el sistema: falla también el perfil de Facturación
   (F2 de la §59).
