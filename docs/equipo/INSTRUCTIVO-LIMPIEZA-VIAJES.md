@@ -46,7 +46,9 @@ que se cierren después.
     Registrado → Listo para facturar; directo, Registrado → En viaje → Entregado) y quedarían en un estado que el directo
     no tiene. Si tiene, consultarlo con Claude.
 - **distribuidora-powerful S.A.** (§38): **Editar cliente** con un nombre inventado y creíble, como los demás (por
-  ejemplo, "Distribuidora Serrana S.R.L."). Sus viajes, comprobantes y recibos lo siguen teniendo.
+  ejemplo, "Distribuidora Serrana S.R.L."). Sus viajes, comprobantes y recibos lo siguen teniendo. Cambiarle también el
+  **e-mail** (hoy es la casilla personal de alguien del equipo: cualquier envío le llegaría) y el **CUIT** (armado con un
+  DNI real) por unos inventados (§62, M8). Su viaje #5 está en la PF-00000005 de la ronda 3: se libera anulándola (§62).
 - Los demás que la tabla 5 marque (empieza en minúscula, sin CUIT, inactivo con viajes abiertos) y los que a ojo no
   parezcan reales.
 

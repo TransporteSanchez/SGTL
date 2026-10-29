@@ -79,6 +79,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
+| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío | — | Lo que falta de la ronda 3, cuando Facu confirme las siglas (§62) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -4950,10 +4951,78 @@ Fede (WhatsApp en viajes, `aae91a7`) ya está integrado.
 
 **Lo que llega a `main` sin probar** (para después del 29/10, en el orden del instructivo del 28/10):
 - [ ] Ronda 3 (E, F, G y P): tipos de comprobante, cuenta corriente, proformas y lo que quedó de la demo; es la
-  integración de Facu (§44 a §56). Emite comprobantes: con el OK de Rocío en cada paso.
+  integración de Facu (§44 a §56). Emite comprobantes: con el OK de Rocío en cada paso. **Probada en parte el 28/10 e
+  interrumpida** (§62): falta lo que dice "Qué falta" del reporte.
 - [ ] Ronda 4 (N y O): hoja de ruta del chofer y control interno con el galpón (§36, §37 y §41).
 - [ ] Ronda 5 (D, H e I): orden de las tablas, cruces y recorrida general.
 - [ ] Ronda 6 (J): WhatsApp en viajes de Fede (§58), con Rocío porque manda mensajes reales; antes, las plantillas
   aprobadas en Meta.
 - [ ] Los puntos del correo de la ronda 1 (7, 12, 13, 14, 17, 24 y 26 de la §59), cuando la contraseña SMTP esté guardada
   desde la máquina que manda el correo.
+
+---
+
+## 62. Ronda 3 de pruebas del 28/10 (facturación) — INTERRUMPIDA; PROPUESTAS PARA DECIDIR CON ROCÍO
+
+Reporte: `docs/pruebas/2026-10-28-pruebas-ronda-3.md` (VM sobre `78d2ef5`). 59 controles: 35 OK, 5 fallas y 19 no
+probados, la mayoría por el corte: a las 21:40, mientras se probaba, Facu renombró siglas en la base compartida (FC A →
+FI A, con sus 5 comprobantes; las de C, ida y vuelta) y Rocío cortó la ronda. Cuenta corriente (parte F) funciona casi
+entera: emisión directa, crédito, débito, crédito y recibo sin imputar, imputación acumulativa y repetida sin duplicar,
+los rechazos de la API y la anulación de un recibo imputado.
+
+**Lo urgente para el 29/10:**
+- **Las siglas que cambió Facu:** preguntarle si FI queda (el cambio de "factura" a "comprobante" de la §38) o era una
+  prueba. Si queda, emitir el comprobante desde una proforma preselecciona "D · Débito interno":
+  `facturacion-proforma.js` (al cargar los tipos) prefiere la sigla `FC`, escrita en el código. Si vuelve a FC, no hay que
+  tocar nada.
+- Que nadie cambie la configuración de facturación hasta la reunión (M9).
+- La contraseña SMTP guardada desde la máquina que va a mostrar el sistema: falla también el perfil de Facturación
+  (F2 de la §59).
+
+**Fallas: causa y propuesta.** Son pantallas de Facu, salvo Generar proforma: Rocío decide y le avisa.
+- **F1, Generar proforma sin confirmación.** `generarProforma` (`gestion-facturacion.html`) guarda y genera sin
+  `SGTL.confirmar`; Marcar aceptada y Anular la tienen, y la de Rukas confirma en el pie. Propuesta: "¿Generar la
+  proforma?", que diga que toma el próximo número y deja de ser borrador, con "Generar". **Hacerlo ya.**
+- **F3, el recibo pisa el importe.** Al tildar una deuda, Aplicar toma su saldo entero y `actualizarResumenRecibo`
+  reescribe el importe con la suma de lo aplicado (también al escribir en Aplicar). Propuesta: con un importe escrito,
+  Aplicar sugiere lo que falta distribuir (hasta el saldo de la deuda) y el importe no cambia; sin importe, como hoy.
+  **Hacerlo ya**, avisándole a Facu: contradice su regla de la §52.
+- **F2, Imputar no aparece en C-4 y C-5.** En el código no falta: con un crédito aplicado (impacto C, saldo 0) el botón
+  sale deshabilitado con "ya está aplicado por completo" (probado con la función de la pantalla). Solo desaparece si la
+  fila llega sin impacto C. **Mirar los datos antes de tocar código** (consulta de abajo).
+- **F6, Anular en créditos y deudas.** El botón dice "Anular recibo" y el motivo, "se corrige con una nota de crédito",
+  aunque no haya NC. Propuesta: "Anular comprobante"; en un crédito, "No se puede anular el crédito: solo se anulan los
+  recibos"; en una deuda, "No se puede anular el comprobante: se corrige con un crédito". **Hacerlo ya** (textos).
+- **F4, "Pendiente" en créditos y recibos con saldo.** Lo arma la API (`EstadoFinanciero` en
+  `CuentaCorrienteController.cs`). Propuesta: "Sin imputar", "Parcialmente imputado" y "Aplicado", como en Comprobantes
+  sin relacionar, revisando el filtro Estado. **Después del 29/10, con Facu.**
+- **F5, Eliminar un recibo anulado.** No es nuevo: es así desde el merge de Facu del 22/10 (§21, "Eliminar uno anulado →
+  'Recibo eliminado.'"). Si se quiere conservar los anulados (el número ya se consumió), se decide con Facu. **Dejarlo y
+  preguntarle.**
+
+**Design system (DS1 a DS8):** se aplica igual en las pantallas de Facu. **Hacer ya** los de texto: M5 ("Queda lista
+para emitir la factura." → "…el comprobante.": la profe no quiere "factura") y DS7 (los `for` de Registrar proforma).
+**Después del 29/10:** DS1 a DS6 y DS8 (aviso arriba y errores debajo de cada campo, Ver comprobante y Ver recibo con
+`.sgtl-dato`, el N° como texto, el globito de Emitir y el motivo del siguiente paso en proformas facturadas).
+
+**Mejoras:** M1, M2, M3, M4 y M7, para después, a la lista de Facu (§40, punto 5). M6 es la §2 (hora UTC). M8, con la
+limpieza (`docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md`, paso 3). M9: antes de otra ronda de facturación, acordar con Facu
+una franja sin cambios de configuración.
+
+**Limpieza:**
+- **Antes de la demo, por pantalla:** anular la PF-00000005 (reserva el viaje #5) y eliminar CR B, CR A y el
+  Numerador CR (aparecen en Emitir crédito). Las siglas, con Facu.
+- **Decidir con Facu:** los comprobantes 51 a 57 de Logística Pampeana (son verosímiles: pueden quedar para la demo) y el
+  FC-A-0001-00000004 "Comprobante interno de prueba" del 27/10, que va con la limpieza de la facturación (§38).
+- **No molesta:** el intento de envío que falló.
+
+**Consulta de solo lectura para F2** (SSMS):
+
+```sql
+SELECT Comprobante_ID, Tipo, Letra, Impacto, ComprobanteReferenciaID, Estado, Total
+FROM dbo.COMPROBANTES
+WHERE Comprobante_ID IN (53, 55);
+```
+
+**Qué falta de la ronda 3:** lo de "Qué falta" del reporte. La parte E (puntos 8 a 12), cuando Facu confirme las siglas;
+G2 y P3, después de la ronda 2.
