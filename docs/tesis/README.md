@@ -33,10 +33,13 @@ económica en términos cualitativos; testers Rocío y Claudia alternando casos;
 
 Pendiente:
 
-1. **Revisión del Sprint 24:** completar con las observaciones de la tutoría del 20/10 (la retro ya está).
-2. **Detalles menores:** si los cinco grupos del sistema coinciden con los actores (parte 4); si un
-   presupuesto aceptado o rechazado puede volver a Pendiente (parte 4, Facu); el orden del backlog
-   pendiente (parte 3) y quién de la empresa es el administrador del sistema (parte 5).
+1. **Detalles menores:** si los cinco grupos del sistema coinciden con los actores (parte 4); el orden
+   del backlog pendiente (parte 3) y quién de la empresa es el administrador del sistema (parte 5).
+   Resuelto el 28/10: un presupuesto aceptado o rechazado vuelve a Pendiente mientras no generó el viaje;
+   la revisión del Sprint 24 tiene las mejoras acordadas en la tutoría del 20/10 (reenvío de WhatsApp,
+   recupero de contraseña por correo y seguir con las pruebas).
+2. **Puntos de las historias nuevas (HU54 a HU73):** revisarlos con el equipo; de ellos salen los totales
+   de los sprints 24 y 25, la tabla de velocidad y el gráfico.
 
 ## Word (versión principal)
 
@@ -46,6 +49,11 @@ membrete de Cervantes, las imágenes de la V1.5 y las correcciones hechas a mano
 - **Los cambios se hacen en el Word**, no en los `.md`. Los `.md` quedan como borrador de origen y
   referencia (el Word se generó desde ellos el 20/10/2026, pero después se editó a mano: regenerarlo
   pisaría esas ediciones).
+- **Versión 2.1 (28/10/2026):** el Word cuenta todo lo incorporado hasta el 28/10 (cierre del Sprint 24,
+  Sprint 25 en curso, requerimientos RF01 a RF38, diagramas de estados y DER nuevos, rondas de prueba
+  posteriores y defectos D09 y D10). Los `.md` quedaron en la 2.0: no se actualizaron.
+- Los diagramas se dibujan con Mermaid. Si se cambia uno, reemplazar la imagen en el Word y revisar que
+  el título siga en la misma página que el diagrama.
 - Quien lo cambie: abrirlo, actualizar la tabla de contenido (clic derecho → Actualizar campo →
   Actualizar toda la tabla), guardarlo, exportar el PDF (Archivo → Guardar como → PDF) y commitear
   los dos archivos juntos (`Docs: …`).

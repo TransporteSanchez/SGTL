@@ -81,6 +81,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la parte Q de la ronda 2 y la reprueba corta den OK (cambio de Rocío, 28/10); **la reprueba ya dio OK**, falta Q. K, L y M y las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La parte Q de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
+| 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | Commit `Docs: …` (29/10), **sin push** | Abrir el PDF y leer las partes nuevas (ver §65) |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -3521,7 +3522,10 @@ sale con `FAC` y los textos de hoy. Pasos:
    proforma.
 8. **Demo de Rukas — hecho (25/10):** los Excel de `docs/pruebas/datos/` con los importes de la tabla (990001 $ 429.101,
    990002 $ 278.028), la fecha (16/10), la ruta de los viajes ("SEDE QUILMES - SEDE BANFIELD") y sin "PRUEBA TRANSPORTE".
-9. **Tesis:** pasar al modelo de la tabla de tarifas el RF12 (`01-analisis-organizacional.md`), el anteproyecto
+9. **Hecho en el Word (28/10, versión 2.1, §65):** requerimientos, anteproyecto y arquitectura con la tabla de tarifas y la
+   palabra "comprobante". El CP11 queda como se ejecutó el 18/10 (con la tarifa de entonces): la tabla de tarifas se prueba
+   en las rondas posteriores, que el Word suma en "Rondas posteriores". Lo de abajo queda como historia.
+   **Tesis:** pasar al modelo de la tabla de tarifas el RF12 (`01-analisis-organizacional.md`), el anteproyecto
    (`02-anteproyecto.md`), la arquitectura (`04-arquitectura-y-diseno.md`) y el CP11 (`05-pruebas-e-implementacion.md`, hoy
    "tarifa por km #5, $ 14.790"), con la palabra "comprobante". La HU26 de la tabla de sprints (`03-metodologia-y-sprints.md`,
    "Tarifas fijas y por km"): a decidir; Claude recomienda dejarla, porque cuenta lo que se hizo en ese sprint, y sumar el
@@ -3532,7 +3536,8 @@ sale con `FAC` y los textos de hoy. Pasos:
 - [x] Tabla anterior: los valores de agosto con un 15 % menos (Rocío, 25/10).
 - [ ] Opción A o B, y qué casos de la demo se regeneran.
 - [ ] Módulos de estadía: proponerlos con el inicio y el fin del viaje, o a mano (§34).
-- [ ] Tesis: la HU26.
+- [x] Tesis: la HU26 queda como está (cuenta lo que se hizo en el Sprint 19); la tabla de tarifas entra como HU61 en el
+  Sprint 24 (Word 2.1, 28/10, §65).
 
 ---
 
@@ -5171,3 +5176,45 @@ casos, sobre los datos ya acomodados.
   (diagramas de los flujos), `docs/diseno/viajes-diseno.md` (estados, huecos y la §7 de adicionales),
   `docs/equipo/INSTRUCTIVO-DEMO-FACTURACION.md` y los Excel de Rukas de `docs/pruebas/datos/README.md`. Antes de escribirlo,
   ver con `docs/README.md` en qué carpeta va.
+
+---
+
+## 65. Documento de la tesis actualizado a la versión 2.1 — HECHO (28/10), COMMITEADO SIN PUSH (29/10)
+
+Pedido de Rocío (28/10): actualizar `docs/tesis/SGTL-Documentacion-Transporte-Sanchez.docx` con todo lo nuevo y sacar lo
+que se entienda hecho por una IA, los comentarios y las notas internas (es el documento que se le presenta al profesor).
+
+**Qué cambió en el Word (y su PDF):**
+- Versión 2.1 en la portada y en el historial de revisión.
+- Análisis organizacional: tecnologías (comprobantes internos) y dos problemas (precio calculado a mano con la tabla de la
+  empresa; recorrido real y costo del viaje sin registrar).
+- Requerimientos: RF01 a RF38 renumerados por área (tabla de tarifas, orden del día, camión ocupado, cancelado y sin carga,
+  adicionales, hoja de ruta del chofer, control interno, datos de la empresa, tableros, comprobantes internos, recupero de
+  contraseña) y RNF09.
+- Anteproyecto: necesidades, oportunidades, alcances, límites y evolutivos al día.
+- Metodología: Node.js en herramientas; épicas, ítems por épica (HU54 a HU73) y backlog pendiente (EV01 a EV14); velocidad
+  con el Sprint 24 cerrado (166 comprometidos, 142 completados) y el Sprint 25 (26/10 – 08/11, 70 puntos, en curso);
+  Sprint 24 con las historias sumadas, dailies del 20 al 25/10, revisión del 20 y del 25/10 y retro; Sprint 25 nuevo.
+- Actores (el chofer usa el sistema), arquitectura (36 controladores, hash PBKDF2, recupero, librerías), diagramas de
+  estados nuevos (viaje con Cancelado y Sin carga, presupuesto, proformas, comprobante), DER de viajes y de usuarios,
+  velocidad, actores y despliegue redibujados con Mermaid; texto debajo de cada diagrama de estados.
+- Pruebas: "Rondas posteriores" (22 al 28/10, desde los reportes de `docs/pruebas/`), defectos D01, D02, D03, D07 y D08 al
+  día, D09 y D10 nuevos, observaciones y conclusión.
+- Implementación, fuentes, Anexo A (acta N.º 4: tarifas y adicionales con Claudia) y Anexo B al día.
+- Limpieza: "PRUEBA-CLAUDE", "[Armar…]", "[… a generar]", referencias a "§" de pendientes, códigos F1/F3/C4,
+  `repositorio.zip`, "coordinar con Federico" y rayas largas en el texto. **Además se sacaron 21 campos ocultos
+  INCLUDEPICTURE que el Word del 20/10 traía con una ruta temporal de la sesión de Claude** (se veían con Alt+F9) y los
+  textos alternativos "Descripción generada automáticamente" de tres imágenes y del logo.
+- Los títulos (Título 1 a 4) mantienen el párrafo siguiente en la misma página, para que no quede un título solo al pie.
+- El índice se regeneró y el PDF se exportó desde Word (79 páginas).
+
+**Falta (Rocío):**
+- [x] Las observaciones de la tutoría del 20/10 en la revisión del Sprint 24 (Rocío, 28/10): con la profesora se
+  definieron las mejoras a sumar (reenviar la hoja de ruta por WhatsApp, recuperar la contraseña por correo y seguir con
+  las pruebas para relevar y corregir errores); el Sprint 25 dice que se tomaron.
+- [ ] Revisar con el equipo los puntos de HU54 a HU73 (de ahí salen los totales, la tabla y el gráfico de velocidad).
+- [x] Commitear el Word y el PDF juntos (`Docs: …`), según `docs/tesis/README.md` (29/10, sin push).
+
+**Cómo revisarlo:** abrir el PDF y leer, en este orden, el historial (p. 5), requerimientos (p. 21 a 23), alcances y
+límites (p. 25 a 28), backlog y velocidad (p. 31 a 36), sprints 24 y 25 (p. 51 a 56), actores y diagramas (p. 57 a 66),
+pruebas (p. 67 a 73) y anexos (p. 78 y 79). Con Alt+F9 en el Word no tiene que aparecer ningún campo INCLUDEPICTURE.
