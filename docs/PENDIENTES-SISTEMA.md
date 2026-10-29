@@ -77,7 +77,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
 | 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 y **reprobados OK** (`docs/pruebas/2026-10-28-reprueba-ronda-1.md`: 15 OK, 1 no probado) | Commits del 28/10 | Lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
-| 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | `database/viajes/04_adicionales_del_viaje.sql` **aplicado por Rocío (28/10, "OK" en las dos)**; recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
+| 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10. **Probado en la VM: OK** (28/10, parte Q: 28 OK; la falla de Auditoría viene de la §39) | Commits del 28/10 | `database/viajes/04_adicionales_del_viaje.sql` **aplicado por Rocío (28/10, "OK" en las dos)**; recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la parte Q de la ronda 2 y la reprueba corta den OK (cambio de Rocío, 28/10); **la reprueba ya dio OK**, falta Q. K, L y M y las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La parte Q de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
@@ -4881,7 +4881,7 @@ mirando primero qué tiene (consulta del reporte). El chofer 12 y dquiroga queda
 
 ---
 
-## 60. Adicionales del viaje de un cliente directo, como en Rukas — SUBIDO, PENDIENTE DE PROBAR EN LA VM (28/10)
+## 60. Adicionales del viaje de un cliente directo, como en Rukas — PROBADO EN LA VM: OK (28/10)
 
 Pedido de Rocío (28/10, para mostrarlo el 29/10): a los clientes directos se les cobran **los mismos adicionales que a
 QUICKFOOD en Rukas, con los mismos valores**, y la vuelta vacía es un porcentaje del flete que elige administración
@@ -4950,6 +4950,41 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
    más: el viaje está sin carga.". Volver a En viaje: la espera sigue y se cobra la tarifa completa más la espera.
    Registrar proforma → Traer viajes: la línea del viaje trae el importe con los adicionales.
 9. Design system del bloque (botón con texto, Quitar solo ícono con tooltip, textos con voseo) a 1366 y 390 px.
+
+**Probado en la VM (28/10, parte Q de la ronda 2): OK.** `docs/pruebas/2026-10-28-pruebas-ronda-2-parte-q.md`: 30
+controles, 28 OK, 1 falla y 1 no probado en parte (el margen del control interno: los camiones no tienen consumo, va con
+la ronda 4). Los adicionales funcionan de punta a punta: la cuenta exacta, un solo PUT con doble clic, el detalle en
+Gestionar y Listar viajes, los errores en la pantalla y en la API (que calcula con la lista, no con lo que manda la
+pantalla), el viaje con plataforma sin cambios, Sin carga quita la vuelta vacía y vuelve a En viaje con la espera, y Traer
+viajes trae el importe con los adicionales.
+
+**Propuestas (decide Rocío):**
+- **F1, Auditoría no registra los adicionales ni el importe al editar** (media; viene de la §39, no de la §60).
+  `GuardarImporte` escribe con SQL directo, fuera del EDMX, y `Sgtlauditcontext` no lo ve. Propuesta: en el Put, después
+  de `GuardarImporte`, si cambiaron el importe o los adicionales, `SGTLAuditContext.RegistrarEvento` con "Importe=$ antes →
+  $ después; Adicionales=…", como el cambio a Sin carga (`TarifaGuardada` pasa a leer también `Importe`). Además, en
+  `Sgtlauditcontext.SerializarCambios`, no contar como cambio un texto que solo difiere en espacios al final (las columnas
+  `char` `Distancia_KM`, `Num_Remito` y `Num_de_Carga`). El `"Viaje_ID": "0"` del alta es de toda la Auditoría (los valores
+  se toman antes de que la base asigne el ID). Es C#: compilar y probar en la VM. **Después del 29/10.**
+- **Textos de la pantalla (solo front, Ctrl+F5), para hacer ya:**
+  - "$ 478.917,80sin IVA" en Completar el viaje: falta el espacio (`mostrarImporte`, `#fijoTarifa`).
+  - Arriba de Completar el viaje de un viaje Sin carga dice "Listo para facturar: …": pasa a "Quedó sin carga: se
+    completan el remito y los adicionales.".
+  - La tarjeta Sin carga, con adicionales: "Se cobra el 60 % de la tarifa ($ 285.763,80) más los adicionales
+    ($ 193.154,00): $ 478.917,80.".
+- **Textos de la API (C#, recompilar), junto con F1:** el aviso al guardar Sin carga ("Se cobra $ 478.917,80: el 60 % de
+  la tarifa más los adicionales.") y el de la cantidad igual al de la pantalla ("Cantidad de 1 a 99.").
+- **Después del 29/10:** la vuelta vacía deshabilitada en la lista de un viaje sin carga, con el motivo; la estadía de los
+  viajes viejos en Ver detalle; "Estadía (módulos de 6 hs)" solo si el viaje ya la tenía; "× N" en Ver detalle cuando la
+  cantidad es más de 1; "Tenés cambios sin guardar" al cancelar Editar viaje; Escape en el calendario de Cambiar estado
+  (cierra el modal entero); la cantidad que acepta letras al escribir; "Hasta 200 caracteres" en el comentario.
+- **De Facu:** en Registrar proforma, "P. Unit." y "Desc.%" son `type="number"` y muestran `478917.8` (punto 11 de la
+  lista de control). A su lista (§40, punto 5).
+
+**Limpieza:** el #54 (Alimentos La Serena, Sin carga con la espera, $ 478.917,80) queda en Gestionar viajes y en Traer
+viajes de octubre. Si no sirve para la demo, se borra con el SQL del reporte (dentro de `BEGIN TRAN`, controla que no
+tenga gastos, presupuesto ni proforma); si sirve para mostrar un sin carga con adicionales, se deja. El #24 no necesita
+limpieza.
 
 ---
 
