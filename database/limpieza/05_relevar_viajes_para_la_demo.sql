@@ -83,7 +83,7 @@ LEFT JOIN dbo.CHOFERES ch ON ch.Chofer_ID = v.ChoferID
 LEFT JOIN dbo.CAMIONES ca ON ca.Camion_ID = v.CamionID
 CROSS APPLY (SELECT CASE
         WHEN ISNULL(c.Tipo_Cliente, N'Directo') <> N'Con_plataforma' AND ch.Chofer_ID IS NULL THEN N'Directo sin chofer: asignarle uno en Editar viaje'
-        WHEN ch.Fecha_Eliminar IS NOT NULL THEN N'Chofer eliminado: asignarle otro en Editar viaje'
+        WHEN ch.EstadoChofer = N'Eliminado' THEN N'Chofer eliminado: asignarle otro en Editar viaje'
         WHEN ch.Chofer_ID IS NOT NULL AND ISNULL(ch.EstadoChofer, N'Activo') <> N'Activo' THEN N'Chofer inactivo: asignarle otro en Editar viaje'
         WHEN ca.Camion_ID IS NULL THEN N'Sin camión: asignarle uno en Editar viaje'
         WHEN ISNULL(ca.EstadoCamion, N'Activo') <> N'Activo' THEN N'Camión inactivo: asignarle otro en Editar viaje (puede cambiar el importe)'
@@ -142,7 +142,7 @@ ORDER BY CASE WHEN ASCII(LEFT(LTRIM(c.Razon_Social), 1)) BETWEEN 97 AND 122 THEN
 -- 6. Todos los choferes. Se marcan los apellidos del equipo que quedaron de las pruebas (§41, punto 21): se cambian por
 -- nombres inventados y creíbles en Editar chofer (sus viajes los siguen teniendo).
 SELECT N'6. Choferes' AS Que, ch.Chofer_ID, ch.Apellido, ch.Nombre, ISNULL(ch.EstadoChofer, N'Activo') AS Estado,
-       CONVERT(bit, CASE WHEN ch.Fecha_Eliminar IS NULL THEN 0 ELSE 1 END) AS Eliminado,
+       CONVERT(bit, CASE WHEN ch.EstadoChofer = N'Eliminado' THEN 1 ELSE 0 END) AS Eliminado,
        (SELECT STRING_AGG(u.Nombre_Usuario, N', ') FROM dbo.USUARIOS u WHERE u.ChoferID = ch.Chofer_ID) AS Usuario,
        n.Viajes, n.Abiertos,
        CASE WHEN ch.Apellido LIKE N'%Montenegro%' OR ch.Apellido LIKE N'%Godoy%' OR ch.Apellido LIKE N'Pai%' OR ch.Apellido LIKE N'%Nuvoli%'
