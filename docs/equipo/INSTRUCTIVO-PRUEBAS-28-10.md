@@ -24,6 +24,9 @@ Antes de pasar todo a `main` y a las ramas de Facu y Fede, esta tanda tiene que 
 3. **Que todo cumple el design system** (`docs/design-system/03-decisiones.md` y la lista de control de `AGENTS.md`), con
    la mirada de usabilidad de la sección 1.
 
+**Decisión de Rocío (28/10):** las tres ramas se pasan cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 se
+prueban después y quedan anotadas en la §61 de `docs/PENDIENTES-SISTEMA.md`.
+
 **Las reglas de la sesión, los datos de prueba y el formato del reporte son los de `docs/equipo/PRUEBAS-VM-CLAUDE.md`:
 leelo antes.** Lo que cada sección de `docs/PENDIENTES-SISTEMA.md` dice para probar se hace completo; acá se remite a esas
 secciones y se agrega lo que falta.

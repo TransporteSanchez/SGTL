@@ -1,7 +1,7 @@
 # Pendientes a corregir en SGTL
 
 Relevamiento del 14/10/2026 (prueba de Viajes en la VM + revisión en la Mac).
-**Última actualización de este documento: 27/10/2026.**
+**Última actualización de este documento: 28/10/2026.**
 
 Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git log origin/rocionuvoli..HEAD`.
 
@@ -78,6 +78,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 | Commits del 28/10 | Reprueba corta antes de la ronda 2 (instructivo del 28/10, §3) y lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
+| 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -4920,3 +4921,39 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
    más: el viaje está sin carga.". Volver a En viaje: la espera sigue y se cobra la tarifa completa más la espera.
    Registrar proforma → Traer viajes: la línea del viaje trae el importe con los adicionales.
 9. Design system del bloque (botón con texto, Quitar solo ícono con tooltip, textos con voseo) a 1366 y 390 px.
+
+---
+
+## 61. Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 — DECIDIDO (28/10), ESPERA LA RONDA 2
+
+Rocío (28/10): "cuando la ronda 2 dé OK pasamos rocionuvoli a main, facugodoy y fedemontenegro, y anotamos en pendientes
+las rondas que faltan". Así las cuatro ramas quedan iguales para la reunión del 29/10. **`main` pasa sin todas las
+pruebas**, como en la §32 (la regla es pasar a `main` solo lo probado): lo que falta está abajo.
+
+**Condición:** la reprueba corta de la ronda 1 y la ronda 2 (K, L, M y Q) de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`
+OK en la VM, con `database/viajes/04_…` corrido antes de recompilar. Si hay fallas, se arreglan en `rocionuvoli`, se
+reprueban y recién ahí se pasa.
+
+**Al 28/10**, ninguna de las tres tiene commits que no estén en `rocionuvoli` (`facugodoy` está 70 atrás,
+`fedemontenegro` 108 y `main` 109): pasan por avance directo, sin conflictos. Lo último de Facu (login, `5642c4e`) y de
+Fede (WhatsApp en viajes, `aae91a7`) ya está integrado.
+
+**Cómo se pasa (en la Mac):**
+1. `git fetch origin` y, para cada rama, `git log rocionuvoli..origin/<rama>`. Si Facu o Fede subieron algo después, se
+   integra primero en `rocionuvoli` (los conflictos, de a uno con Rocío) y se reprueba lo que toque.
+2. Lo que esté sin commitear en la Mac se commitea antes; si no, queda afuera.
+3. Listar los commits que salen, avance directo de las tres al mismo commit de `rocionuvoli` y push.
+4. Avisarles a Facu y a Fede que hagan `pull` y recompilen (en la base no tienen que correr nada: los scripts ya están
+   aplicados). A Facu, además: los arreglos de la §59 tocan su `Security/SesionesRecupero.cs` (F1) y `WebApiConfig.cs`
+   (F4).
+5. Anotar acá el commit y la fecha, y pasar esta sección a "PUSHEADO".
+
+**Lo que llega a `main` sin probar** (para después del 29/10, en el orden del instructivo del 28/10):
+- [ ] Ronda 3 (E, F, G y P): tipos de comprobante, cuenta corriente, proformas y lo que quedó de la demo; es la
+  integración de Facu (§44 a §56). Emite comprobantes: con el OK de Rocío en cada paso.
+- [ ] Ronda 4 (N y O): hoja de ruta del chofer y control interno con el galpón (§36, §37 y §41).
+- [ ] Ronda 5 (D, H e I): orden de las tablas, cruces y recorrida general.
+- [ ] Ronda 6 (J): WhatsApp en viajes de Fede (§58), con Rocío porque manda mensajes reales; antes, las plantillas
+  aprobadas en Meta.
+- [ ] Los puntos del correo de la ronda 1 (7, 12, 13, 14, 17, 24 y 26 de la §59), cuando la contraseña SMTP esté guardada
+  desde la máquina que manda el correo.
