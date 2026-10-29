@@ -81,7 +81,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). **`main` pasado (29/10)**, con la reprueba corta y la parte Q OK; las cuatro ramas iguales. K, L y M y las rondas 3 a 6 quedan anotadas para después | **Pusheado** a las cuatro ramas (29/10) | K, L y M de la ronda 2 y las rondas 3 a 6 (§61, lista de lo que llega sin probar) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
-| 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | Commit `Docs: …` (29/10), **sin push** | Abrir el PDF y leer las partes nuevas (ver §65) |
+| 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | **Pusheado** (`d388d4f`, 29/10); en `main`, `facugodoy` y `fedemontenegro` con la §61 | Abrir el PDF y leer las partes nuevas (ver §65) |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -5220,7 +5220,7 @@ casos, sobre los datos ya acomodados.
 
 ---
 
-## 65. Documento de la tesis actualizado a la versión 2.1 — HECHO (28/10), COMMITEADO SIN PUSH (29/10)
+## 65. Documento de la tesis actualizado a la versión 2.1 — HECHO (28/10), PUSHEADO (`d388d4f`, 29/10)
 
 Pedido de Rocío (28/10): actualizar `docs/tesis/SGTL-Documentacion-Transporte-Sanchez.docx` con todo lo nuevo y sacar lo
 que se entienda hecho por una IA, los comentarios y las notas internas (es el documento que se le presenta al profesor).
@@ -5254,7 +5254,8 @@ que se entienda hecho por una IA, los comentarios y las notas internas (es el do
   definieron las mejoras a sumar (reenviar la hoja de ruta por WhatsApp, recuperar la contraseña por correo y seguir con
   las pruebas para relevar y corregir errores); el Sprint 25 dice que se tomaron.
 - [ ] Revisar con el equipo los puntos de HU54 a HU73 (de ahí salen los totales, la tabla y el gráfico de velocidad).
-- [x] Commitear el Word y el PDF juntos (`Docs: …`), según `docs/tesis/README.md` (29/10, sin push).
+- [x] Commitear el Word y el PDF juntos (`Docs: …`), según `docs/tesis/README.md`: `d388d4f` (29/10), pusheado y en las
+  cuatro ramas (§61).
 
 **Cómo revisarlo:** abrir el PDF y leer, en este orden, el historial (p. 5), requerimientos (p. 21 a 23), alcances y
 límites (p. 25 a 28), backlog y velocidad (p. 31 a 36), sprints 24 y 25 (p. 51 a 56), actores y diagramas (p. 57 a 66),
