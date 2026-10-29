@@ -78,7 +78,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 | Commits del 28/10 | Reprueba corta antes de la ronda 2 (instructivo del 28/10, §3) y lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | `database/viajes/04_adicionales_del_viaje.sql` **aplicado por Rocío (28/10, "OK" en las dos)**; recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
-| 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
+| 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 
@@ -4940,15 +4940,22 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
 
 ---
 
-## 61. Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 — DECIDIDO (28/10), ESPERA LA RONDA 2
+## 61. Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` — FACU Y FEDE PASADOS (28/10); `main` ESPERA LA RONDA 2
 
 Rocío (28/10): "cuando la ronda 2 dé OK pasamos rocionuvoli a main, facugodoy y fedemontenegro, y anotamos en pendientes
 las rondas que faltan". Así las cuatro ramas quedan iguales para la reunión del 29/10. **`main` pasa sin todas las
 pruebas**, como en la §32 (la regla es pasar a `main` solo lo probado): lo que falta está abajo.
 
-**Condición:** la reprueba corta de la ronda 1 y la ronda 2 (K, L, M y Q) de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`
-OK en la VM, con `database/viajes/04_…` corrido antes de recompilar. Si hay fallas, se arreglan en `rocionuvoli`, se
-reprueban y recién ahí se pasa.
+**Cambio de Rocío (28/10, a la noche), para no frenar a los chicos:** "Cuando la VM compile sin errores, pasá rocionuvoli
+a facugodoy y fedemontenegro; main espera a la ronda 2." No quedaban scripts por correr (`viajes/04` aplicado por Rocío) y
+la VM recompiló `dc3e581` con 0 errores. **`facugodoy` y `fedemontenegro` pasan por avance directo al commit de esta
+nota** (no tenían commits propios; ninguno subió nada desde la mañana). Les llega sin probar en la VM lo de la ronda 2
+(adicionales, sin carga, precio por orden del día y ocupados) y los arreglos de la ronda 3 (§62). Si la ronda 2 encuentra
+algo, se arregla en `rocionuvoli` y se les vuelve a pasar.
+
+**Condición para `main`:** la reprueba corta de la ronda 1 y la ronda 2 (K, L, M y Q) de
+`docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` OK en la VM, con `database/viajes/04_…` corrido antes de recompilar (ya está).
+Si hay fallas, se arreglan en `rocionuvoli`, se reprueban y recién ahí se pasa.
 
 **Al 28/10**, ninguna de las tres tiene commits que no estén en `rocionuvoli` (`facugodoy` está 70 atrás,
 `fedemontenegro` 108 y `main` 109): pasan por avance directo, sin conflictos. Lo último de Facu (login, `5642c4e`) y de
