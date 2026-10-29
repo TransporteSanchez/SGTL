@@ -82,7 +82,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 | 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | **Pusheado** (`d388d4f`, 29/10); en `main`, `facugodoy` y `fedemontenegro` con la §61 | Abrir el PDF y leer las partes nuevas (ver §65) |
-| 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
+| 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | **FI volvió a FC (29/10).** La base, con la limpieza de viajes y `docs/equipo/INSTRUCTIVO-DATOS-DEMO.md` (un caso por estado, fechas que cierran; consulta `06`) | Commit del 29/10, sin push | Correr la `05` y la `06` y seguir las guías (§64, punto 3) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -5205,7 +5205,7 @@ casos, sobre los datos ya acomodados.
   Q lleva cerca de una hora en la VM, con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`. Con Q OK, se pasa `main` (§61). K, L
   y M, después de la reunión. **Hecho:** Q dio OK (§60) y `main` pasó el 29/10, con las cuatro ramas iguales (§61).
 
-- [ ] **1. Volver FI a FC (Facu).** En Gestionar tipos de comprobante, la sigla FI vuelve a FC (las letras A y B). Facu la
+- [x] **1. Volver FI a FC (Facu).** **Hecho (29/10, Rocío).** En Gestionar tipos de comprobante, la sigla FI vuelve a FC (las letras A y B). Facu la
   renombró para probar el 28/10 a las 21:42, durante la ronda 3 (§62); con FI, Emitir comprobante desde una proforma no
   propone ningún tipo. Para verificarlo: una proforma aceptada → Emitir comprobante propone "FC · Comprobante interno".
   Hasta la reunión, nadie cambia la configuración de facturación (M9 de la §62). El arreglo de fondo es la §63.
@@ -5214,6 +5214,12 @@ casos, sobre los datos ya acomodados.
   con Rocío, porque manda mensajes reales (el chofer de la demo es dquiroga, con el celular de Rocío). Va **después de la
   limpieza** del punto 3, que se hace sin el token; los viajes que cree esta prueba se cancelan o eliminan al terminar.
 - [ ] **3. Dejar acomodada la base.** Por pantalla salvo lo que diga cada lugar; nada con datos personales en el repo.
+  Rocío (29/10): además de limpiar, "tener una batería de datos en distintos estados y con estados y fechas coherentes",
+  pensada para lo que ve el profe. Va con `docs/equipo/INSTRUCTIVO-DATOS-DEMO.md` (después de la limpieza de viajes): un
+  caso por estado de viajes, presupuestos, proformas y comprobantes, con la consulta nueva
+  `database/limpieza/06_relevar_estados_y_fechas_para_la_demo.sql` (solo lectura: qué estados faltan, fechas que no
+  cierran y numeración contra fechas). **Para decidir con los resultados de la 06 (tablas 5 y 7):** la facturación con
+  fechas de estos días (A, recomendada) o desde cero en orden de fechas (B, con Facu), sección 3 de la guía.
   - Viajes, clientes, choferes, camiones y gasoil: `docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md` (§41, punto 21), con las
     consultas `database/limpieza/05_…`, `database/verificacion/02_…` y `database/limpieza/01_…`.
   - Lo de la ronda 3 (§62, "Limpieza"): anular la PF-00000005 (libera el viaje #5), eliminar CR B, CR A y el Numerador
