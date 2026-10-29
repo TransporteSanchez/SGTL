@@ -881,7 +881,7 @@ Decidido por Rocío con la maqueta del 24/10. Lo usan el dashboard y la pantalla
 - **Permisos por tema** (Facu, 28/10): cada pestaña tiene su casilla en la tarjeta Tableros de Permisos por grupo. La
   tarjeta selecciona las cuatro y refleja la selección parcial, igual que las demás. Solo aparecen las pestañas y los
   favoritos de temas habilitados por los grupos del usuario; los administradores ven todo. El permiso general anterior
-  deja de dar acceso y las cuatro secciones se asignan desde cero (§64 de `docs/PENDIENTES-SISTEMA.md`).
+  deja de dar acceso y las cuatro secciones se asignan desde cero (§66 de `docs/PENDIENTES-SISTEMA.md`).
 - **Estrella de favorito** (`.dash-estrella`): a la derecha del título de la tarjeta, después de "Hoy"/"Histórico".
   Llena y amarilla = está en el dashboard del usuario; vacía y gris = no. Tooltip "Agregar a mi dashboard" / "Quitar de
   mi dashboard". Se guarda al tocarla (toast con el nombre del tablero). En el dashboard se ve solo en Personalizar.
