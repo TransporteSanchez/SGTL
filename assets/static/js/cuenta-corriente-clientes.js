@@ -23,6 +23,7 @@
     var validadorImputacion = null;
     var ivaComprobanteFijo = null;
     var vencimientoComprobanteEditado = false;
+    var importeReciboEscrito = false;
     var paginaActual = 1;
     var paginacionMovimientos = { total: 0, totalPages: 0 };
     var tamanioPagina = 15;
@@ -1161,11 +1162,25 @@
             if (!input.disabled) aplicado += centavos(input.value);
         });
         var importe = porId('reciboFormaImporte');
-        if (recalcularImporte !== false) importe.value = formatearCentavos(aplicado);
+        // Mientras el importe no lo escribió el usuario, acompaña a lo aplicado; escrito, queda fijo (§62, F3).
+        if (recalcularImporte !== false && !importeReciboEscrito) importe.value = formatearCentavos(aplicado);
         var total = centavos(importe.value);
         porId('reciboResumenTotal').textContent = dinero(total / 100);
         porId('reciboResumenAplicado').textContent = dinero(aplicado / 100);
         porId('reciboResumenDiferencia').textContent = dinero((total - aplicado) / 100);
+    }
+    // Al tildar una deuda, Aplicar sugiere su saldo; con el importe escrito, lo que falta distribuir sin pasar del saldo.
+    // Si ya no falta nada, sugiere el saldo y la diferencia del resumen lo muestra.
+    function tildarDeudaRecibo(check) {
+        var input = check.closest('tr').querySelector('.cc-recibo-aplicar');
+        input.disabled = !check.checked;
+        if (!check.checked) { input.value = '0,00'; return; }
+        var saldo = Number(input.getAttribute('data-pendiente-centavos') || 0);
+        var restante = centavos(porId('reciboFormaImporte').value);
+        document.querySelectorAll('.cc-recibo-aplicar').forEach(function (otro) {
+            if (otro !== input && !otro.disabled) restante -= centavos(otro.value);
+        });
+        input.value = formatearCentavos(importeReciboEscrito && restante > 0 ? Math.min(saldo, restante) : saldo);
     }
     function distribuirRecibo() {
         var importe = centavos(porId('reciboFormaImporte').value);
@@ -1215,6 +1230,7 @@
         window.SGTL.limpiarError(porId('reciboReferencia'));
         actualizarReferenciaRecibo();
         porId('reciboFormaImporte').value = '0,00';
+        importeReciboEscrito = false;
         porId('reciboObservaciones').value = '';
         porId('reciboError').textContent = '';
         var mensaje = porId('reciboMensaje');
@@ -2331,14 +2347,14 @@
         });
         porId('reciboFacturas').addEventListener('input', actualizarResumenRecibo);
         porId('reciboFacturas').addEventListener('change', function (event) {
-            if (event.target.classList.contains('cc-recibo-check')) {
-                var input = event.target.closest('tr').querySelector('.cc-recibo-aplicar');
-                input.disabled = !event.target.checked;
-                input.value = event.target.checked ? formatearCentavos(centavos(input.getAttribute('data-pendiente'))) : '0,00';
-            }
+            if (event.target.classList.contains('cc-recibo-check')) tildarDeudaRecibo(event.target);
             actualizarResumenRecibo();
         });
-        porId('reciboFormaImporte').addEventListener('input', function () { actualizarResumenRecibo(false); });
+        porId('reciboFormaImporte').addEventListener('input', function () {
+            var valor = porId('reciboFormaImporte').value.trim();
+            importeReciboEscrito = !!valor && centavos(valor) !== 0;
+            actualizarResumenRecibo(false);
+        });
         porId('reciboFormaPago').addEventListener('change', actualizarReferenciaRecibo);
         porId('reciboReferencia').addEventListener('input', function () {
             if (porId('reciboReferencia').value.trim()) limpiarErrorReferenciaRecibo();

@@ -79,7 +79,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
-| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **La proforma sin FC no propone otro tipo: hecho en la Mac (28/10)** | Commit del 28/10, sin push | La proforma sin FC (§62, "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
+| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo y el importe escrito del recibo no cambia al tildar (F3)** | Commits del 28/10, sin push | La proforma sin FC y F3 (§62, "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -4990,10 +4990,23 @@ los rechazos de la API y la anulación de un recibo imputado.
 - **F1, Generar proforma sin confirmación.** `generarProforma` (`gestion-facturacion.html`) guarda y genera sin
   `SGTL.confirmar`; Marcar aceptada y Anular la tienen, y la de Rukas confirma en el pie. Propuesta: "¿Generar la
   proforma?", que diga que toma el próximo número y deja de ser borrador, con "Generar". **Hacerlo ya.**
-- **F3, el recibo pisa el importe.** Al tildar una deuda, Aplicar toma su saldo entero y `actualizarResumenRecibo`
-  reescribe el importe con la suma de lo aplicado (también al escribir en Aplicar). Propuesta: con un importe escrito,
-  Aplicar sugiere lo que falta distribuir (hasta el saldo de la deuda) y el importe no cambia; sin importe, como hoy.
-  **Hacerlo ya**, avisándole a Facu: contradice su regla de la §52.
+- **F3, el recibo pisa el importe.** Al tildar una deuda, Aplicar tomaba su saldo entero y `actualizarResumenRecibo`
+  reescribía el importe con la suma de lo aplicado (también al escribir en Aplicar). Venía del código del 15/10; el diseño
+  de Facu dice que el importe de la forma de pago es el monto a distribuir y que marcar o escribir a mano recalcula solo lo
+  aplicado y la diferencia (`docs/diseno/cuenta-corriente-diseno.md` y `cuenta-corriente-distribucion-diseno.md`).
+  **Hecho en la Mac (28/10), falta probar en la VM** (Rocío le avisa a Facu): mientras el importe no lo escribió el
+  usuario (vacío o en 0), acompaña a lo tildado, como antes; escrito, queda fijo y Aplicar sugiere lo que falta
+  distribuir, sin pasar del saldo de la deuda (si ya no falta nada, el saldo, y la diferencia lo muestra). Si se borra el
+  importe, vuelve a acompañar desde el próximo tilde. "Distribuir" no cambia. `tildarDeudaRecibo` en
+  `cuenta-corriente-clientes.js`; prueba en `tests/recibos-imputacion-front.test.js`.
+  **Cómo probarlo** (Ctrl+F5; sin emitir, salvo que Rocío lo autorice), Registrar recibo de un cliente con deudas:
+  1. Sin escribir el importe, tildar una deuda: Aplicar y el importe toman su saldo; destildarla: vuelven a 0.
+  2. Escribir un importe menor que el saldo (como los $ 50.000 de la ronda 3) y tildar la deuda: Aplicar sugiere ese
+     importe y el importe no cambia; Diferencia $ 0,00.
+  3. Tildar otra deuda: Aplicar sugiere su saldo, la Diferencia queda negativa y Emitir recibo dice "El total aplicado no
+     puede superar el total del recibo.".
+  4. Escribir un importe mayor que el saldo: Aplicar toma el saldo y la Diferencia es lo que queda sin imputar.
+  5. Editar a mano un Aplicar: el importe escrito no cambia. "Distribuir" reparte el importe por vencimiento, como antes.
 - **F2, Imputar no aparece en C-4 y C-5.** En el código no falta: con un crédito aplicado (impacto C, saldo 0) el botón
   sale deshabilitado con "ya está aplicado por completo" (probado con la función de la pantalla). Solo desaparece si la
   fila llega sin impacto C. **Mirar los datos antes de tocar código** (consulta de abajo).

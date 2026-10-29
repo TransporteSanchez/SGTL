@@ -109,7 +109,44 @@ async function imputarDespues() {
         'se envía el acumulado para agregar solo los 20 nuevos');
     assert.deepStrictEqual(avisos, ['Recibo imputado.']);
 }
+// El importe del recibo es lo que se cobró: tildar una deuda no lo cambia si el usuario lo escribió (§62, F3).
+function tildarConImporte() {
+    const formatearCentavos = v => (v / 100).toFixed(2).replace('.', ',');
+    const fila = saldo => {
+        const input = { disabled: true, value: '0,00', getAttribute: n => ({ 'data-pendiente-centavos': String(saldo) }[n]) };
+        return { input, check: { checked: false, closest: () => ({ querySelector: () => input }) } };
+    };
+    const fc = fila(12100000), d = fila(1000000);
+    const campos = { reciboFormaImporte: { value: '0,00' }, reciboResumenTotal: {}, reciboResumenAplicado: {},
+        reciboResumenDiferencia: {} };
+    const c = { importeReciboEscrito: false, porId: id => campos[id], centavos, formatearCentavos, dinero: v => v,
+        document: { querySelectorAll: () => [fc.input, d.input] } };
+    vm.runInNewContext(['actualizarResumenRecibo', 'tildarDeudaRecibo'].map(funcion).join('\n'), c);
+    const tildar = (f, marcado) => { f.check.checked = marcado; c.tildarDeudaRecibo(f.check); c.actualizarResumenRecibo(); };
+
+    tildar(fc, true);
+    assert.strictEqual(fc.input.value, '121000,00', 'sin importe escrito, Aplicar toma el saldo de la deuda');
+    assert.strictEqual(campos.reciboFormaImporte.value, '121000,00', 'sin importe escrito, el importe acompaña a lo aplicado');
+    tildar(fc, false);
+    assert.strictEqual(campos.reciboFormaImporte.value, '0,00');
+
+    c.importeReciboEscrito = true;
+    campos.reciboFormaImporte.value = '50000,00';
+    tildar(fc, true);
+    assert.strictEqual(fc.input.value, '50000,00', 'con importe escrito, Aplicar sugiere lo que falta distribuir');
+    assert.strictEqual(campos.reciboFormaImporte.value, '50000,00', 'el importe escrito no cambia al tildar');
+    assert.strictEqual(campos.reciboResumenDiferencia.textContent, 0);
+    tildar(d, true);
+    assert.strictEqual(d.input.value, '10000,00', 'si ya no falta distribuir, sugiere el saldo');
+    assert.strictEqual(campos.reciboResumenDiferencia.textContent, -10000, 'y la diferencia muestra que se pasa');
+    tildar(d, false); tildar(fc, false);
+
+    campos.reciboFormaImporte.value = '150000,00';
+    tildar(fc, true);
+    assert.strictEqual(fc.input.value, '121000,00', 'Aplicar no pasa del saldo de la deuda');
+    assert.strictEqual(campos.reciboResumenDiferencia.textContent, 29000, 'lo que sobra queda sin imputar');
+}
 (async () => {
-    acciones(); await emitirSinDeudas(); await imputarDespues();
+    acciones(); await emitirSinDeudas(); await imputarDespues(); tildarConImporte();
     console.log('OK: emitir recibos sin deudas, conservar el importe y abrir y guardar Imputar recibo');
 })().catch(e => { console.error(e); process.exitCode = 1; });
