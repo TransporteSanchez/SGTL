@@ -67,6 +67,7 @@ Reportes: `C:\pruebas-sgtl\reportes\AAAA-MM-DD-pruebas-ronda-N.md`.
 - **Adicionales del viaje (§60, la noche del 28/10):** `database/viajes/04_adicionales_del_viaje.sql`, fila 21 del
   diagnóstico. **Se corre antes de recompilar** (primero con `@Aplicar = 0`, después con `1`; al final, "OK" en las dos):
   la API nueva lee `VIAJES.Vuelta_Vacia_Porcentaje` y `VIAJES.Adicionales`, y sin ellas Gestionar viajes no carga.
+  **Al 28/10 ya está aplicado** ("OK" en las dos): no hay que volver a correrlo.
 - **§43, paso 1 (hecho el 28/10):** `database/tarifas/07_relevar_vueltas_por_recorrido.sql` dio un solo caso, el viaje
   #40 (Servicios Ambientales S.A.), guardado como 2ª vuelta y que con la regla nueva es 1ª. Rocío lo edita y lo guarda
   después de recompilar: pasa a 1ª y cambia su importe. Si en la ronda 2 aparece con otro importe que antes, es eso y no
