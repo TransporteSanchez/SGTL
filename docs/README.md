@@ -59,7 +59,6 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 - `docs/equipo/INSTRUCTIVO-PRUEBAS-TARIFAS.md` — qué probar en la VM de la tabla de tarifas y sus cambios (§33 y §34), con todas las variantes y la mirada de usabilidad.
 - `docs/equipo/INSTRUCTIVO-CUENTAS-CHOFERES.md` — relevamiento de los choferes, el grupo "Choferes" y una cuenta de chofer de prueba que queda para la demo de la hoja de ruta (§36).
 - `docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md` — paso a paso para dejar los datos de viajes como reales antes de la reunión del 29/10 (camiones y gasoil, clientes, choferes, superpuestos y viajes pasados sin cerrar), con la consulta `database/limpieza/05_relevar_viajes_para_la_demo.sql`.
-- `docs/equipo/INSTRUCTIVO-CAPTURAS-GUIA.md` — qué capturas sacar en la VM para la guía del sistema (la página con lo clave de cada módulo para el equipo y el profe), con los datos de la demo y sin guardar nada.
 - `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` — qué probar en la VM de todo lo subido sin reporte al 28/10: las integraciones de Facu (§44 a §57) y Fede (§58) y lo nuestro del 24 al 28/10 (viajes, orden del día, tarifas, hoja de ruta, control interno), con los cruces y el design system, en seis rondas.
 - `docs/equipo/merge-facugodoy-2026-10-17.md` — qué cambió con el merge de Facu (17/10/2026).
 - `docs/equipo/merge-facugodoy-2026-10-22.md` — qué cambió con el merge de Facu (22/10/2026): contraseñas, cuenta corriente, presupuestos y facturación.
