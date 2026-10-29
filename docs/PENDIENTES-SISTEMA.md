@@ -81,6 +81,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
+| 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -5120,3 +5121,35 @@ Emitir Débito, Emitir crédito o ninguno. Como queda en la fila de la sigla, re
 que se sigue proponiendo; quitarle la marca y ver "Seleccioná un tipo"; intentar marcar un crédito para Débito o dos siglas
 para el mismo uso (la API lo rechaza con el error debajo del campo); lo mismo en Emitir crédito y Emitir Débito. Con eso
 se completa también la E4 de la ronda 3 (cambiar la sigla de FC con viajes facturados).
+
+---
+
+## 64. Para el jueves 29/10, antes de la reunión con el profe — ANOTADO (28/10)
+
+Rocío (28/10, a la noche): "lo de volver a fc anotalo como pendiente para mañana jueves, junto con whatsapp, armar casos de
+prueba para el profe y dejar acomodada la ddbb". Orden sugerido: primero lo que cambia la base (1 y 3) y al final los
+casos, sobre los datos ya acomodados. Si la ronda 2 no se terminó el 28/10, va antes que todo y con su OK se pasa `main`
+(§61).
+
+- [ ] **1. Volver FI a FC (Facu).** En Gestionar tipos de comprobante, la sigla FI vuelve a FC (las letras A y B). Facu la
+  renombró para probar el 28/10 a las 21:42, durante la ronda 3 (§62); con FI, Emitir comprobante desde una proforma no
+  propone ningún tipo. Para verificarlo: una proforma aceptada → Emitir comprobante propone "FC · Comprobante interno".
+  Hasta la reunión, nadie cambia la configuración de facturación (M9 de la §62). El arreglo de fondo es la §63.
+- [ ] **2. WhatsApp en viajes (Fede, ronda 6).** Antes, las plantillas `viaje_cancelado` y `viaje_desasignado`
+  aprobadas en Meta y el token del día cargado (§58). La parte J de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (sección 7),
+  con Rocío, porque manda mensajes reales (el chofer de la demo es dquiroga, con el celular de Rocío). Va **después de la
+  limpieza** del punto 3, que se hace sin el token; los viajes que cree esta prueba se cancelan o eliminan al terminar.
+- [ ] **3. Dejar acomodada la base.** Por pantalla salvo lo que diga cada lugar; nada con datos personales en el repo.
+  - Viajes, clientes, choferes, camiones y gasoil: `docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md` (§41, punto 21), con las
+    consultas `database/limpieza/05_…`, `database/verificacion/02_…` y `database/limpieza/01_…`.
+  - Lo de la ronda 3 (§62, "Limpieza"): anular la PF-00000005 (libera el viaje #5), eliminar CR B, CR A y el Numerador
+    CR; los comprobantes 51 a 57 de Logística Pampeana y el FC-A-0001-00000004 "Comprobante interno de prueba", con Facu.
+  - distribuidora-powerful S.A.: nombre, e-mail y CUIT inventados (M8 de la §62).
+  - Usuarios (§59): borrar el grupo "PRUEBA-CLAUDE 20/10" (7), mirando antes qué tiene; mferreyra (18) y "Coordinación de
+    tráfico" (9) quedan si todavía falta alguna ronda de permisos.
+  - Al final, volver a correr las consultas (`05` y `02`) y mirar las pantallas como las va a ver el profe.
+- [ ] **4. Armar los casos de prueba para el profe.** Qué se le muestra y qué casos borde puede probar él (§41, punto 22),
+  con datos verosímiles y en un orden que se pueda seguir en la reunión. Base: `docs/negocio/FLUJOS-VIAJES-Y-PROFORMAS.md`
+  (diagramas de los flujos), `docs/diseno/viajes-diseno.md` (estados, huecos y la §7 de adicionales),
+  `docs/equipo/INSTRUCTIVO-DEMO-FACTURACION.md` y los Excel de Rukas de `docs/pruebas/datos/README.md`. Antes de escribirlo,
+  ver con `docs/README.md` en qué carpeta va.
