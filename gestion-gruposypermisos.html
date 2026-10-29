@@ -538,7 +538,7 @@
                         <div class="card-body py-2">${grupo.Permisos.map(function (item) {
                             return `<div class="form-check ms-3 mb-2">
                                 <input class="form-check-input chk-menu" type="checkbox" value="${SGTL.escapar(item.Menu_ID)}" id="menu_${SGTL.escapar(item.Menu_ID)}" ${item.Asignado ? 'checked' : ''}>
-                                <label class="form-check-label" for="menu_${SGTL.escapar(item.Menu_ID)}">${SGTL.escapar(SGTLPermisos.texto(item.Menu_Nombre))}</label>
+                                <label class="form-check-label" for="menu_${SGTL.escapar(item.Menu_ID)}">${SGTL.escapar(SGTLPermisos.texto(item.Menu_Nombre, grupo.Nombre))}</label>
                             </div>`;
                         }).join('')}</div>
                     </div>
@@ -547,7 +547,7 @@
         }
 
         function agruparMenusPorPrincipal(menus) {
-            const orden = ['General', 'Choferes', 'Camiones', 'Clientes', 'Viajes', 'Facturación', 'Configuración', 'Usuarios'];
+            const orden = ['General', 'Tableros', 'Choferes', 'Camiones', 'Clientes', 'Viajes', 'Facturación', 'Configuración', 'Usuarios'];
             const grupos = [];
             (menus || []).forEach(function (menu) {
                 const nombre = String(menu.Menu_Principal || 'General').trim() || 'General';

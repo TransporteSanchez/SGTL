@@ -74,6 +74,8 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 ### Diseño técnico
 
+- `docs/diseno/tableros-permisos-diseno.md` — permisos por sección de Tableros y favoritos del dashboard.
+- `docs/diseno/tableros-permisos-plan.md` — implementación y verificación de los permisos por sección de Tableros.
 - `docs/diseno/cuenta-corriente-diseno.md` — cuenta corriente de clientes (módulo de Facu).
 - `docs/diseno/cuenta-corriente-distribucion-diseno.md` — plan de distribución de Recibos y Notas de Crédito.
 - `docs/diseno/auditoria-integracion.md` — cómo se registra la auditoría de altas, bajas y modificaciones.

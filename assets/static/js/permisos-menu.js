@@ -10,7 +10,10 @@
 
     // [nombre en la base, sin tildes ni mayúsculas; texto del menú], en el orden del menú.
     var OPCIONES_DEL_MENU = [
-        ['dashboard', 'Dashboard'], ['tableros', 'Tableros'], ['hoja de ruta', 'Hojas de ruta'],
+        ['dashboard', 'Dashboard'],
+        ['tableros de viajes', 'Tableros: viajes'], ['tableros de flota', 'Tableros: flota'],
+        ['tableros de choferes', 'Tableros: choferes'], ['tableros de facturacion', 'Tableros: facturación'],
+        ['hoja de ruta', 'Hojas de ruta'],
         ['listado de choferes', 'Listar choferes'], ['gestion de choferes', 'Gestionar choferes'],
         ['listado de camiones', 'Listar camiones'], ['gestion de camiones', 'Gestionar camiones'],
         ['listado de clientes', 'Listar clientes'], ['gestion de clientes', 'Gestionar clientes'],
@@ -36,9 +39,14 @@
     }
 
     // Un permiso que no está en la lista se ve con su nombre.
-    function texto(nombre) {
+    function texto(nombre, seccion) {
         var lugar = posicion(nombre);
-        return lugar === -1 ? String(nombre == null ? '' : nombre) : OPCIONES_DEL_MENU[lugar][1];
+        var etiqueta = lugar === -1 ? String(nombre == null ? '' : nombre) : OPCIONES_DEL_MENU[lugar][1];
+        if (seccion === 'Tableros' && etiqueta.indexOf('Tableros: ') === 0) {
+            etiqueta = etiqueta.slice('Tableros: '.length);
+            return etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
+        }
+        return etiqueta;
     }
 
     // Para ordenar nombres como el menú; los que no están en la lista van al final, por texto.

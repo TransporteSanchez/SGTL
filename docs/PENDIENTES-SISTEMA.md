@@ -83,6 +83,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 | 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | **Pusheado** (`d388d4f`, 29/10); en `main`, `facugodoy` y `fedemontenegro` con la §61 | Abrir el PDF y leer las partes nuevas (ver §65) |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
+| 66 | Permisos por sección de Tableros: tarjeta propia con Viajes, Flota, Choferes y Facturación | **Hecho en código en facugodoy (28/10)**; asignación desde cero por decisión de Facu | Sin commit ni push | Recompilar la API, abrir Permisos por grupo y asignar las secciones; recorrido en §66 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -5270,3 +5271,55 @@ que se entienda hecho por una IA, los comentarios y las notas internas (es el do
 **Cómo revisarlo:** abrir el PDF y leer, en este orden, el historial (p. 5), requerimientos (p. 21 a 23), alcances y
 límites (p. 25 a 28), backlog y velocidad (p. 31 a 36), sprints 24 y 25 (p. 51 a 56), actores y diagramas (p. 57 a 66),
 pruebas (p. 67 a 73) y anexos (p. 78 y 79). Con Alt+F9 en el Word no tiene que aparecer ningún campo INCLUDEPICTURE.
+
+---
+
+## 66. Permisos por sección de Tableros — HECHO EN CÓDIGO EN FACUGODOY (28/10), FALTA PROBAR CON USUARIOS REALES
+
+Pedido de Facu: una tarjeta **Tableros** en Permisos por grupo, con **Viajes, Flota, Choferes y Facturación**,
+igual que los submódulos de las otras tarjetas. Facu eligió **asignarlas desde cero**: el permiso general anterior
+ya no habilita la pantalla ni sus favoritos y deja de aparecer en la edición de permisos y el detalle del usuario.
+Las asignaciones viejas quedan en la base hasta que se guarde cada grupo; el código las ignora. Los administradores
+siguen viendo las cuatro y el rol Chofer conserva solo Hojas de ruta.
+
+**Implementado:**
+- Cuatro permisos en el catálogo existente de GruposController, agrupados en la tarjeta Tableros, después de General.
+  Se crean sin asignaciones al abrir Permisos por grupo, con el mismo mecanismo del resto; no requiere un script nuevo.
+  La casilla principal selecciona las cuatro y refleja selección parcial. En el detalle del usuario se leen
+  «Tableros: viajes», «Tableros: flota», «Tableros: choferes» y «Tableros: facturación».
+- Con una sección habilitada se puede abrir Tableros; sin ninguna, el menú la oculta y abrir su dirección lleva al inicio.
+  Las pestañas, sus tarjetas y los favoritos del dashboard se filtran por los temas autorizados. Si la última pestaña
+  recordada ya no está autorizada, queda seleccionada la primera disponible. Agregar tableros se deshabilita sin secciones.
+- La API devuelve `TemasPermitidos` con los favoritos, sumando los permisos de todos los grupos del usuario del token.
+  Valida el tema al guardar. Guardar una sección conserva los favoritos restringidos de otras, tanto los ya guardados
+  en la base como los del diseño antiguo del navegador pendientes de migración. Restablecer sigue borrando toda la
+  personalización, y el diseño por defecto también se filtra por permisos. Si falla la lectura de permisos, no se
+  muestra el diseño completo como alternativa.
+- Facturación, deuda y ranking de clientes controlan el permiso **Tableros de facturación**, independiente de operar
+  proformas o cuenta corriente. El ranking se movió de CuentaCorrienteController a TablerosController; conserva su
+  dirección anterior como alias protegido y el dashboard ahora lo pide con la sesión. Se mantienen los cálculos.
+- Diseño y plan: `docs/diseno/tableros-permisos-diseno.md` y `docs/diseno/tableros-permisos-plan.md`.
+
+**Verificación local:** la suite Node completa pasó de 80 pruebas correctas antes del cambio a **81 correctas**. La prueba nueva ejecuta
+el armado de pestañas y favoritos, la resolución real de permisos en C# y el borrado de favoritos en SQLite en memoria.
+La API se compila con MSBuild en una carpeta temporal, sin iniciarla ni consultar la base. La revisión independiente
+detectó dos bordes (preferencias antiguas y ranking sin permiso), corregidos con pruebas que reprodujeron ambos fallos.
+En Chrome, con datos simulados y anchos reales de 1366 y 390 px, se verificaron la tarjeta, selección total/parcial,
+una sola pestaña para un usuario con Flota y las cuatro para un administrador, sin desbordes. No se ejecutó SQL ni se
+asignaron permisos contra la base compartida.
+
+**Cómo probarlo con usuarios reales** (pendiente):
+1. Recompilar la API y Ctrl+F5. Entrar como administrador a Gestionar grupos y permisos → Permisos por grupo.
+2. Elegir un grupo que tenía Tableros: aparece la tarjeta nueva con las cuatro casillas desmarcadas. Marcar solo Flota,
+   guardar y volver a elegir el grupo: solo Flota queda marcada y la casilla de la tarjeta se ve parcial.
+3. Entrar con un usuario de ese grupo: Tableros solo muestra Flota. El dashboard solo muestra favoritos de ese tema,
+   incluso al restablecerlo. Los permisos de Listar/Gestionar camiones no se alteran.
+4. Darle Choferes desde otro grupo: Tableros muestra Flota y Choferes. Quitar ambas: sin Tableros en el menú,
+   sin favoritos de esos temas, Agregar tableros deshabilitado y acceso directo a Tableros redirigido al inicio.
+5. Marcar la casilla principal de Tableros, guardar y comprobar las cuatro secciones; desmarcar una y ver selección parcial.
+6. Con solo Tableros de facturación, sin cuenta corriente ni proformas, comprobar facturación, deuda y ranking.
+   Sin ese permiso, las tres consultas de Tableros deben rechazar el acceso con 403; sin sesión válida, con 401.
+7. Quitar temporalmente un tema con favoritos, guardar otros temas y devolverlo: reaparecen sus favoritos. Repetir con
+   un diseño antiguo del navegador. Restablecer sí borra la personalización completa.
+8. Como administrador, comprobar las cuatro secciones; como chofer, únicamente Hojas de ruta. Repetir la tarjeta y
+   las pestañas a 390 px y en escritorio.

@@ -13,6 +13,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -50,6 +51,13 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Comprobantes { get; set; }
         }
 
+        public class TopClienteFacturacionDto
+        {
+            public int ClienteID { get; set; }
+            public string RazonSocial { get; set; }
+            public decimal Facturacion { get; set; }
+        }
+
         public class DeudaDto
         {
             public int ClienteID { get; set; }
@@ -70,20 +78,13 @@ namespace WebApi_TransporteSanchez.Controllers
             public int Id { get; set; }
             public string Nombre { get; set; }
             public bool EsAdmin { get; set; }
+            public bool EsChofer { get; set; }
         }
 
-        // Claves de tableros-catalogo.js ("kpiviajes", "kmcamionmes"): el catálogo vive en el front.
+        // Claves de tableros-catalogo.js ("kpiviajes", "kmcamionmes"), validadas por tema en PermisosTableros.
         private static readonly Regex FormatoTablero = new Regex(@"^[a-z0-9-]{1,40}$");
         private const int MaximoFavoritos = 60;
         private const int MaximoDiasPeriodo = 1100;   // unos 3 años: el tablero pide un período, no toda la historia
-
-        // Quién ve la facturación: los mismos permisos que dan Gestionar cuenta corriente en el menú (sidebar-loader.js:
-        // cuenta corriente acompaña a las proformas), además de los administradores.
-        private static readonly string[] PermisosFacturacion =
-        {
-            "Cuenta Corriente", "Cuenta corriente de clientes", "Listado de proformas", "Gestión de proformas",
-            "Listado de facturas", "Gestión de facturas"
-        };
 
         private static string ConnectionString()
         {
@@ -137,7 +138,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
         // ---------------------------------------------------------------- Favoritos
 
-        // GET api/tableros/favoritos → { Personalizado, Favoritos: [{ Tablero, X, Y, Ancho, Alto }] } en el orden guardado.
+        // GET api/tableros/favoritos → { Personalizado, TemasPermitidos, Favoritos: [{ Tablero, X, Y, Ancho, Alto }] }.
         // Personalizado = false: el usuario nunca eligió (el dashboard muestra el diseño por defecto).
         [HttpGet, Route("favoritos")]
         public IHttpActionResult GetFavoritos()
@@ -150,6 +151,7 @@ namespace WebApi_TransporteSanchez.Controllers
                     UsuarioSesion usuario = UsuarioDelToken(conexion);
                     if (usuario == null) return Unauthorized();
 
+                    var temasPermitidos = ObtenerTemasPermitidos(conexion, usuario);
                     bool personalizado;
                     using (var comando = new SqlCommand("SELECT COUNT(*) FROM dbo.TABLEROS_USUARIO WHERE Usuario_ID=@usuario;", conexion))
                     {
@@ -180,7 +182,12 @@ ORDER BY Orden, Tablero;", conexion))
                             }
                         }
                     }
-                    return SinCache(new { Personalizado = personalizado, Favoritos = favoritos });
+                    return SinCache(new
+                    {
+                        Personalizado = personalizado,
+                        TemasPermitidos = temasPermitidos,
+                        Favoritos = favoritos.Where(f => temasPermitidos.Contains(PermisosTableros.TemaDeTablero(f.Tablero))).ToList()
+                    });
                 }
             }
             catch (Exception)
@@ -189,7 +196,7 @@ ORDER BY Orden, Tablero;", conexion))
             }
         }
 
-        // PUT api/tableros/favoritos { Favoritos: [...] } → reemplaza todos los favoritos del usuario (el orden es el de la
+        // PUT api/tableros/favoritos { Favoritos: [...] } → reemplaza los favoritos de los temas permitidos (el orden es el de la
         // lista). La usan la estrella de Tableros y Guardar de Personalizar en el dashboard. Una lista vacía también se
         // guarda: el usuario sacó todos los tableros de su dashboard.
         [HttpPut, Route("favoritos")]
@@ -207,16 +214,32 @@ ORDER BY Orden, Tablero;", conexion))
                     UsuarioSesion usuario = UsuarioDelToken(conexion);
                     if (usuario == null) return Unauthorized();
 
+                    var clavesPermitidas = PermisosTableros.TablerosPara(ObtenerTemasPermitidos(conexion, usuario));
+                    if (lista.Any(f => !clavesPermitidas.Contains(f.Tablero.Trim())))
+                        return Content(HttpStatusCode.Forbidden, new { mensaje = "No tenés permiso para guardar uno de los tableros." });
+
                     using (var transaccion = conexion.BeginTransaction())
                     {
                         using (var comando = new SqlCommand(@"
 UPDATE dbo.TABLEROS_USUARIO SET Fecha_Modi=@fecha WHERE Usuario_ID=@usuario;
-IF @@ROWCOUNT = 0 INSERT INTO dbo.TABLEROS_USUARIO (Usuario_ID, Fecha_Modi) VALUES (@usuario, @fecha);
-DELETE FROM dbo.TABLEROS_FAVORITOS WHERE Usuario_ID=@usuario;", conexion, transaccion))
+IF @@ROWCOUNT = 0 INSERT INTO dbo.TABLEROS_USUARIO (Usuario_ID, Fecha_Modi) VALUES (@usuario, @fecha);", conexion, transaccion))
                         {
                             comando.Parameters.Add(P("@usuario", usuario.Id));
                             comando.Parameters.Add(P("@fecha", AhoraArgentina()));
                             comando.ExecuteNonQuery();
+                        }
+
+                        // Al guardar los visibles, conserva los favoritos de secciones que hoy no tiene permitidas.
+                        // Si recupera el permiso, vuelven a aparecer con el lugar que ya tenían.
+                        if (clavesPermitidas.Length > 0)
+                        {
+                            var parametros = string.Join(", ", clavesPermitidas.Select((clave, i) => "@tablero" + i));
+                            using (var comando = new SqlCommand("DELETE FROM dbo.TABLEROS_FAVORITOS WHERE Usuario_ID=@usuario AND Tablero IN (" + parametros + ");", conexion, transaccion))
+                            {
+                                comando.Parameters.Add(P("@usuario", usuario.Id));
+                                for (int i = 0; i < clavesPermitidas.Length; i++) comando.Parameters.Add(P("@tablero" + i, clavesPermitidas[i]));
+                                comando.ExecuteNonQuery();
+                            }
                         }
 
                         for (int i = 0; i < lista.Count; i++)
@@ -288,6 +311,7 @@ VALUES (@usuario, @tablero, @orden, @x, @y, @ancho, @alto);", conexion, transacc
             {
                 string clave = f == null || f.Tablero == null ? "" : f.Tablero.Trim();
                 if (!FormatoTablero.IsMatch(clave)) return "Uno de los tableros no existe. Recargá la pantalla y probá de nuevo.";
+                if (PermisosTableros.TemaDeTablero(clave) == null) return "Uno de los tableros no existe. Recargá la pantalla y probá de nuevo.";
                 if (!vistos.Add(clave)) return "Un tablero está repetido. Recargá la pantalla y probá de nuevo.";
                 // El lugar en la grilla (12 columnas) es opcional; si viene, completo y adentro de la grilla.
                 if (!TieneLugar(f)) continue;
@@ -298,6 +322,56 @@ VALUES (@usuario, @tablero, @orden, @x, @y, @ancho, @alto);", conexion, transacc
         }
 
         // ---------------------------------------------------------------- Facturación (solo lectura)
+
+        // Se conserva la ruta anterior como alias, con el mismo control de sesión y permiso.
+        [HttpGet]
+        [Route("top-clientes-facturacion")]
+        [Route("~/api/dashboard/top-clientes-facturacion")]
+        public IHttpActionResult ObtenerTopClientesFacturacion(int cantidad = 5)
+        {
+            try
+            {
+                cantidad = Math.Max(1, Math.Min(cantidad, 20));
+                using (var conexion = new SqlConnection(ConnectionString()))
+                {
+                    conexion.Open();
+                    UsuarioSesion usuario = UsuarioDelToken(conexion);
+                    if (usuario == null) return Unauthorized();
+                    if (!PuedeVerFacturacion(conexion, usuario)) return SinPermisoFacturacion();
+
+                    const string sql = @"
+SELECT TOP (@cantidad)
+       c.Cliente_ID AS ClienteID,
+       COALESCE(NULLIF(LTRIM(RTRIM(c.Razon_Social)), ''), 'Sin nombre') AS RazonSocial,
+       CONVERT(decimal(18,2), SUM(CASE WHEN comp.Impacto='C' THEN -comp.Total ELSE comp.Total END)) AS Facturacion
+FROM dbo.COMPROBANTES comp
+JOIN dbo.CLIENTES c ON c.Cliente_ID = comp.ClienteID
+WHERE comp.Estado = 'EMITIDO'
+  AND (comp.Impacto='D' OR (comp.Impacto='C' AND comp.Tipo<>'REC'))
+GROUP BY c.Cliente_ID, c.Razon_Social
+ORDER BY Facturacion DESC, RazonSocial;";
+                    var filas = new List<TopClienteFacturacionDto>();
+                    using (var comando = new SqlCommand(sql, conexion))
+                    {
+                        comando.Parameters.Add(P("@cantidad", cantidad));
+                        using (var r = comando.ExecuteReader())
+                        {
+                            while (r.Read()) filas.Add(new TopClienteFacturacionDto
+                            {
+                                ClienteID = Convert.ToInt32(r["ClienteID"], CultureInfo.InvariantCulture),
+                                RazonSocial = Convert.ToString(r["RazonSocial"], CultureInfo.InvariantCulture),
+                                Facturacion = Importe(r, "Facturacion")
+                            });
+                        }
+                    }
+                    return SinCache(filas);
+                }
+            }
+            catch (Exception)
+            {
+                return ErrorInterno("No se pudo calcular la facturación de los clientes. Probá de nuevo.");
+            }
+        }
 
         // GET api/tableros/facturacion?fechaDesde=AAAA-MM-DD&fechaHasta=AAAA-MM-DD
         // Facturación del período por cliente y por día de emisión (la pantalla la agrupa por mes o por semana). Misma cuenta
@@ -457,23 +531,29 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;", conexion))
             return DateTime.TryParseExact(solo, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
 
-        // Administradores, o un grupo con permiso de cuenta corriente o de proformas.
+        // El permiso de consulta del tablero es independiente del permiso para operar cuenta corriente o proformas.
         private static bool PuedeVerFacturacion(SqlConnection conexion, UsuarioSesion usuario)
         {
-            if (usuario.EsAdmin) return true;
-            var nombres = string.Join(", ", PermisosFacturacion.Select((p, i) => "@p" + i));
+            return ObtenerTemasPermitidos(conexion, usuario).Contains("facturacion");
+        }
+
+        private static string[] ObtenerTemasPermitidos(SqlConnection conexion, UsuarioSesion usuario)
+        {
+            if (usuario.EsAdmin || usuario.EsChofer)
+                return PermisosTableros.TemasPara(usuario.EsAdmin, usuario.EsChofer, null);
+            var menus = new List<string>();
             using (var comando = new SqlCommand(@"
-SELECT COUNT(*)
+SELECT DISTINCT m.Menu_Nombre
 FROM dbo.GRUPOS_USUARIOS gu
 JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
 JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
-WHERE gu.UsuarioID = @usuario
-  AND LTRIM(RTRIM(m.Menu_Nombre)) COLLATE Latin1_General_CI_AI IN (" + nombres + ");", conexion))
+WHERE gu.UsuarioID = @usuario;", conexion))
             {
                 comando.Parameters.Add(P("@usuario", usuario.Id));
-                for (int i = 0; i < PermisosFacturacion.Length; i++) comando.Parameters.Add(P("@p" + i, PermisosFacturacion[i]));
-                return Convert.ToInt32(comando.ExecuteScalar(), CultureInfo.InvariantCulture) > 0;
+                using (var r = comando.ExecuteReader())
+                    while (r.Read()) menus.Add(Convert.ToString(r["Menu_Nombre"], CultureInfo.InvariantCulture));
             }
+            return PermisosTableros.TemasPara(false, false, menus);
         }
 
         // ---------------------------------------------------------------- Sesión
@@ -505,7 +585,8 @@ WHERE gu.UsuarioID = @usuario
 
             using (var comando = new SqlCommand(@"
 SELECT TOP (1) Usuario_ID, Nombre_Usuario,
- CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(Rol,''))))='admin' THEN 1 ELSE 0 END AS EsAdmin
+ CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(Rol,''))))='admin' THEN 1 ELSE 0 END AS EsAdmin,
+ CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(Rol,''))))='chofer' THEN 1 ELSE 0 END AS EsChofer
 FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", conexion))
             {
                 comando.Parameters.Add(P("@usuario", claim.Value));
@@ -516,7 +597,8 @@ FROM dbo.USUARIOS WHERE Nombre_Usuario=@usuario AND EstadoUsuario='Activo';", co
                     {
                         Id = Convert.ToInt32(r["Usuario_ID"], CultureInfo.InvariantCulture),
                         Nombre = (string)r["Nombre_Usuario"],
-                        EsAdmin = Convert.ToInt32(r["EsAdmin"], CultureInfo.InvariantCulture) == 1
+                        EsAdmin = Convert.ToInt32(r["EsAdmin"], CultureInfo.InvariantCulture) == 1,
+                        EsChofer = Convert.ToInt32(r["EsChofer"], CultureInfo.InvariantCulture) == 1
                     };
                 }
             }

@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { DatabaseSync } = require('node:sqlite');
 
-const fuente = fs.readFileSync(path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers', 'CuentaCorrienteController.cs'), 'utf8');
+const fuente = fs.readFileSync(path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers', 'TablerosController.cs'), 'utf8');
 const metodo = fuente.split('public IHttpActionResult ObtenerTopClientesFacturacion(')[1].split('[HttpGet]')[0];
 const sqlServidor = metodo.match(/const string sql = @"([\s\S]*?)";/);
 assert.ok(sqlServidor, 'el ranking conserva una consulta ejecutable');

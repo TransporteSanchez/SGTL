@@ -136,7 +136,10 @@ function markActiveSidebarItem() {
 var API_PERM = 'http://localhost:50222/api';
 var MENU_TO_PAGE = {
   'dashboard': 'index.html',
-  'tableros': 'tableros.html',
+  'tableros de viajes': 'tableros.html',
+  'tableros de flota': 'tableros.html',
+  'tableros de choferes': 'tableros.html',
+  'tableros de facturacion': 'tableros.html',
   // Hoja de ruta del chofer (24/10): el grupo de los choferes tiene solo este permiso.
   'hoja de ruta': 'hoja-de-ruta.html',
   'listado de choferes': 'listado-choferes.html',

@@ -260,7 +260,8 @@
 
             // "Agregar tableros" lleva a Tableros; sin el permiso queda deshabilitado con el motivo (§1.4).
             function botonAgregar(id) {
-                var puede = !window.sgtlPuedeEntrar || window.sgtlPuedeEntrar('tableros.html');
+                var puede = SGTLTableros.temasPermitidos().length > 0 &&
+                    (!window.sgtlPuedeEntrar || window.sgtlPuedeEntrar('tableros.html'));
                 var boton = '<a href="tableros.html" class="btn btn-light-secondary' + (puede ? '' : ' disabled') + '"' + (id ? ' id="' + id + '"' : '') +
                     (puede ? '' : ' aria-disabled="true" tabindex="-1"') + '><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar tableros</a>';
                 return puede ? boton : '<span class="sgtl-envoltura-deshabilitado" tabindex="0" data-bs-toggle="tooltip" title="No se puede abrir Tableros: no tenés permiso">' + boton + '</span>';

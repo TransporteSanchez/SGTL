@@ -22,6 +22,10 @@ assert.strictEqual(SGTLPermisos.texto('Presupuestos'), 'Gestionar presupuestos')
 assert.strictEqual(SGTLPermisos.texto('Integración WhatsApp'), 'Gestionar integración de WhatsApp');
 assert.strictEqual(SGTLPermisos.texto('Permiso viejo'), 'Permiso viejo',
     'un permiso que no está en el menú se ve con su nombre');
+assert.strictEqual(SGTLPermisos.texto('Tableros de viajes'), 'Tableros: viajes',
+    'el detalle del usuario debe distinguir el permiso de una sección del de su módulo operativo');
+assert.strictEqual(SGTLPermisos.texto('Tableros de facturacion', 'Tableros'), 'Facturación',
+    'dentro de su tarjeta se ve el nombre de la pestaña');
 assert.deepStrictEqual(
     Array.from(['Permiso viejo', 'Presupuestos', 'Listado de viajes', 'Gestión de viajes', 'Dashboard'].sort(SGTLPermisos.comparar)),
     ['Dashboard', 'Listado de viajes', 'Gestión de viajes', 'Presupuestos', 'Permiso viejo'],
@@ -40,6 +44,8 @@ catalogo.forEach(function (nombre) {
 const menuLateral = leer('assets/static/js/sidebar-loader.js');
 let posicionAnterior = -1;
 catalogo.slice().sort(SGTLPermisos.comparar).forEach(function (nombre) {
+    // Las secciones de Tableros son pestañas internas, sin una subopción en el menú lateral.
+    if (/^Tableros de /i.test(nombre)) return;
     const texto = SGTLPermisos.texto(nombre);
     const posicion = menuLateral.indexOf('>' + texto + '<');
     assert.notStrictEqual(posicion, -1, `"${texto}" debe ser una opción del menú lateral`);

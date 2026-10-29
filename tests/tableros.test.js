@@ -65,10 +65,13 @@ while ((m = patron.exec(tablero))) buscados.add(m[1]);
 // Pantalla nueva: en el menú debajo de Dashboard, con su permiso de grupo, y la API con su controller y su script.
 const menu = leer('assets/static/js/sidebar-loader.js');
 assert.ok(menu.indexOf('href="tableros.html"') > menu.indexOf('href="index.html"'), 'Tableros va en el menú debajo de Dashboard');
-assert.ok(/'tableros':\s*'tableros\.html'/.test(menu), 'falta la clave "tableros" en MENU_TO_PAGE');
+['viajes', 'flota', 'choferes', 'facturacion'].forEach(tema => {
+    assert.ok(menu.includes("'tableros de " + tema + "': 'tableros.html'"), 'falta el acceso por sección en MENU_TO_PAGE');
+});
 const grupos = leer('WebApi_TransporteSanchez/Controllers/GruposController.cs');
-assert.ok(/"Dashboard",\s*"Tableros"/.test(grupos), 'falta "Tableros" en CatalogoMenuPermisos, después de Dashboard');
-assert.ok(/\{ "tableros", "General" \}/.test(grupos), 'falta "tableros" en MenuPrincipalPorPermiso');
+assert.ok(grupos.includes('"Tableros de viajes", "Tableros de flota", "Tableros de choferes", "Tableros de facturación"'),
+    'el catálogo debe contener las cuatro secciones de Tableros');
+assert.ok(/\{ "tableros de viajes", "Tableros" \}/.test(grupos), 'las secciones deben agruparse en su tarjeta Tableros');
 assert.ok(leer('WebApi_TransporteSanchez/WebApi_TransporteSanchez.csproj').indexOf('Controllers\\TablerosController.cs') !== -1,
     'TablerosController.cs tiene que estar en el .csproj (si no, la API no lo compila)');
 const controlador = leer('WebApi_TransporteSanchez/Controllers/TablerosController.cs');

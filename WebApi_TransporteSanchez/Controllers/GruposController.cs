@@ -40,8 +40,9 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static readonly string[] CatalogoMenuPermisos =
         {
-            // "Tableros" (24/10): la pantalla con todos los tableros por tema, con permiso propio como el Dashboard.
-            "Dashboard", "Tableros",
+            "Dashboard",
+            // Se asignan desde cero (Facu, 28/10): el permiso general anterior no da acceso ni se copia.
+            "Tableros de viajes", "Tableros de flota", "Tableros de choferes", "Tableros de facturación",
             // "Hoja de ruta" (24/10): la pantalla del chofer; el grupo de los choferes tiene solo este permiso.
             "Hoja de ruta",
             "Listado de choferes", "Gestión de choferes",
@@ -60,7 +61,10 @@ namespace WebApi_TransporteSanchez.Controllers
             new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
             {
                 { "dashboard", "General" },
-                { "tableros", "General" },
+                { "tableros de viajes", "Tableros" },
+                { "tableros de flota", "Tableros" },
+                { "tableros de choferes", "Tableros" },
+                { "tableros de facturacion", "Tableros" },
                 { "hoja de ruta", "General" },
                 { "listado de choferes", "Choferes" },
                 { "gestion de choferes", "Choferes" },
@@ -881,6 +885,8 @@ namespace WebApi_TransporteSanchez.Controllers
                     var menus = db.Set<MENU>()
 
                         .ToList()
+
+                        .Where(m => !Security.PermisosTableros.EsPermisoAnterior(m.Menu_Nombre))
 
                         .Select(m => new MenuAsignacionDto
 
