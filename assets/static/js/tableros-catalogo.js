@@ -2,8 +2,9 @@
 // Lo usan el dashboard (index.html: solo los favoritos, en la grilla de Personalizar) y la pantalla Tableros
 // (tableros.html: todos, por pestaña, con la estrella). Los datos los dibuja dashboard.js, por el id de cada elemento:
 // cada tablero aparece una sola vez por pantalla.
-// Favoritos: api/tableros/favoritos (TablerosController), por usuario según el token. Quien todavía no eligió ve el
-// diseño por defecto (el dashboard de siempre).
+// Favoritos y temas permitidos: api/tableros/favoritos (TablerosController), por usuario según el token. Quien todavía
+// no eligió ve el diseño por defecto, filtrado por sus permisos. Las claves y temas también se validan en
+// Security/PermisosTableros.cs; tests/tableros-permisos.test.js controla que coincidan ambos catálogos.
 (function (window) {
   'use strict';
 
@@ -15,6 +16,19 @@
     { id: 'choferes', texto: 'Choferes' },
     { id: 'facturacion', texto: 'Facturación' }
   ];
+
+  // Se leen junto con los favoritos desde la API, según el usuario del token. Hasta entonces, ninguno.
+  var temasAutorizados = [];
+  var personalizacionEnServidor = false;
+  function temasPermitidos() {
+    return TEMAS.filter(function (tema) { return temasAutorizados.indexOf(tema.id) !== -1; });
+  }
+  function filtrarFavoritos(lista) {
+    return lista.filter(function (it) {
+      var tablero = POR_ID[it.id];
+      return tablero && temasAutorizados.indexOf(tablero.tema) !== -1;
+    });
+  }
 
   function kpi(id, conBarra) {
     return '<span class="dash-kpi-valor" id="' + id + '">—</span>' + (conBarra
@@ -185,19 +199,30 @@
   // ese (sin los ocultos) y al guardar pasa a la base. Como hacía el dashboard, las tarjetas del diseño por defecto que no
   // estaban cuando lo guardó (y que no ocultó) van al final.
   function claveVieja() { return 'sgtl-dashboard-v2-' + usuario(); }
-  function disenoViejo() {
+  function disenoViejo(soloPendientes) {
     try {
       var guardado = JSON.parse(localStorage.getItem(claveVieja()) || 'null');
       if (!guardado || !guardado.items || !guardado.items.length) return null;
+      if (soloPendientes && !guardado.migracionParcial) return null;
       var ocultos = guardado.hidden || [];
       var ids = guardado.items.map(function (it) { return it.id; });
-      return guardado.items.filter(function (it) { return POR_ID[it.id] && ocultos.indexOf(it.id) === -1; })
-        .map(function (it) { return { id: it.id, x: it.x, y: it.y, w: it.w, h: it.h }; })
-        .concat(DISENO_POR_DEFECTO.filter(function (d) { return ids.indexOf(d.id) === -1 && ocultos.indexOf(d.id) === -1; })
-          .map(function (d) { return { id: d.id }; }));
+      var items = guardado.items.filter(function (it) { return POR_ID[it.id] && ocultos.indexOf(it.id) === -1; })
+        .map(function (it) { return { id: it.id, x: it.x, y: it.y, w: it.w, h: it.h }; });
+      return guardado.migracionParcial ? items : items.concat(DISENO_POR_DEFECTO.filter(function (d) {
+        return ids.indexOf(d.id) === -1 && ocultos.indexOf(d.id) === -1;
+      }).map(function (d) { return { id: d.id }; }));
     } catch (e) { return null; }
   }
   function borrarDisenoViejo() { try { localStorage.removeItem(claveVieja()); } catch (e) { } }
+
+  // Un guardado parcial no puede perder favoritos locales que todavía no pudieron migrar por falta de permiso.
+  function conservarDisenoViejoRestringido() {
+    var restringidos = (disenoViejo(personalizacionEnServidor) || []).filter(function (it) {
+      return temasAutorizados.indexOf(POR_ID[it.id].tema) === -1;
+    });
+    if (!restringidos.length) { borrarDisenoViejo(); return; }
+    try { localStorage.setItem(claveVieja(), JSON.stringify({ items: restringidos, hidden: [], migracionParcial: true })); } catch (e) { }
+  }
 
   function copiaPorDefecto() { return DISENO_POR_DEFECTO.map(function (it) { return Object.assign({}, it); }); }
 
@@ -210,20 +235,28 @@
   }
 
   // Los favoritos del usuario, en orden: { lista: [{ id, x, y, w, h }], personalizado, servidor }. Sin elegir todavía,
-  // el diseño viejo del navegador o el de por defecto. Si la API no responde, igual devuelve uno (servidor: false).
+  // el diseño viejo del navegador o el de por defecto. Todo se filtra por tema; si no puede leer los permisos, queda vacío.
   function leerFavoritos() {
     return pedir('GET', null, '').then(function (datos) {
+      temasAutorizados = datos && Array.isArray(datos.TemasPermitidos) ? datos.TemasPermitidos : [];
+      personalizacionEnServidor = !!(datos && datos.Personalizado);
       if (datos && datos.Personalizado) {
+        var lista = (datos.Favoritos || []).map(function (f) {
+          return { id: f.Tablero, x: f.X, y: f.Y, w: f.Ancho, h: f.Alto };
+        });
+        var pendientesDeMigrar = (disenoViejo(true) || []).filter(function (it) {
+          return !lista.some(function (guardado) { return guardado.id === it.id; });
+        });
         return {
           personalizado: true, servidor: true,
-          lista: (datos.Favoritos || []).filter(function (f) { return POR_ID[f.Tablero]; }).map(function (f) {
-            return { id: f.Tablero, x: f.X, y: f.Y, w: f.Ancho, h: f.Alto };
-          })
+          lista: filtrarFavoritos(lista.concat(pendientesDeMigrar))
         };
       }
-      return { personalizado: false, servidor: true, lista: disenoViejo() || copiaPorDefecto() };
-    }, function () {
-      return { personalizado: false, servidor: false, lista: disenoViejo() || copiaPorDefecto() };
+      return { personalizado: false, servidor: true, lista: filtrarFavoritos(disenoViejo() || copiaPorDefecto()) };
+    }, function (error) {
+      temasAutorizados = [];
+      SGTL.toastError(error.mensajeUsuario || 'No se pudieron cargar los tableros. Probá de nuevo.');
+      return { personalizado: false, servidor: false, lista: [] };
     });
   }
 
@@ -234,7 +267,11 @@
         return { Tablero: it.id, X: conLugar ? it.x : null, Y: conLugar ? it.y : null, Ancho: conLugar ? it.w : null, Alto: conLugar ? it.h : null };
       })
     };
-    return pedir('PUT', cuerpo, porDefecto).then(function (r) { borrarDisenoViejo(); return r; });
+    return pedir('PUT', cuerpo, porDefecto).then(function (r) {
+      conservarDisenoViejoRestringido();
+      personalizacionEnServidor = true;
+      return r;
+    });
   }
 
   function restablecer(porDefecto) {
@@ -244,6 +281,7 @@
   window.SGTLTableros = {
     API: API,
     TEMAS: TEMAS,
+    temasPermitidos: temasPermitidos,
     CATALOGO: CATALOGO,
     tablero: function (id) { return POR_ID[id] || null; },
     DISENO_POR_DEFECTO: DISENO_POR_DEFECTO,

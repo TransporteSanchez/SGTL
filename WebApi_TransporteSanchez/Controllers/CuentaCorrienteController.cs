@@ -97,13 +97,6 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Origen { get; set; }
         }
 
-        public class TopClienteFacturacionDto
-        {
-            public int ClienteID { get; set; }
-            public string RazonSocial { get; set; }
-            public decimal Facturacion { get; set; }
-        }
-
         private static string Cn()
         {
             return ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -127,38 +120,6 @@ namespace WebApi_TransporteSanchez.Controllers
             return db.Database.SqlQuery<int>(
                 "SELECT COUNT(1) FROM dbo.CLIENTES WHERE Cliente_ID=@clienteId AND ISNULL(EstadoCliente,0)=1",
                 P("@clienteId", clienteId)).First() > 0;
-        }
-
-        [HttpGet]
-        [Route("dashboard/top-clientes-facturacion")]
-        public IHttpActionResult ObtenerTopClientesFacturacion(int cantidad = 5)
-        {
-            try
-            {
-                cantidad = Math.Max(1, Math.Min(cantidad, 20));
-
-                using (var db = new DbContext(Cn()))
-                {
-                    const string sql = @"
-SELECT TOP (@cantidad)
-       c.Cliente_ID AS ClienteID,
-       COALESCE(NULLIF(LTRIM(RTRIM(c.Razon_Social)), ''), 'Sin nombre') AS RazonSocial,
-       CONVERT(decimal(18,2), SUM(CASE WHEN comp.Impacto='C' THEN -comp.Total ELSE comp.Total END)) AS Facturacion
-FROM dbo.COMPROBANTES comp
-JOIN dbo.CLIENTES c ON c.Cliente_ID = comp.ClienteID
-WHERE comp.Estado = 'EMITIDO'
-  AND (comp.Impacto='D' OR (comp.Impacto='C' AND comp.Tipo<>'REC'))
-GROUP BY c.Cliente_ID, c.Razon_Social
-ORDER BY Facturacion DESC, RazonSocial;";
-
-                    return Ok(db.Database.SqlQuery<TopClienteFacturacionDto>(sql, P("@cantidad", cantidad)).ToList());
-                }
-            }
-            catch (Exception)
-            {
-                return Content(HttpStatusCode.InternalServerError,
-                    new { error = "No se pudo calcular el ranking de clientes facturados." });
-            }
         }
 
         [HttpGet]

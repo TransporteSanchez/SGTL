@@ -6,7 +6,7 @@ const raiz = path.join(__dirname, '..', 'WebApi_TransporteSanchez', 'Controllers
 const configuracion = fs.readFileSync(path.join(raiz, 'FacturacionConfiguracionController.cs'), 'utf8');
 const comprobantes = fs.readFileSync(path.join(raiz, 'ComprobantesController.cs'), 'utf8');
 const recibos = fs.readFileSync(path.join(raiz, 'RecibosController.cs'), 'utf8');
-const cuenta = fs.readFileSync(path.join(raiz, 'CuentaCorrienteController.cs'), 'utf8');
+const tableros = fs.readFileSync(path.join(raiz, 'TablerosController.cs'), 'utf8');
 
 function bloque(fuente, inicio, fin) {
     const desde = fuente.indexOf(inicio);
@@ -50,7 +50,7 @@ assert.match(emitir.slice(indiceConfiguracion, indicePermiso),
     'la API impide cancelar una proforma con un tipo que no sea de crédito');
 
 assert.ok(!/deuda\.Tipo\s*!=\s*"FAC"/.test(recibos), 'el recibo admite cualquier comprobante emitido de deuda');
-assert.match(cuenta, /comp\.Impacto\s*=\s*'D'/, 'el ranking de clientes incluye deuda de tipos personalizados');
+assert.match(tableros, /comp\.Impacto\s*=\s*'D'/, 'el ranking de clientes incluye deuda de tipos personalizados');
 
 const referencias = bloque(comprobantes, 'public IHttpActionResult ListarFacturasReferencia(', '[HttpGet]');
 assert.match(referencias, /c\.Impacto\s*=\s*'D'/, 'un crédito corriente puede aplicarse sobre FC y otros comprobantes de deuda');

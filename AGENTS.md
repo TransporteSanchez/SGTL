@@ -111,7 +111,8 @@ AGENTS.md"):
     permisos está pendiente de ver con Facu).
   - **Con permiso de grupo** (Gestionar grupos y permisos): el nombre en `CatalogoMenuPermisos` y
     `MenuPrincipalPorPermiso` (`GruposController.cs`), la clave en `MENU_TO_PAGE` (`sidebar-loader.js`) y, si guarda
-    datos, que la API controle el permiso.
+    datos, que la API controle el permiso. Tableros tiene permisos separados para sus cuatro pestañas
+    (Viajes, Flota, Choferes y Facturación), en una tarjeta propia; sus favoritos respetan los mismos permisos.
 - **Los datos de la empresa no se escriben en el código** (nombre, CUIT, domicilio, teléfono, e-mail, logo): salen de
   Configuración → Gestionar empresa (`api/empresa`; en un PDF, `SGTLEmpresa.obtener` de `empresa-datos.js` con la fecha
   de emisión del documento). En un documento va el logo de la empresa, nunca el del sistema (`GestionContenido`).

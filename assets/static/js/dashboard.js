@@ -1264,7 +1264,7 @@
   function cargarTopClientes() {
     var cont = el('top-clientes-list');
     if (!cont) return;
-    pedir('/dashboard/top-clientes-facturacion', { cantidad: 5 }).done(function (data) {
+    pedirConSesion('/tableros/top-clientes-facturacion', { cantidad: 5 }).done(function (data) {
       if (!data || !data.length) {
         cont.innerHTML = '<div class="text-muted text-center py-4">Todavía no hay comprobantes emitidos.</div>';
         return;

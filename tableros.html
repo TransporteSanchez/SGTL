@@ -134,7 +134,7 @@
                     await window.loadSidebar();
                 }
                 window.cargarEstilosContenido().catch(function (error) { console.error(error); });
-                await armarTableros();
+                if (!await armarTableros()) return;
                 loadingMessage.style.display = 'none';
                 document.getElementById('app').style.display = 'block';
                 // Con la pantalla a la vista: la pestaña elegida y, después, los datos (los gráficos miden su tarjeta).
@@ -170,9 +170,18 @@
 
         async function armarTableros() {
             favoritos = await SGTLTableros.leerFavoritos();
+            if (!favoritos.servidor) {
+                document.getElementById('loading-message').textContent = 'No se pudieron cargar los tableros. Recargá la pantalla para reintentar.';
+                return false;
+            }
+            var temas = SGTLTableros.temasPermitidos();
+            if (!temas.length) {
+                window.location.replace('index.html');
+                return false;
+            }
             var pestanas = document.getElementById('tablerosPestanas');
             var paneles = document.getElementById('tablerosPaneles');
-            pestanas.innerHTML = SGTLTableros.TEMAS.map(function (tema, i) {
+            pestanas.innerHTML = temas.map(function (tema, i) {
                 var cantidad = SGTLTableros.CATALOGO.filter(function (t) { return t.tema === tema.id; }).length;
                 return '<li class="nav-item" role="presentation"><button class="nav-link' + (i === 0 ? ' active' : '') + '" id="tab-' + tema.id +
                     '" data-bs-toggle="tab" data-bs-target="#pane-' + tema.id + '" type="button" role="tab" aria-controls="pane-' + tema.id +
@@ -180,7 +189,7 @@
                     ' <span class="text-muted">· ' + cantidad + '</span></button></li>';
             }).join('');
             // Por tema: los indicadores en una fila y, debajo, el resto (cada tarjeta con su alto, sin estirarse).
-            paneles.innerHTML = SGTLTableros.TEMAS.map(function (tema, i) {
+            paneles.innerHTML = temas.map(function (tema, i) {
                 var delTema = SGTLTableros.CATALOGO.filter(function (t) { return t.tema === tema.id; });
                 var indicadores = delTema.filter(function (t) { return t.tipo === 'kpi'; });
                 var resto = delTema.filter(function (t) { return t.tipo !== 'kpi'; });
@@ -192,7 +201,7 @@
                     '<div class="row g-3 align-items-start tableros-grilla">' + resto.map(columnaTablero).join('') + '</div></div>';
             }).join('');
             // Si el usuario la ve, la pestaña la cuenta.
-            if (window.SGTLCambiosTarifa) SGTLCambiosTarifa.tarjetaFija(document.getElementById('cambiosTarifaTableros'), { estrellaFija: true }).then(function (visible) {
+            if (document.getElementById('cambiosTarifaTableros') && window.SGTLCambiosTarifa) SGTLCambiosTarifa.tarjetaFija(document.getElementById('cambiosTarifaTableros'), { estrellaFija: true }).then(function (visible) {
                 if (!visible) return;
                 var cantidad = document.querySelector('#tab-facturacion .text-muted');
                 if (cantidad) cantidad.textContent = '· ' + (SGTLTableros.CATALOGO.filter(function (t) { return t.tema === 'facturacion'; }).length + 1);
@@ -206,6 +215,7 @@
                 var boton = e.target.closest('.dash-estrella');
                 if (boton) cambiarFavorito(boton);
             });
+            return true;
         }
 
         // La última pestaña que se miró (en este navegador).

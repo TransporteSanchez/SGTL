@@ -306,7 +306,7 @@ pantalla. Están aplicadas en todas las pantallas desde el 22/10/2026.
 | Sección | Opciones |
 |---|---|
 | Dashboard | (ítem principal) |
-| Tableros | (ítem principal, nuevo 24/10: todos los tableros por tema; permiso de grupo propio, como el Dashboard; §13) |
+| Tableros | (ítem principal: todos los tableros por tema; permisos de grupo independientes para Viajes, Flota, Choferes y Facturación, en la tarjeta Tableros de Permisos por grupo; §13) |
 | Hojas de ruta | (ítem principal, nuevo 24/10, en plural desde el 27/10: la pantalla del chofer, pensada para el celular; permiso de grupo propio, que en la base sigue llamándose "Hoja de ruta", y un grupo de choferes que solo tiene ese; §10). El chofer entra directo desde el login y tiene el menú con el logo y solo esta opción, plegado al entrar (lo abre el botón de tres rayitas), sin la Documentación |
 | Choferes | Listar choferes · Gestionar choferes |
 | Camiones | Listar camiones · Gestionar camiones |
@@ -878,6 +878,10 @@ Decidido por Rocío con la maqueta del 24/10. Lo usan el dashboard y la pantalla
 - **Pantalla Tableros:** todos los tableros en **pestañas por tema** (Viajes · Flota · Choferes · Facturación), con el
   mismo período que el dashboard. En cada pestaña, los indicadores en una fila y debajo el resto. Un tablero nuevo se
   agrega al catálogo, con su tema; no se arma una tarjeta suelta en una pantalla.
+- **Permisos por tema** (Facu, 28/10): cada pestaña tiene su casilla en la tarjeta Tableros de Permisos por grupo. La
+  tarjeta selecciona las cuatro y refleja la selección parcial, igual que las demás. Solo aparecen las pestañas y los
+  favoritos de temas habilitados por los grupos del usuario; los administradores ven todo. El permiso general anterior
+  deja de dar acceso y las cuatro secciones se asignan desde cero (§64 de `docs/PENDIENTES-SISTEMA.md`).
 - **Estrella de favorito** (`.dash-estrella`): a la derecha del título de la tarjeta, después de "Hoy"/"Histórico".
   Llena y amarilla = está en el dashboard del usuario; vacía y gris = no. Tooltip "Agregar a mi dashboard" / "Quitar de
   mi dashboard". Se guarda al tocarla (toast con el nombre del tablero). En el dashboard se ve solo en Personalizar.

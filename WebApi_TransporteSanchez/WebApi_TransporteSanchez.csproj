@@ -428,6 +428,7 @@
     <Compile Include="Controllers\FacturacionConfiguracionController.cs" />
     <Compile Include="Controllers\EmpresaController.cs" />
     <Compile Include="Controllers\TablerosController.cs" />
+    <Compile Include="Security\PermisosTableros.cs" />
     <Compile Include="Controllers\RecibosController.cs" />
     <Compile Include="Controllers\DestinoController.cs" />
     <Compile Include="Controllers\GestionContenidoController.cs" />

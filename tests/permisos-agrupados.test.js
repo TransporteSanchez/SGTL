@@ -96,6 +96,23 @@ assert.deepStrictEqual(Array.from(ordenados[0].Permisos, function (permiso) { re
 assert.deepStrictEqual(Array.from(ordenados[1].Permisos, function (permiso) { return permiso.Menu_ID; }), [11, 12],
     'Listar va antes que Gestionar, como en el menú');
 
+const conTableros = sandbox.agruparMenusPorPrincipal([
+    { Menu_ID: 1, Menu_Nombre: 'Dashboard', Menu_Principal: 'General' },
+    { Menu_ID: 12, Menu_Nombre: 'Gestión de choferes', Menu_Principal: 'Choferes' },
+    { Menu_ID: 34, Menu_Nombre: 'Tableros de facturación', Menu_Principal: 'Tableros' },
+    { Menu_ID: 33, Menu_Nombre: 'Tableros de choferes', Menu_Principal: 'Tableros' },
+    { Menu_ID: 32, Menu_Nombre: 'Tableros de flota', Menu_Principal: 'Tableros' },
+    { Menu_ID: 31, Menu_Nombre: 'Tableros de viajes', Menu_Principal: 'Tableros' }
+]);
+assert.deepStrictEqual(Array.from(conTableros, g => g.Nombre), ['General', 'Tableros', 'Choferes'],
+    'Tableros debe tener su tarjeta después de General');
+assert.deepStrictEqual(Array.from(conTableros[1].Permisos, p => p.Menu_ID), [31, 32, 33, 34],
+    'las secciones deben aparecer en el mismo orden que las pestañas');
+const tarjetaTableros = sandbox.crearHtmlPermisos([conTableros[1]]);
+['Viajes', 'Flota', 'Choferes', 'Facturación'].forEach(texto => {
+    assert.ok(tarjetaTableros.includes('>' + texto + '</label>'), 'falta la casilla ' + texto);
+});
+
 assert.strictEqual(typeof sandbox.obtenerEstadoMenuPrincipal, 'function',
     'la pantalla debe calcular el estado visual de cada menú principal');
 const sinSeleccion = sandbox.obtenerEstadoMenuPrincipal([

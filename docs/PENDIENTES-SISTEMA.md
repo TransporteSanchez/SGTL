@@ -82,8 +82,9 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 | 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | **Pusheado** (`d388d4f`, 29/10); en `main`, `facugodoy` y `fedemontenegro` con la §61 | Abrir el PDF y leer las partes nuevas (ver §65) |
-| 66 | Ver detalle en las pantallas de gestión: cuando Editar está deshabilitado (un presupuesto aceptado, por ejemplo) no hay forma de ver el registro desde Gestionar, y presupuestos no tiene Listar | **Mejora anotada (29/10)**, para decidir después de la reunión; presupuestos es de Facu | — | Ver §66 |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | **FI volvió a FC (29/10).** La base, con la limpieza de viajes y `docs/equipo/INSTRUCTIVO-DATOS-DEMO.md` (un caso por estado, fechas que cierran; consulta `06`) | Commit del 29/10, sin push | Correr la `05` y la `06` y seguir las guías (§64, punto 3) |
+| 66 | Permisos por sección de Tableros: tarjeta propia con Viajes, Flota, Choferes y Facturación | **Hecho en código en facugodoy (28/10)**; asignación desde cero por decisión de Facu | Commit `3fd85a7` (29/10), en `facugodoy`; mergeado en `rocionuvoli` | Recompilar la API, abrir Permisos por grupo y asignar las secciones; recorrido en §66 |
+| 67 | Ver detalle en las pantallas de gestión: cuando Editar está deshabilitado (un presupuesto aceptado, por ejemplo) no hay forma de ver el registro desde Gestionar, y presupuestos no tiene Listar | **Mejora anotada (29/10)**, para decidir después de la reunión; presupuestos es de Facu | — | Ver §67 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -5297,7 +5298,59 @@ pruebas (p. 67 a 73) y anexos (p. 78 y 79). Con Alt+F9 en el Word no tiene que a
 
 ---
 
-## 66. Ver detalle en las pantallas de gestión — MEJORA ANOTADA (29/10), PARA DESPUÉS DE LA REUNIÓN
+## 66. Permisos por sección de Tableros — HECHO EN CÓDIGO EN FACUGODOY (28/10), FALTA PROBAR CON USUARIOS REALES
+
+Pedido de Facu: una tarjeta **Tableros** en Permisos por grupo, con **Viajes, Flota, Choferes y Facturación**,
+igual que los submódulos de las otras tarjetas. Facu eligió **asignarlas desde cero**: el permiso general anterior
+ya no habilita la pantalla ni sus favoritos y deja de aparecer en la edición de permisos y el detalle del usuario.
+Las asignaciones viejas quedan en la base hasta que se guarde cada grupo; el código las ignora. Los administradores
+siguen viendo las cuatro y el rol Chofer conserva solo Hojas de ruta.
+
+**Implementado:**
+- Cuatro permisos en el catálogo existente de GruposController, agrupados en la tarjeta Tableros, después de General.
+  Se crean sin asignaciones al abrir Permisos por grupo, con el mismo mecanismo del resto; no requiere un script nuevo.
+  La casilla principal selecciona las cuatro y refleja selección parcial. En el detalle del usuario se leen
+  «Tableros: viajes», «Tableros: flota», «Tableros: choferes» y «Tableros: facturación».
+- Con una sección habilitada se puede abrir Tableros; sin ninguna, el menú la oculta y abrir su dirección lleva al inicio.
+  Las pestañas, sus tarjetas y los favoritos del dashboard se filtran por los temas autorizados. Si la última pestaña
+  recordada ya no está autorizada, queda seleccionada la primera disponible. Agregar tableros se deshabilita sin secciones.
+- La API devuelve `TemasPermitidos` con los favoritos, sumando los permisos de todos los grupos del usuario del token.
+  Valida el tema al guardar. Guardar una sección conserva los favoritos restringidos de otras, tanto los ya guardados
+  en la base como los del diseño antiguo del navegador pendientes de migración. Restablecer sigue borrando toda la
+  personalización, y el diseño por defecto también se filtra por permisos. Si falla la lectura de permisos, no se
+  muestra el diseño completo como alternativa.
+- Facturación, deuda y ranking de clientes controlan el permiso **Tableros de facturación**, independiente de operar
+  proformas o cuenta corriente. El ranking se movió de CuentaCorrienteController a TablerosController; conserva su
+  dirección anterior como alias protegido y el dashboard ahora lo pide con la sesión. Se mantienen los cálculos.
+- Diseño y plan: `docs/diseno/tableros-permisos-diseno.md` y `docs/diseno/tableros-permisos-plan.md`.
+
+**Verificación local:** la suite Node completa pasó de 80 pruebas correctas antes del cambio a **81 correctas**. La prueba nueva ejecuta
+el armado de pestañas y favoritos, la resolución real de permisos en C# y el borrado de favoritos en SQLite en memoria.
+La API se compila con MSBuild en una carpeta temporal, sin iniciarla ni consultar la base. La revisión independiente
+detectó dos bordes (preferencias antiguas y ranking sin permiso), corregidos con pruebas que reprodujeron ambos fallos.
+En Chrome, con datos simulados y anchos reales de 1366 y 390 px, se verificaron la tarjeta, selección total/parcial,
+una sola pestaña para un usuario con Flota y las cuatro para un administrador, sin desbordes. No se ejecutó SQL ni se
+asignaron permisos contra la base compartida.
+
+**Cómo probarlo con usuarios reales** (pendiente):
+1. Recompilar la API y Ctrl+F5. Entrar como administrador a Gestionar grupos y permisos → Permisos por grupo.
+2. Elegir un grupo que tenía Tableros: aparece la tarjeta nueva con las cuatro casillas desmarcadas. Marcar solo Flota,
+   guardar y volver a elegir el grupo: solo Flota queda marcada y la casilla de la tarjeta se ve parcial.
+3. Entrar con un usuario de ese grupo: Tableros solo muestra Flota. El dashboard solo muestra favoritos de ese tema,
+   incluso al restablecerlo. Los permisos de Listar/Gestionar camiones no se alteran.
+4. Darle Choferes desde otro grupo: Tableros muestra Flota y Choferes. Quitar ambas: sin Tableros en el menú,
+   sin favoritos de esos temas, Agregar tableros deshabilitado y acceso directo a Tableros redirigido al inicio.
+5. Marcar la casilla principal de Tableros, guardar y comprobar las cuatro secciones; desmarcar una y ver selección parcial.
+6. Con solo Tableros de facturación, sin cuenta corriente ni proformas, comprobar facturación, deuda y ranking.
+   Sin ese permiso, las tres consultas de Tableros deben rechazar el acceso con 403; sin sesión válida, con 401.
+7. Quitar temporalmente un tema con favoritos, guardar otros temas y devolverlo: reaparecen sus favoritos. Repetir con
+   un diseño antiguo del navegador. Restablecer sí borra la personalización completa.
+8. Como administrador, comprobar las cuatro secciones; como chofer, únicamente Hojas de ruta. Repetir la tarjeta y
+   las pestañas a 390 px y en escritorio.
+
+---
+
+## 67. Ver detalle en las pantallas de gestión — MEJORA ANOTADA (29/10), PARA DESPUÉS DE LA REUNIÓN
 
 Rocío (29/10, limpiando la base): "cuando no podés editar un presupuesto, por ejemplo, no podés acceder al detalle y no hay
 un listar"; y lo mismo en los demás módulos de gestión, donde el detalle solo se ve yendo a Listar.
@@ -5320,4 +5373,3 @@ criterio:
 **Para decidir:** si va en todas las de gestión o solo donde Editar se puede deshabilitar (presupuestos, viajes, tarifas
 con viajes); si presupuestos necesita además un Listar presupuestos (menú y permiso, como pide `AGENTS.md`); y avisarle a
 Facu, que presupuestos y la configuración de facturación son suyas.
-
