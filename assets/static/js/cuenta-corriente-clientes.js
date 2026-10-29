@@ -606,11 +606,19 @@
                 deshabilitado: !esCredito || !!item.ComprobanteReferenciaID || estadoDocumental !== 'EMITIDO' || saldoCredito <= 0,
                 motivo: motivoImputacion
             }));
+        // Solo se anulan los recibos. FAC, NC y ND conservan su motivo; los tipos configurables (C, D, FC…) se corrigen con
+        // un crédito interno, no con una NC (§62, F6).
+        var fiscal = tipo === 'FAC' || tipo === 'NC' || tipo === 'ND';
+        var motivoAnular = fiscal
+            ? 'No se puede anular ' + nombre + ': ' + (tipo === 'FAC' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
+            : esCredito
+                ? 'No se puede anular el crédito: solo se anulan los recibos'
+                : 'No se puede anular el comprobante: se corrige con un crédito';
         botones.push(anulado
                 ? window.SGTL.botonFila('eliminar', { id: id, texto: 'Eliminar recibo' })
                 : window.SGTL.botonFila('anular', {
-                    id: id, texto: 'Anular recibo', deshabilitado: !esRecibo,
-                    motivo: 'No se puede anular ' + nombre + ': ' + (tipo && tipo !== 'REC' && tipo !== 'NC' && tipo !== 'ND' ? 'se corrige con una nota de crédito' : 'solo se anulan los recibos')
+                    id: id, texto: esRecibo ? 'Anular recibo' : 'Anular comprobante', deshabilitado: !esRecibo,
+                    motivo: motivoAnular
                 })
         );
         return window.SGTL.accionesFila(botones);

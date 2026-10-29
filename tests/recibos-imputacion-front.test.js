@@ -39,6 +39,19 @@ function acciones() {
         assert.strictEqual(boton.texto, 'Imputar recibo');
         assert.strictEqual(boton.deshabilitado, false, 'un recibo con saldo admite imputación posterior');
     }
+    // Anular: solo los recibos; los tipos configurables no mencionan la NC (§62, F6).
+    for (const [tipo, impacto, motivo] of [
+        ['C', 'C', 'No se puede anular el crédito: solo se anulan los recibos'],
+        ['D', 'D', 'No se puede anular el comprobante: se corrige con un crédito'],
+        ['FC', 'D', 'No se puede anular el comprobante: se corrige con un crédito'],
+        ['FAC', 'D', 'No se puede anular la factura: se corrige con una nota de crédito'],
+        ['NC', 'C', 'No se puede anular la nota de crédito: solo se anulan los recibos']]) {
+        const anular = c.accionesComprobante({ ComprobanteID: 10, Tipo: tipo, Impacto: impacto, EstadoComprobante: 'EMITIDO',
+            SaldoPendiente: 0 }).find(b => b.accion === 'anular');
+        assert.strictEqual(anular.texto, 'Anular comprobante', tipo + ': no dice "Anular recibo"');
+        assert.strictEqual(anular.deshabilitado, true);
+        assert.strictEqual(anular.motivo, motivo, tipo);
+    }
     for (const [estado, saldo, motivo] of [['ANULADO', 100, 'está anulado'], ['EMITIDO', 0, 'ya está aplicado por completo']]) {
         const boton = c.accionesComprobante({ ComprobanteID: 10, Tipo: 'REC', EstadoComprobante: estado, SaldoPendiente: saldo })
             .find(b => b.accion === 'siguiente');

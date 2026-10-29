@@ -297,7 +297,34 @@ function probarTipoPropuesto() {
     assert.strictEqual(sandbox.tipoPropuesto(tipos('FI')), 'FI', 'si hay un solo tipo, lo propone');
 }
 
+// Generar consume un número de proforma: pide confirmación antes de guardar y generar (§5.2; §62, F1).
+async function probarConfirmarGenerar() {
+    const fuente = fs.readFileSync(path.join(__dirname, '..', 'gestion-facturacion.html'), 'utf8');
+    let pedido = null, generadas = 0, respuesta = false;
+    const sandbox = { window: {}, guardarYGenerarProforma: function () { generadas += 1; },
+        SGTL: { confirmar: function (opciones) { pedido = opciones; return Promise.resolve(respuesta); } } };
+    vm.runInNewContext(extraerFuncion(fuente, 'generarProforma'), sandbox, { filename: 'gestion-facturacion.html' });
+    sandbox.generarProforma();
+    await esperarMicrotareas();
+    assert.strictEqual(pedido.titulo, '¿Generar la proforma?');
+    assert.strictEqual(pedido.verbo, 'Generar', 'el pie dice el verbo, nunca "Confirmar"');
+    assert.match(pedido.mensaje, /próximo número/, 'la confirmación dice que consume un número');
+    assert.strictEqual(generadas, 0, 'si se cancela, no se guarda ni se genera');
+    respuesta = true;
+    sandbox.generarProforma();
+    await esperarMicrotareas();
+    assert.strictEqual(generadas, 1, 'al confirmar, guarda y genera');
+
+    assert.ok(fuente.includes("'Queda lista para emitir el comprobante. No vuelve a Generada.'"),
+        'Marcar aceptada no dice "factura" (§62, M5)');
+    const modal = fuente.slice(fuente.indexOf('id="modalProforma"'), fuente.indexOf('id="btnGenerar"'));
+    assert.ok(!/<label class="form-label">/.test(modal), 'las etiquetas del formulario llevan for (§62, DS7)');
+    assert.match(modal, /<label for="p_otros"/, 'Otros impuestos también');
+}
+
 ejecutarPrueba().then(function () {
+    return probarConfirmarGenerar();
+}).then(function () {
     probarTipoPropuesto();
     probarConceptoObligatorioEnProforma();
     probarObservacionesUnificadasEnProforma();

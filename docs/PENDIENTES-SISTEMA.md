@@ -79,7 +79,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
-| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo y el importe escrito del recibo no cambia al tildar (F3)** | Commits del 28/10, sin push | La proforma sin FC y F3 (§62, "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
+| 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -4988,8 +4988,11 @@ los rechazos de la API y la anulación de un recibo imputado.
 
 **Fallas: causa y propuesta.** Son pantallas de Facu, salvo Generar proforma: Rocío decide y le avisa.
 - **F1, Generar proforma sin confirmación.** `generarProforma` (`gestion-facturacion.html`) guarda y genera sin
-  `SGTL.confirmar`; Marcar aceptada y Anular la tienen, y la de Rukas confirma en el pie. Propuesta: "¿Generar la
-  proforma?", que diga que toma el próximo número y deja de ser borrador, con "Generar". **Hacerlo ya.**
+  `SGTL.confirmar`; Marcar aceptada y Anular la tienen, y la de Rukas confirma en el pie. **Hecho en la Mac (28/10), falta
+  probar en la VM:** "¿Generar la proforma?" / "Se le asigna el próximo número de proforma y deja de ser un borrador.",
+  con Cancelar · Generar, encima del modal de la proforma. Visto con la API simulada: al cancelar no se guarda ni se
+  genera y el modal sigue abierto. **Cómo probarlo** (Ctrl+F5): Editar un borrador → Generar proforma → aparece la
+  confirmación; Cancelar → sigue el borrador abierto, sin número. Generar solo con el OK de Rocío (consume un número).
 - **F3, el recibo pisa el importe.** Al tildar una deuda, Aplicar tomaba su saldo entero y `actualizarResumenRecibo`
   reescribía el importe con la suma de lo aplicado (también al escribir en Aplicar). Venía del código del 15/10; el diseño
   de Facu dice que el importe de la forma de pago es el monto a distribuir y que marcar o escribir a mano recalcula solo lo
@@ -5011,8 +5014,11 @@ los rechazos de la API y la anulación de un recibo imputado.
   sale deshabilitado con "ya está aplicado por completo" (probado con la función de la pantalla). Solo desaparece si la
   fila llega sin impacto C. **Mirar los datos antes de tocar código** (consulta de abajo).
 - **F6, Anular en créditos y deudas.** El botón dice "Anular recibo" y el motivo, "se corrige con una nota de crédito",
-  aunque no haya NC. Propuesta: "Anular comprobante"; en un crédito, "No se puede anular el crédito: solo se anulan los
-  recibos"; en una deuda, "No se puede anular el comprobante: se corrige con un crédito". **Hacerlo ya** (textos).
+  aunque no haya NC. **Hecho en la Mac (28/10), falta probar en la VM:** el botón dice "Anular comprobante" (los recibos
+  siguen con "Anular recibo"); en un crédito configurable, "No se puede anular el crédito: solo se anulan los recibos"; en
+  una deuda configurable, "No se puede anular el comprobante: se corrige con un crédito". FAC, NC y ND quedan como
+  estaban. **Cómo probarlo** (Ctrl+F5): Gestionar cuenta corriente de Logística Pampeana → el globito de Anular en el
+  FC-7, el D-3 y el C-5 (este, desplegando las aplicaciones del FC-7).
 - **F4, "Pendiente" en créditos y recibos con saldo.** Lo arma la API (`EstadoFinanciero` en
   `CuentaCorrienteController.cs`). Propuesta: "Sin imputar", "Parcialmente imputado" y "Aplicado", como en Comprobantes
   sin relacionar, revisando el filtro Estado. **Después del 29/10, con Facu.**
@@ -5020,8 +5026,11 @@ los rechazos de la API y la anulación de un recibo imputado.
   'Recibo eliminado.'"). Si se quiere conservar los anulados (el número ya se consumió), se decide con Facu. **Dejarlo y
   preguntarle.**
 
-**Design system (DS1 a DS8):** se aplica igual en las pantallas de Facu. **Hacer ya** los de texto: M5 ("Queda lista
-para emitir la factura." → "…el comprobante.": la profe no quiere "factura") y DS7 (los `for` de Registrar proforma).
+**Design system (DS1 a DS8):** se aplica igual en las pantallas de Facu. **Hechos en la Mac (28/10), falta probar en la
+VM:** M5 (Marcar aceptada dice "Queda lista para emitir el comprobante.": la profe no quiere "factura") y DS7 (todas las
+etiquetas del formulario de la proforma con `for`, no solo las cinco del reporte; Otros impuestos también). **Cómo
+probarlo** (Ctrl+F5): Marcar aceptada en una generada → leer la confirmación y cancelar; en Registrar proforma, hacer clic
+en cada etiqueta: el cursor va a su campo.
 **Después del 29/10:** DS1 a DS6 y DS8 (aviso arriba y errores debajo de cada campo, Ver comprobante y Ver recibo con
 `.sgtl-dato`, el N° como texto, el globito de Emitir y el motivo del siguiente paso en proformas facturadas).
 

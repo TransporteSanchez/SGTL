@@ -129,36 +129,36 @@
                     <input type="hidden" id="p_id">
                     <div class="sgtl-bloque-titulo">Datos generales y del cliente</div>
                     <div class="row g-2">
-                        <div id="p_numeroGrupo" class="col-md-2 d-none"><label class="form-label">Número proforma</label><input id="p_numero" class="form-control" readonly></div>
+                        <div id="p_numeroGrupo" class="col-md-2 d-none"><label for="p_numero" class="form-label">Número proforma</label><input id="p_numero" class="form-control" readonly></div>
                         <div id="p_clienteGrupo" class="col-md-6"><label for="p_cliente" class="form-label req">Cliente</label><select id="p_cliente" class="form-select" onchange="autocompletarCliente()"><option value="">Seleccioná un cliente</option></select></div>
-                        <div class="col-md-3"><label class="form-label">Período: fecha de inicio</label><input id="p_fdesde" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="col-md-3"><label class="form-label">Período: fecha fin</label><input id="p_fhasta" class="form-control" placeholder="DD/MM/AAAA"></div>
+                        <div class="col-md-3"><label for="p_fdesde" class="form-label">Período: fecha de inicio</label><input id="p_fdesde" class="form-control" placeholder="DD/MM/AAAA"></div>
+                        <div class="col-md-3"><label for="p_fhasta" class="form-label">Período: fecha fin</label><input id="p_fhasta" class="form-control" placeholder="DD/MM/AAAA"></div>
                         <!-- Emisión (se completa al generar) y vencimiento de la proforma: no son el período de los viajes. -->
                         <input id="p_femision" type="hidden"><input id="p_fvto" type="hidden">
                         <input id="p_moneda" type="hidden" value="ARS">
                         <!-- Datos del cliente (§25 de PENDIENTES, 22/10): no se editan en la proforma. Los campos quedan ocultos
                              (los completa el cliente elegido) y se ven como texto en el recuadro de abajo, con "Editar cliente". -->
-                        <div class="col-md-4 d-none"><label class="form-label">Razón social</label><input id="p_cli_razon" class="form-control" readonly></div>
-                        <div class="col-md-4 d-none"><label class="form-label">Nombre comercial</label><input id="p_cli_nombre" class="form-control" readonly></div>
-                        <div class="col-md-3 d-none"><label class="form-label">CUIT/CUIL/DNI</label><input id="p_cli_cuit" class="form-control" readonly></div>
-                        <div class="col-md-3 d-none"><label class="form-label">Condición IVA</label><input id="p_cli_condiva" class="form-control" readonly></div>
-                        <div class="col-md-4 d-none"><label class="form-label">Dirección</label><input id="p_cli_dir" class="form-control" readonly></div>
-                        <div class="col-md-2 d-none"><label class="form-label">Teléfono</label><input id="p_cli_tel" class="form-control" readonly></div>
+                        <div class="col-md-4 d-none"><label for="p_cli_razon" class="form-label">Razón social</label><input id="p_cli_razon" class="form-control" readonly></div>
+                        <div class="col-md-4 d-none"><label for="p_cli_nombre" class="form-label">Nombre comercial</label><input id="p_cli_nombre" class="form-control" readonly></div>
+                        <div class="col-md-3 d-none"><label for="p_cli_cuit" class="form-label">CUIT/CUIL/DNI</label><input id="p_cli_cuit" class="form-control" readonly></div>
+                        <div class="col-md-3 d-none"><label for="p_cli_condiva" class="form-label">Condición IVA</label><input id="p_cli_condiva" class="form-control" readonly></div>
+                        <div class="col-md-4 d-none"><label for="p_cli_dir" class="form-label">Dirección</label><input id="p_cli_dir" class="form-control" readonly></div>
+                        <div class="col-md-2 d-none"><label for="p_cli_tel" class="form-label">Teléfono</label><input id="p_cli_tel" class="form-control" readonly></div>
                         <div class="col-12" id="p_cli_resumenGrupo"><div id="p_cli_resumen" class="sgtl-dato-fijo" hidden></div></div>
                     </div>
                     <!-- Datos logísticos históricos: temporalmente fuera del formulario de Proformas. -->
                     <div class="d-none" aria-hidden="true">
-                        <div class="col-md-3"><label class="form-label">Tipo de servicio</label><input id="p_tiposervicio" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Origen</label><input id="p_origen" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Destino</label><input id="p_destino" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Tipo de carga</label><input id="p_tipocarga" class="form-control"></div>
-                        <div class="col-md-3"><label class="form-label">Fecha estimada de carga</label><input id="p_fcarga" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="col-md-3"><label class="form-label">Fecha estimada de entrega</label><input id="p_fentrega" class="form-control" placeholder="DD/MM/AAAA"></div>
-                        <div class="col-md-2"><label class="form-label">Peso</label><input id="p_peso" class="form-control"></div>
-                        <div class="col-md-2"><label class="form-label">Volumen</label><input id="p_volumen" class="form-control"></div>
-                        <div class="col-md-2"><label class="form-label">Bultos</label><input id="p_bultos" class="form-control"></div>
-                        <div class="col-md-4"><label class="form-label">Vehículo requerido</label><input id="p_vehiculo" class="form-control"></div>
-                        <div class="col-md-8"><label class="form-label">Observaciones logísticas</label><input id="p_obslog" class="form-control"></div>
+                        <div class="col-md-3"><label for="p_tiposervicio" class="form-label">Tipo de servicio</label><input id="p_tiposervicio" class="form-control"></div>
+                        <div class="col-md-3"><label for="p_origen" class="form-label">Origen</label><input id="p_origen" class="form-control"></div>
+                        <div class="col-md-3"><label for="p_destino" class="form-label">Destino</label><input id="p_destino" class="form-control"></div>
+                        <div class="col-md-3"><label for="p_tipocarga" class="form-label">Tipo de carga</label><input id="p_tipocarga" class="form-control"></div>
+                        <div class="col-md-3"><label for="p_fcarga" class="form-label">Fecha estimada de carga</label><input id="p_fcarga" class="form-control" placeholder="DD/MM/AAAA"></div>
+                        <div class="col-md-3"><label for="p_fentrega" class="form-label">Fecha estimada de entrega</label><input id="p_fentrega" class="form-control" placeholder="DD/MM/AAAA"></div>
+                        <div class="col-md-2"><label for="p_peso" class="form-label">Peso</label><input id="p_peso" class="form-control"></div>
+                        <div class="col-md-2"><label for="p_volumen" class="form-label">Volumen</label><input id="p_volumen" class="form-control"></div>
+                        <div class="col-md-2"><label for="p_bultos" class="form-label">Bultos</label><input id="p_bultos" class="form-control"></div>
+                        <div class="col-md-4"><label for="p_vehiculo" class="form-label">Vehículo requerido</label><input id="p_vehiculo" class="form-control"></div>
+                        <div class="col-md-8"><label for="p_obslog" class="form-label">Observaciones logísticas</label><input id="p_obslog" class="form-control"></div>
                     </div>
                     <!-- Proforma propia: conceptos. Con un cliente con plataforma se reemplaza por #bloquePlataforma (proformas-plataforma.js). -->
                     <div id="bloqueConceptos">
@@ -189,17 +189,17 @@
                                 <dt class="col-7">Descuentos</dt><dd class="col-5 text-end" id="t_desc">$ 0,00</dd>
                                 <dt class="col-7">Subtotal neto</dt><dd class="col-5 text-end" id="t_neto">$ 0,00</dd>
                                 <dt class="col-7">IVA</dt><dd class="col-5 text-end" id="t_iva">$ 0,00</dd>
-                                <dt class="col-7">Otros impuestos</dt><dd class="col-5 text-end"><input id="p_otros" class="form-control form-control-sm text-end" value="0" oninput="recalcularTotales()"></dd>
+                                <dt class="col-7"><label for="p_otros" class="mb-0">Otros impuestos</label></dt><dd class="col-5 text-end"><input id="p_otros" class="form-control form-control-sm text-end" value="0" oninput="recalcularTotales()"></dd>
                                 <dt class="col-7 fs-5 fw-bold">TOTAL GENERAL</dt><dd class="col-5 text-end fs-5 fw-bold" id="t_total">$ 0,00</dd>
                             </dl>
                         </div>
                     </div>
                     <div class="sgtl-bloque-titulo mt-4">Condiciones comerciales</div>
                     <div class="row g-2">
-                        <div class="col-md-4"><label class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
-                        <div class="col-md-4"><label class="form-label">Plazo de pago</label><input id="p_plazopago" class="form-control"></div>
-                        <div class="col-md-4"><label class="form-label">Validez</label><input id="p_validez" class="form-control"></div>
-                        <div class="col-12"><label class="form-label">Observaciones</label><textarea id="p_observaciones" class="form-control" rows="2"></textarea></div>
+                        <div class="col-md-4"><label for="p_formapago" class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
+                        <div class="col-md-4"><label for="p_plazopago" class="form-label">Plazo de pago</label><input id="p_plazopago" class="form-control"></div>
+                        <div class="col-md-4"><label for="p_validez" class="form-label">Validez</label><input id="p_validez" class="form-control"></div>
+                        <div class="col-12"><label for="p_observaciones" class="form-label">Observaciones</label><textarea id="p_observaciones" class="form-control" rows="2"></textarea></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -952,8 +952,16 @@
                 })
                 .catch(function () { mostrarMensajeProforma('No se pudo guardar la proforma. Revisá la conexión y probá de nuevo.', 'danger'); });
         }
+        // Generar consume un número de proforma: se confirma antes (§5.2).
         function generarProforma() {
             if (window.ProformaPlataforma && ProformaPlataforma.activo()) { ProformaPlataforma.generar(); return; }
+            SGTL.confirmar({
+                titulo: '¿Generar la proforma?',
+                mensaje: 'Se le asigna el próximo número de proforma y deja de ser un borrador.',
+                verbo: 'Generar'
+            }).then(function (hecho) { if (hecho) guardarYGenerarProforma(); });
+        }
+        function guardarYGenerarProforma() {
             // primero guardar, luego generar
             guardarBorrador(function (id) {
                 fetch(API_FAC + '/Proformas/' + id + '/Generar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
@@ -975,7 +983,7 @@
             var x = proformasPagina[id] || { Proforma_ID: id };
             SGTL.confirmar({
                 titulo: '¿Marcar ' + nombreProforma(x) + ' como aceptada?',
-                mensaje: 'Queda lista para emitir la factura. No vuelve a Generada.',
+                mensaje: 'Queda lista para emitir el comprobante. No vuelve a Generada.',
                 verbo: 'Marcar aceptada',
                 accion: function () {
                     return pedidoProforma('POST', API_FAC + '/Proformas/' + id + '/Estado', { Estado: 'Aceptada', Usuario: usuario() },
