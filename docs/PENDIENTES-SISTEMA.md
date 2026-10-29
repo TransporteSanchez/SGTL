@@ -80,6 +80,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | **Correr antes `database/viajes/04_adicionales_del_viaje.sql`**, recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
 | 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` después de la ronda 2 | **Decidido por Rocío (28/10):** las tres, cuando la reprueba corta y la ronda 2 den OK; las rondas 3 a 6 quedan anotadas para después | — | La reprueba corta y la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, cómo se pasa (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **La proforma sin FC no propone otro tipo: hecho en la Mac (28/10)** | Commit del 28/10, sin push | La proforma sin FC (§62, "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
+| 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
 
@@ -5032,3 +5033,47 @@ WHERE Comprobante_ID IN (53, 55);
 
 **Qué falta de la ronda 3:** lo de "Qué falta" del reporte. La parte E (puntos 8 a 12), cuando Facu confirme las siglas;
 G2 y P3, después de la ronda 2.
+
+---
+
+## 63. Tipo de comprobante predeterminado por uso — PROPUESTA (28/10), PARA VER CON FACU DESPUÉS DEL 29/10
+
+Rocío (28/10): "anotá la propuesta del tipo predeterminado en pendientes para verla con Facu después del jueves". Sale de la
+ronda 3 (§62): Facu renombró FC a FI para probar y Emitir comprobante desde una proforma propuso "D · Débito interno".
+Renombrar una sigla es un caso real, así que qué se propone al emitir no puede depender de la sigla. Para el 29/10 alcanza
+con el arreglo chico de la §62 (sin FC, no se propone otro).
+
+**Cómo está hoy (diseño de Facu, §44 a §48):**
+- Cada sigla es una fila de `TIPOS_COMPROBANTE` con un ID fijo (`TipoComp_ID`), su descripción, su impacto (deuda o
+  crédito) y "Es comprobante electrónico". Sus letras A y B son filas de `FACTURACION_TIPOS_COMPROBANTE`, con sucursal y
+  numerador.
+- Cambiar la sigla la cambia en cascada (`ON UPDATE CASCADE`) en comprobantes, movimientos, vínculos con proformas y
+  numeradores, y conserva los ID. FAC, ND, NC y REC son fijas.
+- Entre los tipos de deuda, nada distingue el comprobante del servicio de un débito; Facu lo anotó en la §48 ("El catálogo
+  todavía no distingue facturas internas de débitos internos"). Por eso cada pantalla propone una sigla escrita en el
+  código: la proforma, FC (`facturacion-proforma.js`, `tipoPropuesto`); Emitir crédito, C; y Emitir Débito, D (con ND si
+  no hay D) (`cuenta-corriente-clientes.js`, al cargar los tipos).
+
+**Propuesta:** en la sigla, como la descripción y el impacto, el dato **"Se propone en"**: Emitir desde una proforma,
+Emitir Débito, Emitir crédito o ninguno. Como queda en la fila de la sigla, renombrarla no lo cambia.
+1. **Base:** script nuevo `database/cuenta-corriente/19_…` (idempotente): una columna en `TIPOS_COMPROBANTE` que acepta
+   solo esos tres usos, con un índice único filtrado (una sigla por uso), y la marca inicial en FC, D y C si existen.
+2. **API** (`FacturacionConfiguracionController.cs`, con SQL directo, sin tocar el EDMX): los tres listados de tipos para
+   emitir (`tipos-emision-directa`, `-debito` y `-credito`) dicen cuál es el predeterminado. Al guardar un tipo, el uso
+   tiene que corresponder al impacto: la proforma y Débito, con una deuda; crédito, con un crédito. Como en los listados de
+   hoy, ND no va en la proforma y REC no va en crédito.
+3. **Pantallas:** Gestionar tipos de comprobante muestra y edita "Se propone en" (en el formulario y en el detalle del
+   tipo). La proforma y los modales de crédito y Débito proponen el marcado; si no hay ninguno, "Seleccioná un tipo",
+   salvo que haya un solo tipo.
+4. **Pruebas:** `tests/facturacion-proforma.test.js` y las de cuenta corriente que hoy esperan FC, C y D; una nueva para
+   la regla de la API.
+
+**Para decidir con Facu:**
+- Si "Se propone en" se puede cambiar en un tipo marcado como electrónico (hoy esa marca bloquea todo lo demás del tipo).
+- Si lo hace él en `facugodoy` o se hace en `rocionuvoli` y le llega cuando se pasen las ramas.
+- Si también sirve para Emitir comprobante directo (hoy ofrece todos los de deuda, D incluido, y no propone ninguno).
+
+**Probar en la VM** (cuando esté hecho): correr el `19` antes de recompilar; marcar FC para la proforma, renombrarlo y ver
+que se sigue proponiendo; quitarle la marca y ver "Seleccioná un tipo"; intentar marcar un crédito para Débito o dos siglas
+para el mismo uso (la API lo rechaza con el error debajo del campo); lo mismo en Emitir crédito y Emitir Débito. Con eso
+se completa también la E4 de la ronda 3 (cambiar la sigla de FC con viajes facturados).
