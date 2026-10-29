@@ -25,7 +25,8 @@ Antes de pasar todo a `main` y a las ramas de Facu y Fede, esta tanda tiene que 
    la mirada de usabilidad de la sección 1.
 
 **Decisión de Rocío (28/10, a la noche):** `facugodoy` y `fedemontenegro` ya se pasaron, con la API compilando sin errores.
-`main` se pasa cuando den OK **la reprueba corta de la ronda 1 y la parte Q de la ronda 2**, que se hacen primero. Las
+`main` se pasa cuando den OK **la reprueba corta de la ronda 1 y la parte Q de la ronda 2**, que se hacen primero. La
+reprueba corta ya dio OK el 28/10 (`docs/pruebas/2026-10-28-reprueba-ronda-1.md`): **falta solo la parte Q**. Las
 partes K, L y M de la ronda 2 y las rondas 3 a 6 se prueban después; están anotadas en la §61 de
 `docs/PENDIENTES-SISTEMA.md`.
 

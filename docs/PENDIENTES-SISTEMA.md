@@ -75,10 +75,10 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 55 | Ordenar columnas en choferes y camiones | Hecho en código; API compilada y pruebas locales OK | Incluido en `facugodoy` (27/10) | Ordenar, paginar y exportar desde Gestionar y Listar (§55) |
 | 56 | Versionar las variantes del manual y el script del PDF | Archivos incluidos; carga del PDF pendiente de revisión y ejecución | Incluido en `facugodoy` (27/10) | Revisar los Word y el resultado del script antes de aplicar (§56) |
 | 57 | Recuperar contraseña desde el login por e-mail | Implementado en código; scripts de esquema y configuración pendientes | Incluido en `facugodoy` (28/10) | Aplicar seguridad 02 y e-mail 07, configurar el perfil exclusivo y probar la entrega real (§57) |
-| 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 | Commits del 28/10 | Reprueba corta antes de la ronda 2 (instructivo del 28/10, §3) y lo del correo cuando se guarde la contraseña SMTP (§59) |
+| 59 | Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios, grupos y el usuario del chofer) | **Probada** (`docs/pruebas/2026-10-28-pruebas-ronda-1.md`): 38 OK, 7 fallas, 7 no probados. Arreglos F1, F4, F6, F7, DS2, DS5, DS8 y M11 hechos el 28/10 y **reprobados OK** (`docs/pruebas/2026-10-28-reprueba-ronda-1.md`: 15 OK, 1 no probado) | Commits del 28/10 | Lo del correo cuando se guarde la contraseña SMTP (§59) |
 | 58 | WhatsApp en viajes (Fede): reenviar la hoja de ruta, avisar al cancelar, eliminar, reactivar y cambiar el chofer | **Integrado el 28/10**, subido, pendiente de probar en la VM; faltan las plantillas en Meta | Merge de `fedemontenegro` en `rocionuvoli` (28/10) | `whatsapp/02` aplicado (28/10); recompilar y la ronda 6 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, aparte y al final (§58) |
 | 60 | Adicionales del viaje de un cliente directo, como en Rukas: esperas, descarga y repaletizado (módulos de la tabla de tarifas) y vuelta vacía (un porcentaje del flete que elige administración) | **Hecho en la Mac (28/10)** con API simulada: versión reducida para mostrarla el 29/10 | Commits del 28/10 | `database/viajes/04_adicionales_del_viaje.sql` **aplicado por Rocío (28/10, "OK" en las dos)**; recompilar y la parte Q de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md` (§60) |
-| 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la parte Q de la ronda 2 y la reprueba corta den OK (cambio de Rocío, 28/10); K, L y M y las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La parte Q y la reprueba corta de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
+| 61 | Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` | **`facugodoy` y `fedemontenegro` pasados (28/10)**, con la VM compilando sin errores y sin probar la ronda 2 (cambio de Rocío). `main`, cuando la parte Q de la ronda 2 y la reprueba corta den OK (cambio de Rocío, 28/10); **la reprueba ya dio OK**, falta Q. K, L y M y las rondas 3 a 6 quedan anotadas para después | **Pusheado** a `rocionuvoli`, `facugodoy` y `fedemontenegro` (28/10) | La parte Q de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`; después, `main` (§61) |
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | Anotado (28/10) | — | Ver §64 |
@@ -4816,7 +4816,7 @@ compiló la API; las pruebas de Node de viajes dan OK.
 
 ---
 
-## 59. Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios y el chofer) — PROBADA; ARREGLOS HECHOS, FALTA REPROBAR
+## 59. Ronda 1 de pruebas del 28/10 (login, sesión, recupero, usuarios y el chofer) — PROBADA; ARREGLOS HECHOS Y REPROBADOS OK (28/10)
 
 Reporte: `docs/pruebas/2026-10-28-pruebas-ronda-1.md` (VM sobre `3c37749`). 52 controles: 38 OK, 7 fallas y 7 no probados.
 La API compila sin errores y pasan las 80 pruebas de Node y la de PowerShell. Usuarios, roles, grupos, los permisos de
@@ -4859,9 +4859,16 @@ el sistema. De fondo: una clave común fuera del repo, con Facu.
   carga la apariencia) y M13 (dos pruebas imprimen acentos rotos).
 - M10 (ejemplos con nombres del equipo): con los placeholders (§41, Para más adelante).
 - Hora en UTC en Auditoría y en `CHOFERES.Fecha_Alta`: §2.
+- De la reprueba (baja; la pantalla no hace estas llamadas): `api/Usuarios/Buscar` con página o tamaño negativos responde
+  500 (mejor 400 o la página 1), y `api/Choferes/ValidarDNI/abc` dice que el DNI es válido con letras (que la API también
+  valide el formato).
 
-**Probar en la VM:** la reprueba corta del principio de la ronda 2 de `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, y los
-puntos del correo (7, 12, 13, 14, 17, 24 y 26) cuando la contraseña SMTP esté guardada desde la VM.
+**Reprueba corta OK (28/10, la VM sobre `78d2ef5`):** `docs/pruebas/2026-10-28-reprueba-ronda-1.md`. 16 controles: 15 OK
+y 1 no probado (el correo, F2). Compila con 0 errores y pasan las 80 pruebas de Node y la de PowerShell. F1, F7, F6, M11,
+DS2, DS5, DS8 y F4 funcionan; DS4 sigue pendiente, como estaba anotado. Sigue valiendo para el código posterior: lo que
+cambió después de `78d2ef5` no toca login, sesión, usuarios, choferes ni la hoja de ruta.
+
+**Probar en la VM:** los puntos del correo (7, 12, 13, 14, 17, 24 y 26) cuando la contraseña SMTP esté guardada desde la VM.
 
 **Limpieza:** mferreyra (usuario 18) y el grupo "Coordinación de tráfico" (9) quedan hasta terminar todas las rondas (sirven
 para probar permisos); después, con el SQL del reporte. El grupo viejo "PRUEBA-CLAUDE 20/10" (7) se borra antes del 29/10,
@@ -4941,7 +4948,7 @@ tomando a Rukas como referencia. Es la versión reducida de la propuesta del §4
 
 ---
 
-## 61. Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` — FACU Y FEDE PASADOS (28/10); `main` ESPERA LA PARTE Q Y LA REPRUEBA CORTA
+## 61. Pasar `rocionuvoli` a `main`, `facugodoy` y `fedemontenegro` — FACU Y FEDE PASADOS (28/10); `main` ESPERA LA PARTE Q
 
 Rocío (28/10): "cuando la ronda 2 dé OK pasamos rocionuvoli a main, facugodoy y fedemontenegro, y anotamos en pendientes
 las rondas que faltan". Así las cuatro ramas quedan iguales para la reunión del 29/10. **`main` pasa sin todas las
@@ -4959,6 +4966,8 @@ pasamos main, y K, L y M quedan para después". La ronda 2 entera son unos 60 co
 3); Q (adicionales, lo que se muestra el 29/10) y la reprueba corta de la ronda 1, cerca de hora y media. Las dos, de
 `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, OK en la VM (`database/viajes/04_…` ya está corrido). Si hay fallas, se
 arreglan en `rocionuvoli`, se reprueban y recién ahí se pasa; los arreglos también se les vuelven a pasar a Facu y Fede.
+**La reprueba corta ya estaba hecha y dio OK** (28/10, §59, `docs/pruebas/2026-10-28-reprueba-ronda-1.md`), y lo que
+cambió después no toca lo que probó: **para `main` falta solo la parte Q.**
 
 **Al 28/10**, ninguna de las tres tiene commits que no estén en `rocionuvoli` (`facugodoy` está 70 atrás,
 `fedemontenegro` 108 y `main` 109): pasan por avance directo, sin conflictos. Lo último de Facu (login, `5642c4e`) y de
@@ -5135,10 +5144,10 @@ Rocío (28/10, a la noche): "lo de volver a fc anotalo como pendiente para maña
 prueba para el profe y dejar acomodada la ddbb". Orden sugerido: primero lo que cambia la base (1 y 3) y al final los
 casos, sobre los datos ya acomodados.
 
-- [ ] **0. Antes que todo, si no se hizo el 28/10: la parte Q de la ronda 2 y la reprueba corta de la ronda 1** (Rocío,
-  28/10: "primero la parte Q y la reprueba corta; con eso OK pasamos main, y K, L y M quedan para después"). Cerca de hora
-  y media en la VM, con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`. Con las dos OK, se pasa `main` (§61). K, L y M, después
-  de la reunión.
+- [ ] **0. Antes que todo, si no se hizo el 28/10: la parte Q de la ronda 2** (Rocío, 28/10: "primero la parte Q y la
+  reprueba corta; con eso OK pasamos main, y K, L y M quedan para después"). La reprueba corta ya dio OK el 28/10 (§59).
+  Q lleva cerca de una hora en la VM, con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`. Con Q OK, se pasa `main` (§61). K, L
+  y M, después de la reunión.
 
 - [ ] **1. Volver FI a FC (Facu).** En Gestionar tipos de comprobante, la sigla FI vuelve a FC (las letras A y B). Facu la
   renombró para probar el 28/10 a las 21:42, durante la ronda 3 (§62); con FI, Emitir comprobante desde una proforma no
