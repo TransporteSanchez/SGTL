@@ -20,12 +20,14 @@ actualizar los Excel.
 | `proforma-rukas-demo-caso1-todo-ok (PROFORMA NRO 990210).xlsx` | 990210 | **Todo coincide** | Los 2 "Coincide", Generar proforma habilitado. Generar → Aceptada → emitir el comprobante: neto $ 858.202 + IVA $ 180.222,42 = **$ 1.038.424,42** |
 | `proforma-rukas-demo-caso2-reclamo-a-rukas (PROFORMA NRO 990220).xlsx` | 990220 | **Rukas está mal: hay que reclamar** | El 990005 viene a $ 400.000 y SGTL da $ 429.101: "Importe distinto", en "Para revisar". Registrar reclamo, marcar el 990005 y guardar: "Esperando a Rukas" |
 | `proforma-rukas-demo-caso2-reclamo-a-rukas-corregido (PROFORMA NRO 990220).xlsx` | 990220 | Rukas ya corrigió | Reemplazar Excel en el borrador 990220: el reclamo se cierra solo y los 2 "Coincide" |
-| `proforma-rukas-demo-caso3-corregir-viaje-en-sgtl (PROFORMA NRO 990230).xlsx` | 990230 | **SGTL está mal: hay que corregir el viaje** | El Excel está bien. **Preparación:** en el viaje #24 cambiar el N° de transporte de 990005 a **990050** (simula un error de carga). Al importar: 990005 "Sin viaje relacionado". El ícono del camión abre Gestionar viajes: corregir el #24 a 990005 y guardar; al volver a la pestaña de la proforma se vuelve a controlar solo y quedan los 2 "Coincide". **Eliminar el borrador** al terminar |
+| `proforma-rukas-demo-caso3-corregir-viaje-en-sgtl (PROFORMA NRO 990230).xlsx` | 990230 | **SGTL está mal: hay que corregir el viaje** | Usa **otro viaje, el #28** (19/10/2026, Sede Quilmes → Sede Banfield, del presupuesto 1, **$ 1.157.520**). El Excel trae el número correcto, 990006; en SGTL el #28 quedó cargado con **990060** (el error de carga, ya preparado el 29/10: no hay que tocar nada antes). Al importar: 990006 "Sin viaje relacionado". El ícono del camión abre Gestionar viajes: corregir el #28 a 990006 y guardar; al volver a la pestaña de la proforma se vuelve a controlar solo y coincide. Se puede generar y emitir: neto $ 1.157.520 + IVA $ 243.079,20 = **$ 1.400.599,20** |
 
-**Orden para la reunión:** 1) caso 3 (importar, corregir el viaje, volver a controlar y eliminar el borrador); 2) caso 2
-(importar, registrar el reclamo, reemplazar por el corregido, generar y emitir el comprobante). El caso 1 sirve para
-probar el circuito antes de la reunión: si se genera, no se puede volver a usar con los mismos viajes, así que para
-probarlo alcanza con importarlo, ver los 2 "Coincide" y eliminar el borrador.
+**Orden para la reunión:** el caso 3 usa otro viaje, así que los casos van en cualquier orden y sin eliminar
+borradores. Sugerido: 1) caso 2 (importar, registrar el reclamo, reemplazar por el corregido, generar y emitir el
+comprobante); 2) caso 3 (importar, corregir el viaje, volver a controlar y, si se quiere, generar y emitir). El caso 1 usa
+los mismos viajes que el 2: sirve para probar antes de la reunión importándolo, viendo los 2 "Coincide" y **eliminando el
+borrador** (si se genera, el 14 y el 24 ya no sirven para el caso 2). Si el caso 3 se probó antes, el #28 tiene que
+volver a quedar con 990060.
 
 ### Archivos anteriores (viajes 25 y 26)
 
