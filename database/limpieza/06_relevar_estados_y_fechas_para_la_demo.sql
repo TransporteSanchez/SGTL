@@ -120,7 +120,9 @@ LEFT JOIN #ProformaDelViaje pf ON pf.Viaje_ID = v.Viaje_ID
 LEFT JOIN #ComprobanteDeLaProforma cp ON cp.ProformaID = pf.Proforma_ID
 CROSS APPLY (SELECT NULLIF(CONCAT(
     CASE WHEN v.Fecha_Fin < v.Fecha_Inicio THEN N'Termina antes de empezar: corregir las fechas en Editar viaje. ' END,
+    -- Con plataforma no hay entrega: pasa de Registrado a Listo para facturar sin fecha.
     CASE WHEN v.Estado IN (N'Entregado', N'Facturado', N'Sin_carga') AND v.Fecha_Entrega IS NULL
+              AND ISNULL(c.Tipo_Cliente, N'Directo') <> N'Con_plataforma'
          THEN N'Sin fecha de entrega: volverlo un paso atrás y adelante otra vez con la fecha. ' END,
     CASE WHEN CAST(v.Fecha_Entrega AS date) > @Hoy THEN N'Entrega futura: corregir la fecha en Cambiar estado. ' END,
     CASE WHEN CAST(v.Fecha_Entrega AS date) < CAST(v.Fecha_Inicio AS date) THEN N'Entrega antes del inicio: corregir la fecha. ' END,
