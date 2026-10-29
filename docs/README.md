@@ -51,6 +51,9 @@ Los scripts SQL no son documentación: van en `database/<módulo>/NN_descripcion
 
 ### Equipo
 
+- `docs/equipo/RELEVAMIENTO-USUARIOS.docx` — funcionamiento técnico de usuarios, grupos, permisos, contraseñas y sesiones, con métodos y rutas para la defensa del proyecto.
+- `docs/equipo/RELEVAMIENTO-CONFIGURACION.docx` — funcionamiento técnico de e-mail, WhatsApp, empresa, galpones y apariencia, con métodos, integraciones y límites del código actual.
+- `docs/equipo/RELEVAMIENTO-CUENTA-CORRIENTE-Y-TIPOS.docx` — funcionamiento técnico de Cuenta corriente y Gestionar tipos de comprobante, con métodos, rutas de API, reglas y referencias al código para la defensa del proyecto.
 - `docs/equipo/PROCEDIMIENTO-DESARROLLO-ROCIO.md` — cómo se trabaja entre la Mac y la VM Windows.
 - `docs/equipo/FLUJO-GIT.md` — circuito de ramas (`rocionuvoli`, `main`, `master`, ramas de Facu y Fede).
 - `docs/equipo/INSTRUCTIVO-PRUEBAS-VIAJES-Y-PROFORMAS.md` — paso a paso para probar a mano viajes, proforma propia y proforma de Rukas (con los tres casos), y guion para la presentación.
