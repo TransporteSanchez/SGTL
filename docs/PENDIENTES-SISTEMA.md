@@ -5220,6 +5220,23 @@ casos, sobre los datos ya acomodados.
   `database/limpieza/06_relevar_estados_y_fechas_para_la_demo.sql` (solo lectura: qué estados faltan, fechas que no
   cierran y numeración contra fechas). **Para decidir con los resultados de la 06 (tablas 5 y 7):** la facturación con
   fechas de estos días (A, recomendada) o desde cero en orden de fechas (B, con Facu), sección 3 de la guía.
+  **Hecho el 29/10 (Rocío, en SSMS y por pantalla), con lo mínimo para que se vea bien:**
+  - Superpuestos: SQL del #11 (fin 06/10 16:00), otro camión al #45, otro chofer al #36, el #37 eliminado y el #42
+    cancelado. La `02` da solo el par #5 y #6 (julio, cerrados).
+  - Viajes pasados cerrados según la `05` (entregados, Sin carga, cancelados y QUICKFOOD a Listo para facturar con sus
+    números; los que sobraban, eliminados). Distribuidora del Sur pasó a Directo, con sus tres viajes cancelados y sin
+    plataforma. Un chofer Pai renombrado; Montenegro y Godoy quedan (decisión de Rocío).
+  - PF-00000001 (La Serena, #43 y #44) y PF-00000003 (QUICKFOOD, #25 y #26) estaban Facturadas sin comprobante (Facu los
+    borró el 26/10): volvieron a **Aceptada** y sus viajes a Entregado y Listo para facturar, con registro en Auditoría.
+  - Conceptos de cuatro comprobantes de la ronda 3 cambiados ("Factura a cliente sin proforma", "Comprobante interno de
+    prueba", "NC prueba" y "Debito de prueba") en `COMPROBANTES` y en sus movimientos: sin borrar ni cambiar importes.
+  - **Fechas de la facturación: opción A** (la tabla 7 de la `06` da el 28/10 como último número de cada serie): todo lo
+    que se emita, con fecha de hoy; no hay deuda vencida para mostrar.
+  - Demo de Rukas con Excel nuevos (`docs/pruebas/datos/README.md`, "Demo del 29/10"): #14 y #24 para todo OK y reclamo,
+    y el #28 ya cargado con 990060 para el error de SGTL.
+  - Quedan como están: PF-00000005 con el viaje #5, los comprobantes de Logística Pampeana y Lácteos Monte Grande, el
+    presupuesto 11 y la numeración. Opcionales: una proforma generada (#47 y #48), un borrador (#33), los dos viajes del
+    30/10 (1ª y 2ª vuelta) y el de QUICKFOOD del 31/10.
   - Viajes, clientes, choferes, camiones y gasoil: `docs/equipo/INSTRUCTIVO-LIMPIEZA-VIAJES.md` (§41, punto 21), con las
     consultas `database/limpieza/05_…`, `database/verificacion/02_…` y `database/limpieza/01_…`.
   - Lo de la ronda 3 (§62, "Limpieza"): anular la PF-00000005 (libera el viaje #5), eliminar CR B, CR A y el Numerador
