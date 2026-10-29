@@ -1114,7 +1114,8 @@
                 }
                 // "$ 483.898,00 sin IVA · Tarifas … · Furgón 2019 en adelante, fija hasta 130 km, 1ª vuelta: $ 645.535,00 · sin carga
                 // (60 %): …" (M15 de la prueba en la VM del 25/10).
-                var html = '<strong>' + SGTL.monto(total) + '</strong><span>sin IVA · ' + SGTL.escapar(base.detalle)
+                // El espacio después del monto: en #fijoTarifa (texto) separa "sin IVA"; en #tarifaInfo (flex) no cambia nada.
+                var html = '<strong>' + SGTL.monto(total) + '</strong> <span>sin IVA · ' + SGTL.escapar(base.detalle)
                     + (partes.length ? ': ' + SGTL.monto(base.importe) + ' · ' + SGTL.escapar(partes.join(' · ')) : '') + '</span>';
                 if (rutaFija()) $('#fijoTarifa').html(html); else setTarifaInfo(html, 'ok');
             };
@@ -1613,7 +1614,8 @@
                 var plataforma = clienteConPlataforma();
                 if (viajeTarifaEditable) aviso = 'Listo para facturar: completás los números y podés corregir la tarifa y los km.';
                 // También se cargan los adicionales de un directo (Rocío, 28/10; antes, la estadía). Sin carga es un estado.
-                else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó' : 'Listo para facturar'))
+                else aviso = (estado === 'En_viaje' ? 'Ya salió' : (estado === 'Entregado' ? 'Ya se entregó'
+                        : (estado === 'Sin_carga' ? 'Quedó sin carga' : 'Listo para facturar')))
                     + ': se completan ' + (plataforma ? 'los números de referencia' : 'el remito y los adicionales')
                     + (estado === 'En_viaje' ? ', y se puede cambiar el camión o el chofer. Si cambia el recorrido, registrá otro viaje.' : '.');
             } else if (presupuestoDelViaje) {
@@ -2214,8 +2216,14 @@
             SGTL.ajax({ url: API_VIAJES + '/Tarifario/Vigente', type: 'GET', data: { fecha: String(v.Fecha_Inicio || '').substring(0, 10), clienteId: v.ClienteID || 0 } })
                 .catch(function () { return null; }).then(function (t) {
                 if (!t || !viajeEstado || viajeEstado.Viaje_ID !== v.Viaje_ID) return;
+                // Los adicionales fijos (esperas, descarga…) se siguen cobrando sin carga; la vuelta vacía no (§60).
+                var sinCarga = redondear(v.Importe_Base * t.Falso_Flete_Porcentaje / 100);
+                var adicionales = v.Estadia_Modulos > 0 && t.Estadia_Modulo > 0 ? redondear(t.Estadia_Modulo * v.Estadia_Modulos) : 0;
                 tarjeta.find('.sgtl-opcion-estado-texto').first().text('Llegó al origen y no había carga. Se cobra el ' + porcentaje(t.Falso_Flete_Porcentaje)
-                    + ' de la tarifa: ' + SGTL.monto(redondear(v.Importe_Base * t.Falso_Flete_Porcentaje / 100)) + '.'
+                    + ' de la tarifa' + (adicionales > 0
+                        ? ' (' + SGTL.monto(sinCarga) + ') más los adicionales (' + SGTL.monto(adicionales) + '): '
+                            + SGTL.monto(redondear(sinCarga + adicionales)) + '.'
+                        : ': ' + SGTL.monto(sinCarga) + '.')
                     + (v.Vuelta_Vacia_Porcentaje > 0 ? ' Se quita la vuelta vacía: no llegó al destino.' : ''));
             });
         }

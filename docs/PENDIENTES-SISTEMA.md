@@ -4966,12 +4966,18 @@ viajes trae el importe con los adicionales.
   `Sgtlauditcontext.SerializarCambios`, no contar como cambio un texto que solo difiere en espacios al final (las columnas
   `char` `Distancia_KM`, `Num_Remito` y `Num_de_Carga`). El `"Viaje_ID": "0"` del alta es de toda la Auditoría (los valores
   se toman antes de que la base asigne el ID). Es C#: compilar y probar en la VM. **Después del 29/10.**
-- **Textos de la pantalla (solo front, Ctrl+F5), para hacer ya:**
-  - "$ 478.917,80sin IVA" en Completar el viaje: falta el espacio (`mostrarImporte`, `#fijoTarifa`).
-  - Arriba de Completar el viaje de un viaje Sin carga dice "Listo para facturar: …": pasa a "Quedó sin carga: se
+- **Textos de la pantalla (solo front, Ctrl+F5). Hechos en la Mac (29/10), falta verlos en la VM** (Rocío: "hacé ya los
+  tres textos de pantalla de Sin carga"); probados con la API simulada y en `tests/viajes-flujo.test.js`:
+  - "$ 478.917,80sin IVA" en Completar el viaje: falta el espacio (`mostrarImporte`, `#fijoTarifa`). **Hecho:** un
+    espacio entre el importe y "sin IVA"; en Editar (`#tarifaInfo`, que es flex) no cambia nada.
+  - Arriba de Completar el viaje de un viaje Sin carga dice "Listo para facturar: …". **Hecho:** "Quedó sin carga: se
     completan el remito y los adicionales.".
-  - La tarjeta Sin carga, con adicionales: "Se cobra el 60 % de la tarifa ($ 285.763,80) más los adicionales
-    ($ 193.154,00): $ 478.917,80.".
+  - La tarjeta Sin carga, con adicionales. **Hecho:** "Se cobra el 60 % de la tarifa ($ 285.763,80) más los adicionales
+    ($ 193.154,00): $ 478.917,80."; sin adicionales, como antes ("Se cobra el 60 % de la tarifa: $ …").
+  **Cómo probarlo** (`git pull` y Ctrl+F5, sin recompilar): el #54 (Sin carga, con la espera) → Completar el viaje: arriba
+  "Quedó sin carga: …" y en Tarifa "$ 478.917,80 sin IVA · …". Un viaje directo En viaje con una espera → Cambiar
+  estado: la tarjeta Sin carga con "más los adicionales"; cancelar sin guardar. El aviso al guardar sigue diciendo "(60 %
+  de la tarifa)": es de la API, va con F1.
 - **Textos de la API (C#, recompilar), junto con F1:** el aviso al guardar Sin carga ("Se cobra $ 478.917,80: el 60 % de
   la tarifa más los adicionales.") y el de la cantidad igual al de la pantalla ("Cantidad de 1 a 99.").
 - **Después del 29/10:** la vuelta vacía deshabilitada en la lista de un viaje sin carga, con el motivo; la estadía de los

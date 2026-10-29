@@ -185,5 +185,11 @@ const scriptSinCarga = leer('database/viajes/03_viaje_sin_carga.sql');
 assert.ok(/IF COL_LENGTH\('dbo\.VIAJES', 'Sin_Carga_Observacion'\) IS NULL\s+ALTER TABLE dbo\.VIAJES ADD Sin_Carga_Observacion/.test(scriptSinCarga),
     '10: el script agrega la observación (idempotente)');
 
+// Textos de Sin carga con adicionales (parte Q de la ronda 2, §60).
+assert.ok(/' de la tarifa' \+ \(adicionales > 0\s+\? ' \(' \+ SGTL\.monto\(sinCarga\) \+ '\) más los adicionales \('/.test(pantalla),
+    '60: la tarjeta Sin carga suma los adicionales al porcentaje de la tarifa');
+assert.ok(/estado === 'Sin_carga' \? 'Quedó sin carga'/.test(pantalla), '60: Completar el viaje de uno sin carga no dice "Listo para facturar"');
+assert.ok(pantalla.includes("'</strong> <span>sin IVA · '"), '60: un espacio entre el importe y "sin IVA"');
+
 console.log('OK: flujo de los viajes (entrega parcial o con rechazo, fecha de entrega, eliminar con gastos, evidencia, viaje cancelado, '
     + 'cambio de camión o chofer en viaje, viajes de días futuros y viaje sin carga)');
