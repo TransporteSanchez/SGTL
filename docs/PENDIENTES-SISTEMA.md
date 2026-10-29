@@ -82,6 +82,7 @@ Rama de trabajo: `rocionuvoli`. Para ver qué falta subir: `git status` y `git l
 | 62 | Ronda 3 de pruebas del 28/10 (facturación: tipos de comprobante, cuenta corriente y proformas) | **Interrumpida** (`docs/pruebas/2026-10-28-pruebas-ronda-3.md`): 35 OK, 5 fallas, 19 no probados; Facu renombró siglas (FC → FI) mientras se probaba. Causas y propuestas en §62, para que decida Rocío. **Hechos en la Mac (28/10): la proforma sin FC no propone otro tipo, el importe escrito del recibo no cambia al tildar (F3), Generar proforma pide confirmación (F1), los textos de Anular (F6), "emitir el comprobante" (M5) y los `for` de la proforma (DS7).** Quedan F2 (mirar los datos), F4 y F5 (con Facu) y DS1 a DS6 y DS8 (después del 29/10) | Commits del 28/10, sin push | Los arreglos (§62, cada "Cómo probarlo"); lo que falta de la ronda 3, cuando FC vuelva a FC (§62) |
 | 63 | Tipo de comprobante predeterminado por uso (proforma, débito, crédito), para que renombrar una sigla no cambie qué se propone al emitir | **Propuesta (28/10)**, para ver con Facu después del 29/10: es su módulo y cambia la base | — | Ver §63 |
 | 65 | Documento de la tesis (Word y PDF) actualizado a la versión 2.1, sin rastros de IA ni notas internas | **Hecho (28/10)**, con las observaciones de la tutoría del 20/10; falta que el equipo revise los puntos de HU54 a HU73 | **Pusheado** (`d388d4f`, 29/10); en `main`, `facugodoy` y `fedemontenegro` con la §61 | Abrir el PDF y leer las partes nuevas (ver §65) |
+| 66 | Ver detalle en las pantallas de gestión: cuando Editar está deshabilitado (un presupuesto aceptado, por ejemplo) no hay forma de ver el registro desde Gestionar, y presupuestos no tiene Listar | **Mejora anotada (29/10)**, para decidir después de la reunión; presupuestos es de Facu | — | Ver §66 |
 | 64 | **Para el jueves 29/10, antes de la reunión:** volver FI a FC (Facu), dejar acomodada la base, WhatsApp en viajes (ronda 6) y armar los casos de prueba para el profe | **FI volvió a FC (29/10).** La base, con la limpieza de viajes y `docs/equipo/INSTRUCTIVO-DATOS-DEMO.md` (un caso por estado, fechas que cierran; consulta `06`) | Commit del 29/10, sin push | Correr la `05` y la `06` y seguir las guías (§64, punto 3) |
 
 **Tanda de pruebas del 28/10:** todo lo subido que no tiene reporte (las integraciones de Facu y Fede, §44 a §58, y lo nuestro del 24 al 28/10: §29, §36, §37, §38, §40 punto 7, §41 y §43) se prueba con `docs/equipo/INSTRUCTIVO-PRUEBAS-28-10.md`, en seis rondas. Queda afuera la tanda 2 de tarifas (§39), que espera la limpieza de la §38.
@@ -5293,3 +5294,30 @@ que se entienda hecho por una IA, los comentarios y las notas internas (es el do
 **Cómo revisarlo:** abrir el PDF y leer, en este orden, el historial (p. 5), requerimientos (p. 21 a 23), alcances y
 límites (p. 25 a 28), backlog y velocidad (p. 31 a 36), sprints 24 y 25 (p. 51 a 56), actores y diagramas (p. 57 a 66),
 pruebas (p. 67 a 73) y anexos (p. 78 y 79). Con Alt+F9 en el Word no tiene que aparecer ningún campo INCLUDEPICTURE.
+
+---
+
+## 66. Ver detalle en las pantallas de gestión — MEJORA ANOTADA (29/10), PARA DESPUÉS DE LA REUNIÓN
+
+Rocío (29/10, limpiando la base): "cuando no podés editar un presupuesto, por ejemplo, no podés acceder al detalle y no hay
+un listar"; y lo mismo en los demás módulos de gestión, donde el detalle solo se ve yendo a Listar.
+
+**Cómo está hoy:** las filas de Gestionar camiones, choferes, clientes, orígenes y destinos, tarifas, grupos y permisos,
+presupuestos y la configuración de facturación y de e-mail no tienen el ojo (Ver detalle): empiezan en Editar. El detalle
+está en Listar (camiones, choferes, clientes, usuarios, viajes y comprobantes). Cuando Editar queda deshabilitado con su
+motivo, desde Gestionar no se puede ver el registro. Presupuestos no tiene Listar: lo único en solo lectura es Ver PDF.
+Gestionar viajes, usuarios, proformas y cuenta corriente sí tienen el ojo.
+
+**Propuesta:** el ojo como primer botón de la fila en todas las pantallas de gestión, siempre habilitado, como ya dice el
+orden del §1.4 del design system (Ver detalle · Editar · …). Abre el mismo Ver detalle que el Listar de esa entidad
+(armado con los bloques de su formulario, §6.2, solo "Cerrar" en el pie); donde no hay Listar, uno nuevo con el mismo
+criterio:
+- **Presupuestos (Facu):** "Ver detalle del presupuesto", con los bloques del formulario, el estado en el título y, si
+  generó un viaje, el enlace al viaje. Ver PDF sigue siendo aparte.
+- **Orígenes y destinos, tarifas, grupos y permisos:** Ver detalle con lo mismo que muestra Editar, en texto.
+- Lo que no se puede editar sigue deshabilitado con el motivo, como hoy: no se cambia Editar por una vista de solo lectura.
+
+**Para decidir:** si va en todas las de gestión o solo donde Editar se puede deshabilitar (presupuestos, viajes, tarifas
+con viajes); si presupuestos necesita además un Listar presupuestos (menú y permiso, como pide `AGENTS.md`); y avisarle a
+Facu, que presupuestos y la configuración de facturación son suyas.
+
