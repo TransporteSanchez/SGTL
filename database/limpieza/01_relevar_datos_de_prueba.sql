@@ -2,7 +2,8 @@
    Relevamiento de textos de prueba que se ven en pantalla (solo lectura).
 
    Busca en todas las columnas de texto de las tablas de dbo los valores con "prueba", "preuba", "claude", "test",
-   "asd", "dfg" o "qwe", y muestra tabla, columna, valor, cuántas filas lo tienen y sus IDs. No mira la auditoría, los
+   "asd", "dfg" o "qwe", y desde el 29/10 también "agustin", "bobadilla", "pai" (palabra entera), "powerful" y
+   "demo", y muestra tabla, columna, valor, cuántas filas lo tienen y sus IDs. No mira la auditoría, los
    adjuntos ni los historiales, ni columnas con claves, imágenes o archivos (no muestra secretos).
 
    Usado el 23/10/2026 antes de la reunión con la profe: salieron los choferes 9 y 10 y el usuario 6 (ya corregidos) y
@@ -19,7 +20,11 @@ SELECT @sql = STRING_AGG(CAST(
   + CASE WHEN pk.COLUMN_NAME IS NULL THEN N'NULL'
          ELSE N'LEFT(STRING_AGG(CAST(' + QUOTENAME(pk.COLUMN_NAME) + N' AS nvarchar(max)), N'', ''), 200)' END
   + N' FROM dbo.' + QUOTENAME(c.TABLE_NAME) + N' WHERE '
-  + REPLACE(N'{c} LIKE N''%prueba%'' OR {c} LIKE N''%preuba%'' OR {c} LIKE N''%claude%'' OR {c} LIKE N''%test%'' OR {c} LIKE N''%asd%'' OR {c} LIKE N''%dfg%'' OR {c} LIKE N''%qwe%''',
+  + REPLACE(N'{c} LIKE N''%prueba%'' OR {c} LIKE N''%preuba%'' OR {c} LIKE N''%claude%'' OR {c} LIKE N''%test%'' OR {c} LIKE N''%asd%'' OR {c} LIKE N''%dfg%'' OR {c} LIKE N''%qwe%'''
+       -- Nombres del equipo y de pruebas viejas (29/10). "Pai" solo como palabra entera, para no traer "país".
+         + N' OR {c} LIKE N''%agustin%'' OR {c} LIKE N''%agustín%'' OR {c} LIKE N''%bobadilla%'''
+         + N' OR {c} LIKE N''%powerful%'' OR {c} LIKE N''%demo%'''
+         + N' OR {c} = N''pai'' OR {c} LIKE N''pai %'' OR {c} LIKE N''% pai'' OR {c} LIKE N''% pai %'' OR {c} LIKE N''%, pai%''',
             N'{c}', QUOTENAME(c.COLUMN_NAME))
   + N' GROUP BY LEFT(CAST(' + QUOTENAME(c.COLUMN_NAME) + N' AS nvarchar(400)), 400);'
   AS nvarchar(max)), NCHAR(10))
