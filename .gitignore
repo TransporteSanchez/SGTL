@@ -381,4 +381,5 @@ assets.zip
 
 fix para corregir.txt
 
-.vscode
+.vscode/*
+!.vscode/settings.json
