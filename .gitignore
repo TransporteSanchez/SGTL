@@ -383,3 +383,7 @@ fix para corregir.txt
 
 .vscode/*
 !.vscode/settings.json
+
+# Claves locales: cada uno los arma copiando los .ejemplo.config
+WebApi_TransporteSanchez/conexiones.config
+WebApi_TransporteSanchez/claves.config
