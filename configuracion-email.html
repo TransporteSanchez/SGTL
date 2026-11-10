@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sánchez - Gestionar e-mail</title>
+    <link rel="shortcut icon" href="assets/compiled/svg/ts-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/compiled/css/app.css">
+    <link rel="stylesheet" href="assets/compiled/css/iconly.css">
+</head>
+<body>
+    <script src="assets/static/js/initTheme.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
+
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
+                            <i class="bi bi-justify fs-3" aria-hidden="true"></i>
+                        </a>
+                        <div id="header-container"></div>
+                    </div>
+                </nav>
+            </header>
+
+            <main class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4" aria-labelledby="tituloEmail">
+                    <div class="card rounded">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h1 id="tituloEmail" class="card-title h5 mb-1">Gestionar e-mail</h1>
+                                <p class="text-muted mb-0">Administrá los perfiles SMTP y asigná un perfil a cada módulo.</p>
+                            </div>
+                            <button type="button" id="btnNuevaConfiguracion" class="btn btn-success">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar perfil SMTP
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div id="emailFeedback" class="alert d-none" role="status"></div>
+                            <div class="table-responsive">
+                                <table id="emailConfigTable" class="table table-hover align-middle mb-0" aria-label="Perfiles SMTP">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Servicio</th>
+                                            <th scope="col">Perfil</th>
+                                            <th scope="col">Remitente</th>
+                                            <th scope="col">Servidor SMTP</th>
+                                            <th scope="col">Seguridad</th>
+                                            <th scope="col">Contraseña</th>
+                                            <th scope="col" class="text-end">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="emailConfigTableBody">
+                                        <tr><td colspan="7" class="text-center text-muted py-4">Cargando perfiles…</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <p id="emailEmptyState" class="text-muted text-center my-3 d-none" role="status">
+                                Todavía no hay perfiles SMTP registrados.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-lg-6">
+                            <form id="formAsignacionFacturacion" class="card rounded h-100 mb-0"
+                                  data-modulo="facturacion" aria-labelledby="tituloFacturacion">
+                                <div class="card-header">
+                                    <h2 id="tituloFacturacion" class="card-title h6 mb-1">Perfil para Facturación</h2>
+                                    <p class="text-muted mb-0">Perfil que se usa para enviar comprobantes.</p>
+                                </div>
+                                <div class="card-body">
+                                    <label for="emailFacturacionService" class="form-label">Perfil SMTP</label>
+                                    <select id="emailFacturacionService" name="Service" class="form-select" required disabled>
+                                        <option value="">Seleccioná un perfil</option>
+                                    </select>
+                                    <p class="alert mt-3 mb-0 d-none" data-feedback role="status"></p>
+                                </div>
+                                <div class="card-footer text-end">
+                                    <button type="submit" class="btn btn-primary" disabled>Guardar asignación</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <form id="formAsignacionPresupuestos" class="card rounded h-100 mb-0"
+                                  data-modulo="presupuestos" aria-labelledby="tituloPresupuestos">
+                                <div class="card-header">
+                                    <h2 id="tituloPresupuestos" class="card-title h6 mb-1">Perfil para Presupuestos</h2>
+                                    <p class="text-muted mb-0">Perfil que se usa para enviar presupuestos.</p>
+                                </div>
+                                <div class="card-body">
+                                    <label for="emailPresupuestosService" class="form-label">Perfil SMTP</label>
+                                    <select id="emailPresupuestosService" name="Service" class="form-select" required disabled>
+                                        <option value="">Seleccioná un perfil</option>
+                                    </select>
+                                    <p class="alert mt-3 mb-0 d-none" data-feedback role="status"></p>
+                                </div>
+                                <div class="card-footer text-end">
+                                    <button type="submit" class="btn btn-primary" disabled>Guardar asignación</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <footer><div id="footer-container"></div></footer>
+        </div>
+    </div>
+
+    <div class="modal fade" id="emailConfigModal" tabindex="-1"
+         aria-labelledby="emailConfigModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <form id="emailConfigForm" class="modal-content">
+                <div class="modal-header">
+                    <h2 id="emailConfigModalTitle" class="modal-title h5">Registrar perfil SMTP</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="emailFormFeedback" class="alert d-none" role="status"></div>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="emailNombre" class="form-label">Nombre del perfil</label>
+                            <input id="emailNombre" name="Name" type="text" class="form-control" maxlength="100" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="emailUsuario" class="form-label">Correo remitente</label>
+                            <input id="emailUsuario" name="CredentialFromMailAddres" type="email"
+                                   class="form-control" maxlength="100" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="emailServidor" class="form-label">Servidor SMTP</label>
+                            <input id="emailServidor" name="SmtpHost" type="text" class="form-control"
+                                   maxlength="100" placeholder="smtp.empresa.com" spellcheck="false" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="emailPuerto" class="form-label">Puerto</label>
+                            <input id="emailPuerto" name="SmtpPort" type="number" class="form-control"
+                                   min="1" max="65535" step="1" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="emailSeguridad" class="form-label">Seguridad de la conexión SMTP</label>
+                            <select id="emailSeguridad" name="ModoSeguridad" class="form-select" required>
+                                <option value="" selected disabled>Seleccioná un modo</option>
+                                <option value="StartTls">STARTTLS</option>
+                                <option value="SslOnConnect">TLS desde la conexión</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label for="emailClave" class="form-label">Contraseña SMTP</label>
+                            <input id="emailClave" name="CredentialFromMailPass" type="password"
+                                   class="form-control" maxlength="180" autocomplete="new-password"
+                                   aria-describedby="emailPasswordInfo" required>
+                            <div id="emailPasswordInfo" class="form-text">Ingresá la contraseña para registrar el perfil.</div>
+                        </div>
+                        <div class="col-12">
+                            <label for="emailAsunto" class="form-label">Asunto predeterminado</label>
+                            <input id="emailAsunto" name="Asunto" type="text" class="form-control" maxlength="250">
+                        </div>
+                        <div class="col-12">
+                            <label for="emailCuerpoHtml" class="form-label">Cuerpo HTML predeterminado</label>
+                            <textarea id="emailCuerpoHtml" name="CuerpoHtml" class="form-control" rows="5"></textarea>
+                        </div>
+                    </div>
+                    <p class="text-muted small mt-3 mb-0">Después de guardar, podés enviar un correo de prueba desde la tabla.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnGuardarConfiguracion" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="emailTestModal" tabindex="-1"
+         aria-labelledby="emailTestModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form id="emailTestForm" class="modal-content">
+                <div class="modal-header">
+                    <h2 id="emailTestModalTitle" class="modal-title h5">Enviar correo de prueba</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="emailTestFeedback" class="alert d-none" role="status"></div>
+                    <p class="text-muted">El correo de prueba usa el perfil guardado.</p>
+                    <label for="emailPrueba" class="form-label">Correo de destino</label>
+                    <input id="emailPrueba" name="EmailDestino" type="email" class="form-control"
+                           maxlength="254" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" id="btnEnviarPrueba" class="btn btn-primary">Enviar prueba</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="emailDeleteModal" tabindex="-1" aria-labelledby="emailDeleteModalTitle"
+         aria-describedby="emailDeleteConfirmacion" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 id="emailDeleteModalTitle" class="modal-title h5">Eliminar perfil SMTP</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="emailDeleteConfirmacion" class="mb-0">¿Querés eliminar este perfil SMTP?</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" id="btnEliminarConfiguracion" class="btn btn-danger">Eliminar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/configuracion-email.js"></script>
+</body>
+</html>
+    
