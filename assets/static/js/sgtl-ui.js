@@ -115,6 +115,22 @@
         return porDefecto;
     }
 
+    var API = 'http://localhost:50222/api';
+
+    function encabezados(otros) {
+        var lista = Object.assign({}, otros);
+        var token = localStorage.getItem('token');
+        if (token) lista.Authorization = 'Bearer ' + token;
+        return lista;
+    }
+
+    if (window.jQuery) {
+        window.jQuery(document).ajaxSend(function (evento, xhr, opciones) {
+            var autorizacion = encabezados().Authorization;
+            if (autorizacion && opciones.url.indexOf(API) === 0) xhr.setRequestHeader('Authorization', autorizacion);
+        });
+    }
+
     function ajax(opciones, porDefecto) {
         return Promise.resolve(window.jQuery.ajax(opciones)).catch(function (xhr) {
             var error = new Error('Error ' + xhr.status + ' en ' + opciones.url);
@@ -930,6 +946,8 @@
         modal: modal,
         mensajeError: mensajeError,
         ajax: ajax,
+        api: API,
+        encabezados: encabezados,
         procesando: procesando,
         marcarError: marcarError,
         limpiarError: limpiarError,
