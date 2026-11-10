@@ -60,6 +60,20 @@ function markActiveSidebarItem() {
   }
   
   function buildFallbackSidebarHtml() {
+    const menuConfiguracion = normalizaPerm(localStorage.getItem('userRole')) === 'admin'
+    ? `
+      <li class="sidebar-item has-sub">
+          <a href="#" class="sidebar-link">
+              <i class="bi bi-gear" aria-hidden="true"></i>
+              <span>Configuración</span>
+          </a>
+          <ul class="submenu">
+              <li class="submenu-item">
+                  <a href="configuracion-email.html" class="submenu-link">Gestionar e-mail</a>
+              </li>
+          </ul>
+      </li>`
+    : '';
     return `
   <div class="sidebar-wrapper active">
       <div class="sidebar-header position-relative">
@@ -85,6 +99,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar facturas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar facturas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
+               ${menuConfiguracion}
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-richtext"></i><span>Documentación</span></a><ul class="submenu"><li class="submenu-item"><a href="#" class="submenu-link">Manual de usuario</a></li><li class="submenu-item"><a href="#" class="submenu-link">Otros</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-contenido.html" class="sidebar-link" id="gestionarContenidoBtn"><i class="bi bi-columns"></i><span>Gestionar contenido</span></a></li>
