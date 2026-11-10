@@ -7,7 +7,6 @@
     --bs-border-radius-sm: .5rem;
     --bs-border-radius-lg: .875rem;
     --sgtl-texto: #1d2939;
-    --sgtl-texto-contenido: #344054;
     --sgtl-texto-suave: #667085;
     --sgtl-borde: #e7eaf0;
     --sgtl-borde-campo: #d9dee7;
@@ -113,8 +112,7 @@
 .sgtl-orden-boton:focus-visible,
 .sgtl-info:focus-visible,
 .sgtl-filtro-borrar:focus-visible,
-.sgtl-resumen-item:focus-visible,
-.sgtl-pagination .page-link:focus-visible {
+.sgtl-resumen-item:focus-visible {
     outline: 2px solid var(--sgtl-accion);
     outline-offset: 2px;
 }
@@ -289,77 +287,6 @@ body .bi::before {
 .cc-tab.active {
     border-bottom-color: var(--sgtl-accion);
     color: var(--sgtl-accion);
-}
-
-.sgtl-pagination {
-    --bs-pagination-padding-x: 0;
-    --bs-pagination-padding-y: 0;
-    --bs-pagination-focus-box-shadow: none;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-left: auto;
-    color: var(--sgtl-texto-suave);
-    font-size: .85rem;
-}
-
-.sgtl-pagination .page-link {
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    font-size: 1.35rem;
-}
-
-.sgtl-pagination .sgtl-page-info {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    white-space: nowrap;
-}
-
-.sgtl-pagination .sgtl-page-info label {
-    color: var(--sgtl-texto-suave);
-    font-size: .85rem;
-    font-weight: 400;
-}
-
-.sgtl-pagination .sgtl-page-size {
-    min-width: 64px;
-    padding: .25rem .5rem;
-    border: 1px solid var(--sgtl-borde-campo);
-    border-radius: .25rem;
-    background-color: #fff;
-    color: var(--sgtl-texto-contenido);
-    cursor: pointer;
-}
-
-.sgtl-pagination .sgtl-page-range {
-    margin: 0 18px 0 4px;
-    color: var(--sgtl-texto);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-
-.sgtl-pagination .sgtl-page-action {
-    display: flex;
-    margin: 0;
-}
-
-@media (max-width: 575.98px) {
-    .sgtl-pagination {
-        justify-content: center;
-    }
-
-    .sgtl-pagination .sgtl-page-info {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .sgtl-pagination .sgtl-page-range {
-        margin-right: 2px;
-    }
 }
 
 .badge.estado-gris,

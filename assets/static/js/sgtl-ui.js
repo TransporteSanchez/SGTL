@@ -575,13 +575,43 @@
         };
     }
 
+    var TAMANIOS_PAGINA = [5, 10, 15, 0];
+
+    function botonPagina(destino, deshabilitado, icono, texto) {
+        return '<li class="page-item' + (deshabilitado ? ' disabled' : '') + '">' +
+            '<button type="button" class="page-link" data-pagina="' + destino + '" aria-label="' + texto + '"' + (deshabilitado ? ' disabled' : '') + '>' +
+            '<i class="bi ' + icono + '" aria-hidden="true"></i></button></li>';
+    }
+
     function paginacion(contenedor, opciones) {
         var el = elemento(contenedor);
         if (!el) return;
-        var total = Number(opciones && opciones.total) || 0;
-        if (total) el.style.removeProperty('display');
-        else el.style.setProperty('display', 'none', 'important');
-        if (total && window.PaginacionSGTL) window.PaginacionSGTL.render(el, opciones);
+        opciones = opciones || {};
+        var total = Number(opciones.total) || 0;
+        el.classList.toggle('d-none', !total);
+        if (!total) return;
+        var elegido = opciones.tamanioPagina == null ? 15 : Number(opciones.tamanioPagina);
+        var tamanio = elegido || total;
+        var paginas = Math.ceil(total / tamanio);
+        var pagina = Math.min(Math.max(Number(opciones.pagina) || 1, 1), paginas);
+        var opcionesTamanio = TAMANIOS_PAGINA.map(function (valor) {
+            return '<option value="' + valor + '"' + (valor === elegido ? ' selected' : '') + '>' + (valor || 'Todos') + '</option>';
+        }).join('');
+
+        el.className = 'pagination pagination-sm justify-content-end align-items-center flex-wrap gap-2 mt-3 mb-0';
+        el.innerHTML =
+            '<li class="me-3"><label class="d-flex align-items-center gap-2 small text-muted mb-0">Filas por página' +
+            '<select class="form-select form-select-sm w-auto">' + opcionesTamanio + '</select></label></li>' +
+            '<li class="small text-nowrap me-2">' + ((pagina - 1) * tamanio + 1) + '-' + Math.min(pagina * tamanio, total) + ' de ' + total + '</li>' +
+            botonPagina(pagina - 1, pagina === 1, 'bi-chevron-left', 'Página anterior') +
+            botonPagina(pagina + 1, pagina === paginas, 'bi-chevron-right', 'Página siguiente');
+        el.onclick = function (evento) {
+            var boton = evento.target.closest('[data-pagina]');
+            if (boton && opciones.alCambiarPagina) opciones.alCambiarPagina(Number(boton.dataset.pagina));
+        };
+        el.onchange = function (evento) {
+            if (opciones.alCambiarTamanio) opciones.alCambiarTamanio(Number(evento.target.value));
+        };
     }
 
     var tabla = {
