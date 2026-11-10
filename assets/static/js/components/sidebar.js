@@ -3,8 +3,6 @@ const isDesktop = (windowObj) => windowObj.innerWidth > 1200;
 function setSubmenuState(item, open) {
   const submenu = item.querySelector('.submenu');
   if (!submenu) return;
-  // The theme CSS uses max-height: var(--submenu-height) for open state.
-  // Ensure it is always set, otherwise submenu remains visually closed.
   const links = submenu.querySelectorAll('.submenu-link');
   let totalHeight = 0;
   links.forEach((link) => {
@@ -13,7 +11,7 @@ function setSubmenuState(item, open) {
   // Usar scrollHeight (altura real del contenido) para no recortar el último ítem,
   // más un pequeño margen de seguridad.
   const alturaFinal = Math.max(totalHeight, submenu.scrollHeight) + 8;
-  submenu.style.setProperty('--submenu-height', `${alturaFinal}px`);
+  submenu.style.maxHeight = open ? `${alturaFinal}px` : '';
   submenu.classList.toggle('submenu-open', open);
   submenu.classList.toggle('submenu-closed', !open);
 }
@@ -52,7 +50,7 @@ function bindGlobalButtons() {
     if (burger) {
       e.preventDefault();
       ensureCollapseStyle();
-      document.body.classList.toggle('js-sidebar-collapsed');
+      if (isDesktop(window)) document.body.classList.toggle('js-sidebar-collapsed');
       return;
     }
     const hide = e.target.closest && e.target.closest('.sidebar-hide');
@@ -62,6 +60,9 @@ function bindGlobalButtons() {
       if (!sidebar) return;
       sidebar.classList.remove('active');
       sidebar.classList.add('inactive');
+      const fondo = document.querySelector('.sidebar-backdrop');
+      if (fondo) fondo.remove();
+      document.body.style.overflowY = '';
     }
   });
   window.__sidebarButtonsBound = true;
