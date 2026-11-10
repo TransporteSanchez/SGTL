@@ -651,6 +651,280 @@
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
 
+    function dosCifras(n) {
+        return String(n).padStart(2, '0');
+    }
+
+    function aFecha(valor) {
+        if (valor == null || valor === '') return null;
+        if (!(valor instanceof Date)) {
+            var soloFecha = /^(\d{4})-(\d{2})-(\d{2})$/.exec(valor);
+            valor = soloFecha ? new Date(soloFecha[1], soloFecha[2] - 1, soloFecha[3]) : new Date(String(valor));
+        }
+        return isNaN(valor.getTime()) ? null : valor;
+    }
+
+    function fecha(valor, opciones) {
+        var d = aFecha(valor);
+        if (!d) return '';
+        opciones = opciones || {};
+        var texto = dosCifras(d.getDate()) + '/' + dosCifras(d.getMonth() + 1) + '/' + d.getFullYear();
+        if (opciones.hora || opciones.segundos) texto += ' ' + dosCifras(d.getHours()) + ':' + dosCifras(d.getMinutes());
+        if (opciones.segundos) texto += ':' + dosCifras(d.getSeconds());
+        return texto;
+    }
+
+    function fechaISO(valor) {
+        var d = aFecha(valor);
+        return d ? d.getFullYear() + '-' + dosCifras(d.getMonth() + 1) + '-' + dosCifras(d.getDate()) : '';
+    }
+
+    function leerFecha(texto) {
+        var partes = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(texto == null ? '' : texto).trim());
+        var d = partes && new Date(partes[3], partes[2] - 1, partes[1]);
+        return d && fecha(d) === partes[0] ? d : null;
+    }
+
+    var FORMATO_MONTO = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+    var FORMATO_MONTO_REDONDO = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    var FORMATO_MONTO_CAMPO = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    var FORMATO_KM = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+    function numeroConFormato(valor, formato) {
+        var n = Number(valor);
+        return valor == null || valor === '' || !isFinite(n) ? '' : formato.format(n);
+    }
+
+    function monto(valor, opciones) {
+        return numeroConFormato(valor, opciones && opciones.sinDecimales ? FORMATO_MONTO_REDONDO : FORMATO_MONTO);
+    }
+
+    function km(valor) {
+        return numeroConFormato(valor, FORMATO_KM);
+    }
+
+    var MONTO_ARGENTINO = /^(\d+|\d{1,3}(?:\.\d{3})+)(?:,(\d{0,2}))?$/;
+    var MONTO_PUNTO_DECIMAL = /^(\d+)\.(\d{1,2})$/;
+
+    function montoCentavos(valor) {
+        if (typeof valor === 'number') {
+            var centavos = Math.round(valor * 100);
+            return isFinite(valor) && valor >= 0 && Math.abs(valor * 100 - centavos) < 0.000001 ? centavos : null;
+        }
+        var texto = String(valor == null ? '' : valor).replace(/\s/g, '');
+        var partes = MONTO_ARGENTINO.exec(texto) || MONTO_PUNTO_DECIMAL.exec(texto);
+        if (!partes) return null;
+        var entero = Number(partes[1].replace(/\./g, ''));
+        if (entero > 90071992547409) return null;
+        return entero * 100 + Number(((partes[2] || '') + '00').slice(0, 2));
+    }
+
+    function formatearMontoCentavos(centavos) {
+        var valor = Number(centavos);
+        return Number.isInteger(valor) && valor >= 0 ? FORMATO_MONTO_CAMPO.format(valor / 100) : '';
+    }
+
+    function enlazarMascaraMonto(objetivo) {
+        var input = elemento(objetivo);
+        if (!input) return null;
+        input.addEventListener('blur', function () {
+            var centavos = montoCentavos(input.value);
+            if (centavos != null) input.value = formatearMontoCentavos(centavos);
+        });
+        return input;
+    }
+
+    function calendario(objetivo, base, opciones) {
+        var input = elemento(objetivo);
+        if (!input || typeof window.flatpickr !== 'function') return null;
+        if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) base.locale = 'es';
+        var fp = window.flatpickr(input, Object.assign(base, opciones));
+        if (fp.calendarContainer) fp.calendarContainer.addEventListener('focusin', function (evento) { evento.stopPropagation(); });
+        return fp;
+    }
+
+    function selectorFecha(objetivo, opciones) {
+        return calendario(objetivo, { dateFormat: 'd/m/Y', allowInput: true }, opciones);
+    }
+
+    function rangoFechas(objetivo, opciones) {
+        return calendario(objetivo, {
+            mode: 'range',
+            showMonths: window.innerWidth < 768 ? 1 : 2,
+            altInput: true,
+            altFormat: 'd/m/Y',
+            dateFormat: 'Y-m-d',
+            allowInput: true,
+            altInputClass: 'form-control input sgtl-rango-fechas'
+        }, opciones);
+    }
+
+    function valorRango(objetivo) {
+        var input = elemento(objetivo);
+        var fp = input && input._flatpickr;
+        if (!fp || !fp.selectedDates.length) return null;
+        return { desde: fechaISO(fp.selectedDates[0]), hasta: fechaISO(fp.selectedDates[fp.selectedDates.length - 1]) };
+    }
+
+    var REVISA_CAMPOS = 'Revisá los campos marcados.';
+
+    function avisoFormulario(objetivo, texto, detalle) {
+        var aviso = elemento(objetivo);
+        if (!aviso) return;
+        aviso.textContent = texto || '';
+        if (texto && detalle && detalle.length) {
+            aviso.insertAdjacentHTML('beforeend', '<ul class="sgtl-aviso-lista">' + detalle.map(function (linea) {
+                return '<li>' + escapar(linea) + '</li>';
+            }).join('') + '</ul>');
+        }
+        aviso.style.display = texto ? '' : 'none';
+        aviso.classList.toggle('d-none', !texto);
+        if (texto === REVISA_CAMPOS) seVaSinCamposMarcados(aviso);
+    }
+
+    function seVaSinCamposMarcados(aviso) {
+        var contenedor = aviso.closest('.modal-content, form, .card') || aviso.parentElement;
+        if (!contenedor || aviso.dataset.sgtlSeVa) return;
+        aviso.dataset.sgtlSeVa = 'true';
+        function siYaNoHay() {
+            setTimeout(function () {
+                if (aviso.textContent === REVISA_CAMPOS && !contenedor.querySelector('.is-invalid')) avisoFormulario(aviso, '');
+            }, 0);
+        }
+        ['input', 'change', 'focusout'].forEach(function (tipo) { contenedor.addEventListener(tipo, siYaNoHay); });
+    }
+
+    function revisarFormulario(form, aviso) {
+        var contenedor = elemento(form);
+        var primero = contenedor && contenedor.querySelector('.is-invalid');
+        avisoFormulario(aviso, primero ? REVISA_CAMPOS : '');
+        if (primero) primero.focus();
+        return !primero;
+    }
+
+    function reiniciarFormulario(form, aviso) {
+        var contenedor = elemento(form);
+        if (!contenedor) return;
+        if (typeof contenedor.reset === 'function') contenedor.reset();
+        contenedor.querySelectorAll('.is-invalid').forEach(function (campo) { campo.classList.remove('is-invalid'); });
+        contenedor.querySelectorAll('.invalid-feedback').forEach(function (feedback) { feedback.textContent = ''; });
+        avisoFormulario(aviso, '');
+    }
+
+    function validador(reglas) {
+        function campoDe(regla) {
+            return document.getElementById(regla.id);
+        }
+
+        function errorDe(regla) {
+            var campo = campoDe(regla);
+            if (!campo || campo.disabled) return '';
+            var valor = campo.value.trim();
+            if (!valor) return regla.requerido || '';
+            if (regla.regex && !regla.regex.test(valor)) return regla.mensaje || '';
+            return (regla.validar && regla.validar(valor, campo)) || campo.dataset.errorRemoto || '';
+        }
+
+        function validar(regla) {
+            var campo = campoDe(regla);
+            if (!campo) return true;
+            var mensaje = errorDe(regla);
+            if (mensaje) marcarError(campo, mensaje);
+            else limpiarError(campo);
+            return !mensaje;
+        }
+
+        reglas.forEach(function (regla) {
+            var campo = campoDe(regla);
+            if (!campo) return;
+            if (campo.tagName === 'SELECT') {
+                campo.addEventListener('change', function () { validar(regla); });
+                return;
+            }
+
+            function validarSiHaceFalta() {
+                if (campo.value.trim() || campo.classList.contains('is-invalid')) validar(regla);
+            }
+
+            campo.addEventListener('blur', validarSiHaceFalta);
+            campo.addEventListener('change', validarSiHaceFalta);
+            campo.addEventListener('input', function () {
+                if (regla.soloNumeros) campo.value = campo.value.replace(/[^0-9]/g, '');
+                if (regla.soloLetras) campo.value = campo.value.replace(/[^A-Za-záéíóúÁÉÍÓÚüÜñÑ\s´]/g, '');
+                if (regla.mayusculas) campo.value = campo.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+                if (regla.max && campo.value.length > regla.max) campo.value = campo.value.slice(0, regla.max);
+                delete campo.dataset.errorRemoto;
+                if (campo.classList.contains('is-invalid') && !errorDe(regla)) limpiarError(campo);
+            });
+        });
+
+        return {
+            validarTodo: function () {
+                return reglas.map(validar).every(Boolean);
+            },
+            validar: function (id) {
+                var regla = reglas.find(function (r) { return r.id === id; });
+                return regla ? validar(regla) : true;
+            },
+            reiniciar: function () {
+                reglas.forEach(function (regla) {
+                    var campo = campoDe(regla);
+                    if (campo) delete campo.dataset.errorRemoto;
+                });
+            }
+        };
+    }
+
+    function cambiosSinGuardar(objetivo) {
+        var ventana = elemento(objetivo);
+        var cuerpo = ventana && ventana.querySelector('.modal-body');
+        if (!cuerpo) return { limpiar: function () { } };
+        var hayCambios = false;
+        cuerpo.insertAdjacentHTML('afterbegin',
+            '<div class="alert alert-light-warning color-warning d-none" role="alert" data-sin-cambios>' +
+            '<div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>' +
+            '<button type="button" class="btn btn-sm btn-light-secondary" data-sgtl="seguir">Seguir editando</button>' +
+            '<button type="button" class="btn btn-sm btn-danger ms-1" data-sgtl="descartar">Descartar cambios</button></div>');
+        var aviso = cuerpo.firstElementChild;
+
+        function limpiar() {
+            hayCambios = false;
+            aviso.classList.add('d-none');
+        }
+
+        function marcar(evento) {
+            if (!evento.target.disabled && !evento.target.closest('[data-sin-cambios]')) hayCambios = true;
+        }
+
+        ventana.addEventListener('input', marcar);
+        ventana.addEventListener('change', marcar);
+        ventana.addEventListener('hide.bs.modal', function (evento) {
+            if (evento.target !== ventana || !hayCambios) return;
+            evento.preventDefault();
+            aviso.classList.remove('d-none');
+            cuerpo.scrollTop = 0;
+        });
+        ventana.addEventListener('hidden.bs.modal', function (evento) {
+            if (evento.target === ventana) limpiar();
+        });
+        aviso.querySelector('[data-sgtl="seguir"]').addEventListener('click', function () {
+            aviso.classList.add('d-none');
+            ventana.focus();
+        });
+        aviso.querySelector('[data-sgtl="descartar"]').addEventListener('click', function () {
+            limpiar();
+            modal(ventana, 'hide');
+        });
+        return { limpiar: limpiar };
+    }
+
+    function textoRegistro(usuarioAlta, fechaAlta, usuarioModi, fechaModi) {
+        var partes = [];
+        if (usuarioAlta || fechaAlta) partes.push('Registrado' + (usuarioAlta ? ' por ' + usuarioAlta : '') + (fechaAlta ? ' el ' + fechaAlta : ''));
+        if (fechaModi && fechaModi !== fechaAlta) partes.push('Modificado' + (usuarioModi ? ' por ' + usuarioModi : '') + ' el ' + fechaModi);
+        return partes.join(' · ');
+    }
+
     window.SGTL = {
         escapar: escapar,
         modal: modal,
@@ -675,6 +949,23 @@
         tabla: tabla,
         filtros: filtros,
         descargarCSV: descargarCSV,
+        fecha: fecha,
+        fechaISO: fechaISO,
+        leerFecha: leerFecha,
+        monto: monto,
+        km: km,
+        montoCentavos: montoCentavos,
+        formatearMontoCentavos: formatearMontoCentavos,
+        enlazarMascaraMonto: enlazarMascaraMonto,
+        selectorFecha: selectorFecha,
+        rangoFechas: rangoFechas,
+        valorRango: valorRango,
+        avisoFormulario: avisoFormulario,
+        revisarFormulario: revisarFormulario,
+        reiniciarFormulario: reiniciarFormulario,
+        validador: validador,
+        cambiosSinGuardar: cambiosSinGuardar,
+        textoRegistro: textoRegistro,
         toastExito: function (mensaje) { mostrarAviso('exito', mensaje); },
         toastError: function (mensaje) { mostrarAviso('error', mensaje); }
     };
