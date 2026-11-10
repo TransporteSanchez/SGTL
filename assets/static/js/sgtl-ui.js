@@ -209,7 +209,7 @@
             '<div class="modal-header"><h5 class="modal-title" id="sgtlConfirmarTitulo"></h5>' +
             '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button></div>' +
             '<div class="modal-body">' +
-            '<div class="alert alert-light-danger color-danger d-none" role="alert" data-sgtl="error"></div>' +
+            '<div class="alert alert-light-danger d-none" role="alert" data-sgtl="error"></div>' +
             '<p class="mb-0" data-sgtl="mensaje"></p>' +
             '<div class="mt-3 d-none" data-sgtl="detalle"></div>' +
             '<div class="mt-3 d-none" data-sgtl="motivo">' +
@@ -881,7 +881,7 @@
         if (!cuerpo) return { limpiar: function () { } };
         var hayCambios = false;
         cuerpo.insertAdjacentHTML('afterbegin',
-            '<div class="alert alert-light-warning color-warning d-none" role="alert" data-sin-cambios>' +
+            '<div class="alert alert-light-warning d-none" role="alert" data-sin-cambios>' +
             '<div class="mb-2">Tenés cambios sin guardar. Si cerrás, se pierden.</div>' +
             '<button type="button" class="btn btn-sm btn-light-secondary" data-sgtl="seguir">Seguir editando</button>' +
             '<button type="button" class="btn btn-sm btn-danger ms-1" data-sgtl="descartar">Descartar cambios</button></div>');
