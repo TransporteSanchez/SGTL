@@ -407,6 +407,7 @@
     <Compile Include="Controllers\EmailAccesoController.cs" />
     <Compile Include="Controllers\EmailGestionPerfilesController.cs" />
     <Compile Include="Controllers\EmailServidorController.cs" />
+    <Compile Include="Controllers\FacturacionComprobantesConfiguracion.cs" />
     <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
