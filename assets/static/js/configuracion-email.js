@@ -1,7 +1,7 @@
 (() => {
     "use strict";
 
-    const API = "http://localhost:50222/api/EmailServidor";
+    const API = SGTL.api + "/EmailServidor";
     const porId = id => document.getElementById(id);
 
     async function pedir(ruta = "", { method = "GET", body, aceptar404 = false } = {}) {
@@ -19,7 +19,7 @@
                 body: body === undefined ? undefined : JSON.stringify(body)
             });
         } catch {
-            throw new Error("No se pudo contactar a la API. Comprobá que IIS Express esté en ejecución.");
+            throw new Error("No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.");
         }
 
         if (respuesta.status === 401) throw new Error("Tu sesión no es válida. Volvé a iniciar sesión.");
@@ -29,7 +29,7 @@
         if (!respuesta.ok) {
             const errores = Object.values(datos?.ModelState || {}).flat().filter(Boolean);
             throw new Error(errores.join(" ") || datos?.error || datos?.Message ||
-                "La API devolvió HTTP " + respuesta.status + ".");
+                "No se pudo completar la operación. Probá de nuevo.");
         }
         return datos;
     }
@@ -52,7 +52,7 @@
 
         if (!window.bootstrap?.Modal) {
             tabla.replaceChildren();
-            aviso(avisoPagina, "danger", "No se pudo cargar Bootstrap. Revisá que assets/compiled/js/app.js esté disponible.");
+            aviso(avisoPagina, "danger", "No se pudo cargar la pantalla. Recargala y probá de nuevo.");
             return;
         }
 
@@ -162,7 +162,7 @@
 
         async function cargarPerfiles() {
             const datos = await pedir();
-            if (!Array.isArray(datos)) throw new Error("La API no devolvió una lista de perfiles.");
+            if (!Array.isArray(datos)) throw new Error("No se pudieron cargar los perfiles SMTP.");
 
             perfiles = datos;
             renderizarPerfiles();
@@ -332,7 +332,7 @@
             window.loadHeader().catch(error => console.warn("No se pudo cargar el encabezado.", error));
         }
         if (typeof window.loadFooter === "function") window.loadFooter();
-                fetch("http://localhost:50222/api/GestionContenido/1")
+        fetch(SGTL.api + "/GestionContenido/1")
             .then(respuesta => {
                 if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
                 return respuesta.json();
