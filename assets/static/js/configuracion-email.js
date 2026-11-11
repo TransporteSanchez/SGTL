@@ -42,7 +42,6 @@
     }
 
     document.addEventListener("DOMContentLoaded", async () => {
-        const avisoPagina = porId("emailFeedback");
         const tabla = porId("emailConfigTableBody");
         const formPerfil = porId("emailConfigForm");
         const formPrueba = porId("emailTestForm");
@@ -52,18 +51,12 @@
 
         if (!window.bootstrap?.Modal) {
             tabla.replaceChildren();
-            aviso(avisoPagina, "danger", "No se pudo cargar la pantalla. Recargala y probá de nuevo.");
+            SGTL.toastError("No se pudo cargar la pantalla. Recargala y probá de nuevo.");
             return;
         }
 
         const modalPerfil = prepararModal("emailConfigModal", "btnGuardarConfiguracion", "emailFormFeedback");
         const modalPrueba = prepararModal("emailTestModal", "btnEnviarPrueba", "emailTestFeedback");
-        const feedbackBaja = document.createElement("div");
-        feedbackBaja.className = "alert mt-3 mb-0 d-none";
-        feedbackBaja.setAttribute("role", "alert");
-        porId("emailDeleteConfirmacion").after(feedbackBaja);
-        const modalBaja = prepararModal("emailDeleteModal", "btnEliminarConfiguracion");
-        modalBaja.feedback = feedbackBaja;
 
         const asignaciones = Array.from(document.querySelectorAll("form[data-modulo]"), form => ({
             form,
@@ -78,15 +71,11 @@
         let perfiles = [];
         let idEdicion = null;
         let idPrueba = null;
-        let idBaja = null;
         let cargandoEdicion = false;
 
         function prepararModal(idModal, idBoton, idFeedback) {
             const elemento = porId(idModal);
             const boton = porId(idBoton);
-            elemento.addEventListener("hide.bs.modal", evento => {
-                if (boton.disabled) evento.preventDefault();
-            });
             return {
                 instancia: window.bootstrap.Modal.getOrCreateInstance(elemento),
                 boton,
@@ -96,7 +85,7 @@
 
         async function operarEnModal(modal, operacion) {
             if (modal.boton.disabled) return;
-            modal.boton.disabled = true;
+            const listo = SGTL.procesando(modal.boton);
             aviso(modal.feedback);
             let completada = false;
             try {
@@ -105,7 +94,7 @@
             } catch (error) {
                 aviso(modal.feedback, "danger", error.message);
             } finally {
-                modal.boton.disabled = false;
+                listo();
                 if (completada) modal.instancia.hide();
             }
         }
@@ -128,24 +117,11 @@
 
                 const acciones = fila.insertCell();
                 acciones.className = "text-end";
-                const grupo = document.createElement("div");
-                grupo.className = "d-inline-flex flex-wrap justify-content-end gap-1";
-
-                for (const [accion, texto, variante] of [
-                    ["editar", "Editar", "primary"],
-                    ["probar", "Enviar prueba", "success"],
-                    ["eliminar", "Eliminar", "danger"]
-                ]) {
-                    const boton = document.createElement("button");
-                    boton.type = "button";
-                    boton.className = "btn btn-sm btn-outline-" + variante;
-                    boton.dataset.accion = accion;
-                    boton.dataset.id = String(perfil.Es_id);
-                    boton.textContent = texto;
-                    grupo.append(boton);
-                }
-
-                acciones.append(grupo);
+                acciones.innerHTML = SGTL.accionesFila([
+                    SGTL.botonFila("editar", { id: perfil.Es_id }),
+                    SGTL.botonFila("enviar", { id: perfil.Es_id, texto: "Enviar prueba", icono: "bi-send" }),
+                    SGTL.botonFila("eliminar", { id: perfil.Es_id })
+                ]);
                 return fila;
             });
 
@@ -199,6 +175,7 @@
                 if (asignacion.boton.disabled) return;
 
                 const service = Number(asignacion.selector.value);
+                const listo = SGTL.procesando(asignacion.boton);
                 asignacion.guardando = true;
                 ajustarAsignacion(asignacion);
                 aviso(asignacion.feedback);
@@ -206,10 +183,11 @@
                 try {
                     const datos = await pedir(asignacion.ruta, { method: "PUT", body: { Service: service } });
                     asignacion.selector.value = String(datos?.Service ?? service);
-                    aviso(asignacion.feedback, "success", "Se guardó la asignación.");
+                    SGTL.toastExito("Se guardó la asignación.");
                 } catch (error) {
-                    aviso(asignacion.feedback, "danger", error.message);
+                    SGTL.toastError(error.message);
                 } finally {
+                    listo();
                     asignacion.guardando = false;
                     ajustarAsignacion(asignacion);
                 }
@@ -240,11 +218,11 @@
         }
 
         async function refrescarTrasCambio(mensaje) {
+            SGTL.toastExito(mensaje);
             try {
                 await cargarPerfiles();
-                aviso(avisoPagina, "success", mensaje);
             } catch {
-                aviso(avisoPagina, "warning", mensaje + " No se pudo actualizar la lista. Recargá la página.");
+                SGTL.toastError("No se pudo actualizar la lista. Recargá la página.");
             }
         }
 
@@ -259,32 +237,37 @@
             const ruta = "/" + id;
             if (boton.dataset.accion === "editar") {
                 cargandoEdicion = true;
-                boton.disabled = true;
+                const listo = SGTL.procesando(boton);
                 nuevo.disabled = true;
                 try {
                     const perfil = await pedir(ruta);
                     if (!perfil) throw new Error("No se pudo leer el perfil SMTP.");
                     abrirPerfil(perfil);
                 } catch (error) {
-                    aviso(avisoPagina, "danger", error.message);
+                    SGTL.toastError(error.message);
                 } finally {
                     nuevo.disabled = false;
-                    boton.disabled = false;
+                    listo();
                     cargandoEdicion = false;
                 }
-            } else if (boton.dataset.accion === "probar") {
+            } else if (boton.dataset.accion === "enviar") {
                 idPrueba = id;
                 formPrueba.reset();
                 aviso(modalPrueba.feedback);
                 modalPrueba.instancia.show();
             } else if (boton.dataset.accion === "eliminar") {
-                idBaja = id;
                 const perfil = perfiles.find(item => item.Es_id === id);
-                porId("emailDeleteConfirmacion").textContent = perfil?.Name
-                    ? "¿Querés eliminar el perfil SMTP «" + perfil.Name + "»?"
-                    : "¿Querés eliminar este perfil SMTP?";
-                aviso(modalBaja.feedback);
-                modalBaja.instancia.show();
+                const eliminado = await SGTL.confirmar({
+                    titulo: perfil?.Name ? "¿Eliminar el perfil SMTP «" + perfil.Name + "»?" : "¿Eliminar este perfil SMTP?",
+                    mensaje: "No se puede deshacer.",
+                    verbo: "Eliminar",
+                    peligro: true,
+                    accion: () => pedir(ruta, { method: "DELETE" }).catch(error => {
+                        error.mensajeUsuario = error.message;
+                        throw error;
+                    })
+                });
+                if (eliminado) await refrescarTrasCambio("Se eliminó el perfil SMTP.");
             }
         });
 
@@ -315,16 +298,7 @@
                     method: "POST",
                     body: { EmailDestino: destino }
                 });
-                aviso(avisoPagina, "success", datos?.mensaje || "Se envió el correo de prueba.");
-            });
-        });
-
-        modalBaja.boton.addEventListener("click", () => {
-            if (idBaja === null) return;
-
-            operarEnModal(modalBaja, async () => {
-                await pedir("/" + idBaja, { method: "DELETE" });
-                await refrescarTrasCambio("Se eliminó el perfil SMTP.");
+                SGTL.toastExito(datos?.mensaje || "Se envió el correo de prueba.");
             });
         });
 
@@ -353,7 +327,7 @@
             nuevo.disabled = false;
         } catch (error) {
             tabla.replaceChildren();
-            aviso(avisoPagina, "danger", error.message);
+            SGTL.toastError(error.message);
         }
     });
 })();
