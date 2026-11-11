@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
+    <title>Sistema de gestión de viajes</title>
 
     <style>
         #app {
@@ -34,9 +34,23 @@
             vertical-align: middle;
         }
 
+        #tablaClientes thead th:first-child,
+        #tablaClientes tbody td:first-child:not([colspan]) {
+            text-align: left;
+        }
+
         #tablaClientes th {
             width: auto;
             white-space: nowrap;
+        }
+
+        #tablaClientes thead th:nth-child(1) {
+            width: 30%;
+        }
+
+        #tablaClientes thead th:nth-child(2),
+        #tablaClientes thead th:nth-child(3) {
+            width: 22%;
         }
     </style>
 
@@ -115,20 +129,33 @@
                             </div>
 
 
-                            <h5 class="card-title">
-                                Gestionar clientes
-                            </h5>
+                            <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                <h5 class="card-title mb-0">Gestionar clientes</h5>
+
+                                <div class="d-flex gap-2 ms-auto">
+                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
+                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Descargar reporte"
+                                        aria-label="Descargar reporte">
+                                        <i class="bi bi-download" aria-hidden="true"></i>
+                                    </button>
+
+                                    <button type="button" class="btn btn-success" onclick="abrirModalAltaCliente()">
+                                        <i class="bi bi-person-plus" aria-hidden="true"></i>
+                                        Registrar cliente
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="card-body">
                             <div class="row">
                                 <!-- Columna izquierda - Filtro de búsqueda -->
-                                <div class="col-md-6">
+                                <div class="col-12 col-lg">
                                     <fieldset class="border p-4">
                                         <form id="busquedaClienteForm" class="form">
                                             <!-- Primera fila -->
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
+                                            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 mb-3">
+                                                <div class="col-12 col-lg">
                                                     <label for="txtCUIT_Cliente_Busqueda">CUIT</label>
                                                     <input type="text" class="form-control"
                                                         id="txtCUIT_Cliente_Busqueda" placeholder="XX-XXXXXXXX-X"
@@ -136,74 +163,76 @@
                                                     <div id="busquedaCuitError" class="text-danger small mt-1"
                                                         style="display: none;"></div>
                                                 </div>
-                                                <div class="col-md-6">
+                                                <div class="col-12 col-lg">
+                                                    <label for="txtRazonSocialBusqueda">Razón Social</label>
+                                                    <input type="text" class="form-control" id="txtRazonSocialBusqueda"
+                                                        placeholder="Ingresá parte de la razón social">
+                                                </div>
+                                                <div class="col-12 col-lg">
+                                                    <label for="estadoClienteBusqueda">Estado</label>
+                                                    <select class="form-select" id="estadoClienteBusqueda">
+                                                        <option value="">Todos</option>
+                                                        <option value="Activo">Activo</option>
+                                                        <option value="Inactivo">Inactivo</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-12 col-lg">
                                                     <label for="fechaRango">Fecha de alta</label>
                                                     <input type="text" class="form-control" id="fechaRango"
                                                         placeholder="Desde y hasta">
                                                 </div>
                                             </div>
-                                            <div class="row mb-3 align-items-center">
-                                                <div class="col-12 text-end">
-                                                    <button type="button" class="btn btn-light"
-                                                        onclick="buscarClientes()">Buscar</button>
-                                                </div>
+
+                                            <div class="d-flex justify-content-end">
+                                                <button type="button" class="btn btn-light" onclick="buscarClientes()">
+                                                    Buscar
+                                                </button>
                                             </div>
                                         </form>
                                     </fieldset>
                                 </div>
 
-                                <!-- Columna derecha - Botones -->
-                                <div class="col-md-6 text-end">
-                                    <button type="button" class="btn btn-success" onclick="abrirModalAltaCliente()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar cliente">
-                                        <i class="bi bi-person"></i>
-                                        <i class="bi bi-plus"></i>
-                                    </button>
-                                    <label>&nbsp;</label>
-                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                        <i class="bi bi-download"></i>
-                                    </button>
-                                </div>
-
-                                <div class="table-responsive mt-4">
-                                    <table class="table table-striped" id="tablaClientes">
-                                        <thead>
-                                            <tr>
-                                                <th>Razon Social</th>
-                                                <th>CUIT</th>
-                                                <th>Fecha de alta</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
-                                </div>
-
-                                <!-- Paginación -->
-                                <nav>
-                                    <ul class="pagination justify-content-end" id="pagination">
-                                    </ul>
-                                </nav>
                             </div>
+
+                            <div class="table-responsive mt-4">
+                                <table class="table table-striped" id="tablaClientes">
+                                    <thead>
+                                        <tr>
+                                            <th>Razon Social</th>
+                                            <th>CUIT</th>
+                                            <th>Fecha de alta</th>
+                                            <th>Estado</th>
+                                            <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- Paginación -->
+                            <nav>
+                                <ul class="pagination justify-content-end" id="pagination">
+                                </ul>
+                            </nav>
                         </div>
                     </div>
-                </section>
             </div>
-
-            <!--Fin sección de la tabla-->
+            </section>
         </div>
 
+        <!--Fin sección de la tabla-->
+    </div>
 
-        <!--Footer-->
 
-        <footer>
-            <div id="footer-container"></div>
+    <!--Footer-->
 
-            <script src="./assets/static/js/footer.js"></script>
+    <footer>
+        <div id="footer-container"></div>
 
-        </footer>
+        <script src="./assets/static/js/footer.js"></script>
+
+    </footer>
     </div>
     </div>
 
@@ -723,6 +752,17 @@
                 requestData.fechaHasta = fechaHasta;
             }
 
+            const razonSocial = $('#txtRazonSocialBusqueda').val().trim();
+            const estadoCliente = $('#estadoClienteBusqueda').val();
+
+            if (razonSocial) {
+                requestData.razonSocial = razonSocial;
+            }
+
+            if (estadoCliente) {
+                requestData.estadoCliente = estadoCliente;
+            }
+
             // Realizar la solicitud AJAX GET al controlador
             $.ajax({
                 url: 'http://localhost:50222/api/Clientes/Buscar',
@@ -732,12 +772,12 @@
                     $('#tablaClientes tbody').empty();
 
                     if (!data || !$.isArray(data.Results)) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">Respuesta inválida del servidor.</td></tr>');
+                        $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center">Respuesta inválida del servidor.</td></tr>');
                         return;
                     }
 
                     if (data.Results.length === 0) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
+                        $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center">No se encontraron registros</td></tr>');
                     } else {
                         data.Results.forEach(function (registro) {
                             var idCliente = registro.Cliente_ID != null ? registro.Cliente_ID : registro.cliente_Id;
@@ -752,6 +792,7 @@
                         <td>${razon || ''}</td>
                         <td>${cuitTxt}</td>
                         <td>${fechaAltaTxt}</td>
+                        <td class="estado-cliente"></td>
                         <td>
                             <button type="button" class="btn btn-primary btn-detalle"
                                 data-clienteid="${idCliente}"
@@ -770,7 +811,9 @@
                             </span>
                         </td>
                     </tr>`;
-                            $('#tablaClientes tbody').append(row);
+                            const $fila = $(row);
+                            $fila.find('.estado-cliente').text(registro.EstadoCliente || '—');
+                            $('#tablaClientes tbody').append($fila);
                         });
                     }
 
@@ -779,7 +822,7 @@
                 },
                 error: function (xhr, status, error) {
                     console.error('Clientes/Buscar:', status, error, xhr.responseText);
-                    $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
+                    $('#tablaClientes tbody').html('<tr><td colspan="5" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
                 }
             });
 
