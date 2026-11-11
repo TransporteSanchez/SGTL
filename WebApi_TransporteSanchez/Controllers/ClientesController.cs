@@ -1,4 +1,9 @@
 using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Globalization;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
@@ -39,77 +44,108 @@ namespace WebApi_TransporteSanchez.Controllers
             return new string(cuit.Where(char.IsDigit).ToArray());
         }
 
-        // GET: api/Clientes/Buscar
+        public sealed class ClienteBusquedaFila
+        {
+            public int? Cliente_ID { get; set; }
+            public string RazonSocial { get; set; }
+            public string CUIT_Cliente { get; set; }
+            public DateTime? Fecha_Alta { get; set; }
+            public bool EstadoCliente { get; set; }
+            public int TotalRecords { get; set; }
+        }
+
+        public sealed class CambioEstadoCliente
+        {
+            public bool? EstadoCliente { get; set; }
+        }
+
         [HttpGet]
         [Route("api/Clientes/Buscar")]
-        public IHttpActionResult Buscar(string dni = null, string cuit = null, string razonSocial = null, string estadoCliente = null, DateTime? fechaDesde = null, DateTime? fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(string dni = null, string cuit = null,
+        string razonSocial = null, string estadoCliente = null,
+        DateTime? fechaDesde = null, DateTime? fechaHasta = null,
+        int page = 1, int pageSize = 6)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            if (page < 1 || pageSize < 0)
+                return BadRequest("La página debe ser mayor que cero y el tamaño no puede ser negativo.");
+
+            bool? activo;
+            switch ((estadoCliente ?? "").Trim().ToLowerInvariant())
+            {
+                case "":
+                case "todos":
+                    activo = null;
+                    break;
+                case "activo":
+                case "habilitado":
+                    activo = true;
+                    break;
+                case "inactivo":
+                case "deshabilitado":
+                    activo = false;
+                    break;
+                default:
+                    return BadRequest("El estado debe ser Activo o Inactivo.");
+            }
+
+            var cuitNormalizado = NormalizarCUIT(string.IsNullOrWhiteSpace(cuit) ? dni : cuit);
+            var desdeFila = ((long)page - 1) * pageSize;
+            DateTime? hastaExclusivo = fechaHasta.HasValue && fechaHasta.Value.Date < DateTime.MaxValue.Date
+                ? fechaHasta.Value.Date.AddDays(1)
+                : (DateTime?)null;
+
+            const string sql = @"
+WITH Filtrados AS (
+    SELECT Cliente_ID, Razon_Social AS RazonSocial, CUIT_Cliente, Fecha_Alta,
+           ISNULL(EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente
+    FROM dbo.CLIENTES
+    WHERE (@cuit = '' OR CHARINDEX(@cuit, CUIT_Cliente) > 0)
+      AND (@razon = '' OR CHARINDEX(@razon, Razon_Social) > 0)
+      AND (@desde IS NULL OR Fecha_Alta >= @desde)
+      AND (@hasta IS NULL OR Fecha_Alta < @hasta)
+      AND (@activo IS NULL OR ISNULL(EstadoCliente, CONVERT(bit, 0)) = @activo)
+), Numerados AS (
+    SELECT *, ROW_NUMBER() OVER (ORDER BY Cliente_ID DESC) AS Fila
+    FROM Filtrados
+)
+SELECT p.Cliente_ID, p.RazonSocial, p.CUIT_Cliente, p.Fecha_Alta,
+       ISNULL(p.EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente, t.TotalRecords
+FROM (SELECT COUNT(*) AS TotalRecords FROM Filtrados) AS t
+LEFT JOIN Numerados AS p
+    ON @tamano = 0 OR (p.Fila > @desdeFila AND p.Fila <= @desdeFila + @tamano)
+ORDER BY p.Fila;";
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString))
+                using (var db = new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities")))
                 {
-                    IQueryable<CLIENTES> query = db.Set<CLIENTES>();
-
-                    var filtroCuit = !string.IsNullOrWhiteSpace(cuit) ? cuit : dni;
-                    if (!string.IsNullOrWhiteSpace(filtroCuit))
-                    {
-                        var norm = NormalizarCUIT(filtroCuit);
-                        if (norm.Length > 0)
-                        {
-                            query = query.Where(x => x.CUIT_Cliente.Contains(norm));
-                        }
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(razonSocial))
-                    {
-                        var rs = razonSocial.Trim();
-                        query = query.Where(x => x.Razon_Social != null && x.Razon_Social.Contains(rs));
-                    }
-
-                    if (fechaDesde.HasValue)
-                    {
-                        query = query.Where(x => x.Fecha_Alta >= fechaDesde.Value);
-                    }
-
-                    if (fechaHasta.HasValue)
-                    {
-                        var hasta = fechaHasta.Value.Date.AddDays(1).AddTicks(-1);
-                        query = query.Where(x => x.Fecha_Alta <= hasta);
-                    }
-
-                    // La tabla CLIENTES no tiene columna Estado en el modelo actual; estadoCliente se ignora aquí.
-
-                    var totalRecords = query.Count();
-
-                    var results = query
-                        .OrderByDescending(x => x.Cliente_ID)
-                        .Skip((page - 1) * pageSize)
-                        .Take(pageSize)
-                        .Select(x => new
-                        {
-                            Cliente_ID = x.Cliente_ID,
-                            RazonSocial = x.Razon_Social,
-                            CUIT_Cliente = x.CUIT_Cliente,
-                            Fecha_Alta = x.Fecha_Alta
-                        })
-                        .ToList();
+                    var filas = db.Database.SqlQuery<ClienteBusquedaFila>(sql,
+                        new SqlParameter("@cuit", SqlDbType.VarChar, -1) { Value = cuitNormalizado },
+                        new SqlParameter("@razon", SqlDbType.NVarChar, -1) { Value = (razonSocial ?? "").Trim() },
+                        new SqlParameter("@desde", SqlDbType.DateTime2) { Value = (object)fechaDesde ?? DBNull.Value },
+                        new SqlParameter("@hasta", SqlDbType.DateTime2) { Value = (object)hastaExclusivo ?? DBNull.Value },
+                        new SqlParameter("@activo", SqlDbType.Bit) { Value = (object)activo ?? DBNull.Value },
+                        new SqlParameter("@desdeFila", SqlDbType.BigInt) { Value = desdeFila },
+                        new SqlParameter("@tamano", SqlDbType.Int) { Value = pageSize }
+                    ).ToList();
 
                     return Ok(new
                     {
-                        TotalRecords = totalRecords,
-                        Results = results
+                        TotalRecords = filas[0].TotalRecords,
+                        Results = filas.Where(f => f.Cliente_ID.HasValue).Select(f => new
+                        {
+                            Cliente_ID = f.Cliente_ID.Value,
+                            f.RazonSocial,
+                            f.CUIT_Cliente,
+                            f.Fecha_Alta,
+                            f.EstadoCliente
+                        }).ToList()
                     });
                 }
             }
-            catch (DbUpdateException ex)
+            catch (SqlException)
             {
-                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda de clientes.", ex));
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex);
+                return InternalServerError(new Exception("No se pudieron consultar los clientes."));
             }
         }
 
@@ -394,7 +430,77 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        [HttpPut]
+        [Route("api/Clientes/Estado/{id:int}")]
+        public async Task<IHttpActionResult> PutEstadoCliente(int id,
+    [FromBody] CambioEstadoCliente cambio, CancellationToken ct)
+        {
+            if (!ModelState.IsValid || cambio == null || !cambio.EstadoCliente.HasValue)
+                return BadRequest("Enviá EstadoCliente como true o false.");
 
+            try
+            {
+                var usuario = await new AccesoEmail().AutenticarAsync(Request.Headers.Authorization, ct);
+                if (usuario == null)
+                    return Unauthorized();
+
+                var conexion = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+                var activo = cambio.EstadoCliente.Value;
+
+                using (var db = new SGTLAuditContext(conexion))
+                {
+                    if (!usuario.EsAdministrador)
+                    {
+                        var menus = await (
+                            from u in db.Set<USUARIOS>()
+                            join gu in db.Set<GRUPOS_USUARIOS>() on u.Usuario_ID equals gu.UsuarioID
+                            join gm in db.Set<GRUPOS_MENU>() on gu.GrupoID equals gm.GrupoID
+                            join m in db.Set<MENU>() on gm.MenuID equals m.Menu_ID
+                            where u.Nombre_Usuario == usuario.Nombre
+                            select m.Menu_Nombre
+                        ).Distinct().ToListAsync(ct);
+
+                        var comparador = CultureInfo.GetCultureInfo("es-AR").CompareInfo;
+                        var puedeGestionar = menus.Any(nombre => comparador.Compare(
+                            (nombre ?? "").Trim(), "Gestión de clientes",
+                            CompareOptions.IgnoreCase | CompareOptions.IgnoreNonSpace) == 0);
+                        if (!puedeGestionar)
+                            return Content(HttpStatusCode.Forbidden,
+                                new { message = "No tenés permiso para gestionar clientes." });
+                    }
+
+                    const string sql = @"
+UPDATE dbo.CLIENTES
+SET EstadoCliente = @activo, Fecha_Modi = GETUTCDATE(), Usu_Modi = LEFT(@usuario, 20)
+WHERE Cliente_ID = @id AND (EstadoCliente IS NULL OR EstadoCliente <> @activo);
+SET @filas = @@ROWCOUNT;";
+                    var filas = new SqlParameter("@filas", SqlDbType.Int) { Direction = ParameterDirection.Output };
+                    await db.Database.ExecuteSqlCommandAsync(sql, ct,
+                        new SqlParameter("@activo", SqlDbType.Bit) { Value = activo },
+                        new SqlParameter("@usuario", SqlDbType.VarChar, 50) { Value = usuario.Nombre },
+                        new SqlParameter("@id", SqlDbType.Int) { Value = id },
+                        filas);
+
+                    if ((int)filas.Value == 0)
+                    {
+                        if (!await db.Set<CLIENTES>().AnyAsync(c => c.Cliente_ID == id, ct))
+                            return NotFound();
+                    }
+                    else
+                    {
+                        SGTLAuditContext.RegistrarEvento(conexion, usuario.Nombre, "UPDATE",
+                            "CLIENTES", "Cliente_ID=" + id,
+                            activo ? "Cliente activado." : "Cliente inactivado.");
+                    }
+
+                    return Ok(new { EstadoCliente = activo });
+                }
+            }
+            catch (SqlException)
+            {
+                return InternalServerError(new Exception("No se pudo actualizar el estado del cliente."));
+            }
+        }
 
         // DELETE: api/Clientes/{id}
         public IHttpActionResult Delete(int id)
