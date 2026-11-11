@@ -28,7 +28,7 @@
     return;
   }
 
-  var paginasSoloAdmin = ['gestion-contenido.html'];
+  var paginasSoloAdmin = ['gestion-contenido.html', 'configuracion-email.html'];
   if (paginasSoloAdmin.indexOf(page) !== -1 && !esAdmin()) window.location.replace('index.html');
 })();
 
@@ -90,7 +90,7 @@ function markActiveSidebarItem() {
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-calendar-check"></i><span>Viajes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-viajes.html" class="submenu-link">Listar viajes</a></li><li class="submenu-item"><a href="gestion-viajes.html" class="submenu-link">Gestionar viajes</a></li><li class="submenu-item"><a href="gestion-origenes-destinos.html" class="submenu-link">Gestionar orígenes y destinos</a></li><li class="submenu-item"><a href="gestion-tarifas.html" class="submenu-link">Gestionar tarifas</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-medical"></i><span>Facturación</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-facturas.html" class="submenu-link">Listar proformas</a></li><li class="submenu-item"><a href="gestion-facturacion.html" class="submenu-link">Gestionar proformas</a></li></ul></li>
-              <li class="sidebar-item has-sub${soloAdmin}"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestionar contenido</a></li></ul></li>
+              <li class="sidebar-item has-sub${soloAdmin}"><a href="#" class="sidebar-link"><i class="bi bi-gear"></i><span>Configuración</span></a><ul class="submenu"><li class="submenu-item"><a href="configuracion-email.html" class="submenu-link">Gestionar e-mail</a></li><li class="submenu-item"><a href="gestion-contenido.html" class="submenu-link" id="gestionarContenidoBtn">Gestionar contenido</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-people-fill"></i><span>Usuarios</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-usuarios.html" class="submenu-link">Listar usuarios</a></li><li class="submenu-item"><a href="gestion-usuarios.html" class="submenu-link">Gestionar usuarios</a></li><li class="submenu-item"><a href="gestion-gruposypermisos.html" class="submenu-link">Gestionar grupos y permisos</a></li></ul></li>
               <li class="sidebar-item"><a href="gestion-auditoria.html" class="sidebar-link"><i class="bi bi-clipboard-data"></i><span>Auditoría</span></a></li>
           </ul>
