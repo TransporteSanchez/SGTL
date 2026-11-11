@@ -32,6 +32,10 @@
     transform: translate(-50%, -50%);
 }
 
+a {
+    text-decoration: none;
+}
+
 #main > header .navbar-top {
     box-shadow: inset 0 4px 0 var(--sgtl-marca), 0 1px 0 var(--sgtl-borde);
 }
