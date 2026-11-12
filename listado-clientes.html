@@ -4,922 +4,495 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
-
-    <style>
-        #app {
-            display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        /* Asegura que la tabla se extienda completamente */
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaClientes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaClientes th,
-        #tablaClientes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        #tablaClientes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        .no-outline:focus {
-            outline: none !important;
-            box-shadow: none !important;
-            border: 1px solid #ced4da !important;
-            /* Mantiene el borde original */
-            background-color: #f8f9fa !important;
-            /* Mantiene el color de fondo original */
-        }
-    </style>
-
-    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
-    <link rel="shortcut icon"
-        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
-        type="image/png">
-
-
-
-    <link rel="stylesheet" href="./assets/compiled/css/app.css">
-    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <style>
-        .no-outline:focus {
-            outline: none;
-            box-shadow: none;
-        }
-    </style>
+    <title>Transporte Sánchez - Listar clientes</title>
+    <link rel="shortcut icon" href="assets/compiled/svg/ts-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
+    <link rel="stylesheet" href="assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
-
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
+    <div id="cargandoApariencia" class="min-vh-100 d-flex align-items-center justify-content-center gap-2"
+        role="status">
+        <span class="spinner-border" aria-hidden="true"></span>
+        <span>Cargando…</span>
     </div>
 
-    <div id="app">
-        <!--Barra lateral-->
+    <div id="app" class="d-none">
         <div id="sidebar"></div>
-
-        <div id="main" class='layout-navbar navbar-fixed'>
-            <!--Header-->
+        <div id="main" class="layout-navbar navbar-fixed">
             <header>
-
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
-                        <a href="#" class="burger-btn d-block">
-                            <i class="bi bi-justify fs-3"></i>
+                        <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
+                            <i class="bi bi-justify fs-3" aria-hidden="true"></i>
                         </a>
-
-                        <!--btn para expandir Menú lateral-->
-
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
-
-                        <!--Llamado a las opciones del header-->
-
                         <div id="header-container"></div>
-
-                        <script src="./assets/static/js/header.js"></script>
-
                     </div>
                 </nav>
             </header>
 
-            <!-- Notificación de error -->
-            <div id="toastError"
-                class="toast align-items-center text-white bg-danger border-0 position-fixed top-0 end-0 m-3"
-                role="alert" aria-live="assertive" aria-atomic="true" style="z-index: 1050;">
-                <div class="d-flex">
-                    <div id="toastErrorMessage" class="toast-body">
-                        <!-- Mensaje dinámico se inserta acá -->
-                    </div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                        aria-label="Close"></button>
-                </div>
-            </div>
+            <main class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4" aria-labelledby="tituloClientes">
+                    <div class="card rounded">
+                        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <h1 id="tituloClientes" class="card-title h5 mb-0">Listar clientes</h1>
+                            <button type="button" id="btnDescargarClientes" class="btn btn-secondary"
+                                data-bs-toggle="tooltip" title="Descargar reporte" aria-label="Descargar reporte">
+                                <i class="bi bi-download" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <form id="busquedaClienteForm" class="mb-4" novalidate>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="txtCUIT_Cliente_Busqueda" class="form-label">CUIT</label>
+                                        <input type="text" id="txtCUIT_Cliente_Busqueda" class="form-control"
+                                            placeholder="XX-XXXXXXXX-X" maxlength="13" inputmode="numeric"
+                                            autocomplete="off">
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="txtRazonSocialBusqueda" class="form-label">Razón social</label>
+                                        <input type="text" id="txtRazonSocialBusqueda" class="form-control"
+                                            placeholder="Ingresá parte de la razón social" autocomplete="off">
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="estadoClienteBusqueda" class="form-label">Estado</label>
+                                        <select id="estadoClienteBusqueda" class="form-select">
+                                            <option value="">Todos</option>
+                                            <option value="Activo">Activo</option>
+                                            <option value="Inactivo">Inactivo</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12 col-md-6 col-lg-3">
+                                        <label for="fechaRango" class="form-label">Fecha de alta</label>
+                                        <input type="text" id="fechaRango" class="form-control" placeholder="DD/MM/AAAA"
+                                            autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">Buscar</button>
+                                </div>
+                            </form>
 
-            <section class="section">
-                <div class="card rounded me-4 ms-4 mt-4">
-                    <div class="card-header">
-                        <h5 class="card-title">Listar clientes</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <fieldset class="border p-4">
-                                    <form id="busquedaClienteForm" class="form">
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <label for="txtCUIT_Cliente_Busqueda">CUIT</label>
-                                                <input type="text" class="form-control" id="txtCUIT_Cliente_Busqueda"
-                                                    placeholder="XX-XXXXXXXX-X" maxlength="13" autocomplete="off">
-                                                <div id="busquedaCuitError" class="text-danger small mt-1"
-                                                    style="display: none;"></div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <label for="fechaRango">Fecha de alta</label>
-                                                <input type="text" class="form-control" id="fechaRango"
-                                                    placeholder="Desde y hasta">
-                                            </div>
-                                        </div>
-                                        <div class="row mb-3 align-items-center">
-                                            <div class="col-12 text-end">
-                                                <button type="button" class="btn btn-light"
-                                                    onclick="buscarClientes()">Buscar</button>
-                                            </div>
-                                        </div>
-                                    </form>
-                                </fieldset>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <label>&nbsp;</label>
-                                <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                    data-bs-toggle="tooltip" data-bs-placement="top" title="Generar reporte">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                            </div>
-
-                            <div class="table-responsive mt-4">
-                                <table class="table table-striped" id="tablaClientes">
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle mb-0" id="tablaClientes"
+                                    aria-labelledby="tituloClientes">
                                     <thead>
                                         <tr>
-                                            <th>Razon Social</th>
-                                            <th>CUIT</th>
-                                            <th>Fecha de alta</th>
-                                            <th>Acciones</th>
+                                            <th scope="col">Razón social</th>
+                                            <th scope="col">CUIT</th>
+                                            <th scope="col" class="text-center">Fecha de alta</th>
+                                            <th scope="col" class="text-center">Estado</th>
+                                            <th scope="col" class="text-center">Acciones</th>
                                         </tr>
                                     </thead>
-                                    <tbody></tbody>
+                                    <tbody id="filasClientes"></tbody>
                                 </table>
                             </div>
-
-                            <nav>
+                            <nav aria-label="Paginación de clientes">
                                 <ul class="pagination justify-content-end" id="pagination"></ul>
                             </nav>
                         </div>
                     </div>
-                </div>
-
-            </section>
-
-            <!--Footer-->
+                </section>
+            </main>
 
             <footer>
                 <div id="footer-container"></div>
-
-                <script src="./assets/static/js/footer.js"></script>
-
             </footer>
         </div>
+    </div>
 
-        <!-- Modal detalle cliente (solo lectura) -->
-        <div class="modal fade text-left" id="DetallesClienteModal" tabindex="-1" role="dialog"
-            aria-labelledby="DetallesClienteTitulo" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h4 class="modal-title" id="DetallesClienteTitulo">Detalles del cliente</h4>
-                        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                            <i data-feather="x"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body mt-2 mb-4 mx-2">
-                        <div class="container-fluid">
-                            <div class="row">
-                                <div class="col-md-6 col-12 mb-3">
-                                    <h6>Fecha de alta</h6>
-                                    <span id="detalleFechaAlta" class="badge bg-secondary"></span>
-                                </div>
-                                <div class="col-md-6 col-12 mb-3">
-                                    <h6>Última modificación</h6>
-                                    <span id="detalleFechaModi" class="badge bg-secondary"></span>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 col-12 mt-2">
-                                    <label class="form-label" for="detalleRazonSocial">Razón social</label>
-                                    <input type="text" id="detalleRazonSocial" class="form-control no-outline"
-                                        readonly />
-                                </div>
-                                <div class="col-md-6 col-12 mt-2">
-                                    <label class="form-label" for="detalleCUIT">CUIT</label>
-                                    <input type="text" id="detalleCUIT" class="form-control no-outline" readonly />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleCondFiscal">Condición fiscal</label>
-                                    <input type="text" id="detalleCondFiscal" class="form-control no-outline"
-                                        readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleTelefono">Teléfono</label>
-                                    <input type="text" id="detalleTelefono" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleEmail">Email</label>
-                                    <input type="text" id="detalleEmail" class="form-control no-outline" readonly />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleProvincia">Provincia</label>
-                                    <input type="text" id="detalleProvincia" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleLocalidad">Localidad</label>
-                                    <input type="text" id="detalleLocalidad" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleCalle">Calle</label>
-                                    <input type="text" id="detalleCalle" class="form-control no-outline" readonly />
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleAltura">Altura</label>
-                                    <input type="text" id="detalleAltura" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleUsuAlta">Usuario de alta</label>
-                                    <input type="text" id="detalleUsuAlta" class="form-control no-outline" readonly />
-                                </div>
-                                <div class="col-md-4 col-12 mt-3">
-                                    <label class="form-label" for="detalleUsuModi">Usuario de modificación</label>
-                                    <input type="text" id="detalleUsuModi" class="form-control no-outline" readonly />
-                                </div>
-                            </div>
+    <div class="modal fade" id="DetallesClienteModal" tabindex="-1" aria-labelledby="DetallesClienteTitulo"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h5" id="DetallesClienteTitulo">Detalles del cliente</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <dl class="row g-3 mb-0">
+                        <div class="col-12 col-md-6">
+                            <dt>Razón social</dt>
+                            <dd id="detalleRazonSocial" class="mb-0 text-break"></dd>
                         </div>
-                    </div>
+                        <div class="col-6 col-md-3">
+                            <dt>CUIT</dt>
+                            <dd id="detalleCUIT" class="mb-0"></dd>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <dt>Estado</dt>
+                            <dd id="detalleEstado" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Condición fiscal</dt>
+                            <dd id="detalleCondFiscal" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Tipo de cliente</dt>
+                            <dd id="detalleTipoCliente" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Teléfono</dt>
+                            <dd id="detalleTelefono" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>E-mail</dt>
+                            <dd id="detalleEmail" class="mb-0 text-break"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Provincia</dt>
+                            <dd id="detalleProvincia" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Localidad</dt>
+                            <dd id="detalleLocalidad" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Calle</dt>
+                            <dd id="detalleCalle" class="mb-0 text-break"></dd>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <dt>Altura</dt>
+                            <dd id="detalleAltura" class="mb-0"></dd>
+                        </div>
+                        <div class="col-6 col-md-3">
+                            <dt>Código postal</dt>
+                            <dd id="detalleCodigoPostal" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Fecha de alta</dt>
+                            <dd id="detalleFechaAlta" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Usuario de alta</dt>
+                            <dd id="detalleUsuAlta" class="mb-0 text-break"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Última modificación</dt>
+                            <dd id="detalleFechaModi" class="mb-0"></dd>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <dt>Usuario de modificación</dt>
+                            <dd id="detalleUsuModi" class="mb-0 text-break"></dd>
+                        </div>
+                    </dl>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Scripts -->
-    <script src="assets/extensions/jquery/jqueryajax.js">
-    </script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
     <script>
-        $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
-            $('[data-bs-toggle="tooltip"]').tooltip();
+        document.addEventListener('DOMContentLoaded', function () {
+            if (!localStorage.getItem('token') || !localStorage.getItem('username')) return;
 
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
+            const filasClientes = document.getElementById('filasClientes');
+            const paginador = document.getElementById('pagination');
+            const cuitFiltro = document.getElementById('txtCUIT_Cliente_Busqueda');
+            const razonFiltro = document.getElementById('txtRazonSocialBusqueda');
+            const estadoFiltro = document.getElementById('estadoClienteBusqueda');
+            const fechaFiltro = document.getElementById('fechaRango');
+            const botonDescargar = document.getElementById('btnDescargarClientes');
+            const condiciones = { 1: 'Responsable inscripto', 2: 'Monotributista', 3: 'Exento' };
+            const tipos = { Directo: 'Directo', Con_plataforma: 'Con plataforma' };
+            const catalogosPorProvincia = new Map();
+            const columnas = 5;
+            let tamanioPagina = 15;
+            let busquedaActual = 0;
 
-            // Opcional: Ocultar tooltips al salir
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-    </script>
+            function formatearCUIT(valor) {
+                const digitos = String(valor || '').replace(/\D/g, '').slice(0, 11);
+                if (digitos.length <= 2) return digitos;
+                if (digitos.length <= 10) return digitos.slice(0, 2) + '-' + digitos.slice(2);
+                return digitos.slice(0, 2) + '-' + digitos.slice(2, 10) + '-' + digitos.slice(10);
+            }
 
-    <!-- Carga de diseño y roles -->
-    <script>
-        window.onload = async function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            window.loadHeader();
-            window.loadFooter();
-
-            try {
-                if (typeof window.loadSidebar === 'function') {
-                    await window.loadSidebar();
+            function armarFiltrosClientes() {
+                const cuit = cuitFiltro.value.trim();
+                SGTL.limpiarError(cuitFiltro);
+                if (cuit && !/^\d{2}-\d{8}-\d$/.test(cuit)) {
+                    SGTL.marcarError(cuitFiltro, 'El CUIT tiene que tener 11 números.');
+                    cuitFiltro.focus();
+                    return null;
                 }
-                await loadSettings();  // o tu equivalente que llame applyStyles
-                adjustVisibilityBasedOnRole();  // si la página lo define
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            } catch (error) {
-                console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-            }
-        };
 
-        function adjustVisibilityBasedOnRole() {
-            const userRole = localStorage.getItem('userRole');
-            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-
-            if (userRole && userRole.toLowerCase() === 'admin') {
-                gestionarContenidoBtn.style.display = 'block';
-            } else {
-                gestionarContenidoBtn.style.display = 'none';
-            }
-        }
-
-        async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data) {
-                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            console.error('La respuesta de la API no contiene los datos esperados.');
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        console.error('Error en la petición:', xhr.statusText);
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    console.error('Error al cargar la configuración de la API.');
-                    reject(new Error('Error de red'));
-                };
-
-                xhr.send();
-            });
-        }
-
-        // Aplicar estilos en distintos componentes de la página
-
-        function applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina) {
-            const logoElement = document.querySelector('.sidebar-header .logo img');
-            logoElement.src = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]') || document.createElement('link');
-            favicon.rel = 'shortcut icon';
-            favicon.href = logoUrl || './assets/compiled/svg/ts-icon.svg';
-            document.head.appendChild(favicon);
-
-            // Color de fondo general
-            document.body.style.backgroundColor = colorFondo || '#198754';
-
-            // Crear estilo CSS dinámico para color de texto en hover y activo
-            const dynamicStyle = document.createElement('style');
-            dynamicStyle.innerHTML = `
-        /* Estilo para items activos en el menú */
-        .sidebar-item.active .sidebar-link,
-        .submenu-item.active .submenu-link {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en las opciones del menú */
-        .submenu-item .submenu-link:hover {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el botón hamburguesa */
-        .burger-btn i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el botón hamburguesa */
-        .burger-btn:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Estilo para el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-
-        /* Hover en el ícono de cerrar (sidebar-toggler) */
-        .sidebar-toggler:hover i {
-            color: ${colorBotonesMenu || '#198754'} !important;
-        }
-    `;
-            document.head.appendChild(dynamicStyle);
-
-            // Configuración del contenido en el pie de página
-            const footerContentElement = document.querySelector('.footer p');
-            if (footerContentElement) {
-                footerContentElement.innerHTML = contenidoPiePagina || '2024 &copy; Integra Analistas';
-            }
-        }
-
-        // Lógica de logout y carga de nombre de usuario en el header
-        document.addEventListener("DOMContentLoaded", function () {
-            const token = localStorage.getItem('token');
-
-            if (!token) {
-                window.location.href = 'login.html';
-            } else {
-                const nombre = localStorage.getItem('nombre');
-                const apellido = localStorage.getItem('apellido');
-                document.getElementById('usernameDisplay').textContent = `${nombre} ${apellido}`;
-
-                const logoutBtn = document.getElementById('logoutBtn');
-                if (logoutBtn) {
-                    logoutBtn.addEventListener('click', function (event) {
-                        event.preventDefault();
-
-                        fetch('http://localhost:50222/api/logout', {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
-                        }).then(response => {
-                            if (response.ok) {
-                                localStorage.removeItem('token');
-                                localStorage.removeItem('nombre');
-                                localStorage.removeItem('apellido');
-                                localStorage.removeItem('userRole');
-                                window.location.href = 'login.html';
-                            } else {
-                                alert('Error al cerrar sesión');
-                            }
-                        }).catch(error => {
-                            console.error('Error al realizar la solicitud de logout:', error);
-                            alert('Error al cerrar sesión');
-                        });
-                    });
-                }
-            }
-        });
-    </script>
-
-    <!-- Get Activos -->
-    <script>
-        $(document).ready(function () {
-            buscarClientes();
-        });
-    </script>
-
-    <!-- Buscador, listado y detalle cliente -->
-    <script>
-        const pageSize = 6;
-        let currentPage = 1;
-
-        function formatearCUIT(input) {
-            const digits = input.val().replace(/[^\d]/g, '').slice(0, 11);
-            let formatted;
-            if (digits.length <= 2) {
-                formatted = digits;
-            } else if (digits.length <= 10) {
-                formatted = digits.slice(0, 2) + '-' + digits.slice(2);
-            } else {
-                formatted = digits.slice(0, 2) + '-' + digits.slice(2, 10) + '-' + digits.slice(10);
-            }
-            input.val(formatted);
-        }
-
-        function validarFormatoCUIT(cuit) {
-            return /^\d{2}-\d{8}-\d{1}$/.test(cuit);
-        }
-
-        function cuitDigitosAFormulario(digits) {
-            var d = String(digits || '').replace(/\D/g, '').slice(0, 11);
-            if (d.length <= 2) return d;
-            if (d.length <= 10) return d.slice(0, 2) + '-' + d.slice(2);
-            return d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10);
-        }
-
-        function condFiscalIntATexto(cond) {
-            var map = { 1: 'RI', 2: 'MT', 3: 'EX' };
-            return map[cond] != null ? map[cond] : String(cond);
-        }
-
-        // Función para obtener los nombres de la provincia y localidad
-        function obtenerNombres(provId, locId) {
-            let nombreProvincia = '';
-            let nombreLocalidad = '';
-
-            // Función para obtener el nombre de la provincia
-            function obtenerNombreProvincia() {
-                return $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                }).then(function (data) {
-                    nombreProvincia = data.Nombre_Provincia;
-                }).catch(function () {
-                    nombreProvincia = 'Provincia no encontrada';
-                });
-            }
-
-            // Función para obtener el nombre de la localidad
-            function obtenerNombreLocalidad() {
-                let url = `http://localhost:50222/api/Provincias/${provId}/Localidades`;
-                if (locId) {
-                    url += `?locId=${locId}`;
-                }
-                return $.ajax({
-                    url: url,
-                    type: 'GET'
-                }).then(function (data) {
-                    if (Array.isArray(data) && data.length > 0) {
-                        nombreLocalidad = data[0].Nombre_Localidad;
-                    } else {
-                        nombreLocalidad = 'Localidad no encontrada';
-                    }
-                }).catch(function () {
-                    nombreLocalidad = 'Localidad no encontrada';
-                });
-            }
-
-            // Ejecutar ambas solicitudes en paralelo
-            return $.when(obtenerNombreProvincia(), obtenerNombreLocalidad()).then(function () {
+                const rango = SGTL.valorRango(fechaFiltro);
                 return {
-                    Nombre_Provincia: nombreProvincia,
-                    Nombre_Localidad: nombreLocalidad
+                    cuit: cuit.replace(/\D/g, ''),
+                    razonSocial: razonFiltro.value.trim(),
+                    estadoCliente: estadoFiltro.value,
+                    fechaDesde: rango ? rango.desde : undefined,
+                    fechaHasta: rango ? rango.hasta : undefined
                 };
-            });
-        }
+            }
 
-        function armarFiltrosBusquedaClientes() {
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            var fechaRangoTxt = ($('#fechaRango').val() || '').trim();
-            var fechaDesde = null;
-            var fechaHasta = null;
-            var startData = $('#fechaRango').data('start');
-            var endData = $('#fechaRango').data('end');
-            if (startData && endData) {
-                fechaDesde = startData + ' 00:00:00.000';
-                fechaHasta = endData + ' 23:59:59.999';
-            } else if (fechaRangoTxt) {
-                var fechas = fechaRangoTxt.split(' - ');
-                if (fechas.length === 2 && typeof moment !== 'undefined') {
-                    var m0 = moment(fechas[0], 'DD/MM/YYYY', true);
-                    var m1 = moment(fechas[1], 'DD/MM/YYYY', true);
-                    if (m0.isValid() && m1.isValid()) {
-                        fechaDesde = m0.format('YYYY-MM-DD') + ' 00:00:00.000';
-                        fechaHasta = m1.format('YYYY-MM-DD') + ' 23:59:59.999';
+            function textoEstado(activo) {
+                if (activo === true) return 'Activo';
+                if (activo === false) return 'Inactivo';
+                return '';
+            }
+
+            function filaCliente(registro) {
+                const estado = textoEstado(registro.EstadoCliente);
+                return '<tr>' +
+                    '<td>' + SGTL.escapar(registro.RazonSocial || registro.Razon_Social) + '</td>' +
+                    '<td class="text-nowrap">' + SGTL.escapar(formatearCUIT(registro.CUIT_Cliente)) + '</td>' +
+                    '<td class="text-center text-nowrap">' + SGTL.fecha(registro.Fecha_Alta) + '</td>' +
+                    '<td class="text-center">' + (estado ? SGTL.estado(estado) : '—') + '</td>' +
+                    '<td class="text-center">' + SGTL.accionesFila([
+                        SGTL.botonFila('ver', { id: registro.Cliente_ID, datos: { estado } })
+                    ]) + '</td></tr>';
+            }
+
+            function consultarClientes(filtros, pagina, cantidad) {
+                return SGTL.ajax({
+                    url: SGTL.api + '/Clientes/Buscar',
+                    type: 'GET',
+                    data: { ...filtros, page: pagina, pageSize: cantidad }
+                }, 'No se pudieron consultar los clientes. Probá de nuevo.').then(resultado => {
+                    if (!resultado || !Array.isArray(resultado.Results))
+                        throw new Error('Respuesta inválida de la búsqueda.');
+                    return resultado;
+                });
+            }
+
+            async function buscarClientes(pagina = 1) {
+                const filtros = armarFiltrosClientes();
+                if (!filtros) return;
+
+                const solicitud = ++busquedaActual;
+                SGTL.tabla.cargando(filasClientes, columnas);
+                try {
+                    const resultado = await consultarClientes(filtros, pagina, tamanioPagina);
+                    if (solicitud !== busquedaActual) return;
+
+                    if (resultado.Results.length) {
+                        SGTL.tabla.llenar(filasClientes, resultado.Results.map(filaCliente).join(''));
+                    } else {
+                        SGTL.tabla.vacia(filasClientes, columnas);
                     }
+
+                    SGTL.tabla.paginacion(paginador, {
+                        total: resultado.TotalRecords,
+                        pagina: pagina,
+                        tamanioPagina: tamanioPagina,
+                        alCambiarPagina: buscarClientes,
+                        alCambiarTamanio: function (nuevoTamanio) {
+                            tamanioPagina = nuevoTamanio;
+                            buscarClientes();
+                        }
+                    });
+                } catch (error) {
+                    if (solicitud !== busquedaActual) return;
+                    SGTL.tabla.vacia(filasClientes, columnas, 'No se pudieron cargar los clientes.');
+                    SGTL.tabla.paginacion(paginador, { total: 0 });
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudieron cargar los clientes. Probá de nuevo.');
                 }
             }
-            var requestData = {};
-            if (cuitVal !== '') {
-                requestData.cuit = cuitVal.replace(/\D/g, '');
-            }
-            if (fechaDesde) {
-                requestData.fechaDesde = fechaDesde;
-            }
-            if (fechaHasta) {
-                requestData.fechaHasta = fechaHasta;
-            }
-            return requestData;
-        }
 
-        $(document).ready(function () {
-            $('#fechaRango').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    format: 'DD/MM/YYYY',
-                    applyLabel: 'Aplicar',
-                    cancelLabel: 'Cancelar',
-                    daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                    monthNames: [
-                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
-                    ]
-                }
-            });
-
-            $('#fechaRango').on('apply.daterangepicker', function (ev, picker) {
-                $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
-                $(this).data('start', picker.startDate.format('YYYY-MM-DD'));
-                $(this).data('end', picker.endDate.format('YYYY-MM-DD'));
-                currentPage = 1;
-                buscarClientes(1);
-            });
-
-            $('#fechaRango').on('cancel.daterangepicker', function () {
-                $(this).val('');
-                $(this).removeData('start').removeData('end');
-                currentPage = 1;
-                buscarClientes(1);
-            });
-
-            $('#txtCUIT_Cliente_Busqueda, #fechaRango').on('input', function () {
-                if ($(this).attr('id') === 'fechaRango' && $(this).val().trim() === '') {
-                    $(this).removeData('start').removeData('end');
-                }
-                if ($(this).attr('id') === 'txtCUIT_Cliente_Busqueda' && $(this).val().trim() === '') {
-                    buscarClientes(currentPage);
-                }
-            });
-
-            $('#txtCUIT_Cliente_Busqueda').on('input', function () {
-                formatearCUIT($(this));
-                $(this).removeClass('is-invalid');
-                $('#busquedaCuitError').hide();
-            });
-
-            $('#txtCUIT_Cliente_Busqueda').on('blur', function () {
-                var cuit = $(this).val().trim();
-                if (cuit === '') {
-                    $(this).removeClass('is-invalid');
-                    $('#busquedaCuitError').hide();
-                    return;
-                }
-                if (!validarFormatoCUIT(cuit)) {
-                    $(this).addClass('is-invalid');
-                    $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                } else {
-                    $(this).removeClass('is-invalid');
-                    $('#busquedaCuitError').hide();
-                }
-            });
-        });
-
-        function formatFechaUTC3(isoDate) {
-            if (!isoDate) return '—';
-            const date = new Date(isoDate);
-            const utc3Date = new Date(date.getTime() - 3 * 60 * 60 * 1000);
-            const day = String(utc3Date.getDate()).padStart(2, '0');
-            const month = String(utc3Date.getMonth() + 1).padStart(2, '0');
-            const year = utc3Date.getFullYear();
-            const hours = String(utc3Date.getHours()).padStart(2, '0');
-            const minutes = String(utc3Date.getMinutes()).padStart(2, '0');
-            return `${day}/${month}/${year} ${hours}:${minutes}`;
-        }
-
-        function mostrarDetalleCliente(registro) {
-            obtenerNombres(registro.ProvID, registro.LocID).then(function (nombres) {
-                $('#detalleRazonSocial').val(registro.Razon_Social || '');
-                $('#detalleCUIT').val(cuitDigitosAFormulario(registro.CUIT_Cliente));
-                $('#detalleCondFiscal').val(condFiscalIntATexto(registro.Cond_Fiscal));
-                $('#detalleTelefono').val(registro.Telefono || '');
-                $('#detalleEmail').val(registro.Email || '');
-                $('#detalleProvincia').val(nombres.Nombre_Provincia);
-                $('#detalleLocalidad').val(nombres.Nombre_Localidad);
-                $('#detalleCalle').val(registro.Calle || '');
-                $('#detalleAltura').val(registro.AlturaCalle ? String(registro.AlturaCalle).trim() : '');
-                $('#detalleUsuAlta').val(registro.Usu_Alta || '');
-                $('#detalleUsuModi').val(registro.Usu_Modi || '');
-                $('#detalleFechaAlta').text(formatFechaUTC3(registro.Fecha_Alta)).removeClass().addClass('badge bg-secondary');
-                $('#detalleFechaModi').text(formatFechaUTC3(registro.Fecha_Modi)).removeClass().addClass('badge bg-secondary');
-                $('#DetallesClienteModal').modal('show');
-            }).catch(function (err) {
-                console.error('Error al obtener nombres de provincia o localidad', err);
-            });
-        }
-
-        function abrirModalDetalleCliente(clienteId) {
-            $.ajax({
-                url: 'http://localhost:50222/api/Clientes/' + clienteId,
-                type: 'GET',
-                success: function (data) {
-                    mostrarDetalleCliente(data);
-                },
-                error: function () {
-                    mostrarToastError('No se pudieron cargar los datos del cliente.');
-                }
-            });
-        }
-
-        function buscarClientes(page) {
-            if (page === undefined || page === null) {
-                page = 1;
-            }
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
-                $('#txtCUIT_Cliente_Busqueda').addClass('is-invalid');
-                $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                return;
+            function consultarCliente(id) {
+                return SGTL.ajax({
+                    url: SGTL.api + '/Clientes/' + encodeURIComponent(id),
+                    type: 'GET'
+                }, 'No se pudieron cargar los datos del cliente. Probá de nuevo.');
             }
 
-            currentPage = page;
-            var requestData = armarFiltrosBusquedaClientes();
-            requestData.page = page;
-            requestData.pageSize = pageSize;
+            async function consultarCatalogo(url, valorAusente) {
+                try {
+                    return await SGTL.ajax({ url, type: 'GET' });
+                } catch (error) {
+                    if (error.xhr && error.xhr.status === 404) return valorAusente;
+                    throw error;
+                }
+            }
 
-            $.ajax({
-                url: 'http://localhost:50222/api/Clientes/Buscar',
-                type: 'GET',
-                data: requestData,
-                success: function (data) {
-                    $('#tablaClientes tbody').empty();
+            async function obtenerUbicacion(cliente) {
+                const provId = cliente.ProvID;
+                if (!provId) return { provincia: '', localidad: '' };
 
-                    if (!data || !$.isArray(data.Results)) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">Respuesta inválida del servidor.</td></tr>');
+                if (!catalogosPorProvincia.has(provId)) {
+                    const ruta = SGTL.api + '/Provincias/' + encodeURIComponent(provId);
+                    const catalogo = Promise.all([
+                        consultarCatalogo(ruta, null),
+                        consultarCatalogo(ruta + '/Localidades', [])
+                    ]).then(([provincia, localidades]) => ({
+                        provincia: provincia ? provincia.Nombre_Provincia : '',
+                        localidades: new Map(localidades.map(localidad => [localidad.Loc_ID, localidad.Nombre_Localidad]))
+                    })).catch(error => {
+                        catalogosPorProvincia.delete(provId);
+                        throw error;
+                    });
+                    catalogosPorProvincia.set(provId, catalogo);
+                }
+
+                const catalogo = await catalogosPorProvincia.get(provId);
+                return { provincia: catalogo.provincia, localidad: catalogo.localidades.get(cliente.LocID) || '' };
+            }
+
+            async function abrirDetalle(boton) {
+                const listo = SGTL.procesando(boton);
+                try {
+                    const cliente = await consultarCliente(boton.dataset.id);
+                    const ubicacion = await obtenerUbicacion(cliente)
+                        .catch(() => ({ provincia: '', localidad: '' }));
+                    const campos = {
+                        detalleRazonSocial: cliente.Razon_Social,
+                        detalleCUIT: formatearCUIT(cliente.CUIT_Cliente),
+                        detalleCondFiscal: condiciones[cliente.Cond_Fiscal],
+                        detalleTipoCliente: tipos[cliente.Tipo_Cliente],
+                        detalleTelefono: cliente.Telefono,
+                        detalleEmail: cliente.Email,
+                        detalleProvincia: ubicacion.provincia,
+                        detalleLocalidad: ubicacion.localidad,
+                        detalleCalle: cliente.Calle,
+                        detalleAltura: cliente.AlturaCalle,
+                        detalleCodigoPostal: cliente.CodigoPostal,
+                        detalleFechaAlta: SGTL.fecha(cliente.Fecha_Alta, { hora: true }),
+                        detalleFechaModi: SGTL.fecha(cliente.Fecha_Modi, { hora: true }),
+                        detalleUsuAlta: cliente.Usu_Alta,
+                        detalleUsuModi: cliente.Usu_Modi
+                    };
+                    Object.entries(campos).forEach(([id, valor]) => {
+                        document.getElementById(id).textContent = String(valor ?? '').trim() || '—';
+                    });
+
+                    const estado = textoEstado(cliente.EstadoCliente) || boton.dataset.estado;
+                    document.getElementById('detalleEstado').innerHTML = estado ? SGTL.estado(estado) : '—';
+                    SGTL.modal('#DetallesClienteModal', 'show');
+                } catch (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo abrir el detalle del cliente.');
+                } finally {
+                    listo();
+                }
+            }
+
+            async function descargarClientes() {
+                const filtros = armarFiltrosClientes();
+                if (!filtros) return;
+
+                const listo = SGTL.procesando(botonDescargar);
+                try {
+                    const resultado = await consultarClientes(filtros, 1, 0);
+                    if (!resultado.Results.length) {
+                        SGTL.toastError('No hay clientes para exportar con los filtros elegidos.');
                         return;
                     }
 
-                    if (data.Results.length === 0) {
-                        $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center">No se encontraron registros</td></tr>');
-                    } else {
-                        data.Results.forEach(function (registro) {
-                            var idCliente = registro.Cliente_ID != null ? registro.Cliente_ID : registro.cliente_Id;
-                            var fechaAltaTxt = '';
-                            if (registro.Fecha_Alta) {
-                                fechaAltaTxt = new Date(registro.Fecha_Alta).toLocaleDateString('es-AR');
-                            }
-                            var razon = registro.RazonSocial != null ? registro.RazonSocial : registro.Razon_Social;
-                            var cuitTxt = String(registro.CUIT_Cliente || '').trim();
-                            var row = `
-                    <tr data-clienteid="${idCliente}">
-                        <td>${razon || ''}</td>
-                        <td>${cuitTxt}</td>
-                        <td>${fechaAltaTxt}</td>
-                        <td>
-                            <button type="button" class="btn btn-primary btn-detalle"
-                                data-clienteid="${idCliente}"
-                                data-bs-toggle="tooltip"
-                                data-bs-placement="top"
-                                title="Más detalles"
-                                onclick="abrirModalDetalleCliente('${idCliente}')">
-                                <i class="bi bi-info-circle"></i>
-                            </button>
-                        </td>
-                    </tr>`;
-                            $('#tablaClientes tbody').append(row);
-                        });
+                    const filas = [];
+                    for (let i = 0; i < resultado.Results.length; i += 8) {
+                        const bloque = resultado.Results.slice(i, i + 8);
+                        const datos = await Promise.all(bloque.map(async registro => {
+                            const cliente = await consultarCliente(registro.Cliente_ID);
+                            const ubicacion = await obtenerUbicacion(cliente);
+                            return [
+                                cliente.Cliente_ID, cliente.Razon_Social, formatearCUIT(cliente.CUIT_Cliente),
+                                condiciones[cliente.Cond_Fiscal], tipos[cliente.Tipo_Cliente],
+                                cliente.Telefono, cliente.Email, ubicacion.provincia, ubicacion.localidad,
+                                cliente.Calle, cliente.AlturaCalle, cliente.CodigoPostal,
+                                textoEstado(registro.EstadoCliente),
+                                SGTL.fecha(cliente.Fecha_Alta, { hora: true }), cliente.Usu_Alta,
+                                SGTL.fecha(cliente.Fecha_Modi, { hora: true }), cliente.Usu_Modi
+                            ];
+                        }));
+                        filas.push(...datos);
                     }
-                    renderPagination(data.TotalRecords, pageSize, page);
-                },
-                error: function (xhr, status, error) {
-                    console.error('Clientes/Buscar:', status, error, xhr.responseText);
-                    $('#tablaClientes tbody').html('<tr><td colspan="4" class="text-center text-danger">No se pudo cargar el listado. Verifique que la API esté ejecutándose.</td></tr>');
+
+                    SGTL.descargarCSV('Listado_Clientes.csv', [
+                        'ID', 'Razón social', 'CUIT', 'Condición fiscal', 'Tipo de cliente',
+                        'Teléfono', 'E-mail', 'Provincia', 'Localidad', 'Calle', 'Altura',
+                        'Código postal', 'Estado', 'Fecha de alta', 'Usuario de alta',
+                        'Fecha de modificación', 'Usuario de modificación'
+                    ], filas);
+                } catch (error) {
+                    SGTL.toastError(error.mensajeUsuario || 'No se pudo descargar el reporte. Probá de nuevo.');
+                } finally {
+                    listo();
                 }
-            });
-        }
-
-        function renderPagination(totalRecords, pageSize, currentPageNum) {
-            const totalPages = Math.ceil(totalRecords / pageSize);
-            const paginationContainer = $('#pagination');
-            paginationContainer.empty();
-
-            const prevDisabled = (totalPages === 0 || currentPageNum === 1) ? 'disabled' : '';
-            const nextDisabled = (totalPages === 0 || currentPageNum === totalPages) ? 'disabled' : '';
-
-            paginationContainer.append(`
-                <li class="page-item ${prevDisabled}">
-                    <a class="page-link" href="#" aria-label="Previous" onclick="buscarClientes(${currentPageNum - 1}); return false;">
-                        <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
-                    </a>
-                </li>
-            `);
-
-            for (let i = 1; i <= totalPages && totalPages > 0; i++) {
-                const activeClass = currentPageNum === i ? 'active' : '';
-                paginationContainer.append(`
-                    <li class="page-item ${activeClass}">
-                        <a class="page-link" href="#" onclick="buscarClientes(${i}); return false;">${i}</a>
-                    </li>
-                `);
             }
 
-            paginationContainer.append(`
-                <li class="page-item ${nextDisabled}">
-                    <a class="page-link" href="#" aria-label="Next" onclick="buscarClientes(${currentPageNum + 1}); return false;">
-                        <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
-                    </a>
-                </li>
-            `);
-        }
-
-    </script>
-
-    <!-- Generar reporte csv -->
-    <script>
-        async function generarReporteCSV() {
-            var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
-            if (cuitVal && !validarFormatoCUIT(cuitVal)) {
-                mostrarToastError('Corregí el formato del CUIT antes de exportar.');
-                return;
+            if (typeof window.loadHeader === 'function') {
+                window.loadHeader().catch(() => console.warn('No se pudo cargar el encabezado.'));
             }
-            var requestData = Object.assign({ page: 1, pageSize: 10000 }, armarFiltrosBusquedaClientes());
+            if (typeof window.loadFooter === 'function') window.loadFooter();
 
-            try {
-                const response = await $.ajax({
-                    url: 'http://localhost:50222/api/Clientes/Buscar',
-                    type: 'GET',
-                    data: requestData
-                });
+            SGTL.ajax({
+                url: SGTL.api + '/GestionContenido/1',
+                type: 'GET'
+            }).then(async contenido => {
+                await window.loadSidebar();
 
-                if (!response.Results || response.Results.length === 0) {
-                    mostrarToastError('No se encontraron registros para generar el reporte.');
-                    return;
-                }
+                const contenedorPie = document.getElementById('footer-container');
+                const textoPie = contenido.ContenidoPiePagina || '2024 &copy; Integra Analistas';
 
-                const registrosCompletos = await Promise.all(response.Results.map(async function (r) {
-                    var id = r.Cliente_ID != null ? r.Cliente_ID : r.cliente_Id;
-                    const full = await $.ajax({
-                        url: 'http://localhost:50222/api/Clientes/' + id,
-                        type: 'GET'
+                window.applyStyles(
+                    contenido.Logo,
+                    contenido.ColorFondo,
+                    contenido.ColorBotonesMenu,
+                    textoPie
+                );
+
+                if (!contenedorPie.querySelector('.footer p')) {
+                    const esperarPie = new MutationObserver(function () {
+                        const parrafo = contenedorPie.querySelector('.footer p');
+                        if (!parrafo) return;
+                        esperarPie.disconnect();
+                        parrafo.innerHTML = textoPie;
                     });
-                    full.Provincia = await obtenerNombreProvincia(full.ProvID);
-                    full.Localidad = await obtenerNombreLocalidad(full.ProvID, full.LocID);
-                    return full;
-                }));
-
-                generarCSV(registrosCompletos);
-            } catch (error) {
-                console.error('Error al generar el reporte:', error);
-                mostrarToastError('Error al generar el reporte. Inténtelo de nuevo más tarde.');
-            }
-        }
-
-        function mostrarToastError(mensaje) {
-            $('#toastErrorMessage').text(mensaje);
-            const toast = new bootstrap.Toast(document.getElementById('toastError'));
-            toast.show();
-        }
-
-        async function obtenerNombreProvincia(provId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}`,
-                    type: 'GET'
-                });
-                return data.Nombre_Provincia || 'Provincia no encontrada';
-            } catch (error) {
-                console.error('Error obteniendo provincia:', error);
-                return 'Provincia no encontrada';
-            }
-        }
-
-        async function obtenerNombreLocalidad(provId, locId) {
-            try {
-                const data = await $.ajax({
-                    url: `http://localhost:50222/api/Provincias/${provId}/Localidades?locId=${locId}`,
-                    type: 'GET'
-                });
-                if (Array.isArray(data) && data.length > 0) {
-                    return data[0].Nombre_Localidad;
+                    esperarPie.observe(contenedorPie, { childList: true, subtree: true });
                 }
-                return 'Localidad no encontrada';
-            } catch (error) {
-                console.error('Error obteniendo localidad:', error);
-                return 'Localidad no encontrada';
-            }
-        }
 
-        function generarCSV(data) {
-            const headers = [
-                'Cliente_ID', 'Razon_Social', 'CUIT_Cliente', 'Condicion_fiscal',
-                'Telefono', 'Email', 'Provincia', 'Localidad', 'Calle', 'Altura',
-                'Fecha_de_alta', 'Usuario_alta', 'Fecha_modificacion', 'Usuario_modificacion'
-            ];
-            let csvContent = headers.join(';') + '\n';
-            data.forEach(function (registro) {
-                var condTxt = typeof condFiscalIntATexto === 'function'
-                    ? condFiscalIntATexto(registro.Cond_Fiscal)
-                    : String(registro.Cond_Fiscal);
-                var row = [
-                    registro.Cliente_ID,
-                    registro.Razon_Social || '',
-                    registro.CUIT_Cliente || '',
-                    condTxt,
-                    registro.Telefono || '',
-                    registro.Email || '',
-                    registro.Provincia || '',
-                    registro.Localidad || '',
-                    registro.Calle || '',
-                    registro.AlturaCalle || '',
-                    (registro.Fecha_Alta != null ? formatFechaUTC3(registro.Fecha_Alta) : ''),
-                    registro.Usu_Alta || '',
-                    (registro.Fecha_Modi != null ? formatFechaUTC3(registro.Fecha_Modi) : ''),
-                    registro.Usu_Modi || ''
-                ];
-                csvContent += row.map(function (value) { return '"' + String(value).replace(/"/g, '""') + '"'; }).join(';') + '\n';
+                const logo = document.querySelector('.sidebar-header .logo img');
+                if (logo) await logo.decode();
+
+                document.getElementById('cargandoApariencia').remove();
+                document.getElementById('app').classList.remove('d-none');
+            }).catch(error => {
+                console.warn('No se pudo cargar la apariencia de SGTL.', error);
+                document.getElementById('cargandoApariencia').textContent =
+                    'No se pudo cargar la apariencia. Recargá la página para volver a intentar.';
             });
-            var blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = 'Listado_Clientes.csv';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-    </script>
 
+            cuitFiltro.addEventListener('input', function () {
+                cuitFiltro.value = formatearCUIT(cuitFiltro.value);
+                SGTL.limpiarError(cuitFiltro);
+            });
+            estadoFiltro.addEventListener('change', () => buscarClientes());
+            SGTL.rangoFechas(fechaFiltro, {
+                onChange: fechas => {
+                    if (fechas.length === 2) buscarClientes();
+                }
+            });
+            SGTL.filtros([cuitFiltro, razonFiltro, estadoFiltro, fechaFiltro], () => buscarClientes());
+            document.getElementById('busquedaClienteForm').addEventListener('submit', function (evento) {
+                evento.preventDefault();
+                buscarClientes();
+            });
+            filasClientes.addEventListener('click', function (evento) {
+                const boton = evento.target.closest('[data-accion="ver"]');
+                if (boton) abrirDetalle(boton);
+            });
+            botonDescargar.addEventListener('click', descargarClientes);
+
+            buscarClientes();
+        });
+    </script>
 </body>
 
 </html>
