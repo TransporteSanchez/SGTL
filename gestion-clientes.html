@@ -62,12 +62,12 @@
 
 
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
 
     <div id="loading-message" style="display: none;">
         <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
@@ -133,9 +133,9 @@
                                 <h5 class="card-title mb-0">Gestionar clientes</h5>
 
                                 <div class="d-flex gap-2 ms-auto">
-                                    <button type="button" class="btn btn-secondary" onclick="generarReporteCSV()"
-                                        data-bs-toggle="tooltip" data-bs-placement="top" title="Descargar reporte"
-                                        aria-label="Descargar reporte">
+                                    <button type="button" id="btnDescargarClientes" class="btn btn-secondary"
+                                        onclick="generarReporteCSV()" data-bs-toggle="tooltip" data-bs-placement="top"
+                                        title="Descargar reporte" aria-label="Descargar reporte">
                                         <i class="bi bi-download" aria-hidden="true"></i>
                                     </button>
 
@@ -280,13 +280,18 @@
                                         <option value="EX">Exento</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 col-12">
-                                    <div class="form-group">
-                                        <label for="email-id-column" class="form-label">Email</label>
-                                        <input type="email" id="email-id-column" class="form-control"
-                                            name="email-id-column" placeholder="minombre@correo.com" />
-                                        <div id="emailError" class="invalid-feedback" style="display: none;"></div>
-                                    </div>
+                                <div class="form-group">
+                                    <label for="txtTipoCliente" class="form-label">Tipo de cliente</label>
+                                    <select id="txtTipoCliente" class="form-select">
+                                        <option value="Directo">Directo</option>
+                                        <option value="Con_plataforma">Con plataforma</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="email-id-column" class="form-label">Email</label>
+                                    <input type="email" id="email-id-column" class="form-control" name="email-id-column"
+                                        placeholder="minombre@correo.com" />
+                                    <div id="emailError" class="invalid-feedback" style="display: none;"></div>
                                 </div>
                                 <div class="form-group">
                                     <label for="celphone-column" class="form-label">Teléfono<span class="text-danger">
@@ -321,6 +326,11 @@
                                     </label>
                                     <input type="text" id="txtAlturaCalle" class="form-control" placeholder="Número"
                                         name="altura-column" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="txtCodigoPostal" class="form-label">Código postal</label>
+                                    <input type="text" id="txtCodigoPostal" class="form-control" maxlength="20"
+                                        autocomplete="postal-code">
                                 </div>
                             </div>
                         </div>
@@ -386,6 +396,13 @@
                                     </select>
                                 </div>
                                 <div class="form-group">
+                                    <label for="editarTipoCliente" class="form-label">Tipo de cliente</label>
+                                    <select id="editarTipoCliente" class="form-select">
+                                        <option value="Directo">Directo</option>
+                                        <option value="Con_plataforma">Con plataforma</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
                                     <label for="editarEmail" class="form-label">
                                         Email<span class="text-danger">*</span>
                                     </label>
@@ -430,6 +447,11 @@
                                     </label>
                                     <input type="text" id="editarAltura" class="form-control" placeholder="Número"
                                         name="altura-column" />
+                                </div>
+                                <div class="form-group">
+                                    <label for="editarCodigoPostal" class="form-label">Código postal</label>
+                                    <input type="text" id="editarCodigoPostal" class="form-control" maxlength="20"
+                                        autocomplete="postal-code">
                                 </div>
                             </div>
                         </div>
@@ -487,6 +509,7 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -667,6 +690,42 @@
         let currentPage = 1;
 
         $(document).ready(function () {
+            $('#estadoClienteBusqueda').on('change', function () {
+                currentPage = 1;
+                buscarClientes(currentPage);
+            });
+
+            $('#tablaClientes tbody').on(
+                'click',
+                '[data-accion="activar"], [data-accion="inactivar"]',
+                async function () {
+                    const id = this.dataset.id;
+                    const activar = this.dataset.accion === 'activar';
+                    const verbo = activar ? 'Activar' : 'Inactivar';
+
+                    const confirmado = await SGTL.confirmar({
+                        titulo: `${verbo} cliente`,
+                        mensaje: activar
+                            ? '¿Querés activar este cliente?'
+                            : '¿Querés inactivar este cliente?',
+                        verbo: verbo,
+                        accion: function () {
+                            return SGTL.ajax({
+                                url: `${SGTL.api}/Clientes/Estado/${encodeURIComponent(id)}`,
+                                type: 'PUT',
+                                contentType: 'application/json; charset=utf-8',
+                                data: JSON.stringify({ EstadoCliente: activar })
+                            }, 'No se pudo cambiar el estado del cliente. Probá de nuevo.');
+                        }
+                    });
+
+                    if (confirmado) {
+                        SGTL.toastExito(activar ? 'Cliente activado.' : 'Cliente inactivado.');
+                        currentPage = 1;
+                        buscarClientes(currentPage);
+                    }
+                }
+            );
             $('#fechaRango').daterangepicker({
                 autoUpdateInput: false,
                 showDropdowns: true,               // selectores de mes y año en el encabezado
@@ -709,12 +768,12 @@
             });
         });
 
-        function buscarClientes(page = 1) {
+        function armarFiltrosClientes() {
             var cuitVal = ($('#txtCUIT_Cliente_Busqueda').val() || '').trim();
             if (cuitVal && typeof validarFormatoCUIT === 'function' && !validarFormatoCUIT(cuitVal)) {
                 $('#txtCUIT_Cliente_Busqueda').addClass('is-invalid');
                 $('#busquedaCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                return;
+                return null;
             }
             var fechaRangoTxt = ($('#fechaRango').val() || '').trim();
 
@@ -737,10 +796,7 @@
                 }
             }
 
-            var requestData = {
-                page: page,
-                pageSize: pageSize
-            };
+            const requestData = {};
 
             if (cuitVal !== '') {
                 requestData.cuit = cuitVal.replace(/\D/g, '');
@@ -762,10 +818,19 @@
             if (estadoCliente) {
                 requestData.estadoCliente = estadoCliente;
             }
+            return requestData;
+        }
+
+        function buscarClientes(page = 1) {
+            const requestData = armarFiltrosClientes();
+            if (!requestData) return;
+
+            requestData.page = page;
+            requestData.pageSize = pageSize;
 
             // Realizar la solicitud AJAX GET al controlador
             $.ajax({
-                url: 'http://localhost:50222/api/Clientes/Buscar',
+                url: SGTL.api + '/Clientes/Buscar',
                 type: 'GET',
                 data: requestData,
                 success: function (data) {
@@ -787,12 +852,20 @@
                             }
                             var razon = registro.RazonSocial != null ? registro.RazonSocial : registro.Razon_Social;
                             var cuitTxt = String(registro.CUIT_Cliente || '').trim();
+                            const activo = registro.EstadoCliente;
+                            const tieneEstado = typeof activo === 'boolean';
+                            const etiquetaEstado = tieneEstado
+                                ? SGTL.estado(activo ? 'Activo' : 'Inactivo')
+                                : '—';
+                            const botonEstado = tieneEstado
+                                ? SGTL.botonFila(activo ? 'inactivar' : 'activar', { id: idCliente })
+                                : '';
                             var row = `
                     <tr data-clienteid="${idCliente}">
                         <td>${razon || ''}</td>
                         <td>${cuitTxt}</td>
                         <td>${fechaAltaTxt}</td>
-                        <td class="estado-cliente"></td>
+                        <td class="estado-cliente">${etiquetaEstado}</td>
                         <td>
                             <button type="button" class="btn btn-primary btn-detalle"
                                 data-clienteid="${idCliente}"
@@ -802,6 +875,7 @@
                                 onclick="abrirModalEdicionCliente('${idCliente}')">
                                 <i class="bi bi-pencil"></i>
                             </button>
+                            ${botonEstado}
                             <span data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar">
                                 <button type="button" class="btn btn-danger btn-eliminar ms-1"
                                     data-clienteid="${idCliente}"
@@ -812,7 +886,6 @@
                         </td>
                     </tr>`;
                             const $fila = $(row);
-                            $fila.find('.estado-cliente').text(registro.EstadoCliente || '—');
                             $('#tablaClientes tbody').append($fila);
                         });
                     }
@@ -826,6 +899,95 @@
                 }
             });
 
+        }
+
+        async function generarReporteCSV() {
+            const filtros = armarFiltrosClientes();
+            if (!filtros) return;
+
+            const listo = SGTL.procesando('#btnDescargarClientes');
+            const errorExportacion = 'No se pudo descargar el reporte. Probá de nuevo.';
+
+            try {
+                const resultado = await SGTL.ajax({
+                    url: SGTL.api + '/Clientes/Buscar',
+                    type: 'GET',
+                    data: { ...filtros, page: 1, pageSize: 0 }
+                }, errorExportacion);
+
+                if (!resultado || !Array.isArray(resultado.Results)) {
+                    throw new Error('Respuesta de búsqueda inválida.');
+                }
+
+                if (!resultado.Results.length) {
+                    SGTL.toastError('No hay clientes para exportar con los filtros elegidos.');
+                    return;
+                }
+
+                const provincias = await SGTL.ajax({
+                    url: SGTL.api + '/Provincias',
+                    type: 'GET'
+                }, errorExportacion);
+
+                const nombresProvincia = new Map(provincias.map(p => [p.Prov_ID, p.Nombre_Provincia]));
+                const localidadesPorProvincia = new Map();
+
+                function localidadesDe(provId) {
+                    if (!provId) return Promise.resolve(new Map());
+
+                    if (!localidadesPorProvincia.has(provId)) {
+                        localidadesPorProvincia.set(provId, SGTL.ajax({
+                            url: `${SGTL.api}/Provincias/${provId}/Localidades`,
+                            type: 'GET'
+                        }, errorExportacion).catch(error => {
+                            if (error.xhr && error.xhr.status === 404) return [];
+                            throw error;
+                        }).then(datos => new Map(datos.map(l => [l.Loc_ID, l.Nombre_Localidad]))));
+                    }
+
+                    return localidadesPorProvincia.get(provId);
+                }
+
+                const condiciones = { 1: 'Responsable inscripto', 2: 'Monotributista', 3: 'Exento' };
+                const tipos = { Directo: 'Directo', Con_plataforma: 'Con plataforma' };
+                const filas = [];
+
+                for (let i = 0; i < resultado.Results.length; i += 8) {
+                    const bloque = resultado.Results.slice(i, i + 8);
+                    const filasBloque = await Promise.all(bloque.map(async registro => {
+                        const cliente = await SGTL.ajax({
+                            url: `${SGTL.api}/Clientes/${registro.Cliente_ID}`,
+                            type: 'GET'
+                        }, errorExportacion);
+                        const localidades = await localidadesDe(cliente.ProvID);
+
+                        return [
+                            cliente.Cliente_ID, cliente.Razon_Social,
+                            cuitDigitosAFormulario(cliente.CUIT_Cliente),
+                            condiciones[cliente.Cond_Fiscal], tipos[cliente.Tipo_Cliente],
+                            cliente.Telefono, cliente.Email,
+                            nombresProvincia.get(cliente.ProvID), localidades.get(cliente.LocID),
+                            cliente.Calle, cliente.AlturaCalle, cliente.CodigoPostal,
+                            registro.EstadoCliente ? 'Activo' : 'Inactivo',
+                            SGTL.fecha(cliente.Fecha_Alta, { hora: true }), cliente.Usu_Alta,
+                            SGTL.fecha(cliente.Fecha_Modi, { hora: true }), cliente.Usu_Modi
+                        ];
+                    }));
+
+                    filas.push(...filasBloque);
+                }
+
+                SGTL.descargarCSV('Listado_Clientes.csv', [
+                    'ID', 'Razón social', 'CUIT', 'Condición fiscal', 'Tipo de cliente',
+                    'Teléfono', 'E-mail', 'Provincia', 'Localidad', 'Calle', 'Altura',
+                    'Código postal', 'Estado', 'Fecha de alta', 'Usuario de alta',
+                    'Fecha de modificación', 'Usuario de modificación'
+                ], filas);
+            } catch (error) {
+                SGTL.toastError(error.mensajeUsuario || errorExportacion);
+            } finally {
+                listo();
+            }
         }
 
         // Función para renderizar la paginación
@@ -1182,10 +1344,12 @@
         });
 
         function abrirModalEdicionCliente(clienteId) {
+            $('#confirmarEdicion').removeAttr('Cliente_ID').prop('disabled', true);
+            $('#editarTipoCliente').val('Directo');
+            $('#editarCodigoPostal').val('');
+            $('#alertaCompletaCamposEdicion').hide();
             editarCliente(clienteId);
             $('#editarClienteModal').modal('show');
-            $('#confirmarEdicion').prop('disabled', false);
-            $('#alertaCompletaCamposEdicion').hide();
         }
 
         function abrirModalEliminarCliente(clienteId) {
@@ -1195,7 +1359,7 @@
 
         function editarCliente(id) {
             $.ajax({
-                url: 'http://localhost:50222/api/Clientes/' + id,
+                url: SGTL.api + '/Clientes/' + id,
                 type: 'GET',
                 success: function (data) {
                     clienteEdicionDatosOriginales = data;
@@ -1216,15 +1380,15 @@
 
                     $('#editarCalle').val(data.Calle || '');
                     $('#editarAltura').val((data.AlturaCalle || '').trim());
-
+                    $('#editarTipoCliente').val(data.Tipo_Cliente || 'Directo');
+                    $('#editarCodigoPostal').val(data.CodigoPostal || '');
                     $('#editarCUIT').removeClass('is-invalid is-valid');
                     $('#editarCuitError').hide().text('');
                     $('#editarCuitSuccess').hide().text('');
-
-                    $('#confirmarEdicion').attr('Cliente_ID', id);
+                    $('#confirmarEdicion').attr('Cliente_ID', id).prop('disabled', false);
                 },
                 error: function (xhr, status, error) {
-                    console.error('Error al cargar los datos del cliente:', error);
+                    SGTL.toastError('No se pudieron cargar los datos del cliente. Probá de nuevo.');
                 }
             });
         }
@@ -1252,6 +1416,8 @@
                     LocID: parseInt($('#editarlocalidad').val(), 10),
                     Calle: $('#editarCalle').val().trim(),
                     AlturaCalle: $('#editarAltura').val().trim(),
+                    Tipo_Cliente: $('#editarTipoCliente').val(),
+                    CodigoPostal: $('#editarCodigoPostal').val().trim(),
                     Telefono: $('#editarTelefono').val().trim(),
                     Email: $('#editarEmail').val().trim(),
                     Fecha_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Fecha_Alta : ahora,
@@ -1261,7 +1427,7 @@
                 };
 
                 $.ajax({
-                    url: 'http://localhost:50222/api/Clientes/' + id,
+                    url: SGTL.api + '/Clientes/' + id,
                     type: 'PUT',
                     contentType: 'application/json',
                     data: JSON.stringify(body),
@@ -1450,7 +1616,7 @@
                 errorContainer.text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
                 successContainer.hide();
                 button.prop('disabled', true);
-                return;
+                return null;
             }
 
             // Continuar con la validación en el servidor:
@@ -1543,6 +1709,8 @@
                 LocID: parseInt($('#location-select').val(), 10),
                 Calle: $('#txtCalle').val().trim(),
                 AlturaCalle: $('#txtAlturaCalle').val().trim(),
+                Tipo_Cliente: $('#txtTipoCliente').val(),
+                CodigoPostal: $('#txtCodigoPostal').val().trim(),
                 Telefono: $('#celphone-column').val().trim(),
                 Email: $('#email-id-column').val().trim(),
                 Fecha_Alta: fechaHoraActual,
@@ -1552,7 +1720,7 @@
             };
 
             $.ajax({
-                url: 'http://localhost:50222/api/Clientes',
+                url: SGTL.api + '/Clientes',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify(nuevoCliente),
