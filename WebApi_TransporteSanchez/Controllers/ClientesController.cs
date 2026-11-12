@@ -37,6 +37,50 @@ namespace WebApi_TransporteSanchez.Controllers
 
         }
 
+        public sealed class ClienteFormulario : Cliente
+        {
+            public string Tipo_Cliente { get; set; }
+            public string CodigoPostal { get; set; }
+        }
+
+        private static string ValidarCamposFormulario(string tipoCliente, string codigoPostal)
+        {
+            if (tipoCliente != null && tipoCliente != "Directo" && tipoCliente != "Con_plataforma")
+                return "Seleccioná un tipo de cliente válido.";
+
+            if (codigoPostal != null && codigoPostal.Length > 20)
+                return "El código postal no puede superar los 20 caracteres.";
+
+            return null;
+        }
+
+        private static void GuardarCamposFormulario(SGTLAuditContext db, int id,
+            string tipoCliente, string codigoPostal)
+        {
+            if (tipoCliente == null && codigoPostal == null)
+                return;
+
+            const string sql = @"
+         UPDATE dbo.CLIENTES
+         SET Tipo_Cliente = COALESCE(@tipoCliente, Tipo_Cliente),
+         CodigoPostal = CASE
+         WHEN @codigoPostal IS NULL THEN CodigoPostal
+         ELSE NULLIF(@codigoPostal, N'')
+         END
+         WHERE Cliente_ID = @id;";
+
+            db.Database.ExecuteSqlCommand(sql,
+                new SqlParameter("@id", SqlDbType.Int) { Value = id },
+                new SqlParameter("@tipoCliente", SqlDbType.NVarChar, 20)
+                {
+                    Value = (object)tipoCliente ?? DBNull.Value
+                },
+                new SqlParameter("@codigoPostal", SqlDbType.NVarChar, 20)
+                {
+                    Value = (object)codigoPostal ?? DBNull.Value
+                });
+        }
+
         private string NormalizarCUIT(string cuit)
         {
             if (string.IsNullOrWhiteSpace(cuit)) return string.Empty;
@@ -215,75 +259,51 @@ ORDER BY p.Fila;";
         // GET: api/Clientes/{id}
         public IHttpActionResult Get(int id)
         {
-            // Obtener la cadena de conexión dinámica
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            const string sql = @"
+         SELECT Cliente_ID, Razon_Social, CUIT_Cliente, Cond_Fiscal, ProvID, LocID,
+         Calle, AlturaCalle, Telefono, Email, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi,
+         COALESCE(Tipo_Cliente, N'Directo') AS Tipo_Cliente, CodigoPostal
+         FROM dbo.CLIENTES
+         WHERE Cliente_ID = @id;";
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                var conexion = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+                using (var db = new SGTLAuditContext(conexion))
                 {
-                    var cliente = db.Set<CLIENTES>().Find(id);
+                    var cliente = db.Database.SqlQuery<ClienteFormulario>(sql,
+                        new SqlParameter("@id", SqlDbType.Int) { Value = id }).SingleOrDefault();
 
                     if (cliente == null)
-                    {
-                        return NotFound(); // Retorna 404 si no se encuentra el cliente con el ID especificado
-                    }
+                        return NotFound();
 
-                    var clienteDto = new Cliente
-                    {
-                        Cliente_ID = cliente.Cliente_ID,
-                        Razon_Social = cliente.Razon_Social,
-                        CUIT_Cliente = cliente.CUIT_Cliente,
-                        Cond_Fiscal = cliente.Cond_Fiscal,
-                        ProvID = cliente.ProvID,
-                        LocID = cliente.LocID,
-                        Calle = cliente.Calle,
-                        AlturaCalle = cliente.AlturaCalle,
-                        Telefono = cliente.Telefono,
-                        Email = cliente.Email,
-                        Fecha_Alta = cliente.Fecha_Alta,
-                        Usu_Alta = cliente.Usu_Alta,
-                        Fecha_Modi = cliente.Fecha_Modi,
-                        Usu_Modi = cliente.Usu_Modi
-                    };
-
-                    return Ok(clienteDto); // Retorna 200 con los datos del cliente encontrado
+                    return Ok(cliente);
                 }
             }
-            catch (DbUpdateException ex)
+            catch (SqlException)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
-            }
-            catch (DbEntityValidationException ex)
-            {
-                // Manejo de errores de validación
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-                {
-                    foreach (var error in validationResult.ValidationErrors)
-                    {
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-                    }
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("No se pudieron cargar los datos del cliente."));
             }
         }
 
 
         // POST: api/Clientes
-        public IHttpActionResult Post([FromBody] Cliente clienteDto)
+        public IHttpActionResult Post([FromBody] ClienteFormulario clienteDto)
         {
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
             }
+
+            if (clienteDto == null)
+                return BadRequest("Completá los datos del cliente.");
+
+            var tipoCliente = (clienteDto.Tipo_Cliente ?? "Directo").Trim();
+            var codigoPostal = (clienteDto.CodigoPostal ?? string.Empty).Trim();
+            var errorCampos = ValidarCamposFormulario(tipoCliente, codigoPostal);
+            if (errorCampos != null)
+                return BadRequest(errorCampos);
 
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -325,8 +345,13 @@ ORDER BY p.Fila;";
                     };
 
                     // Agregar la entidad al contexto y guardar cambios
-                    db.Set<CLIENTES>().Add(cliente);
-                    db.SaveChanges();
+                    using (var transaccion = db.Database.BeginTransaction())
+                    {
+                        db.Set<CLIENTES>().Add(cliente);
+                        db.SaveChanges();
+                        GuardarCamposFormulario(db, cliente.Cliente_ID, tipoCliente, codigoPostal);
+                        transaccion.Commit();
+                    }
 
                     return Ok(); // Retorna 200 OK si la inserción fue exitosa
                 }
@@ -359,8 +384,19 @@ ORDER BY p.Fila;";
 
 
         // PUT: api/Clientes/{id}
-        public IHttpActionResult Put(int id, [FromBody] CLIENTES value)
+        public IHttpActionResult Put(int id, [FromBody] ClienteFormulario value)
+
+
         {
+            if (value == null || !ModelState.IsValid)
+                return BadRequest("Completá los datos del cliente.");
+
+            var tipoCliente = value.Tipo_Cliente?.Trim();
+            var codigoPostal = value.CodigoPostal?.Trim();
+            var errorCampos = ValidarCamposFormulario(tipoCliente, codigoPostal);
+            if (errorCampos != null)
+                return BadRequest(errorCampos);
+
             // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
@@ -394,7 +430,12 @@ ORDER BY p.Fila;";
 
                     try
                     {
-                        db.SaveChanges();
+                        using (var transaccion = db.Database.BeginTransaction())
+                        {
+                            db.SaveChanges();
+                            GuardarCamposFormulario(db, id, tipoCliente, codigoPostal);
+                            transaccion.Commit();
+                        }
                         return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
                     }
                     catch (DbEntityValidationException ex)
