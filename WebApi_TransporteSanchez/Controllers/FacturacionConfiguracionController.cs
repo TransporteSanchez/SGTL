@@ -279,6 +279,146 @@ ORDER BY s.Codigo;";
                 throw new ArgumentException("Ingresá el nombre de la sucursal, de hasta 100 caracteres.");
         }
 
+        public class NumeradorEntrada
+        {
+            public string Nombre { get; set; }
+            public int UltimoNumero { get; set; }
+            public int? UltimoNumeroLeido { get; set; }
+        }
+
+        [HttpGet, Route("numeradores")]
+        public Task<IHttpActionResult> Numeradores(CancellationToken ct)
+        {
+            return Consultar(conexion =>
+            {
+                const string sql = @"
+SELECT n.Numerador_ID, n.Nombre, n.UltimoNumero, n.Activo,
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc WHERE tc.NumeradorID = n.Numerador_ID)
+            THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
+FROM dbo.FACTURACION_NUMERADORES n
+ORDER BY n.Nombre;";
+
+                var numeradores = new List<object>();
+                using (var comando = new SqlCommand(sql, conexion))
+                using (var lector = comando.ExecuteReader())
+                {
+                    while (lector.Read())
+                        numeradores.Add(new
+                        {
+                            NumeradorID = (int)lector["Numerador_ID"],
+                            Nombre = (string)lector["Nombre"],
+                            UltimoNumero = (int)lector["UltimoNumero"],
+                            Activo = (bool)lector["Activo"],
+                            PuedeEliminar = (bool)lector["PuedeEliminar"]
+                        });
+                }
+                return numeradores;
+            }, ct);
+        }
+
+        [HttpPost, Route("numeradores")]
+        public Task<IHttpActionResult> CrearNumerador([FromBody] NumeradorEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe un numerador con ese nombre.", transaccion =>
+            {
+                ValidarNumerador(entrada);
+                var id = (int)Valor(transaccion,
+                    "INSERT dbo.FACTURACION_NUMERADORES (Nombre, UltimoNumero) OUTPUT INSERTED.Numerador_ID VALUES (@nombre, @ultimo);",
+                    Parametro("@nombre", entrada.Nombre), Parametro("@ultimo", entrada.UltimoNumero));
+                return new Cambio { Accion = "ALTA", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + entrada.Nombre, Respuesta = new { NumeradorID = id } };
+            }, ct);
+        }
+
+        [HttpPut, Route("numeradores/{id:int}")]
+        public Task<IHttpActionResult> EditarNumerador(int id, [FromBody] NumeradorEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe un numerador con ese nombre.", transaccion =>
+            {
+                ValidarNumerador(entrada);
+                if (entrada.UltimoNumeroLeido == null) throw new ArgumentException("Volvé a abrir el numerador y guardá de nuevo.");
+                var actual = Valor(transaccion, "SELECT UltimoNumero FROM dbo.FACTURACION_NUMERADORES WITH (UPDLOCK) WHERE Numerador_ID = @id;",
+                    Parametro("@id", id));
+                if (actual == null) return null;
+
+                if (entrada.UltimoNumero == entrada.UltimoNumeroLeido)
+                {
+                    Ejecutar(transaccion, "UPDATE dbo.FACTURACION_NUMERADORES SET Nombre = @nombre WHERE Numerador_ID = @id;",
+                        Parametro("@nombre", entrada.Nombre), Parametro("@id", id));
+                    return new Cambio { Accion = "MODIFICAR", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + entrada.Nombre };
+                }
+
+                if ((int)actual != entrada.UltimoNumeroLeido)
+                    throw new ConflictoException("El numerador cambió mientras lo editabas: ahora va por el "
+                        + FacturacionComprobantesConfiguracion.NumeroVisible((int)actual) + ". Revisá el número y guardá de nuevo.", "NUMERO_CAMBIADO");
+                ValidarQueNoBaje(transaccion, id, entrada.UltimoNumero);
+                Ejecutar(transaccion, "UPDATE dbo.FACTURACION_NUMERADORES SET Nombre = @nombre, UltimoNumero = @ultimo WHERE Numerador_ID = @id;",
+                    Parametro("@nombre", entrada.Nombre), Parametro("@ultimo", entrada.UltimoNumero), Parametro("@id", id));
+                return new Cambio
+                {
+                    Accion = "MODIFICAR",
+                    Clave = "Numerador_ID=" + id,
+                    Detalle = "Numerador " + entrada.Nombre + ", último número de " + actual + " a " + entrada.UltimoNumero
+                };
+            }, ct);
+        }
+
+        [HttpPut, Route("numeradores/{id:int}/estado")]
+        public Task<IHttpActionResult> CambiarEstadoNumerador(int id, [FromBody] EstadoEntrada entrada, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                var activo = EstadoPedido(entrada);
+                var anterior = Valor(transaccion, "UPDATE dbo.FACTURACION_NUMERADORES SET Activo = @activo OUTPUT DELETED.Activo WHERE Numerador_ID = @id;",
+                    Parametro("@activo", activo), Parametro("@id", id));
+                if (anterior == null) return null;
+                if ((bool)anterior == activo) return new Cambio();
+                return new Cambio { Accion = activo ? "MODIFICAR" : "BAJA", Clave = "Numerador_ID=" + id, Detalle = activo ? "Numerador activado" : "Numerador inactivado" };
+            }, ct);
+        }
+
+        [HttpDelete, Route("numeradores/{id:int}")]
+        public Task<IHttpActionResult> EliminarNumerador(int id, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                if (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE NumeradorID = @id;", Parametro("@id", id)))
+                    throw new ConflictoException("No se puede eliminar el numerador: lo usa un tipo de comprobante.");
+                var nombre = Valor(transaccion, "SELECT Nombre FROM dbo.FACTURACION_NUMERADORES WITH (XLOCK) WHERE Numerador_ID = @id;",
+                    Parametro("@id", id)) as string;
+                if (nombre == null) return null;
+
+                Ejecutar(transaccion, "DELETE dbo.FACTURACION_NUMERADORES WHERE Numerador_ID = @id;", Parametro("@id", id));
+                return new Cambio { Accion = "ELIMINAR", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + nombre + " eliminado" };
+            }, ct);
+        }
+
+        private static void ValidarNumerador(NumeradorEntrada entrada)
+        {
+            if (entrada == null) throw new ArgumentException("Completá los datos del numerador.");
+            entrada.Nombre = (entrada.Nombre ?? "").Trim();
+            if (entrada.Nombre.Length == 0 || entrada.Nombre.Length > 100)
+                throw new ArgumentException("Ingresá el nombre del numerador, de hasta 100 caracteres.");
+            if (entrada.UltimoNumero < 0 || entrada.UltimoNumero > 99999999)
+                throw new ArgumentException("El último número tiene que estar entre 0 y 99999999.");
+        }
+
+        private static void ValidarQueNoBaje(SqlTransaction transaccion, int numeradorId, int ultimoNumero)
+        {
+            const string sql = @"
+SELECT MAX(c.NumeroCorrelativo)
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID = tc.SucursalID
+JOIN dbo.COMPROBANTES c ON c.Tipo = tc.Tipo AND c.Letra = tc.LetraPredeterminada AND c.Sucursal = s.Codigo
+WHERE tc.NumeradorID = @numerador;";
+
+            var emitido = Valor(transaccion, sql, Parametro("@numerador", numeradorId));
+            if (emitido == DBNull.Value) return;
+            var ultimoEmitido = Convert.ToInt32(emitido);
+            if (ultimoNumero < ultimoEmitido)
+                throw new ConflictoException("Ya hay comprobantes emitidos hasta el " + FacturacionComprobantesConfiguracion.NumeroVisible(ultimoEmitido)
+                    + " con este numerador: el último número no puede ser menor.");
+        }
+
         private async Task<IHttpActionResult> Consultar(Func<SqlConnection, object> consulta, CancellationToken ct)
         {
             try
