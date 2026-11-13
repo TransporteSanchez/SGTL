@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Text.RegularExpressions;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data.Entity;
@@ -62,8 +63,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
             const string sql = @"
          UPDATE dbo.CLIENTES
-         SET Tipo_Cliente = COALESCE(@tipoCliente, Tipo_Cliente),
-         CodigoPostal = CASE
+         SET Tipo_Cliente = COALESCE(@tipoCliente, Tipo_Cliente), CodigoPostal = CASE
          WHEN @codigoPostal IS NULL THEN CodigoPostal
          ELSE NULLIF(@codigoPostal, N'')
          END
@@ -81,11 +81,36 @@ namespace WebApi_TransporteSanchez.Controllers
                 });
         }
 
-        private string NormalizarCUIT(string cuit)
+        private static string NormalizarCUIT(string cuit)
         {
-            if (string.IsNullOrWhiteSpace(cuit)) return string.Empty;
-            // Quitar guiones y cualquier caracter no numérico.
+            if (string.IsNullOrWhiteSpace(cuit))
+                return string.Empty;
+
             return new string(cuit.Where(char.IsDigit).ToArray());
+        }
+
+        private static string ValidarCUITIngresado(string cuit, out string cuitNormalizado)
+        {
+            var texto = (cuit ?? string.Empty).Trim();
+            cuitNormalizado = string.Empty;
+
+            if (!Regex.IsMatch(texto, @"\A(?:[0-9]{11}|[0-9]{2}-[0-9]{8}-[0-9])\z"))
+                return "Ingresá un CUIT de 11 dígitos.";
+
+            cuitNormalizado = NormalizarCUIT(texto);
+            var pesos = new[] { 5, 4, 3, 2, 7, 6, 5, 4, 3, 2 };
+            var suma = 0;
+
+            for (var i = 0; i < pesos.Length; i++)
+                suma += (cuitNormalizado[i] - '0') * pesos[i];
+
+            var digitoEsperado = 11 - suma % 11;
+            if (digitoEsperado == 11) digitoEsperado = 0;
+            if (digitoEsperado == 10) digitoEsperado = 9;
+
+            return cuitNormalizado[10] - '0' == digitoEsperado
+                ? null
+                : "El dígito verificador del CUIT es inválido.";
         }
 
         public sealed class ClienteBusquedaFila
@@ -139,25 +164,19 @@ namespace WebApi_TransporteSanchez.Controllers
                 : (DateTime?)null;
 
             const string sql = @"
-WITH Filtrados AS (
-    SELECT Cliente_ID, Razon_Social AS RazonSocial, CUIT_Cliente, Fecha_Alta,
-           ISNULL(EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente
-    FROM dbo.CLIENTES
-    WHERE (@cuit = '' OR CHARINDEX(@cuit, CUIT_Cliente) > 0)
-      AND (@razon = '' OR CHARINDEX(@razon, Razon_Social) > 0)
-      AND (@desde IS NULL OR Fecha_Alta >= @desde)
-      AND (@hasta IS NULL OR Fecha_Alta < @hasta)
-      AND (@activo IS NULL OR ISNULL(EstadoCliente, CONVERT(bit, 0)) = @activo)
-), Numerados AS (
-    SELECT *, ROW_NUMBER() OVER (ORDER BY Cliente_ID DESC) AS Fila
-    FROM Filtrados
-)
-SELECT p.Cliente_ID, p.RazonSocial, p.CUIT_Cliente, p.Fecha_Alta,
-       ISNULL(p.EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente, t.TotalRecords
-FROM (SELECT COUNT(*) AS TotalRecords FROM Filtrados) AS t
-LEFT JOIN Numerados AS p
-    ON @tamano = 0 OR (p.Fila > @desdeFila AND p.Fila <= @desdeFila + @tamano)
-ORDER BY p.Fila;";
+            WITH Filtrados AS (SELECT Cliente_ID, Razon_Social AS RazonSocial, CUIT_Cliente, Fecha_Alta, ISNULL(EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente
+            FROM dbo.CLIENTES
+            WHERE (@cuit = '' OR CHARINDEX(@cuit, CUIT_Cliente) > 0)
+            AND (@razon = '' OR CHARINDEX(@razon, Razon_Social) > 0)
+            AND (@desde IS NULL OR Fecha_Alta >= @desde)
+            AND (@hasta IS NULL OR Fecha_Alta < @hasta)
+            AND (@activo IS NULL OR ISNULL(EstadoCliente, CONVERT(bit, 0)) = @activo)), Numerados AS (SELECT *, ROW_NUMBER() OVER (ORDER BY Cliente_ID DESC) AS Fila
+            FROM Filtrados)
+            SELECT p.Cliente_ID, p.RazonSocial, p.CUIT_Cliente, p.Fecha_Alta,
+            ISNULL(p.EstadoCliente, CONVERT(bit, 0)) AS EstadoCliente, t.TotalRecords
+            FROM (SELECT COUNT(*) AS TotalRecords FROM Filtrados) AS t
+            LEFT JOIN Numerados AS p ON @tamano = 0 OR (p.Fila > @desdeFila AND p.Fila <= @desdeFila + @tamano)
+            ORDER BY p.Fila;";
 
             try
             {
@@ -259,9 +278,8 @@ ORDER BY p.Fila;";
         // GET: api/Clientes/{id}
         public IHttpActionResult Get(int id)
         {
-            const string sql = @"
-         SELECT Cliente_ID, Razon_Social, CUIT_Cliente, Cond_Fiscal, ProvID, LocID,
-         Calle, AlturaCalle, Telefono, Email, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi,
+         const string sql = @"
+         SELECT Cliente_ID, Razon_Social, CUIT_Cliente, Cond_Fiscal, ProvID, LocID, Calle, AlturaCalle, Telefono, Email, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi, 
          COALESCE(Tipo_Cliente, N'Directo') AS Tipo_Cliente, CodigoPostal
          FROM dbo.CLIENTES
          WHERE Cliente_ID = @id;";
@@ -298,6 +316,10 @@ ORDER BY p.Fila;";
 
             if (clienteDto == null)
                 return BadRequest("Completá los datos del cliente.");
+            string cuitNormalizado;
+            var errorCUIT = ValidarCUITIngresado(clienteDto.CUIT_Cliente, out cuitNormalizado);
+            if (errorCUIT != null)
+                return BadRequest(errorCUIT);
 
             var tipoCliente = (clienteDto.Tipo_Cliente ?? "Directo").Trim();
             var codigoPostal = (clienteDto.CodigoPostal ?? string.Empty).Trim();
@@ -310,10 +332,9 @@ ORDER BY p.Fila;";
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
-                {
-                    var cuitNormalizado = NormalizarCUIT(clienteDto.CUIT_Cliente);
-
+                using (var db = new SGTLAuditContext(connectionString))
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
+                {                 
                     // Verifica si el Cliente ya existe
                     var clienteExistente = db.Set<CLIENTES>().FirstOrDefault(c => c.CUIT_Cliente == cuitNormalizado);
                     if (clienteExistente != null)
@@ -345,13 +366,10 @@ ORDER BY p.Fila;";
                     };
 
                     // Agregar la entidad al contexto y guardar cambios
-                    using (var transaccion = db.Database.BeginTransaction())
-                    {
-                        db.Set<CLIENTES>().Add(cliente);
-                        db.SaveChanges();
-                        GuardarCamposFormulario(db, cliente.Cliente_ID, tipoCliente, codigoPostal);
-                        transaccion.Commit();
-                    }
+                    db.Set<CLIENTES>().Add(cliente);
+                    db.SaveChanges();
+                    GuardarCamposFormulario(db, cliente.Cliente_ID, tipoCliente, codigoPostal);
+                    transaccion.Commit();
 
                     return Ok(); // Retorna 200 OK si la inserción fue exitosa
                 }
@@ -390,7 +408,10 @@ ORDER BY p.Fila;";
         {
             if (value == null || !ModelState.IsValid)
                 return BadRequest("Completá los datos del cliente.");
-
+            string cuitNormalizado;
+            var errorCUIT = ValidarCUITIngresado(value.CUIT_Cliente, out cuitNormalizado);
+            if (errorCUIT != null)
+                return BadRequest(errorCUIT);
             var tipoCliente = value.Tipo_Cliente?.Trim();
             var codigoPostal = value.CodigoPostal?.Trim();
             var errorCampos = ValidarCamposFormulario(tipoCliente, codigoPostal);
@@ -402,7 +423,8 @@ ORDER BY p.Fila;";
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
+                using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
                     CLIENTES oitem = db.Set<CLIENTES>().Find(id);
 
@@ -411,9 +433,14 @@ ORDER BY p.Fila;";
                         return NotFound(); // Retorna 404 si no se encuentra el cliente con el ID especificado
                     }
 
-                    oitem.Cliente_ID = value.Cliente_ID;
+                    var cuitEnUso = db.Set<CLIENTES>().Any(c =>
+                    c.Cliente_ID != id && c.CUIT_Cliente == cuitNormalizado);
+
+                    if (cuitEnUso)
+                        return BadRequest("El CUIT ya está registrado por otro cliente.");
+
                     oitem.Razon_Social = value.Razon_Social;
-                    oitem.CUIT_Cliente = NormalizarCUIT(value.CUIT_Cliente);
+                    oitem.CUIT_Cliente = cuitNormalizado;
                     oitem.Cond_Fiscal = value.Cond_Fiscal;
                     oitem.ProvID = value.ProvID;
                     oitem.LocID = value.LocID;
@@ -430,12 +457,10 @@ ORDER BY p.Fila;";
 
                     try
                     {
-                        using (var transaccion = db.Database.BeginTransaction())
-                        {
-                            db.SaveChanges();
-                            GuardarCamposFormulario(db, id, tipoCliente, codigoPostal);
-                            transaccion.Commit();
-                        }
+                        db.SaveChanges();
+                        GuardarCamposFormulario(db, id, tipoCliente, codigoPostal);
+                        transaccion.Commit();
+
                         return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
                     }
                     catch (DbEntityValidationException ex)
@@ -474,7 +499,7 @@ ORDER BY p.Fila;";
         [HttpPut]
         [Route("api/Clientes/Estado/{id:int}")]
         public async Task<IHttpActionResult> PutEstadoCliente(int id,
-    [FromBody] CambioEstadoCliente cambio, CancellationToken ct)
+        [FromBody] CambioEstadoCliente cambio, CancellationToken ct)
         {
             if (!ModelState.IsValid || cambio == null || !cambio.EstadoCliente.HasValue)
                 return BadRequest("Enviá EstadoCliente como true o false.");
@@ -511,10 +536,10 @@ ORDER BY p.Fila;";
                     }
 
                     const string sql = @"
-UPDATE dbo.CLIENTES
-SET EstadoCliente = @activo, Fecha_Modi = GETUTCDATE(), Usu_Modi = LEFT(@usuario, 20)
-WHERE Cliente_ID = @id AND (EstadoCliente IS NULL OR EstadoCliente <> @activo);
-SET @filas = @@ROWCOUNT;";
+                    UPDATE dbo.CLIENTES
+                    SET EstadoCliente = @activo, Fecha_Modi = GETUTCDATE(), Usu_Modi = LEFT(@usuario, 20)
+                    WHERE Cliente_ID = @id AND (EstadoCliente IS NULL OR EstadoCliente <> @activo);
+                    SET @filas = @@ROWCOUNT;";
                     var filas = new SqlParameter("@filas", SqlDbType.Int) { Direction = ParameterDirection.Output };
                     await db.Database.ExecuteSqlCommandAsync(sql, ct,
                         new SqlParameter("@activo", SqlDbType.Bit) { Value = activo },
@@ -581,15 +606,14 @@ SET @filas = @@ROWCOUNT;";
         [Route("api/Clientes/ValidarCUIT/{cuit}")]
         public IHttpActionResult ValidarCUIT(string cuit)
         {
-            var cuitNormalizado = NormalizarCUIT(cuit);
-
-            // Si la BD guarda CUIT como 11 dígitos, el input con guiones también debe normalizarse.
-            if (cuitNormalizado.Length != 11)
+            string cuitNormalizado;
+            var errorCUIT = ValidarCUITIngresado(cuit, out cuitNormalizado);
+            if (errorCUIT != null)
             {
                 return Content(HttpStatusCode.BadRequest, new
                 {
                     codigo = "cuit_invalido",
-                    mensaje = "Formato de CUIT inválido."
+                    mensaje = errorCUIT
                 });
             }
 
@@ -605,7 +629,6 @@ SET @filas = @@ROWCOUNT;";
                         mensaje = "El CUIT ya está registrado."
                     });
                 }
-
                 return Ok(new
                 {
                     codigo = "CUIT_no_registrado",
@@ -619,21 +642,24 @@ SET @filas = @@ROWCOUNT;";
         [Route("api/Clientes/ValidarCUIT/{cuit}/{clienteId}")]
         public IHttpActionResult ValidarCUIT(string cuit, int clienteId)
         {
-            var cuitNormalizado = NormalizarCUIT(cuit);
-
-            if (cuitNormalizado.Length != 11)
+            string cuitNormalizado;
+            var errorCUIT = ValidarCUITIngresado(cuit, out cuitNormalizado);
+            if (errorCUIT != null)
             {
                 return Content(HttpStatusCode.BadRequest, new
                 {
                     codigo = "cuit_invalido",
-                    mensaje = "Formato de CUIT inválido."
+                    mensaje = errorCUIT
                 });
             }
 
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
             using (var db = new SGTLAuditContext(connectionString))
             {
-                var clienteConMismoCUIT = db.Set<CLIENTES>().FirstOrDefault(x => x.CUIT_Cliente == cuitNormalizado);
+                var clienteConMismoCUIT = db.Set<CLIENTES>()
+                .Where(x => x.CUIT_Cliente == cuitNormalizado)
+                .OrderBy(x => x.Cliente_ID == clienteId ? 1 : 0)
+                .FirstOrDefault();
 
                 // Si el CUIT pertenece al mismo cliente que se está editando, está permitido.
                 if (clienteConMismoCUIT != null && clienteConMismoCUIT.Cliente_ID == clienteId)
@@ -661,7 +687,6 @@ SET @filas = @@ROWCOUNT;";
                 });
             }
         }
-
 
     }
 
