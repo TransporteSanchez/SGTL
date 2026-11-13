@@ -163,6 +163,122 @@ ORDER BY tc.LetraPredeterminada;";
             return activas;
         }
 
+        public class SucursalEntrada
+        {
+            public string Codigo { get; set; }
+            public string Nombre { get; set; }
+        }
+
+        [HttpGet, Route("sucursales")]
+        public Task<IHttpActionResult> Sucursales(CancellationToken ct)
+        {
+            return Consultar(conexion =>
+            {
+                const string sql = @"
+SELECT s.Sucursal_ID, s.Codigo, s.Nombre, s.Activa,
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES c WHERE c.Sucursal = s.Codigo)
+            THEN 0 ELSE 1 END AS bit) AS PuedeCambiarCodigo,
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES c WHERE c.Sucursal = s.Codigo)
+                   OR EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc WHERE tc.SucursalID = s.Sucursal_ID)
+            THEN 0 ELSE 1 END AS bit) AS PuedeEliminar
+FROM dbo.FACTURACION_SUCURSALES s
+ORDER BY s.Codigo;";
+
+                var sucursales = new List<object>();
+                using (var comando = new SqlCommand(sql, conexion))
+                using (var lector = comando.ExecuteReader())
+                {
+                    while (lector.Read())
+                        sucursales.Add(new
+                        {
+                            SucursalID = (int)lector["Sucursal_ID"],
+                            Codigo = (string)lector["Codigo"],
+                            Nombre = (string)lector["Nombre"],
+                            Activa = (bool)lector["Activa"],
+                            PuedeCambiarCodigo = (bool)lector["PuedeCambiarCodigo"],
+                            PuedeEliminar = (bool)lector["PuedeEliminar"]
+                        });
+                }
+                return sucursales;
+            }, ct);
+        }
+
+        [HttpPost, Route("sucursales")]
+        public Task<IHttpActionResult> CrearSucursal([FromBody] SucursalEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe una sucursal con ese código.", transaccion =>
+            {
+                ValidarSucursal(entrada);
+                var id = (int)Valor(transaccion,
+                    "INSERT dbo.FACTURACION_SUCURSALES (Codigo, Nombre) OUTPUT INSERTED.Sucursal_ID VALUES (@codigo, @nombre);",
+                    Parametro("@codigo", entrada.Codigo), Parametro("@nombre", entrada.Nombre));
+                return new Cambio { Accion = "ALTA", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo, Respuesta = new { SucursalID = id } };
+            }, ct);
+        }
+
+        [HttpPut, Route("sucursales/{id:int}")]
+        public Task<IHttpActionResult> EditarSucursal(int id, [FromBody] SucursalEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe una sucursal con ese código.", transaccion =>
+            {
+                ValidarSucursal(entrada);
+                var codigoActual = Valor(transaccion, "SELECT Codigo FROM dbo.FACTURACION_SUCURSALES WITH (XLOCK) WHERE Sucursal_ID = @id;",
+                    Parametro("@id", id)) as string;
+                if (codigoActual == null) return null;
+                if (entrada.Codigo != codigoActual
+                    && Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK) WHERE Sucursal = @codigo;", Parametro("@codigo", codigoActual)))
+                    throw new ConflictoException("No se puede cambiar el código de la sucursal: figura en un comprobante.");
+
+                Ejecutar(transaccion, "UPDATE dbo.FACTURACION_SUCURSALES SET Codigo = @codigo, Nombre = @nombre WHERE Sucursal_ID = @id;",
+                    Parametro("@codigo", entrada.Codigo), Parametro("@nombre", entrada.Nombre), Parametro("@id", id));
+                return new Cambio { Accion = "MODIFICAR", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo };
+            }, ct);
+        }
+
+        [HttpPut, Route("sucursales/{id:int}/estado")]
+        public Task<IHttpActionResult> CambiarEstadoSucursal(int id, [FromBody] EstadoEntrada entrada, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                var activa = EstadoPedido(entrada);
+                var anterior = Valor(transaccion, "UPDATE dbo.FACTURACION_SUCURSALES SET Activa = @activa OUTPUT DELETED.Activa WHERE Sucursal_ID = @id;",
+                    Parametro("@activa", activa), Parametro("@id", id));
+                if (anterior == null) return null;
+                if ((bool)anterior == activa) return new Cambio();
+                return new Cambio { Accion = activa ? "MODIFICAR" : "BAJA", Clave = "Sucursal_ID=" + id, Detalle = activa ? "Sucursal activada" : "Sucursal inactivada" };
+            }, ct);
+        }
+
+        [HttpDelete, Route("sucursales/{id:int}")]
+        public Task<IHttpActionResult> EliminarSucursal(int id, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                const string enUso = "No se puede eliminar la sucursal: la usa un tipo de comprobante o un comprobante.";
+                if (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE SucursalID = @id;", Parametro("@id", id)))
+                    throw new ConflictoException(enUso);
+                var codigo = Valor(transaccion, "SELECT Codigo FROM dbo.FACTURACION_SUCURSALES WITH (XLOCK) WHERE Sucursal_ID = @id;",
+                    Parametro("@id", id)) as string;
+                if (codigo == null) return null;
+                if (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK) WHERE Sucursal = @codigo;", Parametro("@codigo", codigo)))
+                    throw new ConflictoException(enUso);
+
+                Ejecutar(transaccion, "DELETE dbo.FACTURACION_SUCURSALES WHERE Sucursal_ID = @id;", Parametro("@id", id));
+                return new Cambio { Accion = "ELIMINAR", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + codigo + " eliminada" };
+            }, ct);
+        }
+
+        private static void ValidarSucursal(SucursalEntrada entrada)
+        {
+            if (entrada == null) throw new ArgumentException("Completá los datos de la sucursal.");
+            var codigo = FacturacionComprobantesConfiguracion.NormalizarSucursal(entrada.Codigo);
+            if (codigo == null) throw new ArgumentException("Ingresá el código de la sucursal.");
+            entrada.Codigo = codigo.PadLeft(4, '0');
+            entrada.Nombre = (entrada.Nombre ?? "").Trim();
+            if (entrada.Nombre.Length == 0 || entrada.Nombre.Length > 100)
+                throw new ArgumentException("Ingresá el nombre de la sucursal, de hasta 100 caracteres.");
+        }
+
         private async Task<IHttpActionResult> Consultar(Func<SqlConnection, object> consulta, CancellationToken ct)
         {
             try
