@@ -184,6 +184,115 @@ ORDER BY tc.LetraPredeterminada;";
             }
         }
 
+        public class EstadoEntrada
+        {
+            public bool? Activo { get; set; }
+        }
+
+        private class Cambio
+        {
+            public string Accion { get; set; }
+            public string Clave { get; set; }
+            public string Detalle { get; set; }
+            public object Respuesta { get; set; }
+        }
+
+        private class ConflictoException : Exception
+        {
+            public ConflictoException(string mensaje, string codigo = null) : base(mensaje)
+            {
+                Codigo = codigo;
+            }
+
+            public string Codigo { get; }
+        }
+
+        private async Task<IHttpActionResult> Guardar(string siYaExiste, Func<SqlTransaction, Cambio> operacion, CancellationToken ct)
+        {
+            try
+            {
+                var usuario = await acceso.AutenticarAsync(Request.Headers.Authorization, ct);
+                if (usuario == null) return Unauthorized();
+                if (!usuario.EsAdministrador)
+                    return Content(HttpStatusCode.Forbidden, new { error = "Solo un administrador puede modificar la configuración de facturación." });
+
+                Cambio cambio;
+                using (var conexion = new SqlConnection(CadenaConexion()))
+                {
+                    conexion.Open();
+                    using (var transaccion = conexion.BeginTransaction(IsolationLevel.Serializable))
+                    {
+                        cambio = operacion(transaccion);
+                        if (cambio == null) return NotFound();
+                        transaccion.Commit();
+                    }
+                }
+
+                if (cambio.Accion != null)
+                    SGTLAuditContext.RegistrarEvento(ConnectionStringHelper.GetConnectionString("SGTLEntities"), usuario.Nombre,
+                        cambio.Accion, "FACTURACION_CONFIG", cambio.Clave, cambio.Detalle, "Configuración");
+                return cambio.Respuesta == null ? (IHttpActionResult)Ok() : Ok(cambio.Respuesta);
+            }
+            catch (ConflictoException ex)
+            {
+                return Content(HttpStatusCode.Conflict, new { error = ex.Message, codigo = ex.Codigo });
+            }
+            catch (ArgumentException ex)
+            {
+                return Content(HttpStatusCode.BadRequest, new { error = ex.Message });
+            }
+            catch (SqlException ex) when (ex.Number == 2601 || ex.Number == 2627)
+            {
+                return Content(HttpStatusCode.Conflict, new { error = siYaExiste ?? "Ya existe un registro con esos datos." });
+            }
+            catch (SqlException ex) when (ex.Number == 547)
+            {
+                return Content(HttpStatusCode.Conflict, new { error = "No se puede completar: hay datos relacionados." });
+            }
+            catch (SqlException ex) when (ex.Number >= 50000)
+            {
+                return Content(HttpStatusCode.Conflict, new { error = ex.Message });
+            }
+            catch (Exception)
+            {
+                return Content(HttpStatusCode.BadRequest, new { error = "No se pudo completar la operación. Probá de nuevo." });
+            }
+        }
+
+        private static SqlParameter Parametro(string nombre, object valor)
+        {
+            return new SqlParameter(nombre, valor ?? DBNull.Value);
+        }
+
+        private static object Valor(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
+        {
+            using (var comando = new SqlCommand(sql, transaccion.Connection, transaccion))
+            {
+                comando.Parameters.AddRange(parametros);
+                return comando.ExecuteScalar();
+            }
+        }
+
+        private static bool Existe(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
+        {
+            return Valor(transaccion, sql, parametros) != null;
+        }
+
+        private static void Ejecutar(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
+        {
+            using (var comando = new SqlCommand(sql, transaccion.Connection, transaccion))
+            {
+                comando.Parameters.AddRange(parametros);
+                comando.ExecuteNonQuery();
+            }
+        }
+
+        private static bool EstadoPedido(EstadoEntrada entrada)
+        {
+            if (entrada?.Activo == null) throw new ArgumentException("Indicá si queda activo o inactivo.");
+            return entrada.Activo.Value;
+        }
+
         private static string CadenaConexion()
         {
             return new EntityConnectionStringBuilder(ConnectionStringHelper.GetConnectionString("SGTLEntities")).ProviderConnectionString;
