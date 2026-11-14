@@ -458,6 +458,8 @@ WHERE tc.NumeradorID = @numerador;";
             public string LetraPredeterminada { get; set; }
             public int SucursalID { get; set; }
             public int NumeradorID { get; set; }
+            public string TipoLeido { get; set; }
+            public string LetraLeida { get; set; }
         }
 
         [HttpPost, Route("tipos-comprobante")]
@@ -506,6 +508,89 @@ VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada,
                     Respuesta = new { FactTipoID = id }
+                };
+            }, ct);
+        }
+
+        [HttpPut, Route("tipos-comprobante/{id:int}")]
+        public Task<IHttpActionResult> EditarTipo(int id, [FromBody] TipoEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe un tipo de comprobante con esa sigla y letra.", transaccion =>
+            {
+                ValidarTipo(entrada);
+                // Bloquea todas las letras de la sigla antes del catálogo, en el mismo orden que el alta y la emisión.
+                Ejecutar(transaccion, @"
+SELECT COUNT(*) FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK)
+WHERE Tipo = (SELECT Tipo FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE FactTipo_ID = @id);", Parametro("@id", id));
+                var actual = TipoParaCambiar(transaccion, id);
+                if (actual == null) return null;
+                var sigla = (string)actual["Tipo"];
+                var letra = (string)actual["LetraPredeterminada"];
+                if (entrada.TipoLeido != sigla || entrada.LetraLeida != letra)
+                    throw new ConflictoException("El tipo de comprobante cambió mientras lo editabas. Volvé a abrirlo y guardá de nuevo.");
+
+                var cambiaSigla = entrada.Tipo != sigla;
+                var cambiaLetra = entrada.LetraPredeterminada != letra;
+                var cambiaImpacto = entrada.Impacto != (string)actual["Impacto"];
+                if (cambiaSigla && (ImpactoFijo(sigla) != null || ImpactoFijo(entrada.Tipo) != null))
+                    throw new ArgumentException("FAC, ND, NC y REC son siglas fijas del sistema: no se pueden cambiar ni usar para otro tipo.");
+                if (cambiaImpacto && Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK) WHERE Tipo = @tipo;", Parametro("@tipo", sigla)))
+                    throw new ConflictoException("No se puede cambiar el impacto: el tipo ya tiene comprobantes.");
+                if (cambiaLetra)
+                {
+                    if (Existe(transaccion, "SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE Tipo = @tipo AND LetraPredeterminada = @letra;",
+                        Parametro("@tipo", sigla), Parametro("@letra", entrada.LetraPredeterminada)))
+                        throw new ConflictoException("Ya existe un tipo de comprobante con esa sigla y letra.", "TIPO_DUPLICADO");
+                    if (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK) WHERE Tipo = @tipo AND NULLIF(LTRIM(RTRIM(Letra)), '') IS NULL;",
+                        Parametro("@tipo", sigla)))
+                        throw new ConflictoException("No se puede cambiar la letra: hay comprobantes anteriores de este tipo sin letra.");
+                    if (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.COMPROBANTES WITH (UPDLOCK) WHERE Tipo = @tipo AND Letra = @letra;",
+                        Parametro("@tipo", sigla), Parametro("@letra", entrada.LetraPredeterminada)))
+                        throw new ConflictoException("No se puede cambiar la letra: ya hay comprobantes de este tipo con la letra " + entrada.LetraPredeterminada + ".", "LETRA_USADA");
+                }
+                if (cambiaSigla
+                    && (Existe(transaccion, "SELECT TOP (1) 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo;", Parametro("@tipo", entrada.Tipo))
+                        || Existe(transaccion, "SELECT 1 FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo;", Parametro("@tipo", entrada.Tipo))))
+                    throw new ConflictoException("Ya existe un tipo de comprobante con esa sigla.", "TIPO_DUPLICADO");
+
+                var numerador = Fila(transaccion, @"
+SELECT n.UltimoNumero, CAST(CASE WHEN n.Activo = 1 AND s.Activa = 1 THEN 1 ELSE 0 END AS bit) AS Activos
+FROM dbo.FACTURACION_NUMERADORES n WITH (UPDLOCK)
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID = @sucursal
+WHERE n.Numerador_ID = @numerador;",
+                    Parametro("@sucursal", entrada.SucursalID), Parametro("@numerador", entrada.NumeradorID));
+                if (numerador == null || ((bool)actual["Activo"] && !(bool)numerador["Activos"]))
+                    throw new ArgumentException("Elegí una sucursal y un numerador activos.");
+
+                if (cambiaSigla)
+                    Ejecutar(transaccion, @"
+UPDATE dbo.TIPOS_COMPROBANTE SET Tipo = @tipo WHERE Tipo = @anterior;
+UPDATE dbo.COMPROBANTES SET TipoReferencia = @tipo WHERE TipoReferencia = @anterior;",
+                        Parametro("@tipo", entrada.Tipo), Parametro("@anterior", sigla));
+                if (cambiaImpacto)
+                    Ejecutar(transaccion, "UPDATE dbo.TIPOS_COMPROBANTE SET Impacto = @impacto WHERE Tipo = @tipo;",
+                        Parametro("@impacto", entrada.Impacto), Parametro("@tipo", entrada.Tipo));
+                if (cambiaLetra)
+                    Ejecutar(transaccion, "UPDATE dbo.COMPROBANTES SET Letra = @letra WHERE Tipo = @tipo AND Letra = @anterior;",
+                        Parametro("@letra", entrada.LetraPredeterminada), Parametro("@tipo", entrada.Tipo), Parametro("@anterior", letra));
+                Ejecutar(transaccion, @"
+UPDATE dbo.TIPOS_COMPROBANTE SET Descripcion = @descripcion, EsElectronico = @electronico WHERE Tipo = @tipo;
+UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE
+SET LetraPredeterminada = @letra, SucursalID = @sucursal, NumeradorID = @numerador, FechaModificacion = SYSUTCDATETIME()
+WHERE FactTipo_ID = @id;",
+                    Parametro("@descripcion", entrada.Descripcion), Parametro("@electronico", entrada.EsElectronico), Parametro("@tipo", entrada.Tipo),
+                    Parametro("@letra", entrada.LetraPredeterminada), Parametro("@sucursal", entrada.SucursalID),
+                    Parametro("@numerador", entrada.NumeradorID), Parametro("@id", id));
+                if (cambiaLetra || entrada.SucursalID != (int)actual["SucursalID"] || entrada.NumeradorID != (int)actual["NumeradorID"])
+                    ValidarQueNoBaje(transaccion, entrada.NumeradorID, (int)numerador["UltimoNumero"]);
+
+                return new Cambio
+                {
+                    Accion = "MODIFICAR",
+                    Clave = "FactTipo_ID=" + id,
+                    Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada
+                        + (cambiaSigla || cambiaLetra ? " (antes " + sigla + " " + letra + ")" : "")
+                        + (entrada.EsElectronico ? ", marcado como electrónico" : "")
                 };
             }, ct);
         }
@@ -603,7 +688,7 @@ END;", Parametro("@id", id), Parametro("@tipo", tipo["Tipo"]));
         private static Dictionary<string, object> TipoParaCambiar(SqlTransaction transaccion, int id)
         {
             var tipo = Fila(transaccion, @"
-SELECT tc.Tipo, tc.LetraPredeterminada, tc.Activo, t.EsElectronico
+SELECT tc.Tipo, tc.LetraPredeterminada, tc.SucursalID, tc.NumeradorID, tc.Activo, t.Impacto, t.EsElectronico
 FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc WITH (UPDLOCK)
 JOIN dbo.TIPOS_COMPROBANTE t WITH (UPDLOCK) ON t.Tipo = tc.Tipo
 WHERE tc.FactTipo_ID = @id;", Parametro("@id", id));
