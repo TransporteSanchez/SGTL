@@ -27,17 +27,47 @@ namespace WebApi_TransporteSanchez.Controllers
             return Consultar(conexion =>
             {
                 const string sql = @"
-SELECT DISTINCT t.Tipo, t.Descripcion
-FROM dbo.TIPOS_COMPROBANTE t
-JOIN dbo.FACTURACION_TIPOS_COMPROBANTE tc ON tc.Tipo = t.Tipo
-ORDER BY t.Tipo;";
+SELECT tc.FactTipo_ID, tc.Tipo, t.Descripcion, t.Impacto, t.EsElectronico, tc.LetraPredeterminada,
+       tc.SucursalID, s.Codigo AS Sucursal, tc.NumeradorID, n.Nombre AS Numerador, tc.Activo,
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES c WHERE c.Tipo = tc.Tipo)
+            THEN 1 ELSE 0 END AS bit) AS TieneComprobantes,
+       CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.COMPROBANTES c WHERE c.Tipo = tc.Tipo
+                   AND (c.Letra = tc.LetraPredeterminada OR NULLIF(LTRIM(RTRIM(c.Letra)), '') IS NULL))
+            THEN 1 ELSE 0 END AS bit) AS TieneComprobantesDeLaLetra
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc
+JOIN dbo.TIPOS_COMPROBANTE t ON t.Tipo = tc.Tipo
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID = tc.SucursalID
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID = tc.NumeradorID
+ORDER BY tc.Tipo, tc.LetraPredeterminada;";
 
                 var tipos = new List<object>();
                 using (var comando = new SqlCommand(sql, conexion))
                 using (var lector = comando.ExecuteReader())
                 {
                     while (lector.Read())
-                        tipos.Add(new { Tipo = (string)lector["Tipo"], Descripcion = (string)lector["Descripcion"] });
+                    {
+                        var tipo = (string)lector["Tipo"];
+                        var electronico = (bool)lector["EsElectronico"];
+                        var siglaLibre = !electronico && ImpactoFijo(tipo) == null;
+                        tipos.Add(new
+                        {
+                            FactTipoID = (int)lector["FactTipo_ID"],
+                            Tipo = tipo,
+                            Descripcion = (string)lector["Descripcion"],
+                            Impacto = (string)lector["Impacto"],
+                            EsElectronico = electronico,
+                            LetraPredeterminada = (string)lector["LetraPredeterminada"],
+                            SucursalID = (int)lector["SucursalID"],
+                            Sucursal = (string)lector["Sucursal"],
+                            NumeradorID = (int)lector["NumeradorID"],
+                            Numerador = (string)lector["Numerador"],
+                            Activo = (bool)lector["Activo"],
+                            PuedeCambiarSigla = siglaLibre,
+                            PuedeCambiarImpacto = siglaLibre && !(bool)lector["TieneComprobantes"],
+                            PuedeCambiarLetra = !electronico && tipo != "REC",
+                            PuedeEliminar = !electronico && !(bool)lector["TieneComprobantesDeLaLetra"]
+                        });
+                    }
                 }
                 return tipos;
             }, ct);
@@ -440,23 +470,15 @@ WHERE tc.NumeradorID = @numerador;";
                     Parametro("@tipo", entrada.Tipo), Parametro("@letra", entrada.LetraPredeterminada)))
                     throw new ConflictoException("Ya existe un tipo de comprobante con esa sigla y letra.", "TIPO_DUPLICADO");
 
-                var existeElTipo = false;
-                using (var comando = new SqlCommand("SELECT Descripcion, Impacto, EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo;",
-                    transaccion.Connection, transaccion))
+                var existente = Fila(transaccion, "SELECT Descripcion, Impacto, EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo;",
+                    Parametro("@tipo", entrada.Tipo));
+                if (existente != null)
                 {
-                    comando.Parameters.Add(Parametro("@tipo", entrada.Tipo));
-                    using (var lector = comando.ExecuteReader())
-                    {
-                        if (lector.Read())
-                        {
-                            if ((bool)lector["EsElectronico"])
-                                throw new ConflictoException("No se puede agregar otra letra al tipo de comprobante: es electrónico.");
-                            if ((string)lector["Impacto"] != entrada.Impacto || entrada.EsElectronico
-                                || !string.Equals(((string)lector["Descripcion"]).Trim(), entrada.Descripcion, StringComparison.OrdinalIgnoreCase))
-                                throw new ArgumentException("El tipo " + entrada.Tipo + " ya existe: usá su misma descripción y su mismo impacto, sin marcarlo como electrónico.");
-                            existeElTipo = true;
-                        }
-                    }
+                    if ((bool)existente["EsElectronico"])
+                        throw new ConflictoException("No se puede agregar otra letra al tipo de comprobante: es electrónico.");
+                    if ((string)existente["Impacto"] != entrada.Impacto || entrada.EsElectronico
+                        || !string.Equals(((string)existente["Descripcion"]).Trim(), entrada.Descripcion, StringComparison.OrdinalIgnoreCase))
+                        throw new ArgumentException("El tipo " + entrada.Tipo + " ya existe: usá su misma descripción y su mismo impacto, sin marcarlo como electrónico.");
                 }
 
                 var ultimoNumero = Valor(transaccion, @"
@@ -467,7 +489,7 @@ WHERE n.Numerador_ID = @numerador AND n.Activo = 1;",
                     Parametro("@sucursal", entrada.SucursalID), Parametro("@numerador", entrada.NumeradorID));
                 if (ultimoNumero == null) throw new ArgumentException("Elegí una sucursal y un numerador activos.");
 
-                if (!existeElTipo)
+                if (existente == null)
                     Ejecutar(transaccion, "INSERT dbo.TIPOS_COMPROBANTE (Tipo, Descripcion, Impacto, EsElectronico) VALUES (@tipo, @descripcion, @impacto, @electronico);",
                         Parametro("@tipo", entrada.Tipo), Parametro("@descripcion", entrada.Descripcion), Parametro("@impacto", entrada.Impacto),
                         Parametro("@electronico", entrada.EsElectronico));
@@ -484,6 +506,65 @@ VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada,
                     Respuesta = new { FactTipoID = id }
+                };
+            }, ct);
+        }
+
+        [HttpPut, Route("tipos-comprobante/{id:int}/estado")]
+        public Task<IHttpActionResult> CambiarEstadoTipo(int id, [FromBody] EstadoEntrada entrada, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                var activo = EstadoPedido(entrada);
+                var tipo = TipoParaCambiar(transaccion, id);
+                if (tipo == null) return null;
+                if ((bool)tipo["Activo"] == activo) return new Cambio();
+                if (activo && !Existe(transaccion, @"
+SELECT 1
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID = tc.SucursalID AND s.Activa = 1
+JOIN dbo.FACTURACION_NUMERADORES n ON n.Numerador_ID = tc.NumeradorID AND n.Activo = 1
+WHERE tc.FactTipo_ID = @id;", Parametro("@id", id)))
+                    throw new ConflictoException("Para activar el tipo de comprobante, activá antes su sucursal y su numerador.");
+
+                Ejecutar(transaccion, "UPDATE dbo.FACTURACION_TIPOS_COMPROBANTE SET Activo = @activo, FechaModificacion = SYSUTCDATETIME() WHERE FactTipo_ID = @id;",
+                    Parametro("@activo", activo), Parametro("@id", id));
+                return new Cambio
+                {
+                    Accion = activo ? "MODIFICAR" : "BAJA",
+                    Clave = "FactTipo_ID=" + id,
+                    Detalle = "Tipo de comprobante " + tipo["Tipo"] + " " + tipo["LetraPredeterminada"] + (activo ? " activado" : " inactivado")
+                };
+            }, ct);
+        }
+
+        [HttpDelete, Route("tipos-comprobante/{id:int}")]
+        public Task<IHttpActionResult> EliminarTipo(int id, CancellationToken ct)
+        {
+            return Guardar(null, transaccion =>
+            {
+                var tipo = TipoParaCambiar(transaccion, id);
+                if (tipo == null) return null;
+                if (Existe(transaccion, @"
+SELECT TOP (1) 1
+FROM dbo.COMPROBANTES WITH (UPDLOCK)
+WHERE Tipo = @tipo AND (Letra = @letra OR NULLIF(LTRIM(RTRIM(Letra)), '') IS NULL);",
+                    Parametro("@tipo", tipo["Tipo"]), Parametro("@letra", tipo["LetraPredeterminada"])))
+                    throw new ConflictoException("No se puede eliminar el tipo de comprobante: ya tiene comprobantes emitidos.");
+
+                Ejecutar(transaccion, @"
+DELETE dbo.FACTURACION_TIPOS_COMPROBANTE WHERE FactTipo_ID = @id;
+IF NOT EXISTS (SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WHERE Tipo = @tipo)
+   AND NOT EXISTS (SELECT 1 FROM dbo.COMPROBANTES WHERE Tipo = @tipo)
+BEGIN
+    DELETE dbo.COMPROBANTES_NUMERADORES WHERE Tipo = @tipo;
+    DELETE dbo.TIPOS_COMPROBANTE WHERE Tipo = @tipo;
+END;", Parametro("@id", id), Parametro("@tipo", tipo["Tipo"]));
+                return new Cambio
+                {
+                    Accion = "ELIMINAR",
+                    Clave = "FactTipo_ID=" + id,
+                    Detalle = "Tipo de comprobante " + tipo["Tipo"] + " " + tipo["LetraPredeterminada"] + " eliminado"
                 };
             }, ct);
         }
@@ -517,6 +598,18 @@ VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
                 case "NC": case "REC": return "C";
                 default: return null;
             }
+        }
+
+        private static Dictionary<string, object> TipoParaCambiar(SqlTransaction transaccion, int id)
+        {
+            var tipo = Fila(transaccion, @"
+SELECT tc.Tipo, tc.LetraPredeterminada, tc.Activo, t.EsElectronico
+FROM dbo.FACTURACION_TIPOS_COMPROBANTE tc WITH (UPDLOCK)
+JOIN dbo.TIPOS_COMPROBANTE t WITH (UPDLOCK) ON t.Tipo = tc.Tipo
+WHERE tc.FactTipo_ID = @id;", Parametro("@id", id));
+            if (tipo != null && (bool)tipo["EsElectronico"])
+                throw new ConflictoException("Los tipos de comprobante electrónicos no se pueden cambiar ni eliminar.");
+            return tipo;
         }
 
         private async Task<IHttpActionResult> Consultar(Func<SqlConnection, object> consulta, CancellationToken ct)
@@ -632,6 +725,19 @@ VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
         private static bool Existe(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
         {
             return Valor(transaccion, sql, parametros) != null;
+        }
+
+        private static Dictionary<string, object> Fila(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
+        {
+            using (var comando = new SqlCommand(sql, transaccion.Connection, transaccion))
+            {
+                comando.Parameters.AddRange(parametros);
+                using (var lector = comando.ExecuteReader())
+                {
+                    if (!lector.Read()) return null;
+                    return Enumerable.Range(0, lector.FieldCount).ToDictionary(lector.GetName, lector.GetValue);
+                }
+            }
         }
 
         private static void Ejecutar(SqlTransaction transaccion, string sql, params SqlParameter[] parametros)
