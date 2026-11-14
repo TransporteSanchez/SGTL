@@ -413,6 +413,9 @@
     <Compile Include="Services\WhatsApp\RegistroEnviosWhatsApp.cs" />
     <Compile Include="Controllers\TablerosController.cs" />
     <Compile Include="Controllers\WhatsAppConfigController.cs" />
+    <Compile Include="Services\WhatsApp\ConfiguracionEnvioWhatsApp.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppCloudApiNotifier.cs" />
+    <Compile Include="Services\WhatsApp\ViajeWhatsAppDispatcher.cs" />
     <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
