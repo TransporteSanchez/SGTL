@@ -416,7 +416,107 @@ WHERE tc.NumeradorID = @numerador;";
             var ultimoEmitido = Convert.ToInt32(emitido);
             if (ultimoNumero < ultimoEmitido)
                 throw new ConflictoException("Ya hay comprobantes emitidos hasta el " + FacturacionComprobantesConfiguracion.NumeroVisible(ultimoEmitido)
-                    + " con este numerador: el último número no puede ser menor.");
+                    + " para los tipos de este numerador: su último número no puede quedar en el " + FacturacionComprobantesConfiguracion.NumeroVisible(ultimoNumero) + ".");
+        }
+
+        public class TipoEntrada
+        {
+            public string Tipo { get; set; }
+            public string Descripcion { get; set; }
+            public string Impacto { get; set; }
+            public bool EsElectronico { get; set; }
+            public string LetraPredeterminada { get; set; }
+            public int SucursalID { get; set; }
+            public int NumeradorID { get; set; }
+        }
+
+        [HttpPost, Route("tipos-comprobante")]
+        public Task<IHttpActionResult> CrearTipo([FromBody] TipoEntrada entrada, CancellationToken ct)
+        {
+            return Guardar("Ya existe un tipo de comprobante con esa sigla y letra.", transaccion =>
+            {
+                ValidarTipo(entrada);
+                if (Existe(transaccion, "SELECT 1 FROM dbo.FACTURACION_TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo AND LetraPredeterminada = @letra;",
+                    Parametro("@tipo", entrada.Tipo), Parametro("@letra", entrada.LetraPredeterminada)))
+                    throw new ConflictoException("Ya existe un tipo de comprobante con esa sigla y letra.", "TIPO_DUPLICADO");
+
+                var existeElTipo = false;
+                using (var comando = new SqlCommand("SELECT Descripcion, Impacto, EsElectronico FROM dbo.TIPOS_COMPROBANTE WITH (UPDLOCK) WHERE Tipo = @tipo;",
+                    transaccion.Connection, transaccion))
+                {
+                    comando.Parameters.Add(Parametro("@tipo", entrada.Tipo));
+                    using (var lector = comando.ExecuteReader())
+                    {
+                        if (lector.Read())
+                        {
+                            if ((bool)lector["EsElectronico"])
+                                throw new ConflictoException("No se puede agregar otra letra al tipo de comprobante: es electrónico.");
+                            if ((string)lector["Impacto"] != entrada.Impacto || entrada.EsElectronico
+                                || !string.Equals(((string)lector["Descripcion"]).Trim(), entrada.Descripcion, StringComparison.OrdinalIgnoreCase))
+                                throw new ArgumentException("El tipo " + entrada.Tipo + " ya existe: usá su misma descripción y su mismo impacto, sin marcarlo como electrónico.");
+                            existeElTipo = true;
+                        }
+                    }
+                }
+
+                var ultimoNumero = Valor(transaccion, @"
+SELECT n.UltimoNumero
+FROM dbo.FACTURACION_NUMERADORES n WITH (UPDLOCK)
+JOIN dbo.FACTURACION_SUCURSALES s ON s.Sucursal_ID = @sucursal AND s.Activa = 1
+WHERE n.Numerador_ID = @numerador AND n.Activo = 1;",
+                    Parametro("@sucursal", entrada.SucursalID), Parametro("@numerador", entrada.NumeradorID));
+                if (ultimoNumero == null) throw new ArgumentException("Elegí una sucursal y un numerador activos.");
+
+                if (!existeElTipo)
+                    Ejecutar(transaccion, "INSERT dbo.TIPOS_COMPROBANTE (Tipo, Descripcion, Impacto, EsElectronico) VALUES (@tipo, @descripcion, @impacto, @electronico);",
+                        Parametro("@tipo", entrada.Tipo), Parametro("@descripcion", entrada.Descripcion), Parametro("@impacto", entrada.Impacto),
+                        Parametro("@electronico", entrada.EsElectronico));
+                var id = (int)Valor(transaccion, @"
+INSERT dbo.FACTURACION_TIPOS_COMPROBANTE (Tipo, LetraPredeterminada, SucursalID, NumeradorID, Activo)
+OUTPUT INSERTED.FactTipo_ID
+VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
+                    Parametro("@tipo", entrada.Tipo), Parametro("@letra", entrada.LetraPredeterminada),
+                    Parametro("@sucursal", entrada.SucursalID), Parametro("@numerador", entrada.NumeradorID));
+                ValidarQueNoBaje(transaccion, entrada.NumeradorID, (int)ultimoNumero);
+                return new Cambio
+                {
+                    Accion = "ALTA",
+                    Clave = "FactTipo_ID=" + id,
+                    Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada,
+                    Respuesta = new { FactTipoID = id }
+                };
+            }, ct);
+        }
+
+        private static void ValidarTipo(TipoEntrada entrada)
+        {
+            if (entrada == null) throw new ArgumentException("Completá los datos del tipo de comprobante.");
+            entrada.Tipo = CodigoTipo(entrada.Tipo);
+            entrada.Descripcion = (entrada.Descripcion ?? "").Trim();
+            if (entrada.Descripcion.Length == 0 || entrada.Descripcion.Length > 50)
+                throw new ArgumentException("Ingresá la descripción del tipo, de hasta 50 caracteres.");
+            entrada.Impacto = (entrada.Impacto ?? "").Trim().ToUpperInvariant();
+            if (entrada.Impacto != "D" && entrada.Impacto != "C")
+                throw new ArgumentException("Elegí si el tipo genera deuda o crédito.");
+            var impactoFijo = ImpactoFijo(entrada.Tipo);
+            if (impactoFijo != null && entrada.Impacto != impactoFijo)
+                throw new ArgumentException(impactoFijo == "D" ? "Las facturas y las notas de débito tienen que generar deuda."
+                    : "Las notas de crédito y los recibos tienen que generar crédito.");
+            entrada.LetraPredeterminada = FacturacionComprobantesConfiguracion.NormalizarLetra(entrada.LetraPredeterminada);
+            if (entrada.Tipo == "REC" && entrada.LetraPredeterminada != "X")
+                throw new ArgumentException("Los recibos usan la letra X.");
+            if (entrada.Tipo != "REC" && entrada.LetraPredeterminada != "A" && entrada.LetraPredeterminada != "B")
+                throw new ArgumentException("Elegí la letra A o B.");
+        }
+
+        private static string ImpactoFijo(string tipo)
+        {
+            switch (tipo)
+            {
+                case "FAC": case "ND": return "D";
+                case "NC": case "REC": return "C";
+                default: return null;
+            }
         }
 
         private async Task<IHttpActionResult> Consultar(Func<SqlConnection, object> consulta, CancellationToken ct)
