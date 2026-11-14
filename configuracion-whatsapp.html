@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionar WhatsApp</title>
+    <link rel="shortcut icon" href="assets/compiled/svg/ts-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/compiled/css/app.css">
+    <link rel="stylesheet" href="assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="assets/static/css/sgtl.css">
+</head>
+<body>
+    <script src="assets/compiled/js/app.js"></script>
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
+                            <i class="bi bi-justify fs-3" aria-hidden="true"></i>
+                        </a>
+                        <div id="header-container"></div>
+                    </div>
+                </nav>
+            </header>
+            <main class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4" aria-labelledby="tituloWhatsApp">
+                    <form id="whatsappForm" class="card rounded">
+                        <div class="card-header">
+                            <h1 id="tituloWhatsApp" class="card-title h5 mb-1">Gestionar WhatsApp</h1>
+                            <p class="text-muted mb-0">Configurá la cuenta de Meta y las plantillas de los avisos de viajes.</p>
+                        </div>
+                        <div class="card-body">
+                            <div id="whatsappAviso" class="alert d-none" role="status"></div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="waEnabled">
+                                <label class="form-check-label" for="waEnabled">Enviar avisos de viajes</label>
+                                <div class="form-text">Si está apagado, no se envían mensajes al registrar un viaje.</div>
+                            </div>
+                            <h2 class="h6 border-bottom pb-2 mb-3">Cuenta de Meta</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="waAccessToken" class="form-label">Token de acceso</label>
+                                    <input id="waAccessToken" type="password" class="form-control" autocomplete="new-password" maxlength="4000">
+                                    <div id="waTokenAyuda" class="form-text">Dejalo vacío para conservar el token guardado.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="waPhoneNumberId" class="form-label">ID del número</label>
+                                    <input id="waPhoneNumberId" type="text" class="form-control" maxlength="50" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: el Phone Number ID de Meta.</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="waApiVersion" class="form-label">Versión de la API</label>
+                                    <input id="waApiVersion" type="text" class="form-control" maxlength="20" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: v21.0</div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="waCountryCode" class="form-label">Código de país</label>
+                                    <input id="waCountryCode" type="text" class="form-control" maxlength="10" inputmode="numeric">
+                                    <div class="form-text">Por ejemplo: 54. Sin el signo +.</div>
+                                </div>
+                            </div>
+                            <h2 class="h6 border-bottom pb-2 mt-4 mb-3">Plantillas aprobadas en Meta</h2>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label for="waTemplateName" class="form-label">Viaje asignado</label>
+                                    <input id="waTemplateName" type="text" class="form-control" maxlength="100" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: viaje_asignado. Se usa al registrar, reenviar o cambiar el recorrido.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="waTemplateCancelado" class="form-label">Viaje cancelado</label>
+                                    <input id="waTemplateCancelado" type="text" class="form-control" maxlength="100" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: viaje_cancelado. Se usa al cancelar o eliminar el viaje.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="waTemplateDesasignado" class="form-label">Chofer desasignado</label>
+                                    <input id="waTemplateDesasignado" type="text" class="form-control" maxlength="100" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: viaje_desasignado. Se usa al cambiar el chofer.</div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="waTemplateLanguage" class="form-label">Idioma de las plantillas</label>
+                                    <input id="waTemplateLanguage" type="text" class="form-control" maxlength="20" spellcheck="false">
+                                    <div class="form-text">Por ejemplo: es_AR</div>
+                                </div>
+                            </div>
+                            <p id="waMeta" class="text-muted small mt-3 mb-0"></p>
+                        </div>
+                        <div class="card-footer text-end">
+                            <button type="submit" id="btnGuardarWhatsApp" class="btn btn-primary">Guardar</button>
+                        </div>
+                    </form>
+                </section>
+            </main>
+            <footer><div id="footer-container"></div></footer>
+        </div>
+    </div>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/configuracion-whatsapp.js"></script>
+</body>
+</html>
