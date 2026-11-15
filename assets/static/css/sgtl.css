@@ -113,6 +113,10 @@ a {
     pointer-events: none;
 }
 
+.btn-outline-secondary {
+    --bs-btn-disabled-color: #212529;
+}
+
 .sgtl-orden-boton:focus-visible,
 .sgtl-info:focus-visible,
 .sgtl-filtro-borrar:focus-visible,

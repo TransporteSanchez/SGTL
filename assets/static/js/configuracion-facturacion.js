@@ -6,6 +6,7 @@
     var sucursalEditada = null;
     var numeradores = [];
     var numeradorEditado = null;
+    var tipos = [];
 
     function porId(id) {
         return document.getElementById(id);
@@ -45,14 +46,17 @@
     }
 
     function cargar() {
-        return Promise.all([pedir('/sucursales'), pedir('/numeradores')]).then(function (datos) {
+        return Promise.all([pedir('/sucursales'), pedir('/numeradores'), pedir('/tipos-comprobante')]).then(function (datos) {
             sucursales = datos[0];
             numeradores = datos[1];
+            tipos = datos[2];
             mostrarSucursales();
             mostrarNumeradores();
+            mostrarTipos();
         }).catch(function (error) {
             SGTL.tabla.vacia('#sucursalesBody', 4, 'No se pudo cargar la configuración.');
             SGTL.tabla.vacia('#numeradoresBody', 4, 'No se pudo cargar la configuración.');
+            SGTL.tabla.vacia('#tiposBody', 9, 'No se pudo cargar la configuración.');
             SGTL.toastError(error.message);
         });
     }
@@ -78,6 +82,31 @@
             return '<tr><td>' + SGTL.escapar(numerador.Nombre) + '</td><td>' + String(numerador.UltimoNumero).padStart(8, '0') + '</td>'
                 + '<td class="text-center">' + estado(numerador.Activo) + '</td>'
                 + '<td class="text-center">' + acciones(numerador.NumeradorID, numerador.Activo, numerador.PuedeEliminar) + '</td></tr>';
+        }).join(''));
+    }
+
+    function accionesTipo(tipo) {
+        var accionEstado = tipo.Activo ? 'inactivar' : 'activar';
+        var botones = [
+            SGTL.botonFila(accionEstado, { id: tipo.FactTipoID, deshabilitado: tipo.EsElectronico,
+                motivo: 'No se puede ' + accionEstado + ' el tipo de comprobante: es electrónico' })
+        ];
+        if (tipo.PuedeEliminar) botones.push(SGTL.botonFila('eliminar', { id: tipo.FactTipoID }));
+        return SGTL.accionesFila(botones);
+    }
+
+    function mostrarTipos() {
+        if (!tipos.length) {
+            SGTL.tabla.vacia('#tiposBody', 9, 'Todavía no hay tipos de comprobante registrados.');
+            return;
+        }
+        SGTL.tabla.llenar('#tiposBody', tipos.map(function (tipo) {
+            return '<tr><td>' + SGTL.escapar(tipo.Tipo) + '</td><td>' + SGTL.escapar(tipo.Descripcion) + '</td>'
+                + '<td>' + (tipo.Impacto === 'C' ? 'Crédito' : 'Deuda') + '</td><td>' + SGTL.escapar(tipo.LetraPredeterminada) + '</td>'
+                + '<td>' + SGTL.escapar(tipo.Sucursal) + '</td><td>' + SGTL.escapar(tipo.Numerador) + '</td>'
+                + '<td>' + (tipo.EsElectronico ? 'Sí' : 'No') + '</td>'
+                + '<td class="text-center">' + estado(tipo.Activo) + '</td>'
+                + '<td class="text-center">' + accionesTipo(tipo) + '</td></tr>';
         }).join(''));
     }
 
@@ -216,6 +245,16 @@
         else cambiarEstado(boton, ruta, !numerador.Activo, numerador.Activo ? 'Numerador inactivado.' : 'Numerador activado.');
     });
 
+    porId('tiposBody').addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-accion]');
+        var tipo = boton && tipos.find(function (t) { return t.FactTipoID === Number(boton.dataset.id); });
+        if (!tipo) return;
+        var ruta = '/tipos-comprobante/' + tipo.FactTipoID;
+        var nombre = tipo.Tipo + ' ' + tipo.LetraPredeterminada;
+        if (boton.dataset.accion === 'eliminar') eliminar(ruta, '¿Eliminar el tipo de comprobante ' + nombre + '?', 'Tipo de comprobante eliminado.');
+        else cambiarEstado(boton, ruta, !tipo.Activo, tipo.Activo ? 'Tipo de comprobante inactivado.' : 'Tipo de comprobante activado.');
+    });
+
     porId('registrarSucursal').addEventListener('click', function () { abrirSucursal(null); });
     porId('sucursalForm').addEventListener('submit', guardarSucursal);
     porId('registrarNumerador').addEventListener('click', function () { abrirNumerador(null); });
@@ -223,5 +262,6 @@
 
     SGTL.tabla.cargando('#sucursalesBody', 4);
     SGTL.tabla.cargando('#numeradoresBody', 4);
+    SGTL.tabla.cargando('#tiposBody', 9);
     cargar();
 })();

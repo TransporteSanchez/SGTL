@@ -19,14 +19,13 @@
 
     function getJsPDF() { return (window.jspdf && window.jspdf.jsPDF) ? window.jspdf.jsPDF : (window.jsPDF || null); }
 
-    // Trae el logo (si es un data URI raster utilizable) desde Gestión de contenido.
     function obtenerLogo() {
         return fetch(API + '/GestionContenido/1')
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
                 var logo = d && d.Logo;
                 if (typeof logo === 'string' && /^data:image\/(png|jpe?g)/i.test(logo)) return logo;
-                return null; // SVG / ruta: no lo embebemos, usamos texto
+                return null;
             })
             .catch(function () { return null; });
     }
@@ -40,14 +39,14 @@
         var M = 20;
         var y = M;
 
-        // ---------- Encabezado ----------
+        // Encabezado
         if (logoDataUri) {
             try { doc.addImage(logoDataUri, 'PNG', M, y, 45, 18); } catch (e) { }
         } else {
             doc.setFont('helvetica', 'bold'); doc.setFontSize(16); doc.setTextColor(20);
             doc.text(EMPRESA.razon || 'Transporte Sánchez', M, y + 8);
         }
-        // Recuadro derecho: PROFORMA
+        // Recuadro derecho: datos proforma
         var bx = W - M - 60, by = y, bw = 60, bh = 26;
         doc.setDrawColor(180); doc.setLineWidth(0.3); doc.roundedRect(bx, by, bw, bh, 2, 2);
         doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.setTextColor(20);
@@ -58,14 +57,14 @@
         doc.text('Estado: ' + txt(p.Estado), bx + 3, by + 25);
 
         y += 30;
-        // Datos de la empresa
+        // Empresa
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(80);
         var emp = [EMPRESA.razon, EMPRESA.cuit ? ('CUIT: ' + EMPRESA.cuit) : '', EMPRESA.direccion, [EMPRESA.ciudad, EMPRESA.provincia].filter(Boolean).join(', '),
             [EMPRESA.telefono ? ('Tel: ' + EMPRESA.telefono) : '', EMPRESA.email, EMPRESA.web].filter(Boolean).join('  ·  ')].filter(Boolean);
         emp.forEach(function (linea) { doc.text(linea, M, y); y += 4; });
         y += 2;
 
-        // ---------- Recuadro Cliente ----------
+        // Cliente
         doc.setDrawColor(200); doc.setFillColor(247, 248, 250);
         var chY = y, chH = 30;
         doc.roundedRect(M, chY, W - 2 * M, chH, 2, 2, 'FD');
@@ -83,7 +82,7 @@
         doc.text('Contacto: ' + txt(p.Cli_Contacto), colB, ry + 15);
         y = chY + chH + 5;
 
-        // ---------- Datos del servicio ----------
+        // Servicio
         doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(40);
         doc.text('DATOS DEL SERVICIO', M, y); y += 5;
         doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); doc.setTextColor(60);
@@ -91,7 +90,7 @@
         doc.text('Tipo de carga: ' + txt(p.TipoCarga), colA, y); doc.text('Peso / Volumen: ' + [p.Peso, p.Volumen].filter(Boolean).join(' / '), colB, y); y += 5;
         doc.text('Fecha de carga: ' + txt(fdate(p.FechaCarga)), colA, y); doc.text('Entrega estimada: ' + txt(fdate(p.FechaEntrega)), colB, y); y += 6;
 
-        // ---------- Tabla de conceptos (paginada) ----------
+        // Conceptos
         var filas = (p.Detalle || []).map(function (l) {
             return [ (l.Cantidad != null ? l.Cantidad : ''), txt(l.Codigo), txt(l.Concepto) + (l.Descripcion ? ('\n' + l.Descripcion) : ''),
                 money(l.PrecioUnitario), (Number(l.DescuentoPct) || 0) + '%', (Number(l.IvaPct) || 0) + '%', money(l.Subtotal) ];
@@ -110,7 +109,7 @@
             }
         });
 
-        // ---------- Totales / condiciones / observaciones ----------
+        // Totales / condiciones / observaciones
         y = doc.lastAutoTable.finalY + 6;
         function saltoSiHaceFalta(alto) { if (y + alto > H - 28) { doc.addPage(); y = M; } }
 
@@ -155,7 +154,7 @@
             doc.text(obs, M, y); y += obs.length * 4;
         }
 
-        // ---------- Pie en todas las páginas ----------
+        // Pie de página
         var usuario = null; try { usuario = localStorage.getItem('username'); } catch (e) { }
         var ahora = new Date();
         var emitido = ('0' + ahora.getDate()).slice(-2) + '/' + ('0' + (ahora.getMonth() + 1)).slice(-2) + '/' + ahora.getFullYear() +
