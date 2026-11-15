@@ -12,35 +12,19 @@ using System.Web;
 
 namespace WebApi_TransporteSanchez
 {
-    /// <summary>
-    /// Contexto con auditoria automatica. Reemplaza al DbContext generico que usan
-    /// los controllers: cada vez que se llama SaveChanges(), registra en la tabla
-    /// AUDITORIA todas las altas/bajas/modificaciones con sus valores antes/despues.
-    ///
-    /// Integracion: reemplazar en los controllers  new DbContext(...)  por
-    /// new SGTLAuditContext(...)  (mismo argumento de connection string).
-    /// </summary>
     public class SGTLAuditContext : DbContext
     {
         public SGTLAuditContext(string nameOrConnectionString) : base(nameOrConnectionString) { }
 
-        /// <summary>
-        /// Usuario responsable del cambio. Si el controller lo setea, se usa ese.
-        /// Si no, se intenta deducir del propio registro (Usu_Modi / Usu_Alta) o del
-        /// contexto HTTP; en ultimo caso queda "sistema".
-        /// </summary>
         public string UsuarioAuditoria { get; set; }
 
-        // Entidades que NO se auditan (evita ruido y recursion).
         private static readonly HashSet<string> EntidadesExcluidas =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "AUDITORIA", "PROFORMA_DETALLE" };
 
-        // Campos que nunca se guardan en claro.
         private static readonly HashSet<string> CamposSensibles =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase)
             { "Contraseña", "Contrasena", "Password", "Pass", "Clave_Acceso" };
 
-        // ------------------------------------------------------------------ API
 
         public override int SaveChanges()
         {
@@ -58,10 +42,6 @@ namespace WebApi_TransporteSanchez
             return resultado;
         }
 
-        /// <summary>
-        /// Registra un evento manual (LOGIN, LOGOUT, u otra accion que no pasa por
-        /// SaveChanges). Nunca lanza excepcion: la auditoria no debe romper el flujo.
-        /// </summary>
         public static void RegistrarEvento(string connectionString, string usuario, string accion,
             string entidad = null, string clave = null, string detalle = null, string origen = null)
         {
@@ -80,10 +60,8 @@ namespace WebApi_TransporteSanchez
                         P("@origen", origen ?? OrigenHttp()));
                 }
             }
-            catch { /* silencioso a proposito */ }
+            catch { /* silencioso */ }
         }
-
-        // -------------------------------------------------------------- interno
 
         private class CambioAudit
         {
@@ -116,7 +94,6 @@ namespace WebApi_TransporteSanchez
 
                 var cambio = new CambioAudit { Entry = entry, Entidad = entidad };
 
-                // nombres de la clave primaria
                 try
                 {
                     var se = osm.GetObjectStateEntry(entry.Entity);
@@ -157,14 +134,12 @@ namespace WebApi_TransporteSanchez
 
             foreach (var c in pendientes)
             {
-                // para INSERT/UPDATE la clave (identity) recien esta disponible tras el save
                 if (c.Accion != "DELETE")
                 {
                     try { c.Clave = ResolverClave(c.Entry.CurrentValues, c.KeyNames); }
                     catch { }
                 }
 
-                // en UPDATE sin cambios reales, no registramos
                 if (c.Accion == "UPDATE" && (c.ValoresNuevos == "{}" || string.IsNullOrEmpty(c.ValoresNuevos)))
                     continue;
 
@@ -181,7 +156,7 @@ namespace WebApi_TransporteSanchez
                         P("@nue", c.ValoresNuevos),
                         P("@origen", origen));
                 }
-                catch { /* la auditoria nunca debe romper la operacion principal */ }
+                catch {}
             }
         }
 
@@ -189,7 +164,6 @@ namespace WebApi_TransporteSanchez
         {
             if (!string.IsNullOrWhiteSpace(UsuarioAuditoria)) return UsuarioAuditoria;
 
-            // deducir del propio registro
             var values = accion == "DELETE" ? entry.OriginalValues : entry.CurrentValues;
             var preferidos = accion == "INSERT"
                 ? new[] { "Usu_Alta", "Usu_Modi" }
@@ -207,7 +181,6 @@ namespace WebApi_TransporteSanchez
                 catch { }
             }
 
-            // contexto HTTP (si algun filtro lo dejo)
             try
             {
                 var u = HttpContext.Current?.Items["UsuarioAuditoria"] as string;
@@ -237,7 +210,7 @@ namespace WebApi_TransporteSanchez
             {
                 object val;
                 try { val = values[name]; } catch { continue; }
-                if (val is DbPropertyValues) continue; // omitir tipos complejos anidados
+                if (val is DbPropertyValues) continue;
                 dict[name] = Formatear(name, val);
             }
             return ToJson(dict);
@@ -266,8 +239,6 @@ namespace WebApi_TransporteSanchez
             nuevos = ToJson(nueD);
         }
 
-        // Valores más largos que esto se resumen para no inflar la tabla AUDITORIA
-        // (por ejemplo, un logo subido en base64).
         private const int MaxLongitudValor = 1000;
 
         private static string Formatear(string nombre, object val)

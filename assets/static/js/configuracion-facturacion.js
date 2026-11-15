@@ -7,6 +7,8 @@
     var numeradores = [];
     var numeradorEditado = null;
     var tipos = [];
+    var tipoEditado = null;
+    var descripcionCopiada = false;
 
     function porId(id) {
         return document.getElementById(id);
@@ -43,6 +45,10 @@
 
     function estado(activo) {
         return SGTL.estado(activo ? 'Activo' : 'Inactivo');
+    }
+
+    function impacto(valor) {
+        return valor === 'C' ? 'Crédito' : 'Deuda';
     }
 
     function cargar() {
@@ -88,6 +94,8 @@
     function accionesTipo(tipo) {
         var accionEstado = tipo.Activo ? 'inactivar' : 'activar';
         var botones = [
+            SGTL.botonFila('editar', { id: tipo.FactTipoID, deshabilitado: tipo.EsElectronico,
+                motivo: 'No se puede editar el tipo de comprobante: es electrónico' }),
             SGTL.botonFila(accionEstado, { id: tipo.FactTipoID, deshabilitado: tipo.EsElectronico,
                 motivo: 'No se puede ' + accionEstado + ' el tipo de comprobante: es electrónico' })
         ];
@@ -102,7 +110,7 @@
         }
         SGTL.tabla.llenar('#tiposBody', tipos.map(function (tipo) {
             return '<tr><td>' + SGTL.escapar(tipo.Tipo) + '</td><td>' + SGTL.escapar(tipo.Descripcion) + '</td>'
-                + '<td>' + (tipo.Impacto === 'C' ? 'Crédito' : 'Deuda') + '</td><td>' + SGTL.escapar(tipo.LetraPredeterminada) + '</td>'
+                + '<td>' + impacto(tipo.Impacto) + '</td><td>' + SGTL.escapar(tipo.LetraPredeterminada) + '</td>'
                 + '<td>' + SGTL.escapar(tipo.Sucursal) + '</td><td>' + SGTL.escapar(tipo.Numerador) + '</td>'
                 + '<td>' + (tipo.EsElectronico ? 'Sí' : 'No') + '</td>'
                 + '<td class="text-center">' + estado(tipo.Activo) + '</td>'
@@ -225,6 +233,114 @@
         porId('numeradorUltimo').value = actual.UltimoNumero;
     }
 
+    function otraLetra(sigla) {
+        return tipoEditado ? null : tipos.find(function (t) { return t.Tipo === sigla; });
+    }
+
+    function siglaElectronica(sigla) {
+        var existente = otraLetra(sigla);
+        return existente && existente.EsElectronico ? 'No se puede agregar otra letra al tipo ' + sigla + ': es electrónico.' : '';
+    }
+
+    var validarTipo = SGTL.validador([
+        { id: 'tipoSigla', requerido: 'Completá la sigla.', mayusculas: true, max: 3, validar: siglaElectronica },
+        { id: 'tipoDescripcion', requerido: 'Completá la descripción.' },
+        { id: 'tipoSucursal', requerido: 'Elegí una sucursal.' },
+        { id: 'tipoNumerador', requerido: 'Elegí un numerador.' }
+    ]);
+    var cambiosTipo = SGTL.cambiosSinGuardar('#tipoModal');
+
+    function fijar(id, fijo, texto, motivo) {
+        porId(id + 'Campo').classList.toggle('d-none', fijo);
+        porId(id + 'Texto').classList.toggle('d-none', !fijo);
+        porId(id + 'Texto').innerHTML = SGTL.escapar(texto) + '<span class="form-text d-block">' + SGTL.escapar(motivo) + '</span>';
+    }
+
+    function avisoElectronico() {
+        porId('tipoElectronicoAviso').classList.toggle('d-none', !porId('tipoElectronico').checked);
+    }
+
+    function siglaEscrita() {
+        var sigla = porId('tipoSigla').value;
+        var existente = otraLetra(sigla);
+        if (existente) {
+            porId('tipoDescripcion').value = existente.Descripcion;
+            porId('tipoImpacto').value = existente.Impacto;
+            porId('tipoElectronico').checked = false;
+        } else if (descripcionCopiada) {
+            porId('tipoDescripcion').value = '';
+        }
+        descripcionCopiada = !!existente;
+        var motivo = 'Es igual en todas las letras de ' + sigla + '.';
+        fijar('tipoDescripcion', !!existente, porId('tipoDescripcion').value, motivo);
+        if (!tipoEditado) fijar('tipoImpacto', !!existente, impacto(porId('tipoImpacto').value), motivo);
+        porId('tipoElectronicoCampo').classList.toggle('d-none', !!existente);
+        avisoElectronico();
+    }
+
+    function opcion(valor, texto) {
+        return '<option value="' + valor + '">' + SGTL.escapar(texto) + '</option>';
+    }
+
+    function abrirTipo(tipo) {
+        tipoEditado = tipo;
+        SGTL.reiniciarFormulario('#tipoForm', '#tipoAviso');
+        validarTipo.reiniciar();
+        porId('tipoTitulo').textContent = tipo ? 'Editar tipo de comprobante' : 'Registrar tipo de comprobante';
+        porId('tipoSucursal').innerHTML = opcion('', 'Seleccioná una sucursal') + sucursales.filter(function (s) {
+            return s.Activa || (tipo && s.SucursalID === tipo.SucursalID);
+        }).map(function (s) { return opcion(s.SucursalID, s.Codigo + ' - ' + s.Nombre); }).join('');
+        porId('tipoNumerador').innerHTML = opcion('', 'Seleccioná un numerador') + numeradores.filter(function (n) {
+            return n.Activo || (tipo && n.NumeradorID === tipo.NumeradorID);
+        }).map(function (n) { return opcion(n.NumeradorID, n.Nombre); }).join('');
+        porId('tipoSigla').value = tipo ? tipo.Tipo : '';
+        porId('tipoLetra').value = tipo && tipo.PuedeCambiarLetra ? tipo.LetraPredeterminada : 'A';
+        porId('tipoImpacto').value = tipo ? tipo.Impacto : 'D';
+        porId('tipoDescripcion').value = tipo ? tipo.Descripcion : '';
+        porId('tipoSucursal').value = tipo ? tipo.SucursalID : '';
+        porId('tipoNumerador').value = tipo ? tipo.NumeradorID : '';
+        descripcionCopiada = false;
+        var editando = !!tipo;
+        fijar('tipoSigla', editando && !tipo.PuedeCambiarSigla, porId('tipoSigla').value, 'Es una sigla fija del sistema.');
+        fijar('tipoLetra', editando && !tipo.PuedeCambiarLetra, editando ? tipo.LetraPredeterminada : '', 'Los recibos usan la letra X.');
+        fijar('tipoImpacto', editando && !tipo.PuedeCambiarImpacto, impacto(porId('tipoImpacto').value),
+            editando && tipo.PuedeCambiarSigla ? 'Ya hay comprobantes de este tipo.' : 'Es fijo en las siglas del sistema.');
+        siglaEscrita();
+        SGTL.modal('#tipoModal', 'show');
+    }
+
+    function guardarTipo(evento) {
+        evento.preventDefault();
+        validarTipo.validarTodo();
+        if (!SGTL.revisarFormulario('#tipoForm', '#tipoAviso')) return;
+        var listo = SGTL.procesando(evento.submitter);
+        var cuerpo = {
+            Tipo: porId('tipoSigla').value,
+            Descripcion: porId('tipoDescripcion').value.trim(),
+            Impacto: porId('tipoImpacto').value,
+            LetraPredeterminada: tipoEditado && !tipoEditado.PuedeCambiarLetra ? tipoEditado.LetraPredeterminada : porId('tipoLetra').value,
+            SucursalID: Number(porId('tipoSucursal').value),
+            NumeradorID: Number(porId('tipoNumerador').value),
+            EsElectronico: porId('tipoElectronico').checked
+        };
+        var pedido;
+        if (tipoEditado) {
+            cuerpo.TipoLeido = tipoEditado.Tipo;
+            cuerpo.LetraLeida = tipoEditado.LetraPredeterminada;
+            pedido = pedir('/tipos-comprobante/' + tipoEditado.FactTipoID, 'PUT', cuerpo);
+        } else {
+            pedido = pedir('/tipos-comprobante', 'POST', cuerpo);
+        }
+        pedido.then(function () {
+            listo();
+            guardado('#tipoModal', cambiosTipo, 'Tipo de comprobante guardado.');
+        }).catch(function (error) {
+            listo();
+            SGTL.avisoFormulario('#tipoAviso', error.message);
+            cargar();
+        });
+    }
+
     porId('sucursalesBody').addEventListener('click', function (evento) {
         var boton = evento.target.closest('[data-accion]');
         var sucursal = boton && sucursales.find(function (s) { return s.SucursalID === Number(boton.dataset.id); });
@@ -251,7 +367,8 @@
         if (!tipo) return;
         var ruta = '/tipos-comprobante/' + tipo.FactTipoID;
         var nombre = tipo.Tipo + ' ' + tipo.LetraPredeterminada;
-        if (boton.dataset.accion === 'eliminar') eliminar(ruta, '¿Eliminar el tipo de comprobante ' + nombre + '?', 'Tipo de comprobante eliminado.');
+        if (boton.dataset.accion === 'editar') abrirTipo(tipo);
+        else if (boton.dataset.accion === 'eliminar') eliminar(ruta, '¿Eliminar el tipo de comprobante ' + nombre + '?', 'Tipo de comprobante eliminado.');
         else cambiarEstado(boton, ruta, !tipo.Activo, tipo.Activo ? 'Tipo de comprobante inactivado.' : 'Tipo de comprobante activado.');
     });
 
@@ -259,6 +376,10 @@
     porId('sucursalForm').addEventListener('submit', guardarSucursal);
     porId('registrarNumerador').addEventListener('click', function () { abrirNumerador(null); });
     porId('numeradorForm').addEventListener('submit', guardarNumerador);
+    porId('registrarTipo').addEventListener('click', function () { abrirTipo(null); });
+    porId('tipoSigla').addEventListener('input', siglaEscrita);
+    porId('tipoElectronico').addEventListener('change', avisoElectronico);
+    porId('tipoForm').addEventListener('submit', guardarTipo);
 
     SGTL.tabla.cargando('#sucursalesBody', 4);
     SGTL.tabla.cargando('#numeradoresBody', 4);

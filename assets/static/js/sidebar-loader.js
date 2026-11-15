@@ -13,10 +13,10 @@
       payload = payload.replace(/-/g, '+').replace(/_/g, '/');
       while (payload.length % 4) payload += '=';
       var datos = JSON.parse(decodeURIComponent(escape(atob(payload))));
-      if (!datos.exp) return false;                 // sin claim exp: no afirmamos que venció
-      return (datos.exp * 1000) <= Date.now();       // exp está en segundos
+      if (!datos.exp) return false;                 
+      return (datos.exp * 1000) <= Date.now();       
     } catch (e) {
-      return true;                                   // token ilegible => inválido
+      return true;                                   
     }
   }
 
@@ -128,7 +128,7 @@ function aplicarPermisos() {
   if (permisosAplicados) return;
   var username = null;
   try { username = localStorage.getItem('username'); } catch (e) { }
-  if (!username) return; // sin usuario logueado, no filtramos (el header maneja el login)
+  if (!username) return; 
   permisosAplicados = true;
   fetch(API_PERM + '/Usuarios/MenusPermitidos?username=' + encodeURIComponent(username))
     .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
@@ -139,7 +139,7 @@ function aplicarPermisos() {
       filtrarSidebarPermisos(permitidas);
       guardaAccesoPagina(permitidas);
     })
-    .catch(function () { /* fail-open: si el endpoint falla, no bloqueamos (evita brickear la app) */ });
+    .catch(function () { });
 }
 
 function filtrarSidebarPermisos(permitidas) {
@@ -165,7 +165,7 @@ function filtrarSidebarPermisos(permitidas) {
 function guardaAccesoPagina(permitidas) {
   var actual = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (!actual || actual === 'login.html') return;
-  if (permitidas.indexOf(actual) !== -1) return; // tiene acceso a esta pantalla
+  if (permitidas.indexOf(actual) !== -1) return; 
   if (permitidas.length) { window.location.replace(permitidas[0]); }
   else { alert('No tenés pantallas asignadas. Contactá al administrador.'); }
 }

@@ -10,12 +10,9 @@ using System.Web.Http;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
-    // Modulo Proformas (Fase 1). Persistencia por SQL directo (el modelo EDMX no
-    // conoce las columnas nuevas ni PROFORMA_DETALLE). Auditoria manual por accion.
     [RoutePrefix("api/Proformas")]
     public class ProformasController : ApiController
     {
-        // ============================ DTOs ============================
         public class DetalleLineaDto
         {
             public int? Detalle_ID { get; set; }
@@ -85,7 +82,6 @@ namespace WebApi_TransporteSanchez.Controllers
         public class CambioEstadoDto { public string Estado { get; set; } public string Usuario { get; set; } }
         public class UsuarioDto { public string Usuario { get; set; } }
 
-        // ======================= Helpers =======================
         private static string Cn() { return ConnectionStringHelper.GetConnectionString("SGTLEntities"); }
         private static SqlParameter P(string n, object v) { return new SqlParameter(n, v ?? DBNull.Value); }
         private static decimal Redondear(decimal v) { return decimal.Round(v, 2, MidpointRounding.AwayFromZero); }
@@ -125,8 +121,6 @@ namespace WebApi_TransporteSanchez.Controllers
             if (p.OtrosImpuestos < 0) p.OtrosImpuestos = 0;
             p.TotalGeneral = Redondear(p.SubtotalNeto + p.IVA + p.OtrosImpuestos);
         }
-
-        // Parametros de negocio compartidos por INSERT y UPDATE de cabecera
         private static List<SqlParameter> ParamsNegocio(ProformaDto p)
         {
             return new List<SqlParameter>
@@ -211,8 +205,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch { }
         }
-
-        // ======================= Endpoints =======================
 
         [HttpGet]
         [Route("")]
@@ -474,7 +466,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // Prellenado desde viajes: usa entidades del EDMX (VIAJES/TARIFAS/ORIGEN/DESTINO), que si estan mapeadas.
         [HttpGet]
         [Route("PrellenarViajes")]
         public IHttpActionResult PrellenarViajes(int clienteId, string desde, string hasta)
