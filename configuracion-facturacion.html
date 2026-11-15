@@ -63,6 +63,33 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="card rounded">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                            <div>
+                                <h2 class="card-title h6 mb-1">Numeradores</h2>
+                                <p class="text-muted mb-0">Cada comprobante sale con el número que sigue al último de su numerador.</p>
+                            </div>
+                            <button type="button" id="registrarNumerador" class="btn btn-success">
+                                <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar numerador
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th scope="col">Nombre</th>
+                                            <th scope="col">Último número</th>
+                                            <th scope="col" class="text-center">Estado</th>
+                                            <th scope="col" class="text-center">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="numeradoresBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </section>
             </main>
 
@@ -95,6 +122,36 @@
                         <div class="col-md-8">
                             <label for="sucursalNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
                             <input id="sucursalNombre" class="form-control" maxlength="100">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal fade" id="numeradorModal" tabindex="-1" data-bs-backdrop="static"
+         aria-labelledby="numeradorTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form id="numeradorForm" class="modal-content" autocomplete="off" novalidate>
+                <div class="modal-header">
+                    <h2 id="numeradorTitulo" class="modal-title h5">Registrar numerador</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="numeradorAviso" class="alert alert-danger d-none" role="alert"></div>
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label for="numeradorNombre" class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input id="numeradorNombre" class="form-control" maxlength="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="numeradorUltimo" class="form-label">Último número <span class="text-danger">*</span></label>
+                            <input id="numeradorUltimo" class="form-control" inputmode="numeric" maxlength="8">
+                            <div class="form-text">El próximo comprobante sale con el siguiente.</div>
                         </div>
                     </div>
                 </div>

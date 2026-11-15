@@ -85,7 +85,6 @@
         </div>
     </div>
 
-    <!-- ============ Modal Proforma (crear/editar/ver) ============ -->
     <div class="modal fade" id="modalProforma" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content">
@@ -96,7 +95,6 @@
                 </div>
                 <div class="modal-body">
                     <input type="hidden" id="p_id">
-                    <!-- Bloque 1: Datos generales -->
                     <div class="bloque-titulo">1 · Datos generales</div>
                     <div class="row g-2">
                         <div class="col-md-3"><label class="form-label">Número</label><input id="p_numero" class="form-control" readonly placeholder="(se asigna al generar)"></div>
@@ -104,7 +102,6 @@
                         <div class="col-md-3"><label class="form-label">Fecha de vencimiento</label><input id="p_fvto" class="form-control"></div>
                         <div class="col-md-3"><label class="form-label">Moneda</label><select id="p_moneda" class="form-select"><option>ARS</option></select></div>
                     </div>
-                    <!-- Bloque 2: Cliente -->
                     <div class="bloque-titulo">2 · Datos del cliente</div>
                     <div class="row g-2">
                         <div class="col-md-4"><label class="form-label req">Cliente</label><select id="p_cliente" class="form-select" onchange="autocompletarCliente()"><option value="">Seleccionar…</option></select></div>
@@ -120,7 +117,6 @@
                         <div class="col-md-4"><label class="form-label">Email</label><input id="p_cli_email" class="form-control"></div>
                         <div class="col-md-4"><label class="form-label">Persona de contacto</label><input id="p_cli_contacto" class="form-control"></div>
                     </div>
-                    <!-- Bloque 3: Transporte -->
                     <div class="bloque-titulo">3 · Información del transporte</div>
                     <div class="row g-2">
                         <div class="col-md-3"><label class="form-label">Tipo de servicio</label><input id="p_tiposervicio" class="form-control"></div>
@@ -135,7 +131,6 @@
                         <div class="col-md-4"><label class="form-label">Vehículo requerido</label><input id="p_vehiculo" class="form-control"></div>
                         <div class="col-md-8"><label class="form-label">Observaciones logísticas</label><input id="p_obslog" class="form-control"></div>
                     </div>
-                    <!-- Bloque 4: Conceptos -->
                     <div class="bloque-titulo d-flex justify-content-between align-items-center">
                         <span>4 · Detalle de conceptos</span>
                         <span>
@@ -152,7 +147,6 @@
                             <tbody id="cuerpoConceptos"></tbody>
                         </table>
                     </div>
-                    <!-- Bloque 5: Totales -->
                     <div class="row">
                         <div class="col-md-6 col-lg-5 ms-auto">
                             <div class="bloque-titulo">5 · Totales</div>
@@ -166,7 +160,6 @@
                             </dl>
                         </div>
                     </div>
-                    <!-- Bloque 6: Condiciones comerciales -->
                     <div class="bloque-titulo">6 · Condiciones comerciales</div>
                     <div class="row g-2">
                         <div class="col-md-3"><label class="form-label">Forma de pago</label><input id="p_formapago" class="form-control"></div>
@@ -176,7 +169,6 @@
                         <div class="col-md-6"><label class="form-label">Observaciones comerciales</label><textarea id="p_obscom" class="form-control" rows="2"></textarea></div>
                         <div class="col-md-6"><label class="form-label">Condiciones particulares</label><textarea id="p_condpart" class="form-control" rows="2"></textarea></div>
                     </div>
-                    <!-- Bloque 7: Observaciones -->
                     <div class="bloque-titulo">7 · Observaciones</div>
                     <textarea id="p_observaciones" class="form-control" rows="3" placeholder="Mercadería frágil, requiere seguro adicional, etc."></textarea>
                 </div>
@@ -190,7 +182,6 @@
         </div>
     </div>
 
-    <!-- Modal traer viajes -->
     <div class="modal fade" id="modalViajes" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog"><div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">Traer viajes del cliente</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -205,7 +196,6 @@
         </div></div>
     </div>
 
-    <!-- Modal cambiar estado -->
     <div class="modal fade" id="modalEstado" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog"><div class="modal-content">
             <div class="modal-header"><h5 class="modal-title">Cambiar estado</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
@@ -218,7 +208,6 @@
         </div></div>
     </div>
 
-    <!-- Scripts -->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
@@ -297,16 +286,13 @@
             setVal('p_cli_dir', dir);
             setVal('p_cli_tel', c.Telefono || '');
             setVal('p_cli_email', c.Email || '');
-            // Ciudad/Provincia/CondIVA quedan editables (son códigos en CLIENTES).
         }
 
-        // ---------- Estados (filtro) ----------
         function initEstadosFiltro() {
             var s = document.getElementById('fEstado');
             ESTADOS.forEach(function (e) { s.innerHTML += '<option value="' + e + '">' + e + '</option>'; });
         }
 
-        // ---------- Grilla ----------
         function limpiarFiltros() { ['fNumero', 'fDesde', 'fHasta', 'fUsuario'].forEach(function (i) { setVal(i, ''); }); setVal('fCliente', ''); setVal('fEstado', ''); buscarProformas(1); }
         function buscarProformas(page) {
             profState.page = page || 1;
@@ -368,7 +354,6 @@
         }
         function irPag(p) { if (p < 1 || p > profState.totalPages || p === profState.page) return false; buscarProformas(p); return false; }
 
-        // ---------- Conceptos ----------
         function filaConcepto(l) {
             l = l || {};
             var ivaSel = IVA_OPCIONES.map(function (v) { return '<option value="' + v + '"' + (Number(l.IvaPct) === v ? ' selected' : '') + '>' + v + '%</option>'; }).join('');
@@ -413,7 +398,6 @@
             document.getElementById('t_total').textContent = money(subtotal - desc + iva + otros);
         }
 
-        // ---------- Traer viajes ----------
         function abrirTraerViajes() {
             if (!val('p_cliente')) { alert('Elegí un cliente primero.'); return; }
             $('#modalViajes').modal('show');
@@ -431,7 +415,6 @@
                 .catch(function () { alert('Error al traer viajes.'); });
         }
 
-        // ---------- Form: abrir / leer ----------
         function limpiarForm() {
             ['p_id', 'p_numero', 'p_femision', 'p_fvto', 'p_cli_razon', 'p_cli_nombre', 'p_cli_cuit', 'p_cli_condiva', 'p_cli_dir', 'p_cli_ciudad', 'p_cli_prov', 'p_cli_cp', 'p_cli_tel', 'p_cli_email', 'p_cli_contacto', 'p_tiposervicio', 'p_origen', 'p_destino', 'p_tipocarga', 'p_fcarga', 'p_fentrega', 'p_peso', 'p_volumen', 'p_bultos', 'p_vehiculo', 'p_obslog', 'p_formapago', 'p_plazopago', 'p_validez', 'p_tiemposervicio', 'p_obscom', 'p_condpart', 'p_observaciones'].forEach(function (i) { setVal(i, ''); });
             setVal('p_cliente', ''); setVal('p_moneda', 'ARS'); setVal('p_otros', '0');
@@ -471,7 +454,6 @@
                 recalcularTotales();
                 document.getElementById('tituloModal').textContent = (soloLectura ? 'Ver proforma ' : 'Editar proforma ') + (p.Numero || ('#' + p.Proforma_ID));
                 document.getElementById('badgeEstadoModal').outerHTML = '<span id="badgeEstadoModal" class="badge ms-2 ' + (badgeEstado(estadoActual).match(/bg-\w+/)[0]) + '">' + esc(estadoActual) + '</span>';
-                // solo Borrador es editable
                 setModoLectura(soloLectura || estadoActual !== 'Borrador');
                 $('#modalProforma').modal('show');
             }).catch(function () { alert('No se pudo abrir la proforma.'); });
@@ -481,7 +463,6 @@
             cont.querySelectorAll('input,select,textarea').forEach(function (e) { if (e.id === 'p_numero') return; e.disabled = ro; });
             document.getElementById('btnGuardarBorrador').style.display = ro ? 'none' : '';
             document.getElementById('btnGenerar').style.display = ro ? 'none' : '';
-            // botones de línea
             cont.querySelectorAll('#tablaConceptos button, .bloque-titulo button').forEach(function (b) { b.style.display = ro ? 'none' : ''; });
         }
         function armarDto() {
@@ -521,7 +502,6 @@
                 .catch(function () { alert('Error de red al guardar.'); });
         }
         function generarProforma() {
-            // primero guardar, luego generar
             guardarBorrador(function (id) {
                 fetch(API_FAC + '/Proformas/' + id + '/Generar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ Usuario: usuario() }) })
                     .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
@@ -538,7 +518,6 @@
             });
         }
 
-        // ---------- Estado / Anular / Duplicar ----------
         function abrirEstado(id, actual) {
             setVal('e_id', id);
             var sel = document.getElementById('e_estado');

@@ -4,6 +4,8 @@
     var API = SGTL.api + '/facturacion-config';
     var sucursales = [];
     var sucursalEditada = null;
+    var numeradores = [];
+    var numeradorEditado = null;
 
     function porId(id) {
         return document.getElementById(id);
@@ -43,11 +45,14 @@
     }
 
     function cargar() {
-        return pedir('/sucursales').then(function (datos) {
-            sucursales = datos;
+        return Promise.all([pedir('/sucursales'), pedir('/numeradores')]).then(function (datos) {
+            sucursales = datos[0];
+            numeradores = datos[1];
             mostrarSucursales();
+            mostrarNumeradores();
         }).catch(function (error) {
-            SGTL.tabla.vacia('#sucursalesBody', 4, 'No se pudieron cargar las sucursales.');
+            SGTL.tabla.vacia('#sucursalesBody', 4, 'No se pudo cargar la configuración.');
+            SGTL.tabla.vacia('#numeradoresBody', 4, 'No se pudo cargar la configuración.');
             SGTL.toastError(error.message);
         });
     }
@@ -61,6 +66,18 @@
             return '<tr><td>' + SGTL.escapar(sucursal.Codigo) + '</td><td>' + SGTL.escapar(sucursal.Nombre) + '</td>'
                 + '<td class="text-center">' + estado(sucursal.Activa) + '</td>'
                 + '<td class="text-center">' + acciones(sucursal.SucursalID, sucursal.Activa, sucursal.PuedeEliminar) + '</td></tr>';
+        }).join(''));
+    }
+
+    function mostrarNumeradores() {
+        if (!numeradores.length) {
+            SGTL.tabla.vacia('#numeradoresBody', 4, 'Todavía no hay numeradores registrados.');
+            return;
+        }
+        SGTL.tabla.llenar('#numeradoresBody', numeradores.map(function (numerador) {
+            return '<tr><td>' + SGTL.escapar(numerador.Nombre) + '</td><td>' + String(numerador.UltimoNumero).padStart(8, '0') + '</td>'
+                + '<td class="text-center">' + estado(numerador.Activo) + '</td>'
+                + '<td class="text-center">' + acciones(numerador.NumeradorID, numerador.Activo, numerador.PuedeEliminar) + '</td></tr>';
         }).join(''));
     }
 
@@ -87,6 +104,13 @@
             if (eliminado) SGTL.toastExito(mensaje);
             cargar();
         });
+    }
+
+    function guardado(modal, cambios, mensaje) {
+        cambios.limpiar();
+        SGTL.modal(modal, 'hide');
+        SGTL.toastExito(mensaje);
+        cargar();
     }
 
     var validarSucursal = SGTL.validador([
@@ -119,14 +143,57 @@
         var pedido = sucursalEditada ? pedir('/sucursales/' + sucursalEditada.SucursalID, 'PUT', cuerpo) : pedir('/sucursales', 'POST', cuerpo);
         pedido.then(function () {
             listo();
-            cambiosSucursal.limpiar();
-            SGTL.modal('#sucursalModal', 'hide');
-            SGTL.toastExito('Sucursal guardada.');
-            cargar();
+            guardado('#sucursalModal', cambiosSucursal, 'Sucursal guardada.');
         }).catch(function (error) {
             listo();
             SGTL.avisoFormulario('#sucursalAviso', error.message);
         });
+    }
+
+    var validarNumerador = SGTL.validador([
+        { id: 'numeradorNombre', requerido: 'Completá el nombre.' },
+        { id: 'numeradorUltimo', requerido: 'Completá el último número.', soloNumeros: true, max: 8 }
+    ]);
+    var cambiosNumerador = SGTL.cambiosSinGuardar('#numeradorModal');
+
+    function abrirNumerador(numerador) {
+        numeradorEditado = numerador;
+        SGTL.reiniciarFormulario('#numeradorForm', '#numeradorAviso');
+        validarNumerador.reiniciar();
+        porId('numeradorTitulo').textContent = numerador ? 'Editar numerador' : 'Registrar numerador';
+        porId('numeradorNombre').value = numerador ? numerador.Nombre : '';
+        porId('numeradorUltimo').value = numerador ? numerador.UltimoNumero : '0';
+        SGTL.modal('#numeradorModal', 'show');
+    }
+
+    function guardarNumerador(evento) {
+        evento.preventDefault();
+        validarNumerador.validarTodo();
+        if (!SGTL.revisarFormulario('#numeradorForm', '#numeradorAviso')) return;
+        var listo = SGTL.procesando(evento.submitter);
+        var cuerpo = { Nombre: porId('numeradorNombre').value.trim(), UltimoNumero: Number(porId('numeradorUltimo').value) };
+        var pedido;
+        if (numeradorEditado) {
+            cuerpo.UltimoNumeroLeido = numeradorEditado.UltimoNumero;
+            pedido = pedir('/numeradores/' + numeradorEditado.NumeradorID, 'PUT', cuerpo);
+        } else {
+            pedido = pedir('/numeradores', 'POST', cuerpo);
+        }
+        pedido.then(function () {
+            listo();
+            guardado('#numeradorModal', cambiosNumerador, 'Numerador guardado.');
+        }).catch(function (error) {
+            listo();
+            SGTL.avisoFormulario('#numeradorAviso', error.message);
+            if (error.codigo === 'NUMERO_CAMBIADO') cargar().then(numeroActual);
+        });
+    }
+
+    function numeroActual() {
+        var actual = numeradores.find(function (n) { return n.NumeradorID === numeradorEditado.NumeradorID; });
+        if (!actual) return;
+        numeradorEditado = actual;
+        porId('numeradorUltimo').value = actual.UltimoNumero;
     }
 
     porId('sucursalesBody').addEventListener('click', function (evento) {
@@ -139,9 +206,22 @@
         else cambiarEstado(boton, ruta, !sucursal.Activa, sucursal.Activa ? 'Sucursal inactivada.' : 'Sucursal activada.');
     });
 
+    porId('numeradoresBody').addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-accion]');
+        var numerador = boton && numeradores.find(function (n) { return n.NumeradorID === Number(boton.dataset.id); });
+        if (!numerador) return;
+        var ruta = '/numeradores/' + numerador.NumeradorID;
+        if (boton.dataset.accion === 'editar') abrirNumerador(numerador);
+        else if (boton.dataset.accion === 'eliminar') eliminar(ruta, '¿Eliminar el numerador ' + numerador.Nombre + '?', 'Numerador eliminado.');
+        else cambiarEstado(boton, ruta, !numerador.Activo, numerador.Activo ? 'Numerador inactivado.' : 'Numerador activado.');
+    });
+
     porId('registrarSucursal').addEventListener('click', function () { abrirSucursal(null); });
     porId('sucursalForm').addEventListener('submit', guardarSucursal);
+    porId('registrarNumerador').addEventListener('click', function () { abrirNumerador(null); });
+    porId('numeradorForm').addEventListener('submit', guardarNumerador);
 
     SGTL.tabla.cargando('#sucursalesBody', 4);
+    SGTL.tabla.cargando('#numeradoresBody', 4);
     cargar();
 })();

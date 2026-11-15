@@ -19,7 +19,6 @@
             z-index: 9999;
         }
 
-        /* Asegura que la tabla se extienda completamente */
         .table-responsive {
             width: 100%;
         }
@@ -35,13 +34,11 @@
             vertical-align: middle;
         }
 
-        /* Ajusta el ancho de las columnas para que ocupen el mismo espacio */
         #tablaViajes th {
             width: auto;
             white-space: nowrap;
         }
 
-        /* Centrar la paginación */
         .pagination {
             justify-content: center;
         }
@@ -75,7 +72,6 @@
         <div id="sidebar"></div>
 
         <div id="main" class='layout-navbar navbar-fixed'>
-            <!--Header-->
             <header>
 
                 <nav class="navbar navbar-expand navbar-light navbar-top">
@@ -84,15 +80,11 @@
                             <i class="bi bi-justify fs-3"></i>
                         </a>
 
-                        <!--btn para expandir Menú lateral-->
-
                         <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
                             data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                             aria-expanded="false" aria-label="Toggle navigation">
                             <span class="navbar-toggler-icon"></span>
                         </button>
-
-                        <!--Llamado a las opciones del header-->
 
                         <div id="header-container"></div>
 
@@ -104,12 +96,9 @@
 
             <div class="page-heading">
 
-                <!--Comienzo sección de la tabla-->
                 <section class="section">
                     <div class="card rounded me-4 ms-4 mt-4">
                         <div class="card-header">
-
-                            <!--Notificaciones de Alta, Editar y Eliminar-->
 
                             <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
                                 <div class="toast align-items-center text-white bg-success border-0" role="alert"
@@ -131,11 +120,9 @@
 
                         <div class="card-body">
                             <div class="row">
-                                <!-- Columna izquierda - Filtros -->
                                 <div class="col-md-6">
                                     <fieldset class="border p-4">
                                         <form id="busquedaViajeForm" class="form">
-                                            <!-- Fila 1 -->
                                             <div class="row mb-3">
                                                 <div class="col-md-6">
                                                     <label for="idviajeinput">Número de viaje</label>
@@ -148,7 +135,6 @@
                                                         placeholder="Desde y hasta">
                                                 </div>
                                             </div>
-                                            <!-- Fila 2 -->
                                             <div class="row mb-3">
                                                 <div class="col-md-6">
                                                     <label for="fechaRangoFinViaje">Fecha de fin</label>
@@ -164,7 +150,6 @@
                                     </fieldset>
                                 </div>
 
-                                <!-- Columna derecha - Alta y reporte -->
                                 <div class="col-md-6 text-end">
                                     <button type="button" class="btn btn-success" onclick="abrirModalAltaViaje()"
                                         data-bs-toggle="tooltip" data-bs-placement="top" title="Registrar viaje">
@@ -178,7 +163,6 @@
                                     </button>
                                 </div>
 
-                                <!-- Tabla de resultados -->
                                 <div class="table-responsive mt-4">
                                     <table class="table table-striped" id="tablaViajes">
                                         <thead>
@@ -194,12 +178,10 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <!-- Contenido dinámico -->
                                         </tbody>
                                     </table>
                                 </div>
 
-                                <!-- Paginación -->
                                 <nav>
                                     <ul class="pagination justify-content-end" id="pagination">
                                     </ul>
@@ -211,10 +193,6 @@
                 </section>
             </div>
 
-            <!--Fin sección de la tabla-->
-
-            <!--Footer-->
-
             <footer>
                 <div id="footer-container"></div>
                 <script src="./assets/static/js/footer.js"></script>
@@ -223,8 +201,6 @@
 
     </div>
 
-
-    <!-- Alta Modal -->
     <div class="modal fade text-left" id="ModalAltaViaje" tabindex="-1" role="dialog"
         aria-labelledby="ModalAltaViajelabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
@@ -309,7 +285,6 @@
                                     <div id="choferResultados" class="list-group position-absolute w-100" style="z-index:1080; display:none; max-height:200px; overflow:auto;"></div>
                                 </div>
                             </div>
-                            <!-- Columna derecha: mapa -->
                             <div class="col-lg-5">
                                 <label class="form-label">Ruta y distancia</label>
                                 <div id="mapaViaje" style="height: 430px; width: 100%; border-radius: 6px; border: 1px solid #dee2e6;"></div>
@@ -335,8 +310,6 @@
         </div>
     </div>
 
-
-    <!--Scripts-->
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
@@ -350,14 +323,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
 
-    <!-- Carga de diseño y roles -->
     <script>
         window.onload = function () {
             const loadingMessage = document.getElementById('loading-message');
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            // Cargar header, footer y configuración
             window.loadHeader();
             window.loadFooter();
 
@@ -419,13 +390,10 @@
 
     </script>
 
-    <!-- Comportamiento tooltip -->
     <script>
         $(document).ready(function () {
-            // Inicializa tooltips en todos los elementos estáticos
             $('[data-bs-toggle="tooltip"]').tooltip();
 
-            // Aplica tooltips a elementos dinámicamente agregados en la tabla
             $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
                 $(this).tooltip('show');
             });
@@ -434,7 +402,6 @@
                 $(this).tooltip('hide');
             });
 
-            // Manejo específico para tooltips en botones deshabilitados
             $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
                 $(this).tooltip('show');
             });
@@ -446,12 +413,10 @@
 
     </script>
 
-    <!-- Buscador y Listar + Acciones -->
     <script>
         const pageSize = 6;
         let currentPage = 1;
 
-        // Datepicker para el filtro de fecha de inicio de viaje
         $('#fechaRangoInicioViaje').daterangepicker({
             autoUpdateInput: false,
             locale: {
@@ -479,7 +444,6 @@
             buscarViajes(currentPage);
         });
 
-        // Datepicker para el filtro de fecha de fin de viaje
         $('#fechaRangoFinViaje').daterangepicker({
             autoUpdateInput: false,
             locale: {
@@ -630,10 +594,6 @@
 
     </script>
 
-    <!-- Alta -->
-
-
-    <!-- Modal de confirmacion de eliminacion de viaje (Fase 1) -->
     <div class="modal fade text-left" id="confirmarEliminarViajeModal" tabindex="-1" role="dialog"
         aria-labelledby="confirmarEliminarViajeLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
@@ -655,12 +615,10 @@
         </div>
     </div>
 
-    <!-- ================= Fase 1: ABM de Viajes (alta / edicion / eliminacion) ================= -->
     <script>
         const API_VIAJES = 'http://localhost:50222/api';
         let viajeIdEliminar = null;
 
-        // Datos auxiliares
         var origenesAll = [], destinosAll = [];
         var origenesData = {}, destinosData = {};
         var mapaViaje = null, rutaViajeLayer = null, marcadoresViaje = [];
@@ -686,7 +644,6 @@
                 .text(txt);
         }
 
-        // ===================== MAPA (OpenStreetMap + OSRM) =====================
         function initMapaViaje() {
             if (mapaViaje || typeof L === 'undefined') return;
             mapaViaje = L.map('mapaViaje').setView([-34.6, -58.4], 5);
@@ -747,7 +704,6 @@
             }).fail(function () { msgMapa('No se pudo geocodificar las direcciones.', 'error'); });
         }
 
-        // ===================== COMBOS =====================
         function cargarClientesViaje() {
             var d = $.Deferred();
             $.ajax({ url: API_VIAJES + '/Clientes', type: 'GET' })
@@ -797,7 +753,6 @@
             setTarifaInfo('Completá cliente, origen y destino para cargar o calcular la tarifa.');
         }
 
-        // ===================== TARIFA AUTOMÁTICA =====================
         function resolverTarifa() {
             var tipo = $('input[name="tipoTarifa"]:checked').val();
             if (tipo === 'fija') { resolverTarifaFija(); }
@@ -823,7 +778,6 @@
                 .fail(function (xhr) { $('#tarifaKmId').val(''); setTarifaInfo('No hay tarifa por km para ese período y distancia. ' + parsearError(xhr), 'error'); });
         }
 
-        // ===================== BUSCADOR DE CHOFER =====================
         function buscarChoferInput() {
             var q = $('#choferBuscar').val().trim();
             $('#choferSelectId').val('');
@@ -847,7 +801,6 @@
         }
         function seleccionarChofer(id, texto) { $('#choferSelectId').val(id); $('#choferBuscar').val(texto); $('#choferResultados').hide().empty(); }
 
-        // ===================== ABRIR MODAL =====================
         function resetFormViaje() {
             document.getElementById('FormAltaViaje').reset();
             if (window.fpInicio) fpInicio.clear();
@@ -905,7 +858,6 @@
             });
         }
 
-        // ===================== GUARDAR =====================
         function construirViajeDto() {
             var tipo = $('input[name="tipoTarifa"]:checked').val();
             return {
@@ -956,7 +908,6 @@
             });
         }
 
-        // ===================== ELIMINAR / ESTADO =====================
         function abrirModalEliminarViaje(id, estado) { viajeIdEliminar = id; $('#confirmarEliminarViajeModal').modal('show'); }
         function confirmarEliminarViaje() {
             if (!viajeIdEliminar) return;
@@ -966,7 +917,6 @@
         }
         function abrirModalEstadoViaje(id, estado) { alert('La activación/inactivación de viajes no está disponible en esta versión.'); }
 
-        // ===================== READY =====================
         $(document).ready(function () {
             if (window.flatpickr) {
                 window.fpInicio = flatpickr('#fechaInicio', { enableTime: true, time_24hr: true, dateFormat: 'Y-m-d H:i', allowInput: true, onChange: function () { if ($('input[name="tipoTarifa"]:checked').val() === 'km') resolverTarifaKm(); } });
