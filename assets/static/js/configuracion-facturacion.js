@@ -250,6 +250,7 @@
         porId(id + 'Campo').classList.toggle('d-none', fijo);
         porId(id + 'Texto').classList.toggle('d-none', !fijo);
         porId(id + 'Texto').innerHTML = SGTL.escapar(texto) + '<span class="form-text d-block">' + SGTL.escapar(motivo) + '</span>';
+        document.querySelector('label[for="' + id + '"] .text-danger').classList.toggle('d-none', fijo);
     }
 
     function avisoElectronico() {
@@ -376,6 +377,15 @@
     porId('tipoSigla').addEventListener('input', siglaEscrita);
     porId('tipoElectronico').addEventListener('change', avisoElectronico);
     porId('tipoForm').addEventListener('submit', guardarTipo);
+
+    window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
+    window.loadFooter();
+    fetch(SGTL.api + '/GestionContenido/1').then(function (respuesta) {
+        if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+        return respuesta.json();
+    }).then(function (contenido) {
+        window.applyStyles(contenido.Logo, contenido.ColorFondo, contenido.ColorBotonesMenu, contenido.ContenidoPiePagina);
+    }).catch(function (error) { console.warn('No se pudo cargar la apariencia de SGTL.', error); });
 
     SGTL.tabla.cargando('#sucursalesBody', 4);
     SGTL.tabla.cargando('#numeradoresBody', 4);

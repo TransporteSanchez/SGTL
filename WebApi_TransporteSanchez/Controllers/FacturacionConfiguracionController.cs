@@ -242,7 +242,7 @@ ORDER BY s.Codigo;";
                 var id = (int)Valor(transaccion,
                     "INSERT dbo.FACTURACION_SUCURSALES (Codigo, Nombre) OUTPUT INSERTED.Sucursal_ID VALUES (@codigo, @nombre);",
                     Parametro("@codigo", entrada.Codigo), Parametro("@nombre", entrada.Nombre));
-                return new Cambio { Accion = "ALTA", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo, Respuesta = new { SucursalID = id } };
+                return new Cambio { Accion = "INSERT", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo, Respuesta = new { SucursalID = id } };
             }, ct);
         }
 
@@ -261,7 +261,7 @@ ORDER BY s.Codigo;";
 
                 Ejecutar(transaccion, "UPDATE dbo.FACTURACION_SUCURSALES SET Codigo = @codigo, Nombre = @nombre WHERE Sucursal_ID = @id;",
                     Parametro("@codigo", entrada.Codigo), Parametro("@nombre", entrada.Nombre), Parametro("@id", id));
-                return new Cambio { Accion = "MODIFICAR", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo };
+                return new Cambio { Accion = "UPDATE", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + entrada.Codigo };
             }, ct);
         }
 
@@ -275,7 +275,7 @@ ORDER BY s.Codigo;";
                     Parametro("@activa", activa), Parametro("@id", id));
                 if (anterior == null) return null;
                 if ((bool)anterior == activa) return new Cambio();
-                return new Cambio { Accion = activa ? "MODIFICAR" : "BAJA", Clave = "Sucursal_ID=" + id, Detalle = activa ? "Sucursal activada" : "Sucursal inactivada" };
+                return new Cambio { Accion = "UPDATE", Clave = "Sucursal_ID=" + id, Detalle = activa ? "Sucursal activada" : "Sucursal inactivada" };
             }, ct);
         }
 
@@ -294,7 +294,7 @@ ORDER BY s.Codigo;";
                     throw new ConflictoException(enUso);
 
                 Ejecutar(transaccion, "DELETE dbo.FACTURACION_SUCURSALES WHERE Sucursal_ID = @id;", Parametro("@id", id));
-                return new Cambio { Accion = "ELIMINAR", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + codigo + " eliminada" };
+                return new Cambio { Accion = "DELETE", Clave = "Sucursal_ID=" + id, Detalle = "Sucursal " + codigo + " eliminada" };
             }, ct);
         }
 
@@ -355,7 +355,7 @@ ORDER BY n.Nombre;";
                 var id = (int)Valor(transaccion,
                     "INSERT dbo.FACTURACION_NUMERADORES (Nombre, UltimoNumero) OUTPUT INSERTED.Numerador_ID VALUES (@nombre, @ultimo);",
                     Parametro("@nombre", entrada.Nombre), Parametro("@ultimo", entrada.UltimoNumero));
-                return new Cambio { Accion = "ALTA", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + entrada.Nombre, Respuesta = new { NumeradorID = id } };
+                return new Cambio { Accion = "INSERT", Clave = "Numerador_ID=" + id, Detalle = "Numerador «" + entrada.Nombre + "»", Respuesta = new { NumeradorID = id } };
             }, ct);
         }
 
@@ -374,7 +374,7 @@ ORDER BY n.Nombre;";
                 {
                     Ejecutar(transaccion, "UPDATE dbo.FACTURACION_NUMERADORES SET Nombre = @nombre WHERE Numerador_ID = @id;",
                         Parametro("@nombre", entrada.Nombre), Parametro("@id", id));
-                    return new Cambio { Accion = "MODIFICAR", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + entrada.Nombre };
+                    return new Cambio { Accion = "UPDATE", Clave = "Numerador_ID=" + id, Detalle = "Numerador «" + entrada.Nombre + "»" };
                 }
 
                 if ((int)actual != entrada.UltimoNumeroLeido)
@@ -385,9 +385,9 @@ ORDER BY n.Nombre;";
                     Parametro("@nombre", entrada.Nombre), Parametro("@ultimo", entrada.UltimoNumero), Parametro("@id", id));
                 return new Cambio
                 {
-                    Accion = "MODIFICAR",
+                    Accion = "UPDATE",
                     Clave = "Numerador_ID=" + id,
-                    Detalle = "Numerador " + entrada.Nombre + ", último número de " + actual + " a " + entrada.UltimoNumero
+                    Detalle = "Numerador «" + entrada.Nombre + "», último número de " + actual + " a " + entrada.UltimoNumero
                 };
             }, ct);
         }
@@ -402,7 +402,7 @@ ORDER BY n.Nombre;";
                     Parametro("@activo", activo), Parametro("@id", id));
                 if (anterior == null) return null;
                 if ((bool)anterior == activo) return new Cambio();
-                return new Cambio { Accion = activo ? "MODIFICAR" : "BAJA", Clave = "Numerador_ID=" + id, Detalle = activo ? "Numerador activado" : "Numerador inactivado" };
+                return new Cambio { Accion = "UPDATE", Clave = "Numerador_ID=" + id, Detalle = activo ? "Numerador activado" : "Numerador inactivado" };
             }, ct);
         }
 
@@ -418,7 +418,7 @@ ORDER BY n.Nombre;";
                 if (nombre == null) return null;
 
                 Ejecutar(transaccion, "DELETE dbo.FACTURACION_NUMERADORES WHERE Numerador_ID = @id;", Parametro("@id", id));
-                return new Cambio { Accion = "ELIMINAR", Clave = "Numerador_ID=" + id, Detalle = "Numerador " + nombre + " eliminado" };
+                return new Cambio { Accion = "DELETE", Clave = "Numerador_ID=" + id, Detalle = "Numerador «" + nombre + "» eliminado" };
             }, ct);
         }
 
@@ -504,7 +504,7 @@ VALUES (@tipo, @letra, @sucursal, @numerador, 1);",
                 ValidarQueNoBaje(transaccion, entrada.NumeradorID, (int)ultimoNumero);
                 return new Cambio
                 {
-                    Accion = "ALTA",
+                    Accion = "INSERT",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada,
                     Respuesta = new { FactTipoID = id }
@@ -586,7 +586,7 @@ WHERE FactTipo_ID = @id;",
 
                 return new Cambio
                 {
-                    Accion = "MODIFICAR",
+                    Accion = "UPDATE",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + entrada.Tipo + " " + entrada.LetraPredeterminada
                         + (cambiaSigla || cambiaLetra ? " (antes " + sigla + " " + letra + ")" : "")
@@ -616,7 +616,7 @@ WHERE tc.FactTipo_ID = @id;", Parametro("@id", id)))
                     Parametro("@activo", activo), Parametro("@id", id));
                 return new Cambio
                 {
-                    Accion = activo ? "MODIFICAR" : "BAJA",
+                    Accion = "UPDATE",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + tipo["Tipo"] + " " + tipo["LetraPredeterminada"] + (activo ? " activado" : " inactivado")
                 };
@@ -647,7 +647,7 @@ BEGIN
 END;", Parametro("@id", id), Parametro("@tipo", tipo["Tipo"]));
                 return new Cambio
                 {
-                    Accion = "ELIMINAR",
+                    Accion = "DELETE",
                     Clave = "FactTipo_ID=" + id,
                     Detalle = "Tipo de comprobante " + tipo["Tipo"] + " " + tipo["LetraPredeterminada"] + " eliminado"
                 };
