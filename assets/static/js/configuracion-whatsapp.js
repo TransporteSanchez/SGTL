@@ -2,27 +2,18 @@
     "use strict";
     var API = SGTL.api + "/WhatsAppConfig/1";
     function porId(id) { return document.getElementById(id); }
-    function aviso(tipo, mensaje) {
-        var elemento = porId("whatsappAviso");
-        elemento.classList.remove("alert-success", "alert-danger");
-        elemento.textContent = mensaje || "";
-        elemento.classList.toggle("d-none", !mensaje);
-        if (mensaje) elemento.classList.add(tipo === "ok" ? "alert-success" : "alert-danger");
-    }
     function pedir(metodo, cuerpo) {
         return fetch(API, {
             method: metodo,
             headers: SGTL.encabezados(cuerpo ? { "Content-Type": "application/json", Accept: "application/json" } : { Accept: "application/json" }),
             body: cuerpo ? JSON.stringify(cuerpo) : undefined
+        }).catch(function () {
+            throw new Error("No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.");
         }).then(function (respuesta) {
             return respuesta.json().catch(function () { return null; }).then(function (datos) {
-                if (respuesta.status === 401) throw new Error("Tu sesión no es válida. Volvé a iniciar sesión.");
-                if (!respuesta.ok) throw new Error((datos && (datos.mensaje || datos.Message)) || "No se pudo completar la operación. Probá de nuevo.");
+                if (!respuesta.ok) throw new Error(SGTL.mensajeError({ status: respuesta.status, responseJSON: datos }, "No se pudo completar la operación. Probá de nuevo."));
                 return datos;
             });
-        }).catch(function (error) {
-            if (error && error.message) throw error;
-            throw new Error("No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.");
         });
     }
     function mostrar(datos) {
@@ -44,12 +35,19 @@
     }
     document.addEventListener("DOMContentLoaded", function () {
         var boton = porId("btnGuardarWhatsApp");
+        window.loadHeader().catch(function (error) { console.warn("No se pudo cargar el encabezado.", error); });
+        window.loadFooter();
+        fetch(SGTL.api + "/GestionContenido/1").then(function (respuesta) {
+            if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
+            return respuesta.json();
+        }).then(function (contenido) {
+            window.applyStyles(contenido.Logo, contenido.ColorFondo, contenido.ColorBotonesMenu, contenido.ContenidoPiePagina);
+        }).catch(function (error) { console.warn("No se pudo cargar la apariencia de SGTL.", error); });
         pedir("GET").then(mostrar).catch(function (error) {
-            aviso("error", error.message);
+            SGTL.toastError(error.message);
         });
         porId("whatsappForm").addEventListener("submit", function (evento) {
             evento.preventDefault();
-            aviso();
             var listo = SGTL.procesando(boton);
             var cuerpo = {
                 Enabled: porId("waEnabled").checked,
@@ -66,7 +64,7 @@
                 mostrar(datos);
                 SGTL.toastExito("Configuración de WhatsApp guardada.");
             }).catch(function (error) {
-                aviso("error", error.message);
+                SGTL.toastError(error.message);
             }).then(listo);
         });
     });
