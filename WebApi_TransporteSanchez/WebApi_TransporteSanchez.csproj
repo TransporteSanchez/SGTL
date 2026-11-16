@@ -407,6 +407,15 @@
     <Compile Include="Controllers\EmailAccesoController.cs" />
     <Compile Include="Controllers\EmailGestionPerfilesController.cs" />
     <Compile Include="Controllers\EmailServidorController.cs" />
+    <Compile Include="Controllers\EmpresaController.cs" />
+    <Compile Include="Services\WhatsApp\EnlacesMapa.cs" />
+    <Compile Include="Services\WhatsApp\TelefonosWhatsApp.cs" />
+    <Compile Include="Services\WhatsApp\RegistroEnviosWhatsApp.cs" />
+    <Compile Include="Controllers\TablerosController.cs" />
+    <Compile Include="Controllers\WhatsAppConfigController.cs" />
+    <Compile Include="Services\WhatsApp\ConfiguracionEnvioWhatsApp.cs" />
+    <Compile Include="Services\WhatsApp\WhatsAppCloudApiNotifier.cs" />
+    <Compile Include="Services\WhatsApp\ViajeWhatsAppDispatcher.cs" />
     <Compile Include="Controllers\FacturacionComprobantesConfiguracion.cs" />
     <Compile Include="Controllers\FacturacionConfiguracionController.cs" />
     <Compile Include="Controllers\HealthController.cs" />
