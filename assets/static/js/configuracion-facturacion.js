@@ -160,14 +160,10 @@
         sucursalEditada = sucursal;
         SGTL.reiniciarFormulario('#sucursalForm', '#sucursalAviso');
         validarSucursal.reiniciar();
-        var codigoFijo = !!sucursal && !sucursal.PuedeCambiarCodigo;
         porId('sucursalTitulo').textContent = sucursal ? 'Editar sucursal' : 'Registrar sucursal';
         porId('sucursalCodigo').value = sucursal ? sucursal.Codigo : '';
         porId('sucursalNombre').value = sucursal ? sucursal.Nombre : '';
-        porId('sucursalCodigoTexto').textContent = porId('sucursalCodigo').value;
-        porId('sucursalCodigoCampo').classList.toggle('d-none', codigoFijo);
-        porId('sucursalCodigoTexto').classList.toggle('d-none', !codigoFijo);
-        porId('sucursalFija').classList.toggle('d-none', !codigoFijo);
+        fijar('sucursalCodigo', !!sucursal && !sucursal.PuedeCambiarCodigo, porId('sucursalCodigo').value, 'Ya hay comprobantes de esta sucursal.');
         SGTL.modal('#sucursalModal', 'show');
     }
 
