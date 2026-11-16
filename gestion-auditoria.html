@@ -87,53 +87,47 @@
                         </div>
 
                         <div class="card-body">
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label">Usuario</label>
+                            <div class="row g-3 mb-3 align-items-end">
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fUsuario" class="form-label">Usuario</label>
                                     <div class="position-relative">
                                         <input type="text" id="fUsuario" class="form-control" autocomplete="off"
-                                            placeholder="Todos — clic para elegir o escribí">
+                                            placeholder="Todos los usuarios">
                                         <div id="usuarioDropdown" class="list-group position-absolute w-100 shadow-sm"
                                             style="z-index:1050; max-height:230px; overflow-y:auto; display:none;"></div>
                                     </div>
                                 </div>
-                                <div class="col-md-3 col-sm-6">
-                                    <label class="form-label">Entidad</label>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fFecha" class="form-label">Fecha</label>
+                                    <input type="text" id="fFecha" class="form-control" placeholder="Desde y hasta">
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fEntidad" class="form-label">Entidad</label>
                                     <select id="fEntidad" class="form-select">
                                         <option value="">Todas</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Acción</label>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="fAccion" class="form-label">Acción</label>
                                     <select id="fAccion" class="form-select">
                                         <option value="">Todas</option>
-                                        <option value="INSERT">Alta (INSERT)</option>
-                                        <option value="UPDATE">Modificación (UPDATE)</option>
-                                        <option value="DELETE">Baja (DELETE)</option>
+                                        <option value="INSERT">Alta</option>
+                                        <option value="UPDATE">Modificación</option>
+                                        <option value="DELETE">Baja</option>
                                         <option value="LOGIN">Inicio de sesión</option>
                                         <option value="LOGOUT">Cierre de sesión</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Desde</label>
-                                    <input type="text" id="fDesde" class="form-control" placeholder="AAAA-MM-DD">
+                                <div class="col-12 col-lg-6">
+                                    <label for="fTexto" class="form-label">Buscar en el detalle</label>
+                                    <input type="text" id="fTexto" class="form-control" autocomplete="off"
+                                        placeholder="Texto en el registro o en los valores">
                                 </div>
-                                <div class="col-md-2 col-sm-6">
-                                    <label class="form-label">Hasta</label>
-                                    <input type="text" id="fHasta" class="form-control" placeholder="AAAA-MM-DD">
-                                </div>
-                                <div class="col-md-4 col-sm-6">
-                                    <label class="form-label">Buscar en el detalle</label>
-                                    <input type="text" id="fTexto" class="form-control" placeholder="Texto en clave o valores">
-                                </div>
-                                <div class="col-md-8 col-sm-6 d-flex align-items-end gap-2">
-                                    <button class="btn btn-primary" onclick="buscarAuditoria()">
-                                        <i class="bi bi-search me-1"></i>Buscar
+                                <div class="col-12 col-lg-6 d-flex align-items-center justify-content-end gap-3">
+                                    <span id="resumen" class="text-muted"></span>
+                                    <button type="button" id="btnBuscar" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
                                     </button>
-                                    <button class="btn btn-light-secondary" onclick="limpiarFiltros()">
-                                        <i class="bi bi-eraser me-1"></i>Limpiar
-                                    </button>
-                                    <span id="resumen" class="text-muted ms-auto align-self-center"></span>
                                 </div>
                             </div>
 
@@ -209,6 +203,7 @@
     <script src="assets/static/js/sidebar-loader.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/footer.js"></script>
@@ -324,11 +319,11 @@
             if (!dd) return;
             var q = (filtro || '').toLowerCase();
             var items = usuariosAudit.filter(function (u) { return u.toLowerCase().indexOf(q) !== -1; });
-            var html = '<button type="button" class="list-group-item list-group-item-action text-muted" data-val="">(Todos)</button>';
+            var html = '<button type="button" class="list-group-item list-group-item-action text-muted" data-val="">Todos los usuarios</button>';
             if (usuariosAudit.length === 0) {
-                html += '<span class="list-group-item disabled small text-muted">Sin usuarios para listar</span>';
+                html += '<span class="list-group-item disabled small text-muted">Todavía no hay usuarios en la auditoría.</span>';
             } else if (!items.length) {
-                html += '<span class="list-group-item disabled small text-muted">Sin coincidencias</span>';
+                html += '<span class="list-group-item disabled small text-muted">No hay usuarios que coincidan.</span>';
             } else {
                 items.slice(0, 50).forEach(function (u) {
                     html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + esc(u) + '">' + esc(u) + '</button>';
@@ -349,14 +344,12 @@
             const u = document.getElementById('fUsuario').value.trim();
             const en = document.getElementById('fEntidad').value;
             const ac = document.getElementById('fAccion').value;
-            const de = document.getElementById('fDesde').value.trim();
-            const ha = document.getElementById('fHasta').value.trim();
+            const fecha = SGTL.valorRango('#fFecha');
             const tx = document.getElementById('fTexto').value.trim();
             if (u) p.append('usuario', u);
             if (en) p.append('entidad', en);
             if (ac) p.append('accion', ac);
-            if (de) p.append('desde', de);
-            if (ha) p.append('hasta', ha);
+            if (fecha) { p.append('desde', fecha.desde); p.append('hasta', fecha.hasta); }
             if (tx) p.append('texto', tx);
             p.append('page', audState.page);
             p.append('pageSize', audState.pageSize);
@@ -444,22 +437,17 @@
             $('#modalDetalle').modal('show');
         }
 
-        function limpiarFiltros() {
-            ['fUsuario', 'fDesde', 'fHasta', 'fTexto'].forEach(id => document.getElementById(id).value = '');
-            document.getElementById('fEntidad').value = '';
-            document.getElementById('fAccion').value = '';
+        function filtrar() {
+            ocultarUsuarioDropdown();
             buscarAuditoria(1);
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            if (window.flatpickr) {
-                ['fDesde', 'fHasta'].forEach(id => flatpickr('#' + id, { dateFormat: 'Y-m-d', allowInput: true }));
-            }
-            ['fUsuario', 'fTexto'].forEach(id => {
-                document.getElementById(id).addEventListener('keypress', function (e) {
-                    if (e.key === 'Enter') { ocultarUsuarioDropdown(); buscarAuditoria(1); }
-                });
-            });
+            SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) filtrar(); } });
+            const filtrosAuditoria = SGTL.filtros(['#fUsuario', '#fFecha', '#fEntidad', '#fAccion', '#fTexto'], filtrar);
+            document.getElementById('fEntidad').addEventListener('change', filtrar);
+            document.getElementById('fAccion').addEventListener('change', filtrar);
+            document.getElementById('btnBuscar').addEventListener('click', filtrar);
 
             var fu = document.getElementById('fUsuario');
             fu.addEventListener('focus', function () { renderUsuarioDropdown(fu.value.trim()); });
@@ -469,8 +457,8 @@
                 if (!btn) return;
                 e.preventDefault();
                 fu.value = btn.getAttribute('data-val') || '';
-                ocultarUsuarioDropdown();
-                buscarAuditoria(1);
+                filtrosAuditoria.actualizar();
+                filtrar();
             });
             document.addEventListener('click', function (e) {
                 if (!e.target.closest('#fUsuario') && !e.target.closest('#usuarioDropdown')) ocultarUsuarioDropdown();
