@@ -350,127 +350,6 @@
         </div>
     </div>
 
-    <!-- Edit Modal -->
-    <div class="modal fade text-left" id="editarClienteModal" tabindex="-1" role="dialog"
-        aria-labelledby="editarClienteModallabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="editarClienteModallabel">Editar datos del cliente</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
-                        <i data-feather="x"></i>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div id="alertaCompletaCamposEdicion" class="alert alert-light-danger color-danger"
-                        style="display: none;" role="alert">
-                    </div>
-                    <form class="form" id="FormEditarCliente">
-                        <div class="row">
-                            <div class="col-md-6 col-12">
-                                <div class="form-group">
-                                    <label for="editarCUIT" class="form-label">
-                                        CUIT<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" id="editarCUIT" class="form-control" placeholder="XX-XXXXXXXX-X"
-                                        name="cuit-column" />
-                                    <div id="editarCuitError" class="invalid-feedback" style="display: none;"></div>
-                                    <div id="editarCuitSuccess" class="valid-feedback" style="display: none;"></div>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarRazonSocial" class="form-label">
-                                        Razón Social<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" id="editarRazonSocial" class="form-control"
-                                        placeholder="Razón Social" name="razon-social-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarCondFiscal" class="form-label">
-                                        Condición Fiscal<span class="text-danger">*</span>
-                                    </label>
-                                    <select id="editarCondFiscal" class="form-control" name="cond-fiscal-column">
-                                        <option value="">Seleccione una opción</option>
-                                        <option value="RI">Responsable Inscripto</option>
-                                        <option value="MT">Monotributista</option>
-                                        <option value="EX">Exento</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarTipoCliente" class="form-label">Tipo de cliente</label>
-                                    <select id="editarTipoCliente" class="form-select">
-                                        <option value="Directo">Directo</option>
-                                        <option value="Con_plataforma">Con plataforma</option>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarEmail" class="form-label">
-                                        Email<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="email" id="editarEmail" class="form-control"
-                                        placeholder="ejemplo@email.com" name="email-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarTelefono" class="form-label">
-                                        Teléfono<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" id="editarTelefono" class="form-control" placeholder="Teléfono"
-                                        name="telefono-column" />
-                                </div>
-                            </div>
-                            <div class="col-md-6 col-12">
-                                <div class="form-group">
-                                    <label for="editarprovincia" class="form-label">
-                                        Provincia<span class="text-danger">*</span>
-                                    </label>
-                                    <select id="editarprovincia" class="form-control form-select"
-                                        name="provincia-column">
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarlocalidad" class="form-label">
-                                        Localidad<span class="text-danger">*</span>
-                                    </label>
-                                    <select id="editarlocalidad" class="form-control form-select"
-                                        name="localidad-column">
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarCalle" class="form-label">
-                                        Calle<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" id="editarCalle" class="form-control"
-                                        placeholder="Nombre de la calle" name="calle-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarAltura" class="form-label">
-                                        Altura<span class="text-danger">*</span>
-                                    </label>
-                                    <input type="text" id="editarAltura" class="form-control" placeholder="Número"
-                                        name="altura-column" />
-                                </div>
-                                <div class="form-group">
-                                    <label for="editarCodigoPostal" class="form-label">Código postal</label>
-                                    <input type="text" id="editarCodigoPostal" class="form-control" maxlength="20"
-                                        autocomplete="postal-code">
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                        <i class="bx bx-x d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Cancelar</span>
-                    </button>
-                    <button type="submit" class="btn btn-primary ms-1" id="confirmarEdicion">
-                        <i class="bx bx-check d-block d-sm-none"></i>
-                        <span class="d-none d-sm-block">Confirmar</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal de confirmación de eliminación -->
     <div class="modal fade text-left" id="confirmarEliminarModal" tabindex="-1" role="dialog"
         aria-labelledby="confirmarEliminarLabel" aria-hidden="true">
@@ -510,6 +389,7 @@
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/cliente-editar.js"></script>
     <script src="assets/static/gestionContenido.js"></script>
 
     <!-- Carga de diseño y roles -->
@@ -577,11 +457,9 @@
                     logoutBtn.addEventListener('click', function (event) {
                         event.preventDefault();
 
-                        fetch('http://localhost:50222/api/logout', {
+                        fetch(`${SGTL.api}/logout`, {
                             method: 'POST',
-                            headers: {
-                                'Authorization': 'Bearer ' + token
-                            }
+                            headers: SGTL.encabezados()
                         }).then(response => {
                             if (response.ok) {
                                 localStorage.removeItem('token');
@@ -1071,7 +949,7 @@
 
         function cargarProvincias() {
             $.ajax({
-                url: 'http://localhost:50222/api/Provincias',
+                url: SGTL.api + '/Provincias',
                 type: 'GET',
                 success: function (data) {
                     var select = $('#province-select');
@@ -1093,7 +971,7 @@
 
         function cargarLocalidades(provinciaId) {
             $.ajax({
-                url: 'http://localhost:50222/api/Provincias/' + provinciaId + '/Localidades',
+                url: SGTL.api + '/Provincias/' + provinciaId + '/Localidades',
                 type: 'GET',
                 success: function (data) {
                     var select = $('#location-select');
@@ -1193,202 +1071,27 @@
 
 
     <!-- Editor -->
-
     <script>
-        var clienteEdicionDatosOriginales = null;
-
-        function formatDateForInput(isoDate) {
-            var date = new Date(isoDate);
-            var year = date.getFullYear();
-            var month = String(date.getMonth() + 1).padStart(2, '0');
-            var day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
+        function cuitDigitosAFormulario(valor) {
+            const d = String(valor || '').replace(/\D/g, '').slice(0, 11);
+            return d.length > 10
+                ? d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10)
+                : d.length > 2 ? d.slice(0, 2) + '-' + d.slice(2) : d;
         }
-
-        function cuitDigitosAFormulario(digits) {
-            var d = String(digits || '').replace(/\D/g, '').slice(0, 11);
-            if (d.length <= 2) return d;
-            if (d.length <= 10) return d.slice(0, 2) + '-' + d.slice(2);
-            return d.slice(0, 2) + '-' + d.slice(2, 10) + '-' + d.slice(10);
-        }
-
-        function condFiscalIntACodigoSelect(condFiscal) {
-            var map = { 1: 'RI', 2: 'MT', 3: 'EX' };
-            return map[condFiscal] != null ? map[condFiscal] : '';
-        }
-
-        function cargarProvinciasEdicion(callback) {
-            $.ajax({
-                url: 'http://localhost:50222/api/Provincias',
-                type: 'GET',
-                success: function (data) {
-                    var select = $('#editarprovincia');
-                    select.empty();
-                    select.append('<option value="">Seleccione una provincia</option>');
-                    data.forEach(function (provincia) {
-                        select.append('<option value="' + provincia.Prov_ID + '">' + provincia.Nombre_Provincia + '</option>');
-                    });
-                    if (typeof callback === 'function') callback();
-                },
-                error: function (xhr, status, error) {
-                    console.error(error);
-                }
-            });
-        }
-
-        function cargarLocalidadesEdicion(provinciaId, callback) {
-            var select = $('#editarlocalidad');
-            select.empty();
-            if (!provinciaId) {
-                select.prop('disabled', true);
-                select.append('<option value="">Seleccione una localidad</option>');
-                if (typeof callback === 'function') callback();
-                return;
-            }
-            $.ajax({
-                url: 'http://localhost:50222/api/Provincias/' + provinciaId + '/Localidades',
-                type: 'GET',
-                success: function (data) {
-                    select.prop('disabled', false);
-                    select.append('<option value="">Seleccione una localidad</option>');
-                    data.forEach(function (localidad) {
-                        select.append('<option value="' + localidad.Loc_ID + '">' + localidad.Nombre_Localidad + '</option>');
-                    });
-                    if (typeof callback === 'function') callback();
-                },
-                error: function (xhr, status, error) {
-                    console.error(error);
-                }
-            });
-        }
-
-        $('#editarprovincia').on('change', function () {
-            var provinciaId = $(this).val();
-            cargarLocalidadesEdicion(provinciaId);
-            if (!provinciaId) {
-                $('#editarlocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
-            }
-        });
 
         function abrirModalEdicionCliente(clienteId) {
-            $('#confirmarEdicion').removeAttr('Cliente_ID').prop('disabled', true);
-            $('#editarTipoCliente').val('Directo');
-            $('#editarCodigoPostal').val('');
-            $('#alertaCompletaCamposEdicion').hide();
-            editarCliente(clienteId);
-            $('#editarClienteModal').modal('show');
+            SGTLEditarCliente.abrir(clienteId, {
+                alCerrar: function (resultado) {
+                    if (resultado) buscarClientes();
+                }
+            });
         }
 
         function abrirModalEliminarCliente(clienteId) {
             setEliminarClienteId(clienteId);
-            $('#confirmarEliminarModal').modal('show');
-        }
-
-        function editarCliente(id) {
-            $.ajax({
-                url: SGTL.api + '/Clientes/' + id,
-                type: 'GET',
-                success: function (data) {
-                    clienteEdicionDatosOriginales = data;
-
-                    var cuitRaw = (data.CUIT_Cliente != null ? String(data.CUIT_Cliente) : '').trim();
-                    $('#editarCUIT').val(cuitDigitosAFormulario(cuitRaw));
-                    $('#editarRazonSocial').val(data.Razon_Social || '');
-                    $('#editarCondFiscal').val(condFiscalIntACodigoSelect(data.Cond_Fiscal));
-                    $('#editarEmail').val(data.Email || '');
-                    $('#editarTelefono').val((data.Telefono || '').trim());
-
-                    cargarProvinciasEdicion(function () {
-                        $('#editarprovincia').val(data.ProvID);
-                        cargarLocalidadesEdicion(data.ProvID, function () {
-                            $('#editarlocalidad').val(data.LocID);
-                        });
-                    });
-
-                    $('#editarCalle').val(data.Calle || '');
-                    $('#editarAltura').val((data.AlturaCalle || '').trim());
-                    $('#editarTipoCliente').val(data.Tipo_Cliente || 'Directo');
-                    $('#editarCodigoPostal').val(data.CodigoPostal || '');
-                    $('#editarCUIT').removeClass('is-invalid is-valid');
-                    $('#editarCuitError').hide().text('');
-                    $('#editarCuitSuccess').hide().text('');
-                    $('#confirmarEdicion').attr('Cliente_ID', id).prop('disabled', false);
-                },
-                error: function (xhr, status, error) {
-                    SGTL.toastError('No se pudieron cargar los datos del cliente. Probá de nuevo.');
-                }
-            });
-        }
-
-        $(document).ready(function () {
-            $('#confirmarEdicion').on('click', function (event) {
-                event.preventDefault();
-                var id = $('#confirmarEdicion').attr('Cliente_ID');
-                if (!id) return;
-
-                var mapaCondFiscal = { RI: 1, MT: 2, EX: 3 };
-                var codCf = $('#editarCondFiscal').val();
-                var condFiscalInt = mapaCondFiscal[codCf] != null ? mapaCondFiscal[codCf] : parseInt(codCf, 10);
-
-                var cuitDigits = $('#editarCUIT').val().trim().replace(/[^\d]/g, '');
-                var usuarioLogueado = localStorage.getItem('username') || 'Desconocido';
-                var ahora = new Date().toISOString();
-
-                var body = {
-                    Cliente_ID: parseInt(id, 10),
-                    Razon_Social: $('#editarRazonSocial').val().trim(),
-                    CUIT_Cliente: cuitDigits,
-                    Cond_Fiscal: isNaN(condFiscalInt) ? (clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Cond_Fiscal : 0) : condFiscalInt,
-                    ProvID: parseInt($('#editarprovincia').val(), 10),
-                    LocID: parseInt($('#editarlocalidad').val(), 10),
-                    Calle: $('#editarCalle').val().trim(),
-                    AlturaCalle: $('#editarAltura').val().trim(),
-                    Tipo_Cliente: $('#editarTipoCliente').val(),
-                    CodigoPostal: $('#editarCodigoPostal').val().trim(),
-                    Telefono: $('#editarTelefono').val().trim(),
-                    Email: $('#editarEmail').val().trim(),
-                    Fecha_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Fecha_Alta : ahora,
-                    Usu_Alta: clienteEdicionDatosOriginales ? clienteEdicionDatosOriginales.Usu_Alta : usuarioLogueado,
-                    Fecha_Modi: ahora,
-                    Usu_Modi: usuarioLogueado
-                };
-
-                $.ajax({
-                    url: SGTL.api + '/Clientes/' + id,
-                    type: 'PUT',
-                    contentType: 'application/json',
-                    data: JSON.stringify(body),
-                    success: function () {
-                        mostrarToastExito('El cliente se actualizó correctamente.');
-                        $('#editarClienteModal').modal('hide');
-                        buscarClientes();
-                    },
-                    error: function (xhr) {
-                        var msg = 'No se pudo guardar los cambios.';
-                        if (xhr.responseJSON && xhr.responseJSON.Message) msg = xhr.responseJSON.Message;
-                        $('#alertaCompletaCamposEdicion').text(msg).show();
-                    }
-                });
-            });
-        });
-
-        function mostrarToastExito(mensaje) {
-            var toastElement = $('#alert-success');
-            toastElement.find('.toast-body').text(mensaje);
-            toastElement.show();
-            var toast = new bootstrap.Toast(toastElement[0]);
-            toast.show();
-            setTimeout(function () {
-                toast.hide();
-            }, 5000);
+            SGTL.modal('#confirmarEliminarModal', 'show');
         }
     </script>
-
-
-
-
-
-
 
 
     <!--Eliminar-->
@@ -1419,7 +1122,7 @@
         function confirmarEliminarCliente() {
             if (clienteIdAEliminar) {
                 $.ajax({
-                    url: 'http://localhost:50222/api/Clientes/' + clienteIdAEliminar,
+                    url: SGTL.api + '/Clientes/' + clienteIdAEliminar,
                     type: 'DELETE',
                     success: function () {
                         mostrarToastExito('El cliente se eliminó exitosamente.');
@@ -1503,23 +1206,6 @@
                     validarCUIT($(this), $('#cuitError'), $('#cuitSuccess'), $('#confirmarBtn'));
                 }
             });
-
-            // Para el formulario de edición
-            $('#editarCUIT').on('input', function () {
-                formatearCUIT($(this));
-            });
-
-            $('#editarCUIT').on('blur', function () {
-                let cuit = $(this).val();
-                if (cuit && !validarFormatoCUIT(cuit)) {
-                    $(this).addClass('is-invalid');
-                    $('#editarCuitError').text('Formato de CUIT inválido (XX-XXXXXXXX-X)').show();
-                    $('#confirmarEdicion').prop('disabled', true);
-                } else {
-                    let clienteId = $('#confirmarEdicion').attr('Cliente_ID');
-                    validarCUIT($(this), $('#editarCuitError'), $('#editarCuitSuccess'), $('#confirmarEdicion'), clienteId);
-                }
-            });
         });
 
         // Modificar la función validarCUIT existente para incluir la validación del formato
@@ -1550,15 +1236,12 @@
             // 1) Intentamos con el CUIT con guiones (como lo muestra la UI).
             // 2) Si falla sin respuesta (HTTP 0), reintentamos con solo dígitos.
             const urlConGuiones = clienteId
-                ? `http://localhost:50222/api/Clientes/ValidarCUIT/${cuit}/${clienteId}`
-                : `http://localhost:50222/api/Clientes/ValidarCUIT/${cuit}`;
+                ? `${SGTL.api}/Clientes/ValidarCUIT/${cuit}/${clienteId}`
+                : `${SGTL.api}/Clientes/ValidarCUIT/${cuit}`;
 
             const urlSinGuiones = clienteId
-                ? `http://localhost:50222/api/Clientes/ValidarCUIT/${cuitDigits}/${clienteId}`
-                : `http://localhost:50222/api/Clientes/ValidarCUIT/${cuitDigits}`;
-
-            console.log('validarCUIT -> urlConGuiones:', urlConGuiones);
-            console.log('validarCUIT -> urlSinGuiones:', urlSinGuiones);
+                ? `${SGTL.api}/Clientes/ValidarCUIT/${cuitDigits}/${clienteId}`
+                : `${SGTL.api}/Clientes/ValidarCUIT/${cuitDigits}`;
 
             function aplicarResultado(response) {
                 if (response.codigo === 'CUIT_registrado') {
