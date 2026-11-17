@@ -1,5 +1,3 @@
-/* Estilos compartidos por todas las pantallas: el tema Zephyr de Bootswatch sobre Mazer y lo propio.
-   Va después de assets/compiled/css/app.css. */
 @import url("../../extensions/bootswatch/zephyr/bootstrap.min.css");
 
 :root {
