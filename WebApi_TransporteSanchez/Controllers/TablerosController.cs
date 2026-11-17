@@ -10,6 +10,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Security;
 namespace WebApi_TransporteSanchez.Controllers
 {
     [RoutePrefix("api/tableros")]
@@ -19,15 +20,20 @@ namespace WebApi_TransporteSanchez.Controllers
         private const int MaximoFavoritos = 60;
         private const int MaximoDiasPeriodo = 1100;
         private static readonly Regex FormatoTablero = new Regex(@"^[a-z0-9-]{1,40}$");
-        private static readonly string[] PermisosFacturacion =
-        {
-            "Cuenta Corriente", "Cuenta corriente de clientes", "Listado de proformas", "Gestión de proformas",
-            "Listado de facturas", "Gestión de facturas"
-        };
         private const string SqlUsuario = @"
 SELECT TOP (2) Usuario_ID
 FROM dbo.USUARIOS
 WHERE Nombre_Usuario = @nombre AND EstadoUsuario = 'Activo';";
+        private const string SqlEsChofer = @"
+SELECT CASE WHEN LOWER(LTRIM(RTRIM(ISNULL(Rol, N'')))) = N'chofer' THEN 1 ELSE 0 END
+FROM dbo.USUARIOS
+WHERE Usuario_ID = @usuario;";
+        private const string SqlMenus = @"
+SELECT DISTINCT LTRIM(RTRIM(m.Menu_Nombre))
+FROM dbo.GRUPOS_USUARIOS gu
+JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
+JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
+WHERE gu.UsuarioID = @usuario;";
         private const string SqlPersonalizado = @"
 SELECT COUNT(*) FROM dbo.TABLEROS_USUARIO WHERE Usuario_ID = @usuario;";
         private const string SqlFavoritos = @"
@@ -97,11 +103,13 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
                     new SqlParameter("@nombre", SqlDbType.NVarChar, 50) { Value = sesion.Nombre }).ToListAsync(ct);
                 if (ids.Count != 1) return Unauthorized();
                 int usuario = ids[0];
+                var temas = await TemasDe(db, usuario, sesion.EsAdministrador, ct);
                 int marcas = await db.Database.SqlQuery<int>(SqlPersonalizado,
                     new SqlParameter("@usuario", usuario)).SingleAsync(ct);
                 var favoritos = await db.Database.SqlQuery<FavoritoTablero>(SqlFavoritos,
                     new SqlParameter("@usuario", usuario)).ToListAsync(ct);
-                return Ok(new { Personalizado = marcas > 0, Favoritos = favoritos });
+                var visibles = favoritos.Where(f => temas.Contains(PermisosTableros.TemaDeTablero(f.Tablero))).ToList();
+                return Ok(new { Personalizado = marcas > 0, TemasPermitidos = temas, Favoritos = visibles });
             }
         }
         [HttpPut, Route("favoritos")]
@@ -113,32 +121,37 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
             var sesion = await new AccesoEmail().AutenticarAsync(Request.Headers.Authorization, ct);
             if (sesion == null || string.IsNullOrWhiteSpace(sesion.Nombre)) return Unauthorized();
             using (var db = new SGTLAuditContext(conexion))
-            using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
             {
                 var ids = await db.Database.SqlQuery<int>(SqlUsuario,
                     new SqlParameter("@nombre", SqlDbType.NVarChar, 50) { Value = sesion.Nombre }).ToListAsync(ct);
                 if (ids.Count != 1) return Unauthorized();
                 int usuario = ids[0];
-                await db.Database.ExecuteSqlCommandAsync(SqlMarcarUsuario, ct,
-                    new SqlParameter("@usuario", usuario),
-                    new SqlParameter("@fecha", SqlDbType.DateTime) { Value = AhoraArgentina() });
-                await db.Database.ExecuteSqlCommandAsync(SqlBorrarFavoritos, ct,
-                    new SqlParameter("@usuario", usuario));
-                for (int i = 0; i < lista.Count; i++)
+                var permitidos = new HashSet<string>(PermisosTableros.TablerosPara(
+                    await TemasDe(db, usuario, sesion.EsAdministrador, ct)));
+                if (lista.Any(f => !permitidos.Contains(f.Tablero.Trim())))
+                    return Content(HttpStatusCode.Forbidden, new { mensaje = "No tenés permiso para guardar uno de los tableros." });
+                using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
-                    var f = lista[i];
-                    bool conLugar = f.X.HasValue && f.Y.HasValue && f.Ancho.HasValue && f.Alto.HasValue;
-                    await db.Database.ExecuteSqlCommandAsync(SqlInsertarFavorito, ct,
+                    await db.Database.ExecuteSqlCommandAsync(SqlMarcarUsuario, ct,
                         new SqlParameter("@usuario", usuario),
-                        new SqlParameter("@tablero", SqlDbType.VarChar, 40) { Value = f.Tablero.Trim() },
-                        new SqlParameter("@orden", SqlDbType.SmallInt) { Value = i },
-                        new SqlParameter("@x", SqlDbType.TinyInt) { Value = conLugar ? (object)f.X.Value : DBNull.Value },
-                        new SqlParameter("@y", SqlDbType.SmallInt) { Value = conLugar ? (object)f.Y.Value : DBNull.Value },
-                        new SqlParameter("@ancho", SqlDbType.TinyInt) { Value = conLugar ? (object)f.Ancho.Value : DBNull.Value },
-                        new SqlParameter("@alto", SqlDbType.TinyInt) { Value = conLugar ? (object)f.Alto.Value : DBNull.Value });
+                        new SqlParameter("@fecha", SqlDbType.DateTime) { Value = AhoraArgentina() });
+                    await BorrarFavoritosPermitidos(db, usuario, permitidos, ct);
+                    for (int i = 0; i < lista.Count; i++)
+                    {
+                        var f = lista[i];
+                        bool conLugar = f.X.HasValue && f.Y.HasValue && f.Ancho.HasValue && f.Alto.HasValue;
+                        await db.Database.ExecuteSqlCommandAsync(SqlInsertarFavorito, ct,
+                            new SqlParameter("@usuario", usuario),
+                            new SqlParameter("@tablero", SqlDbType.VarChar, 40) { Value = f.Tablero.Trim() },
+                            new SqlParameter("@orden", SqlDbType.SmallInt) { Value = i },
+                            new SqlParameter("@x", SqlDbType.TinyInt) { Value = conLugar ? (object)f.X.Value : DBNull.Value },
+                            new SqlParameter("@y", SqlDbType.SmallInt) { Value = conLugar ? (object)f.Y.Value : DBNull.Value },
+                            new SqlParameter("@ancho", SqlDbType.TinyInt) { Value = conLugar ? (object)f.Ancho.Value : DBNull.Value },
+                            new SqlParameter("@alto", SqlDbType.TinyInt) { Value = conLugar ? (object)f.Alto.Value : DBNull.Value });
+                    }
+                    tx.Commit();
+                    return Ok(new { Personalizado = true, Cantidad = lista.Count });
                 }
-                tx.Commit();
-                return Ok(new { Personalizado = true, Cantidad = lista.Count });
             }
         }
         [HttpDelete, Route("favoritos")]
@@ -212,21 +225,33 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
             if (solo.Length > 10) solo = solo.Substring(0, 10);
             return DateTime.TryParseExact(solo, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out fecha);
         }
+        private static async Task<string[]> TemasDe(SGTLAuditContext db, int usuario, bool esAdmin, CancellationToken ct)
+        {
+            if (esAdmin) return PermisosTableros.TemasPara(true, false, null);
+            int chofer = await db.Database.SqlQuery<int>(SqlEsChofer, new SqlParameter("@usuario", usuario)).SingleAsync(ct);
+            if (chofer == 1) return PermisosTableros.TemasPara(false, true, null);
+            var menus = await db.Database.SqlQuery<string>(SqlMenus, new SqlParameter("@usuario", usuario)).ToListAsync(ct);
+            return PermisosTableros.TemasPara(false, false, menus);
+        }
+        private static async Task BorrarFavoritosPermitidos(SGTLAuditContext db, int usuario, HashSet<string> permitidos, CancellationToken ct)
+        {
+            if (permitidos.Count == 0) return;
+            var parametros = new List<SqlParameter> { new SqlParameter("@usuario", usuario) };
+            var marcas = new List<string>();
+            int i = 0;
+            foreach (string clave in permitidos)
+            {
+                marcas.Add("@t" + i);
+                parametros.Add(new SqlParameter("@t" + i, SqlDbType.VarChar, 40) { Value = clave });
+                i++;
+            }
+            string sql = "DELETE FROM dbo.TABLEROS_FAVORITOS WHERE Usuario_ID = @usuario AND Tablero IN (" + string.Join(", ", marcas) + ");";
+            await db.Database.ExecuteSqlCommandAsync(sql, ct, parametros.ToArray());
+        }
         private static async Task<bool> PuedeVerFacturacion(SGTLAuditContext db, int usuario, CancellationToken ct)
         {
-            var nombres = string.Join(", ", PermisosFacturacion.Select((p, i) => "@p" + i));
-            var parametros = new List<SqlParameter> { new SqlParameter("@usuario", usuario) };
-            for (int i = 0; i < PermisosFacturacion.Length; i++)
-                parametros.Add(new SqlParameter("@p" + i, PermisosFacturacion[i]));
-            int cantidad = await db.Database.SqlQuery<int>(@"
-SELECT COUNT(*)
-FROM dbo.GRUPOS_USUARIOS gu
-JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
-JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
-WHERE gu.UsuarioID = @usuario
-  AND LTRIM(RTRIM(m.Menu_Nombre)) COLLATE Latin1_General_CI_AI IN (" + nombres + ");",
-                parametros.ToArray()).SingleAsync(ct);
-            return cantidad > 0;
+            var temas = await TemasDe(db, usuario, false, ct);
+            return temas.Contains("facturacion");
         }
         private static string Validar(List<FavoritoTablero> lista)
         {
@@ -236,6 +261,7 @@ WHERE gu.UsuarioID = @usuario
             {
                 string clave = f == null || f.Tablero == null ? "" : f.Tablero.Trim();
                 if (!FormatoTablero.IsMatch(clave)) return "Uno de los tableros no existe. Recargá la pantalla y probá de nuevo.";
+                if (PermisosTableros.TemaDeTablero(clave) == null) return "Uno de los tableros no existe. Recargá la pantalla y probá de nuevo.";
                 if (!vistos.Add(clave)) return "Un tablero está repetido. Recargá la pantalla y probá de nuevo.";
                 if (!f.X.HasValue && !f.Y.HasValue && !f.Ancho.HasValue && !f.Alto.HasValue) continue;
                 if (!(f.X.HasValue && f.Y.HasValue && f.Ancho.HasValue && f.Alto.HasValue))
