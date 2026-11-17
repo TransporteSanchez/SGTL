@@ -92,6 +92,27 @@ JOIN dbo.CLIENTES cl ON cl.Cliente_ID = d.ClienteID
 WHERE d.Pendiente > 0
 GROUP BY d.ClienteID, cl.Razon_Social
 ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
+        private const string SqlViajesPeriodo = @"
+SELECT v.Viaje_ID,
+       v.Fecha_Inicio,
+       RTRIM(v.Distancia_KM) AS Distancia_KM,
+       v.Estado,
+       v.Resultado_Entrega,
+       v.Falso_Flete,
+       v.ChoferID,
+       v.CamionID,
+       v.ClienteID,
+       COALESCE(NULLIF(LTRIM(RTRIM(cl.Razon_Social)), N''), N'Sin nombre') AS Cliente,
+       COALESCE(LTRIM(RTRIM(o.Descripcion)), N'') AS Origen,
+       COALESCE(LTRIM(RTRIM(d.Descripcion)), N'') AS Destino,
+       CAST(v.Importe AS decimal(18,2)) AS Importe
+FROM dbo.VIAJES v
+LEFT JOIN dbo.CLIENTES cl ON cl.Cliente_ID = v.ClienteID
+LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID
+LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID
+WHERE v.Estado <> N'Cancelado'
+  AND v.Fecha_Inicio >= @desde AND v.Fecha_Inicio < @hasta
+ORDER BY v.Fecha_Inicio, v.Viaje_ID;";
         [HttpGet, Route("favoritos")]
         public async Task<IHttpActionResult> GetFavoritos(CancellationToken ct)
         {
@@ -208,6 +229,27 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
                 return Ok(filas);
             }
         }
+        [HttpGet, Route("viajes")]
+        public async Task<IHttpActionResult> GetViajes(CancellationToken ct, string fechaDesde = null, string fechaHasta = null)
+        {
+            DateTime desde, hasta;
+            string error = LeerPeriodo(fechaDesde, fechaHasta, out desde, out hasta);
+            if (error != null) return BadRequest(error);
+            var sesion = await new AccesoEmail().AutenticarAsync(Request.Headers.Authorization, ct);
+            if (sesion == null || string.IsNullOrWhiteSpace(sesion.Nombre)) return Unauthorized();
+            using (var db = new SGTLAuditContext(conexion))
+            {
+                var ids = await db.Database.SqlQuery<int>(SqlUsuario,
+                    new SqlParameter("@nombre", SqlDbType.NVarChar, 50) { Value = sesion.Nombre }).ToListAsync(ct);
+                if (ids.Count != 1) return Unauthorized();
+                if (!sesion.EsAdministrador && !await PuedeVerViajes(db, ids[0], ct))
+                    return Content(HttpStatusCode.Forbidden, new { mensaje = "No tenés permiso para ver los viajes." });
+                var filas = await db.Database.SqlQuery<ViajePeriodo>(SqlViajesPeriodo,
+                    new SqlParameter("@desde", SqlDbType.Date) { Value = desde.Date },
+                    new SqlParameter("@hasta", SqlDbType.Date) { Value = hasta.Date.AddDays(1) }).ToListAsync(ct);
+                return Ok(filas);
+            }
+        }
         private static string LeerPeriodo(string fechaDesde, string fechaHasta, out DateTime desde, out DateTime hasta)
         {
             hasta = DateTime.MinValue;
@@ -252,6 +294,11 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
         {
             var temas = await TemasDe(db, usuario, false, ct);
             return temas.Contains("facturacion");
+        }
+        private static async Task<bool> PuedeVerViajes(SGTLAuditContext db, int usuario, CancellationToken ct)
+        {
+            var temas = await TemasDe(db, usuario, false, ct);
+            return temas.Contains("viajes");
         }
         private static string Validar(List<FavoritoTablero> lista)
         {
@@ -316,5 +363,21 @@ ORDER BY Vencida DESC, PorVencer DESC, Cliente;";
         public decimal Vencida31a60 { get; set; }
         public decimal Vencida61a90 { get; set; }
         public decimal VencidaMas90 { get; set; }
+    }
+    public sealed class ViajePeriodo
+    {
+        public int Viaje_ID { get; set; }
+        public DateTime Fecha_Inicio { get; set; }
+        public string Distancia_KM { get; set; }
+        public string Estado { get; set; }
+        public string Resultado_Entrega { get; set; }
+        public bool Falso_Flete { get; set; }
+        public int ChoferID { get; set; }
+        public int CamionID { get; set; }
+        public int ClienteID { get; set; }
+        public string Cliente { get; set; }
+        public string Origen { get; set; }
+        public string Destino { get; set; }
+        public decimal? Importe { get; set; }
     }
 }
