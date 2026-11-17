@@ -7,26 +7,6 @@
     <title>Transporte Sánchez - Auditoría</title>
 
     <style>
-        #app { display: none; }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-
-        .table-responsive { width: 100%; }
-
-        #tablaAuditoria { width: 100%; }
-        #tablaAuditoria th, #tablaAuditoria td { vertical-align: middle; }
-        #tablaAuditoria th { white-space: nowrap; }
-
-        .pagination { justify-content: center; }
-
-        .badge-accion { font-size: .75rem; letter-spacing: .3px; }
-
         .clave-cell {
             max-width: 220px;
             white-space: nowrap;
@@ -56,12 +36,6 @@
 
 <body>
 
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-    </div>
-
     <div id="app">
         <div id="sidebar"></div>
 
@@ -73,7 +47,6 @@
                             <i class="bi bi-justify fs-3" aria-hidden="true"></i>
                         </a>
                         <div id="header-container"></div>
-                        <script src="./assets/static/js/header.js"></script>
                     </div>
                 </nav>
             </header>
@@ -162,30 +135,29 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modalDetalle" tabindex="-1" aria-labelledby="detalleTitulo" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-clipboard-data me-2"></i>Detalle del movimiento</h5>
+                    <h5 class="modal-title" id="detalleTitulo">Ver detalle del movimiento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <dl class="row mb-3">
-                        <dt class="col-sm-3">Fecha y hora</dt><dd class="col-sm-9" id="dFecha"></dd>
-                        <dt class="col-sm-3">Usuario</dt><dd class="col-sm-9" id="dUsuario"></dd>
-                        <dt class="col-sm-3">Acción</dt><dd class="col-sm-9" id="dAccion"></dd>
-                        <dt class="col-sm-3">Entidad</dt><dd class="col-sm-9" id="dEntidad"></dd>
-                        <dt class="col-sm-3">Registro</dt><dd class="col-sm-9" id="dClave"></dd>
-                        <dt class="col-sm-3">Origen</dt><dd class="col-sm-9" id="dOrigen"></dd>
-                    </dl>
-                    <div class="row">
+                    <div class="sgtl-bloque row">
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Fecha y hora</span><span class="sgtl-dato-valor" id="dFecha"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Usuario</span><span class="sgtl-dato-valor" id="dUsuario"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Entidad</span><span class="sgtl-dato-valor" id="dEntidad"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Origen</span><span class="sgtl-dato-valor" id="dOrigen"></span></div>
+                        <div class="col-12 sgtl-dato"><span class="sgtl-dato-etiqueta">Registro</span><span class="sgtl-dato-valor text-break" id="dClave"></span></div>
+                    </div>
+                    <div class="sgtl-bloque row">
                         <div class="col-md-6">
-                            <h6 class="text-danger">Valores anteriores</h6>
-                            <pre class="json-box" id="dAntes">—</pre>
+                            <div class="sgtl-bloque-titulo">Valores anteriores</div>
+                            <pre class="json-box" id="dAntes"></pre>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-success">Valores nuevos</h6>
-                            <pre class="json-box" id="dNuevos">—</pre>
+                            <div class="sgtl-bloque-titulo">Valores nuevos</div>
+                            <pre class="json-box" id="dNuevos"></pre>
                         </div>
                     </div>
                 </div>
@@ -205,51 +177,8 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="./assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/header.js"></script>
     <script src="assets/static/js/footer.js"></script>
-
-    <script>
-        window.onload = function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            if (typeof window.loadHeader === 'function') window.loadHeader();
-            if (typeof window.loadFooter === 'function') window.loadFooter();
-
-            loadSettings()
-                .then(() => {
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar configuración:', error);
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                });
-        };
-
-        async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            if (data && typeof applyStyles === 'function') {
-                                applyStyles(data.Logo, data.ColorFondo, data.ColorBotonesMenu, data.ContenidoPiePagina);
-                            }
-                        } catch (e) { }
-                        resolve();
-                    } else { reject(new Error('Error en la carga de la API')); }
-                };
-                xhr.onerror = function () { reject(new Error('Error de red')); };
-                xhr.send();
-            });
-        }
-    </script>
 
     <script>
         const API_AUD = SGTL.api + '/Auditoria';
@@ -257,17 +186,10 @@
         let audCache = {};
         let ultimaBusqueda = 0;
 
-        function esc(s) {
-            if (s === null || s === undefined) return '';
-            return String(s).replace(/[&<>"']/g, function (c) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-            });
-        }
-
         function prettyJson(txt) {
             if (!txt) return '—';
-            try { return esc(JSON.stringify(JSON.parse(txt), null, 2)); }
-            catch (e) { return esc(txt); }
+            try { return SGTL.escapar(JSON.stringify(JSON.parse(txt), null, 2)); }
+            catch (e) { return SGTL.escapar(txt); }
         }
 
         function pedir(ruta) {
@@ -312,7 +234,7 @@
                 html += '<span class="list-group-item disabled small text-muted">No hay usuarios que coincidan.</span>';
             } else {
                 items.slice(0, 50).forEach(function (u) {
-                    html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + esc(u) + '">' + esc(u) + '</button>';
+                    html += '<button type="button" class="list-group-item list-group-item-action" data-val="' + SGTL.escapar(u) + '">' + SGTL.escapar(u) + '</button>';
                 });
             }
             dd.innerHTML = html;
@@ -382,15 +304,19 @@
         function verDetalle(id) {
             const it = audCache[id];
             if (!it) return;
-            document.getElementById('dFecha').textContent = SGTL.fecha(it.Fecha, { segundos: true });
-            document.getElementById('dUsuario').textContent = it.Usuario || '—';
-            document.getElementById('dAccion').innerHTML = SGTL.estado(it.Accion);
-            document.getElementById('dEntidad').textContent = it.Entidad || '—';
-            document.getElementById('dClave').textContent = it.Clave || '—';
-            document.getElementById('dOrigen').textContent = it.Origen || '—';
+            document.getElementById('detalleTitulo').innerHTML = 'Ver detalle del movimiento #' + it.Auditoria_ID + ' ' + SGTL.estado(it.Accion);
+            mostrarDato('dFecha', SGTL.fecha(it.Fecha, { segundos: true }));
+            mostrarDato('dUsuario', it.Usuario);
+            mostrarDato('dEntidad', it.Entidad);
+            mostrarDato('dOrigen', it.Origen);
+            mostrarDato('dClave', it.Clave);
             document.getElementById('dAntes').innerHTML = prettyJson(it.Valores_Anteriores);
             document.getElementById('dNuevos').innerHTML = prettyJson(it.Valores_Nuevos);
-            $('#modalDetalle').modal('show');
+            SGTL.modal('#modalDetalle', 'show');
+        }
+
+        function mostrarDato(id, valor) {
+            document.getElementById(id).textContent = String(valor == null ? '' : valor).trim() || '—';
         }
 
         function filtrar() {
@@ -399,6 +325,15 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
+            window.loadFooter();
+            fetch(SGTL.api + '/GestionContenido/1').then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+                return respuesta.json();
+            }).then(function (contenido) {
+                window.applyStyles(contenido.Logo, contenido.ColorFondo, contenido.ColorBotonesMenu, contenido.ContenidoPiePagina);
+            }).catch(function (error) { console.warn('No se pudo cargar la apariencia de SGTL.', error); });
+
             SGTL.rangoFechas('#fFecha', { onClose: function (fechas) { if (fechas.length !== 1) filtrar(); } });
             const filtrosAuditoria = SGTL.filtros(['#fUsuario', '#fFecha', '#fEntidad', '#fAccion', '#fTexto'], filtrar);
             document.getElementById('fEntidad').addEventListener('change', filtrar);

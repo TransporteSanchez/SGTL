@@ -8,7 +8,7 @@ function loadHeader() {
 
         setupUserInfo();
 
-        resolve(); // Resuelve la promesa cuando el header se ha cargado
+        resolve();
       } else {
         console.error('Error al cargar el header:', xhr.statusText);
         reject(new Error('Error al cargar el header'));
@@ -27,7 +27,7 @@ function setupUserInfo() {
   const loadingRedirect = document.getElementById('loading-redirect');
 
   if (!token) {
-    loadingRedirect.style.display = 'flex'; // Muestra el mensaje de carga
+    loadingRedirect.style.display = 'flex';
     window.location.replace('Login.html');
     return;
   }
@@ -50,8 +50,8 @@ function setupUserInfo() {
         userInitialsContainer.style.justifyContent = 'center';
         userInitialsContainer.style.width = '40px';
         userInitialsContainer.style.height = '40px';
-        userInitialsContainer.style.backgroundColor = menuColor || '#007bff'; // Fondo dinámico desde la API o color por defecto
-        userInitialsContainer.style.color = '#fff'; // Color del texto de las iniciales
+        userInitialsContainer.style.backgroundColor = menuColor || '#007bff';
+        userInitialsContainer.style.color = '#fff';
         userInitialsContainer.style.borderRadius = '50%';
         userInitialsContainer.style.fontWeight = 'bold';
         userInitialsContainer.style.fontSize = '1rem';
@@ -91,7 +91,7 @@ function loadDynamicBackgroundColor() {
       if (xhr.status === 200) {
         try {
           const data = JSON.parse(xhr.responseText);
-          resolve(data.ColorBotonesMenu); // Devolver el color de fondo recibido
+          resolve(data.ColorBotonesMenu);
         } catch (e) {
           console.error("Error al parsear la respuesta JSON:", e);
           reject(e);
