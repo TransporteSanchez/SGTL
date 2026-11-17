@@ -35,6 +35,7 @@ a {
 }
 
 #main > header .navbar-top {
+    background-color: #fff;
     box-shadow: inset 0 4px 0 var(--sgtl-marca), 0 1px 0 var(--sgtl-borde);
 }
 
