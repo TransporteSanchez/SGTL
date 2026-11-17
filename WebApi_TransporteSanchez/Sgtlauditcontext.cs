@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data.Entity;
+using System.Data.Entity.Core.Objects;
 using System.Data.Entity.Infrastructure;
 using System.Data.SqlClient;
 using System.Globalization;
@@ -89,7 +90,7 @@ namespace WebApi_TransporteSanchez
 
             foreach (var entry in entries)
             {
-                var entidad = entry.Entity.GetType().Name;
+                var entidad = ObjectContext.GetObjectType(entry.Entity.GetType()).Name;
                 if (EntidadesExcluidas.Contains(entidad)) continue;
 
                 var cambio = new CambioAudit { Entry = entry, Entidad = entidad };
