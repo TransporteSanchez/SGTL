@@ -164,9 +164,12 @@
                                                         style="display: none;"></div>
                                                 </div>
                                                 <div class="col-12 col-lg">
-                                                    <label for="txtRazonSocialBusqueda">Razón Social</label>
-                                                    <input type="text" class="form-control" id="txtRazonSocialBusqueda"
-                                                        placeholder="Ingresá parte de la razón social">
+                                                    <label for="razonSocialClientesSelect">Razón
+                                                        social</label>
+                                                    <select id="razonSocialClientesSelect" class="form-select"
+                                                        aria-label="Razón social">
+                                                        <option value="">Todos</option>
+                                                    </select>
                                                 </div>
                                                 <div class="col-12 col-lg">
                                                     <label for="estadoClienteBusqueda">Estado</label>
@@ -388,9 +391,11 @@
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script src="assets/static/js/sgtl-ui.js"></script>
     <script src="assets/static/js/cliente-editar.js"></script>
     <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
+    <script src="assets/static/js/filtro-clientes-razon-social.js"></script>
 
     <!-- Carga de diseño y roles -->
     <script>
@@ -495,10 +500,17 @@
         let currentPage = 1;
 
         $(document).ready(function () {
+            SGTL.filtros(
+                ['#txtRazonSocialBusqueda'],
+                () => buscarClientes(1)
+            );
+
             $('#estadoClienteBusqueda').on('change', function () {
                 currentPage = 1;
                 buscarClientes(currentPage);
             });
+
+            // El resto del bloque continúa como está.
 
             $('#tablaClientes tbody').on(
                 'click',
@@ -1082,7 +1094,10 @@
         function abrirModalEdicionCliente(clienteId) {
             SGTLEditarCliente.abrir(clienteId, {
                 alCerrar: function (resultado) {
-                    if (resultado) buscarClientes();
+                    if (resultado) {
+                        FiltroRazonSocialClientes.recargar()
+                            .then(() => buscarClientes());
+                    }
                 }
             });
         }
@@ -1127,7 +1142,8 @@
                     success: function () {
                         mostrarToastExito('El cliente se eliminó exitosamente.');
                         $('#confirmarEliminarModal').modal('hide');
-                        buscarClientes();
+                        FiltroRazonSocialClientes.recargar()
+                            .then(() => buscarClientes());
                     },
                     error: function (xhr, status, error) {
                         console.error('Error al eliminar el cliente:', xhr.responseText || error);
@@ -1344,7 +1360,8 @@
                             if (_i) _i.hide();
                         }
                     } catch (e) { }
-                    buscarClientes();
+                    FiltroRazonSocialClientes.recargar()
+                        .then(() => buscarClientes());
                     mostrarToastExito('El cliente se registró exitosamente');
                 },
                 error: function (xhr, status, error) {

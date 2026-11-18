@@ -53,9 +53,11 @@
                                             autocomplete="off">
                                     </div>
                                     <div class="col-12 col-md-6 col-lg-3">
-                                        <label for="txtRazonSocialBusqueda" class="form-label">Razón social</label>
-                                        <input type="text" id="txtRazonSocialBusqueda" class="form-control"
-                                            placeholder="Ingresá parte de la razón social" autocomplete="off">
+                                        <label for="razonSocialClientesSelect" class="form-label">Razón social</label>
+                                        <select id="razonSocialClientesSelect" class="form-select"
+                                            aria-label="Razón social">
+                                            <option value="">Todos</option>
+                                        </select>
                                     </div>
                                     <div class="col-12 col-md-6 col-lg-3">
                                         <label for="estadoClienteBusqueda" class="form-label">Estado</label>
@@ -199,6 +201,8 @@
     <script src="assets/extensions/flatpickr/l10n/es.js"></script>
     <script src="assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
+    <script src="assets/static/js/filtro-clientes-razon-social.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (!localStorage.getItem('token') || !localStorage.getItem('username')) return;
@@ -206,7 +210,7 @@
             const filasClientes = document.getElementById('filasClientes');
             const paginador = document.getElementById('pagination');
             const cuitFiltro = document.getElementById('txtCUIT_Cliente_Busqueda');
-            const razonFiltro = document.getElementById('txtRazonSocialBusqueda');
+            const razonFiltro = document.getElementById('razonSocialClientesSelect');
             const estadoFiltro = document.getElementById('estadoClienteBusqueda');
             const fechaFiltro = document.getElementById('fechaRango');
             const botonDescargar = document.getElementById('btnDescargarClientes');
