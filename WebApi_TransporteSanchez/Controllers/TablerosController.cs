@@ -102,12 +102,16 @@ SELECT v.Viaje_ID,
        v.ChoferID,
        v.CamionID,
        v.ClienteID,
+       COALESCE(NULLIF(LTRIM(RTRIM(ch.Nombre + N' ' + ch.Apellido)), N''), N'') AS Chofer,
+       COALESCE(NULLIF(LTRIM(RTRIM(ca.Dominio)), N''), N'') AS Dominio,
        COALESCE(NULLIF(LTRIM(RTRIM(cl.Razon_Social)), N''), N'Sin nombre') AS Cliente,
        COALESCE(LTRIM(RTRIM(o.Descripcion)), N'') AS Origen,
        COALESCE(LTRIM(RTRIM(d.Descripcion)), N'') AS Destino,
        CAST(v.Importe AS decimal(18,2)) AS Importe
 FROM dbo.VIAJES v
 LEFT JOIN dbo.CLIENTES cl ON cl.Cliente_ID = v.ClienteID
+LEFT JOIN dbo.CHOFERES ch ON ch.Chofer_ID = v.ChoferID
+LEFT JOIN dbo.CAMIONES ca ON ca.Camion_ID = v.CamionID
 LEFT JOIN dbo.ORIGEN o ON o.Origen_ID = v.OrigenID
 LEFT JOIN dbo.DESTINO d ON d.Destino_ID = v.DestinoID
 WHERE v.Estado <> N'Cancelado'
@@ -374,6 +378,8 @@ ORDER BY v.Fecha_Inicio, v.Viaje_ID;";
         public bool Falso_Flete { get; set; }
         public int ChoferID { get; set; }
         public int CamionID { get; set; }
+        public string Chofer { get; set; }
+        public string Dominio { get; set; }
         public int ClienteID { get; set; }
         public string Cliente { get; set; }
         public string Origen { get; set; }
