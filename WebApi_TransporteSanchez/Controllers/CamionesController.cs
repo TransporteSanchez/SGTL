@@ -38,12 +38,11 @@ namespace WebApi_TransporteSanchez.Controllers
         // GET: api/Camiones
         public IHttpActionResult Get()
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var camiones = db.Set<CAMIONES>()
                         .Where(c => c.EstadoCamion != "Eliminado")
@@ -69,10 +68,10 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (camiones == null || !camiones.Any())
                     {
-                        return NotFound(); // Retorna 404 si no se encuentran registros
+                        return NotFound();
                     }
 
-                    return Ok(camiones); // Retorna 200 con la lista de camiones
+                    return Ok(camiones);
                 }
             }
             catch (DbUpdateException ex)
@@ -113,13 +112,11 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var query = db.Set<CAMIONES>().Where(c => c.EstadoCamion != "Eliminado");
 
-                    // Filtro por dominio si se proporciona
                     if (!string.IsNullOrEmpty(dominio))
                     {
                         query = query.Where(c => c.Dominio.Contains(dominio));
                     }
 
-                    // Filtro por rango de fechas de alta si se proporciona
                     if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime desde))
                     {
                         query = query.Where(c => c.Fecha_Alta >= desde);
@@ -127,7 +124,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime hasta))
                     {
-                        hasta = hasta.AddDays(1).AddTicks(-1); // Incluir toda la fecha hasta las 23:59:59
+                        hasta = hasta.AddDays(1).AddTicks(-1);
                         query = query.Where(c => c.Fecha_Alta <= hasta);
                     }
 
@@ -261,14 +258,12 @@ namespace WebApi_TransporteSanchez.Controllers
         [Route("api/Camiones/{camionID}/Chofer_Camion")]
         public IHttpActionResult GetChoferesByCamion(int camionID)
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Consultar los choferes asociados al camionID especificado, solo si el camión no ha sido eliminado
                     var choferes = from cc in db.Set<CHOFER_CAMION>()
                                    join c in db.Set<CHOFERES>() on cc.ChoferID equals c.Chofer_ID
                                    join cam in db.Set<CAMIONES>() on cc.CamionID equals cam.Camion_ID
@@ -285,15 +280,15 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (!choferesList.Any())
                     {
-                        return NotFound(); // Retorna 404 si no se encuentran choferes asociados
+                        return NotFound();
                     }
 
-                    return Ok(choferesList); // Retorna 200 con la lista de choferes
+                    return Ok(choferesList);
                 }
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
@@ -303,21 +298,19 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+                return BadRequest(ModelState);
             }
 
             try
             {
-                // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Crear una nueva entidad CAMIONES y asignar valores desde CamionDto
                     var camion = new CAMIONES
                     {
                         Camion_ID = camionDto.Camion_ID,
-                        Dominio = camionDto.Dominio.Trim(), // Trim para eliminar espacios en blanco
+                        Dominio = camionDto.Dominio.Trim(),
                         Marca = camionDto.Marca,
                         Modelo = camionDto.Modelo,
                         AñoModelo = camionDto.AñoModelo,
@@ -334,41 +327,36 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Modi = camionDto.Usu_Modi
                     };
 
-                    // Agregar la entidad al contexto y guardar cambios
                     db.Set<CAMIONES>().Add(camion);
 
                     try
                     {
                         db.SaveChanges();
-                        return Ok(); // Retorna 200 OK si fue exitosa
+                        return Ok();
                     }
                     catch (DbEntityValidationException ex)
                     {
-                        // Crear una lista para almacenar los errores de validación
                         var validationErrors = new List<string>();
 
                         foreach (var validationResult in ex.EntityValidationErrors)
                         {
                             foreach (var error in validationResult.ValidationErrors)
                             {
-                                // Agregar el error a la lista
                                 validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
                             }
                         }
 
-                        // Devolver la lista de errores como respuesta con estado 400 (Bad Request)
                         return Content(HttpStatusCode.BadRequest, validationErrors);
                     }
                     catch (DbUpdateException ex)
                     {
-                        // Manejo de otros errores relacionados con la base de datos
-                        return InternalServerError(ex); // Retorna 500 en caso de error interno
+                        return InternalServerError(ex);
                     }
                 }
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
@@ -379,25 +367,22 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+                return BadRequest(ModelState);
             }
 
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             using (var db = new SGTLAuditContext(connectionString))
             {
-                // Buscar la entidad CAMIONES por ID
                 var camion = db.Set<CAMIONES>().Find(id);
 
                 if (camion == null)
                 {
-                    return NotFound(); // Retorna 404 si no se encuentra el camión con el ID especificado
+                    return NotFound();
                 }
 
                 var validationErrors = new List<object>();
 
-                // Validar si el camión está eliminado
                 if (camion.EstadoCamion == "Eliminado")
                 {
                     validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "No se puede editar un camión eliminado." });
@@ -408,7 +393,6 @@ namespace WebApi_TransporteSanchez.Controllers
                     return Content(HttpStatusCode.BadRequest, validationErrors);
                 }
 
-                // Actualizar propiedades del camión con los valores recibidos
                 camion.Dominio = camionDto.Dominio.Trim();
                 camion.Marca = camionDto.Marca;
                 camion.Modelo = camionDto.Modelo;
@@ -422,13 +406,12 @@ namespace WebApi_TransporteSanchez.Controllers
                 camion.Fecha_Modi = camionDto.Fecha_Modi;
                 camion.Usu_Modi = camionDto.Usu_Modi;
 
-                // Marcar la entidad como modificada
                 db.Entry(camion).State = System.Data.Entity.EntityState.Modified;
 
                 try
                 {
-                    db.SaveChanges(); // Guardar cambios en la base de datos
-                    return Ok(); // Retorna 200 OK si la actualización fue exitosa
+                    db.SaveChanges();
+                    return Ok();
                 }
                 catch (DbEntityValidationException ex)
                 {
@@ -440,18 +423,15 @@ namespace WebApi_TransporteSanchez.Controllers
                         }
                     }
 
-                    // Devolver la lista de errores como respuesta con estado 400 (Bad Request)
                     return Content(HttpStatusCode.BadRequest, validationErrors);
                 }
                 catch (DbUpdateConcurrencyException)
                 {
-                    // Manejo de errores de concurrencia
-                    return Conflict(); // Retorna 409 Conflict en caso de error de concurrencia
+                    return Conflict();
                 }
                 catch (DbUpdateException ex)
                 {
-                    // Manejo de otros errores relacionados con la base de datos
-                    return InternalServerError(ex); // Retorna 500 en caso de error interno
+                    return InternalServerError(ex);
                 }
             }
         }
@@ -481,7 +461,6 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var validationErrors = new List<object>();
 
-                    // Validar si ya está eliminado
                     if (camion.EstadoCamion == "Eliminado")
                     {
                         validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "El camión ya se encuentra eliminado." });
@@ -493,7 +472,6 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Content(HttpStatusCode.BadRequest, validationErrors);
                     }
 
-                    // Marcar como eliminado
                     camion.EstadoCamion = "Eliminado";
                     camion.Fecha_Modi = DateTime.Now;
                     camion.Usu_Modi = model.Usu_Modi;
@@ -537,69 +515,6 @@ namespace WebApi_TransporteSanchez.Controllers
             [Required]
             public string Usu_Modi { get; set; }
         }
-
-
-
-
-        //// DELETE: api/Camiones/{id}
-        //public IHttpActionResult Delete(int id)
-        //{
-        //    try
-        //    {
-        //        // Obtener la cadena de conexión dinámica
-        //        string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-        //        using (var db = new SGTLAuditContext(connectionString))
-        //        {
-        //            // Buscar el camión por ID
-        //            CAMIONES oitem = db.Set<CAMIONES>().Find(id);
-
-        //            if (oitem == null)
-        //            {
-        //                return NotFound(); // Retorna 404 si no se encuentra el camión con el ID especificado
-        //            }
-
-        //            db.Set<CAMIONES>().Remove(oitem);
-
-        //            try
-        //            {
-        //                db.SaveChanges();
-        //                return Ok("Camión eliminado con éxito."); // Retorna 200 OK si la eliminación fue exitosa
-        //            }
-        //            catch (DbEntityValidationException ex)
-        //            {
-        //                // Crear una lista para almacenar los errores de validación
-        //                var validationErrors = new List<string>();
-
-        //                foreach (var validationResult in ex.EntityValidationErrors)
-        //                {
-        //                    foreach (var error in validationResult.ValidationErrors)
-        //                    {
-        //                        // Agregar el error a la lista
-        //                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-        //                    }
-        //                }
-
-        //                // Devolver la lista de errores como respuesta con estado 400 (Bad Request)
-        //                return Content(HttpStatusCode.BadRequest, validationErrors);
-        //            }
-        //            catch (System.Data.Entity.Infrastructure.DbUpdateConcurrencyException)
-        //            {
-        //                // Manejo de errores de concurrencia
-        //                return Conflict(); // Retorna 409 Conflict en caso de error de concurrencia
-        //            }
-        //            catch (System.Data.Entity.Infrastructure.DbUpdateException ex)
-        //            {
-        //                // Manejo de otros errores relacionados con la base de datos
-        //                return InternalServerError(ex); // Retorna 500 en caso de error interno
-        //            }
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return InternalServerError(ex); // Retorna 500 en caso de error interno
-        //    }
-        //}
 
 
     }
