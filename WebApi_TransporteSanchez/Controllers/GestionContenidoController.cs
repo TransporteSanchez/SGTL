@@ -18,12 +18,12 @@ namespace WebApi_TransporteSanchez.Controllers
         public class GestionContenidoDto
         {
             public int GestionContenido_ID { get; set; }
-            public string Logo { get; set; } // Se puede dejar como null
-            public string ColorFondo { get; set; } // Se puede dejar como null
-            public string ColorBotonesMenu { get; set; } // Se puede dejar como null
-            public string ContenidoPiePagina { get; set; } // Se puede dejar como null
-            public DateTime? Fecha_Modi { get; set; } // Esto puede seguir como nullable
-            public string Usu_Modi { get; set; } // Se puede dejar como null
+            public string Logo { get; set; }
+            public string ColorFondo { get; set; }
+            public string ColorBotonesMenu { get; set; }
+            public string ContenidoPiePagina { get; set; }
+            public DateTime? Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
         }
 
 
@@ -33,34 +33,32 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var olist = db.Set<GESTION_CONTENIDO>().Select(c => new GestionContenidoDto
                     {
                         GestionContenido_ID = c.GestionContenido_ID,
-                        Logo = c.Logo, // Se permite nulo
-                        ColorFondo = c.ColorFondo, // Se permite nulo
-                        ColorBotonesMenu = c.ColorBotonesMenu, // Se permite nulo
-                        ContenidoPiePagina = c.ContenidoPiePagina, // Se permite nulo
-                        Fecha_Modi = c.Fecha_Modi, // Se permite nulo
-                        Usu_Modi = c.Usu_Modi // Se permite nulo
+                        Logo = c.Logo,
+                        ColorFondo = c.ColorFondo,
+                        ColorBotonesMenu = c.ColorBotonesMenu,
+                        ContenidoPiePagina = c.ContenidoPiePagina,
+                        Fecha_Modi = c.Fecha_Modi,
+                        Usu_Modi = c.Usu_Modi
                     }).ToList();
 
                     if (olist == null || !olist.Any())
                     {
-                        return NotFound(); // 404 si no hay contenido
+                        return NotFound();
                     }
 
-                    return Ok(olist); // 200 OK con la lista de contenido
+                    return Ok(olist);
                 }
             }
             catch (Exception ex)
             {
-                // Manejo de errores generales
-                return InternalServerError(ex); // 500 Internal Server Error
+                return InternalServerError(ex);
             }
         }
 
@@ -69,43 +67,39 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             try
             {
-                // Validar que el ID sea 1
                 if (id != 1)
                 {
-                    return BadRequest("Solo se permite el ID 1."); // 400 Bad Request
+                    return BadRequest("Solo se permite el ID 1.");
                 }
 
-                // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Buscar el contenido basado en el ID
                     var content = db.Set<GESTION_CONTENIDO>()
                                     .Where(c => c.GestionContenido_ID == id)
                                     .Select(c => new GestionContenidoDto
                                     {
                                         GestionContenido_ID = c.GestionContenido_ID,
-                                        Logo = c.Logo, // Se permite nulo
-                                        ColorFondo = c.ColorFondo, // Se permite nulo
-                                        ColorBotonesMenu = c.ColorBotonesMenu, // Se permite nulo
-                                        ContenidoPiePagina = c.ContenidoPiePagina, // Se permite nulo
-                                        Fecha_Modi = c.Fecha_Modi, // Se permite nulo
-                                        Usu_Modi = c.Usu_Modi // Se permite nulo
+                                        Logo = c.Logo,
+                                        ColorFondo = c.ColorFondo,
+                                        ColorBotonesMenu = c.ColorBotonesMenu,
+                                        ContenidoPiePagina = c.ContenidoPiePagina,
+                                        Fecha_Modi = c.Fecha_Modi,
+                                        Usu_Modi = c.Usu_Modi
                                     }).FirstOrDefault();
 
                     if (content == null)
                     {
-                        return NotFound(); // 404 si no se encuentra el contenido
+                        return NotFound();
                     }
 
-                    return Ok(content); // 200 OK con el contenido encontrado
+                    return Ok(content);
                 }
             }
             catch (Exception ex)
             {
-                // Manejo de errores generales
-                return InternalServerError(ex); // 500 Internal Server Error
+                return InternalServerError(ex);
             }
         }
 
@@ -115,32 +109,27 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             if (value == null)
             {
-                return BadRequest("Datos inválidos."); // 400 Bad Request si el cuerpo está vacío o es incorrecto
+                return BadRequest("Datos inválidos.");
             }
 
             try
             {
-                // Obtener la cadena de conexión dinámica
                 string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    // Verificar que el registro exista
                     if (!db.Set<GESTION_CONTENIDO>().Any(x => x.GestionContenido_ID == id))
                     {
-                        return NotFound(); // 404 si no se encuentra el contenido
+                        return NotFound();
                     }
 
                     var fechaModi = (value.Fecha_Modi != default(DateTime)) ? value.Fecha_Modi : DateTime.Now;
 
-                    // Valores actuales (antes del cambio) para el detalle de auditoría.
                     var actual = db.Database.SqlQuery<GestionContenidoDto>(
                         "SELECT GestionContenido_ID, Logo, ColorFondo, ColorBotonesMenu, ContenidoPiePagina, Fecha_Modi, Usu_Modi " +
                         "FROM GESTION_CONTENIDO WHERE GestionContenido_ID = @idsel",
                         new SqlParameter("@idsel", id)).FirstOrDefault();
 
-                    // Actualización vía SQL directo: evita el facet MaxLength(255) del modelo,
-                    // necesario para guardar el Logo en base64 (la columna ya es NVARCHAR(MAX)).
                     int filas = db.Database.ExecuteSqlCommand(
                         "UPDATE GESTION_CONTENIDO SET Logo = @logo, ColorFondo = @fondo, " +
                         "ColorBotonesMenu = @menu, ContenidoPiePagina = @pie, " +
@@ -155,9 +144,6 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (filas == 0) return NotFound();
 
-                    // Auditoría manual (esta ruta no pasa por SaveChanges). Registramos el antes
-                    // y el después, solo de los campos que cambiaron. El logo se resume para no
-                    // volcar el base64 en la bitácora. El try/catch evita romper el guardado.
                     try
                     {
                         var antes = new Dictionary<string, string>();
@@ -181,12 +167,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                     catch { }
 
-                    return Ok("Actualización exitosa."); // 200 OK
+                    return Ok("Actualización exitosa.");
                 }
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -197,23 +182,18 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                // Registrar errores
                 foreach (var validationError in validationErrors)
                 {
-                    Console.WriteLine(validationError); // Puedes registrar el error en logs, si lo prefieres
+                    Console.WriteLine(validationError);
                 }
 
-                // Retornar los errores de validación como respuesta 400 Bad Request
-                return Content(HttpStatusCode.BadRequest, validationErrors); // 400 Bad Request con listado de errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                // Manejo de errores generales
-                return InternalServerError(ex); // 500 Internal Server Error para otros errores no esperados
+                return InternalServerError(ex);
             }
         }
-
-        // ===================== utilitarios de auditoría =====================
 
         private static void AgregarCambio(Dictionary<string, string> antes, Dictionary<string, string> despues,
             string campo, string valorAntes, string valorNuevo)
@@ -225,7 +205,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // Resume el logo para la bitácora: no volcamos el base64 completo.
         private static string ResumirLogo(string logo)
         {
             if (string.IsNullOrEmpty(logo)) return "(vacío)";
