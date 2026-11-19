@@ -28,6 +28,7 @@ namespace WebApi_TransporteSanchez
             container.RegisterType<IAccesoEmail, AccesoEmail>();
             container.RegisterType<IGestionPerfilesEmail, GestionPerfilesEmail>();
             container.RegisterType<EmailServidorController>();
+            container.RegisterType<RecuperoContrasenaController>();
 
             // Configurar el contenedor como el resolvedor de dependencias predeterminado de Web API
             GlobalConfiguration.Configuration.DependencyResolver = new Unity.WebApi.UnityDependencyResolver(container);
