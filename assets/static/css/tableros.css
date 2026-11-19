@@ -1,0 +1,156 @@
+.dash-calor {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-size: .75rem;
+    color: var(--sgtl-texto);
+}
+
+.dash-calor th {
+    font-weight: 600;
+    color: var(--sgtl-texto-suave);
+    white-space: nowrap;
+}
+
+.dash-calor thead th {
+    max-width: 7.5rem;
+    padding: 0 .25rem .25rem;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    text-transform: none;
+}
+
+.dash-calor tbody th {
+    padding: 0 .75rem 0 0;
+    line-height: 1.15;
+    color: var(--sgtl-texto);
+    text-align: left;
+}
+
+.dash-calor tbody th small {
+    display: block;
+    max-width: 11rem;
+    overflow: hidden;
+    font-weight: 400;
+    color: var(--sgtl-texto-suave);
+    text-overflow: ellipsis;
+}
+
+.dash-calor td {
+    height: 2.125rem;
+    min-width: 3.25rem;
+    padding: 0 .375rem;
+    border-radius: 4px;
+    font-weight: 700;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.dash-calor td:not(.dash-calor-total):hover {
+    box-shadow: inset 0 0 0 2px var(--sgtl-texto);
+}
+
+.dash-calor tfoot th,
+.dash-calor tfoot td {
+    padding-top: .25rem;
+}
+
+.dash-calor .dash-calor-esquina {
+    font-size: .6875rem;
+    text-align: left;
+    vertical-align: bottom;
+}
+
+.dash-calor .dash-calor-total {
+    padding: 0 0 0 .5rem;
+    text-align: right;
+}
+
+.dash-calor thead th:first-child,
+.dash-calor tbody th,
+.dash-calor tfoot th,
+.dash-calor .dash-calor-total {
+    width: 1%;
+}
+
+.dash-calor-vacio {
+    background-color: var(--sgtl-gris-resalte);
+    color: var(--sgtl-texto-suave);
+}
+
+.dash-calor-cero {
+    background-color: #fff;
+    box-shadow: inset 0 0 0 1px var(--sgtl-borde);
+}
+
+.dash-calor-poco {
+    opacity: .45;
+}
+
+.dash-calor-1 {
+    background-color: #eaeefa;
+}
+
+.dash-calor-2 {
+    background-color: #cdd7f1;
+}
+
+.dash-calor-3 {
+    background-color: #adbde7;
+}
+
+.dash-calor-4 {
+    background-color: #8da3dd;
+}
+
+.dash-calor-5 {
+    background-color: #6c85d0;
+}
+
+.dash-calor-6 {
+    background-color: #4c67c2;
+}
+
+.dash-calor-7 {
+    background-color: #354eac;
+}
+
+.dash-calor-8 {
+    background-color: #223692;
+}
+
+.dash-calor-5,
+.dash-calor-6,
+.dash-calor-7,
+.dash-calor-8 {
+    color: #fff;
+}
+
+.dash-escala-paso {
+    display: inline-block;
+    width: 1.25rem;
+    height: .625rem;
+    border-radius: 3px;
+}
+
+@media (max-width: 575.98px) {
+    .dash-calor thead th:first-child,
+    .dash-calor tbody th,
+    .dash-calor tfoot th {
+        position: sticky;
+        left: 0;
+        z-index: 1;
+        background-color: #fff;
+    }
+
+    .dash-calor tbody th {
+        max-width: 7.5rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dash-calor tbody th small {
+        max-width: 7rem;
+    }
+}

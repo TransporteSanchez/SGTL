@@ -1,4 +1,3 @@
-// Funciones de interfaz compartidas por todas las pantallas (window.SGTL). Va después de assets/compiled/js/app.js.
 (function () {
     'use strict';
 
@@ -17,7 +16,6 @@
         return objetivo;
     }
 
-    // Evita que modal no abra cuando falta window.bootstrap: primero prueba con jQuery.
     function componente(nombre, el, accion, opciones) {
         if (window.jQuery && window.jQuery.fn[nombre]) {
             return window.jQuery(el)[nombre](accion === undefined ? opciones : accion);

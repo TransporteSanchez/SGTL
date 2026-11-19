@@ -1,5 +1,3 @@
-/* Estilos compartidos por todas las pantallas: el tema Zephyr de Bootswatch sobre Mazer y lo propio.
-   Va después de assets/compiled/css/app.css. */
 @import url("../../extensions/bootswatch/zephyr/bootstrap.min.css");
 
 :root {
@@ -37,6 +35,7 @@ a {
 }
 
 #main > header .navbar-top {
+    background-color: #fff;
     box-shadow: inset 0 4px 0 var(--sgtl-marca), 0 1px 0 var(--sgtl-borde);
 }
 

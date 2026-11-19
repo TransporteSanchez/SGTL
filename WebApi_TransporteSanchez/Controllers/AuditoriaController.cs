@@ -10,8 +10,6 @@ using System.Web.Http;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
-    // Consulta de la bitacora de auditoria (solo lectura).
-    // Alimenta la pantalla gestion-auditoria.html.
     [RoutePrefix("api/Auditoria")]
     public class AuditoriaController : ApiController
     {
@@ -33,14 +31,13 @@ namespace WebApi_TransporteSanchez.Controllers
             return ConnectionStringHelper.GetConnectionString("SGTLEntities");
         }
 
-        // GET: api/Auditoria?usuario=&entidad=&accion=&desde=&hasta=&texto=&page=1&pageSize=20
         [HttpGet]
         [Route("")]
         public IHttpActionResult Get(string usuario = null, string entidad = null, string accion = null,
             string desde = null, string hasta = null, string texto = null, int page = 1, int pageSize = 20)
         {
             if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 200) pageSize = 20;
+            if (pageSize < 0 || pageSize > 200) pageSize = 20;
 
             var where = new StringBuilder(" WHERE 1 = 1 ");
             var parametros = new List<SqlParameter>();
@@ -83,12 +80,11 @@ namespace WebApi_TransporteSanchez.Controllers
             {
                 using (var db = new DbContext(Cn()))
                 {
-                    // total
                     var pTotal = parametros.Select(Clonar).ToArray();
                     int total = db.Database.SqlQuery<int>(
                         "SELECT COUNT(*) FROM AUDITORIA" + where, pTotal).FirstOrDefault();
+                    if (pageSize == 0) { page = 1; pageSize = Math.Max(total, 1); }
 
-                    // pagina
                     var pPage = parametros.Select(Clonar).ToList();
                     pPage.Add(new SqlParameter("@offset", (page - 1) * pageSize));
                     pPage.Add(new SqlParameter("@limit", pageSize));
@@ -119,7 +115,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET: api/Auditoria/Entidades  -> lista de entidades distintas (para el combo del filtro)
         [HttpGet]
         [Route("Entidades")]
         public IHttpActionResult GetEntidades()
@@ -140,7 +135,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET: api/Auditoria/Usuarios  -> usuarios distintos presentes en la auditoría (para el filtro)
         [HttpGet]
         [Route("Usuarios")]
         public IHttpActionResult GetUsuarios()
@@ -161,7 +155,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // Un SqlParameter no se puede reutilizar entre comandos: clonamos por cada query.
         private static SqlParameter Clonar(SqlParameter p)
         {
             return new SqlParameter(p.ParameterName, p.Value);

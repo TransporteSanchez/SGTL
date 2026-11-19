@@ -8,8 +8,6 @@ function setSubmenuState(item, open) {
   links.forEach((link) => {
     totalHeight += link.offsetHeight || 40;
   });
-  // Usar scrollHeight (altura real del contenido) para no recortar el último ítem,
-  // más un pequeño margen de seguridad.
   const alturaFinal = Math.max(totalHeight, submenu.scrollHeight) + 8;
   submenu.style.maxHeight = open ? `${alturaFinal}px` : '';
   submenu.classList.toggle('submenu-open', open);
@@ -43,7 +41,6 @@ function ensureCollapseStyle() {
 }
 
 function bindGlobalButtons() {
-  // Delegación en document: funciona aunque el header (con .burger-btn) se cargue después por XHR.
   if (window.__sidebarButtonsBound) return;
   document.addEventListener('click', (e) => {
     const burger = e.target.closest && e.target.closest('.burger-btn');

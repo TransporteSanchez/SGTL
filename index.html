@@ -4,53 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de gestión de viajes</title>
-    <style>
-        #app {
-            display: none;
-        }
-
-        #loading-message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 9999;
-        }
-    </style>
+    <title>Transporte Sánchez - Dashboard</title>
 
     <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
-    <link rel="shortcut icon"
-        href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACEAAAAiCAYAAADRcLDBAAAEs2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIKICAgIHhtbG5zOnhtcD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgZXhpZjpQaXhlbFhEaW1lbnNpb249IjMzIgogICBleGlmOlBpeGVsWURpbWVuc2lvbj0iMzQiCiAgIGV4aWY6Q29sb3JTcGFjZT0iMSIKICAgdGlmZjpJbWFnZVdpZHRoPSIzMyIKICAgdGlmZjpJbWFnZUxlbmd0aD0iMzQiCiAgIHRpZmY6UmVzb2x1dGlvblVuaXQ9IjIiCiAgIHRpZmY6WFJlc29sdXRpb249Ijk2LjAiCiAgIHRpZmY6WVJlc29sdXRpb249Ijk2LjAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIuMSIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjItMDMtMzFUMTA6NTA6MjMrMDI6MDAiPgogICA8eG1wTU06SGlzdG9yeT4KICAgIDxyZGY6U2VxPgogICAgIDxyZGY6bGkKICAgICAgc3RFdnQ6YWN0aW9uPSJwcm9kdWNlZCIKICAgICAgc3RFdnQ6c29mdHdhcmVBZ2VudD0iQWZmaW5pdHkgRGVzaWduZXIgMS4xMC4xIgogICAgICBzdEV2dDp3aGVuPSIyMDIyLTAzLTMxVDEwOjUwOjIzKzAyOjAwIi8+CiAgICA8L3JkZjpTZXE+CiAgIDwveG1wTU06SGlzdG9yeT4KICA8L3JkZjpEZXNjcmlwdGlvbj4KIDwvcmRmOlJERj4KPC94OnhtcG1ldGE+Cjw/eHBhY2tldCBlbmQ9InIiPz5V57uAAAABgmlDQ1BzUkdCIElFQzYxOTY2LTIuMQAAKJF1kc8rRFEUxz9maORHo1hYKC9hISNGTWwsRn4VFmOUX5uZZ36oeTOv954kW2WrKLHxa8FfwFZZK0WkZClrYoOe87ypmWTO7dzzud97z+nec8ETzaiaWd4NWtYyIiNhZWZ2TvE946WZSjqoj6mmPjE1HKWkfdxR5sSbgFOr9Ll/rXoxYapQVik8oOqGJTwqPL5i6Q5vCzeo6dii8KlwpyEXFL519LjLLw6nXP5y2IhGBsFTJ6ykijhexGra0ITl5bRqmWU1fx/nJTWJ7PSUxBbxJkwijBBGYYwhBgnRQ7/MIQIE6ZIVJfK7f/MnyUmuKrPOKgZLpEhj0SnqslRPSEyKnpCRYdXp/9++msneoFu9JgwVT7b91ga+LfjetO3PQ9v+PgLvI1xkC/m5A+h7F32zoLXug38dzi4LWnwHzjeg8UGPGbFfySvuSSbh9QRqZ6H+Gqrm3Z7l9zm+h+iafNUV7O5Bu5z3L/wAdthn7QIme0YAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAJTSURBVFiF7Zi9axRBGIefEw2IdxFBRQsLWUTBaywSK4ubdSGVIY1Y6HZql8ZKCGIqwX/AYLmCgVQKfiDn7jZeEQMWfsSAHAiKqPiB5mIgELWYOW5vzc3O7niHhT/YZvY37/swM/vOzJbIqVq9uQ04CYwCI8AhYAlYAB4Dc7HnrOSJWcoJcBS4ARzQ2F4BZ2LPmTeNuykHwEWgkQGAet9QfiMZjUSt3hwD7psGTWgs9pwH1hC1enMYeA7sKwDxBqjGnvNdZzKZjqmCAKh+U1kmEwi3IEBbIsugnY5avTkEtIAtFhBrQCX2nLVehqyRqFoCAAwBh3WGLAhbgCRIYYinwLolwLqKUwwi9pxV4KUlxKKKUwxC6ZElRCPLYAJxGfhSEOCz6m8HEXvOB2CyIMSk6m8HoXQTmMkJcA2YNTHm3congOvATo3tE3A29pxbpnFzQSiQPcB55IFmFNgFfEQeahaAGZMpsIJIAZWAHcDX2HN+2cT6r39GxmvC9aPNwH5gO1BOPFuBVWAZue0vA9+A12EgjPadnhCuH1WAE8ivYAQ4ohKaagV4gvxi5oG7YSA2vApsCOH60WngKrA3R9IsvQUuhIGY00K4flQG7gHH/mLytB4C42EgfrQb0mV7us8AAMeBS8mGNMR4nwHamtBB7B4QRNdaS0M8GxDEog7iyoAguvJ0QYSBuAOcAt71Kfl7wA8DcTvZ2KtOlJEr+ByyQtqqhTyHTIeB+ONeqi3brh+VgIN0fohUgWGggizZFTplu12yW8iy/YLOGWMpDMTPXnl+Az9vj2HERYqPAAAAAElFTkSuQmCC"
-        type="image/png">
-
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@3.10.2/dist/fullcalendar.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack.min.css">
-    <style>
-        .grid-stack { background: transparent; }
-        .grid-stack-item-content { inset: 0; display: flex; }
-        .grid-stack-item-content > .card { width: 100%; height: 100%; margin-bottom: 0; display: flex; flex-direction: column; overflow: hidden; }
-        .grid-stack-item-content > .card > .card-header { flex: 0 0 auto; }
-        .grid-stack-item-content > .card > .card-body { flex: 1 1 auto; min-height: 0; overflow: auto; }
-        #chart-viajes-mensual, #calendarioViajes { height: 100%; }
-        .grid-stack.editando .grid-stack-item-content > .card { outline: 2px dashed rgba(13,110,253,.55); outline-offset: -2px; }
-        .grid-stack.editando .card-header { cursor: move; }
-        #widgetsChecklist .form-check-input { cursor: pointer; }
-    </style>
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="assets/static/css/sgtl.css">
+    <link rel="stylesheet" href="assets/static/css/tableros.css">
 </head>
 
 <body>
-    <script src="assets/static/js/initTheme.js"></script>
-
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-    </div>
-
     <div id="app">
         <div id="sidebar"></div>
 
@@ -58,623 +22,133 @@
             <header>
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
-                        <a href="#" class="burger-btn d-block">
-                            <i class="bi bi-justify fs-3"></i>
+                        <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
+                            <i class="bi bi-justify fs-3" aria-hidden="true"></i>
                         </a>
-                        <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
-                            data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
-                            aria-expanded="false" aria-label="Toggle navigation">
-                            <span class="navbar-toggler-icon"></span>
-                        </button>
                         <div id="header-container"></div>
-                        <script src="./assets/static/js/header.js"></script>
                     </div>
                 </nav>
             </header>
 
-            <div id="main-content">
-                <div class="page-heading mt-4 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <h3 class="mb-0">¡Bienvenido!</h3>
-                    <div class="d-flex gap-2 align-items-center" id="dash-toolbar">
-                        <div class="position-relative d-inline-block" id="widgetsMenu" style="display:none;">
-                            <button class="btn btn-light-secondary btn-sm" id="btnWidgets" type="button"><i class="fas fa-eye me-1"></i>Widgets</button>
-                            <div class="card shadow-sm position-absolute end-0 mt-1 p-2" id="widgetsPanel" style="display:none; z-index:1050; min-width:230px;">
-                                <div id="widgetsChecklist"></div>
+            <div class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4">
+                    <div class="card rounded">
+                        <div class="card-header">
+                            <h1 class="card-title h5 mb-1"><i class="bi bi-grid-fill me-2" aria-hidden="true"></i>Dashboard</h1>
+                            <p class="text-muted mb-0" id="periodoTexto"></p>
+                        </div>
+
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-md-auto">
+                                    <span class="form-label d-block" id="periodoEtiqueta">Período</span>
+                                    <div class="btn-group" role="group" aria-labelledby="periodoEtiqueta" id="periodoRapido">
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoMes" value="mes">
+                                        <label class="btn btn-outline-primary" for="periodoMes">Último mes</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoTrimestre" value="trimestre" checked>
+                                        <label class="btn btn-outline-primary" for="periodoTrimestre">Trimestre</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoSemestre" value="semestre">
+                                        <label class="btn btn-outline-primary" for="periodoSemestre">Semestre</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoAnio" value="anio">
+                                        <label class="btn btn-outline-primary" for="periodoAnio">Año</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="periodoRango" class="form-label">Otras fechas</label>
+                                    <input type="text" id="periodoRango" class="form-control" placeholder="Desde y hasta">
+                                </div>
                             </div>
                         </div>
-                        <button class="btn btn-outline-secondary btn-sm" id="btnResetLayout" style="display:none;"><i class="fas fa-rotate-left me-1"></i>Restablecer</button>
-                        <button class="btn btn-light-secondary btn-sm" id="btnCancelarLayout" style="display:none;">Cancelar</button>
-                        <button class="btn btn-success btn-sm" id="btnGuardarLayout" style="display:none;"><i class="fas fa-check me-1"></i>Guardar</button>
-                        <button class="btn btn-primary btn-sm" id="btnPersonalizar"><i class="fas fa-sliders-h me-1"></i>Personalizar</button>
                     </div>
-                </div>
 
-                <div class="page-content">
-                <div class="grid-stack">
-                <div class="grid-stack-item" gs-id="choferes" gs-x="0" gs-y="0" gs-w="4" gs-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-users me-2 text-primary"></i>
-                                    <h5 class="mb-0">Choferes activos</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="h4 mb-0" id="choferes-activos-texto">0 / 0</span>
-                                    </div>
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-primary" id="choferes-activos-bar" role="progressbar"
-                                            style="width: 0%;"></div>
-                                    </div>
-                                </div>
-                            </div>
+                    <div class="card rounded" data-tema="viajes">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0">Recorridos más usados</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-recorridos"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
                     </div>
-                </div>
-                <div class="grid-stack-item" gs-id="camiones" gs-x="4" gs-y="0" gs-w="4" gs-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-truck me-2 text-success"></i>
-                                    <h5 class="mb-0">Camiones activos</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="h4 mb-0" id="camiones-activos-texto">0 / 0</span>
-                                    </div>
-                                    <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar bg-success" id="camiones-activos-bar" role="progressbar"
-                                            style="width: 0%;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="costo" gs-x="8" gs-y="0" gs-w="4" gs-h="2">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header d-flex align-items-center">
-                                    <i class="fas fa-dollar-sign me-2 text-info"></i>
-                                    <h5 class="mb-0">Costo por viaje</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex flex-column">
-                                        <span class="h4 mb-1" id="costo-promedio-texto">—</span>
-                                        <small class="text-muted" id="costo-por-viaje-subtitulo">Costo promedio</small>
-                                        <small class="text-muted mt-1" id="costo-total-viajes">0 viajes</small>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="chart" gs-x="0" gs-y="2" gs-w="8" gs-h="5">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Viajes - Evolución Mensual</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div id="chart-viajes-mensual"></div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="topclientes" gs-x="8" gs-y="2" gs-w="4" gs-h="5">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Top Clientes en facturación</h5>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div id="top-clientes-list" class="list-group list-group-flush">
-                                        <div class="text-muted text-center py-4">Cargando...</div>
-                                    </div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-                <div class="grid-stack-item" gs-id="calendario" gs-x="0" gs-y="7" gs-w="12" gs-h="6">
-                    <div class="grid-stack-item-content">
-                        <div class="card rounded custom-card h-100">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Calendario de viajes</h5>
-                                </div>
-                                <div class="card-body p-2">
-                                    <div id="calendarioViajes"></div>
-                                </div>
-                            </div>
-                    </div>
-                </div>
-                </div>
-                </div>
 
-                <footer>
-                    <div id="footer-container"></div>
-                    <script src="./assets/static/js/footer.js"></script>
-                </footer>
+                    <div class="card rounded" data-tema="viajes">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0">Rechazos por cliente y destino</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-rechazos"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded" data-tema="flota">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0" id="titulo-kmcamionmes">Km por camión y por mes</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-camiones"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded" data-tema="flota">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0" id="titulo-ingresoscamionmes">Ingresos por camión y por mes</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-ingresos"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded" data-tema="choferes">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0" id="titulo-kmchofermes">Km por chofer y por mes</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-choferes"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
+                    </div>
+
+                    <div class="card rounded" data-tema="facturacion">
+                        <div class="card-header">
+                            <h2 class="card-title h5 mb-0" id="titulo-facturacionmes">Facturación por cliente y por mes</h2>
+                        </div>
+                        <div class="card-body">
+                            <div id="calor-facturacion"><p class="text-muted text-center py-4 mb-0">Cargando…</p></div>
+                        </div>
+                    </div>
+                </section>
             </div>
+
+            <footer>
+                <div id="footer-container"></div>
+            </footer>
         </div>
     </div>
 
-    <script src="assets/extensions/jquery/jquery.min.js"></script>
-    <script src="assets/extensions/jquery/moment.min.js"></script>
-    <script src="assets/extensions/fullcalendar/fullcalendar.min.js"></script>
-    <script src="assets/extensions/fullcalendar/locale/es.js"></script>
     <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
-    <script src="assets/extensions/apexcharts/apexcharts.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/gridstack@10.3.1/dist/gridstack-all.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/dashboard.js"></script>
 
     <script>
-        window.onload = async function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            window.loadHeader();
+        document.addEventListener('DOMContentLoaded', function () {
+            window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
             window.loadFooter();
+            fetch(SGTL.api + '/GestionContenido/1').then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+                return respuesta.json();
+            }).then(function (contenido) {
+                window.applyStyles(contenido.Logo, contenido.ColorFondo, contenido.ColorBotonesMenu, contenido.ContenidoPiePagina);
+            }).catch(function (error) { console.warn('No se pudo cargar la apariencia de SGTL.', error); });
 
-            try {
-                if (typeof window.loadSidebar === 'function') {
-                    await window.loadSidebar();
-                }
-                await loadSettings();
-                adjustVisibilityBasedOnRole();
-                loadChoferesActivos();
-                loadCamionesActivos();
-                loadCostoPorViaje();
-                loadViajesEvolucionMensual();
-                loadTopClientesFacturacion();
-                loadCalendarioViajes();
-
-                if (typeof window.initDashboardGrid === 'function') { window.initDashboardGrid(); }
-
-                loadingMessage.style.display = 'none';
-                document.getElementById('app').style.display = 'block';
-            } catch (error) {
-                console.error('Error al cargar el header, footer o los datos:', error);
-                loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-            }
-        };
-
-        function loadCalendarioViajes() {
-            var $el = $('#calendarioViajes');
-            if (!$el.length || !$.fn.fullCalendar) { return; }
-            $.ajax({ url: API_BASE + '/Viajes', type: 'GET' })
-                .done(function (data) {
-                    var eventos = (data || []).map(function (v) {
-                        return {
-                            title: 'Viaje #' + v.Viaje_ID + ': ' + (v.Origen || '') + ' -> ' + (v.Destino || ''),
-                            start: v.Fecha_Inicio,
-                            end: v.Fecha_Fin
-                        };
-                    });
-                    $el.fullCalendar({
-                        locale: 'es',
-                        defaultView: 'month',
-                        header: { left: 'prev,next', center: 'title', right: 'today' },
-                        height: 'auto',
-                        fixedWeekCount: false,
-                        eventLimit: 2,
-                        titleFormat: 'MMM YYYY',
-                        events: eventos
-                    });
-                    if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 90);
-                })
-                .fail(function () {
-                    $el.html('<p class="text-muted text-center py-4">No se pudieron cargar los viajes.</p>');
-                });
-        }
-
-        function adjustVisibilityBasedOnRole() {
-            const userRole = localStorage.getItem('userRole');
-            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-            if (!gestionarContenidoBtn) return;
-
-            if (userRole && userRole.toLowerCase() === 'admin') {
-                gestionarContenidoBtn.style.display = 'block';
-            } else {
-                gestionarContenidoBtn.style.display = 'none';
-            }
-        }
-
-        async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data) {
-                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    reject(new Error('Error de red'));
-                };
-
-                xhr.send();
-            });
-        }
+            SGTLDashboard.iniciar();
+        });
     </script>
-
-    <script>
-        const API_BASE = 'http://localhost:50222/api';
-
-        function loadChoferesActivos() {
-            $.ajax({
-                url: API_BASE + '/Choferes',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    const total = data.length;
-                    const activos = data.filter(c => (c.EstadoChofer || '').toLowerCase() === 'activo').length;
-                    const pct = total > 0 ? Math.round((activos / total) * 100) : 0;
-                    document.getElementById('choferes-activos-texto').textContent = activos + ' / ' + total;
-                    document.getElementById('choferes-activos-bar').style.width = pct + '%';
-                },
-                error: function (err) {
-                    if (err.status === 404) {
-                        document.getElementById('choferes-activos-texto').textContent = '0 / 0';
-                    } else {
-                        console.error('Error Choferes:', err);
-                    }
-                }
-            });
-        }
-
-        function loadCostoPorViaje() {
-            $.ajax({
-                url: API_BASE + '/Viajes/ResumenCosto',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    const elPromedio = document.getElementById('costo-promedio-texto');
-                    const elSubtitulo = document.getElementById('costo-por-viaje-subtitulo');
-                    const elTotalViajes = document.getElementById('costo-total-viajes');
-                    if (data && data.cantidadViajes > 0) {
-                        elPromedio.textContent = typeof data.costoPromedio === 'number'
-                            ? '$' + Number(data.costoPromedio).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-                            : '—';
-                        elTotalViajes.textContent = data.cantidadViajes + ' viajes';
-                        if (data.costoTotal != null) {
-                            elSubtitulo.textContent = 'Total: $' + Number(data.costoTotal).toLocaleString('es-AR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-                        }
-                    } else {
-                        elPromedio.textContent = '—';
-                        elSubtitulo.textContent = 'Costo promedio';
-                        elTotalViajes.textContent = (data && data.cantidadViajes !== undefined ? data.cantidadViajes : 0) + ' viajes';
-                    }
-                },
-                error: function (err) {
-                    document.getElementById('costo-promedio-texto').textContent = '—';
-                    document.getElementById('costo-por-viaje-subtitulo').textContent = 'Costo promedio';
-                    document.getElementById('costo-total-viajes').textContent = 'No disponible';
-                    if (err.status !== 404) console.error('Error ResumenCosto:', err);
-                }
-            });
-        }
-
-        function loadCamionesActivos() {
-            $.ajax({
-                url: API_BASE + '/Camiones',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    const total = data.length;
-                    document.getElementById('camiones-activos-texto').textContent = total + ' / ' + total;
-                    document.getElementById('camiones-activos-bar').style.width = total > 0 ? '100%' : '0%';
-                },
-                error: function (err) {
-                    if (err.status === 404) {
-                        document.getElementById('camiones-activos-texto').textContent = '0 / 0';
-                    } else {
-                        console.error('Error Camiones:', err);
-                    }
-                }
-            });
-        }
-
-        function loadViajesEvolucionMensual() {
-            $.ajax({
-                url: API_BASE + '/Viajes',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-                    const porMes = {};
-                    meses.forEach((m, i) => { porMes[i + 1] = 0; });
-                    (data || []).forEach(v => {
-                        const fecha = v.Fecha_Inicio ? new Date(v.Fecha_Inicio) : null;
-                        if (fecha && !isNaN(fecha.getMonth())) {
-                            const mes = fecha.getMonth() + 1;
-                            porMes[mes] = (porMes[mes] || 0) + 1;
-                        }
-                    });
-                    const series = meses.map((_, i) => porMes[i + 1] || 0);
-
-                    const options = {
-                        chart: { type: 'line', height: 280, toolbar: { show: false }, zoom: { enabled: false } },
-                        stroke: { curve: 'smooth', width: 2 },
-                        colors: ['#198754'],
-                        fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.4, opacityTo: 0.1 } },
-                        xaxis: { categories: meses },
-                        yaxis: { min: 0, tickAmount: 6 },
-                        dataLabels: { enabled: false },
-                        tooltip: { y: { formatter: function (val) { return val + ' viajes'; } } }
-                    };
-                    const chart = new ApexCharts(document.querySelector('#chart-viajes-mensual'), { ...options, series: [{ name: 'Viajes', data: series }] });
-                    window.__viajesChart = chart;
-                    chart.render();
-                    if (window.ajustarWidgetsVivos) setTimeout(window.ajustarWidgetsVivos, 90);
-                },
-                error: function (err) {
-                    if (err.status === 404) {
-                        document.getElementById('chart-viajes-mensual').innerHTML = '<p class="text-muted text-center py-4">No hay datos de viajes</p>';
-                    } else {
-                        document.getElementById('chart-viajes-mensual').innerHTML = '<p class="text-danger text-center py-4">Error al cargar viajes</p>';
-                        console.error('Error Viajes:', err);
-                    }
-                }
-            });
-        }
-
-        function loadTopClientesFacturacion() {
-            $.ajax({
-                url: API_BASE + '/Clientes',
-                method: 'GET',
-                dataType: 'json',
-                success: function (data) {
-                    const lista = document.getElementById('top-clientes-list');
-                    if (!data || data.length === 0) {
-                        lista.innerHTML = '<div class="text-muted text-center py-4">No hay clientes</div>';
-                        return;
-                    }
-                    const top = data.slice(0, 5);
-                    lista.innerHTML = top.map(c => {
-                        const nombre = (c.Razon_Social || c.Nombre || 'Sin nombre').trim();
-                        const facturacion = (c.Facturacion != null && c.Facturacion !== '')
-                            ? ('$' + Number(c.Facturacion).toLocaleString('es-AR'))
-                            : '—';
-                        return '<div class="list-group-item d-flex justify-content-between align-items-center"><span>' + nombre + '</span><strong>' + facturacion + '</strong></div>';
-                    }).join('');
-                },
-                error: function (err) {
-                    document.getElementById('top-clientes-list').innerHTML = '<div class="text-muted text-center py-4">No se pudieron cargar los clientes</div>';
-                    if (err.status !== 404) console.error('Error Clientes:', err);
-                }
-            });
-        }
-    </script>
-
-    <!-- ================= Dashboard personalizable (Gridstack) ================= -->
-    <script>
-        (function () {
-            var API_DL = 'http://localhost:50222/api';
-            var GRID = null;
-            var enEdicion = false;
-
-            var WIDGETS = [
-                { id: 'choferes', label: 'Choferes activos' },
-                { id: 'camiones', label: 'Camiones activos' },
-                { id: 'costo', label: 'Costo por viaje' },
-                { id: 'chart', label: 'Viajes - Evolución mensual' },
-                { id: 'topclientes', label: 'Top clientes en facturación' },
-                { id: 'calendario', label: 'Calendario de viajes' }
-            ];
-            var LAYOUT_DEFAULT = [
-                { id: 'choferes', x: 0, y: 0, w: 4, h: 2 },
-                { id: 'camiones', x: 4, y: 0, w: 4, h: 2 },
-                { id: 'costo', x: 8, y: 0, w: 4, h: 2 },
-                { id: 'chart', x: 0, y: 2, w: 8, h: 5 },
-                { id: 'topclientes', x: 8, y: 2, w: 4, h: 5 },
-                { id: 'calendario', x: 0, y: 7, w: 12, h: 6 }
-            ];
-
-            function el(id) { return document.getElementById(id); }
-            function itemEl(id) { return document.querySelector('.grid-stack-item[gs-id="' + id + '"]'); }
-            function usuario() { try { return localStorage.getItem('username'); } catch (e) { return null; } }
-
-            function refrescarVivos() {
-                // Gráfico: ajustar altura al alto disponible del contenedor
-                try {
-                    var cc = document.getElementById('chart-viajes-mensual');
-                    var body = cc ? cc.closest('.card-body') : null;
-                    if (window.__viajesChart && body && body.clientHeight) {
-                        var h = Math.max(150, body.clientHeight - 8);
-                        window.__viajesChart.updateOptions({ chart: { height: h } }, false, false);
-                    } else {
-                        window.dispatchEvent(new Event('resize'));
-                    }
-                } catch (e) { try { window.dispatchEvent(new Event('resize')); } catch (x) { } }
-
-                // Calendario: ajustar altura al alto disponible del contenedor
-                try {
-                    if (window.jQuery && $('#calendarioViajes').length && $.fn.fullCalendar) {
-                        var cal = document.getElementById('calendarioViajes');
-                        var body2 = cal ? cal.closest('.card-body') : null;
-                        var ch = (body2 && body2.clientHeight) ? (body2.clientHeight - 6) : 300;
-                        $('#calendarioViajes').fullCalendar('option', 'height', Math.max(180, ch));
-                    }
-                } catch (e) { }
-            }
-            window.ajustarWidgetsVivos = refrescarVivos;
-
-            window.initDashboardGrid = function () {
-                if (typeof GridStack === 'undefined') { return; } // si el CDN no cargó, el dashboard sigue estático
-                GRID = GridStack.init({
-                    column: 12,
-                    cellHeight: 62,
-                    margin: 8,
-                    float: false,
-                    staticGrid: true,
-                    handle: '.card-header',
-                    columnOpts: { breakpointForWindow: true, breakpoints: [{ w: 768, c: 1 }] }
-                });
-                GRID.on('resizestop change', function () { refrescarVivos(); });
-                construirChecklist();
-                wireToolbar();
-                cargarLayout();
-            };
-
-            function cargarLayout() {
-                var u = usuario();
-                if (!u) { aplicarLayout(LAYOUT_DEFAULT, []); return; }
-                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u))
-                    .then(function (r) { return r.ok ? r.json() : null; })
-                    .then(function (data) {
-                        var parsed = null;
-                        if (data && data.Layout) { try { parsed = JSON.parse(data.Layout); } catch (e) { } }
-                        if (parsed && parsed.items && parsed.items.length) {
-                            aplicarLayout(parsed.items, parsed.hidden || []);
-                        } else {
-                            aplicarLayout(LAYOUT_DEFAULT, []);
-                        }
-                    })
-                    .catch(function () { aplicarLayout(LAYOUT_DEFAULT, []); });
-            }
-
-            function aplicarLayout(items, hidden) {
-                hidden = hidden || [];
-                if (!GRID) return;
-                GRID.batchUpdate();
-                // asegurar que todos estén visibles y en el grid
-                WIDGETS.forEach(function (w) {
-                    var e = itemEl(w.id);
-                    if (!e) return;
-                    e.style.display = '';
-                    try { GRID.makeWidget(e); } catch (x) { }
-                });
-                // aplicar posiciones de los visibles
-                var visibles = items.filter(function (it) { return hidden.indexOf(it.id) === -1; });
-                GRID.load(visibles, false);
-                // ocultar los marcados
-                hidden.forEach(function (id) {
-                    var e = itemEl(id);
-                    if (!e) return;
-                    try { GRID.removeWidget(e, false); } catch (x) { }
-                    e.style.display = 'none';
-                });
-                GRID.commit();
-                actualizarChecklist(hidden);
-                setTimeout(refrescarVivos, 80);
-            }
-
-            function mostrarWidget(id) {
-                var e = itemEl(id); if (!e || !GRID) return;
-                e.style.display = '';
-                try { GRID.makeWidget(e); } catch (x) { }
-                setTimeout(refrescarVivos, 60);
-            }
-            function ocultarWidget(id) {
-                var e = itemEl(id); if (!e || !GRID) return;
-                try { GRID.removeWidget(e, false); } catch (x) { }
-                e.style.display = 'none';
-            }
-
-            function construirChecklist() {
-                var cont = el('widgetsChecklist'); if (!cont) return;
-                cont.innerHTML = '';
-                WIDGETS.forEach(function (w) {
-                    var lbl = document.createElement('label');
-                    lbl.className = 'd-flex align-items-center gap-2 py-1 mb-0';
-                    lbl.style.cursor = 'pointer';
-                    lbl.innerHTML = '<input type="checkbox" class="form-check-input mt-0" data-wid="' + w.id + '" checked> <span>' + w.label + '</span>';
-                    cont.appendChild(lbl);
-                });
-                cont.addEventListener('change', function (e) {
-                    var cb = e.target.closest('input[data-wid]'); if (!cb) return;
-                    var id = cb.getAttribute('data-wid');
-                    if (cb.checked) mostrarWidget(id); else ocultarWidget(id);
-                });
-            }
-            function actualizarChecklist(hidden) {
-                var cont = el('widgetsChecklist'); if (!cont) return;
-                Array.prototype.forEach.call(cont.querySelectorAll('input[data-wid]'), function (cb) {
-                    cb.checked = hidden.indexOf(cb.getAttribute('data-wid')) === -1;
-                });
-            }
-
-            function entrarEdicion() {
-                enEdicion = true;
-                if (GRID) GRID.setStatic(false);
-                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.add('editando');
-                el('btnPersonalizar').style.display = 'none';
-                el('btnGuardarLayout').style.display = '';
-                el('btnCancelarLayout').style.display = '';
-                el('btnResetLayout').style.display = '';
-                el('widgetsMenu').style.display = '';
-            }
-            function salirEdicion() {
-                enEdicion = false;
-                if (GRID) GRID.setStatic(true);
-                var gs = document.querySelector('.grid-stack'); if (gs) gs.classList.remove('editando');
-                el('btnPersonalizar').style.display = '';
-                el('btnGuardarLayout').style.display = 'none';
-                el('btnCancelarLayout').style.display = 'none';
-                el('btnResetLayout').style.display = 'none';
-                el('widgetsMenu').style.display = 'none';
-                el('widgetsPanel').style.display = 'none';
-            }
-
-            function guardarLayout() {
-                var u = usuario();
-                if (!u || !GRID) { salirEdicion(); return; }
-                var hidden = [];
-                Array.prototype.forEach.call(el('widgetsChecklist').querySelectorAll('input[data-wid]'), function (cb) {
-                    if (!cb.checked) hidden.push(cb.getAttribute('data-wid'));
-                });
-                var items = GRID.save(false); // [{id,x,y,w,h}, ...] de los visibles
-                var payload = { Nombre_Usuario: u, Layout: JSON.stringify({ items: items, hidden: hidden }) };
-                fetch(API_DL + '/DashboardLayout', {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }).then(function () { }).catch(function () { })
-                    .then(function () { salirEdicion(); refrescarVivos(); });
-            }
-
-            function cancelarEdicion() { salirEdicion(); cargarLayout(); }
-
-            function restablecerLayout() {
-                var u = usuario();
-                function aplicarDefault() {
-                    aplicarLayout(LAYOUT_DEFAULT, []);
-                    salirEdicion();
-                }
-                if (!u) { aplicarDefault(); return; }
-                fetch(API_DL + '/DashboardLayout?username=' + encodeURIComponent(u), { method: 'DELETE' })
-                    .then(aplicarDefault).catch(aplicarDefault);
-            }
-
-            function wireToolbar() {
-                el('btnPersonalizar').addEventListener('click', entrarEdicion);
-                el('btnGuardarLayout').addEventListener('click', guardarLayout);
-                el('btnCancelarLayout').addEventListener('click', cancelarEdicion);
-                el('btnResetLayout').addEventListener('click', restablecerLayout);
-                el('btnWidgets').addEventListener('click', function (e) {
-                    e.stopPropagation();
-                    var p = el('widgetsPanel');
-                    p.style.display = (p.style.display === 'none' || !p.style.display) ? 'block' : 'none';
-                });
-                document.addEventListener('click', function (e) {
-                    if (!e.target.closest('#widgetsMenu')) { el('widgetsPanel').style.display = 'none'; }
-                });
-            }
-        })();
-    </script>
-
 </body>
 
 </html>
