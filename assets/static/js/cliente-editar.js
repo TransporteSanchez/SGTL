@@ -10,8 +10,20 @@
         ['CodigoPostal', 'Código postal', 'text', false]
     ];
     const validaciones = {
-        CUIT_Cliente: { regex: /^\d{2}-\d{8}-\d$/, mensaje: 'Ingresá un CUIT de 11 dígitos.' },
-        Email: { regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, mensaje: 'Revisá el e-mail.' }
+        CUIT_Cliente: {
+            regex: /^\d{2}-\d{8}-\d$/,
+            mensaje: 'Ingresá un CUIT de 11 dígitos.'
+        },
+        Email: {
+            regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+            mensaje: 'Revisá el e-mail.'
+        },
+        Telefono: {
+            regex: /^\d{1,10}$/,
+            mensaje: 'Ingresá hasta 10 números, sin espacios ni guiones.',
+            soloNumeros: true,
+            max: 10
+        }
     };
     const porId = id => document.getElementById(id), campo = clave => porId('ce_' + clave);
     const valor = clave => campo(clave).value.trim(), digitos = texto => String(texto ?? '').replace(/\D/g, '');
@@ -39,6 +51,7 @@
                 tipo.map(([v, t]) => '<option value="' + v + '">' + t + '</option>').join('') + '</select>'
                 : '<input class="form-control" id="' + id + '" type="' + tipo + '"' +
                 (clave === 'CUIT_Cliente' ? ' inputmode="numeric" placeholder="XX-XXXXXXXX-X"' : '') +
+                (clave === 'Telefono' ? ' maxlength="10" inputmode="numeric" autocomplete="tel"' : '') +
                 (clave === 'CodigoPostal' ? ' maxlength="20" autocomplete="postal-code"' : '') + '>';
             return '<div class="col-12 col-md-6"><label class="form-label" for="' + id + '">' +
                 titulo + (requerido ? ' <span class="text-danger">*</span>' : '') + '</label>' + control +

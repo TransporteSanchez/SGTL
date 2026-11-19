@@ -212,15 +212,13 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET: api/Clientes
         public IHttpActionResult Get()
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var olist = db.Set<CLIENTES>().Select(c => new Cliente
                     {
@@ -243,20 +241,18 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (olist == null || !olist.Any())
                     {
-                        return NotFound(); // Retorna 404 si no se encuentran registros
+                        return NotFound();
                     }
 
-                    return Ok(olist); // Retorna 200 con la lista de clientes
+                    return Ok(olist);
                 }
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -267,18 +263,17 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
-        // GET: api/Clientes/{id}
         public IHttpActionResult Get(int id)
         {
-         const string sql = @"
+            const string sql = @"
          SELECT Cliente_ID, Razon_Social, CUIT_Cliente, Cond_Fiscal, ProvID, LocID, Calle, AlturaCalle, Telefono, Email, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi, 
          COALESCE(Tipo_Cliente, N'Directo') AS Tipo_Cliente, CodigoPostal
          FROM dbo.CLIENTES
@@ -306,12 +301,11 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
 
-        // POST: api/Clientes
         public IHttpActionResult Post([FromBody] ClienteFormulario clienteDto)
         {
             if (!ModelState.IsValid)
             {
-                return BadRequest(ModelState); // Retorna 400 si el modelo no es válido
+                return BadRequest(ModelState);
             }
 
             if (clienteDto == null)
@@ -327,15 +321,13 @@ namespace WebApi_TransporteSanchez.Controllers
             if (errorCampos != null)
                 return BadRequest(errorCampos);
 
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
-                {                 
-                    // Verifica si el Cliente ya existe
+                {
                     var clienteExistente = db.Set<CLIENTES>().FirstOrDefault(c => c.CUIT_Cliente == cuitNormalizado);
                     if (clienteExistente != null)
                     {
@@ -343,10 +335,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         {
                             code = "cliente_duplicado",
                             message = "Ya existe un cliente registrado con este CUIT."
-                        }); // Retorna 400 si el cliente ya existe con un código específico
+                        });
                     }
 
-                    // Crear una nueva entidad CLIENTES y asignar valores desde clienteDto
                     var cliente = new CLIENTES
                     {
                         Cliente_ID = clienteDto.Cliente_ID,
@@ -365,23 +356,20 @@ namespace WebApi_TransporteSanchez.Controllers
                         Usu_Modi = clienteDto.Usu_Modi
                     };
 
-                    // Agregar la entidad al contexto y guardar cambios
                     db.Set<CLIENTES>().Add(cliente);
                     db.SaveChanges();
                     GuardarCamposFormulario(db, cliente.Cliente_ID, tipoCliente, codigoPostal);
                     transaccion.Commit();
 
-                    return Ok(); // Retorna 200 OK si la inserción fue exitosa
+                    return Ok();
                 }
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (DbEntityValidationException ex)
             {
-                // Manejo de errores de validación
                 var validationErrors = new List<string>();
 
                 foreach (var validationResult in ex.EntityValidationErrors)
@@ -392,16 +380,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     }
                 }
 
-                return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                return Content(HttpStatusCode.BadRequest, validationErrors);
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
 
-        // PUT: api/Clientes/{id}
         public IHttpActionResult Put(int id, [FromBody] ClienteFormulario value)
 
 
@@ -418,7 +405,6 @@ namespace WebApi_TransporteSanchez.Controllers
             if (errorCampos != null)
                 return BadRequest(errorCampos);
 
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
@@ -430,7 +416,7 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     if (oitem == null)
                     {
-                        return NotFound(); // Retorna 404 si no se encuentra el cliente con el ID especificado
+                        return NotFound();
                     }
 
                     var cuitEnUso = db.Set<CLIENTES>().Any(c =>
@@ -461,11 +447,10 @@ namespace WebApi_TransporteSanchez.Controllers
                         GuardarCamposFormulario(db, id, tipoCliente, codigoPostal);
                         transaccion.Commit();
 
-                        return Ok("Cliente actualizado con éxito."); // Retorna 200 si la actualización fue exitosa
+                        return Ok("Cliente actualizado con éxito.");
                     }
                     catch (DbEntityValidationException ex)
                     {
-                        // Manejo de errores de validación
                         var validationErrors = new List<string>();
 
                         foreach (var validationResult in ex.EntityValidationErrors)
@@ -476,23 +461,21 @@ namespace WebApi_TransporteSanchez.Controllers
                             }
                         }
 
-                        return Content(HttpStatusCode.BadRequest, validationErrors); // Retorna 400 Bad Request con errores de validación
+                        return Content(HttpStatusCode.BadRequest, validationErrors);
                     }
                     catch (DbUpdateException ex)
                     {
-                        // Manejo de errores relacionados con la base de datos
-                        return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
+                        return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
                     }
                 }
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
@@ -568,40 +551,36 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // DELETE: api/Clientes/{id}
         public IHttpActionResult Delete(int id)
         {
-            // Obtener la cadena de conexión dinámica
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString)) // Usar DbContext con la cadena de conexión personalizada
+                using (var db = new SGTLAuditContext(connectionString))
                 {
                     var cliente = db.Set<CLIENTES>().Find(id);
                     if (cliente == null)
                     {
-                        return NotFound(); // Retorna 404 si no se encuentra el cliente con el ID especificado
+                        return NotFound();
                     }
 
                     db.Set<CLIENTES>().Remove(cliente);
                     db.SaveChanges();
 
-                    return Ok("Cliente eliminado con éxito."); // Retorna 200 si la eliminación fue exitosa
+                    return Ok("Cliente eliminado con éxito.");
                 }
             }
             catch (DbUpdateException ex)
             {
-                // Manejo de errores relacionados con la base de datos
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex)); // Retorna 500 en caso de error interno
+                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex); // Retorna 500 en caso de error interno
+                return InternalServerError(ex);
             }
         }
 
-        // GET: api/Clientes/ValidarCUIT/{cuit}
         [HttpGet]
         [Route("api/Clientes/ValidarCUIT/{cuit}")]
         public IHttpActionResult ValidarCUIT(string cuit)
@@ -637,7 +616,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // GET: api/Clientes/ValidarCUIT/{cuit}/{clienteId}
         [HttpGet]
         [Route("api/Clientes/ValidarCUIT/{cuit}/{clienteId}")]
         public IHttpActionResult ValidarCUIT(string cuit, int clienteId)
@@ -661,7 +639,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 .OrderBy(x => x.Cliente_ID == clienteId ? 1 : 0)
                 .FirstOrDefault();
 
-                // Si el CUIT pertenece al mismo cliente que se está editando, está permitido.
                 if (clienteConMismoCUIT != null && clienteConMismoCUIT.Cliente_ID == clienteId)
                 {
                     return Ok(new
