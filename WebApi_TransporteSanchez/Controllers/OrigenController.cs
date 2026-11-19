@@ -19,9 +19,7 @@ namespace WebApi_TransporteSanchez.Controllers
             public int LocID { get; set; }
             public string Calle { get; set; }
             public string AlturaCalle { get; set; }
-            /// <summary>Nombre de provincia (tabla PROVINCIAS), para geocodificacion.</summary>
             public string NombreProvincia { get; set; }
-            /// <summary>Nombre de localidad (tabla LOCALIDADES), para geocodificacion.</summary>
             public string NombreLocalidad { get; set; }
             public int ClienteID { get; set; }
             public string ClienteRazon { get; set; }
