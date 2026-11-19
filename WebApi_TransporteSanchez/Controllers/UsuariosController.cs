@@ -246,7 +246,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                     var menus = db.Set<MENU>()
                         .Where(m => menuIds.Contains(m.Menu_ID))
-                        .Select(m => m.Menu_Nombre).ToList();
+                        .Select(m => m.Menu_Nombre).ToList()
+                        .Where(nombre => !Security.PermisosTableros.EsPermisoAnterior(nombre)).ToList();
 
                     return Ok(new { Rol = user.Rol, Menus = menus });
                 }
@@ -762,7 +763,9 @@ namespace WebApi_TransporteSanchez.Controllers
 
                             .Select(m => m.Menu_Nombre)
 
-                            .ToList();
+                            .ToList()
+                            
+                            .Where(nombre => !Security.PermisosTableros.EsPermisoAnterior(nombre)).ToList();
 
                         grupos.Add(new GrupoPermisosDto
 

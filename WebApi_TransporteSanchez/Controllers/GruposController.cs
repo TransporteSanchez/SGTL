@@ -637,6 +637,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
                         })
 
+                        .ToList()
+                        .Where(m => !Security.PermisosTableros.EsPermisoAnterior(m.Menu_Nombre))
                         .ToList();
 
 
