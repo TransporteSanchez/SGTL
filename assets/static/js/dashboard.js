@@ -14,7 +14,7 @@
     var periodo = null;
     var pedido = 0;
     function nodo(id) { return document.getElementById(id); }
-    function aviso(id, texto) { var destino = nodo(id); if (destino) destino.textContent = texto; }
+    function aviso(id, texto) { var destino = nodo(id); if (destino) destino.innerHTML = '<p class="text-muted text-center py-4 mb-0">' + SGTL.escapar(texto) + '</p>'; }
     function titulo(id, texto) { var destino = nodo(id); if (destino) destino.textContent = texto; }
     function visible(id) {
         var destino = nodo(id);
@@ -122,7 +122,7 @@
                 if (respuesta.status === 403 && cuerpo && cuerpo.mensaje) error.message = cuerpo.mensaje;
                 throw error;
             });
-        });
+        }, function () { throw new Error('No se pudo cargar.'); });
     }
     function aplicarTemas(temas) {
         document.querySelectorAll('[data-tema]').forEach(function (tarjeta) {

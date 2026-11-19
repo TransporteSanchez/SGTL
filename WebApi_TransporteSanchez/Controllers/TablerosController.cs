@@ -302,7 +302,7 @@ ORDER BY v.Fecha_Inicio, v.Viaje_ID;";
         private static async Task<bool> PuedeVerViajes(SGTLAuditContext db, int usuario, CancellationToken ct)
         {
             var temas = await TemasDe(db, usuario, false, ct);
-            return temas.Contains("viajes");
+            return temas.Contains("viajes") || temas.Contains("flota") || temas.Contains("choferes");
         }
         private static string Validar(List<FavoritoTablero> lista)
         {
