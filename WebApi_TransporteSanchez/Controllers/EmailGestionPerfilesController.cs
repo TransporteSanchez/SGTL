@@ -35,7 +35,8 @@ FROM dbo.EmailServidor";
 
         private const string ConsultaAsignacion = @"
 SELECT a.Modulo, p.[Service], p.Es_id AS EmailServidorID,
-       p.[Name] AS Perfil, p.CredentialFromMailAddres AS Remitente
+       p.[Name] AS Perfil, p.CredentialFromMailAddres AS Remitente,
+       a.UrlLogin
 FROM dbo.CONFIGURACION_EMAIL_MODULO AS a
 INNER JOIN dbo.EmailServidor AS p ON p.[Service] = a.[Service]
 WHERE a.Modulo = @modulo;";
@@ -166,37 +167,71 @@ SELECT CASE WHEN @@ROWCOUNT = 0 THEN 0 ELSE CONVERT(int, @id) END;";
         }
 
         public async Task<AsignacionEmailSalida> GuardarAsignacionAsync(
-            string modulo, short service, string usuario, CancellationToken ct)
+    string modulo, short service, string urlLogin,
+    string usuario, CancellationToken ct)
         {
+            var url = modulo == "RECUPERO_CONTRASENA"
+                ? WebApi_TransporteSanchez.Security.RecuperoContrasena
+                    .ValidarUrlLogin(urlLogin)
+                : null;
+
             const string guardar = @"
 UPDATE dbo.CONFIGURACION_EMAIL_MODULO WITH (UPDLOCK, HOLDLOCK)
-SET [Service] = @service, FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario
+SET [Service] = @service, UrlLogin = @url,
+    FechaModificacion = SYSUTCDATETIME(), UsuarioModificacion = @usuario
 WHERE Modulo = @modulo;
 IF @@ROWCOUNT = 0
-    INSERT dbo.CONFIGURACION_EMAIL_MODULO (Modulo, [Service], FechaModificacion, UsuarioModificacion)
-    VALUES (@modulo, @service, SYSUTCDATETIME(), @usuario);";
+    INSERT dbo.CONFIGURACION_EMAIL_MODULO
+        (Modulo, [Service], UrlLogin, FechaModificacion, UsuarioModificacion)
+    VALUES (@modulo, @service, @url, SYSUTCDATETIME(), @usuario);";
 
             AsignacionEmailSalida asignacion;
+
             using (var db = new SGTLAuditContext(conexion))
-            using (var transaccion = db.Database.BeginTransaction(IsolationLevel.Serializable))
+            using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
             {
-                bool existe = await db.Database.SqlQuery<bool>(@"
-SELECT CAST(CASE WHEN EXISTS (SELECT 1 FROM dbo.EmailServidor WHERE [Service] = @service)
-                 THEN 1 ELSE 0 END AS bit);",
-                    P("@service", SqlDbType.SmallInt, service)).SingleAsync(ct);
+                var existe = await db.Database.SqlQuery<bool>(@"
+SELECT CAST(CASE WHEN EXISTS (
+    SELECT 1 FROM dbo.EmailServidor WHERE [Service] = @service)
+    THEN 1 ELSE 0 END AS bit);",
+                    P("@service", SqlDbType.SmallInt, service))
+                    .SingleAsync(ct);
+
                 if (!existe) return null;
+
+                var incompatible = await db.Database.SqlQuery<bool>(@"
+SELECT CAST(CASE WHEN EXISTS (
+    SELECT 1 FROM dbo.CONFIGURACION_EMAIL_MODULO WITH (UPDLOCK, HOLDLOCK)
+    WHERE [Service] = @service AND Modulo <> @modulo
+      AND (@modulo = 'RECUPERO_CONTRASENA'
+           OR Modulo = 'RECUPERO_CONTRASENA'))
+    THEN 1 ELSE 0 END AS bit);",
+                    P("@service", SqlDbType.SmallInt, service),
+                    P("@modulo", SqlDbType.VarChar, modulo, 30))
+                    .SingleAsync(ct);
+
+                if (incompatible)
+                    throw new ValidacionEmailException(
+                        "El perfil de recupero debe ser exclusivo. Seleccioná otro perfil SMTP.");
 
                 await db.Database.ExecuteSqlCommandAsync(guardar, ct,
                     P("@modulo", SqlDbType.VarChar, modulo, 30),
                     P("@service", SqlDbType.SmallInt, service),
+                    P("@url", SqlDbType.NVarChar, url, 1024),
                     P("@usuario", SqlDbType.NVarChar, usuario, 100));
 
                 asignacion = await LeerAsignacionAsync(db, modulo, ct);
-                if (asignacion == null) throw new InvalidOperationException("No se pudo leer la asignación guardada.");
-                transaccion.Commit();
+
+                if (asignacion == null)
+                    throw new InvalidOperationException(
+                        "No se pudo leer la asignación guardada.");
+
+                tx.Commit();
             }
 
-            Auditar(usuario, "EMAIL_MODULE", asignacion.EmailServidorID, modulo + " asociado al Service=" + service + ".");
+            Auditar(usuario, "EMAIL_MODULE", asignacion.EmailServidorID,
+                modulo + " asociado al Service=" + service + ".");
+
             return asignacion;
         }
 
@@ -236,6 +271,60 @@ WHERE Es_id = @id;", P("@id", SqlDbType.Int, id)).SingleOrDefaultAsync(ct);
             await EnviarSmtpAsync(perfil.SmtpHost, perfil.SmtpPort.Value, modo, remitente, clave, mensaje, ct);
             Auditar(usuario, "SMTP_TEST", id, "Correo de prueba aceptado por el servidor SMTP.");
             return true;
+        }
+
+        public async Task EnviarRecuperoAsync(
+             string destino, string asunto, string cuerpoHtml, CancellationToken ct)
+        {
+            PerfilParaPrueba perfil;
+
+            using (var db = new SGTLAuditContext(conexion))
+            {
+                perfil = await db.Database.SqlQuery<PerfilParaPrueba>(@"
+                 SELECT e.SmtpHost, e.SmtpPort, e.CredentialFromMailAddres,
+                 e.CredentialFromMailPassProtegida,
+                 COALESCE(NULLIF(LTRIM(RTRIM(e.NombreRemitente)), N''),
+                 e.[Name]) AS NombreRemitente,
+                 e.Asunto, e.CuerpoHtml, " + ModoSql + @"
+                 FROM dbo.CONFIGURACION_EMAIL_MODULO m
+                 JOIN dbo.EmailServidor e ON e.[Service] = m.[Service]
+                 WHERE m.Modulo = 'RECUPERO_CONTRASENA'
+                 AND NOT EXISTS (
+                 SELECT 1 FROM dbo.CONFIGURACION_EMAIL_MODULO otro
+                 WHERE otro.[Service] = m.[Service]
+                 AND otro.Modulo <> m.Modulo);")
+                    .SingleOrDefaultAsync(ct);
+            }
+
+            if (perfil == null)
+                throw new ValidacionEmailException(
+                    "Asigná un perfil exclusivo para el recupero de contraseña.");
+
+            ValidarServidor(perfil.SmtpHost, perfil.SmtpPort);
+
+            var remitente = ValidarCorreo(perfil.CredentialFromMailAddres,
+                "El perfil de recupero no tiene un remitente válido.");
+
+            var destinatario = ValidarCorreo(destino,
+                "El correo de destino no es válido.");
+
+            var clave = AbrirSecreto(perfil.CredentialFromMailPassProtegida);
+
+            var mensaje = new MimeMessage();
+            mensaje.From.Add(new MailboxAddress(
+                perfil.NombreRemitente ?? "", remitente));
+            mensaje.To.Add(new MailboxAddress("", destinatario));
+            mensaje.Subject = asunto;
+            mensaje.Body = new TextPart("html") { Text = cuerpoHtml };
+
+            await EnviarSmtpAsync(
+                perfil.SmtpHost,
+                perfil.SmtpPort.Value,
+                ResolverModo(perfil.ModoSeguridad),
+                remitente,
+                clave,
+                mensaje,
+                ct);
         }
 
         private static async Task EnviarSmtpAsync(

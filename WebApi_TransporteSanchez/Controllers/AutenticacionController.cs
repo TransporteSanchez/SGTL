@@ -1,195 +1,229 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Linq;
-using System.Security.Claims;
-using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using System.Data.Entity;
-using System.Data.SqlClient;
-using Microsoft.IdentityModel.Tokens;
-using Microsoft.Extensions.Configuration;
-using System.Web.Http;
 using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Web;
+using System.Web.Http;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
     [Route("api/login")]
     public class LoginController : ApiController
     {
-        private readonly IConfiguration _config;
-
-        public LoginController(IConfiguration config)
-        {
-            _config = config;
-        }
-
-        // Clase que representa la solicitud de inicio de sesión
-        public class LoginRequestDTO
+        public sealed class LoginRequestDTO
         {
             public string Nombre_Usuario { get; set; }
             public string Contraseña { get; set; }
         }
 
-        // Clase que representa la respuesta de inicio de sesión
-        public class LoginResponseDTO
+        public sealed class LoginResponseDTO
         {
             public string Token { get; set; }
             public string Nombre_Usuario { get; set; }
-            public string Nombre { get; set; } // Agregar campo Nombre
-            public string Apellido { get; set; } // Agregar campo Apellido
+            public string Nombre { get; set; }
+            public string Apellido { get; set; }
             public string Rol { get; set; }
         }
 
-        [HttpPost]
-        public IHttpActionResult Login(LoginRequestDTO userLogin)
+        [HttpPost, AllowAnonymous]
+        public async Task<IHttpActionResult> Login(
+            LoginRequestDTO entrada,
+            CancellationToken ct)
         {
-            // Validar que el objeto de solicitud y los campos no sean nulos o vacíos
-            if (userLogin == null || string.IsNullOrEmpty(userLogin.Nombre_Usuario) || string.IsNullOrEmpty(userLogin.Contraseña))
+            if (entrada == null ||
+                string.IsNullOrWhiteSpace(entrada.Nombre_Usuario) ||
+                entrada.Nombre_Usuario.Trim().Length > 50 ||
+                string.IsNullOrEmpty(entrada.Contraseña) ||
+                entrada.Contraseña.Length > 1024)
             {
-                return Content(HttpStatusCode.BadRequest, new { error = "El nombre de usuario y la contraseña son obligatorios." });
-            }
-
-            var validationErrors = new Dictionary<string, string>();
-
-            // Verificar si el usuario existe en la base de datos
-            var userExists = UserExists(userLogin.Nombre_Usuario);
-
-            // Verificar si la contraseña es correcta (independientemente del usuario)
-            var isPasswordValid = IsPasswordValid(userLogin.Contraseña);
-
-            if (!userExists)
-            {
-                // Caso: Usuario no existe
-                if (isPasswordValid)
-                {
-                    // La contraseña es correcta, pero el usuario es incorrecto
-                    validationErrors["Nombre_Usuario"] = "Usuario incorrecto.";
-                }
-                else
-                {
-                    // Ambos son incorrectos
-                    validationErrors["General"] = "Usuario y contraseña incorrectos.";
-                }
-            }
-            else
-            {
-                // Usuario existe, verificar si la contraseña coincide con este usuario específico
-                var user = Authenticate(userLogin);
-                if (user == null)
-                {
-                    // Usuario existe pero la contraseña es incorrecta
-                    validationErrors["Contraseña"] = "Contraseña incorrecta.";
-                }
-                else
-                {
-                    // Usuario y contraseña son correctos, generar el token
-                    try
+                return Content(
+                    HttpStatusCode.BadRequest,
+                    new
                     {
-                        var token = Generate(user);
+                        error = "Ingresá el usuario y la contraseña."
+                    });
+            }
 
-                        // Auditoría: registrar el inicio de sesión (no pasa por SaveChanges).
-                        try
+            var ip = HttpContext.Current == null
+                ? "sin-ip"
+                : HttpContext.Current.Request.UserHostAddress;
+
+            if (!LimitesAcceso.Permitir("login:global", 300) ||
+                !LimitesAcceso.Permitir("login:ip:" + ip, 30))
+            {
+                return Content(
+                    (HttpStatusCode)429,
+                    new
+                    {
+                        error = "Esperá unos minutos antes de volver a intentar."
+                    });
+            }
+
+            try
+            {
+                using (var db = SeguridadSql.Abrir())
+                {
+                    var candidatos = await db.Database
+                        .SqlQuery<UsuarioAcceso>(
+                            SeguridadSql.Usuario +
+                            "WHERE LOWER(Nombre_Usuario)=LOWER(@nombre);",
+                            SeguridadSql.P(
+                                "@nombre",
+                                SqlDbType.NVarChar,
+                                entrada.Nombre_Usuario.Trim(),
+                                50))
+                        .ToListAsync(ct);
+
+                    var usuario = candidatos.Count == 1
+                        ? candidatos[0]
+                        : null;
+
+                    if (usuario == null)
+                    {
+                        ClavesSeguras.SimularVerificacion(
+                            entrada.Contraseña);
+
+                        return CredencialesIncorrectas();
+                    }
+
+                    // Durante la transición, una cuenta en texto plano
+                    // también realiza trabajo PBKDF2.
+                    if (ClavesSeguras.RequiereActualizar(usuario.Clave))
+                    {
+                        ClavesSeguras.SimularVerificacion(
+                            entrada.Contraseña);
+                    }
+
+                    bool correcta = ClavesSeguras.Verificar(
+                        entrada.Contraseña,
+                        usuario.Clave);
+
+                    if (!correcta ||
+                        !string.Equals(
+                            usuario.EstadoUsuario,
+                            "Activo",
+                            StringComparison.OrdinalIgnoreCase))
+                    {
+                        return CredencialesIncorrectas();
+                    }
+
+                    if (ClavesSeguras.RequiereActualizar(usuario.Clave))
+                    {
+                        var hash = ClavesSeguras.Crear(
+                            entrada.Contraseña);
+
+                        int filas = await db.Database
+                            .ExecuteSqlCommandAsync(
+                             @"UPDATE dbo.USUARIOS
+                             SET Contraseña = @nueva, VersionSesion = VersionSesion + 1
+                             WHERE Usuario_ID = @id
+                             AND VersionSesion = @version
+                             AND EstadoUsuario = 'Activo'
+                             AND Contraseña COLLATE Latin1_General_100_BIN2 = @anterior COLLATE Latin1_General_100_BIN2
+                             AND DATALENGTH(Contraseña) = DATALENGTH(@anterior);",
+                                ct,
+                                SeguridadSql.P(
+                                    "@nueva",
+                                    SqlDbType.NVarChar,
+                                    hash,
+                                    255),
+                                SeguridadSql.P(
+                                    "@id",
+                                    SqlDbType.Int,
+                                    usuario.Usuario_ID),
+                                SeguridadSql.P(
+                                    "@version",
+                                    SqlDbType.BigInt,
+                                    usuario.VersionSesion),
+                                SeguridadSql.P(
+                                    "@anterior",
+                                    SqlDbType.NVarChar,
+                                    usuario.Clave,
+                                    255));
+
+                        if (filas != 1)
                         {
-                            string cnAudit = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-                            string origenIp = null;
-                            try { origenIp = System.Web.HttpContext.Current?.Request?.UserHostAddress; } catch { }
-                            using (var dbAudit = new SGTLAuditContext(cnAudit))
-                            {
-                                dbAudit.Database.ExecuteSqlCommand(
-                                    "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
-                                    "VALUES (GETDATE(), @usu, 'LOGIN', 'USUARIOS', @clave, NULL, @detalle, @origen)",
-                                    new SqlParameter("@usu", (object)user.Nombre_Usuario ?? DBNull.Value),
-                                    new SqlParameter("@clave", "Usuario_ID=" + user.Usuario_ID),
-                                    new SqlParameter("@detalle", "Inicio de sesión"),
-                                    new SqlParameter("@origen", (object)origenIp ?? DBNull.Value));
-                            }
+                            return CredencialesIncorrectas();
                         }
-                        catch { }
 
-                        var response = new LoginResponseDTO
-                        {
-                            Token = token,
-                            Nombre_Usuario = user.Nombre_Usuario,
-                            Nombre = user.Nombre, // Incluir Nombre en la respuesta
-                            Apellido = user.Apellido, // Incluir Apellido en la respuesta
-                            Rol = user.Rol
-                        };
-
-                        return Ok(response);
+                        usuario.Clave = hash;
+                        usuario.VersionSesion++;
                     }
-                    catch (Exception ex)
+                    // Un cambio simultáneo de contraseña, estado o rol
+                    // impide emitir una sesión con los datos anteriores.
+                    var vigentes = await db.Database
+                        .SqlQuery<UsuarioAcceso>(
+                            SeguridadSql.Usuario +
+                            @"WHERE Usuario_ID = @id
+                            AND VersionSesion = @version
+                            AND EstadoUsuario = 'Activo'
+                            AND Contraseña COLLATE Latin1_General_100_BIN2 = @clave COLLATE Latin1_General_100_BIN2
+                            AND DATALENGTH(Contraseña) = DATALENGTH(@clave);",
+                            SeguridadSql.P(
+                                "@id",
+                                SqlDbType.Int,
+                                usuario.Usuario_ID),
+                            SeguridadSql.P(
+                                "@version",
+                                SqlDbType.BigInt,
+                                usuario.VersionSesion),
+                            SeguridadSql.P(
+                                "@clave",
+                                SqlDbType.NVarChar,
+                                usuario.Clave,
+                                255))
+                        .ToListAsync(ct);
+
+                    if (vigentes.Count != 1)
                     {
-                        return Content(HttpStatusCode.InternalServerError, new { error = $"Error inesperado: {ex.Message}" });
+                        return CredencialesIncorrectas();
                     }
+
+                    usuario = vigentes[0];
+
+                    var token = SesionSegura.Emitir(usuario);
+
+                    SeguridadSql.Auditar(
+                        usuario.Nombre_Usuario,
+                        "LOGIN",
+                        usuario.Usuario_ID);
+
+                    return Ok(new LoginResponseDTO
+                    {
+                        Token = token,
+                        Nombre_Usuario = usuario.Nombre_Usuario,
+                        Nombre = usuario.Nombre,
+                        Apellido = usuario.Apellido,
+                        Rol = usuario.Rol
+                    });
                 }
             }
-
-            // Devolver los errores de validación con un estado 401 Unauthorized
-            if (validationErrors.Count > 0)
+            catch (OperationCanceledException)
             {
-                return Content(HttpStatusCode.Unauthorized, validationErrors);
+                throw;
             }
-
-            return Ok();
-        }
-
-        // Método para verificar si el usuario existe en la base de datos
-        private bool UserExists(string nombreUsuario)
-        {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
+            catch
             {
-                return db.Set<USUARIOS>().Any(user => user.Nombre_Usuario.ToLower() == nombreUsuario.ToLower());
+                return Content(
+                    HttpStatusCode.InternalServerError,
+                    new
+                    {
+                        error = "No se pudo iniciar sesión."
+                    });
             }
         }
 
-        // Método para verificar si la contraseña es correcta para algún usuario (sin importar el nombre de usuario)
-        private bool IsPasswordValid(string password)
+        private IHttpActionResult CredencialesIncorrectas()
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
-            {
-                return db.Set<USUARIOS>().Any(user => user.Contraseña == password);
-            }
-        }
-
-        // Método para autenticar un usuario específico por nombre de usuario y contraseña
-        private USUARIOS Authenticate(LoginRequestDTO userLogin)
-        {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-            using (var db = new SGTLAuditContext(connectionString))
-            {
-                return db.Set<USUARIOS>().FirstOrDefault(user =>
-                    user.Nombre_Usuario.ToLower() == userLogin.Nombre_Usuario.ToLower() &&
-                    user.Contraseña == userLogin.Contraseña);
-            }
-        }
-
-        private string Generate(USUARIOS user)
-        {
-            if (string.IsNullOrEmpty(JwtConfig.SecretKey))
-                throw new ArgumentException("La clave JWT no está configurada o es nula.");
-
-            var securitykey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtConfig.SecretKey));
-            var credentials = new SigningCredentials(securitykey, SecurityAlgorithms.HmacSha256);
-
-            // Crear los Claims
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Nombre_Usuario),
-                new Claim(ClaimTypes.Name, user.Nombre),
-                new Claim(ClaimTypes.Surname, user.Apellido),
-                new Claim(ClaimTypes.Role, user.Rol)
-            };
-
-            var token = new JwtSecurityToken(
-                JwtConfig.Issuer,
-                JwtConfig.Audience,
-                claims,
-                expires: DateTime.Now.AddMinutes(JwtConfig.ExpirationMinutes),
-                signingCredentials: credentials);
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
+            return Content(
+                HttpStatusCode.Unauthorized,
+                new
+                {
+                    General = "Usuario o contraseña incorrectos."
+                });
         }
     }
 }

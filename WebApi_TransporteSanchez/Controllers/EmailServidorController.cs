@@ -109,7 +109,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 if (!ModelState.IsValid) return BadRequest(ModelState);
 
                 var asignacion = await perfiles.GuardarAsignacionAsync(
-                    codigo, entrada.Service.Value, usuario, ct);
+                    codigo, entrada.Service.Value, entrada.UrlLogin, usuario, ct);
                 if (asignacion == null) return BadRequest("El perfil SMTP seleccionado ya no existe.");
                 return Ok(asignacion);
             }, ct);
@@ -173,8 +173,13 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static string CodigoModulo(string modulo)
         {
-            var codigo = (modulo ?? string.Empty).ToUpperInvariant();
-            return codigo == "FACTURACION" || codigo == "PRESUPUESTOS" ? codigo : null;
+            var codigo = (modulo ?? string.Empty).Trim().ToUpperInvariant();
+
+            return codigo == "FACTURACION" ||
+                   codigo == "PRESUPUESTOS" ||
+                   codigo == "RECUPERO_CONTRASENA"
+                ? codigo
+                : null;
         }
     }
 
@@ -221,6 +226,9 @@ namespace WebApi_TransporteSanchez.Controllers
     public sealed class AsignacionEmailEntrada
     {
         public short? Service { get; set; }
+
+        [StringLength(1024)]
+        public string UrlLogin { get; set; }
     }
 
     public sealed class AsignacionEmailSalida
@@ -230,6 +238,7 @@ namespace WebApi_TransporteSanchez.Controllers
         public short EmailServidorID { get; set; }
         public string Perfil { get; set; }
         public string Remitente { get; set; }
+        public string UrlLogin { get; set; }
     }
 
     public sealed class PruebaEmailEntrada
@@ -257,7 +266,17 @@ namespace WebApi_TransporteSanchez.Controllers
         Task<PerfilEmailSalida> EditarAsync(int id, PerfilEmailEntrada entrada, string usuario, CancellationToken ct);
         Task<bool> EliminarAsync(int id, string usuario, CancellationToken ct);
         Task<AsignacionEmailSalida> ObtenerAsignacionAsync(string modulo, CancellationToken ct);
-        Task<AsignacionEmailSalida> GuardarAsignacionAsync(string modulo, short service, string usuario, CancellationToken ct);
+        Task<AsignacionEmailSalida> GuardarAsignacionAsync(
+            string modulo,
+            short service,
+            string urlLogin,
+            string usuario,
+            CancellationToken ct);
+        Task EnviarRecuperoAsync(
+            string destino,
+            string asunto,
+            string cuerpoHtml,
+            CancellationToken ct);
         Task<bool> EnviarPruebaAsync(int id, string destino, string usuario, CancellationToken ct);
     }
 

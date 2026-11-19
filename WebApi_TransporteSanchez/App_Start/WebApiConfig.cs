@@ -17,6 +17,12 @@ namespace WebApi_TransporteSanchez
 
             config.EnableCors(cors);
 
+            // Validar la sesión en los endpoints de la API.
+            //**config.Filters.Add(new Security.FiltroSesionSegura());
+
+            // No devolver detalles técnicos de excepciones al cliente.
+            config.IncludeErrorDetailPolicy = IncludeErrorDetailPolicy.Never;
+
             // Rutas de API web
             config.MapHttpAttributeRoutes();
 

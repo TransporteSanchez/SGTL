@@ -4,356 +4,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transporte Sanchez - Sistema de Gestionar viajes</title>
-    <!-- Estilos reutilizados -->
+    <title>Transporte Sánchez - Iniciar sesión</title>
+    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
-    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
-
+    <link rel="stylesheet" href="./assets/static/css/sgtl.css">
     <style>
-        /* Estilos personalizados */
-        .left-section {
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            background-color: #c7e4e4; /* Color de fondo por defecto */
-        }
-
-        .left-section img {
-            max-width: 200px;
-        }
-
-        .left-section h1 {
-            margin-top: 20px;
-            font-size: 2.5rem;
-        }
-
-        .right-section {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #ffffff; /* Fondo blanco para la sección derecha */
+        #loginPage {
+            background-color: #c7e4e4;
         }
 
         .login-card {
-            width: 100%;
             max-width: 400px;
-            border-radius: 10px;
-            padding: 40px;
-            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
-            position: relative;
         }
 
-        .input-group-text {
-            cursor: pointer;
+        .left-section img,
+        #logoDerecho {
+            max-width: 200px;
         }
 
-        .loading-spinner {
-            display: none;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .error-message {
-            color: #dc3545;
-            font-size: 0.875em;
-            display: none;
+        @media (min-width: 992px) {
+            .right-section {
+                background-color: var(--bs-body-bg);
+            }
         }
     </style>
 </head>
 
-<body>
-    <div class="container-fluid">
-        <div class="row vh-100">
-            <!-- Sección izquierda -->
-            <div class="col-lg-6 left-section d-none d-lg-flex">
-                <div class="text-center">
-                    <img id="logoIzquierdo" src="./assets/compiled/svg/ts-logo2.svg" alt="Logo Izquierdo" style="width: 500px;">
-                </div>
-            </div>
-
-            <!-- Notificación de error -->
-            <div class="position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-                <div class="toast align-items-center text-white bg-danger border-0" role="alert" id="alert-error"
-                    aria-live="assertive" aria-atomic="true" style="display: none;">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            Ocurrió un error al iniciar sesión
+<body id="loginPage">
+    <main class="container-fluid" aria-labelledby="tituloLogin">
+        <div class="row min-vh-100">
+            <section class="col-lg-6 left-section d-none d-lg-flex align-items-center justify-content-center p-4"
+                aria-label="Identidad institucional">
+                <img id="logoIzquierdo" src="./assets/compiled/svg/ts-logo2.svg" class="img-fluid w-100"
+                    alt="Logo de Transporte Sánchez">
+            </section>
+            <section class="col-12 col-lg-6 right-section d-flex align-items-center justify-content-center p-3 p-sm-4">
+                <div class="login-card card w-100 shadow mb-0">
+                    <div class="card-body p-4 p-sm-5">
+                        <div class="text-center mb-4">
+                            <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" class="img-fluid w-100"
+                                alt="Transporte Sánchez">
                         </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"
-                            aria-label="Close"></button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sección derecha -->
-            <div class="col-lg-6 right-section">
-                <div class="login-card card">
-                    <div class="text-center mb-4">
-                        <img id="logoDerecho" src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo Derecho" style="width: 200px;">
-                    </div>
-                    <h5 class="text-center mb-4">Iniciar sesión</h5>
-                    <!-- Formulario -->
-                    <form id="loginForm">
-                        <div class="mb-3">
-                            <label for="username" class="form-label">Usuario</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username"
-                                    placeholder="Ingrese su usuario">
+                        <h1 id="tituloLogin" class="h4 text-center mb-4">Iniciar sesión</h1>
+                        <div id="contenidoFeedback" class="alert alert-warning d-none" role="status"></div>
+                        <p id="contenidoEstado" class="small text-muted text-center" role="status">
+                            Cargando configuración de la pantalla…
+                        </p>
+                        <form id="loginForm" novalidate>
+                            <div id="generalError" class="alert alert-danger d-none" role="alert"></div>
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Usuario</label>
+                                <div class="input-group has-validation">
+                                    <span class="input-group-text"><i class="bi bi-person"
+                                            aria-hidden="true"></i></span>
+                                    <input type="text" class="form-control" id="username" name="username" maxlength="50"
+                                        autocomplete="username" autocapitalize="none" spellcheck="false"
+                                        aria-describedby="userError" required>
+                                    <div id="userError" class="invalid-feedback"></div>
+                                </div>
                             </div>
-                            <small id="userError" class="error-message"></small>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Contraseña</label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fa fa-lock"></i></span>
-                                <input type="password" class="form-control" id="password" name="password"
-                                    placeholder="Ingrese su contraseña">
-                                <span class="input-group-text" id="togglePassword" onclick="togglePassword()">
-                                    <i class="fa fa-eye" id="eyeIcon"></i>
-                                </span>
+                            <div class="mb-4">
+                                <label for="password" class="form-label">Contraseña</label>
+                                <div class="input-group has-validation">
+                                    <span class="input-group-text"><i class="bi bi-lock" aria-hidden="true"></i></span>
+                                    <input type="password" class="form-control" id="password" name="password"
+                                        maxlength="1024" autocomplete="current-password" aria-describedby="passError"
+                                        required>
+                                    <button type="button" id="togglePassword" class="btn btn-outline-secondary"
+                                        aria-label="Mostrar contraseña" aria-controls="password" aria-pressed="false">
+                                        <i id="eyeIcon" class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                    <div id="passError" class="invalid-feedback"></div>
+                                </div>
                             </div>
-                            <small id="passError" class="error-message"></small>
+                            <div class="d-grid">
+                                <button type="submit" id="btnIngresar" class="btn btn-primary">Ingresar</button>
+                            </div>
+                        </form>
+                        <div id="footerContent" class="text-center text-muted small mt-4">
+                            2024 © Integra Analistas
                         </div>
-
-                        <small id="generalError" class="error-message text-center mb-3 d-block" style="display: none;"></small>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Entrar</button>
-                        </div>
-                    </form>
-
-                    <!-- Loading Spinner -->
-                    <div class="loading-spinner" id="loadingSpinner">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="visually-hidden">Cargando...</span>
-                        </div>
-                    </div>
-
-                    <div class="text-center mt-4" id="footerContent">
-                        <small>2024 © Integra Analistas</small>
                     </div>
                 </div>
-            </div>
+            </section>
         </div>
-    </div>
-
-    <!-- Librería de Bootstrap -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
+    </main>
+    <script src="./assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="./assets/compiled/js/app.js"></script>
+    <script src="./assets/static/js/sgtl-ui.js"></script>
     <script>
-        // Función para alternar visibilidad de la contraseña
-        function togglePassword() {
-            const passwordInput = document.getElementById('password');
-            const eyeIcon = document.getElementById('eyeIcon');
+        (() => {
+            'use strict';
+            const porId = id => document.getElementById(id);
+            const formulario = porId('loginForm'), usuario = porId('username'), clave = porId('password');
+            const botonIngresar = porId('btnIngresar'), botonMostrar = porId('togglePassword');
+            const aviso = porId('generalError');
+            let enviando = false;
 
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                eyeIcon.classList.remove('fa-eye');
-                eyeIcon.classList.add('fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                eyeIcon.classList.remove('fa-eye-slash');
-                eyeIcon.classList.add('fa-eye');
+            const validacion = SGTL.validador([
+                { id: 'username', requerido: 'Ingresá tu usuario.' },
+                { id: 'password', requerido: 'Ingresá tu contraseña.' }
+            ]);
+
+            function mostrarContrasena(mostrar) {
+                clave.type = mostrar ? 'text' : 'password';
+                porId('eyeIcon').classList.toggle('bi-eye', !mostrar);
+                porId('eyeIcon').classList.toggle('bi-eye-slash', mostrar);
+                botonMostrar.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+                botonMostrar.setAttribute('aria-pressed', String(mostrar));
             }
-        }
 
-        // Mostrar u ocultar el spinner de carga
-        function showLoadingSpinner(show) {
-            document.getElementById('loadingSpinner').style.display = show ? 'block' : 'none';
-        }
+            botonMostrar.addEventListener('pointerdown', evento => {
+                if (enviando || botonMostrar.disabled || evento.button !== 0 || !evento.isPrimary) return;
+                evento.preventDefault();
+                botonMostrar.setPointerCapture(evento.pointerId);
+                mostrarContrasena(true);
+            });
+            ['pointerup', 'pointercancel', 'lostpointercapture', 'blur'].forEach(tipo => {
+                botonMostrar.addEventListener(tipo, () => mostrarContrasena(false));
+            });
+            botonMostrar.addEventListener('keydown', evento => {
+                if (evento.key !== ' ' && evento.key !== 'Enter') return;
+                evento.preventDefault();
+                if (!enviando && !botonMostrar.disabled) { mostrarContrasena(true); }
+            });
+            botonMostrar.addEventListener('keyup', evento => {
+                if (evento.key !== ' ' && evento.key !== 'Enter') return;
+                evento.preventDefault();
+                mostrarContrasena(false);
+            });
+            window.addEventListener('blur', () => mostrarContrasena(false));
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) mostrarContrasena(false);
+            });
 
-        // Cargar contenido de la API GestionContenido usando XHR
-        function loadContent() {
-            showLoadingSpinner(true);
-
-            const xhr = new XMLHttpRequest();
-            xhr.open("GET", "http://localhost:50222/api/GestionContenido/1", true);
-
-            xhr.onreadystatechange = function () {
-                if (xhr.readyState === 4) {  // La solicitud ha terminado
-                    if (xhr.status === 200) {  // Estado exitoso
-                        try {
-                            const data = JSON.parse(xhr.responseText);
-                            console.log("Respuesta completa de GestionContenido:", data);
-
-                            // Verificar si la respuesta es un objeto o un array
-                            let content;
-                            if (Array.isArray(data) && data.length > 0) {
-                                content = data[0];
-                            } else if (typeof data === 'object') {
-                                content = data;
-                            } else {
-                                console.error("Formato de respuesta inesperado:", data);
-                                throw new Error("Formato de respuesta inesperado");
-                            }
-
-                            console.log("Contenido recibido:", content);
-
-                            // Asignar Logo tanto al logo izquierdo como al derecho
-                            if (content.Logo) {
-                                document.getElementById('logoIzquierdo').src = content.Logo;
-                                document.getElementById('logoDerecho').src = content.Logo;
-                                console.log("Logo asignado:", content.Logo);
-                            } else {
-                                console.warn("Logo no está disponible.");
-                                document.getElementById('logoIzquierdo').src = './assets/compiled/svg/default-logo.svg';
-                                document.getElementById('logoDerecho').src = './assets/compiled/svg/default-logo.svg';
-                            }
-
-                            // Asignar ColorFondo si existe
-                            if (content.ColorFondo) {
-                                document.querySelector('.left-section').style.backgroundColor = content.ColorFondo;
-                                console.log("ColorFondo asignado:", content.ColorFondo);
-                            } else {
-                                console.warn("ColorFondo no está disponible.");
-                            }
-
-                            // Asignar ContenidoPiePagina si existe
-                            if (content.ContenidoPiePagina) {
-                                document.getElementById('footerContent').innerHTML = content.ContenidoPiePagina;
-                                console.log("ContenidoPiePagina asignado:", content.ContenidoPiePagina);
-                            } else {
-                                console.warn("ContenidoPiePagina no está disponible.");
-                            }
-                        } catch (e) {
-                            console.error("Error al parsear la respuesta JSON:", e);
-                            mostrarToastError();
-                        }
-                    } else {
-                        console.error("Error al cargar el contenido. Estado HTTP:", xhr.status);
-                        mostrarToastError();
+            function cargarContenido() {
+                $.ajax({
+                    url: SGTL.api + '/GestionContenido/1', method: 'GET', dataType: 'json', timeout: 15000
+                }).done(datos => {
+                    const contenido = Array.isArray(datos) ? datos[0] : datos;
+                    if (!contenido || typeof contenido !== 'object') {
+                        SGTL.avisoFormulario(porId('contenidoFeedback'),
+                            'No se pudo cargar la configuración de la pantalla. Podés intentar ingresar.');
+                        return;
                     }
-                    showLoadingSpinner(false);
-                }
-            };
-
-            xhr.onerror = function () {
-                console.error("Error de red al intentar conectar con la API GestionContenido.");
-                mostrarToastError();
-                showLoadingSpinner(false);
-            };
-
-            xhr.send();
-        }
-
-        // Mostrar una notificación de error usando Bootstrap Toast
-        function mostrarToastError() {
-            const toastEl = document.getElementById('alert-error');
-            toastEl.style.display = 'block';
-            const toast = new bootstrap.Toast(toastEl);
-            toast.show();
-        }
-
-        // Llamada a la API al cargar la página
-        window.onload = loadContent;
-
-        // Gestión del formulario de login
-        document.getElementById('loginForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-
-            // Obtener los valores ingresados
-            const username = document.getElementById('username').value.trim();
-            const password = document.getElementById('password').value.trim();
-
-            // Limpiar mensajes de error previos
-            document.getElementById('userError').style.display = 'none';
-            document.getElementById('userError').textContent = '';
-            document.getElementById('passError').style.display = 'none';
-            document.getElementById('passError').textContent = '';
-            document.getElementById('generalError').style.display = 'none';
-            document.getElementById('generalError').textContent = '';
-
-            if (username && password) {
-                showLoadingSpinner(true);
-
-                const xhrLogin = new XMLHttpRequest();
-                xhrLogin.open("POST", "http://localhost:50222/api/login", true);
-                xhrLogin.setRequestHeader("Content-Type", "application/json");
-
-                xhrLogin.onreadystatechange = function () {
-                    if (xhrLogin.readyState === 4) {  // La solicitud ha terminado
-                        showLoadingSpinner(false);
-                        if (xhrLogin.status === 200) {  // Estado exitoso
-                            try {
-                                const data = JSON.parse(xhrLogin.responseText);
-                                console.log("Respuesta de login exitoso:", data);
-
-                                // Guardar token, rol, usuario, nombre y apellido en localStorage
-                                localStorage.setItem('token', data.Token);
-                                localStorage.setItem('username', data.Nombre_Usuario);
-                                localStorage.setItem('userRole', data.Rol);
-                                localStorage.setItem('nombre', data.Nombre);
-                                localStorage.setItem('apellido', data.Apellido);
-
-                                // Redirigir al usuario al dashboard
-                                window.location.href = 'index.html';
-                            } catch (e) {
-                                console.error("Error al parsear la respuesta JSON de login:", e);
-                                mostrarToastError();
-                            }
-                        } else if (xhrLogin.status === 401) {  // Error de autenticación
-                            try {
-                                const errorData = JSON.parse(xhrLogin.responseText);
-                                console.log("Errores de autenticación:", errorData);
-
-                                // Mostrar errores específicos
-                                if (errorData.Nombre_Usuario) {
-                                    document.getElementById('userError').textContent = errorData.Nombre_Usuario;
-                                    document.getElementById('userError').style.display = 'block';
-                                }
-                                if (errorData.Contraseña) {
-                                    document.getElementById('passError').textContent = errorData.Contraseña;
-                                    document.getElementById('passError').style.display = 'block';
-                                }
-                                if (errorData.General) {
-                                    document.getElementById('generalError').textContent = errorData.General;
-                                    document.getElementById('generalError').style.display = 'block';
-                                }
-                            } catch (e) {
-                                console.error("Error al parsear la respuesta JSON de error de login:", e);
-                                mostrarToastError();
-                            }
-                        } else {  // Otros errores
-                            console.error("Error al iniciar sesión. Estado HTTP:", xhrLogin.status);
-                            mostrarToastError();
-                        }
+                    if (typeof contenido.ColorFondo === 'string' && contenido.ColorFondo.trim()) {
+                        porId('loginPage').style.backgroundColor = contenido.ColorFondo.trim();
                     }
-                };
-
-                xhrLogin.onerror = function () {
-                    console.error("Error de red al intentar conectar con la API de login.");
-                    mostrarToastError();
-                    showLoadingSpinner(false);
-                };
-
-                const requestBody = JSON.stringify({
-                    Nombre_Usuario: username,
-                    Contraseña: password
+                    if (typeof contenido.Logo === 'string' && contenido.Logo.trim()) {
+                        porId('logoIzquierdo').src = contenido.Logo.trim();
+                        porId('logoDerecho').src = contenido.Logo.trim();
+                    }
+                    if (typeof contenido.ContenidoPiePagina === 'string' && contenido.ContenidoPiePagina.trim()) {
+                        porId('footerContent').innerHTML = contenido.ContenidoPiePagina;
+                    }
+                }).fail(() => {
+                    SGTL.avisoFormulario(porId('contenidoFeedback'),
+                        'No se pudo cargar la configuración de la pantalla. Podés intentar ingresar.');
+                }).always(() => {
+                    porId('contenidoEstado').classList.add('d-none');
                 });
-
-                console.log("Enviando solicitud a la API de login con:", requestBody);
-                xhrLogin.send(requestBody);
-            } else {
-                // Mostrar mensajes de error si los campos están vacíos
-                if (!username) {
-                    document.getElementById('userError').textContent = 'El usuario es requerido.';
-                    document.getElementById('userError').style.display = 'block';
-                }
-                if (!password) {
-                    document.getElementById('passError').textContent = 'La contraseña es requerida.';
-                    document.getElementById('passError').style.display = 'block';
-                }
             }
-        });
-    </script>
 
+            function mensajeDeError(xhr) {
+                if (xhr.status === 0) {
+                    return 'No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.';
+                }
+                const datos = xhr.responseJSON || {}, mensaje = datos.General || datos.error;
+                if (typeof mensaje === 'string' && mensaje.trim()) { return mensaje; }
+                if (xhr.status === 401) { return 'Usuario o contraseña incorrectos.'; }
+                if (xhr.status === 429) { return 'Esperá unos minutos antes de volver a intentar.'; }
+                return 'No se pudo iniciar sesión. Probá de nuevo.';
+            }
+
+            formulario.addEventListener('submit', evento => {
+                evento.preventDefault();
+                mostrarContrasena(false);
+                if (enviando) return;
+                SGTL.avisoFormulario(aviso, '');
+                if (!validacion.validarTodo()) {
+                    SGTL.revisarFormulario(formulario, aviso);
+                    return;
+                }
+
+                enviando = true;
+                usuario.readOnly = true;
+                clave.readOnly = true;
+                botonMostrar.disabled = true;
+                const listo = SGTL.procesando(botonIngresar, 'Ingresando…');
+
+                // El 401 del login representa credenciales incorrectas.
+                // Se maneja acá para evitar el cierre de sesión de SGTL.ajax.
+                $.ajax({
+                    url: SGTL.api + '/login', method: 'POST',
+                    contentType: 'application/json; charset=utf-8', dataType: 'json', timeout: 30000,
+                    data: JSON.stringify({ Nombre_Usuario: usuario.value.trim(), Contraseña: clave.value })
+                }).done(datos => {
+                    if (!datos || typeof datos.Token !== 'string' || !datos.Token.trim() ||
+                        typeof datos.Nombre_Usuario !== 'string' || !datos.Nombre_Usuario.trim()) {
+                        SGTL.avisoFormulario(aviso,
+                            'No se pudo completar el inicio de sesión. Probá de nuevo.');
+                        return;
+                    }
+                    const sesion = {
+                        token: datos.Token, username: datos.Nombre_Usuario, userRole: datos.Rol || '',
+                        nombre: datos.Nombre || '', apellido: datos.Apellido || ''
+                    };
+                    try {
+                        Object.entries(sesion).forEach(([nombre, valor]) => { localStorage.setItem(nombre, valor); });
+                        window.location.href = 'index.html';
+                    } catch {
+                        Object.keys(sesion).forEach(nombre => {
+                            try { localStorage.removeItem(nombre); } catch { }
+                        });
+                        SGTL.avisoFormulario(aviso,
+                            'No se pudo guardar la sesión. Revisá que el navegador permita el almacenamiento local.');
+                    }
+                }).fail(xhr => {
+                    SGTL.avisoFormulario(aviso, mensajeDeError(xhr));
+                }).always(() => {
+                    listo();
+                    usuario.readOnly = false;
+                    clave.readOnly = false;
+                    botonMostrar.disabled = false;
+                    enviando = false;
+                });
+            });
+            cargarContenido();
+        })();
+    </script>
 </body>
 
 </html>
