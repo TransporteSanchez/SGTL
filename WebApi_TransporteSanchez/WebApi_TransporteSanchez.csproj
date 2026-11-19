@@ -431,6 +431,7 @@
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />
     <Compile Include="Controllers\TarifasKmController.cs" />
+    <Compile Include="Controllers\RecuperoContrasenaController.cs" />
     <Compile Include="DESTINO.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
@@ -471,6 +472,7 @@
     <Compile Include="Security\LimitesAcceso.cs" />
     <Compile Include="Security\SeguridadSql.cs" />
     <Compile Include="Security\SesionSegura.cs" />
+    <Compile Include="Security\RecuperoContrasena.cs" />
     <Compile Include="SGTL.Context.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
