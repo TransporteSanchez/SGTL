@@ -65,7 +65,7 @@
         var guardada = '';
         try { guardada = localStorage.getItem(CLAVE_PESTANA) || ''; } catch (error) { guardada = ''; }
         var boton = document.getElementById('tab-' + guardada);
-        if (boton && window.bootstrap && bootstrap.Tab) bootstrap.Tab.getOrCreateInstance(boton).show();
+        if (boton) boton.click();
         pestanas.addEventListener('shown.bs.tab', function (evento) {
             try { localStorage.setItem(CLAVE_PESTANA, evento.target.getAttribute('data-tema')); } catch (error) { }
         });

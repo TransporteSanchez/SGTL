@@ -72,7 +72,7 @@ function markActiveSidebarItem() {
           <div class="d-flex justify-content-between align-items-center">
               <div class="logo">
                   <a href="index.html">
-                      <img src="./assets/compiled/svg/ts-logo-text.svg" alt="Logo" style="width: 240px; height: 160px">
+                    <img src="./assets/static/images/logo/sgtl-logo.png" alt="Logo de SGTL" style="width: 220px; max-width: 100%; height: auto;">
                   </a>
               </div>
               <div class="sidebar-toggler x">
@@ -85,6 +85,7 @@ function markActiveSidebarItem() {
       <div class="sidebar-menu">
           <ul class="menu">
               <li class="sidebar-item"><a href="index.html" class="sidebar-link"><i class="bi bi-grid-fill"></i><span>Dashboard</span></a></li>
+              <li class="sidebar-item"><a href="tableros.html" class="sidebar-link"><i class="bi bi-bar-chart-line"></i><span>Tableros</span></a></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-file-earmark-person"></i><span>Choferes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-choferes.html" class="submenu-link">Listar choferes</a></li><li class="submenu-item"><a href="gestion-choferes.html" class="submenu-link">Gestionar choferes</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-truck"></i><span>Camiones</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-camiones.html" class="submenu-link">Listar camiones</a></li><li class="submenu-item"><a href="gestion-camiones.html" class="submenu-link">Gestionar camiones</a></li></ul></li>
               <li class="sidebar-item has-sub"><a href="#" class="sidebar-link"><i class="bi bi-person-workspace"></i><span>Clientes</span></a><ul class="submenu"><li class="submenu-item"><a href="listado-clientes.html" class="submenu-link">Listar clientes</a></li><li class="submenu-item"><a href="gestion-clientes.html" class="submenu-link">Gestionar clientes</a></li></ul></li>
@@ -101,6 +102,10 @@ function markActiveSidebarItem() {
 var API_PERM = 'http://localhost:50222/api';
 var MENU_TO_PAGE = {
   'dashboard': 'index.html',
+  'tableros de viajes': 'tableros.html',
+  'tableros de flota': 'tableros.html',
+  'tableros de choferes': 'tableros.html',
+  'tableros de facturacion': 'tableros.html',
   'listado de choferes': 'listado-choferes.html',
   'gestion de choferes': 'gestion-choferes.html',
   'listado de camiones': 'listado-camiones.html',
