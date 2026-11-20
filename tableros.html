@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transporte Sánchez - Tableros</title>
+    <link rel="shortcut icon" href="assets/compiled/svg/ts-icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="assets/compiled/css/app.css">
+    <link rel="stylesheet" href="assets/compiled/css/iconly.css">
+    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="assets/static/css/sgtl.css">
+    <link rel="stylesheet" href="assets/static/css/tableros.css">
+</head>
+<body>
+    <script src="assets/compiled/js/app.js"></script>
+    <div id="app">
+        <div id="sidebar"></div>
+        <div id="main" class="layout-navbar navbar-fixed">
+            <header>
+                <nav class="navbar navbar-expand navbar-light navbar-top">
+                    <div class="container-fluid">
+                        <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
+                            <i class="bi bi-justify fs-3" aria-hidden="true"></i>
+                        </a>
+                        <div id="header-container"></div>
+                    </div>
+                </nav>
+            </header>
+            <main class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4">
+                    <div class="card rounded mb-3">
+                        <div class="card-header">
+                            <h1 class="card-title h5 mb-1">Tableros</h1>
+                            <p class="text-muted mb-0">Marcá con la estrella los que querés ver en el inicio.</p>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-end">
+                                <div class="col-12 col-md-auto">
+                                    <span class="form-label d-block" id="periodoEtiqueta">Período</span>
+                                    <div class="btn-group" role="group" aria-labelledby="periodoEtiqueta">
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoMes" value="mes">
+                                        <label class="btn btn-outline-primary" for="periodoMes">Último mes</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoTrimestre" value="trimestre" checked>
+                                        <label class="btn btn-outline-primary" for="periodoTrimestre">Trimestre</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoSemestre" value="semestre">
+                                        <label class="btn btn-outline-primary" for="periodoSemestre">Semestre</label>
+                                        <input type="radio" class="btn-check" name="periodo" id="periodoAnio" value="anio">
+                                        <label class="btn btn-outline-primary" for="periodoAnio">Año</label>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3">
+                                    <label for="periodoRango" class="form-label">Otras fechas</label>
+                                    <input type="text" id="periodoRango" class="form-control" placeholder="Desde y hasta" aria-label="Desde y hasta">
+                                </div>
+                            </div>
+                            <p id="periodoTexto" class="text-muted mb-0 mt-3"></p>
+                            <p id="tablerosMas" class="d-md-none small text-muted mt-3 mb-2">Deslizá para ver los otros temas.</p>
+                            <ul class="nav nav-tabs flex-nowrap overflow-auto" id="tablerosPestanas" role="tablist"></ul>
+                            <div class="tab-content pt-3" id="tablerosPaneles"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+            <footer><div id="footer-container"></div></footer>
+        </div>
+    </div>
+    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/static/js/components/sidebar.js"></script>
+    <script src="assets/static/js/sidebar-loader.js"></script>
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
+    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
+    <script src="assets/extensions/flatpickr/l10n/es.js"></script>
+    <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/tableros-catalogo.js"></script>
+    <script src="assets/static/js/tableros.js"></script>
+    <script src="assets/static/js/dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
+            window.loadFooter();
+            fetch(SGTL.api + '/GestionContenido/1').then(function (respuesta) {
+                if (!respuesta.ok) throw new Error('HTTP ' + respuesta.status);
+                return respuesta.json();
+            }).then(function (contenido) {
+                window.applyStyles(contenido.Logo, contenido.ColorFondo, contenido.ColorBotonesMenu, contenido.ContenidoPiePagina);
+            }).catch(function (error) { console.warn('No se pudo cargar la apariencia de SGTL.', error); });
+            SGTLTablerosPagina.iniciar();
+        });
+    </script>
+</body>
+</html>
