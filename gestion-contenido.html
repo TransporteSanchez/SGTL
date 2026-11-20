@@ -12,7 +12,7 @@
     </style>
 
 
-    <link rel="shortcut icon" href="./assets/compiled/svg/ts-icon.svg" type="image/x-icon">
+    <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/static/css/sgtl.css">
@@ -72,7 +72,7 @@
                                     </div>
                                     <div class="col-md-9 form-group">
                                         <div class="d-flex align-items-center gap-3 mb-2">
-                                            <img id="logoPreview" src="./assets/compiled/svg/ts-logo-text.svg"
+                                            <img id="logoPreview" src="./assets/static/images/logo/sgtl-logo.png"
                                                 alt="Vista previa del logo"
                                                 style="height:48px; max-width:200px; object-fit:contain; background:#fff; border:1px solid #e5e7eb; border-radius:6px; padding:4px;">
                                             <div class="d-flex align-items-center">
@@ -87,7 +87,7 @@
                                         <input type="text" id="logoInput" class="form-control" name="logoInput"
                                             placeholder="Pegá una URL o ruta de imagen (o usá Examinar)">
                                         <small class="text-muted d-block mt-1" id="logoHelp">
-                                            Pegá una URL/ruta (ej. <code>./assets/compiled/svg/ts-logo-text.svg</code>) o subí un archivo
+                                            Pegá una URL/ruta (ej. <code>./assets/static/images/logo/sgtl-logo.png</code>) o subí un archivo
                                             (.png, .svg, .jpg, .webp, .ico). Máximo 1&nbsp;MB.
                                         </small>
                                     </div>
@@ -215,17 +215,18 @@
                             const colorFondo = data.ColorFondo;
                             const colorBotonesMenu = data.ColorBotonesMenu;
                             const contenidoPiePagina = data.ContenidoPiePagina;
+                            const marca = window.SGTL_CONTENIDO_DEFAULT;
 
                             if (esDataUri(logoUrl)) {
                                 uploadedLogoDataUrl = logoUrl;
                                 marcarArchivoCargado(true);
                             } else {
-                                document.getElementById('logoInput').value = logoUrl || './assets/compiled/svg/ts-logo-text.svg';
+                                document.getElementById('logoInput').value = logoUrl || marca.logo;
                             }
-                            setLogoPreview(logoUrl || './assets/compiled/svg/ts-logo-text.svg');
-                            document.getElementById('backgroundColorInput').value = colorFondo || '#D3E8DE';
-                            document.getElementById('menuColorInput').value = colorBotonesMenu || '#198754';
-                            document.getElementById('footerContentInput').value = contenidoPiePagina || '2024 &copy; Integra Analistas';
+                            setLogoPreview(logoUrl || marca.logo);
+                            document.getElementById('backgroundColorInput').value = colorFondo || marca.fondo;
+                            document.getElementById('menuColorInput').value = colorBotonesMenu || marca.menu;
+                            document.getElementById('footerContentInput').value = contenidoPiePagina || marca.pie;
 
                             applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
                             resolve();
@@ -298,12 +299,13 @@
         });
 
         function loadDefaultValues() {
-            document.getElementById('logoInput').value = './assets/compiled/svg/ts-logo-text.svg';
-            document.getElementById('backgroundColorInput').value = '#b6d8c7';
-            document.getElementById('menuColorInput').value = '#198754';
-            document.getElementById('footerContentInput').value = '2025 &copy; Integra Analistas';
+            const marca = window.SGTL_CONTENIDO_DEFAULT;
+            document.getElementById('logoInput').value = marca.logo;
+            document.getElementById('backgroundColorInput').value = marca.fondo;
+            document.getElementById('menuColorInput').value = marca.menu;
+            document.getElementById('footerContentInput').value = marca.pie;
 
-            applyStyles('./assets/compiled/svg/ts-logo-text.svg', '#b6d8c7', '#198754', '2025 &copy; Integra Analistas');
+            applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
         }
 
         const usuarioModificador = localStorage.getItem('username') || 'UsuarioDesconocido';
@@ -313,25 +315,21 @@
             loadingMessage.style.display = 'block';
             document.getElementById('app').style.display = 'none';
 
-            const defaultLogo = './assets/compiled/svg/ts-logo-text.svg';
-            const defaultFavicon = './assets/compiled/svg/ts-icon.svg';
-            const defaultColorFondo = '#b6d8c7';
-            const defaultColorBotonesMenu = '#198754';
-            const defaultContenidoPiePagina = '2025 &copy; Integra Analistas';
+            const marca = window.SGTL_CONTENIDO_DEFAULT;
 
             uploadedLogoDataUrl = null;
             marcarArchivoCargado(false);
-            document.getElementById('logoInput').value = defaultLogo;
-            setLogoPreview(defaultLogo);
-            document.getElementById('backgroundColorInput').value = defaultColorFondo;
-            document.getElementById('menuColorInput').value = defaultColorBotonesMenu;
-            document.getElementById('footerContentInput').value = defaultContenidoPiePagina;
+            document.getElementById('logoInput').value = marca.logo;
+            setLogoPreview(marca.logo);
+            document.getElementById('backgroundColorInput').value = marca.fondo;
+            document.getElementById('menuColorInput').value = marca.menu;
+            document.getElementById('footerContentInput').value = marca.pie;
 
             const settingsData = {
-                Logo: defaultLogo,
-                ColorFondo: defaultColorFondo,
-                ColorBotonesMenu: defaultColorBotonesMenu,
-                ContenidoPiePagina: defaultContenidoPiePagina,
+                Logo: marca.logo,
+                ColorFondo: marca.fondo,
+                ColorBotonesMenu: marca.menu,
+                ContenidoPiePagina: marca.pie,
                 Fecha_Modi: new Date().toISOString(),
                 Usu_Modi: usuarioModificador
             };
@@ -365,12 +363,7 @@
 
             xhr.send(JSON.stringify(settingsData));
 
-            applyStyles(defaultLogo, defaultColorFondo, defaultColorBotonesMenu, defaultContenidoPiePagina);
-
-            const favicon = document.querySelector('link[rel="shortcut icon"]');
-            if (favicon) {
-                favicon.href = defaultFavicon;
-            }
+            applyStyles(marca.logo, marca.fondo, marca.menu, marca.pie);
         }
 
         var MAX_LOGO_BYTES = 1024 * 1024;
@@ -395,7 +388,7 @@
 
         function setLogoPreview(src) {
             var img = document.getElementById('logoPreview');
-            if (img) img.src = src || './assets/compiled/svg/ts-logo-text.svg';
+            if (img) img.src = src || window.SGTL_CONTENIDO_DEFAULT.logo;
         }
 
         function marcarArchivoCargado(cargado) {
