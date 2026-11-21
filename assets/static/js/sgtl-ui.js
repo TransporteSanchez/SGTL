@@ -340,6 +340,8 @@
         'update': 'Modificación',
         'delete': 'Baja',
         'recupero contrasena': 'Recupero de contraseña',
+        'smtp test': 'Prueba de correo',
+        'email module': 'Asignación de perfil',
         'km manual': 'Km manual'
     };
 
@@ -640,7 +642,7 @@
         var envolturas = [].concat(campos).map(elemento).filter(Boolean).map(function (campo) {
             var fp = campo._flatpickr;
             var visible = fp && fp.altInput ? fp.altInput : campo;
-            var etiqueta = campo.id && document.querySelector('label[for="' + campo.id + '"]');
+            var etiqueta = visible.id && document.querySelector('label[for="' + visible.id + '"]');
             var nombre = etiqueta ? etiqueta.textContent.trim().toLowerCase() : '';
             var envoltura = document.createElement('div');
             envoltura.className = 'sgtl-filtro';
@@ -784,6 +786,12 @@
         if (window.flatpickr.l10ns && window.flatpickr.l10ns.es) base.locale = 'es';
         var fp = window.flatpickr(input, Object.assign(base, opciones));
         if (fp.calendarContainer) fp.calendarContainer.addEventListener('focusin', function (evento) { evento.stopPropagation(); });
+        if (fp.altInput && input.id) {
+            fp.altInput.id = input.id + 'Visible';
+            document.querySelectorAll('label[for="' + input.id + '"]').forEach(function (etiqueta) {
+                etiqueta.htmlFor = fp.altInput.id;
+            });
+        }
         return fp;
     }
 

@@ -139,7 +139,7 @@
     }
     function prepararViaje(viaje) {
         viaje._fecha = leerFechaApi(viaje.Fecha_Inicio);
-        viaje._km = leerKm(viaje.Distancia_KM);
+        viaje._km = Math.round(leerKm(viaje.Distancia_KM));
         viaje._grupo = grupoDe(viaje);
         viaje._clave = viaje._fecha ? claveGrupo(viaje._fecha) : '';
         return viaje;
