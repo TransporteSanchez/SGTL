@@ -480,6 +480,7 @@
     <Compile Include="PROVINCIAS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="Security\Administracion.cs" />
     <Compile Include="Security\ClavesSeguras.cs" />
     <Compile Include="Security\LimitesAcceso.cs" />
     <Compile Include="Security\SeguridadSql.cs" />
