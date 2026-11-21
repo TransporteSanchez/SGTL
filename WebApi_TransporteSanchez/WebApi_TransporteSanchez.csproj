@@ -437,6 +437,7 @@
     <Compile Include="Controllers\GruposController.cs" />
     <Compile Include="Controllers\OrigenController.cs" />
     <Compile Include="Controllers\ProvinciasController.cs" />
+    <Compile Include="Controllers\UbicacionesController.cs" />
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />
@@ -460,6 +461,7 @@
     <Compile Include="GRUPOS_USUARIOS.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
+    <Compile Include="IUbicacion.cs" />
     <Compile Include="LOCALIDADES.cs">
       <DependentUpon>SGTL.tt</DependentUpon>
     </Compile>
