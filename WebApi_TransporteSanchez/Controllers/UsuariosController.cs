@@ -39,7 +39,10 @@ namespace WebApi_TransporteSanchez.Controllers
             public long? VersionSesionOriginal { get; set; }
         }
 
-        public sealed class EstadoEntrada { public string EstadoUsuario { get; set; } }
+        public sealed class EstadoUsuarioEntrada
+        {
+            public string EstadoUsuario { get; set; }
+        }
         public sealed class ClaveEntrada
         {
             public string Nombre_Usuario { get; set; }
@@ -98,11 +101,13 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         [HttpGet, Route("MenusPermitidos")]
-        public IHttpActionResult MenusPermitidos(string username = null)
+        public IHttpActionResult MenusPermitidos()
         {
-            if (username != null && !PermisosAdministracion.Iguales(username, Operador.Nombre_Usuario))
-                return Error(HttpStatusCode.Forbidden, "Solo podés consultar tus propios permisos.");
-            return Ejecutar(db => Ok(new { Operador.Rol, Menus = PermisosAdministracion.Menus(db, Operador) }));
+            return Ejecutar(db => Ok(new
+            {
+                Operador.Rol,
+                Menus = PermisosAdministracion.Menus(db, Operador)
+            }));
         }
 
         [HttpGet, Route("Buscar")]
@@ -324,7 +329,7 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         [HttpPut, Route("EstadoUsuario/{id:int}")]
-        public IHttpActionResult EstadoUsuario(int id, EstadoEntrada entrada)
+        public IHttpActionResult EstadoUsuario(int id, EstadoUsuarioEntrada entrada)
         {
             if (entrada == null || !EstadosPermitidos.Contains(entrada.EstadoUsuario)) return Error(HttpStatusCode.BadRequest, "Seleccioná un estado válido.");
             return Ejecutar(db =>

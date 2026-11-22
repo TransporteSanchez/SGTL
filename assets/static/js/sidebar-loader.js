@@ -13,10 +13,10 @@
       payload = payload.replace(/-/g, '+').replace(/_/g, '/');
       while (payload.length % 4) payload += '=';
       var datos = JSON.parse(decodeURIComponent(escape(atob(payload))));
-      if (!datos.exp) return false;                 
-      return (datos.exp * 1000) <= Date.now();       
+      if (!datos.exp) return false;
+      return (datos.exp * 1000) <= Date.now();
     } catch (e) {
-      return true;                                   
+      return true;
     }
   }
 
@@ -33,40 +33,40 @@
 })();
 
 function markActiveSidebarItem() {
-    const sidebar = document.getElementById('sidebar');
-    if (!sidebar) return;
-  
-    const currentPage = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
-  
-    sidebar.querySelectorAll('.sidebar-item').forEach((el) => el.classList.remove('active'));
-    sidebar.querySelectorAll('.submenu-item').forEach((el) => el.classList.remove('active'));
-  
-    const activeLinks = sidebar.querySelectorAll('.sidebar-item a[href]');
-    let activeLink = null;
-  
-    activeLinks.forEach((link) => {
-      const href = (link.getAttribute('href') || '').toLowerCase();
-      if (href && href !== '#' && href === currentPage && !activeLink) {
-        activeLink = link;
-      }
-    });
-  
-    if (!activeLink) return;
-  
-    const submenuItem = activeLink.closest('.submenu-item');
-    if (submenuItem) submenuItem.classList.add('active');
-  
-    const sidebarItem = activeLink.closest('.sidebar-item');
-    if (sidebarItem) sidebarItem.classList.add('active');
-  }
-  
-  function esAdmin() {
-    return normalizaPerm(localStorage.getItem('userRole')) === 'admin';
-  }
-  
-  function buildFallbackSidebarHtml() {
-    var soloAdmin = esAdmin() ? '' : ' d-none';
-    return `
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+
+  const currentPage = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+
+  sidebar.querySelectorAll('.sidebar-item').forEach((el) => el.classList.remove('active'));
+  sidebar.querySelectorAll('.submenu-item').forEach((el) => el.classList.remove('active'));
+
+  const activeLinks = sidebar.querySelectorAll('.sidebar-item a[href]');
+  let activeLink = null;
+
+  activeLinks.forEach((link) => {
+    const href = (link.getAttribute('href') || '').toLowerCase();
+    if (href && href !== '#' && href === currentPage && !activeLink) {
+      activeLink = link;
+    }
+  });
+
+  if (!activeLink) return;
+
+  const submenuItem = activeLink.closest('.submenu-item');
+  if (submenuItem) submenuItem.classList.add('active');
+
+  const sidebarItem = activeLink.closest('.sidebar-item');
+  if (sidebarItem) sidebarItem.classList.add('active');
+}
+
+function esAdmin() {
+  return normalizaPerm(localStorage.getItem('userRole')) === 'admin';
+}
+
+function buildFallbackSidebarHtml() {
+  var soloAdmin = esAdmin() ? '' : ' d-none';
+  return `
   <div class="sidebar-wrapper active">
       <div class="sidebar-header position-relative">
           <div class="d-flex justify-content-between align-items-center">
@@ -97,8 +97,8 @@ function markActiveSidebarItem() {
           </ul>
       </div>
   </div>`;
-  }
-  
+}
+
 var API_PERM = 'http://localhost:50222/api';
 var MENU_TO_PAGE = {
   'dashboard': 'index.html',
@@ -133,9 +133,16 @@ function aplicarPermisos() {
   if (permisosAplicados) return;
   var username = null;
   try { username = localStorage.getItem('username'); } catch (e) { }
-  if (!username) return; 
+  if (!username) return;
   permisosAplicados = true;
-  fetch(API_PERM + '/Usuarios/MenusPermitidos?username=' + encodeURIComponent(username))
+  fetch(
+    SGTL.api + '/Usuarios/MenusPermitidos?username=' + encodeURIComponent(username),
+    {
+      headers: SGTL.encabezados({
+        Accept: 'application/json'
+      })
+    }
+  )
     .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
@@ -170,39 +177,39 @@ function filtrarSidebarPermisos(permitidas) {
 function guardaAccesoPagina(permitidas) {
   var actual = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
   if (!actual || actual === 'login.html') return;
-  if (permitidas.indexOf(actual) !== -1) return; 
+  if (permitidas.indexOf(actual) !== -1) return;
   if (permitidas.length) { window.location.replace(permitidas[0]); }
   else { alert('No tenés pantallas asignadas. Contactá al administrador.'); }
 }
 
 function applySidebar(sidebarRoot, html) {
-    sidebarRoot.innerHTML = html;
-    markActiveSidebarItem();
-  
-    if (typeof window.initializeSidebar === 'function') {
-      window.initializeSidebar();
-    }
-    aplicarPermisos();
+  sidebarRoot.innerHTML = html;
+  markActiveSidebarItem();
+
+  if (typeof window.initializeSidebar === 'function') {
+    window.initializeSidebar();
   }
-  
-  function loadSidebar() {
-    return new Promise((resolve, reject) => {
-      const sidebarRoot = document.getElementById('sidebar');
-      if (!sidebarRoot || sidebarRoot.querySelector('.sidebar-wrapper')) {
-        resolve();
-        return;
-      }
-      applySidebar(sidebarRoot, buildFallbackSidebarHtml());
+  aplicarPermisos();
+}
+
+function loadSidebar() {
+  return new Promise((resolve, reject) => {
+    const sidebarRoot = document.getElementById('sidebar');
+    if (!sidebarRoot || sidebarRoot.querySelector('.sidebar-wrapper')) {
       resolve();
-    });
-  }
-  
-  window.loadSidebar = loadSidebar;
-  
-  if (document.readyState !== 'loading') {
+      return;
+    }
+    applySidebar(sidebarRoot, buildFallbackSidebarHtml());
+    resolve();
+  });
+}
+
+window.loadSidebar = loadSidebar;
+
+if (document.readyState !== 'loading') {
+  loadSidebar().catch((err) => console.error(err));
+} else {
+  document.addEventListener('DOMContentLoaded', () => {
     loadSidebar().catch((err) => console.error(err));
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      loadSidebar().catch((err) => console.error(err));
-    });
-  }
+  });
+}
