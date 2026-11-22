@@ -68,6 +68,7 @@
         if (boton) boton.click();
         pestanas.addEventListener('shown.bs.tab', function (evento) {
             try { localStorage.setItem(CLAVE_PESTANA, evento.target.getAttribute('data-tema')); } catch (error) { }
+            if (window.SGTLDashboard && SGTLDashboard.alMostrar) SGTLDashboard.alMostrar();
         });
         paneles.addEventListener('click', function (evento) {
             var estrellaBtn = evento.target.closest('[data-tablero]');
