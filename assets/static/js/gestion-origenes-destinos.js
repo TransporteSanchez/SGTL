@@ -136,7 +136,7 @@
 
     function abrir(tipo, id) {
         var estado = TIPOS[tipo];
-        var ubicacion = id ? estado.lista.find(function (item) { return String(item[estado.campoId]) === String(id); }) : null;
+        var ubicacion = id ? ubicacionDe(tipo, id) : null;
         editando = { tipo: tipo, id: id };
         SGTL.reiniciarFormulario('#ubicacionForm', '#ubicacionAviso');
         validarUbicacion.reiniciar();
@@ -204,6 +204,47 @@
         });
     }
 
+    function ubicacionDe(tipo, id) {
+        var estado = TIPOS[tipo];
+        return estado.lista.find(function (item) { return String(item[estado.campoId]) === String(id); });
+    }
+
+    function registro(usuario, fecha) {
+        return [usuario, SGTL.fecha(fecha, { hora: true })].filter(Boolean).join(', ');
+    }
+
+    function verDetalle(tipo, id) {
+        var ubicacion = ubicacionDe(tipo, id);
+        porId('detalleTitulo').textContent = 'Ver detalle del ' + tipo;
+        porId('detalleCliente').textContent = ubicacion.ClienteRazon;
+        porId('detalleDescripcion').textContent = ubicacion.Descripcion;
+        porId('detalleProvincia').textContent = ubicacion.NombreProvincia;
+        porId('detalleLocalidad').textContent = ubicacion.NombreLocalidad;
+        porId('detalleDireccion').textContent = direccion(ubicacion);
+        porId('detalleAlta').textContent = registro(ubicacion.Usu_Alta, ubicacion.Fecha_Alta);
+        porId('detalleModificacion').textContent = registro(ubicacion.Usu_Modi, ubicacion.Fecha_Modi);
+        SGTL.modal('#detalleModal', 'show');
+    }
+
+    function eliminar(tipo, id) {
+        var estado = TIPOS[tipo];
+        SGTL.confirmar({
+            titulo: '¿Eliminar el ' + tipo + ' ' + ubicacionDe(tipo, id).Descripcion + '?',
+            mensaje: 'No se puede deshacer.',
+            verbo: 'Eliminar',
+            peligro: true,
+            accion: function () {
+                return SGTL.ajax({ url: SGTL.api + estado.ruta + '/' + id, type: 'DELETE' }, 'No se pudo eliminar. Probá de nuevo.');
+            }
+        }).then(function (eliminado) {
+            if (!eliminado) return;
+            SGTL.toastExito(estado.sufijo + ' eliminado.');
+            listar(tipo);
+        });
+    }
+
+    var ACCIONES = { ver: verDetalle, editar: abrir, eliminar: eliminar };
+
     Object.keys(TIPOS).forEach(function (tipo) {
         var estado = TIPOS[tipo];
         Object.assign(estado, { lista: [], pagina: 1, tamanio: 15, texto: '', cliente: '' });
@@ -215,8 +256,8 @@
         });
         porId('registrar' + estado.sufijo).addEventListener('click', function () { abrir(tipo, null); });
         porId('filas' + estado.sufijo).addEventListener('click', function (evento) {
-            var boton = evento.target.closest('[data-accion="editar"]');
-            if (boton) abrir(tipo, boton.dataset.id);
+            var boton = evento.target.closest('[data-accion]');
+            if (boton) ACCIONES[boton.dataset.accion](tipo, boton.dataset.id);
         });
         listar(tipo);
     });
