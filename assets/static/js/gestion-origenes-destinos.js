@@ -37,7 +37,7 @@
 
     function filtradas(estado) {
         return estado.lista.filter(function (ubicacion) {
-            if (estado.cliente && String(ubicacion.ClienteID) !== estado.cliente) return false;
+            if (estado.cliente && normalizar(ubicacion.ClienteRazon).indexOf(estado.cliente) === -1) return false;
             if (!estado.texto) return true;
             var texto = [ubicacion.Descripcion, ubicacion.Calle, ubicacion.AlturaCalle, ubicacion.NombreLocalidad, ubicacion.NombreProvincia].join(' ');
             return normalizar(texto).indexOf(estado.texto) !== -1;
@@ -87,7 +87,7 @@
     function buscar(tipo) {
         var estado = TIPOS[tipo];
         estado.texto = normalizar(porId('texto' + estado.sufijo).value.trim());
-        estado.cliente = porId('cliente' + estado.sufijo).value;
+        estado.cliente = normalizar(porId('clienteTexto' + estado.sufijo).value.trim());
         estado.pagina = 1;
         dibujar(tipo);
     }
@@ -105,8 +105,8 @@
         lista.forEach(function (item) { select.append(new Option(item[campoTexto], item[campoValor])); });
     }
 
-    function cargarCombos() {
-        var clientes = SGTL.ajax({ url: SGTL.api + '/Clientes', type: 'GET' },
+    function cargarClientes() {
+        return SGTL.ajax({ url: SGTL.api + '/Clientes', type: 'GET' },
             'No se pudieron cargar los clientes. Revisá la conexión y probá de nuevo.')
             .catch(function (error) {
                 if (error.xhr && error.xhr.status === 404) return [];
@@ -115,9 +115,12 @@
             .then(function (lista) {
                 return lista.sort(function (a, b) { return comparador.compare(a.Razon_Social, b.Razon_Social); });
             });
+    }
+
+    function cargarCombos() {
         var provincias = SGTL.ajax({ url: SGTL.api + '/Provincias', type: 'GET' },
             'No se pudieron cargar las provincias. Revisá la conexión y probá de nuevo.');
-        return Promise.all([clientes, provincias]);
+        return Promise.all([cargarClientes(), provincias]);
     }
 
     function cargarLocalidades(provinciaId, localidadId) {
@@ -249,7 +252,9 @@
         var estado = TIPOS[tipo];
         Object.assign(estado, { lista: [], pagina: 1, tamanio: 15, texto: '', cliente: '' });
         estado.orden = SGTL.tabla.habilitarOrden('#tabla' + estado.sufijo, function () { estado.pagina = 1; dibujar(tipo); });
-        SGTL.filtros(['#texto' + estado.sufijo], function () { buscar(tipo); });
+        SelectClientePredictivo.inicializar('cliente' + estado.sufijo, { idCampo: 'clienteTexto' + estado.sufijo, placeholder: 'Todos los clientes' });
+        porId('cliente' + estado.sufijo).addEventListener('change', function () { buscar(tipo); });
+        SGTL.filtros(['#clienteTexto' + estado.sufijo, '#texto' + estado.sufijo], function () { buscar(tipo); });
         porId('busqueda' + estado.sufijo).addEventListener('submit', function (evento) {
             evento.preventDefault();
             buscar(tipo);
@@ -266,6 +271,15 @@
         cargarLocalidades(evento.target.value).catch(function (error) { SGTL.avisoFormulario('#ubicacionAviso', error.mensajeUsuario); });
     });
     porId('ubicacionForm').addEventListener('submit', guardar);
+    cargarClientes().then(function (clientes) {
+        Object.keys(TIPOS).forEach(function (tipo) {
+            var select = porId('cliente' + TIPOS[tipo].sufijo);
+            opciones(select, 'Todos los clientes', clientes, 'Cliente_ID', 'Razon_Social');
+            SelectClientePredictivo.sincronizar(select);
+        });
+    }, function (error) {
+        SGTL.toastError(error.mensajeUsuario);
+    });
 
     window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
     window.loadFooter();
