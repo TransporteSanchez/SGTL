@@ -26,6 +26,21 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Origen { get; set; }
         }
 
+        private const string OrigenAuditoria = @"
+        FROM (
+            SELECT Auditoria_ID, Fecha, Usuario, Accion,
+            CASE
+            WHEN Entidad = 'EmailServidor' THEN 'EMAIL_SERVIDOR'
+            ELSE Entidad
+            END AS Entidad,
+            CASE
+            WHEN Entidad IN ('EmailServidor', 'EMAIL_SERVIDOR')
+                AND SUBSTRING(Clave, 1, 6) = 'Es_id='
+            THEN CONCAT('EmailServidor_ID=', SUBSTRING(Clave, 7, LEN(Clave)))
+            ELSE Clave
+            END AS Clave, Clave AS ClaveOriginal, Valores_Anteriores, Valores_Nuevos, Origen
+            FROM AUDITORIA) AS registros";
+
         private static string Cn()
         {
             return ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -49,8 +64,18 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             if (!string.IsNullOrWhiteSpace(entidad))
             {
+                var entidadFiltro = entidad.Trim();
+
+                if (string.Equals(
+                    entidadFiltro,
+                    "EmailServidor",
+                    StringComparison.OrdinalIgnoreCase))
+                {
+                    entidadFiltro = "EMAIL_SERVIDOR";
+                }
+
                 where.Append(" AND Entidad = @entidad ");
-                parametros.Add(new SqlParameter("@entidad", entidad.Trim()));
+                parametros.Add(new SqlParameter("@entidad", entidadFiltro));
             }
             if (!string.IsNullOrWhiteSpace(accion))
             {
@@ -72,7 +97,7 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             if (!string.IsNullOrWhiteSpace(texto))
             {
-                where.Append(" AND (Clave LIKE @texto OR Valores_Anteriores LIKE @texto OR Valores_Nuevos LIKE @texto) ");
+                where.Append(" AND (Clave LIKE @texto OR ClaveOriginal LIKE @texto OR Valores_Anteriores LIKE @texto OR Valores_Nuevos LIKE @texto) ");
                 parametros.Add(new SqlParameter("@texto", "%" + texto.Trim() + "%"));
             }
 
@@ -82,7 +107,7 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var pTotal = parametros.Select(Clonar).ToArray();
                     int total = db.Database.SqlQuery<int>(
-                        "SELECT COUNT(*) FROM AUDITORIA" + where, pTotal).FirstOrDefault();
+                    "SELECT COUNT(*) " + OrigenAuditoria + where, pTotal).FirstOrDefault();
                     if (pageSize == 0) { page = 1; pageSize = Math.Max(total, 1); }
 
                     var pPage = parametros.Select(Clonar).ToList();
@@ -90,11 +115,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     pPage.Add(new SqlParameter("@limit", pageSize));
 
                     string sql =
-                        "SELECT Auditoria_ID, Fecha, Usuario, Accion, Entidad, Clave, " +
-                        "Valores_Anteriores, Valores_Nuevos, Origen " +
-                        "FROM AUDITORIA" + where +
-                        " ORDER BY Fecha DESC, Auditoria_ID DESC " +
-                        " OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY";
+                    "SELECT Auditoria_ID, Fecha, Usuario, Accion, Entidad, Clave, " +
+                    "Valores_Anteriores, Valores_Nuevos, Origen " +
+                     OrigenAuditoria + where +
+                    " ORDER BY Fecha DESC, Auditoria_ID DESC " +
+                    " OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY";
 
                     var items = db.Database.SqlQuery<AuditoriaDTO>(sql, pPage.ToArray()).ToList();
 
@@ -124,7 +149,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 using (var db = new DbContext(Cn()))
                 {
                     var lista = db.Database.SqlQuery<string>(
-                        "SELECT DISTINCT Entidad FROM AUDITORIA WHERE Entidad IS NOT NULL ORDER BY Entidad").ToList();
+                    "SELECT DISTINCT Entidad " + OrigenAuditoria +
+                    " WHERE Entidad IS NOT NULL ORDER BY Entidad").ToList();
                     return Ok(lista);
                 }
             }
