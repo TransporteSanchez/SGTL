@@ -92,6 +92,118 @@
         dibujar(tipo);
     }
 
+    var editando = null;
+    var validarUbicacion = SGTL.validador([
+        { id: 'ubicacionCliente', requerido: 'Seleccioná un cliente.' },
+        { id: 'ubicacionDescripcion', requerido: 'Completá la descripción.' },
+        { id: 'ubicacionProvincia', requerido: 'Seleccioná una provincia.' },
+        { id: 'ubicacionLocalidad', requerido: 'Seleccioná una localidad.' }
+    ]);
+
+    function opciones(select, primera, lista, campoValor, campoTexto) {
+        select.replaceChildren(new Option(primera, ''));
+        lista.forEach(function (item) { select.append(new Option(item[campoTexto], item[campoValor])); });
+    }
+
+    function cargarCombos() {
+        var clientes = SGTL.ajax({ url: SGTL.api + '/Clientes', type: 'GET' },
+            'No se pudieron cargar los clientes. Revisá la conexión y probá de nuevo.')
+            .catch(function (error) {
+                if (error.xhr && error.xhr.status === 404) return [];
+                throw error;
+            })
+            .then(function (lista) {
+                return lista.sort(function (a, b) { return comparador.compare(a.Razon_Social, b.Razon_Social); });
+            });
+        var provincias = SGTL.ajax({ url: SGTL.api + '/Provincias', type: 'GET' },
+            'No se pudieron cargar las provincias. Revisá la conexión y probá de nuevo.');
+        return Promise.all([clientes, provincias]);
+    }
+
+    function cargarLocalidades(provinciaId, localidadId) {
+        var select = porId('ubicacionLocalidad');
+        opciones(select, 'Seleccioná una localidad', [], '', '');
+        select.disabled = true;
+        if (!provinciaId) return Promise.resolve();
+        return SGTL.ajax({ url: SGTL.api + '/Provincias/' + provinciaId + '/Localidades', type: 'GET' },
+            'No se pudieron cargar las localidades. Revisá la conexión y probá de nuevo.')
+            .then(function (localidades) {
+                opciones(select, 'Seleccioná una localidad', localidades, 'Loc_ID', 'Nombre_Localidad');
+                select.value = localidadId || '';
+                select.disabled = false;
+            });
+    }
+
+    function abrir(tipo, id) {
+        var estado = TIPOS[tipo];
+        var ubicacion = id ? estado.lista.find(function (item) { return String(item[estado.campoId]) === String(id); }) : null;
+        editando = { tipo: tipo, id: id };
+        SGTL.reiniciarFormulario('#ubicacionForm', '#ubicacionAviso');
+        validarUbicacion.reiniciar();
+        porId('ubicacionTitulo').textContent = (id ? 'Editar ' : 'Registrar ') + tipo;
+        porId('ubicacionGuardar').disabled = true;
+        cargarLocalidades('');
+        SGTL.modal('#ubicacionModal', 'show');
+
+        cargarCombos().then(function (datos) {
+            opciones(porId('ubicacionCliente'), 'Seleccioná un cliente', datos[0], 'Cliente_ID', 'Razon_Social');
+            opciones(porId('ubicacionProvincia'), 'Seleccioná una provincia', datos[1], 'Prov_ID', 'Nombre_Provincia');
+            if (!ubicacion) return;
+            porId('ubicacionCliente').value = ubicacion.ClienteID;
+            porId('ubicacionDescripcion').value = ubicacion.Descripcion;
+            porId('ubicacionProvincia').value = ubicacion.ProvID;
+            porId('ubicacionCalle').value = ubicacion.Calle || '';
+            porId('ubicacionAltura').value = ubicacion.AlturaCalle || '';
+            return cargarLocalidades(ubicacion.ProvID, ubicacion.LocID);
+        }).then(function () {
+            porId('ubicacionGuardar').disabled = false;
+        }, function (error) {
+            SGTL.modal('#ubicacionModal', 'hide');
+            SGTL.toastError(error.mensajeUsuario);
+        });
+    }
+
+    function guardar(evento) {
+        evento.preventDefault();
+        validarUbicacion.validarTodo();
+        if (!SGTL.revisarFormulario('#ubicacionForm', '#ubicacionAviso')) return;
+
+        var tipo = editando.tipo;
+        var id = editando.id;
+        var estado = TIPOS[tipo];
+        var usuario = localStorage.getItem('username');
+        var cuerpo = {
+            ClienteID: Number(porId('ubicacionCliente').value),
+            Descripcion: porId('ubicacionDescripcion').value.trim(),
+            ProvID: Number(porId('ubicacionProvincia').value),
+            LocID: Number(porId('ubicacionLocalidad').value),
+            Calle: porId('ubicacionCalle').value.trim(),
+            AlturaCalle: porId('ubicacionAltura').value.trim(),
+            Usu_Alta: usuario,
+            Usu_Modi: usuario
+        };
+        var listo = SGTL.procesando('#ubicacionGuardar');
+        SGTL.ajax({
+            url: SGTL.api + estado.ruta + (id ? '/' + id : ''),
+            type: id ? 'PUT' : 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(cuerpo)
+        }, 'No se pudo guardar. Revisá la conexión y probá de nuevo.').then(function () {
+            listo();
+            SGTL.modal('#ubicacionModal', 'hide');
+            SGTL.toastExito(estado.sufijo + (id ? ' guardado.' : ' registrado.'));
+            listar(tipo);
+        }, function (error) {
+            listo();
+            var errores = error.xhr && error.xhr.status === 400 && error.xhr.responseJSON;
+            if (Array.isArray(errores)) {
+                SGTL.avisoFormulario('#ubicacionAviso', 'No se pudo guardar.', errores.map(function (item) { return item.ErrorMessage; }));
+            } else {
+                SGTL.avisoFormulario('#ubicacionAviso', error.mensajeUsuario);
+            }
+        });
+    }
+
     Object.keys(TIPOS).forEach(function (tipo) {
         var estado = TIPOS[tipo];
         Object.assign(estado, { lista: [], pagina: 1, tamanio: 15, texto: '', cliente: '' });
@@ -101,8 +213,18 @@
             evento.preventDefault();
             buscar(tipo);
         });
+        porId('registrar' + estado.sufijo).addEventListener('click', function () { abrir(tipo, null); });
+        porId('filas' + estado.sufijo).addEventListener('click', function (evento) {
+            var boton = evento.target.closest('[data-accion="editar"]');
+            if (boton) abrir(tipo, boton.dataset.id);
+        });
         listar(tipo);
     });
+
+    porId('ubicacionProvincia').addEventListener('change', function (evento) {
+        cargarLocalidades(evento.target.value).catch(function (error) { SGTL.avisoFormulario('#ubicacionAviso', error.mensajeUsuario); });
+    });
+    porId('ubicacionForm').addEventListener('submit', guardar);
 
     window.loadHeader().catch(function (error) { console.warn('No se pudo cargar el encabezado.', error); });
     window.loadFooter();
