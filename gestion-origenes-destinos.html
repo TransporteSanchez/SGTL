@@ -5,199 +5,203 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transporte Sánchez - Gestionar orígenes y destinos</title>
-
-    <style>
-        #app {
-            display: none;
-        }
-
-        .table-responsive {
-            width: 100%;
-        }
-
-        #tablaViajes {
-            width: 100%;
-            text-align: center;
-        }
-
-        #tablaViajes th,
-        #tablaViajes td {
-            text-align: center;
-            vertical-align: middle;
-        }
-
-        #tablaViajes th {
-            width: auto;
-            white-space: nowrap;
-        }
-
-        .pagination {
-            justify-content: center;
-        }
-    </style>
-
-
-    <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
-    <link rel="stylesheet" href="./assets/compiled/css/app.css">
-    <link rel="stylesheet" href="./assets/compiled/css/iconly.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <link rel="stylesheet" href="assets/extensions/flatpickr/flatpickr.min.css">
+    <link rel="shortcut icon" href="assets/static/images/logo/sgtl-icono.png" type="image/png">
+    <link rel="stylesheet" href="assets/compiled/css/app.css">
+    <link rel="stylesheet" href="assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/static/css/sgtl.css">
 </head>
 
 <body>
-
-    <div id="loading-message" style="display: none;">
-        <div class="spinner-border" role="status" style="width: 50px; height: 50px;">
-            <span class="visually-hidden">Cargando...</span>
-        </div>
-    </div>
-
     <div id="app">
         <div id="sidebar"></div>
-
-        <div id="main" class='layout-navbar navbar-fixed'>
+        <div id="main" class="layout-navbar navbar-fixed">
             <header>
                 <nav class="navbar navbar-expand navbar-light navbar-top">
                     <div class="container-fluid">
                         <a href="#" class="burger-btn d-block" aria-label="Abrir menú">
                             <i class="bi bi-justify fs-3" aria-hidden="true"></i>
                         </a>
-
                         <div id="header-container"></div>
-                        <script src="./assets/static/js/header.js"></script>
                     </div>
                 </nav>
             </header>
 
-            <div class="page-heading">
-
-                <section class="section mx-3 mx-md-4 mt-4">
+            <main class="page-heading">
+                <section class="section mx-3 mx-md-4 mt-4" aria-labelledby="tituloUbicaciones">
                     <div class="card rounded">
                         <div class="card-header">
-                            <h1 class="card-title h5 mb-1"><i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Gestionar orígenes y destinos</h1>
+                            <h1 id="tituloUbicaciones" class="card-title h5 mb-1"><i class="bi bi-calendar-check me-2" aria-hidden="true"></i>Gestionar orígenes y destinos</h1>
                             <p class="text-muted mb-0">Lugares de carga y de entrega de cada cliente.</p>
                         </div>
                         <div class="card-body">
                             <ul class="nav nav-tabs" role="tablist">
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#pane-origenes" type="button" role="tab">Or&iacute;genes</button>
+                                    <button type="button" id="tabOrigen" class="nav-link active" data-bs-toggle="tab" data-bs-target="#paneOrigen"
+                                        role="tab" aria-controls="paneOrigen" aria-selected="true">Orígenes</button>
                                 </li>
                                 <li class="nav-item" role="presentation">
-                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#pane-destinos" type="button" role="tab">Destinos</button>
+                                    <button type="button" id="tabDestino" class="nav-link" data-bs-toggle="tab" data-bs-target="#paneDestino"
+                                        role="tab" aria-controls="paneDestino" aria-selected="false">Destinos</button>
                                 </li>
                             </ul>
+
                             <div class="tab-content pt-4">
-                                <div class="tab-pane fade show active" id="pane-origenes" role="tabpanel">
-                            <div class="text-end mb-3">
-                                <button type="button" class="btn btn-success" onclick="abrirAltaOD('origen')">
-                                    <i class="bi bi-plus"></i> Nuevo origen
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover" id="tabla_origen">
-                                    <thead><tr>
-                                        <th>#</th><th>Descripci&oacute;n</th><th>Cliente</th>
-                                        <th>Provincia</th><th>Localidad</th><th>Direcci&oacute;n</th><th>Acciones</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+                                <div class="tab-pane fade show active" id="paneOrigen" role="tabpanel" aria-labelledby="tabOrigen">
+                                    <form id="busquedaOrigen" class="row g-3 align-items-end mb-4" novalidate>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="clienteOrigen" class="form-label">Cliente</label>
+                                            <select id="clienteOrigen" class="form-select">
+                                                <option value="">Todos los clientes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="textoOrigen" class="form-label">Descripción o dirección</label>
+                                            <input type="text" id="textoOrigen" class="form-control" autocomplete="off">
+                                        </div>
+                                        <div class="col-12 col-lg-6 d-flex justify-content-end gap-2">
+                                            <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                            <button type="button" id="registrarOrigen" class="btn btn-success"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar origen</button>
+                                        </div>
+                                    </form>
+                                    <div class="table-responsive">
+                                        <table id="tablaOrigen" class="table table-striped table-hover align-middle mb-0" aria-labelledby="tabOrigen">
+                                            <thead class="text-nowrap">
+                                                <tr>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="Descripcion">Descripción<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="ClienteRazon">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="NombreProvincia">Provincia<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="NombreLocalidad">Localidad<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col">Dirección</th>
+                                                    <th scope="col" class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="filasOrigen"></tbody>
+                                        </table>
+                                    </div>
+                                    <nav aria-label="Paginación de orígenes">
+                                        <ul id="paginacionOrigen" class="pagination justify-content-end"></ul>
+                                    </nav>
                                 </div>
-                                <div class="tab-pane fade" id="pane-destinos" role="tabpanel">
-                            <div class="text-end mb-3">
-                                <button type="button" class="btn btn-success" onclick="abrirAltaOD('destino')">
-                                    <i class="bi bi-plus"></i> Nuevo destino
-                                </button>
-                            </div>
-                            <div class="table-responsive">
-                                <table class="table table-striped table-hover" id="tabla_destino">
-                                    <thead><tr>
-                                        <th>#</th><th>Descripci&oacute;n</th><th>Cliente</th>
-                                        <th>Provincia</th><th>Localidad</th><th>Direcci&oacute;n</th><th>Acciones</th>
-                                    </tr></thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+
+                                <div class="tab-pane fade" id="paneDestino" role="tabpanel" aria-labelledby="tabDestino">
+                                    <form id="busquedaDestino" class="row g-3 align-items-end mb-4" novalidate>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="clienteDestino" class="form-label">Cliente</label>
+                                            <select id="clienteDestino" class="form-select">
+                                                <option value="">Todos los clientes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-12 col-sm-6 col-lg-3">
+                                            <label for="textoDestino" class="form-label">Descripción o dirección</label>
+                                            <input type="text" id="textoDestino" class="form-control" autocomplete="off">
+                                        </div>
+                                        <div class="col-12 col-lg-6 d-flex justify-content-end gap-2">
+                                            <button type="submit" class="btn btn-light"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                                            <button type="button" id="registrarDestino" class="btn btn-success"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar destino</button>
+                                        </div>
+                                    </form>
+                                    <div class="table-responsive">
+                                        <table id="tablaDestino" class="table table-striped table-hover align-middle mb-0" aria-labelledby="tabDestino">
+                                            <thead class="text-nowrap">
+                                                <tr>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="Descripcion">Descripción<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="ClienteRazon">Cliente<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="NombreProvincia">Provincia<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col"><button type="button" class="sgtl-orden-boton" data-sgtl-orden="NombreLocalidad">Localidad<i class="bi bi-arrow-down-up ms-1" aria-hidden="true"></i></button></th>
+                                                    <th scope="col">Dirección</th>
+                                                    <th scope="col" class="text-center">Acciones</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="filasDestino"></tbody>
+                                        </table>
+                                    </div>
+                                    <nav aria-label="Paginación de destinos">
+                                        <ul id="paginacionDestino" class="pagination justify-content-end"></ul>
+                                    </nav>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
-                </div>
+            </main>
 
             <footer>
                 <div id="footer-container"></div>
-                <script src="./assets/static/js/footer.js"></script>
             </footer>
         </div>
-
     </div>
 
-
-    <div class="modal fade text-left" id="modalOD" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-            <div class="modal-content">
+    <div class="modal fade" id="ubicacionModal" tabindex="-1" data-bs-backdrop="static"
+         aria-labelledby="ubicacionTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+            <form id="ubicacionForm" class="modal-content" autocomplete="off" novalidate>
                 <div class="modal-header">
-                    <h4 class="modal-title" id="tituloOD">Nuevo</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                    <h2 id="ubicacionTitulo" class="modal-title h5">Registrar origen</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="alertaOD" class="alert alert-light-danger color-danger" style="display:none;"></div>
-                    <form class="form" id="formOD">
-                        <input type="hidden" id="odTipo" value="">
-                        <input type="hidden" id="odId" value="">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Cliente</label>
-                                <select class="form-select" id="odCliente"><option value="">Seleccione un cliente</option></select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Descripci&oacute;n</label>
-                                <input type="text" class="form-control" id="odDescripcion">
-                            </div>
+                    <div id="ubicacionAviso" class="alert alert-danger d-none" role="alert"></div>
+                    <div class="sgtl-bloque-titulo">Datos</div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label for="ubicacionCliente" class="form-label">Cliente <span class="text-danger">*</span></label>
+                            <select id="ubicacionCliente" class="form-select"></select>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Provincia</label>
-                                <select class="form-select" id="odProvincia"><option value="">Seleccione una provincia</option></select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Localidad</label>
-                                <select class="form-select" id="odLocalidad" disabled><option value="">Seleccione una localidad</option></select>
-                            </div>
+                        <div class="col-12 col-md-6">
+                            <label for="ubicacionDescripcion" class="form-label">Descripción <span class="text-danger">*</span></label>
+                            <input id="ubicacionDescripcion" class="form-control" maxlength="50">
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-md-8">
-                                <label class="form-label">Calle</label>
-                                <input type="text" class="form-control" id="odCalle">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Altura</label>
-                                <input type="text" class="form-control" id="odAltura">
-                            </div>
+                    </div>
+                    <div class="sgtl-bloque-titulo">Domicilio</div>
+                    <div class="row g-3">
+                        <div class="col-12 col-md-6">
+                            <label for="ubicacionProvincia" class="form-label">Provincia <span class="text-danger">*</span></label>
+                            <select id="ubicacionProvincia" class="form-select"></select>
                         </div>
-                    </form>
+                        <div class="col-12 col-md-6">
+                            <label for="ubicacionLocalidad" class="form-label">Localidad <span class="text-danger">*</span></label>
+                            <select id="ubicacionLocalidad" class="form-select" disabled></select>
+                        </div>
+                        <div class="col-12 col-md-8">
+                            <label for="ubicacionCalle" class="form-label">Calle</label>
+                            <input id="ubicacionCalle" class="form-control" maxlength="50">
+                        </div>
+                        <div class="col-12 col-md-4">
+                            <label for="ubicacionAltura" class="form-label">Altura</label>
+                            <input id="ubicacionAltura" class="form-control" maxlength="10">
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary ms-1" onclick="guardarOD()">Confirmar</button>
+                    <button type="submit" id="ubicacionGuardar" class="btn btn-primary">Guardar</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
-    <div class="modal fade text-left" id="modalEliminarOD" tabindex="-1" role="dialog" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal fade" id="detalleModal" tabindex="-1" aria-labelledby="detalleTitulo" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Confirmar eliminaci&oacute;n</h5>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close"><i data-feather="x"></i></button>
+                    <h2 id="detalleTitulo" class="modal-title h5">Ver detalle del origen</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                 </div>
-                <div class="modal-body">&iquest;Est&aacute; seguro que desea eliminar este registro?</div>
+                <div class="modal-body">
+                    <div class="sgtl-bloque row">
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Cliente</span><span class="sgtl-dato-valor" id="detalleCliente"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Descripción</span><span class="sgtl-dato-valor" id="detalleDescripcion"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Provincia</span><span class="sgtl-dato-valor" id="detalleProvincia"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Localidad</span><span class="sgtl-dato-valor" id="detalleLocalidad"></span></div>
+                        <div class="col-12 sgtl-dato"><span class="sgtl-dato-etiqueta">Dirección</span><span class="sgtl-dato-valor" id="detalleDireccion"></span></div>
+                    </div>
+                    <div class="sgtl-bloque row">
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Registrado</span><span class="sgtl-dato-valor" id="detalleAlta"></span></div>
+                        <div class="col-sm-6 sgtl-dato"><span class="sgtl-dato-etiqueta">Última modificación</span><span class="sgtl-dato-valor" id="detalleModificacion"></span></div>
+                    </div>
+                </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-danger ms-1" onclick="confirmarEliminarOD()">Eliminar</button>
+                    <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -207,269 +211,13 @@
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/extensions/simple-datatables/umd/simple-datatables.js"></script>
-    <script src="assets/static/js/pages/simple-datatables.js"></script>
     <script src="assets/extensions/jquery/jqueryajax.js"></script>
-    <script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
-    <script src="assets/extensions/flatpickr/flatpickr.min.js"></script>
-    <script src="./assets/static/gestionContenido.js"></script>
+    <script src="assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
-
-    <script>
-        window.onload = function () {
-            const loadingMessage = document.getElementById('loading-message');
-            loadingMessage.style.display = 'block';
-            document.getElementById('app').style.display = 'none';
-
-            window.loadHeader();
-            window.loadFooter();
-
-            loadSettings()
-                .then(() => {
-                    adjustVisibilityBasedOnRole();
-                    loadingMessage.style.display = 'none';
-                    document.getElementById('app').style.display = 'block';
-                    if (typeof window.loadSidebar === 'function') { window.loadSidebar(); }
-                })
-                .catch((error) => {
-                    console.error('Error al cargar el header, footer o los datos:', error);
-                    loadingMessage.innerText = 'Error al cargar el header, footer o los datos.';
-                });
-        };
-
-        function adjustVisibilityBasedOnRole() {
-            const userRole = localStorage.getItem('userRole');
-            const gestionarContenidoBtn = document.getElementById('gestionarContenidoBtn');
-
-            if (userRole && userRole.toLowerCase() === 'admin') {
-                gestionarContenidoBtn.style.display = 'block';
-            } else {
-                gestionarContenidoBtn.style.display = 'none';
-            }
-        }
-
-        async function loadSettings() {
-            return new Promise((resolve, reject) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', 'http://localhost:50222/api/GestionContenido/1', true);
-
-                xhr.onload = function () {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const data = JSON.parse(xhr.responseText);
-                        if (data) {
-                            const { Logo: logoUrl, ColorFondo: colorFondo, ColorBotonesMenu: colorBotonesMenu, ContenidoPiePagina: contenidoPiePagina } = data;
-
-                            applyStyles(logoUrl, colorFondo, colorBotonesMenu, contenidoPiePagina);
-                            resolve();
-                        } else {
-                            console.error('La respuesta de la API no contiene los datos esperados.');
-                            reject(new Error('Datos vacíos o inexistentes en la respuesta de la API'));
-                        }
-                    } else {
-                        console.error('Error en la petición:', xhr.statusText);
-                        reject(new Error('Error en la carga de la API'));
-                    }
-                };
-
-                xhr.onerror = function () {
-                    console.error('Error al cargar la configuración de la API.');
-                    reject(new Error('Error de red'));
-                };
-
-                xhr.send();
-            });
-        }
-
-    </script>
-
-    <script>
-        $(document).ready(function () {
-            $('[data-bs-toggle="tooltip"]').tooltip();
-
-            $(document).on('mouseenter', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', '[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-
-            $(document).on('mouseenter', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('show');
-            });
-
-            $(document).on('mouseleave', 'span[data-bs-toggle="tooltip"]', function () {
-                $(this).tooltip('hide');
-            });
-        });
-
-    </script>
-
-    <script>
-        const API_OD = 'http://localhost:50222/api';
-        let odElimTipo = null, odElimId = null;
-
-        function usuarioActual() { return localStorage.getItem('username') || 'sistema'; }
-        function rutaOD(tipo) { return tipo === 'origen' ? '/Origen' : '/Destino'; }
-        function idCampo(tipo, o) { return tipo === 'origen' ? o.Origen_ID : o.Destino_ID; }
-
-        function parseErr(xhr) {
-            try {
-                let r = xhr.responseJSON;
-                if (!r && xhr.responseText) { r = JSON.parse(xhr.responseText); }
-                if (Array.isArray(r)) { return r.map(function (e) { return e.ErrorMessage || e; }).join(' '); }
-                if (r && r.Message) { return r.Message; }
-                if (r && r.ExceptionMessage) { return r.ExceptionMessage; }
-            } catch (e) { }
-            return 'Ocurrio un error. Revise los datos e intente nuevamente.';
-        }
-
-        function cargarCombo(url, sel, ph, map) {
-            const s = $(sel);
-            const d = $.Deferred();
-            $.ajax({ url: url, type: 'GET' })
-                .done(function (data) { s.empty().append('<option value="">' + ph + '</option>'); (data || []).forEach(function (it) { s.append(map(it)); }); })
-                .fail(function () { s.empty().append('<option value="">' + ph + '</option>'); })
-                .always(function () { d.resolve(); });
-            return d.promise();
-        }
-
-        function cargarClientesOD() {
-            return cargarCombo(API_OD + '/Clientes', '#odCliente', 'Seleccione un cliente',
-                function (c) { return '<option value="' + c.Cliente_ID + '">' + c.Razon_Social + '</option>'; });
-        }
-        function cargarProvinciasOD() {
-            return cargarCombo(API_OD + '/Provincias', '#odProvincia', 'Seleccione una provincia',
-                function (p) { return '<option value="' + p.Prov_ID + '">' + p.Nombre_Provincia + '</option>'; });
-        }
-        function cargarLocalidadesOD(provId, locSel) {
-            const s = $('#odLocalidad');
-            const d = $.Deferred();
-            if (!provId) { s.prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>'); d.resolve(); return d.promise(); }
-            $.ajax({ url: API_OD + '/Provincias/' + provId + '/Localidades', type: 'GET' })
-                .done(function (data) {
-                    s.prop('disabled', false).empty().append('<option value="">Seleccione una localidad</option>');
-                    (data || []).forEach(function (l) { s.append('<option value="' + l.Loc_ID + '">' + l.Nombre_Localidad + '</option>'); });
-                    if (locSel) { s.val(locSel); }
-                })
-                .fail(function () { s.prop('disabled', false).empty().append('<option value="">Seleccione una localidad</option>'); })
-                .always(function () { d.resolve(); });
-            return d.promise();
-        }
-
-        function listarOD(tipo) {
-            $.ajax({ url: API_OD + rutaOD(tipo), type: 'GET' })
-                .done(function (data) {
-                    const tb = $('#tabla_' + tipo + ' tbody').empty();
-                    if (!data || !data.length) { tb.html('<tr><td colspan="7" class="text-center">Sin registros</td></tr>'); return; }
-                    data.forEach(function (o) {
-                        const id = idCampo(tipo, o);
-                        const dir = ((o.Calle || '') + ' ' + (o.AlturaCalle || '')).trim();
-                        tb.append('<tr>' +
-                            '<td>' + id + '</td>' +
-                            '<td>' + (o.Descripcion || '') + '</td>' +
-                            '<td>' + (o.ClienteRazon || '') + '</td>' +
-                            '<td>' + (o.NombreProvincia || '') + '</td>' +
-                            '<td>' + (o.NombreLocalidad || '') + '</td>' +
-                            '<td>' + dir + '</td>' +
-                            '<td><button class="btn btn-primary btn-sm" onclick="abrirEditarOD(\'' + tipo + '\',' + id + ')"><i class="bi bi-pencil"></i></button> ' +
-                            '<button class="btn btn-danger btn-sm ms-1" onclick="abrirEliminarOD(\'' + tipo + '\',' + id + ')"><i class="bi bi-trash"></i></button></td>' +
-                            '</tr>');
-                    });
-                })
-                .fail(function () { $('#tabla_' + tipo + ' tbody').html('<tr><td colspan="7" class="text-center">Sin registros</td></tr>'); });
-        }
-
-        function abrirAltaOD(tipo) {
-            document.getElementById('formOD').reset();
-            $('#odId').val('');
-            $('#odTipo').val(tipo);
-            $('#tituloOD').text(tipo === 'origen' ? 'Nuevo origen' : 'Nuevo destino');
-            $('#alertaOD').hide().empty();
-            $('#odLocalidad').prop('disabled', true).empty().append('<option value="">Seleccione una localidad</option>');
-            $.when(cargarClientesOD(), cargarProvinciasOD()).always(function () {
-                $('#modalOD').modal('show');
-            });
-        }
-
-        function abrirEditarOD(tipo, id) {
-            document.getElementById('formOD').reset();
-            $('#odId').val(id);
-            $('#odTipo').val(tipo);
-            $('#tituloOD').text(tipo === 'origen' ? 'Editar origen' : 'Editar destino');
-            $('#alertaOD').hide().empty();
-            $.when(cargarClientesOD(), cargarProvinciasOD()).always(function () {
-                $.ajax({ url: API_OD + rutaOD(tipo) + '/' + id, type: 'GET' })
-                    .done(function (o) {
-                        $('#odCliente').val(o.ClienteID);
-                        $('#odDescripcion').val(o.Descripcion);
-                        $('#odCalle').val(o.Calle);
-                        $('#odAltura').val(o.AlturaCalle);
-                        $('#odProvincia').val(o.ProvID);
-                        cargarLocalidadesOD(o.ProvID, o.LocID).always(function () {
-                            $('#modalOD').modal('show');
-                        });
-                    })
-                    .fail(function () { alert('No se pudo cargar el registro.'); });
-            });
-        }
-
-        function guardarOD() {
-            const tipo = $('#odTipo').val();
-            const dto = {
-                Descripcion: ($('#odDescripcion').val() || '').trim(),
-                ClienteID: parseInt($('#odCliente').val()) || 0,
-                ProvID: parseInt($('#odProvincia').val()) || 0,
-                LocID: parseInt($('#odLocalidad').val()) || 0,
-                Calle: ($('#odCalle').val() || '').trim(),
-                AlturaCalle: ($('#odAltura').val() || '').trim(),
-                Usu_Alta: usuarioActual(),
-                Usu_Modi: usuarioActual()
-            };
-            const falt = [];
-            if (!dto.Descripcion) falt.push('Descripción');
-            if (!dto.ClienteID) falt.push('Cliente');
-            if (!dto.ProvID) falt.push('Provincia');
-            if (!dto.LocID) falt.push('Localidad');
-            if (falt.length) { $('#alertaOD').html('Complete los campos: ' + falt.join(', ') + '.').show(); return; }
-
-            const id = $('#odId').val();
-            const edit = id !== '' && id != null;
-            $.ajax({
-                url: edit ? (API_OD + rutaOD(tipo) + '/' + id) : (API_OD + rutaOD(tipo)),
-                type: edit ? 'PUT' : 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify(dto),
-                success: function () {
-                    $('#modalOD').modal('hide');
-                    alert(edit ? 'Registro actualizado.' : 'Registro creado.');
-                    listarOD(tipo);
-                },
-                error: function (xhr) { $('#alertaOD').html(parseErr(xhr)).show(); }
-            });
-        }
-
-        function abrirEliminarOD(tipo, id) { odElimTipo = tipo; odElimId = id; $('#modalEliminarOD').modal('show'); }
-        function confirmarEliminarOD() {
-            if (!odElimTipo || !odElimId) { return; }
-            $.ajax({ url: API_OD + rutaOD(odElimTipo) + '/' + odElimId, type: 'DELETE' })
-                .done(function () {
-                    $('#modalEliminarOD').modal('hide');
-                    alert('Registro eliminado correctamente.');
-                    const t = odElimTipo; odElimTipo = null; odElimId = null;
-                    listarOD(t);
-                })
-                .fail(function (xhr) { $('#modalEliminarOD').modal('hide'); alert(parseErr(xhr)); });
-        }
-
-        $(document).ready(function () {
-            $('#odProvincia').on('change', function () { cargarLocalidadesOD($(this).val(), null); });
-            listarOD('origen');
-            listarOD('destino');
-        });
-    </script>
-
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
+    <script src="assets/static/js/select-cliente-predictivo.js"></script>
+    <script src="assets/static/js/gestion-origenes-destinos.js"></script>
 </body>
 
 </html>
