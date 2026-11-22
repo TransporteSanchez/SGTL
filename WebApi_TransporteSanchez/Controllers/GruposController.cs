@@ -1,895 +1,232 @@
 ﻿using System;
-
 using System.Collections.Generic;
-
+using System.Data;
 using System.Data.Entity;
-
-using System.Data.Entity.Infrastructure;
-
-using System.Data.Entity.Validation;
-
 using System.Linq;
-
 using System.Net;
-
 using System.Web.Http;
-
-
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
-
 {
-
-    [RoutePrefix("api/Grupos")]
-
-    public class GruposController : ApiController
-
+    [AccesoAdministracion("grupos"), RoutePrefix("api/Grupos")]
+    public sealed class GruposController : ControladorAdministracion
     {
-
-        public class GruposDto
-
+        public sealed class GrupoEntrada { public string Grupo_Nombre { get; set; } }
+        public sealed class MenusEntrada
         {
-
-            public int Grupo_ID { get; set; }
-
-            public string Grupo_Nombre { get; set; }
-
-        }
-
-
-
-        public class MenuAsignacionDto
-
-        {
-
-            public int Menu_ID { get; set; }
-
-            public string Menu_Nombre { get; set; }
-
-            public bool Asignado { get; set; }
-
-        }
-
-
-
-        public class UsuarioAsignacionDto
-
-        {
-
-            public int Usuario_ID { get; set; }
-
-            public string Nombre_Usuario { get; set; }
-
-            public string NombreCompleto { get; set; }
-
-            public bool Asignado { get; set; }
-
-        }
-
-
-
-        public class GrupoUpsertDto
-
-        {
-
-            public string Grupo_Nombre { get; set; }
-
-            /// <summary>Nombre del usuario logueado (Usu_Alta y Usu_Modi). Si no se envía, se usa "SISTEMA".</summary>
-
-            public string UsuarioLogueado { get; set; }
-
-        }
-
-
-
-        public class GuardarMenusGrupoDto
-
-        {
-
             public List<int> MenuIds { get; set; }
-
+            public List<int> MenuIdsOriginales { get; set; }
         }
-
-
-
-        public class GuardarUsuariosGrupoDto
-
+        public sealed class IntegrantesEntrada
         {
-
-            public List<int> UsuarioIds { get; set; }
-
+            public List<int> AgregarIds { get; set; }
+            public List<int> QuitarIds { get; set; }
         }
 
-
-
-        private static string ObtenerMensajeInterno(Exception ex)
-
-        {
-
-            if (ex == null) return null;
-
-            var actual = ex;
-
-            while (actual.InnerException != null)
-
-                actual = actual.InnerException;
-
-            return actual.Message;
-
-        }
-
-
-
-        [HttpGet]
-
-        [Route("")]
-
+        [HttpGet, Route("")]
         public IHttpActionResult Get()
-
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-
-
-            try
-
-            {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
-                {
-
-                    var grupos = db.Set<GRUPOS>()
-
-                        .OrderBy(g => g.Grupo_Nombre)
-
-                        .Select(g => new GruposDto
-
-                        {
-
-                            Grupo_ID = g.Grupo_ID,
-
-                            Grupo_Nombre = g.Grupo_Nombre
-
-                        }).ToList();
-
-
-
-                    return Ok(grupos);
-
-                }
-
-            }
-
-            catch (DbEntityValidationException ex)
-
-            {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            return Ejecutar(db => Ok(db.Set<GRUPOS>().AsNoTracking().OrderBy(g => g.Grupo_Nombre)
+                .Select(g => new { g.Grupo_ID, g.Grupo_Nombre }).ToList()));
         }
 
-
-
-        [HttpGet]
-
-        [Route("{id:int}")]
-
+        [HttpGet, Route("{id:int}")]
         public IHttpActionResult Get(int id)
-
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-
+            return Ejecutar(db =>
             {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
-                {
-
-                    var grupo = db.Set<GRUPOS>()
-
-                        .Where(g => g.Grupo_ID == id)
-
-                        .Select(g => new GruposDto
-
-                        {
-
-                            Grupo_ID = g.Grupo_ID,
-
-                            Grupo_Nombre = g.Grupo_Nombre
-
-                        })
-
-                        .FirstOrDefault();
-
-
-
-                    if (grupo == null)
-
-                    {
-
-                        return NotFound();
-
-                    }
-
-
-
-                    return Ok(grupo);
-
-                }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+                var grupo = db.Set<GRUPOS>().AsNoTracking().Where(g => g.Grupo_ID == id)
+                    .Select(g => new { g.Grupo_ID, g.Grupo_Nombre }).SingleOrDefault();
+                return grupo == null ? (IHttpActionResult)NotFound() : Ok(grupo);
+            });
         }
 
-
-
-        [HttpPost]
-
-        [Route("")]
-
-        public IHttpActionResult Post([FromBody] GrupoUpsertDto value)
-
+        private IHttpActionResult GuardarNombre(int? id, GrupoEntrada entrada)
         {
-
-            if (value == null || string.IsNullOrWhiteSpace(value.Grupo_Nombre))
-
+            var nombre = (entrada == null ? "" : entrada.Grupo_Nombre ?? "").Trim();
+            if (nombre.Length == 0 || nombre.Length > 100)
+                return Error(HttpStatusCode.BadRequest, "Completá el nombre del grupo, con hasta 100 caracteres.");
+            return Ejecutar(db =>
             {
-
-                return Content(HttpStatusCode.BadRequest, new { message = "El nombre del grupo es obligatorio." });
-
-            }
-
-
-
-            string nombre = value.Grupo_Nombre.Trim();
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-
-
-            try
-
-            {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
+                using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
-
-                    bool existe = db.Set<GRUPOS>().Any(g => g.Grupo_Nombre == nombre);
-
-                    if (existe)
-
+                    if (id.HasValue && !db.Set<GRUPOS>().Any(g => g.Grupo_ID == id.Value)) return NotFound();
+                    var normalizado = nombre.ToLowerInvariant();
+                    var excluirId = id.GetValueOrDefault();
+                    if (db.Set<GRUPOS>().Any(g => g.Grupo_Nombre.Trim().ToLower() == normalizado && g.Grupo_ID != excluirId))
+                        return Error(HttpStatusCode.Conflict, "Ya existe un grupo con ese nombre.");
+                    int grupoId;
+                    // Los campos de registro de GRUPOS no están mapeados en el EDMX de main.
+                    if (id.HasValue)
                     {
-
-                        return Content(HttpStatusCode.BadRequest, new { message = "Ya existe un grupo con ese nombre." });
-
+                        grupoId = id.Value;
+                        db.Database.ExecuteSqlCommand("UPDATE dbo.GRUPOS SET Grupo_Nombre=@p0, Fecha_Modi=GETDATE(), Usu_Modi=@p1 WHERE Grupo_ID=@p2", nombre, UsuarioRegistro, grupoId);
                     }
-
-
-
-                    // Usu_Alta y Usu_Modi = usuario logueado (mismo valor en alta). Si no viene, "SISTEMA".
-
-                    string usu = (value.UsuarioLogueado ?? "").Trim();
-
-                    if (string.IsNullOrEmpty(usu)) usu = "SISTEMA";
-
-
-
-                    int nuevoId = db.Database.SqlQuery<int>(
-
-                        "INSERT INTO dbo.GRUPOS (Grupo_Nombre, Fecha_Alta, Usu_Alta, Fecha_Modi, Usu_Modi) OUTPUT INSERTED.Grupo_ID VALUES (@p0, GETDATE(), @p1, GETDATE(), @p2)",
-
-                        nombre, usu, usu
-
-                    ).FirstOrDefault();
-
-
-
-                    return Ok(new { message = "Grupo creado correctamente.", Grupo_ID = nuevoId });
-
-                }
-
-            }
-
-            catch (DbEntityValidationException ex)
-
-            {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
+                    else
                     {
-
-                        validationErrors.Add($"{error.PropertyName}: {error.ErrorMessage}");
-
+                        grupoId = db.Database.SqlQuery<int>(@"INSERT INTO dbo.GRUPOS (Grupo_Nombre,Fecha_Alta,Usu_Alta,Fecha_Modi,Usu_Modi)
+                            OUTPUT INSERTED.Grupo_ID VALUES (@p0,GETDATE(),@p1,GETDATE(),@p1)", nombre, UsuarioRegistro).Single();
                     }
-
+                    tx.Commit();
+                    Auditar("GRUPOS", id.HasValue ? "UPDATE" : "INSERT", grupoId);
+                    return Ok(new { Grupo_ID = grupoId, message = id.HasValue ? "Grupo actualizado." : "Grupo registrado." });
                 }
-
-                return Content(HttpStatusCode.BadRequest, new { message = "Error de validación.", errors = validationErrors });
-
-            }
-
-            catch (DbUpdateException ex)
-
-            {
-
-                var msg = ObtenerMensajeInterno(ex);
-
-                return Content(HttpStatusCode.InternalServerError, new { message = "Error al crear el grupo.", detail = msg });
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                var msg = ObtenerMensajeInterno(ex);
-
-                return Content(HttpStatusCode.InternalServerError, new { message = "Error al crear el grupo.", detail = msg });
-
-            }
-
+            });
         }
 
+        [HttpPost, Route("")]
+        public IHttpActionResult Post(GrupoEntrada entrada) { return GuardarNombre(null, entrada); }
 
+        [HttpPut, Route("{id:int}")]
+        public IHttpActionResult Put(int id, GrupoEntrada entrada) { return GuardarNombre(id, entrada); }
 
-        [HttpPut]
-
-        [Route("{id:int}")]
-
-        public IHttpActionResult Put(int id, [FromBody] GrupoUpsertDto value)
-
+        private static bool QuedariaSinGrupo(SGTLAuditContext db, int grupoId, List<int> usuarios)
         {
-
-            if (value == null || string.IsNullOrWhiteSpace(value.Grupo_Nombre))
-
-            {
-
-                return BadRequest("El nombre del grupo es obligatorio.");
-
-            }
-
-
-
-            string nombre = value.Grupo_Nombre.Trim();
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-
-
-            try
-
-            {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
-                {
-
-                    var grupo = db.Set<GRUPOS>().Find(id);
-
-
-
-                    if (grupo == null)
-
-                    {
-
-                        return NotFound();
-
-                    }
-
-
-                    bool nombreDuplicado = db.Set<GRUPOS>().Any(g => g.Grupo_ID != id && g.Grupo_Nombre == nombre);
-
-                    if (nombreDuplicado)
-
-                    {
-
-                        return Content(HttpStatusCode.BadRequest, new { message = "Ya existe otro grupo con ese nombre." });
-
-                    }
-
-
-
-                    grupo.Grupo_Nombre = nombre;
-
-                    db.SaveChanges();
-
-
-
-                    return Ok(new { message = "Grupo actualizado correctamente." });
-
-                }
-
-            }
-
-            catch (DbEntityValidationException ex)
-
-            {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            return db.Set<USUARIOS>().Any(u => usuarios.Contains(u.Usuario_ID) && u.Rol.Trim().ToLower() == "user" &&
+                !db.Set<GRUPOS_USUARIOS>().Any(gu => gu.UsuarioID == u.Usuario_ID && gu.GrupoID != grupoId));
         }
 
-
-
-        [HttpDelete]
-
-        [Route("{id:int}")]
-
+        [HttpDelete, Route("{id:int}")]
         public IHttpActionResult Delete(int id)
-
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-
-
-            try
-
+            return Ejecutar(db =>
             {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
+                using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
-
-                    var grupo = db.Set<GRUPOS>().Find(id);
-
-
-
-                    if (grupo == null)
-
-                    {
-
-                        return NotFound();
-
-                    }
-
-
-
-                    // Eliminar primero los registros que referencian al grupo (evitar conflicto FK)
-
-                    var permisos = db.Set<GRUPOS_MENU>().Where(x => x.GrupoID == id).ToList();
-
-                    var usuariosGrupo = db.Set<GRUPOS_USUARIOS>().Where(x => x.GrupoID == id).ToList();
-
-
-
-                    if (permisos.Any())
-
-                    {
-
-                        db.Set<GRUPOS_MENU>().RemoveRange(permisos);
-
-                        db.SaveChanges(); // Persistir antes de borrar el grupo
-
-                    }
-
-                    if (usuariosGrupo.Any())
-
-                    {
-
-                        db.Set<GRUPOS_USUARIOS>().RemoveRange(usuariosGrupo);
-
-                        db.SaveChanges(); // Persistir antes de borrar el grupo
-
-                    }
-
-
-                    db.Set<GRUPOS>().Remove(grupo);
-
+                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id)) return NotFound();
+                    var integrantes = db.Set<GRUPOS_USUARIOS>().Where(gu => gu.GrupoID == id).ToList();
+                    if (QuedariaSinGrupo(db, id, integrantes.Select(gu => gu.UsuarioID).Distinct().ToList()))
+                        return Error(HttpStatusCode.Conflict, "No se puede eliminar el grupo: un usuario se quedaría sin grupos.");
+                    db.Set<GRUPOS_USUARIOS>().RemoveRange(integrantes);
+                    db.Set<GRUPOS_MENU>().RemoveRange(db.Set<GRUPOS_MENU>().Where(gm => gm.GrupoID == id));
                     db.SaveChanges();
-
-
-
-                    return Ok(new { message = "Grupo eliminado correctamente." });
-
+                    db.Database.ExecuteSqlCommand("DELETE FROM dbo.GRUPOS WHERE Grupo_ID=@p0", id);
+                    tx.Commit();
+                    Auditar("GRUPOS", "DELETE", id);
+                    return Ok(new { message = "Grupo eliminado." });
                 }
-
-            }
-
-            catch (DbEntityValidationException ex)
-
-            {
-
-                var validationErrors = new List<string>();
-
-                foreach (var validationResult in ex.EntityValidationErrors)
-
-                {
-
-                    foreach (var error in validationResult.ValidationErrors)
-
-                    {
-
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-
-                    }
-
-                }
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            });
         }
 
-
-
-        [HttpGet]
-
-        [Route("{id:int}/Menus")]
-
-        public IHttpActionResult GetMenusPorGrupo(int id)
-
+        [HttpGet, Route("{id:int}/Menus")]
+        public IHttpActionResult Menus(int id)
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-
+            return Ejecutar(db =>
             {
+                if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
+                    return NotFound();
 
-                using (var db = new SGTLAuditContext(connectionString))
+                var ids = db.Set<GRUPOS_MENU>()
+                    .Where(gm => gm.GrupoID == id)
+                    .Select(gm => gm.MenuID)
+                    .ToList();
 
-                {
+                var catalogo = db.Set<MENU>()
+                    .AsNoTracking()
+                    .OrderBy(m => m.Menu_Nombre)
+                    .Select(m => new { m.Menu_ID, m.Menu_Nombre })
+                    .ToList();
 
-                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
-
+                return Ok(catalogo
+                    .Where(m => !PermisosTableros.EsPermisoAnterior(m.Menu_Nombre))
+                    .Select(m => new
                     {
-
-                        return NotFound();
-
-                    }
-
-
-                    var menus = db.Set<MENU>()
-
-                        .OrderBy(m => m.Menu_Nombre)
-
-                        .Select(m => new MenuAsignacionDto
-
-                        {
-
-                            Menu_ID = m.Menu_ID,
-
-                            Menu_Nombre = m.Menu_Nombre,
-
-                            Asignado = db.Set<GRUPOS_MENU>().Any(gm => gm.GrupoID == id && gm.MenuID == m.Menu_ID)
-
-                        })
-
-                        .ToList()
-                        .Where(m => !Security.PermisosTableros.EsPermisoAnterior(m.Menu_Nombre))
-                        .ToList();
-
-
-
-                    return Ok(menus);
-
-                }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+                        m.Menu_ID,
+                        m.Menu_Nombre,
+                        Asignado = ids.Contains(m.Menu_ID),
+                        EsTablero = PermisosTableros.TemasPara(
+                            false, false, new[] { m.Menu_Nombre }
+                        ).Length > 0
+                    })
+                    .ToList());
+            });
         }
 
-
-
-        [HttpPost]
-
-        [Route("{id:int}/Menus")]
-
-        public IHttpActionResult GuardarMenusPorGrupo(int id, [FromBody] GuardarMenusGrupoDto value)
-
+        [HttpPost, Route("{id:int}/Menus")]
+        public IHttpActionResult GuardarMenus(int id, MenusEntrada entrada)
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-
+            if (entrada == null || entrada.MenuIds == null || entrada.MenuIdsOriginales == null)
+                return Error(HttpStatusCode.BadRequest, "Indicá los permisos elegidos y los que cargaste al abrir el grupo.");
+            var ids = entrada.MenuIds.Distinct().ToList();
+            if (ids.Any(i => i < 1)) return Error(HttpStatusCode.BadRequest, "Seleccioná permisos válidos.");
+            return Ejecutar(db =>
             {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
+                using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
-
-                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
-
-                    {
-
-                        return NotFound();
-
-                    }
-
-
-
-                    var ids = (value?.MenuIds ?? new List<int>()).Distinct().ToList();
-
-                    var actuales = db.Set<GRUPOS_MENU>().Where(x => x.GrupoID == id).ToList();
-
-                    if (actuales.Any())
-
-                    {
-
-                        db.Set<GRUPOS_MENU>().RemoveRange(actuales);
-
-                    }
-
-
-
-                    foreach (var menuId in ids)
-
-                    {
-
-                        db.Set<GRUPOS_MENU>().Add(new GRUPOS_MENU
-
-                        {
-
-                            GrupoID = id,
-
-                            MenuID = menuId
-
-                        });
-
-                    }
-
-
-
+                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id)) return NotFound();
+                    var catalogo = db.Set<MENU>().Select(m => new { m.Menu_ID, m.Menu_Nombre }).ToList();
+                    var permitidos = new HashSet<int>(catalogo.Where(m => !PermisosTableros.EsPermisoAnterior(m.Menu_Nombre)).Select(m => m.Menu_ID));
+                    if (ids.Any(i => !permitidos.Contains(i)))
+                        return Error(HttpStatusCode.BadRequest, "Uno o más permisos ya no están disponibles. Volvé a cargar el grupo.");
+                    var actuales = db.Set<GRUPOS_MENU>().Where(gm => gm.GrupoID == id).ToList();
+                    if (!new HashSet<int>(actuales.Where(gm => permitidos.Contains(gm.MenuID)).Select(gm => gm.MenuID)).SetEquals(entrada.MenuIdsOriginales))
+                        return Error(HttpStatusCode.Conflict, "Los permisos cambiaron desde que abriste el grupo. Volvé a cargarlo y revisá los cambios.");
+                    db.Set<GRUPOS_MENU>().RemoveRange(actuales.Where(gm => !ids.Contains(gm.MenuID)));
+                    foreach (var menuId in ids.Except(actuales.Select(gm => gm.MenuID)))
+                        db.Set<GRUPOS_MENU>().Add(new GRUPOS_MENU { GrupoID = id, MenuID = menuId });
                     db.SaveChanges();
-
-                    return Ok(new { message = "Permisos guardados correctamente." });
-
+                    tx.Commit();
+                    return Ok(new { message = "Permisos guardados." });
                 }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            });
         }
 
-
-
-        [HttpGet]
-
-        [Route("{id:int}/Usuarios")]
-
-        public IHttpActionResult GetUsuariosPorGrupo(int id)
-
+        [HttpGet, Route("{id:int}/Usuarios")]
+        public IHttpActionResult Usuarios(int id)
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-
+            return Ejecutar(db =>
             {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
-                {
-
-                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
-
+                if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id)) return NotFound();
+                var relaciones = db.Set<GRUPOS_USUARIOS>().Select(gu => new { gu.UsuarioID, gu.GrupoID }).Distinct().ToList();
+                var asignados = new HashSet<int>(relaciones.Where(gu => gu.GrupoID == id).Select(gu => gu.UsuarioID));
+                var conOtroGrupo = new HashSet<int>(relaciones.Where(gu => gu.GrupoID != id).Select(gu => gu.UsuarioID));
+                return Ok(db.Set<USUARIOS>().AsNoTracking().OrderBy(u => u.Nombre_Usuario)
+                    .Select(u => new { u.Usuario_ID, u.Nombre_Usuario, u.Nombre, u.Apellido, u.Rol }).ToList()
+                    .Select(u => new
                     {
-
-                        return NotFound();
-
-                    }
-
-
-
-                    var usuarios = db.Set<USUARIOS>()
-
-                        .OrderBy(u => u.Nombre_Usuario)
-
-                        .Select(u => new UsuarioAsignacionDto
-
-                        {
-
-                            Usuario_ID = u.Usuario_ID,
-
-                            Nombre_Usuario = u.Nombre_Usuario,
-
-                            NombreCompleto = (u.Nombre ?? "") + " " + (u.Apellido ?? ""),
-
-                            Asignado = db.Set<GRUPOS_USUARIOS>().Any(gu => gu.GrupoID == id && gu.UsuarioID == u.Usuario_ID)
-
-                        })
-
-                        .ToList();
-
-
-
-                    return Ok(usuarios);
-
-                }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+                        u.Usuario_ID,
+                        u.Nombre_Usuario,
+                        u.Rol,
+                        NombreCompleto = ((u.Nombre ?? "") + " " + (u.Apellido ?? "")).Trim(),
+                        Asignado = asignados.Contains(u.Usuario_ID),
+                        PuedeAgregar = PermisosAdministracion.Iguales(u.Rol, "user"),
+                        PuedeQuitar = !PermisosAdministracion.Iguales(u.Rol, "user") || conOtroGrupo.Contains(u.Usuario_ID)
+                    }).ToList());
+            });
         }
 
-
-
-        [HttpPost]
-
-        [Route("{id:int}/Usuarios")]
-
-        public IHttpActionResult GuardarUsuariosPorGrupo(int id, [FromBody] GuardarUsuariosGrupoDto value)
-
+        [HttpPost, Route("{id:int}/Usuarios/Cambios")]
+        public IHttpActionResult GuardarIntegrantes(int id, IntegrantesEntrada entrada)
         {
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-
+            if (entrada == null) return Error(HttpStatusCode.BadRequest, "Indicá los usuarios que querés agregar o quitar.");
+            var agregar = (entrada.AgregarIds ?? new List<int>()).Distinct().ToList();
+            var quitar = (entrada.QuitarIds ?? new List<int>()).Distinct().ToList();
+            if (agregar.Concat(quitar).Any(i => i < 1) || agregar.Intersect(quitar).Any())
+                return Error(HttpStatusCode.BadRequest, "Revisá los usuarios que querés agregar o quitar.");
+            return Ejecutar(db =>
             {
-
-                using (var db = new SGTLAuditContext(connectionString))
-
+                using (var tx = db.Database.BeginTransaction(IsolationLevel.Serializable))
                 {
-
-                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
-
-                    {
-
-                        return NotFound();
-
-                    }
-
-
-
-                    var ids = (value?.UsuarioIds ?? new List<int>()).Distinct().ToList();
-
-                    var actuales = db.Set<GRUPOS_USUARIOS>().Where(x => x.GrupoID == id).ToList();
-
-                    if (actuales.Any())
-
-                    {
-
-                        db.Set<GRUPOS_USUARIOS>().RemoveRange(actuales);
-
-                    }
-
-
-
-                    foreach (var usuarioId in ids)
-
-                    {
-
-                        db.Set<GRUPOS_USUARIOS>().Add(new GRUPOS_USUARIOS
-
-                        {
-
-                            GrupoID = id,
-
-                            UsuarioID = usuarioId
-
-                        });
-
-                    }
-
-
-
+                    if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id)) return NotFound();
+                    var solicitados = agregar.Concat(quitar).Distinct().ToList();
+                    var usuarios = db.Set<USUARIOS>().Where(u => solicitados.Contains(u.Usuario_ID)).Select(u => new { u.Usuario_ID, u.Rol }).ToList();
+                    if (usuarios.Count != solicitados.Count) return Error(HttpStatusCode.Conflict, "Uno o más usuarios ya no existen. Volvé a cargar el grupo.");
+                    if (usuarios.Any(u => agregar.Contains(u.Usuario_ID) && !PermisosAdministracion.Iguales(u.Rol, "user")))
+                        return Error(HttpStatusCode.BadRequest, "Solo se pueden agregar usuarios con rol Usuario. Administradores y choferes no usan grupos.");
+                    var actuales = db.Set<GRUPOS_USUARIOS>().Where(gu => gu.GrupoID == id).ToList();
+                    var borrar = actuales.Where(gu => quitar.Contains(gu.UsuarioID)).ToList();
+                    if (QuedariaSinGrupo(db, id, borrar.Select(gu => gu.UsuarioID).Distinct().ToList()))
+                        return Error(HttpStatusCode.Conflict, "No se puede quitar un usuario de su único grupo.");
+                    db.Set<GRUPOS_USUARIOS>().RemoveRange(borrar);
+                    var nuevos = agregar.Except(actuales.Select(gu => gu.UsuarioID)).ToList();
+                    foreach (var usuarioId in nuevos)
+                        db.Set<GRUPOS_USUARIOS>().Add(new GRUPOS_USUARIOS { GrupoID = id, UsuarioID = usuarioId });
                     db.SaveChanges();
-
-                    return Ok(new { message = "Usuarios del grupo guardados correctamente." });
-
+                    tx.Commit();
+                    return Ok(new { message = "Integrantes guardados.", UsuariosAgregados = nuevos.Count, UsuariosQuitados = borrar.Count });
                 }
-
-            }
-
-            catch (Exception ex)
-
-            {
-
-                return InternalServerError(ex);
-
-            }
-
+            });
         }
-
-
-
     }
-
 }
-
