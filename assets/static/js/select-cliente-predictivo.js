@@ -151,7 +151,10 @@
             } else if (evento.key === 'Enter' && abierta) {
                 const indice = activa >= 0 ? activa :
                     (campo.value.trim() && botones.length === 1 ? 0 : -1);
-                if (indice < 0) return;
+                if (indice < 0) {
+                    cerrar();
+                    return;
+                }
                 evento.preventDefault();
                 evento.stopPropagation();
                 botones[indice].click();

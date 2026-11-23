@@ -64,7 +64,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     var u = db.Set<T>().Find(id);
                     if (u == null) return NotFound();
-                    return Ok(ADatos(u, null, null, null));
+                    var cliente = db.Set<CLIENTES>().Find(u.ClienteID);
+                    return Ok(ADatos(u, u.PROVINCIAS?.Nombre_Provincia, u.LOCALIDADES?.Nombre_Localidad, cliente?.Razon_Social));
                 }
             }
             catch (Exception ex)
@@ -174,7 +175,8 @@ namespace WebApi_TransporteSanchez.Controllers
             u.ProvID = dto.ProvID;
             u.LocID = dto.LocID;
             u.Calle = (dto.Calle ?? "").Trim();
-            u.AlturaCalle = (dto.AlturaCalle ?? "").Trim();
+            var altura = (dto.AlturaCalle ?? "").Trim();
+            if (u.AlturaCalle?.Trim() != altura) u.AlturaCalle = altura;
             u.ClienteID = dto.ClienteID;
             u.Fecha_Modi = DateTime.Now;
             u.Usu_Modi = usuario;
@@ -189,7 +191,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var errores = new List<object>();
             if (string.IsNullOrWhiteSpace(d.Descripcion))
-                errores.Add(new { PropertyName = "Descripcion", ErrorMessage = "La descripción es obligatoria." });
+                errores.Add(new { PropertyName = "Descripcion", ErrorMessage = "Completá la descripción." });
             else if (d.Descripcion.Trim().Length > 50)
                 errores.Add(new { PropertyName = "Descripcion", ErrorMessage = "La descripción puede tener hasta 50 caracteres." });
             if (d.ClienteID <= 0)
