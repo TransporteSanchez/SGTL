@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Controllers;
 using System.Web.Http.Filters;
+using Newtonsoft.Json;
 
 namespace WebApi_TransporteSanchez.Security
 {
@@ -310,7 +311,9 @@ namespace WebApi_TransporteSanchez.Security
         protected void Auditar(
             string entidad,
             string accion,
-            int id)
+            int id,
+            object valoresAnteriores = null,
+            object valoresNuevos = null)
         {
             var clave = entidad == "USUARIOS"
                 ? "Usuario_ID=" + id
@@ -321,7 +324,13 @@ namespace WebApi_TransporteSanchez.Security
                 Operador.Nombre_Usuario,
                 accion,
                 entidad,
-                clave
+                clave,
+                detalle: valoresNuevos == null
+                    ? null
+                    : JsonConvert.SerializeObject(valoresNuevos),
+                valoresAnteriores: valoresAnteriores == null
+                    ? null
+                    : JsonConvert.SerializeObject(valoresAnteriores)
             );
         }
     }

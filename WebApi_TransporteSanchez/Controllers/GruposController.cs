@@ -23,6 +23,28 @@ namespace WebApi_TransporteSanchez.Controllers
             public List<int> AgregarIds { get; set; }
             public List<int> QuitarIds { get; set; }
         }
+        public sealed class GrupoAuditoria
+        {
+            public int Grupo_ID { get; set; }
+            public string Grupo_Nombre { get; set; }
+            public DateTime? Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public DateTime? Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
+        }
+
+        private static GrupoAuditoria ObtenerValoresAuditoria(
+            SGTLAuditContext db,
+            int id)
+        {
+            return db.Database.SqlQuery<GrupoAuditoria>(
+                @"SELECT Grupo_ID, Grupo_Nombre, Fecha_Alta,
+                 Usu_Alta, Fecha_Modi, Usu_Modi
+          FROM dbo.GRUPOS
+          WHERE Grupo_ID = @p0",
+                id
+            ).Single();
+        }
 
         [HttpGet, Route("")]
         public IHttpActionResult Get()
@@ -56,6 +78,9 @@ namespace WebApi_TransporteSanchez.Controllers
                     var excluirId = id.GetValueOrDefault();
                     if (db.Set<GRUPOS>().Any(g => g.Grupo_Nombre.Trim().ToLower() == normalizado && g.Grupo_ID != excluirId))
                         return Error(HttpStatusCode.Conflict, "Ya existe un grupo con ese nombre.");
+                    var anteriores = id.HasValue
+                        ? ObtenerValoresAuditoria(db, id.Value)
+                        : null;
                     int grupoId;
                     // Los campos de registro de GRUPOS no están mapeados en el EDMX de main.
                     if (id.HasValue)
@@ -68,8 +93,15 @@ namespace WebApi_TransporteSanchez.Controllers
                         grupoId = db.Database.SqlQuery<int>(@"INSERT INTO dbo.GRUPOS (Grupo_Nombre,Fecha_Alta,Usu_Alta,Fecha_Modi,Usu_Modi)
                             OUTPUT INSERTED.Grupo_ID VALUES (@p0,GETDATE(),@p1,GETDATE(),@p1)", nombre, UsuarioRegistro).Single();
                     }
+                    var nuevos = ObtenerValoresAuditoria(db, grupoId);
                     tx.Commit();
-                    Auditar("GRUPOS", id.HasValue ? "UPDATE" : "INSERT", grupoId);
+                    Auditar(
+                        "GRUPOS",
+                        id.HasValue ? "UPDATE" : "INSERT",
+                        grupoId,
+                        anteriores,
+                        nuevos
+                    );
                     return Ok(new { Grupo_ID = grupoId, message = id.HasValue ? "Grupo actualizado." : "Grupo registrado." });
                 }
             });
@@ -98,12 +130,13 @@ namespace WebApi_TransporteSanchez.Controllers
                     var integrantes = db.Set<GRUPOS_USUARIOS>().Where(gu => gu.GrupoID == id).ToList();
                     if (QuedariaSinGrupo(db, id, integrantes.Select(gu => gu.UsuarioID).Distinct().ToList()))
                         return Error(HttpStatusCode.Conflict, "No se puede eliminar el grupo: un usuario se quedaría sin grupos.");
+                    var anteriores = ObtenerValoresAuditoria(db, id);
                     db.Set<GRUPOS_USUARIOS>().RemoveRange(integrantes);
                     db.Set<GRUPOS_MENU>().RemoveRange(db.Set<GRUPOS_MENU>().Where(gm => gm.GrupoID == id));
                     db.SaveChanges();
                     db.Database.ExecuteSqlCommand("DELETE FROM dbo.GRUPOS WHERE Grupo_ID=@p0", id);
                     tx.Commit();
-                    Auditar("GRUPOS", "DELETE", id);
+                    Auditar("GRUPOS", "DELETE", id, valoresAnteriores: anteriores);
                     return Ok(new { message = "Grupo eliminado." });
                 }
             });

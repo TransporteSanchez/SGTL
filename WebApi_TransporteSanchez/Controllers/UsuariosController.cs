@@ -25,6 +25,36 @@ namespace WebApi_TransporteSanchez.Controllers
             public long? VersionSesion { get; set; }
         }
 
+        public sealed class UsuarioAuditoria
+        {
+            public int Usuario_ID { get; set; }
+            public string Nombre { get; set; }
+            public string Apellido { get; set; }
+            public string Nombre_Usuario { get; set; }
+            public string Email { get; set; }
+            public string Rol { get; set; }
+            public string EstadoUsuario { get; set; }
+            public DateTime? Fecha_Alta { get; set; }
+            public string Usu_Alta { get; set; }
+            public DateTime? Fecha_Modi { get; set; }
+            public string Usu_Modi { get; set; }
+            public long? VersionSesion { get; set; }
+        }
+
+        private static UsuarioAuditoria ObtenerValoresAuditoria(
+            SGTLAuditContext db,
+            int id)
+        {
+            return db.Database.SqlQuery<UsuarioAuditoria>(
+                @"SELECT Usuario_ID, Nombre, Apellido, Nombre_Usuario,
+                 Email, Rol, EstadoUsuario, Fecha_Alta, Usu_Alta,
+                 Fecha_Modi, Usu_Modi, VersionSesion
+                 FROM dbo.USUARIOS
+                 WHERE Usuario_ID = @p0",
+                id
+            ).Single();
+        }
+
         public sealed class UsuarioEntrada
         {
             public string Nombre { get; set; }
@@ -278,8 +308,9 @@ namespace WebApi_TransporteSanchez.Controllers
                         entrada.Nombre, entrada.Apellido, entrada.Nombre_Usuario, ClavesSeguras.Crear(entrada.Contraseña),
                         (object)email ?? DBNull.Value, entrada.Rol, entrada.EstadoUsuario, UsuarioRegistro).Single();
                     AsignarGrupos(db, id, grupos);
+                    var nuevos = ObtenerValoresAuditoria(db, id);
                     tx.Commit();
-                    Auditar("USUARIOS", "INSERT", id);
+                    Auditar("USUARIOS", "INSERT", id, valoresNuevos: nuevos);
                     return Content(HttpStatusCode.Created, new { Usuario_ID = id, message = "Usuario registrado." });
                 }
             });
@@ -315,14 +346,16 @@ namespace WebApi_TransporteSanchez.Controllers
                         return Error(HttpStatusCode.Conflict, "Ese e-mail ya está registrado en otro usuario.", "email_duplicado");
                     var cambiaClave = !string.IsNullOrEmpty(entrada.Contraseña);
                     var revocar = cambiaClave || !PermisosAdministracion.Iguales(actual.Rol, entrada.Rol) || actual.EstadoUsuario != entrada.EstadoUsuario;
+                    var anteriores = ObtenerValoresAuditoria(db, id);
                     db.Database.ExecuteSqlCommand(@"UPDATE dbo.USUARIOS SET Nombre=@p0, Apellido=@p1, Contraseña=@p2,
                         Email=@p3, Rol=@p4, EstadoUsuario=@p5, Fecha_Modi=GETDATE(), Usu_Modi=@p6, VersionSesion=VersionSesion+@p7
                         WHERE Usuario_ID=@p8", entrada.Nombre, entrada.Apellido,
                         cambiaClave ? ClavesSeguras.Crear(entrada.Contraseña) : actual.Clave,
                         (object)email ?? DBNull.Value, entrada.Rol, entrada.EstadoUsuario, UsuarioRegistro, revocar ? 1 : 0, id);
                     AsignarGrupos(db, id, grupos);
+                    var nuevos = ObtenerValoresAuditoria(db, id);
                     tx.Commit();
-                    Auditar("USUARIOS", "UPDATE", id);
+                    Auditar("USUARIOS", "UPDATE", id, anteriores, nuevos);
                     return Ok(new { message = "Usuario actualizado.", SesionRevocada = revocar && id == Operador.Usuario_ID });
                 }
             });
@@ -340,11 +373,24 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (actual == null) return NotFound();
                     var impedimento = Impedimento(db, actual, (actual.Rol ?? "").Trim().ToLowerInvariant(), entrada.EstadoUsuario);
                     if (impedimento != null) return impedimento;
+                    var anteriores = ObtenerValoresAuditoria(db, id);
                     if (actual.EstadoUsuario != entrada.EstadoUsuario)
-                        db.Database.ExecuteSqlCommand(@"UPDATE dbo.USUARIOS SET EstadoUsuario=@p0, Fecha_Modi=GETDATE(),
-                            Usu_Modi=@p1, VersionSesion=VersionSesion+1 WHERE Usuario_ID=@p2", entrada.EstadoUsuario, UsuarioRegistro, id);
+                    {
+                        db.Database.ExecuteSqlCommand(
+                            @"UPDATE dbo.USUARIOS
+                            SET EstadoUsuario = @p0,
+                            Fecha_Modi = GETDATE(),
+                            Usu_Modi = @p1,
+                            VersionSesion = VersionSesion + 1
+                            WHERE Usuario_ID = @p2",
+                            entrada.EstadoUsuario,
+                            UsuarioRegistro,
+                            id
+                        );
+                    }
+                    var nuevos = ObtenerValoresAuditoria(db, id);
                     tx.Commit();
-                    Auditar("USUARIOS", "UPDATE", id);
+                    Auditar("USUARIOS", "UPDATE", id, anteriores, nuevos);
                     return Ok(new { message = "Estado actualizado." });
                 }
             });
@@ -368,10 +414,12 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (actual == null) return Unauthorized();
                     if (!ClavesSeguras.Verificar(entrada.ContrasenaActual, actual.Clave))
                         return Error(HttpStatusCode.BadRequest, "La contraseña actual es incorrecta.");
+                    var anteriores = ObtenerValoresAuditoria(db, actual.Usuario_ID);
                     db.Database.ExecuteSqlCommand(@"UPDATE dbo.USUARIOS SET Contraseña=@p0, VersionSesion=VersionSesion+1,
                         Fecha_Modi=GETDATE(), Usu_Modi=@p1 WHERE Usuario_ID=@p2", ClavesSeguras.Crear(entrada.ContrasenaNueva), UsuarioRegistro, actual.Usuario_ID);
+                    var nuevos = ObtenerValoresAuditoria(db, actual.Usuario_ID);
                     tx.Commit();
-                    Auditar("USUARIOS", "UPDATE", actual.Usuario_ID);
+                    Auditar("USUARIOS", "UPDATE", actual.Usuario_ID, anteriores, nuevos);
                     return Ok(new { message = "Contraseña actualizada. Volvé a iniciar sesión." });
                 }
             });
@@ -388,11 +436,12 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (actual == null) return NotFound();
                     var impedimento = Impedimento(db, actual, (actual.Rol ?? "").Trim().ToLowerInvariant(), actual.EstadoUsuario, true);
                     if (impedimento != null) return impedimento;
+                    var anteriores = ObtenerValoresAuditoria(db, id);
                     db.Set<GRUPOS_USUARIOS>().RemoveRange(db.Set<GRUPOS_USUARIOS>().Where(g => g.UsuarioID == id));
                     db.SaveChanges();
                     db.Database.ExecuteSqlCommand("DELETE FROM dbo.USUARIOS WHERE Usuario_ID=@p0", id);
                     tx.Commit();
-                    Auditar("USUARIOS", "DELETE", id);
+                    Auditar("USUARIOS", "DELETE", id, valoresAnteriores: anteriores);
                     return Ok(new { message = "Usuario eliminado." });
                 }
             });
