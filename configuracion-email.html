@@ -12,7 +12,12 @@
 </head>
 
 <body>
-    <div id="app">
+    <div id="cargandoApariencia" class="min-vh-100 d-flex align-items-center justify-content-center gap-2"
+        role="status">
+        <span class="spinner-border" aria-hidden="true"></span>
+        <span>Cargando…</span>
+    </div>
+    <div id="app" class="d-none">
         <div id="sidebar"></div>
         <div id="main" class="layout-navbar navbar-fixed">
             <header>
@@ -257,7 +262,6 @@
         </div>
     </div>
 
-    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
     <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>

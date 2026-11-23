@@ -40,8 +40,66 @@
         elemento.classList.toggle("d-none", !mensaje);
         if (mensaje) elemento.classList.add("alert-" + tipo);
     }
+    async function inicializarApariencia() {
+        const indicador = porId("cargandoApariencia");
+
+        try {
+            const encabezado = window.loadHeader();
+            window.loadFooter();
+
+            const [contenido] = await Promise.all([
+                fetch(SGTL.api + "/GestionContenido/1", {
+                    cache: "no-store",
+                    headers: SGTL.encabezados({ Accept: "application/json" })
+                }).then(respuesta => {
+                    if (!respuesta.ok) {
+                        throw new Error("No se pudo cargar la apariencia de SGTL.");
+                    }
+
+                    return respuesta.json();
+                }),
+                encabezado,
+                window.loadSidebar()
+            ]);
+
+            const datos = contenido || {};
+            const textoPie = datos.ContenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
+            const contenedorPie = porId("footer-container");
+
+            window.applyStyles(
+                datos.Logo,
+                datos.ColorFondo,
+                datos.ColorBotonesMenu,
+                textoPie
+            );
+
+            if (!contenedorPie.querySelector(".footer p")) {
+                const esperarPie = new MutationObserver(() => {
+                    const parrafo = contenedorPie.querySelector(".footer p");
+                    if (!parrafo) return;
+
+                    esperarPie.disconnect();
+                    parrafo.innerHTML = textoPie;
+                });
+
+                esperarPie.observe(contenedorPie, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            indicador.classList.add("d-none");
+            porId("app").classList.remove("d-none");
+            return true;
+        } catch {
+            indicador.textContent =
+                "No se pudo cargar la pantalla. Recargá la página para volver a intentar.";
+            return false;
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", async () => {
+        if (!await inicializarApariencia()) return;
         const tabla = porId("emailConfigTableBody");
         const formPerfil = porId("emailConfigForm");
         const formPrueba = porId("emailTestForm");
@@ -378,27 +436,6 @@
                 SGTL.toastExito(datos?.mensaje || "Se envió el correo de prueba.");
             });
         });
-
-        if (typeof window.loadHeader === "function") {
-            window.loadHeader().catch(error => console.warn("No se pudo cargar el encabezado.", error));
-        }
-        if (typeof window.loadFooter === "function") window.loadFooter();
-        fetch(SGTL.api + "/GestionContenido/1", {
-            headers: SGTL.encabezados({ Accept: "application/json" })
-        })
-            .then(respuesta => {
-                if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
-                return respuesta.json();
-            })
-            .then(contenido => {
-                window.applyStyles(
-                    contenido.Logo,
-                    contenido.ColorFondo,
-                    contenido.ColorBotonesMenu,
-                    contenido.ContenidoPiePagina
-                );
-            })
-            .catch(error => console.warn("No se pudo cargar la apariencia de SGTL.", error));
 
         try {
             await cargarPerfiles();
