@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System.Data;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Web.Http;
-using System.IdentityModel.Tokens.Jwt;
-using System.Linq;
-using System.Web;
-using Microsoft.IdentityModel.Tokens;
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -11,10 +10,22 @@ namespace WebApi_TransporteSanchez.Controllers
     public class LogoutController : ApiController
     {
         [HttpPost]
-        public IHttpActionResult Logout()
+        public async Task<IHttpActionResult> Logout(CancellationToken ct)
         {
-            // Aquí solo indicamos que el logout fue exitoso
-            return Ok(new { message = "Sesión cerrada correctamente." });
+            var usuario = await SesionSegura.VerificarAsync(Request, ct);
+            if (usuario == null) return Ok();
+
+            using (var db = SeguridadSql.Abrir())
+            {
+                await db.Database.ExecuteSqlCommandAsync(
+                    "UPDATE dbo.USUARIOS SET VersionSesion = VersionSesion + 1 WHERE Usuario_ID = @id AND VersionSesion = @version;",
+                    ct,
+                    SeguridadSql.P("@id", SqlDbType.Int, usuario.Usuario_ID),
+                    SeguridadSql.P("@version", SqlDbType.BigInt, usuario.VersionSesion));
+            }
+
+            SeguridadSql.Auditar(usuario.Nombre_Usuario, "LOGOUT", usuario.Usuario_ID);
+            return Ok();
         }
     }
 }

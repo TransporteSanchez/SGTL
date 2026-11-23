@@ -419,7 +419,6 @@
     <Compile Include="Services\WhatsApp\ViajeWhatsAppDispatcher.cs" />
     <Compile Include="Controllers\FacturacionComprobantesConfiguracion.cs" />
     <Compile Include="Controllers\FacturacionConfiguracionController.cs" />
-    <Compile Include="Controllers\HealthController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\LogoutController.cs" />
     <Compile Include="Controllers\TarifasController.cs" />

@@ -1,112 +1,68 @@
+function apiDelEncabezado() {
+  return window.SGTL ? SGTL.api : 'http://localhost:50222/api';
+}
+
 function loadHeader() {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", "views/header.html");
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        document.getElementById("header-container").innerHTML = xhr.responseText;
-
-        setupUserInfo();
-
-        resolve();
-      } else {
-        console.error('Error al cargar el header:', xhr.statusText);
-        reject(new Error('Error al cargar el header'));
-      }
-    };
-    xhr.onerror = function() {
-      console.error('Error de red al cargar el header.');
-      reject(new Error('Error de red'));
-    };
-    xhr.send();
+  return fetch('views/header.html').then(respuesta => {
+    if (!respuesta.ok) throw new Error('No se pudo cargar el encabezado.');
+    return respuesta.text();
+  }).then(html => {
+    document.getElementById('header-container').innerHTML = html;
+    setupUserInfo();
   });
 }
 
 function setupUserInfo() {
   const token = localStorage.getItem('token');
-  const loadingRedirect = document.getElementById('loading-redirect');
 
   if (!token) {
-    loadingRedirect.style.display = 'flex';
+    document.getElementById('loading-redirect').style.display = 'flex';
     window.location.replace('Login.html');
     return;
   }
 
-  loadDynamicBackgroundColor().then(menuColor => {
-    const nombre = localStorage.getItem('nombre');
-    const apellido = localStorage.getItem('apellido');
-    const usernameDisplay = document.getElementById('usernameDisplay');
-    const userInitialsContainer = document.getElementById('userInitials'); 
+  mostrarUsuario();
+  colorDelMenu().then(color => {
+    if (color) document.getElementById('userInitials').style.backgroundColor = color;
+  }, () => {});
 
-    if (usernameDisplay && nombre && apellido) {
-      usernameDisplay.textContent = `${nombre} ${apellido}`;
-
-      const iniciales = (nombre[0] || "") + (apellido[0] || "");
-      if (userInitialsContainer) {
-        userInitialsContainer.textContent = iniciales.toUpperCase();
-
-        userInitialsContainer.style.display = 'flex';
-        userInitialsContainer.style.alignItems = 'center';
-        userInitialsContainer.style.justifyContent = 'center';
-        userInitialsContainer.style.width = '40px';
-        userInitialsContainer.style.height = '40px';
-        userInitialsContainer.style.backgroundColor = menuColor || '#007bff';
-        userInitialsContainer.style.color = '#fff';
-        userInitialsContainer.style.borderRadius = '50%';
-        userInitialsContainer.style.fontWeight = 'bold';
-        userInitialsContainer.style.fontSize = '1rem';
-      }
-    } else {
-      console.warn('Nombre de usuario no disponible en localStorage.');
-    }
-  }).catch(error => {
-    console.error("Error al cargar el color de fondo dinámico:", error);
+  document.getElementById('logoutBtn').addEventListener('click', evento => {
+    evento.preventDefault();
+    ['token', 'username', 'nombre', 'apellido', 'userRole'].forEach(clave => localStorage.removeItem(clave));
+    fetch(apiDelEncabezado() + '/logout', {
+      method: 'POST',
+      keepalive: true,
+      headers: { Authorization: 'Bearer ' + token }
+    }).catch(() => {});
+    window.location.replace('Login.html');
   });
-
-  const logoutBtn = document.getElementById('logoutBtn');
-  if (logoutBtn) {
-    logoutBtn.addEventListener('click', function(event) {
-      event.preventDefault();
-      ['token', 'username', 'nombre', 'apellido', 'userRole'].forEach(clave => localStorage.removeItem(clave));
-      fetch('http://localhost:50222/api/logout', {
-        method: 'POST',
-        keepalive: true,
-        headers: {
-          'Authorization': 'Bearer ' + token
-        }
-      }).catch(() => {});
-      window.location.replace('Login.html');
-    });
-  } else {
-    console.warn('Botón de logout no encontrado.');
-  }
 }
 
-function loadDynamicBackgroundColor() {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", "http://localhost:50222/api/GestionContenido/1", true);
+function mostrarUsuario() {
+  const nombre = localStorage.getItem('nombre');
+  const apellido = localStorage.getItem('apellido');
+  if (!nombre || !apellido) return;
 
-    xhr.onload = function() {
-      if (xhr.status === 200) {
-        try {
-          const data = JSON.parse(xhr.responseText);
-          resolve(data.ColorBotonesMenu);
-        } catch (e) {
-          console.error("Error al parsear la respuesta JSON:", e);
-          reject(e);
-        }
-      } else {
-        console.error("Error al cargar la configuración de la API. Estado HTTP:", xhr.status);
-        reject(new Error("Error en la carga de la API"));
-      }
-    };
-
-    xhr.onerror = function() {
-      console.error("Error de red al intentar conectar con la API GestionContenido.");
-      reject(new Error("Error de red"));
-    };
-
-    xhr.send();
+  const iniciales = document.getElementById('userInitials');
+  document.getElementById('usernameDisplay').textContent = nombre + ' ' + apellido;
+  iniciales.textContent = (nombre[0] + apellido[0]).toUpperCase();
+  Object.assign(iniciales.style, {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '40px',
+    height: '40px',
+    backgroundColor: window.SGTL_CONTENIDO_DEFAULT.menu,
+    color: '#fff',
+    borderRadius: '50%',
+    fontWeight: 'bold',
+    fontSize: '1rem'
   });
+}
+
+function colorDelMenu() {
+  return fetch(apiDelEncabezado() + '/GestionContenido/1').then(respuesta => {
+    if (!respuesta.ok) throw new Error('No se pudo cargar la apariencia.');
+    return respuesta.json();
+  }).then(contenido => contenido.ColorBotonesMenu);
 }
