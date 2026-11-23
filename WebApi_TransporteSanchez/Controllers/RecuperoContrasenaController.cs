@@ -62,8 +62,9 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         [HttpPost, Route("solicitar")]
-        public IHttpActionResult Solicitar(
-            [FromBody] SolicitarEntrada entrada)
+        public async Task<IHttpActionResult> Solicitar(
+    [FromBody] SolicitarEntrada entrada,
+    CancellationToken ct)
         {
             string email;
 
@@ -85,19 +86,151 @@ namespace WebApi_TransporteSanchez.Controllers
             var ip =
                 HttpContext.Current?.Request.UserHostAddress ?? "sin-ip";
 
-            if (LimitesAcceso.Permitir("recupero:global", 120) &&
-                LimitesAcceso.Permitir("recupero:ip:" + ip, 10))
+            if (!LimitesAcceso.Permitir("recupero:global", 120) ||
+                !LimitesAcceso.Permitir("recupero:ip:" + ip, 10))
             {
-                Encolar(ct =>
-                    new RecuperoContrasena(new GestionPerfilesEmail())
-                        .SolicitarAsync(email, ct));
+                return Responder((HttpStatusCode)429,
+                    new
+                    {
+                        error = "Esperá unos minutos antes de volver a intentar."
+                    });
             }
 
-            return Responder(HttpStatusCode.OK,
-                new
+            try
+            {
+                if (!await CorreoRecuperoConfiguradoAsync(ct))
                 {
-                    mensaje = RecuperoContrasena.MensajeSolicitud
-                });
+                    return Responder(HttpStatusCode.ServiceUnavailable,
+                        new
+                        {
+                            codigo = "recupero_sin_configurar",
+                            error = "Primero hay que configurar el servidor de e-mail para el recupero de contraseña. Comunicate con quien administra el sistema."
+                        });
+                }
+
+                Encolar(cancelacion =>
+                    new RecuperoContrasena(new GestionPerfilesEmail())
+                        .SolicitarAsync(email, cancelacion));
+
+                return Responder(HttpStatusCode.OK,
+                    new
+                    {
+                        mensaje = RecuperoContrasena.MensajeSolicitud
+                    });
+            }
+            catch (OperationCanceledException)
+                when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    "No se pudo comprobar el correo de recupero: {0}",
+                    ex.GetType().Name);
+
+                return Responder(HttpStatusCode.ServiceUnavailable,
+                    new
+                    {
+                        error = "No se pudo solicitar el recupero. Probá de nuevo."
+                    });
+            }
+        }
+
+        private static async Task<bool> CorreoRecuperoConfiguradoAsync(
+             CancellationToken ct)
+        {
+            using (var db = SeguridadSql.Abrir())
+            {
+                var urlLogin = await db.Database.SqlQuery<string>(
+                @"SELECT m.UrlLogin
+                FROM dbo.CONFIGURACION_EMAIL_MODULO m
+                INNER JOIN dbo.EmailServidor e ON e.[Service] = m.[Service]
+                WHERE m.Modulo = 'RECUPERO_CONTRASENA'
+                AND NULLIF(LTRIM(RTRIM(e.SmtpHost)), N'') IS NOT NULL
+                AND e.SmtpPort BETWEEN 1 AND 65535
+                AND e.SecureSocketOption IN (2, 3)
+                AND NULLIF(LTRIM(RTRIM(e.CredentialFromMailAddres)), N'') IS NOT NULL
+                AND NULLIF(LTRIM(RTRIM(e.CredentialFromMailPassProtegida)), N'') IS NOT NULL
+                AND NOT EXISTS (SELECT 1
+                FROM dbo.CONFIGURACION_EMAIL_MODULO otro
+                WHERE otro.[Service] = m.[Service]
+                AND otro.Modulo <> m.Modulo
+                );")
+                    .SingleOrDefaultAsync(ct);
+
+                if (string.IsNullOrWhiteSpace(urlLogin)) return false;
+
+                try
+                {
+                    RecuperoContrasena.ValidarUrlLogin(urlLogin);
+                    return true;
+                }
+                catch (ValidacionEmailException)
+                {
+                    return false;
+                }
+            }
+        }
+
+        public sealed class ValidarEntrada
+        {
+            public string Token { get; set; }
+        }
+
+        [HttpPost, Route("validar")]
+        public async Task<IHttpActionResult> Validar(
+            [FromBody] ValidarEntrada entrada,
+            CancellationToken ct)
+        {
+            var ip =
+                HttpContext.Current?.Request.UserHostAddress ?? "sin-ip";
+
+            if (!LimitesAcceso.Permitir("validar-recupero:global", 300) ||
+                !LimitesAcceso.Permitir("validar-recupero:ip:" + ip, 30))
+            {
+                return Responder((HttpStatusCode)429,
+                    new
+                    {
+                        error = "Esperá unos minutos antes de volver a intentar."
+                    });
+            }
+
+            if (entrada == null || !ModelState.IsValid ||
+                !RecuperoContrasena.TokenValido(entrada.Token))
+            {
+                return Responder(HttpStatusCode.BadRequest,
+                    new { error = RecuperoContrasena.EnlaceInvalido });
+            }
+
+            try
+            {
+                var vigente = await RecuperoContrasena.EnlaceVigenteAsync(
+                    entrada.Token, ct);
+
+                if (!vigente)
+                    return Responder(HttpStatusCode.BadRequest,
+                        new { error = RecuperoContrasena.EnlaceInvalido });
+
+                return Responder(HttpStatusCode.OK, new { vigente = true });
+            }
+            catch (OperationCanceledException)
+                when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Trace.TraceWarning(
+                    "No se pudo comprobar el enlace de recupero: {0}",
+                    ex.GetType().Name);
+
+                return Responder(HttpStatusCode.ServiceUnavailable,
+                    new
+                    {
+                        error = "No se pudo comprobar el enlace. Probá de nuevo."
+                    });
+            }
         }
 
         [HttpPost, Route("restablecer")]

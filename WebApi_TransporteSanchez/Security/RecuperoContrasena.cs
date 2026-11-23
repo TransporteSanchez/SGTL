@@ -215,6 +215,42 @@ namespace WebApi_TransporteSanchez.Security
             }
         }
 
+        public static async Task<bool> EnlaceVigenteAsync(
+            string token, CancellationToken ct)
+        {
+            if (!TokenValido(token)) return false;
+
+            using (var db = SeguridadSql.Abrir())
+            {
+                var estado = await db.Database.SqlQuery<EstadoEnlace>(
+                    @"SELECT r.Email AS EmailSolicitud,
+                             u.Email AS EmailActual,
+                             r.ClaveHuella,
+                             u.Contraseña AS ClaveActual
+                      FROM dbo.RECUPERO_CONTRASENA r
+                      INNER JOIN dbo.USUARIOS u
+                          ON u.Usuario_ID = r.UsuarioID
+                      WHERE r.TokenHash = @token
+                        AND r.Enviado = 1
+                        AND r.UsadoUtc IS NULL
+                        AND r.VenceUtc > SYSUTCDATETIME()
+                        AND u.EstadoUsuario = 'Activo'
+                        AND u.VersionSesion = r.VersionSesion;",
+                    SeguridadSql.P(
+                        "@token", SqlDbType.Char,
+                        ClavesSeguras.Huella(token), 64))
+                    .SingleOrDefaultAsync(ct);
+
+                return estado != null &&
+                    string.Equals(
+                        estado.EmailSolicitud,
+                        estado.EmailActual,
+                        StringComparison.OrdinalIgnoreCase) &&
+                    estado.ClaveHuella ==
+                        ClavesSeguras.Huella(estado.ClaveActual);
+            }
+        }
+
         public async Task<string> RestablecerAsync(
             string token, string nueva, CancellationToken ct)
         {
@@ -290,9 +326,11 @@ namespace WebApi_TransporteSanchez.Security
                         ct,
                         SeguridadSql.P(
                             "@clave", SqlDbType.NVarChar, claveNueva, 255),
-                        SeguridadSql.P(
-                            "@nombre", SqlDbType.NVarChar,
-                            usuario.Nombre_Usuario, 50),
+                                                SeguridadSql.P(
+                            "@nombre", SqlDbType.VarChar,
+                            usuario.Nombre_Usuario.Substring(
+                                0, Math.Min(20, usuario.Nombre_Usuario.Length)),
+                            20),
                         SeguridadSql.P("@id", SqlDbType.Int, id),
                         SeguridadSql.P(
                             "@version", SqlDbType.BigInt,
@@ -315,6 +353,14 @@ namespace WebApi_TransporteSanchez.Security
 
                 return usuario.Email;
             }
+        }
+
+        private sealed class EstadoEnlace
+        {
+            public string EmailSolicitud { get; set; }
+            public string EmailActual { get; set; }
+            public string ClaveHuella { get; set; }
+            public string ClaveActual { get; set; }
         }
 
         private sealed class EstadoRecupero
