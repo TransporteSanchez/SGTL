@@ -20,10 +20,14 @@
         return favoritos.some(function (item) { return item.Tablero === id; });
     }
 
+    function textoEstrella(titulo, marcada) {
+        return marcada ? 'Sacar ' + titulo + ' del inicio' : 'Agregar ' + titulo + ' al inicio';
+    }
+
     function estrella(tablero) {
         var marcada = esFavorito(tablero.id);
         return '<button type="button" class="btn btn-sm btn-outline-secondary" data-tablero="' + tablero.id + '" aria-pressed="' + marcada + '" aria-label="' +
-            (marcada ? 'Sacar ' : 'Agregar ') + SGTL.escapar(tablero.titulo) + ' del inicio">' +
+            SGTL.escapar(textoEstrella(tablero.titulo, marcada)) + '">' +
             '<i class="bi ' + (marcada ? 'bi-star-fill text-warning' : 'bi-star') + '" aria-hidden="true"></i></button>';
     }
 
@@ -97,7 +101,7 @@
             favoritos = lista;
             var icono = boton.querySelector('i');
             boton.setAttribute('aria-pressed', marcada ? 'false' : 'true');
-            boton.setAttribute('aria-label', (marcada ? 'Agregar ' : 'Sacar ') + tablero.titulo + ' del inicio');
+            boton.setAttribute('aria-label', textoEstrella(tablero.titulo, !marcada));
             if (icono) icono.className = 'bi ' + (marcada ? 'bi-star' : 'bi-star-fill text-warning');
             SGTL.toastExito(marcada ? tablero.titulo + ' salió del inicio.' : tablero.titulo + ' se agregó al inicio.');
         }).catch(function (error) {
