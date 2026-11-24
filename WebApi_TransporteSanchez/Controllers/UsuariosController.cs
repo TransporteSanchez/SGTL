@@ -255,7 +255,7 @@ namespace WebApi_TransporteSanchez.Controllers
         {
             var admin = PermisosAdministracion.Iguales(Operador.Rol, "admin");
             if (!admin && (PermisosAdministracion.Iguales(rol, "admin") || (actual != null && PermisosAdministracion.Iguales(actual.Rol, "admin"))))
-                return Error(HttpStatusCode.Forbidden, "Solo un administrador puede gestionar cuentas de administrador.");
+                return Error(HttpStatusCode.Conflict, "Solo un administrador puede gestionar cuentas de administrador.");
             if (actual == null) return null;
             if (actual.Usuario_ID == Operador.Usuario_ID && (eliminar || estado != "Activo" || !PermisosAdministracion.Iguales(actual.Rol, rol)))
                 return Error(HttpStatusCode.Conflict, "No podés eliminar tu cuenta, inactivarla ni cambiar tu propio rol.");
