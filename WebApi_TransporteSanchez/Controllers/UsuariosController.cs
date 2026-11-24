@@ -345,7 +345,15 @@ namespace WebApi_TransporteSanchez.Controllers
                     if (email != null && db.Database.SqlQuery<int>("SELECT COUNT(*) FROM dbo.USUARIOS WITH(UPDLOCK,HOLDLOCK) WHERE Email=@p0 AND Usuario_ID<>@p1", email, id).Single() > 0)
                         return Error(HttpStatusCode.Conflict, "Ese e-mail ya está registrado en otro usuario.", "email_duplicado");
                     var cambiaClave = !string.IsNullOrEmpty(entrada.Contraseña);
-                    var revocar = cambiaClave || !PermisosAdministracion.Iguales(actual.Rol, entrada.Rol) || actual.EstadoUsuario != entrada.EstadoUsuario;
+                    var cambiaEmail = !string.Equals(
+                        actual.Email ?? "",
+                        email ?? "",
+                        StringComparison.OrdinalIgnoreCase
+                    );
+                    var revocar = cambiaClave
+                        || cambiaEmail
+                        || !PermisosAdministracion.Iguales(actual.Rol, entrada.Rol)
+                        || actual.EstadoUsuario != entrada.EstadoUsuario;
                     var anteriores = ObtenerValoresAuditoria(db, id);
                     db.Database.ExecuteSqlCommand(@"UPDATE dbo.USUARIOS SET Nombre=@p0, Apellido=@p1, Contraseña=@p2,
                         Email=@p3, Rol=@p4, EstadoUsuario=@p5, Fecha_Modi=GETDATE(), Usu_Modi=@p6, VersionSesion=VersionSesion+@p7
