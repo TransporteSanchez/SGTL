@@ -2,9 +2,17 @@
     'use strict';
 
     var logo = null;
-    var formatos = { 'image/png': 1, 'image/jpeg': 1, 'image/svg+xml': 1, 'image/webp': 1, 'image/x-icon': 1, 'image/vnd.microsoft.icon': 1 };
+    var logoGuardado = null;
+    var logoCambio;
 
     function porId(id) { return document.getElementById(id); }
+
+    function formatearCuit(valor) {
+        var digitos = String(valor || '').replace(/\D/g, '').slice(0, 11);
+        if (digitos.length <= 2) return digitos;
+        if (digitos.length <= 10) return digitos.slice(0, 2) + '-' + digitos.slice(2);
+        return digitos.slice(0, 2) + '-' + digitos.slice(2, 10) + '-' + digitos.slice(10);
+    }
 
     function pedir(ruta, metodo, cuerpo) {
         return fetch(SGTL.api + ruta, {
@@ -30,42 +38,49 @@
         select.value = elegido || '';
     }
 
+    function logoActual() {
+        if (logoCambio === undefined) return logoGuardado;
+        return logoCambio;
+    }
+
     function mostrarLogo() {
+        var actual = logoActual();
         var imagen = porId('empresaLogoPreview');
         var icono = porId('empresaLogoIcono');
         var quitar = porId('btnQuitarLogoEmpresa');
-        if (logo) {
-            imagen.src = logo;
+        var detalle;
+        if (actual) {
+            imagen.src = actual;
             imagen.classList.remove('d-none');
             icono.classList.add('d-none');
             quitar.classList.remove('d-none');
-            porId('empresaLogoDetalle').textContent = 'Este logo sale en los documentos.';
         } else {
             imagen.removeAttribute('src');
             imagen.classList.add('d-none');
             icono.classList.remove('d-none');
             quitar.classList.add('d-none');
-            porId('empresaLogoDetalle').textContent = 'Sin logo: en los documentos sale el nombre.';
         }
+        if (logoCambio === null && logoGuardado) detalle = 'Sin guardar · va a salir el nombre.';
+        else if (logoCambio) detalle = 'Sin guardar · ' + tamanioLogo(logoCambio);
+        else if (actual) detalle = tamanioLogo(actual) + ' · sale en los documentos.';
+        else detalle = 'Sin logo: en los documentos sale el nombre.';
+        porId('empresaLogoDetalle').textContent = detalle;
     }
 
     function localidades(provincia, elegida) {
         var select = porId('empresaLocalidad');
         select.disabled = true;
-        opciones(select, [], 'Loc_ID', 'Nombre_Localidad', 'Elegí una localidad');
+        opciones(select, [], 'Loc_ID', 'Nombre_Localidad', 'Seleccioná una localidad');
         if (!provincia) return Promise.resolve();
         return pedir('/Provincias/' + provincia + '/Localidades').then(function (lista) {
-            opciones(select, (lista || []).slice().sort(function (a, b) {
-                return a.Nombre_Localidad.localeCompare(b.Nombre_Localidad);
-            }), 'Loc_ID', 'Nombre_Localidad', 'Elegí una localidad', elegida);
-            select.disabled = false;
+            opciones(select, lista || [], 'Loc_ID', 'Nombre_Localidad', 'Seleccioná una localidad', elegida);
         });
     }
 
     function mostrar(datos) {
         porId('empresaRazonSocial').value = datos ? (datos.Razon_Social || '') : '';
         porId('empresaNombreComercial').value = datos ? (datos.Nombre_Comercial || '') : '';
-        porId('empresaCuit').value = datos ? (datos.CUIT || '') : '';
+        porId('empresaCuit').value = formatearCuit(datos ? datos.CUIT : '');
         porId('empresaCondIva').value = datos && datos.Cond_Fiscal ? String(datos.Cond_Fiscal) : '';
         porId('empresaCalle').value = datos ? (datos.Calle || '') : '';
         porId('empresaAltura').value = datos ? (datos.AlturaCalle || '') : '';
@@ -73,6 +88,8 @@
         porId('empresaTelefono').value = datos ? (datos.Telefono || '') : '';
         porId('empresaEmail').value = datos ? (datos.Email || '') : '';
         logo = datos ? (datos.Logo || null) : null;
+        logoGuardado = datos ? (datos.Logo || null) : null;
+        logoCambio = undefined;
         mostrarLogo();
         porId('registroEmpresa').textContent = datos && datos.Fecha_Modi
             ? 'Última modificación: ' + SGTL.fecha(datos.Fecha_Modi, { hora: true }) + (datos.Usu_Modi ? ', ' + datos.Usu_Modi : '')
@@ -95,14 +112,14 @@
             CodigoPostal: porId('empresaCodigoPostal').value,
             Telefono: porId('empresaTelefono').value,
             Email: porId('empresaEmail').value,
-            Logo: logo
+            Logo: logoActual()
         };
     }
 
     var reglas = SGTL.validador([
         { id: 'empresaRazonSocial', requerido: 'Completá la razón social.', max: 200 },
         { id: 'empresaNombreComercial', max: 100 },
-        { id: 'empresaCuit', requerido: 'Completá el CUIT.', validar: function (valor) { return valor.replace(/\D/g, '').length === 11 ? '' : 'El CUIT tiene que tener 11 números.'; } },
+        { id: 'empresaCuit', requerido: 'Completá el CUIT.', regex: /^\d{2}-\d{8}-\d$/, mensaje: 'El CUIT tiene que tener 11 números.' },
         { id: 'empresaCondIva', requerido: 'Seleccioná la condición de IVA.' },
         { id: 'empresaProvincia', requerido: 'Seleccioná una provincia.' },
         { id: 'empresaLocalidad', requerido: 'Seleccioná una localidad.' },
@@ -124,9 +141,7 @@
         }).catch(function (error) { console.warn('No se pudo cargar la apariencia de SGTL.', error); });
 
         pedir('/Provincias').then(function (lista) {
-            opciones(porId('empresaProvincia'), (lista || []).slice().sort(function (a, b) {
-                return a.Nombre_Provincia.localeCompare(b.Nombre_Provincia);
-            }), 'Prov_ID', 'Nombre_Provincia', 'Elegí una provincia');
+            opciones(porId('empresaProvincia'), lista || [], 'Prov_ID', 'Nombre_Provincia', 'Seleccioná una provincia');
             return pedir('/empresa');
         }).then(mostrar).catch(function (error) {
             SGTL.avisoFormulario('#avisoEmpresa', error.message);
@@ -137,26 +152,20 @@
                 SGTL.toastError(error.message);
             });
         });
-        porId('btnLogoEmpresa').addEventListener('click', function () { porId('empresaLogoArchivo').click(); });
-        porId('btnQuitarLogoEmpresa').addEventListener('click', function () { logo = null; mostrarLogo(); });
+        porId('btnQuitarLogoEmpresa').addEventListener('click', function () {
+            logoCambio = null;
+            mostrarLogo();
+        });
         porId('empresaLogoArchivo').addEventListener('change', function () {
-            var archivo = porId('empresaLogoArchivo').files[0];
-            porId('empresaLogoArchivo').value = '';
-            if (!archivo) return;
-            if (!formatos[archivo.type]) { SGTL.toastError('Ese formato no sirve para el logo. Elegí un PNG, JPG, SVG, WEBP o ICO.'); return; }
-            if (archivo.size > 1024 * 1024) { SGTL.toastError('El logo supera 1 MB. Elegí una imagen más liviana.'); return; }
-            var lector = new FileReader();
-            lector.onload = function () {
-                logo = String(lector.result || '');
-                if (logo.length > 1500000) { logo = null; SGTL.toastError('El logo supera 1 MB. Elegí una imagen más liviana.'); }
+            leerArchivoLogo(porId('empresaLogoArchivo'), function (datos) {
+                logoCambio = datos;
                 mostrarLogo();
-            };
-            lector.readAsDataURL(archivo);
+            });
         });
         porId('formEmpresa').addEventListener('submit', function (evento) {
             evento.preventDefault();
-            SGTL.avisoFormulario('#avisoEmpresa', '');
-            if (!reglas.validarTodo()) return;
+            reglas.validarTodo();
+            if (!SGTL.revisarFormulario('#formEmpresa', '#avisoEmpresa')) return;
             var listo = SGTL.procesando(porId('btnGuardarEmpresa'));
             pedir('/empresa', 'PUT', cuerpo()).then(function (datos) {
                 if (datos && datos.SinCambios) SGTL.toastExito('No hubo cambios para guardar.');
@@ -165,6 +174,9 @@
             }).catch(function (error) {
                 SGTL.avisoFormulario('#avisoEmpresa', error.message);
             }).then(listo);
+        });
+        porId('empresaCuit').addEventListener('input', function () {
+            this.value = formatearCuit(this.value);
         });
     });
 })();
