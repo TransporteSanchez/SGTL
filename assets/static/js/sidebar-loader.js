@@ -21,16 +21,20 @@
   }
 
   if (!token || !username || tokenVencido(token)) {
-    ['token', 'username', 'userRole', 'nombre', 'apellido'].forEach(function (k) {
-      try { localStorage.removeItem(k); } catch (e) { }
-    });
-    window.location.replace('Login.html');
+    irAlLogin();
     return;
   }
 
   var paginasSoloAdmin = ['gestion-contenido.html', 'configuracion-email.html', 'configuracion-facturacion.html', 'configuracion-whatsapp.html', 'gestion-empresa.html'];
   if (paginasSoloAdmin.indexOf(page) !== -1 && !esAdmin()) window.location.replace('index.html');
 })();
+
+function irAlLogin() {
+  ['token', 'username', 'userRole', 'nombre', 'apellido'].forEach(function (k) {
+    try { localStorage.removeItem(k); } catch (e) { }
+  });
+  window.location.replace('Login.html');
+}
 
 function markActiveSidebarItem() {
     const sidebar = document.getElementById('sidebar');
@@ -136,7 +140,7 @@ function aplicarPermisos() {
   if (!username) return; 
   permisosAplicados = true;
   fetch((window.SGTL ? SGTL.api : API_PERM) + '/Usuarios/MenusPermitidos', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } })
-    .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
+    .then(function (r) { if (r.status === 401) irAlLogin(); if (!r.ok) throw new Error('perm'); return r.json(); })
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
       if (rol === 'admin') return;
