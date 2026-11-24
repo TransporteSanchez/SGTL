@@ -1,6 +1,12 @@
 (function () {
     'use strict';
 
+    const AYUDA_CLAVE =
+        'De 8 a 20 caracteres, con al menos una letra y un número.';
+
+    const ERROR_CLAVE =
+        'Tiene que tener de 8 a 20 caracteres, con al menos una letra y un número.';
+
     const el = id => document.getElementById(id);
 
     const textoRol = rol => ({
@@ -251,8 +257,8 @@
             el('usuarioClave').value = '';
 
             el('ayudaClave').textContent = id
-                ? 'Dejá el campo vacío para conservar la contraseña. Si la cambiás, usá entre 8 y 20 caracteres, con una letra y un número como mínimo.'
-                : 'Usá entre 8 y 20 caracteres, con al menos una letra y un número.';
+                ? 'Dejá el campo vacío para conservar la contraseña. ' + AYUDA_CLAVE
+                : AYUDA_CLAVE;
 
             el('usuarioRol').value = String(u.Rol || '')
                 .trim()
@@ -306,21 +312,6 @@
         validador.validarTodo();
 
         const clave = el('usuarioClave').value;
-
-        if (
-            (!editando || clave.length > 0) &&
-            (
-                clave.length < 8 ||
-                clave.length > 20 ||
-                !/[a-zA-Z]/.test(clave) ||
-                !/[0-9]/.test(clave)
-            )
-        ) {
-            SGTL.marcarError(
-                '#usuarioClave',
-                'Usá entre 8 y 20 caracteres, con al menos una letra y un número.'
-            );
-        }
 
         const grupos = Array.from(
             el('opcionesGruposUsuario').querySelectorAll('input:checked')
@@ -690,6 +681,13 @@
                 },
                 {
                     id: 'usuarioClave',
+
+                    get requerido() {
+                        return !editando || el('usuarioClave').value.length > 0
+                            ? ERROR_CLAVE
+                            : '';
+                    },
+
                     validar: (valor, campo) => {
                         const clave = campo.value;
 
@@ -699,7 +697,7 @@
                             !/[a-zA-Z]/.test(clave) ||
                             !/[0-9]/.test(clave)
                         )
-                            ? 'Usá entre 8 y 20 caracteres, con al menos una letra y un número.'
+                            ? ERROR_CLAVE
                             : '';
                     }
                 }
