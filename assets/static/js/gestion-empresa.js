@@ -1,7 +1,6 @@
 (function () {
     'use strict';
 
-    var logo = null;
     var logoGuardado = null;
     var logoCambio;
 
@@ -74,6 +73,7 @@
         if (!provincia) return Promise.resolve();
         return pedir('/Provincias/' + provincia + '/Localidades').then(function (lista) {
             opciones(select, lista || [], 'Loc_ID', 'Nombre_Localidad', 'Seleccioná una localidad', elegida);
+            select.disabled = false;
         });
     }
 
@@ -87,7 +87,6 @@
         porId('empresaCodigoPostal').value = datos ? (datos.CodigoPostal || '') : '';
         porId('empresaTelefono').value = datos ? (datos.Telefono || '') : '';
         porId('empresaEmail').value = datos ? (datos.Email || '') : '';
-        logo = datos ? (datos.Logo || null) : null;
         logoGuardado = datos ? (datos.Logo || null) : null;
         logoCambio = undefined;
         mostrarLogo();
@@ -152,6 +151,7 @@
                 SGTL.toastError(error.message);
             });
         });
+        porId('btnLogoEmpresa').addEventListener('click', function () { porId('empresaLogoArchivo').click(); });
         porId('btnQuitarLogoEmpresa').addEventListener('click', function () {
             logoCambio = null;
             mostrarLogo();
@@ -159,6 +159,7 @@
         porId('empresaLogoArchivo').addEventListener('change', function () {
             leerArchivoLogo(porId('empresaLogoArchivo'), function (datos) {
                 logoCambio = datos;
+                porId('empresaLogoArchivo').value = '';
                 mostrarLogo();
             });
         });
