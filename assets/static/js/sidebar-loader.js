@@ -135,7 +135,7 @@ function aplicarPermisos() {
   try { username = localStorage.getItem('username'); } catch (e) { }
   if (!username) return; 
   permisosAplicados = true;
-  fetch(API_PERM + '/Usuarios/MenusPermitidos?username=' + encodeURIComponent(username))
+  fetch((window.SGTL ? SGTL.api : API_PERM) + '/Usuarios/MenusPermitidos', { headers: { Authorization: 'Bearer ' + localStorage.getItem('token') } })
     .then(function (r) { if (!r.ok) throw new Error('perm'); return r.json(); })
     .then(function (data) {
       var rol = normalizaPerm(data.Rol);
