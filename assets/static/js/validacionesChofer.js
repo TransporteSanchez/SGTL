@@ -19,7 +19,7 @@ const camposRequeridosChofer = {
         '#altaNombre', '#altaApellido', '#altaDNI', '#altaCUIL',
         '#altaCelular', '#altaProvincia', '#altaLocalidad', '#altaCalle',
         '#altaEmail', '#altaNombreUsuario', '#altaContrasena'
-],
+    ],
     edicion: [
         '#editarNombre', '#editarApellido', '#editarDNI', '#editarCUIL',
         '#editarCelular', '#editarProvincia', '#editarLocalidad', '#editarCalle'
@@ -101,15 +101,13 @@ const reglasValidacionChofer = {
         regex: /^[A-Za-z0-9_]{1,50}$/,
         mensaje: 'Usá solo letras, números y guion bajo.',
         min: 1,
-        max: 50,
         soloNumeros: false
     },
     contrasena: {
         error: { alta: '#altaContrasena-error', editar: '#editarContrasena-error' },
         regex: /^(?=.*[A-Za-z])(?=.*[0-9]).{8,20}$/,
-        mensaje: 'Tiene que tener de 8 a 20 caracteres, con una letra y un número.',
+        mensaje: 'Tiene que tener de 8 a 20 caracteres, con al menos una letra y un número.',
         min: 8,
-        max: 20,
         soloNumeros: false
     }
 };
