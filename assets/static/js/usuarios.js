@@ -248,26 +248,21 @@
 
             el('tituloModalUsuario').textContent =
                 id ? 'Editar usuario' : 'Registrar usuario';
-
             el('usuarioNombre').value = u.Nombre || '';
             el('usuarioApellido').value = u.Apellido || '';
             el('usuarioCuenta').value = u.Nombre_Usuario || '';
             el('usuarioCuenta').disabled = !!id;
             el('usuarioEmail').value = u.Email || '';
             el('usuarioClave').value = '';
-
             el('ayudaClave').textContent = id
                 ? 'Dejá el campo vacío para conservar la contraseña. ' + AYUDA_CLAVE
                 : AYUDA_CLAVE;
-
             el('usuarioRol').value = String(u.Rol || '')
                 .trim()
                 .toLowerCase();
-
             el('usuarioRol').disabled = id === acceso.Usuario_ID;
             el('usuarioActivo').checked = u.EstadoUsuario === 'Activo';
             el('usuarioActivo').disabled = id === acceso.Usuario_ID;
-
             el('opcionesGruposUsuario').innerHTML =
                 gruposFormulario.length
                     ? gruposFormulario.map(g =>
@@ -636,89 +631,86 @@
                 return;
             }
 
-            el('registrarUsuario').classList.toggle(
-                'd-none',
-                !gestionar
-            );
+            if (gestionar) {
+                el('registrarUsuario').classList.remove('d-none');
 
-            const roles = await pedir('/Roles');
+                const roles = await pedir('/Roles');
 
-            roles
-                .filter(r =>
-                    r !== 'admin' ||
-                    String(acceso.Rol).trim().toLowerCase() === 'admin'
-                )
-                .forEach(r => {
-                    el('usuarioRol').appendChild(
-                        new Option(textoRol(r), r)
-                    );
+                roles
+                    .filter(r =>
+                        r !== 'admin' ||
+                        String(acceso.Rol).trim().toLowerCase() === 'admin'
+                    )
+                    .forEach(r => {
+                        el('usuarioRol').appendChild(
+                            new Option(textoRol(r), r)
+                        );
+                    });
+
+                validador = SGTL.validador([
+                    {
+                        id: 'usuarioNombre',
+                        requerido: 'Completá el nombre.',
+                        max: 50
+                    },
+                    {
+                        id: 'usuarioApellido',
+                        requerido: 'Completá el apellido.',
+                        max: 50
+                    },
+                    {
+                        id: 'usuarioCuenta',
+                        requerido: 'Completá el nombre de usuario.',
+                        max: 50
+                    },
+                    {
+                        id: 'usuarioEmail',
+                        regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                        mensaje: 'Ingresá un e-mail válido.'
+                    },
+                    {
+                        id: 'usuarioRol',
+                        requerido: 'Seleccioná un rol.'
+                    },
+                    {
+                        id: 'usuarioClave',
+
+                        get requerido() {
+                            return !editando || el('usuarioClave').value.length > 0
+                                ? ERROR_CLAVE
+                                : '';
+                        },
+
+                        validar: (valor, campo) => {
+                            const clave = campo.value;
+
+                            return (
+                                clave.length < 8 ||
+                                clave.length > 20 ||
+                                !/[a-zA-Z]/.test(clave) ||
+                                !/[0-9]/.test(clave)
+                            )
+                                ? ERROR_CLAVE
+                                : '';
+                        }
+                    }
+                ]);
+
+                cambiosModal = SGTL.cambiosSinGuardar('#modalUsuario');
+
+                el('formUsuario').addEventListener('submit', guardar);
+                el('usuarioRol').addEventListener('change', actualizarRol);
+
+                el('opcionesGruposUsuario').addEventListener('change', () => {
+                    SGTL.limpiarError('#gruposUsuario');
                 });
 
-            validador = SGTL.validador([
-                {
-                    id: 'usuarioNombre',
-                    requerido: 'Completá el nombre.',
-                    max: 50
-                },
-                {
-                    id: 'usuarioApellido',
-                    requerido: 'Completá el apellido.',
-                    max: 50
-                },
-                {
-                    id: 'usuarioCuenta',
-                    requerido: 'Completá el nombre de usuario.',
-                    max: 50
-                },
-                {
-                    id: 'usuarioEmail',
-                    regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    mensaje: 'Ingresá un e-mail válido.'
-                },
-                {
-                    id: 'usuarioRol',
-                    requerido: 'Seleccioná un rol.'
-                },
-                {
-                    id: 'usuarioClave',
-
-                    get requerido() {
-                        return !editando || el('usuarioClave').value.length > 0
-                            ? ERROR_CLAVE
-                            : '';
-                    },
-
-                    validar: (valor, campo) => {
-                        const clave = campo.value;
-
-                        return (
-                            clave.length < 8 ||
-                            clave.length > 20 ||
-                            !/[a-zA-Z]/.test(clave) ||
-                            !/[0-9]/.test(clave)
-                        )
-                            ? ERROR_CLAVE
-                            : '';
-                    }
-                }
-            ]);
-
-            cambiosModal = SGTL.cambiosSinGuardar('#modalUsuario');
-
-            el('formUsuario').addEventListener('submit', guardar);
-            el('usuarioRol').addEventListener('change', actualizarRol);
-
-            el('opcionesGruposUsuario').addEventListener('change', () => {
-                SGTL.limpiarError('#gruposUsuario');
-            });
-
-            el('registrarUsuario').addEventListener('click', evento => {
-                abrirFormulario(null, evento.currentTarget);
-            });
-
+                el('registrarUsuario').addEventListener('click', evento => {
+                    abrirFormulario(null, evento.currentTarget);
+                });
+            }
             el('filasUsuarios').addEventListener('click', accionFila);
             el('exportarUsuarios').addEventListener('click', exportar);
-
             el('filtrosUsuarios').addEventListener('submit', evento => {
                 evento.preventDefault();
                 buscar(1);

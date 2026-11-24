@@ -53,10 +53,6 @@
                                     aria-label="Descargar reporte" title="Descargar reporte">
                                     <i class="bi bi-download" aria-hidden="true"></i>
                                 </button>
-
-                                <button id="registrarUsuario" class="btn btn-success d-none" type="button">
-                                    Registrar usuario
-                                </button>
                             </div>
                         </div>
 
@@ -138,108 +134,6 @@
             <footer>
                 <div id="footer-container"></div>
             </footer>
-        </div>
-    </div>
-
-    <div id="modalUsuario" class="modal fade" tabindex="-1" aria-labelledby="tituloModalUsuario" aria-hidden="true"
-        data-bs-backdrop="static">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="tituloModalUsuario" class="modal-title h5">Registrar usuario</h2>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                </div>
-
-                <form id="formUsuario" novalidate>
-                    <div class="modal-body">
-                        <div id="avisoUsuario" class="alert alert-light-danger d-none" role="alert"></div>
-
-                        <fieldset id="camposUsuario" class="border-0 p-0 m-0">
-                            <div class="row g-3">
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioNombre" class="form-label">
-                                        Nombre <span class="text-danger">*</span>
-                                    </label>
-                                    <input id="usuarioNombre" class="form-control" maxlength="50"
-                                        autocomplete="given-name">
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioApellido" class="form-label">
-                                        Apellido <span class="text-danger">*</span>
-                                    </label>
-                                    <input id="usuarioApellido" class="form-control" maxlength="50"
-                                        autocomplete="family-name">
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioCuenta" class="form-label">
-                                        Nombre de usuario <span class="text-danger">*</span>
-                                    </label>
-                                    <input id="usuarioCuenta" class="form-control" maxlength="50" autocomplete="off">
-                                    <div class="form-text">
-                                        Una vez registrado, el nombre de usuario no se puede cambiar.
-                                    </div>
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioEmail" class="form-label">E-mail</label>
-                                    <input id="usuarioEmail" type="email" class="form-control" maxlength="254"
-                                        autocomplete="email">
-                                    <div class="form-text">Se usa para recuperar el acceso.</div>
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioClave" class="form-label">Contraseña</label>
-                                    <input id="usuarioClave" type="password" class="form-control" maxlength="20"
-                                        autocomplete="new-password">
-                                    <div id="ayudaClave" class="form-text">
-                                        Usá entre 8 y 20 caracteres, con al menos una letra y un número.
-                                    </div>
-                                </div>
-
-                                <div class="col-12 col-md-6">
-                                    <label for="usuarioRol" class="form-label">
-                                        Rol <span class="text-danger">*</span>
-                                    </label>
-                                    <select id="usuarioRol" class="form-select">
-                                        <option value="">Seleccioná un rol</option>
-                                    </select>
-                                    <div id="ayudaRol" class="form-text"></div>
-                                </div>
-
-                                <div class="col-12">
-                                    <div class="form-check form-switch">
-                                        <input id="usuarioActivo" type="checkbox" class="form-check-input" checked>
-                                        <label for="usuarioActivo" class="form-check-label">
-                                            Activo
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div id="zonaGruposUsuario" class="col-12 d-none">
-                                    <fieldset id="gruposUsuario" class="border rounded p-3">
-                                        <legend class="float-none w-auto px-2 fs-6">
-                                            Grupos <span class="text-danger">*</span>
-                                        </legend>
-                                        <div id="opcionesGruposUsuario" class="row g-2"></div>
-                                        <div class="form-text">Asigná al menos un grupo.</div>
-                                    </fieldset>
-                                </div>
-                            </div>
-                        </fieldset>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">
-                            Cancelar
-                        </button>
-                        <button id="guardarUsuario" type="submit" class="btn btn-primary">
-                            Guardar
-                        </button>
-                    </div>
-                </form>
-            </div>
         </div>
     </div>
 
