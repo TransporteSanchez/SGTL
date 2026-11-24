@@ -115,8 +115,8 @@ namespace WebApi_TransporteSanchez.Controllers
 
         private static bool QuedariaSinGrupo(SGTLAuditContext db, int grupoId, List<int> usuarios)
         {
-            return db.Set<USUARIOS>().Any(u => usuarios.Contains(u.Usuario_ID) && u.Rol.Trim().ToLower() == "user" &&
-                !db.Set<GRUPOS_USUARIOS>().Any(gu => gu.UsuarioID == u.Usuario_ID && gu.GrupoID != grupoId));
+            return db.Set<USUARIOS>().Where(u => usuarios.Contains(u.Usuario_ID) && u.Rol.Trim().ToLower() == "user" &&
+                !db.Set<GRUPOS_USUARIOS>().Any(gu => gu.UsuarioID == u.Usuario_ID && gu.GrupoID != grupoId)).Any();
         }
 
         [HttpDelete, Route("{id:int}")]
