@@ -15,6 +15,16 @@
     var pedido = 0;
     function nodo(id) { return document.getElementById(id); }
     function aviso(id, texto) { var destino = nodo(id); if (destino) destino.innerHTML = '<p class="text-muted text-center py-4 mb-0">' + SGTL.escapar(texto) + '</p>'; }
+    function avisoFila(id, columnas, texto) {
+        var cuerpo = nodo(id);
+        if (cuerpo) cuerpo.innerHTML = '<tr><td colspan="' + columnas + '" class="text-center text-muted py-4">' + SGTL.escapar(texto) + '</td></tr>';
+    }
+    function marcarPendientes() {
+        avisoFila('revisar-viajes', 3, 'Entra con Viajes.');
+        aviso('calendarioViajes', 'Entra con Viajes.');
+        aviso('top-clientes-list', 'Todavía no está en esta pantalla.');
+        aviso('clientes-mes', 'Todavía no está en esta pantalla.');
+    }
     function titulo(id, texto) { var destino = nodo(id); if (destino) destino.textContent = texto; }
     function visible(id) {
         var destino = nodo(id);
@@ -670,6 +680,7 @@
     }
     function cargar() {
         var numero = ++pedido;
+        marcarPendientes();
         var columnas = armarColumnas(periodo);
         var fechas = { fechaDesde: SGTL.fechaISO(periodo.desde), fechaHasta: SGTL.fechaISO(periodo.hasta) };
         var desdeAnterior = periodo.antDesde;
@@ -695,9 +706,21 @@
                 mostrarIndicadores(contar(viajes), contar(anteriores));
                 mostrarUltimos(viajes);
                 mostrarComparativa(viajes, viajesDe(respuestas[1]), columnas);
-                try { mostrarGraficos(viajes, columnas); } catch (errorGrafico) { }
+                mostrarGraficos(viajes, columnas);
             }).catch(function (error) {
-                if (numero === pedido) MAPAS.slice(0, 5).forEach(function (id) { if (visible(id)) aviso(id, error.message); });
+                if (numero !== pedido) return;
+                var texto = SGTL.escapar(error.message);
+                MAPAS.slice(0, 5).forEach(function (id) { if (visible(id)) aviso(id, error.message); });
+                ['kpi-viajes', 'kpi-entregados', 'kpi-pendientes', 'kpi-rechazo', 'kpi-km', 'costo-promedio-texto'].forEach(function (id) {
+                    ponerNumero(id, '—');
+                });
+                ['kpi-viajes-detalle', 'kpi-entregados-detalle', 'kpi-pendientes-detalle', 'kpi-rechazo-detalle', 'kpi-km-detalle', 'costo-detalle'].forEach(function (id) {
+                    ponerDetalle(id, texto);
+                });
+                var ultimos = nodo('ultimos-viajes');
+                if (ultimos) ultimos.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">' + texto + '</td></tr>';
+                var comparativa = nodo('comparativa-meses');
+                if (comparativa) comparativa.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">' + texto + '</td></tr>';
             });
         }
         if (visible('calor-facturacion')) {
@@ -710,7 +733,8 @@
                 if (numero === pedido) mostrarDeuda(datos);
             }).catch(function (error) {
                 if (numero !== pedido) return;
-                if (visible('deuda-clientes')) aviso('deuda-clientes', error.message);
+                var cuerpo = nodo('deuda-clientes');
+                if (cuerpo) cuerpo.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-4">' + SGTL.escapar(error.message) + '</td></tr>';
                 if (visible('calor-deuda')) aviso('calor-deuda', error.message);
             });
         }
@@ -727,7 +751,9 @@
         if (nodo('choferes-activos-texto')) {
             pedir('/Choferes').then(function (datos) {
                 if (numero === pedido) mostrarActivos('choferes-activos-texto', 'choferes-activos-bar', datos || [], 'EstadoChofer');
-            }).catch(function () { });
+            }).catch(function (error) {
+                if (numero === pedido) ponerNumero('choferes-activos-texto', error.message);
+            });
         }
         if (nodo('proximos-viajes')) {
             var hoy = inicioDia(new Date());
