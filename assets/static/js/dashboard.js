@@ -158,7 +158,7 @@
     }
     function prepararViaje(viaje) {
         viaje._fecha = leerFechaApi(viaje.Fecha_Inicio);
-        viaje._km = Math.round(leerKm(viaje.Distancia_KM));
+        viaje._km = leerKm(viaje.Distancia_KM);
         viaje._grupo = grupoDe(viaje);
         viaje._clave = viaje._fecha ? claveGrupo(viaje._fecha) : '';
         return viaje;
@@ -314,6 +314,7 @@
         var semana = periodo.porSemana ? 'semana' : 'mes';
         var camiones = filasPor(viajes, columnas, function (viaje) { return viaje._km; }, function (viaje) { return viaje.CamionID; }, dominioDe, 'Sin camión');
         var choferes = filasPor(viajes, columnas, function (viaje) { return viaje._km; }, function (viaje) { return viaje.ChoferID; }, choferDe, 'Sin chofer');
+        camiones.filas.concat(choferes.filas).forEach(function (fila) { fila.valores = fila.valores.map(Math.round); });
         var ingresos = filasPor(viajes, columnas, function (viaje) {
             var importe = viaje.Importe == null || viaje.Importe === '' ? NaN : Number(viaje.Importe);
             return isFinite(importe) ? importe : null;

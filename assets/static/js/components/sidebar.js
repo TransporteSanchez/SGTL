@@ -3,13 +3,7 @@ const isDesktop = (windowObj) => windowObj.innerWidth > 1200;
 function setSubmenuState(item, open) {
   const submenu = item.querySelector('.submenu');
   if (!submenu) return;
-  const links = submenu.querySelectorAll('.submenu-link');
-  let totalHeight = 0;
-  links.forEach((link) => {
-    totalHeight += link.offsetHeight || 40;
-  });
-  const alturaFinal = Math.max(totalHeight, submenu.scrollHeight) + 8;
-  submenu.style.maxHeight = open ? `${alturaFinal}px` : '';
+  submenu.style.maxHeight = open ? 'none' : '';
   submenu.classList.toggle('submenu-open', open);
   submenu.classList.toggle('submenu-closed', !open);
 }
