@@ -393,7 +393,7 @@
         var promedio = actual.conImporte ? actual.importe / actual.conImporte : 0;
         var promedioAnterior = anterior.conImporte ? anterior.importe / anterior.conImporte : 0;
         ponerNumero('costo-promedio-texto', promedio ? SGTL.monto(promedio) : '—');
-        ponerDetalle('costo-detalle', variacion(Math.round(promedio), Math.round(promedioAnterior), false));
+        ponerDetalle('costo-detalle', variacion(Math.round(promedio), Math.round(promedioAnterior), true));
     }
     function mostrarDeuda(filas) {
         filas = filas || [];
@@ -547,6 +547,15 @@
             cuerpo.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">No hay viajes en el período.</td></tr>';
             return;
         }
+        var total = { viajes: 0, entregado: 0, parcial: 0, rechazo: 0, pendiente: 0, km: 0 };
+        cuentas.forEach(function (cuenta) {
+            total.viajes += cuenta.viajes;
+            total.entregado += cuenta.entregado;
+            total.parcial += cuenta.parcial;
+            total.rechazo += cuenta.rechazo;
+            total.pendiente += cuenta.pendiente;
+            total.km += cuenta.km;
+        });
         cuerpo.innerHTML = columnas.map(function (grupo, indice) {
             var cuenta = cuentas[indice];
             var antes = base[indice];
@@ -554,7 +563,10 @@
                 variacionCorta(cuenta.viajes, antes.viajes) + '</td><td class="text-end">' + formatoEntero.format(cuenta.entregado) + '</td><td class="text-end">' +
                 formatoEntero.format(cuenta.parcial) + '</td><td class="text-end">' + formatoEntero.format(cuenta.rechazo) + '</td><td class="text-end">' +
                 formatoEntero.format(cuenta.pendiente) + '</td><td class="text-end text-nowrap">' + SGTL.escapar(SGTL.km(cuenta.km)) + '</td></tr>';
-        }).join('');
+        }).join('') + '<tr class="fw-bold"><td class="text-nowrap">Total del período</td><td class="text-end">' + formatoEntero.format(total.viajes) +
+            '</td><td class="text-end"></td><td class="text-end">' + formatoEntero.format(total.entregado) + '</td><td class="text-end">' + formatoEntero.format(total.parcial) +
+            '</td><td class="text-end">' + formatoEntero.format(total.rechazo) + '</td><td class="text-end">' + formatoEntero.format(total.pendiente) +
+            '</td><td class="text-end text-nowrap">' + SGTL.escapar(SGTL.km(total.km)) + '</td></tr>';
     }
     var graficos = {};
     var graficosPendientes = {};
@@ -660,15 +672,27 @@
         var numero = ++pedido;
         var columnas = armarColumnas(periodo);
         var fechas = { fechaDesde: SGTL.fechaISO(periodo.desde), fechaHasta: SGTL.fechaISO(periodo.hasta) };
-        var fechasAnteriores = { fechaDesde: SGTL.fechaISO(periodo.antDesde), fechaHasta: SGTL.fechaISO(periodo.antHasta) };
+        var desdeAnterior = periodo.antDesde;
+        var hastaAnterior = periodo.antHasta;
+        if (columnas.length) {
+            var inicioPrevio = periodo.porSemana ? sumarDias(columnas[0].inicio, -7) : new Date(columnas[0].inicio.getFullYear(), columnas[0].inicio.getMonth() - 1, 1);
+            var finPrevio = sumarDias(columnas[0].inicio, -1);
+            if (inicioPrevio < desdeAnterior) desdeAnterior = inicioPrevio;
+            if (finPrevio > hastaAnterior) hastaAnterior = finPrevio;
+        }
+        var fechasAnteriores = { fechaDesde: SGTL.fechaISO(desdeAnterior), fechaHasta: SGTL.fechaISO(hastaAnterior) };
         var hayNumeros = nodo('kpi-viajes') || nodo('kpi-km') || nodo('costo-promedio-texto');
         MAPAS.forEach(function (id) { if (visible(id)) aviso(id, 'Cargando…'); });
         if (MAPAS.slice(0, 5).some(visible) || hayNumeros) {
             Promise.all([pedir('/tableros/viajes', fechas), pedir('/tableros/viajes', fechasAnteriores)]).then(function (respuestas) {
                 if (numero !== pedido) return;
                 var viajes = viajesDe(respuestas[0]);
+                var anteriores = viajesDe(respuestas[1]).filter(function (viaje) {
+                    var dia = inicioDia(viaje._fecha);
+                    return dia >= inicioDia(periodo.antDesde) && dia <= inicioDia(periodo.antHasta);
+                });
                 mapasDeViajes(viajes, columnas);
-                mostrarIndicadores(contar(viajes), contar(viajesDe(respuestas[1])));
+                mostrarIndicadores(contar(viajes), contar(anteriores));
                 mostrarUltimos(viajes);
                 mostrarComparativa(viajes, viajesDe(respuestas[1]), columnas);
                 try { mostrarGraficos(viajes, columnas); } catch (errorGrafico) { }
