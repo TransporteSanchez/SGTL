@@ -9,13 +9,16 @@ const equivalenciasCamposChofer = {
     provincia: ['#altaProvincia', '#editarProvincia'],
     localidad: ['#altaLocalidad', '#editarLocalidad'],
     calle: ['#altaCalle', '#editarCalle'],
-    alturaCalle: ['#altaCalleAltura', '#editarCalleAltura']
+    alturaCalle: ['#altaCalleAltura', '#editarCalleAltura'],
+    nombreUsuario: ['#altaNombreUsuario', '#editarNombreUsuario'],
+    contrasena: ['#altaContrasena', '#editarContrasena']
 };
 
 const camposRequeridosChofer = {
     alta: [
         '#altaNombre', '#altaApellido', '#altaDNI', '#altaCUIL',
-        '#altaCelular', '#altaProvincia', '#altaLocalidad', '#altaCalle'
+        '#altaCelular', '#altaProvincia', '#altaLocalidad', '#altaCalle',
+        '#altaEmail', '#altaNombreUsuario', '#altaContrasena'
     ],
     edicion: [
         '#editarNombre', '#editarApellido', '#editarDNI', '#editarCUIL',
@@ -75,8 +78,7 @@ const reglasValidacionChofer = {
             editar: '#editarEmail-error'
         },
         regex: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-        mensaje: 'El email debe incluir @ y un dominio.',
-        min: 0,
+        mensaje: 'Revisá el e-mail: tiene que tener @ y un dominio.',
         max: null,
         soloNumeros: false
     },
@@ -92,6 +94,20 @@ const reglasValidacionChofer = {
         mensaje: 'Solo se permiten letras y espacios.',
         min: 1,
         max: 50,
+        soloNumeros: false
+    },
+    nombreUsuario: {
+        error: { alta: '#altaNombreUsuario-error', editar: '#editarNombreUsuario-error' },
+        regex: /^[A-Za-z0-9_]{1,50}$/,
+        mensaje: 'Usá solo letras, números y guion bajo.',
+        min: 1,
+        soloNumeros: false
+    },
+    contrasena: {
+        error: { alta: '#altaContrasena-error', editar: '#editarContrasena-error' },
+        regex: /^(?=.*[A-Za-z])(?=.*[0-9]).{8,20}$/,
+        mensaje: 'Tiene que tener de 8 a 20 caracteres, con al menos una letra y un número.',
+        min: 8,
         soloNumeros: false
     }
 };

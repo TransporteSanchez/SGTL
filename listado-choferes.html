@@ -290,6 +290,12 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="row">
+                                <div class="col-12 mt-4">
+                                    <h6>Acceso al sistema</h6>
+                                    <p class="mb-0" id="detalleUsuario"></p>
+                                </div>
+                            </div>
                             <div class="mt-4">
                                 <h6>Camión asignado</h6>
                                 <div class="row">
@@ -528,6 +534,11 @@
                 $('#celphone-column').val(registro.TelefonoCelular);
                 $('#phone-column').val(registro.TelefonoFijo);
                 $('#email-column').val(registro.Email);
+                if (registro.Usuario_Nombre) {
+                    $('#detalleUsuario').html(SGTL.escapar(registro.Usuario_Nombre) + ' ' + SGTL.estado(registro.Usuario_Estado));
+                } else {
+                    $('#detalleUsuario').html('<span class="text-muted">Sin usuario</span>');
+                }
                 $('#province-column').val(nombres.Nombre_Provincia);
                 $('#local-column').val(nombres.Nombre_Localidad);
                 $('#street-column').val(registro.Calle);

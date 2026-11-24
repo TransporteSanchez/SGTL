@@ -1,12 +1,14 @@
 (function (window) {
     'use strict';
     function cuitConGuiones(valor) {
-        var digitos = String(valor == null ? '' : valor).replace(/\D/g, '');
-        return digitos.length === 11 ? digitos.slice(0, 2) + '-' + digitos.slice(2, 10) + '-' + digitos.slice(10) : String(valor || '').trim();
+        var digitos = String(valor == null ? '' : valor).replace(/\D/g, '').slice(0, 11);
+        if (digitos.length <= 2) return digitos;
+        if (digitos.length <= 10) return digitos.slice(0, 2) + '-' + digitos.slice(2);
+        return digitos.slice(0, 2) + '-' + digitos.slice(2, 10) + '-' + digitos.slice(10);
     }
     function fechaApi(valor) {
-        var partes = String(valor == null ? '' : valor).match(/^(\d{4})-(\d{2})-(\d{2})/);
-        return partes ? partes[0] : null;
+        var dia = SGTL.fechaISO(valor);
+        return dia || null;
     }
     function limpio(valor) {
         return String(valor == null ? '' : valor).trim();

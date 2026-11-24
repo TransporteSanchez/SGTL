@@ -281,8 +281,9 @@
                                 </div>
                                 <div class="col-md-4 col-12">
                                     <div class="form-group">
-                                        <label for="altaEmail" class="form-label">Email</label>
-                                        <input type="email" id="altaEmail" class="form-control" name="altaEmail" />
+                                        <label for="altaEmail" class="form-label">E-mail <span class="text-danger">*</span></label>
+                                        <input type="email" id="altaEmail" class="form-control" name="altaEmail" maxlength="50" />
+                                        <div class="form-text">Con este e-mail recupera la contraseña.</div>
                                         <div id="altaEmail-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
@@ -309,6 +310,26 @@
                                         <label for="altaCalleAltura" class="form-label">Altura</label>
                                         <input type="number" id="altaCalleAltura" class="form-control"
                                             placeholder="0 o 999" name="altaCalleAltura" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    <h6 class="mt-2">Acceso al sistema</h6>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="altaNombreUsuario" class="form-label">Usuario <span class="text-danger">*</span></label>
+                                        <input type="text" id="altaNombreUsuario" class="form-control" name="altaNombreUsuario" maxlength="50" autocomplete="off" />
+                                        <div id="altaNombreUsuario-error" class="invalid-feedback" style="display: none;"></div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 col-12">
+                                    <div class="form-group">
+                                        <label for="altaContrasena" class="form-label">Contraseña <span class="text-danger">*</span></label>
+                                        <input type="password" id="altaContrasena" class="form-control" name="altaContrasena" maxlength="20" autocomplete="new-password" />
+                                        <div class="form-text">De 8 a 20 caracteres, con al menos una letra y un número.</div>
+                                        <div id="altaContrasena-error" class="invalid-feedback" style="display: none;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -452,6 +473,34 @@
                                         <label for="editarCalleAltura" class="form-label">Altura</label>
                                         <input type="text" id="editarCalleAltura" class="form-control"
                                             placeholder="999 o S/N" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="editarAccesoActual" class="d-none">
+                                <h6 class="mt-2">Acceso al sistema</h6>
+                                <p class="mb-1">Usuario <span id="editarUsuarioNombre"></span> <span id="editarUsuarioEstado"></span></p>
+                                <p class="text-muted small mb-0">La contraseña y el estado de la cuenta se cambian en Gestionar usuarios.</p>
+                            </div>
+                            <div id="editarAccesoNuevo" class="d-none">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <h6 class="mt-2">Acceso al sistema</h6>
+                                        <p class="text-muted small">Opcional. Si le creás el usuario, completá también la contraseña y el e-mail.</p>
+                                    </div>
+                                    <div class="col-md-4 col-12">
+                                        <div class="form-group">
+                                            <label for="editarNombreUsuario" class="form-label">Usuario</label>
+                                            <input type="text" id="editarNombreUsuario" class="form-control" maxlength="50" autocomplete="off" />
+                                            <div id="editarNombreUsuario-error" class="invalid-feedback" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4 col-12">
+                                        <div class="form-group">
+                                            <label for="editarContrasena" class="form-label">Contraseña</label>
+                                            <input type="password" id="editarContrasena" class="form-control" maxlength="20" autocomplete="new-password" />
+                                            <div class="form-text">De 8 a 20 caracteres, con al menos una letra y un número.</div>
+                                            <div id="editarContrasena-error" class="invalid-feedback" style="display: none;"></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -636,6 +685,24 @@
             $('#checkestadoactivo').prop('checked', true);
 
             buscarChoferes();
+            $('#altaNombreUsuario, #editarNombreUsuario').on('blur', function () {
+                var input = $(this);
+                var nombre = input.val().trim();
+                var error = $('#' + input.attr('id') + '-error');
+                if (!/^[A-Za-z0-9_]{1,50}$/.test(nombre)) return;
+
+                $.ajax({
+                    url: SGTL.api + '/Choferes/UsuarioLibre',
+                    type: 'GET',
+                    data: { nombre: nombre },
+                    success: function (data) {
+                        if (data && data.Libre === false) {
+                            input.addClass('is-invalid');
+                            error.text('Ya existe un usuario con ese nombre de usuario.').show();
+                        }
+                    }
+                });
+            });
         });
     </script>
 
@@ -874,7 +941,7 @@
 
         function editarChofer(id) {
             $.ajax({
-                url: `http://localhost:50222/api/Choferes/${id}`,
+                url: SGTL.api + '/Choferes/' + id,
                 type: 'GET',
                 success: function (data) {
                     $('#editarNombre').val(data.Nombre);
@@ -884,6 +951,14 @@
                     $('#editarTelefono').val(data.TelefonoFijo);
                     $('#editarCelular').val(data.TelefonoCelular);
                     $('#editarEmail').val(data.Email);
+                    var tieneUsuario = !!data.Usuario_Nombre;
+                    $('#editarAccesoActual').toggleClass('d-none', !tieneUsuario);
+                    $('#editarAccesoNuevo').toggleClass('d-none', tieneUsuario);
+                    if (tieneUsuario) {
+                        $('#editarUsuarioNombre').text(data.Usuario_Nombre);
+                        $('#editarUsuarioEstado').html(SGTL.estado(data.Usuario_Estado));
+                    }
+                    $('#editarNombreUsuario, #editarContrasena').val('');
                     $('#editarCalle').val(data.Calle);
                     $('#editarCalleAltura').val(data.AlturaCalle);
 
@@ -1199,6 +1274,26 @@
                     }
                 }
 
+                var pideAcceso = !$('#editarAccesoNuevo').hasClass('d-none') &&
+                    ($('#editarNombreUsuario').val().trim() !== '' || $('#editarContrasena').val() !== '');
+                if (pideAcceso) {
+                    ['#editarEmail', '#editarNombreUsuario', '#editarContrasena'].forEach(function (selector) {
+                        var input = $(selector);
+                        var valor = input.val().trim();
+                        var clave = obtenerClaveDesdeInputID(input.attr('id'));
+                        var regla = clave && reglas[clave] ? reglas[clave] : null;
+                        if (valor === '') {
+                            tieneCamposVacios = true;
+                            input.addClass('is-invalid');
+                            return;
+                        }
+                        if (regla) {
+                            validarCampo(input, regla.error, regla.regex, regla.mensaje, regla.min, regla.max, regla.soloNumeros);
+                            if (input.hasClass('is-invalid')) hayErrores = true;
+                        }
+                    });
+                }
+
                 if (tieneCamposVacios) {
                     $('#alertaCompletaCamposEdicion').text('Por favor, completá todos los campos requeridos *').show();
                 } else {
@@ -1226,9 +1321,15 @@
                     Fecha_Modi: fechaHoraActual,
                     Usu_Modi: usuarioLogueado
                 };
+                if (pideAcceso) {
+                    choferActualizado.Acceso = {
+                        Nombre_Usuario: $('#editarNombreUsuario').val().trim(),
+                        Contraseña: $('#editarContrasena').val()
+                    };
+                }
 
                 $.ajax({
-                    url: 'http://localhost:50222/api/Choferes/' + id,
+                    url: SGTL.api + '/Choferes/' + id,
                     type: 'PUT',
                     contentType: 'application/json',
                     data: JSON.stringify(choferActualizado),
@@ -1237,9 +1338,16 @@
                         $('#editarChoferModal').modal('hide');
                         buscarChoferes();
                     },
-                    error: function (xhr, status, error) {
-                        console.error('Error al actualizar el chofer:', error);
-                        alert('Error al actualizar el chofer. Por favor, intenta nuevamente.');
+                    error: function (xhr) {
+                        var cuerpo = xhr.responseJSON;
+                        var error = Array.isArray(cuerpo) ? cuerpo[0] : cuerpo;
+                        var campos = { Email: '#editarEmail', Nombre_Usuario: '#editarNombreUsuario', 'Contraseña': '#editarContrasena' };
+                        if (error && campos[error.PropertyName]) {
+                            $(campos[error.PropertyName]).addClass('is-invalid');
+                            $(campos[error.PropertyName] + '-error').text(error.ErrorMessage).show();
+                            return;
+                        }
+                        $('#alertaCompletaCamposEdicion').text('No se pudo guardar el chofer.').show();
                     }
                 });
             });
@@ -1548,6 +1656,10 @@
                     TelefonoFijo: $('#altaTelefono').val().trim(),
                     TelefonoCelular: $('#altaCelular').val().trim(),
                     Email: $('#altaEmail').val().trim(),
+                    Acceso: {
+                        Nombre_Usuario: $('#altaNombreUsuario').val().trim(),
+                        Contraseña: $('#altaContrasena').val()
+                    },
                     ProvID: $('#altaProvincia').val(),
                     LocID: $('#altaLocalidad').val(),
                     Calle: $('#altaCalle').val().trim(),
@@ -1560,7 +1672,7 @@
                 };
 
                 $.ajax({
-                    url: 'http://localhost:50222/api/Choferes',
+                    url: SGTL.api + '/Choferes',
                     type: 'POST',
                     contentType: 'application/json',
                     data: JSON.stringify(nuevoChofer),
@@ -1576,8 +1688,16 @@
                         buscarChoferes();
                         mostrarToastExito('El chofer se registró exitosamente.');
                     },
-                    error: function (xhr, status, error) {
-                        console.error('Error al agregar el chofer:', error);
+                    error: function (xhr) {
+                        var cuerpo = xhr.responseJSON;
+                        var error = Array.isArray(cuerpo) ? cuerpo[0] : cuerpo;
+                        var campos = { Email: '#altaEmail', Nombre_Usuario: '#altaNombreUsuario', 'Contraseña': '#altaContrasena' };
+                        if (error && campos[error.PropertyName]) {
+                            $(campos[error.PropertyName]).addClass('is-invalid');
+                            $(campos[error.PropertyName] + '-error').text(error.ErrorMessage).show();
+                            return;
+                        }
+                        $('#alertaCompletaCampos').text('No se pudo registrar el chofer.').show();
                     }
                 });
             }
