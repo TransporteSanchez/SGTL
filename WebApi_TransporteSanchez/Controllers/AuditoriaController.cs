@@ -1,8 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Data.Entity;
 using System.Data.SqlClient;
-using System.Globalization;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -13,7 +12,9 @@ namespace WebApi_TransporteSanchez.Controllers
     [RoutePrefix("api/Auditoria")]
     public class AuditoriaController : ApiController
     {
-        public class AuditoriaDTO
+        private readonly string conexion = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+
+        public class Movimiento
         {
             public int Auditoria_ID { get; set; }
             public DateTime Fecha { get; set; }
@@ -26,138 +27,83 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Origen { get; set; }
         }
 
-        private static string Cn()
-        {
-            return ConnectionStringHelper.GetConnectionString("SGTLEntities");
-        }
-
-        [HttpGet]
-        [Route("")]
+        [HttpGet, Route("")]
         public IHttpActionResult Get(string usuario = null, string entidad = null, string accion = null,
-            string desde = null, string hasta = null, string texto = null, int page = 1, int pageSize = 20)
+            DateTime? desde = null, DateTime? hasta = null, string texto = null, int page = 1, int pageSize = 20)
         {
             if (page < 1) page = 1;
             if (pageSize < 0 || pageSize > 200) pageSize = 20;
 
-            var where = new StringBuilder(" WHERE 1 = 1 ");
-            var parametros = new List<SqlParameter>();
+            var filtro = new StringBuilder(" WHERE 1 = 1");
+            var valores = new Dictionary<string, object>();
 
-            if (!string.IsNullOrWhiteSpace(usuario))
+            void Agregar(string condicion, string parametro, object valor)
             {
-                where.Append(" AND Usuario LIKE @usuario ");
-                parametros.Add(new SqlParameter("@usuario", "%" + usuario.Trim() + "%"));
+                filtro.Append(" AND ").Append(condicion);
+                valores[parametro] = valor;
             }
-            if (!string.IsNullOrWhiteSpace(entidad))
-            {
-                where.Append(" AND Entidad = @entidad ");
-                parametros.Add(new SqlParameter("@entidad", entidad.Trim()));
-            }
-            if (!string.IsNullOrWhiteSpace(accion))
-            {
-                where.Append(" AND Accion = @accion ");
-                parametros.Add(new SqlParameter("@accion", accion.Trim().ToUpperInvariant()));
-            }
-            DateTime dt;
-            if (!string.IsNullOrWhiteSpace(desde) &&
-                DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
-            {
-                where.Append(" AND Fecha >= @desde ");
-                parametros.Add(new SqlParameter("@desde", dt.Date));
-            }
-            if (!string.IsNullOrWhiteSpace(hasta) &&
-                DateTime.TryParse(hasta, CultureInfo.InvariantCulture, DateTimeStyles.None, out dt))
-            {
-                where.Append(" AND Fecha < @hasta ");
-                parametros.Add(new SqlParameter("@hasta", dt.Date.AddDays(1)));
-            }
+
+            if (!string.IsNullOrWhiteSpace(usuario)) Agregar("Usuario LIKE @usuario", "@usuario", "%" + usuario.Trim() + "%");
+            if (!string.IsNullOrWhiteSpace(entidad)) Agregar("Entidad = @entidad", "@entidad", entidad.Trim());
+            if (!string.IsNullOrWhiteSpace(accion)) Agregar("Accion = @accion", "@accion", accion.Trim().ToUpperInvariant());
+            if (desde.HasValue) Agregar("Fecha >= @desde", "@desde", desde.Value.Date);
+            if (hasta.HasValue) Agregar("Fecha < @hasta", "@hasta", hasta.Value.Date.AddDays(1));
             if (!string.IsNullOrWhiteSpace(texto))
+                Agregar("(Clave LIKE @texto OR Valores_Anteriores LIKE @texto OR Valores_Nuevos LIKE @texto)", "@texto", "%" + texto.Trim() + "%");
+
+            return Consultar("No se pudo consultar la auditoría.", db =>
             {
-                where.Append(" AND (Clave LIKE @texto OR Valores_Anteriores LIKE @texto OR Valores_Nuevos LIKE @texto) ");
-                parametros.Add(new SqlParameter("@texto", "%" + texto.Trim() + "%"));
-            }
+                int total = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM AUDITORIA" + filtro, Parametros(valores)).Single();
+                int pagina = pageSize == 0 ? 1 : page;
+                int tamanio = pageSize == 0 ? Math.Max(total, 1) : pageSize;
 
-            try
-            {
-                using (var db = new DbContext(Cn()))
-                {
-                    var pTotal = parametros.Select(Clonar).ToArray();
-                    int total = db.Database.SqlQuery<int>(
-                        "SELECT COUNT(*) FROM AUDITORIA" + where, pTotal).FirstOrDefault();
-                    if (pageSize == 0) { page = 1; pageSize = Math.Max(total, 1); }
+                valores["@desplazamiento"] = (pagina - 1) * tamanio;
+                valores["@cantidad"] = tamanio;
+                var items = db.Database.SqlQuery<Movimiento>(
+                    "SELECT Auditoria_ID, Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen FROM AUDITORIA" +
+                    filtro + " ORDER BY Fecha DESC, Auditoria_ID DESC OFFSET @desplazamiento ROWS FETCH NEXT @cantidad ROWS ONLY",
+                    Parametros(valores)).ToList();
 
-                    var pPage = parametros.Select(Clonar).ToList();
-                    pPage.Add(new SqlParameter("@offset", (page - 1) * pageSize));
-                    pPage.Add(new SqlParameter("@limit", pageSize));
-
-                    string sql =
-                        "SELECT Auditoria_ID, Fecha, Usuario, Accion, Entidad, Clave, " +
-                        "Valores_Anteriores, Valores_Nuevos, Origen " +
-                        "FROM AUDITORIA" + where +
-                        " ORDER BY Fecha DESC, Auditoria_ID DESC " +
-                        " OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY";
-
-                    var items = db.Database.SqlQuery<AuditoriaDTO>(sql, pPage.ToArray()).ToList();
-
-                    return Ok(new
-                    {
-                        items,
-                        total,
-                        page,
-                        pageSize,
-                        totalPages = (int)Math.Ceiling(total / (double)pageSize)
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                var msg = ex.InnerException?.Message ?? ex.Message;
-                return Content(HttpStatusCode.InternalServerError, new { error = "Error al consultar la auditoria.", detalle = msg });
-            }
+                return new { items, total, page = pagina, pageSize = tamanio, totalPages = (int)Math.Ceiling(total / (double)tamanio) };
+            });
         }
 
-        [HttpGet]
-        [Route("Entidades")]
+        [HttpGet, Route("Entidades")]
         public IHttpActionResult GetEntidades()
         {
-            try
-            {
-                using (var db = new DbContext(Cn()))
-                {
-                    var lista = db.Database.SqlQuery<string>(
-                        "SELECT DISTINCT Entidad FROM AUDITORIA WHERE Entidad IS NOT NULL ORDER BY Entidad").ToList();
-                    return Ok(lista);
-                }
-            }
-            catch (Exception ex)
-            {
-                var msg = ex.InnerException?.Message ?? ex.Message;
-                return Content(HttpStatusCode.InternalServerError, new { error = "Error al obtener entidades.", detalle = msg });
-            }
+            return Consultar("No se pudieron cargar las entidades.", db => Distintos(db, "Entidad"));
         }
 
-        [HttpGet]
-        [Route("Usuarios")]
+        [HttpGet, Route("Usuarios")]
         public IHttpActionResult GetUsuarios()
         {
+            return Consultar("No se pudieron cargar los usuarios.", db => Distintos(db, "Usuario"));
+        }
+
+        private IHttpActionResult Consultar(string mensaje, Func<SGTLAuditContext, object> consulta)
+        {
             try
             {
-                using (var db = new DbContext(Cn()))
+                using (var db = new SGTLAuditContext(conexion))
                 {
-                    var lista = db.Database.SqlQuery<string>(
-                        "SELECT DISTINCT Usuario FROM AUDITORIA WHERE Usuario IS NOT NULL AND LTRIM(RTRIM(Usuario)) <> '' ORDER BY Usuario").ToList();
-                    return Ok(lista);
+                    return Ok(consulta(db));
                 }
             }
             catch (Exception ex)
             {
-                var msg = ex.InnerException?.Message ?? ex.Message;
-                return Content(HttpStatusCode.InternalServerError, new { error = "Error al obtener usuarios.", detalle = msg });
+                Trace.TraceError("Auditoría: {0}", ex.Message);
+                return Content(HttpStatusCode.InternalServerError, new { error = mensaje });
             }
         }
 
-        private static SqlParameter Clonar(SqlParameter p)
+        private static List<string> Distintos(SGTLAuditContext db, string columna)
         {
-            return new SqlParameter(p.ParameterName, p.Value);
+            return db.Database.SqlQuery<string>("SELECT DISTINCT " + columna + " FROM AUDITORIA WHERE LTRIM(RTRIM(" + columna + ")) <> '' ORDER BY " + columna).ToList();
+        }
+
+        private static SqlParameter[] Parametros(Dictionary<string, object> valores)
+        {
+            return valores.Select(v => new SqlParameter(v.Key, v.Value)).ToArray();
         }
     }
 }
