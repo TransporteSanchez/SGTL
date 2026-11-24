@@ -271,7 +271,7 @@
             ['proformas', 'Facturación'],
             ['facturacion', 'Facturación'],
             ['tipos de comprobante', 'Facturación'],
-            ['presupuestos', 'Facturación'],
+            ['presupuestos', 'Presupuestos'],
             ['cuenta corriente', 'Facturación'],
             ['usuarios', 'Usuarios'],
             ['grupos y permisos', 'Usuarios'],
@@ -464,8 +464,7 @@
             el('permisosGrupo').textContent =
                 'Seleccioná un grupo para volver a cargarlo.';
 
-            SGTL.avisoFormulario(
-                '#avisoGrupo',
+            SGTL.toastError(
                 error.mensajeUsuario || 'No se pudo cargar el grupo.'
             );
         } finally {
@@ -520,8 +519,7 @@
 
             SGTL.toastExito('Permisos guardados.');
         } catch (error) {
-            SGTL.avisoFormulario(
-                '#avisoGrupo',
+            SGTL.toastError(
                 error.mensajeUsuario || 'No se pudieron guardar los permisos.'
             );
         } finally {
@@ -559,8 +557,7 @@
 
             SGTL.toastExito('Usuarios guardados.');
         } catch (error) {
-            SGTL.avisoFormulario(
-                '#avisoGrupo',
+            SGTL.toastError(
                 error.mensajeUsuario || 'No se pudieron guardar los usuarios.'
             );
         } finally {
@@ -659,9 +656,7 @@
             await seleccionar(id);
 
             if (grupoId === id && cargado) {
-                window.bootstrap.Tab
-                    .getOrCreateInstance(el('tabPermisos'))
-                    .show();
+                el('tabPermisos').click();
             }
 
             return;
