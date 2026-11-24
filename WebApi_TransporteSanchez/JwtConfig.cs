@@ -11,6 +11,6 @@ namespace WebApi_TransporteSanchez
         public static readonly string SecretKey = ConfigurationManager.AppSettings["JwtClave"];
         public const string Issuer = "*";
         public const string Audience = "*";
-        public const int ExpirationMinutes = 30;
+        public const int ExpirationMinutes = 480;
     }
 }
