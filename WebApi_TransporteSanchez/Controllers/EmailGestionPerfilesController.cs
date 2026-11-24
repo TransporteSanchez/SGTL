@@ -435,7 +435,14 @@ WHERE Es_id = @id;", P("@id", SqlDbType.Int, id)).SingleOrDefaultAsync(ct);
 
         private void Auditar(string usuario, string accion, int id, string detalle)
         {
-            SGTLAuditContext.RegistrarEvento(conexion, usuario, accion, "EmailServidor", "Es_id=" + id, detalle);
+            SGTLAuditContext.RegistrarEvento(
+                conexion,
+                usuario,
+                accion,
+                "EMAIL_SERVIDOR",
+                "EmailServidor_ID=" + id,
+                detalle
+            );
         }
 
         private sealed class PerfilParaPrueba

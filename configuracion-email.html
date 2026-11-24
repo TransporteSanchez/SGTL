@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,10 +10,14 @@
     <link rel="stylesheet" href="assets/compiled/css/iconly.css">
     <link rel="stylesheet" href="assets/static/css/sgtl.css">
 </head>
-<body>
-    <script src="assets/compiled/js/app.js"></script>
 
-    <div id="app">
+<body>
+    <div id="cargandoApariencia" class="min-vh-100 d-flex align-items-center justify-content-center gap-2"
+        role="status">
+        <span class="spinner-border" aria-hidden="true"></span>
+        <span>Cargando…</span>
+    </div>
+    <div id="app" class="d-none">
         <div id="sidebar"></div>
         <div id="main" class="layout-navbar navbar-fixed">
             <header>
@@ -32,7 +37,8 @@
                         <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                             <div>
                                 <h1 id="tituloEmail" class="card-title h5 mb-1">Gestionar e-mail</h1>
-                                <p class="text-muted mb-0">Administrá los perfiles SMTP y asigná un perfil a cada módulo.</p>
+                                <p class="text-muted mb-0">Administrá los perfiles SMTP y asigná un perfil a cada
+                                    módulo.</p>
                             </div>
                             <button type="button" id="btnNuevaConfiguracion" class="btn btn-success">
                                 <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Registrar perfil SMTP
@@ -40,7 +46,8 @@
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="emailConfigTable" class="table table-hover align-middle mb-0" aria-label="Perfiles SMTP">
+                                <table id="emailConfigTable" class="table table-hover align-middle mb-0"
+                                    aria-label="Perfiles SMTP">
                                     <thead>
                                         <tr>
                                             <th scope="col">Servicio</th>
@@ -53,7 +60,9 @@
                                         </tr>
                                     </thead>
                                     <tbody id="emailConfigTableBody">
-                                        <tr><td colspan="7" class="text-center text-muted py-4">Cargando perfiles…</td></tr>
+                                        <tr>
+                                            <td colspan="7" class="text-center text-muted py-4">Cargando perfiles…</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -66,14 +75,15 @@
                     <div class="row g-3">
                         <div class="col-lg-6">
                             <form id="formAsignacionFacturacion" class="card rounded h-100 mb-0"
-                                  data-modulo="facturacion" aria-labelledby="tituloFacturacion">
+                                data-modulo="facturacion" aria-labelledby="tituloFacturacion">
                                 <div class="card-header">
                                     <h2 id="tituloFacturacion" class="card-title h6 mb-1">Perfil para Facturación</h2>
                                     <p class="text-muted mb-0">Perfil que se usa para enviar comprobantes.</p>
                                 </div>
                                 <div class="card-body">
                                     <label for="emailFacturacionService" class="form-label">Perfil SMTP</label>
-                                    <select id="emailFacturacionService" name="Service" class="form-select" required disabled>
+                                    <select id="emailFacturacionService" name="Service" class="form-select" required
+                                        disabled>
                                         <option value="">Seleccioná un perfil</option>
                                     </select>
                                     <p class="alert mt-3 mb-0 d-none" data-feedback role="status"></p>
@@ -86,14 +96,15 @@
 
                         <div class="col-lg-6">
                             <form id="formAsignacionPresupuestos" class="card rounded h-100 mb-0"
-                                  data-modulo="presupuestos" aria-labelledby="tituloPresupuestos">
+                                data-modulo="presupuestos" aria-labelledby="tituloPresupuestos">
                                 <div class="card-header">
                                     <h2 id="tituloPresupuestos" class="card-title h6 mb-1">Perfil para Presupuestos</h2>
                                     <p class="text-muted mb-0">Perfil que se usa para enviar presupuestos.</p>
                                 </div>
                                 <div class="card-body">
                                     <label for="emailPresupuestosService" class="form-label">Perfil SMTP</label>
-                                    <select id="emailPresupuestosService" name="Service" class="form-select" required disabled>
+                                    <select id="emailPresupuestosService" name="Service" class="form-select" required
+                                        disabled>
                                         <option value="">Seleccioná un perfil</option>
                                     </select>
                                     <p class="alert mt-3 mb-0 d-none" data-feedback role="status"></p>
@@ -103,16 +114,66 @@
                                 </div>
                             </form>
                         </div>
+
+                        <div class="col-12">
+                            <form id="formAsignacionRecupero" class="card rounded mb-0"
+                                data-modulo="recupero_contrasena" aria-labelledby="tituloRecupero" novalidate>
+                                <div class="card-header">
+                                    <h2 id="tituloRecupero" class="card-title h6 mb-1">
+                                        Perfil para recupero de contraseña
+                                    </h2>
+                                    <p class="text-muted mb-0">
+                                        Elegí un perfil SMTP exclusivo para recuperar contraseñas.
+                                    </p>
+                                </div>
+
+                                <div class="card-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label for="emailRecuperoService" class="form-label">Perfil SMTP</label>
+                                            <select id="emailRecuperoService" name="Service" class="form-select"
+                                                required disabled>
+                                                <option value="">Seleccioná un perfil</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="emailRecuperoUrlLogin" class="form-label">
+                                                Dirección del Login
+                                            </label>
+                                            <input id="emailRecuperoUrlLogin" name="UrlLogin" type="url"
+                                                class="form-control" maxlength="1024" autocomplete="url"
+                                                spellcheck="false" aria-describedby="ayudaUrlRecupero" required
+                                                disabled>
+                                            <div id="ayudaUrlRecupero" class="form-text">
+                                                Pegá la dirección completa de Login.html, sin parámetros ni fragmentos.
+                                                Usá HTTPS; en localhost podés usar HTTP.
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p class="alert mt-3 mb-0 d-none" data-feedback role="status"></p>
+                                </div>
+
+                                <div class="card-footer text-end">
+                                    <button type="submit" class="btn btn-primary" disabled>
+                                        Guardar asignación
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </section>
             </main>
 
-            <footer><div id="footer-container"></div></footer>
+            <footer>
+                <div id="footer-container"></div>
+            </footer>
         </div>
     </div>
 
-    <div class="modal fade" id="emailConfigModal" tabindex="-1"
-         aria-labelledby="emailConfigModalTitle" aria-hidden="true">
+    <div class="modal fade" id="emailConfigModal" tabindex="-1" aria-labelledby="emailConfigModalTitle"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-scrollable">
             <form id="emailConfigForm" class="modal-content">
                 <div class="modal-header">
@@ -124,23 +185,24 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label for="emailNombre" class="form-label">Nombre del perfil</label>
-                            <input id="emailNombre" name="Name" type="text" class="form-control" maxlength="100" required>
+                            <input id="emailNombre" name="Name" type="text" class="form-control" maxlength="100"
+                                required>
                         </div>
                         <div class="col-md-6">
                             <label for="emailUsuario" class="form-label">Correo remitente</label>
-                            <input id="emailUsuario" name="CredentialFromMailAddres" type="email"
-                                   class="form-control" maxlength="100" required>
+                            <input id="emailUsuario" name="CredentialFromMailAddres" type="email" class="form-control"
+                                maxlength="100" required>
                         </div>
                         <div class="col-md-5">
                             <label for="emailServidor" class="form-label">Servidor SMTP</label>
-                            <input id="emailServidor" name="SmtpHost" type="text" class="form-control"
-                                   maxlength="100" spellcheck="false" required>
+                            <input id="emailServidor" name="SmtpHost" type="text" class="form-control" maxlength="100"
+                                spellcheck="false" required>
                             <div class="form-text">Por ejemplo: smtp.empresa.com</div>
                         </div>
                         <div class="col-md-2">
                             <label for="emailPuerto" class="form-label">Puerto</label>
-                            <input id="emailPuerto" name="SmtpPort" type="number" class="form-control"
-                                   min="1" max="65535" step="1" required>
+                            <input id="emailPuerto" name="SmtpPort" type="number" class="form-control" min="1"
+                                max="65535" step="1" required>
                         </div>
                         <div class="col-md-5">
                             <label for="emailSeguridad" class="form-label">Seguridad de la conexión SMTP</label>
@@ -152,10 +214,11 @@
                         </div>
                         <div class="col-12">
                             <label for="emailClave" class="form-label">Contraseña SMTP</label>
-                            <input id="emailClave" name="CredentialFromMailPass" type="password"
-                                   class="form-control" maxlength="180" autocomplete="new-password"
-                                   aria-describedby="emailPasswordInfo" required>
-                            <div id="emailPasswordInfo" class="form-text">Ingresá la contraseña para registrar el perfil.</div>
+                            <input id="emailClave" name="CredentialFromMailPass" type="password" class="form-control"
+                                maxlength="180" autocomplete="new-password" aria-describedby="emailPasswordInfo"
+                                required>
+                            <div id="emailPasswordInfo" class="form-text">Ingresá la contraseña para registrar el
+                                perfil.</div>
                         </div>
                         <div class="col-12">
                             <label for="emailAsunto" class="form-label">Asunto predeterminado</label>
@@ -166,7 +229,8 @@
                             <textarea id="emailCuerpoHtml" name="CuerpoHtml" class="form-control" rows="5"></textarea>
                         </div>
                     </div>
-                    <p class="text-muted small mt-3 mb-0">Después de guardar, podés enviar un correo de prueba desde la tabla.</p>
+                    <p class="text-muted small mt-3 mb-0">Después de guardar, podés enviar un correo de prueba desde la
+                        tabla.</p>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -176,8 +240,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="emailTestModal" tabindex="-1"
-         aria-labelledby="emailTestModalTitle" aria-hidden="true">
+    <div class="modal fade" id="emailTestModal" tabindex="-1" aria-labelledby="emailTestModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <form id="emailTestForm" class="modal-content">
                 <div class="modal-header">
@@ -188,8 +251,8 @@
                     <div id="emailTestFeedback" class="alert d-none" role="status"></div>
                     <p class="text-muted">El correo de prueba usa el perfil guardado.</p>
                     <label for="emailPrueba" class="form-label">Correo de destino</label>
-                    <input id="emailPrueba" name="EmailDestino" type="email" class="form-control"
-                           maxlength="254" required>
+                    <input id="emailPrueba" name="EmailDestino" type="email" class="form-control" maxlength="254"
+                        required>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light-secondary" data-bs-dismiss="modal">Cancelar</button>
@@ -199,14 +262,14 @@
         </div>
     </div>
 
-    <script src="assets/extensions/perfect-scrollbar/perfect-scrollbar.min.js"></script>
+    <script src="assets/compiled/js/app.js"></script>
     <script src="assets/static/js/components/sidebar.js"></script>
     <script src="assets/static/js/sidebar-loader.js"></script>
-    <script src="assets/static/js/header.js"></script>
-    <script src="assets/static/js/footer.js"></script>
     <script src="assets/static/gestionContenido.js"></script>
     <script src="assets/static/js/sgtl-ui.js"></script>
+    <script src="assets/static/js/header.js"></script>
+    <script src="assets/static/js/footer.js"></script>
     <script src="assets/static/js/configuracion-email.js"></script>
 </body>
+
 </html>
-    

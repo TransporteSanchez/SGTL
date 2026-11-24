@@ -43,25 +43,37 @@ namespace WebApi_TransporteSanchez
             return resultado;
         }
 
-        public static void RegistrarEvento(string connectionString, string usuario, string accion,
-            string entidad = null, string clave = null, string detalle = null, string origen = null)
+        public static void RegistrarEvento(
+            string connectionString,
+            string usuario,
+            string accion,
+            string entidad = null,
+            string clave = null,
+            string detalle = null,
+            string origen = null,
+            string valoresAnteriores = null)
         {
             try
             {
                 using (var db = new DbContext(connectionString))
                 {
                     db.Database.ExecuteSqlCommand(
-                        "INSERT INTO AUDITORIA (Fecha, Usuario, Accion, Entidad, Clave, Valores_Anteriores, Valores_Nuevos, Origen) " +
-                        "VALUES (GETDATE(), @usuario, @accion, @entidad, @clave, NULL, @detalle, @origen)",
+                        @"INSERT INTO AUDITORIA
+                    (Fecha, Usuario, Accion, Entidad, Clave,
+                     Valores_Anteriores, Valores_Nuevos, Origen)
+                  VALUES
+                    (GETDATE(), @usuario, @accion, @entidad, @clave,
+                     @anteriores, @detalle, @origen)",
                         P("@usuario", usuario),
                         P("@accion", accion),
                         P("@entidad", entidad),
                         P("@clave", clave),
+                        P("@anteriores", valoresAnteriores),
                         P("@detalle", detalle),
                         P("@origen", origen ?? OrigenHttp()));
                 }
             }
-            catch { /* silencioso */ }
+            catch { }
         }
 
         private class CambioAudit

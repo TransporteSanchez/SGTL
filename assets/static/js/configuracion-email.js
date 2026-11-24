@@ -8,7 +8,7 @@
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Iniciá sesión para gestionar e-mail.");
 
-        const headers = { Accept: "application/json", Authorization: "Bearer " + token };
+        const headers = SGTL.encabezados({ Accept: "application/json" });
         if (body !== undefined) headers["Content-Type"] = "application/json";
 
         let respuesta;
@@ -40,8 +40,66 @@
         elemento.classList.toggle("d-none", !mensaje);
         if (mensaje) elemento.classList.add("alert-" + tipo);
     }
+    async function inicializarApariencia() {
+        const indicador = porId("cargandoApariencia");
+
+        try {
+            const encabezado = window.loadHeader();
+            window.loadFooter();
+
+            const [contenido] = await Promise.all([
+                fetch(SGTL.api + "/GestionContenido/1", {
+                    cache: "no-store",
+                    headers: SGTL.encabezados({ Accept: "application/json" })
+                }).then(respuesta => {
+                    if (!respuesta.ok) {
+                        throw new Error("No se pudo cargar la apariencia de SGTL.");
+                    }
+
+                    return respuesta.json();
+                }),
+                encabezado,
+                window.loadSidebar()
+            ]);
+
+            const datos = contenido || {};
+            const textoPie = datos.ContenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
+            const contenedorPie = porId("footer-container");
+
+            window.applyStyles(
+                datos.Logo,
+                datos.ColorFondo,
+                datos.ColorBotonesMenu,
+                textoPie
+            );
+
+            if (!contenedorPie.querySelector(".footer p")) {
+                const esperarPie = new MutationObserver(() => {
+                    const parrafo = contenedorPie.querySelector(".footer p");
+                    if (!parrafo) return;
+
+                    esperarPie.disconnect();
+                    parrafo.innerHTML = textoPie;
+                });
+
+                esperarPie.observe(contenedorPie, {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            indicador.classList.add("d-none");
+            porId("app").classList.remove("d-none");
+            return true;
+        } catch {
+            indicador.textContent =
+                "No se pudo cargar la pantalla. Recargá la página para volver a intentar.";
+            return false;
+        }
+    }
 
     document.addEventListener("DOMContentLoaded", async () => {
+        if (!await inicializarApariencia()) return;
         const tabla = porId("emailConfigTableBody");
         const formPerfil = porId("emailConfigForm");
         const formPrueba = porId("emailTestForm");
@@ -58,15 +116,52 @@
         const modalPerfil = prepararModal("emailConfigModal", "btnGuardarConfiguracion", "emailFormFeedback");
         const modalPrueba = prepararModal("emailTestModal", "btnEnviarPrueba", "emailTestFeedback");
 
-        const asignaciones = Array.from(document.querySelectorAll("form[data-modulo]"), form => ({
-            form,
-            ruta: "/asignaciones/" + encodeURIComponent(form.dataset.modulo),
-            selector: form.elements.namedItem("Service"),
-            boton: form.querySelector('button[type="submit"]'),
-            feedback: form.querySelector("[data-feedback]"),
-            cargada: false,
-            guardando: false
-        }));
+        const asignaciones = Array.from(
+            document.querySelectorAll("form[data-modulo]"),
+            form => {
+                const selector = form.elements.namedItem("Service");
+                const urlLogin = form.elements.namedItem("UrlLogin");
+                const reglas = [
+                    {
+                        id: selector.id,
+                        requerido: "Seleccioná un perfil SMTP."
+                    }
+                ];
+
+                if (urlLogin) {
+                    reglas.push({
+                        id: urlLogin.id,
+                        requerido: "Completá la dirección del Login.",
+                        validar: valor => {
+                            if (valor.length > 1024) {
+                                return "Ingresá una dirección de hasta 1.024 caracteres.";
+                            }
+
+                            try {
+                                new URL(valor);
+                                return "";
+                            } catch {
+                                return "Ingresá la dirección completa del Login.";
+                            }
+                        }
+                    });
+                }
+
+                form.noValidate = true;
+
+                return {
+                    form,
+                    ruta: "/asignaciones/" + encodeURIComponent(form.dataset.modulo),
+                    selector,
+                    urlLogin,
+                    boton: form.querySelector('button[type="submit"]'),
+                    feedback: form.querySelector("[data-feedback]"),
+                    validador: SGTL.validador(reglas),
+                    cargada: false,
+                    guardando: false
+                };
+            }
+        );
 
         let perfiles = [];
         let idEdicion = null;
@@ -131,9 +226,13 @@
         }
 
         function ajustarAsignacion(asignacion) {
-            const { selector, boton, cargada, guardando } = asignacion;
-            selector.disabled = !cargada || guardando || perfiles.length === 0;
-            boton.disabled = selector.disabled || !selector.value;
+            const { selector, urlLogin, boton, cargada, guardando } = asignacion;
+            const deshabilitada = !cargada || guardando || perfiles.length === 0;
+
+            selector.disabled = deshabilitada;
+            if (urlLogin) urlLogin.disabled = deshabilitada;
+
+            boton.disabled = deshabilitada || !selector.value;
         }
 
         async function cargarPerfiles() {
@@ -158,9 +257,18 @@
         async function cargarAsignacion(asignacion) {
             try {
                 const datos = await pedir(asignacion.ruta, { aceptar404: true });
+
                 asignacion.selector.value = datos ? String(datos.Service) : "";
+
+                if (asignacion.urlLogin) {
+                    asignacion.urlLogin.value = datos?.UrlLogin || "";
+                }
+
                 asignacion.cargada = true;
-                if (!datos) aviso(asignacion.feedback, "info", "Todavía no hay un perfil asignado.");
+
+                if (!datos) {
+                    aviso(asignacion.feedback, "info", "Todavía no hay un perfil asignado.");
+                }
             } catch (error) {
                 aviso(asignacion.feedback, "danger", error.message);
             } finally {
@@ -169,23 +277,50 @@
         }
 
         for (const asignacion of asignaciones) {
-            asignacion.selector.addEventListener("change", () => ajustarAsignacion(asignacion));
+            asignacion.selector.addEventListener(
+                "change",
+                () => ajustarAsignacion(asignacion)
+            );
+
             asignacion.form.addEventListener("submit", async evento => {
                 evento.preventDefault();
+
                 if (asignacion.boton.disabled) return;
 
-                const service = Number(asignacion.selector.value);
+                asignacion.validador.validarTodo();
+
+                if (!SGTL.revisarFormulario(asignacion.form, asignacion.feedback)) {
+                    return;
+                }
+
+                const body = {
+                    Service: Number(asignacion.selector.value)
+                };
+
+                if (asignacion.urlLogin) {
+                    body.UrlLogin = asignacion.urlLogin.value.trim();
+                }
+
                 const listo = SGTL.procesando(asignacion.boton);
                 asignacion.guardando = true;
                 ajustarAsignacion(asignacion);
                 aviso(asignacion.feedback);
 
                 try {
-                    const datos = await pedir(asignacion.ruta, { method: "PUT", body: { Service: service } });
-                    asignacion.selector.value = String(datos?.Service ?? service);
+                    const datos = await pedir(asignacion.ruta, {
+                        method: "PUT",
+                        body
+                    });
+
+                    asignacion.selector.value = String(datos?.Service ?? body.Service);
+
+                    if (asignacion.urlLogin) {
+                        asignacion.urlLogin.value = datos?.UrlLogin ?? body.UrlLogin;
+                    }
+
                     SGTL.toastExito("Se guardó la asignación.");
                 } catch (error) {
-                    SGTL.toastError(error.message);
+                    SGTL.avisoFormulario(asignacion.feedback, error.message);
                 } finally {
                     listo();
                     asignacion.guardando = false;
@@ -301,25 +436,6 @@
                 SGTL.toastExito(datos?.mensaje || "Se envió el correo de prueba.");
             });
         });
-
-        if (typeof window.loadHeader === "function") {
-            window.loadHeader().catch(error => console.warn("No se pudo cargar el encabezado.", error));
-        }
-        if (typeof window.loadFooter === "function") window.loadFooter();
-        fetch(SGTL.api + "/GestionContenido/1")
-            .then(respuesta => {
-                if (!respuesta.ok) throw new Error("HTTP " + respuesta.status);
-                return respuesta.json();
-            })
-            .then(contenido => {
-                window.applyStyles(
-                    contenido.Logo,
-                    contenido.ColorFondo,
-                    contenido.ColorBotonesMenu,
-                    contenido.ContenidoPiePagina
-                );
-            })
-            .catch(error => console.warn("No se pudo cargar la apariencia de SGTL.", error));
 
         try {
             await cargarPerfiles();

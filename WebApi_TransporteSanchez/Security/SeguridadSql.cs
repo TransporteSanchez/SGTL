@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.Entity;
 
 namespace WebApi_TransporteSanchez.Security
 {
@@ -20,8 +21,30 @@ FROM dbo.USUARIOS ";
 
         internal static SGTLAuditContext Abrir()
         {
-            return new SGTLAuditContext(
+            var db = new SGTLAuditContext(
                 ConnectionStringHelper.GetConnectionString("SGTLEntities"));
+
+            try
+            {
+                // El índice calculado exige estas opciones en la misma conexión.
+                db.Database.Connection.Open();
+                db.Database.ExecuteSqlCommand(
+                    TransactionalBehavior.DoNotEnsureTransaction,
+                    @"SET ANSI_NULLS ON;
+              SET ANSI_PADDING ON;
+              SET ANSI_WARNINGS ON;
+              SET ARITHABORT ON;
+              SET CONCAT_NULL_YIELDS_NULL ON;
+              SET QUOTED_IDENTIFIER ON;
+              SET NUMERIC_ROUNDABORT OFF;");
+
+                return db;
+            }
+            catch
+            {
+                db.Dispose();
+                throw;
+            }
         }
 
         internal static SqlParameter P(

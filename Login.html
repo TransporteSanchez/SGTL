@@ -8,26 +8,7 @@
     <link rel="shortcut icon" href="./assets/static/images/logo/sgtl-icono.png" type="image/png">
     <link rel="stylesheet" href="./assets/compiled/css/app.css">
     <link rel="stylesheet" href="./assets/static/css/sgtl.css">
-    <style>
-        #loginPage {
-            background-color: #e4eef8;
-        }
-
-        .login-card {
-            max-width: 400px;
-        }
-
-        .left-section img,
-        #logoDerecho {
-            max-width: 200px;
-        }
-
-        @media (min-width: 992px) {
-            .right-section {
-                background-color: var(--bs-body-bg);
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="./css/login.css">
 </head>
 
 <body id="loginPage">
@@ -42,15 +23,16 @@
                 <div class="login-card card w-100 shadow mb-0">
                     <div class="card-body p-4 p-sm-5">
                         <div class="text-center mb-4">
-                            <img id="logoDerecho" src="./assets/static/images/logo/sgtl-logo.png" class="img-fluid w-100"
-                                alt="SGTL">
+                            <img id="logoDerecho" src="./assets/static/images/logo/sgtl-logo.png"
+                                class="img-fluid w-100" alt="SGTL">
                         </div>
-                        <h1 id="tituloLogin" class="h4 text-center mb-4">Iniciar sesión</h1>
+                        <h1 id="tituloLogin" class="h4 text-center mb-4" tabindex="-1">Iniciar sesión</h1>
                         <div id="contenidoFeedback" class="alert alert-warning d-none" role="status"></div>
                         <p id="contenidoEstado" class="small text-muted text-center" role="status">
                             Cargando configuración de la pantalla…
                         </p>
-                        <form id="loginForm" novalidate>
+                        <form id="loginForm" method="post" novalidate>
+                            <div id="resultadoLogin" class="alert alert-light-success d-none" role="status"></div>
                             <div id="generalError" class="alert alert-danger d-none" role="alert"></div>
                             <div class="mb-3">
                                 <label for="username" class="form-label">Usuario</label>
@@ -80,7 +62,118 @@
                             <div class="d-grid">
                                 <button type="submit" id="btnIngresar" class="btn btn-primary">Ingresar</button>
                             </div>
+                            <div class="text-center mt-3">
+                                <button type="button" id="abrirRecupero" class="btn btn-link"
+                                    data-vista="solicitarRecuperoForm">
+                                    Recuperar contraseña
+                                </button>
+                            </div>
                         </form>
+
+                        <form id="solicitarRecuperoForm" class="d-none" method="post" novalidate>
+                            <p class="text-muted">Ingresá el e-mail registrado en tu cuenta para recibir las
+                                instrucciones.</p>
+                            <div id="errorSolicitud" class="alert alert-light-danger d-none" role="alert"></div>
+                            <div class="mb-4">
+                                <label for="recuperoEmail" class="form-label">E-mail</label>
+                                <input id="recuperoEmail" name="email" type="email" class="form-control" maxlength="254"
+                                    autocomplete="email" autocapitalize="none" spellcheck="false"
+                                    aria-describedby="ayudaRecuperoEmail errorRecuperoEmail" required>
+                                <div id="errorRecuperoEmail" class="invalid-feedback"></div>
+                                <div id="ayudaRecuperoEmail" class="form-text">
+                                    Si no tenés un e-mail registrado, comunicate con quien administra tus accesos.
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button id="btnSolicitarRecupero" type="submit" class="btn btn-primary">Enviar
+                                    enlace</button>
+                                <button id="volverLoginSolicitud" type="button" class="btn btn-light-secondary"
+                                    data-vista="loginForm">
+                                    Volver a iniciar sesión
+                                </button>
+                            </div>
+                        </form>
+
+                        <div id="recuperoEnviado" class="d-none">
+                            <p id="mensajeSolicitud" class="alert alert-light-success d-none" role="status"></p>
+                            <p class="text-muted">Revisá también la carpeta de correo no deseado. El enlace vence en 20
+                                minutos y se puede usar una sola vez.</p>
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-primary" data-vista="loginForm">Volver a iniciar
+                                    sesión</button>
+                                <button type="button" class="btn btn-light-secondary"
+                                    data-vista="solicitarRecuperoForm">Solicitar otro enlace</button>
+                            </div>
+                        </div>
+
+                        <div id="comprobarRecupero" class="d-none">
+                            <p id="estadoComprobacion" class="text-muted" role="status">
+                                Comprobando el enlace…
+                            </p>
+                            <div id="errorComprobacion" class="alert alert-light-danger d-none" role="alert"></div>
+                            <div class="d-grid gap-2">
+                                <button id="reintentarComprobacion" type="button" class="btn btn-primary d-none">
+                                    Volver a intentar
+                                </button>
+                                <button type="button" class="btn btn-light-secondary"
+                                    data-vista="solicitarRecuperoForm">
+                                    Solicitar otro enlace
+                                </button>
+                            </div>
+                        </div>
+
+                        <form id="restablecerRecuperoForm" class="d-none" method="post" novalidate>
+                            <p class="text-muted">Elegí una contraseña nueva para volver a ingresar.</p>
+                            <div id="errorRestablecer" class="alert alert-light-danger d-none" role="alert"></div>
+                            <div class="mb-3">
+                                <label for="contrasenaNueva" class="form-label">Contraseña nueva</label>
+                                <div class="input-group has-validation">
+                                    <input id="contrasenaNueva" name="contrasenaNueva" type="password"
+                                        class="form-control" autocomplete="new-password"
+                                        aria-describedby="ayudaContrasenaNueva errorContrasenaNueva" required>
+                                    <button id="mostrarContrasenaNueva" type="button" class="btn btn-outline-secondary"
+                                        aria-label="Mostrar contraseña" aria-controls="contrasenaNueva"
+                                        aria-pressed="false">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                    <div id="errorContrasenaNueva" class="invalid-feedback"></div>
+                                </div>
+                                <div id="ayudaContrasenaNueva" class="form-text">
+                                    Usá entre 8 y 20 caracteres, con al menos una letra y un número.
+                                </div>
+                            </div>
+                            <div class="mb-4">
+                                <label for="repetirContrasena" class="form-label">Repetir contraseña nueva</label>
+                                <div class="input-group has-validation">
+                                    <input id="repetirContrasena" name="repetirContrasena" type="password"
+                                        class="form-control" autocomplete="new-password"
+                                        aria-describedby="errorRepetirContrasena" required>
+                                    <button id="mostrarRepetirContrasena" type="button"
+                                        class="btn btn-outline-secondary" aria-label="Mostrar contraseña"
+                                        aria-controls="repetirContrasena" aria-pressed="false">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                    <div id="errorRepetirContrasena" class="invalid-feedback"></div>
+                                </div>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <button id="btnRestablecer" type="submit" class="btn btn-primary">Restablecer
+                                    contraseña</button>
+                                <button type="button" class="btn btn-light-secondary" data-vista="loginForm">Volver a
+                                    iniciar sesión</button>
+                            </div>
+                        </form>
+
+                        <div id="recuperoInvalido" class="d-none">
+                            <p id="mensajeEnlaceInvalido" class="alert alert-light-danger d-none" role="alert"></p>
+
+                            <div class="d-grid">
+                                <button id="solicitarOtroEnlace" type="button" class="btn btn-primary"
+                                    data-vista="solicitarRecuperoForm">
+                                    Solicitar otro enlace
+                                </button>
+                            </div>
+                        </div>
                         <div id="footerContent" class="text-center text-muted small mt-4">
                             SGTL | un producto de Integra Analistas &reg;
                         </div>
@@ -89,150 +182,11 @@
             </section>
         </div>
     </main>
-    <script src="./assets/extensions/jquery/jqueryajax.js"></script>
     <script src="./assets/compiled/js/app.js"></script>
+    <script src="./assets/extensions/jquery/jqueryajax.js"></script>
+    <script src="./assets/static/gestionContenido.js"></script>
     <script src="./assets/static/js/sgtl-ui.js"></script>
-    <script>
-        (() => {
-            'use strict';
-            const porId = id => document.getElementById(id);
-            const formulario = porId('loginForm'), usuario = porId('username'), clave = porId('password');
-            const botonIngresar = porId('btnIngresar'), botonMostrar = porId('togglePassword');
-            const aviso = porId('generalError');
-            let enviando = false;
-
-            const validacion = SGTL.validador([
-                { id: 'username', requerido: 'Ingresá tu usuario.' },
-                { id: 'password', requerido: 'Ingresá tu contraseña.' }
-            ]);
-
-            function mostrarContrasena(mostrar) {
-                clave.type = mostrar ? 'text' : 'password';
-                porId('eyeIcon').classList.toggle('bi-eye', !mostrar);
-                porId('eyeIcon').classList.toggle('bi-eye-slash', mostrar);
-                botonMostrar.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
-                botonMostrar.setAttribute('aria-pressed', String(mostrar));
-            }
-
-            botonMostrar.addEventListener('pointerdown', evento => {
-                if (enviando || botonMostrar.disabled || evento.button !== 0 || !evento.isPrimary) return;
-                evento.preventDefault();
-                botonMostrar.setPointerCapture(evento.pointerId);
-                mostrarContrasena(true);
-            });
-            ['pointerup', 'pointercancel', 'lostpointercapture', 'blur'].forEach(tipo => {
-                botonMostrar.addEventListener(tipo, () => mostrarContrasena(false));
-            });
-            botonMostrar.addEventListener('keydown', evento => {
-                if (evento.key !== ' ' && evento.key !== 'Enter') return;
-                evento.preventDefault();
-                if (!enviando && !botonMostrar.disabled) { mostrarContrasena(true); }
-            });
-            botonMostrar.addEventListener('keyup', evento => {
-                if (evento.key !== ' ' && evento.key !== 'Enter') return;
-                evento.preventDefault();
-                mostrarContrasena(false);
-            });
-            window.addEventListener('blur', () => mostrarContrasena(false));
-            document.addEventListener('visibilitychange', () => {
-                if (document.hidden) mostrarContrasena(false);
-            });
-
-            function cargarContenido() {
-                $.ajax({
-                    url: SGTL.api + '/GestionContenido/1', method: 'GET', dataType: 'json', timeout: 15000
-                }).done(datos => {
-                    const contenido = Array.isArray(datos) ? datos[0] : datos;
-                    if (!contenido || typeof contenido !== 'object') {
-                        SGTL.avisoFormulario(porId('contenidoFeedback'),
-                            'No se pudo cargar la configuración de la pantalla. Podés intentar ingresar.');
-                        return;
-                    }
-                    if (typeof contenido.ColorFondo === 'string' && contenido.ColorFondo.trim()) {
-                        porId('loginPage').style.backgroundColor = contenido.ColorFondo.trim();
-                    }
-                    if (typeof contenido.Logo === 'string' && contenido.Logo.trim()) {
-                        porId('logoIzquierdo').src = contenido.Logo.trim();
-                        porId('logoDerecho').src = contenido.Logo.trim();
-                    }
-                    if (typeof contenido.ContenidoPiePagina === 'string' && contenido.ContenidoPiePagina.trim()) {
-                        porId('footerContent').innerHTML = contenido.ContenidoPiePagina;
-                    }
-                }).fail(() => {
-                    SGTL.avisoFormulario(porId('contenidoFeedback'),
-                        'No se pudo cargar la configuración de la pantalla. Podés intentar ingresar.');
-                }).always(() => {
-                    porId('contenidoEstado').classList.add('d-none');
-                });
-            }
-
-            function mensajeDeError(xhr) {
-                if (xhr.status === 0) {
-                    return 'No se pudo conectar con el servidor. Revisá la conexión y probá de nuevo.';
-                }
-                const datos = xhr.responseJSON || {}, mensaje = datos.General || datos.error;
-                if (typeof mensaje === 'string' && mensaje.trim()) { return mensaje; }
-                if (xhr.status === 401) { return 'Usuario o contraseña incorrectos.'; }
-                if (xhr.status === 429) { return 'Esperá unos minutos antes de volver a intentar.'; }
-                return 'No se pudo iniciar sesión. Probá de nuevo.';
-            }
-
-            formulario.addEventListener('submit', evento => {
-                evento.preventDefault();
-                mostrarContrasena(false);
-                if (enviando) return;
-                SGTL.avisoFormulario(aviso, '');
-                if (!validacion.validarTodo()) {
-                    SGTL.revisarFormulario(formulario, aviso);
-                    return;
-                }
-
-                enviando = true;
-                usuario.readOnly = true;
-                clave.readOnly = true;
-                botonMostrar.disabled = true;
-                const listo = SGTL.procesando(botonIngresar, 'Ingresando…');
-
-                // El 401 del login representa credenciales incorrectas.
-                // Se maneja acá para evitar el cierre de sesión de SGTL.ajax.
-                $.ajax({
-                    url: SGTL.api + '/login', method: 'POST',
-                    contentType: 'application/json; charset=utf-8', dataType: 'json', timeout: 30000,
-                    data: JSON.stringify({ Nombre_Usuario: usuario.value.trim(), Contraseña: clave.value })
-                }).done(datos => {
-                    if (!datos || typeof datos.Token !== 'string' || !datos.Token.trim() ||
-                        typeof datos.Nombre_Usuario !== 'string' || !datos.Nombre_Usuario.trim()) {
-                        SGTL.avisoFormulario(aviso,
-                            'No se pudo completar el inicio de sesión. Probá de nuevo.');
-                        return;
-                    }
-                    const sesion = {
-                        token: datos.Token, username: datos.Nombre_Usuario, userRole: datos.Rol || '',
-                        nombre: datos.Nombre || '', apellido: datos.Apellido || ''
-                    };
-                    try {
-                        Object.entries(sesion).forEach(([nombre, valor]) => { localStorage.setItem(nombre, valor); });
-                        window.location.href = 'index.html';
-                    } catch {
-                        Object.keys(sesion).forEach(nombre => {
-                            try { localStorage.removeItem(nombre); } catch { }
-                        });
-                        SGTL.avisoFormulario(aviso,
-                            'No se pudo guardar la sesión. Revisá que el navegador permita el almacenamiento local.');
-                    }
-                }).fail(xhr => {
-                    SGTL.avisoFormulario(aviso, mensajeDeError(xhr));
-                }).always(() => {
-                    listo();
-                    usuario.readOnly = false;
-                    clave.readOnly = false;
-                    botonMostrar.disabled = false;
-                    enviando = false;
-                });
-            });
-            cargarContenido();
-        })();
-    </script>
+    <script src="./assets/static/js/login.js"></script>
 </body>
 
 </html>
