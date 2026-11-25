@@ -2,11 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Proformas;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
@@ -208,59 +209,21 @@ namespace WebApi_TransporteSanchez.Controllers
 
         [HttpGet]
         [Route("")]
-        public IHttpActionResult Listar(string numero = null, int? clienteId = null, string estado = null,
-            string desde = null, string hasta = null, string usuario = null,
-            bool soloGeneradas = false, int page = 1, int pageSize = 15)
+        public IHttpActionResult Listar([FromUri] ConsultaProformas.Filtro filtro)
         {
-            if (page < 1) page = 1;
-            if (pageSize < 1 || pageSize > 200) pageSize = 15;
-            var where = new StringBuilder(" WHERE 1=1 ");
-            var ps = new List<SqlParameter>();
-            if (!string.IsNullOrWhiteSpace(numero)) { where.Append(" AND Numero LIKE @numero "); ps.Add(P("@numero", "%" + numero.Trim() + "%")); }
-            if (clienteId.HasValue && clienteId.Value > 0) { where.Append(" AND ClienteID=@cli "); ps.Add(P("@cli", clienteId.Value)); }
-            if (!string.IsNullOrWhiteSpace(estado)) { where.Append(" AND Estado=@est "); ps.Add(P("@est", estado.Trim())); }
-            if (soloGeneradas) where.Append(" AND Estado <> 'Borrador' ");
-            if (!string.IsNullOrWhiteSpace(usuario)) { where.Append(" AND Usu_Alta LIKE @usu "); ps.Add(P("@usu", "%" + usuario.Trim() + "%")); }
-            DateTime d;
-            if (!string.IsNullOrWhiteSpace(desde) && DateTime.TryParse(desde, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
-            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) >= @desde "); ps.Add(P("@desde", d.Date)); }
-            if (!string.IsNullOrWhiteSpace(hasta) && DateTime.TryParse(hasta, CultureInfo.InvariantCulture, DateTimeStyles.None, out d))
-            { where.Append(" AND ISNULL(FechaEmision,FechaCreacion) < @hasta "); ps.Add(P("@hasta", d.Date.AddDays(1))); }
-
             try
             {
                 using (var db = new DbContext(Cn()))
                 {
-                    int total = db.Database.SqlQuery<int>("SELECT COUNT(*) FROM PROFORMAS" + where,
-                        ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToArray()).First();
-
-                    var pPage = ps.Select(x => new SqlParameter(x.ParameterName, x.Value)).ToList();
-                    pPage.Add(P("@off", (page - 1) * pageSize)); pPage.Add(P("@lim", pageSize));
-                    string sql =
-                        "SELECT Proforma_ID, Numero, ISNULL(FechaEmision,FechaCreacion) AS Fecha, ClienteID, " +
-                        "Cli_RazonSocial AS Cliente, Destino, ISNULL(TotalGeneral,ISNULL(ImporteTotal,0)) AS Total, Estado, Usu_Alta AS UsuarioCreador " +
-                        "FROM PROFORMAS" + where + " ORDER BY Proforma_ID DESC OFFSET @off ROWS FETCH NEXT @lim ROWS ONLY";
-                    var items = db.Database.SqlQuery<ListItem>(sql, pPage.ToArray()).ToList();
-                    return Ok(new { items, total, page, pageSize, totalPages = (int)Math.Ceiling(total / (double)pageSize) });
+                    var pagina = ConsultaProformas.Buscar(db, filtro ?? new ConsultaProformas.Filtro());
+                    return Ok(new { items = pagina.Proformas, total = pagina.Total, totalPages = pagina.Paginas });
                 }
             }
             catch (Exception ex)
             {
-                return Content(HttpStatusCode.InternalServerError, new { error = "Error al listar proformas.", detalle = ex.InnerException?.Message ?? ex.Message });
+                Trace.TraceError("Proformas: {0}", ex.Message);
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudieron consultar las proformas." });
             }
-        }
-
-        private class ListItem
-        {
-            public int Proforma_ID { get; set; }
-            public string Numero { get; set; }
-            public DateTime? Fecha { get; set; }
-            public int? ClienteID { get; set; }
-            public string Cliente { get; set; }
-            public string Destino { get; set; }
-            public decimal Total { get; set; }
-            public string Estado { get; set; }
-            public string UsuarioCreador { get; set; }
         }
 
         [HttpGet]
