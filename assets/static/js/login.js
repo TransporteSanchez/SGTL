@@ -357,16 +357,16 @@
             'gestion-choferes.html',
             'gestion-clientes.html',
             'gestion-contenido.html',
-            'gestion-facturacion.html',
             'gestion-gruposypermisos.html',
             'gestion-origenes-destinos.html',
+            'gestion-proformas.html',
             'gestion-tarifas.html',
             'gestion-usuarios.html',
             'gestion-viajes.html',
             'listado-camiones.html',
             'listado-choferes.html',
             'listado-clientes.html',
-            'listado-facturas.html',
+            'listado-proformas.html',
             'listado-usuarios.html',
             'listado-viajes.html'
         ]);
