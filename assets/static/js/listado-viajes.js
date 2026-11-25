@@ -1,10 +1,11 @@
 (function () {
     'use strict';
 
-    var COLUMNAS = 6;
+    var COLUMNAS = 7;
     var estados = SGTL.estadosViaje();
     var tamanio = 15;
     var pedido = 0;
+    var viajes = [];
     var orden;
 
     function porId(id) {
@@ -29,7 +30,8 @@
             '<td class="text-center text-nowrap">' + celdaFecha(viaje) + '</td>' +
             '<td>' + SGTL.escapar(viaje.Origen) + '<div class="small text-muted">→ ' + SGTL.escapar(viaje.Destino) + '</div></td>' +
             '<td class="text-end text-nowrap">' + textoKm(viaje.Distancia_KM) + '</td>' +
-            '<td class="text-center text-nowrap">' + SGTL.estadoViaje(viaje.Estado) + '</td></tr>';
+            '<td class="text-center text-nowrap">' + SGTL.estadoViaje(viaje.Estado) + '</td>' +
+            '<td class="text-center">' + SGTL.accionesFila([SGTL.botonFila('ver', { id: viaje.Viaje_ID })]) + '</td></tr>';
     }
 
     function filtros() {
@@ -60,7 +62,8 @@
         SGTL.tabla.cargando('#filasViajes', COLUMNAS);
         consultar(pagina, tamanio, 'No se pudieron cargar los viajes. Revisá la conexión y probá de nuevo.').then(function (datos) {
             if (numero !== pedido) return;
-            if (datos.Results.length) SGTL.tabla.llenar('#filasViajes', datos.Results.map(fila).join(''));
+            viajes = datos.Results;
+            if (viajes.length) SGTL.tabla.llenar('#filasViajes', viajes.map(fila).join(''));
             else SGTL.tabla.vacia('#filasViajes', COLUMNAS);
             SGTL.tabla.paginacion('#paginacionViajes', {
                 total: datos.TotalRecords,
@@ -124,6 +127,11 @@
         buscar(1);
     });
     porId('exportarViajes').addEventListener('click', exportar);
+    porId('filasViajes').addEventListener('click', function (evento) {
+        var boton = evento.target.closest('[data-accion="ver"]');
+        if (!boton) return;
+        SGTLDetalleViaje.abrir(viajes.find(function (viaje) { return String(viaje.Viaje_ID) === boton.dataset.id; }));
+    });
     cargarClientes();
     buscar(1);
 
