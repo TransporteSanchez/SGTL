@@ -115,11 +115,11 @@
         SGTL.rangoFechas(rango, { onClose: function (fechas) { if (fechas.length !== 1) buscar(1); } });
     });
     orden = SGTL.tabla.habilitarOrden('#tablaViajes', function () { buscar(1); });
-    SGTL.filtros(['#viajeNumero', '#viajeCliente', '#viajeInicio', '#viajeFin', '#viajeEstado', '#viajeReferencia'], function () {
-        SelectClientePredictivo.sincronizar('viajeCliente');
+    SelectClientePredictivo.inicializar('viajeCliente', { idCampo: 'viajeClienteTexto', placeholder: 'Todos los clientes' });
+    SGTL.filtros(['#viajeNumero', '#viajeClienteTexto', '#viajeInicio', '#viajeFin', '#viajeEstado', '#viajeReferencia'], function () {
+        if (!porId('viajeClienteTexto').value) porId('viajeCliente').value = '';
         buscar(1);
     });
-    SelectClientePredictivo.inicializar('viajeCliente', { placeholder: 'Todos los clientes' });
     ['viajeCliente', 'viajeEstado'].forEach(function (id) { porId(id).addEventListener('change', function () { buscar(1); }); });
     porId('viajeNumero').addEventListener('input', function () { this.value = this.value.replace(/\D/g, ''); });
     porId('busquedaViajes').addEventListener('submit', function (evento) {
