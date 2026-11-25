@@ -3,16 +3,17 @@ using System.Collections.Generic;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using WebApi_TransporteSanchez.Viajes;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
     public class ViajesController : ApiController
     {
-        // DTO principal: refleja exactamente los campos de la entidad VIAJES.
         public class ViajeDto
         {
             public int Viaje_ID { get; set; }
@@ -34,157 +35,25 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Modi { get; set; }
         }
 
-        // GET: api/Viajes
-        // Lista todos los viajes con las descripciones de origen y destino resueltas.
-        public IHttpActionResult Get()
-        {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
-            try
-            {
-                using (var db = new SGTLAuditContext(connectionString))
-                {
-                    var olist = (from v in db.Set<VIAJES>()
-                                 join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj
-                                 from o in oj.DefaultIfEmpty()
-                                 join d in db.Set<DESTINO>() on v.DestinoID equals d.Destino_ID into dj
-                                 from d in dj.DefaultIfEmpty()
-                                 select new
-                                 {
-                                     v.Viaje_ID,
-                                     v.OrigenID,
-                                     v.DestinoID,
-                                     Origen = o != null ? o.Descripcion : "",
-                                     Destino = d != null ? d.Descripcion : "",
-                                     v.Distancia_KM,
-                                     v.Num_Remito,
-                                     v.Num_de_Carga,
-                                     v.Fecha_Inicio,
-                                     v.Fecha_Fin,
-                                     v.ChoferID,
-                                     v.CamionID,
-                                     v.TarifaFijaID,
-                                     v.TarifaKmID,
-                                     v.ClienteID,
-                                     v.Fecha_Alta,
-                                     v.Usu_Alta,
-                                     v.Fecha_Modi,
-                                     v.Usu_Modi
-                                 })
-                                 .OrderByDescending(v => v.Viaje_ID)
-                                 .ToList();
-
-                    if (olist == null || !olist.Any())
-                    {
-                        return NotFound();
-                    }
-
-                    return Ok(olist);
-                }
-            }
-            catch (DbEntityValidationException ex)
-            {
-                var validationErrors = new List<string>();
-                foreach (var validationResult in ex.EntityValidationErrors)
-                {
-                    foreach (var error in validationResult.ValidationErrors)
-                    {
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
-                    }
-                }
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex);
-            }
-        }
-
-        // GET: api/Viajes/Buscar
-        // Mismo contrato que Camiones/Buscar: filtros opcionales + paginacion.
-        // Devuelve { TotalRecords, Results = [...] } tal como lo consume gestion-viajes.html.
         [HttpGet]
         [Route("api/Viajes/Buscar")]
-        public IHttpActionResult Buscar(string idViaje = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar([FromUri] ConsultaViajes.Filtro filtro)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
-
             try
             {
-                using (var db = new SGTLAuditContext(connectionString))
+                using (var db = new SGTLAuditContext(ConnectionStringHelper.GetConnectionString("SGTLEntities")))
                 {
-                    var query = db.Set<VIAJES>().AsQueryable();
-
-                    // Filtro por numero (ID) de viaje si se proporciona
-                    if (!string.IsNullOrEmpty(idViaje) && int.TryParse(idViaje, out int viajeId))
-                    {
-                        query = query.Where(v => v.Viaje_ID == viajeId);
-                    }
-
-                    // Filtro por rango de fecha de inicio del viaje
-                    if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime desde))
-                    {
-                        query = query.Where(v => v.Fecha_Inicio >= desde);
-                    }
-
-                    if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime hasta))
-                    {
-                        hasta = hasta.AddDays(1).AddTicks(-1); // incluir todo el dia
-                        query = query.Where(v => v.Fecha_Inicio <= hasta);
-                    }
-
-                    var totalRecords = query.Count();
-
-                    var results = (from v in query
-                                   join o in db.Set<ORIGEN>() on v.OrigenID equals o.Origen_ID into oj
-                                   from o in oj.DefaultIfEmpty()
-                                   join d in db.Set<DESTINO>() on v.DestinoID equals d.Destino_ID into dj
-                                   from d in dj.DefaultIfEmpty()
-                                   orderby v.Viaje_ID descending
-                                   select new
-                                   {
-                                       v.Viaje_ID,
-                                       v.Fecha_Inicio,
-                                       v.Fecha_Fin,
-                                       Origen = o != null ? o.Descripcion : "",
-                                       Destino = d != null ? d.Descripcion : "",
-                                       v.Num_Remito,
-                                       v.Num_de_Carga,
-                                       v.Distancia_KM,
-                                       v.OrigenID,
-                                       v.DestinoID,
-                                       v.ChoferID,
-                                       v.CamionID,
-                                       v.ClienteID,
-                                       v.TarifaFijaID,
-                                       v.TarifaKmID,
-                                       // La tabla VIAJES no tiene columna Estado en este modelo.
-                                       // Se devuelve vacio para que el frontend habilite la edicion/eliminacion.
-                                       Estado = ""
-                                   })
-                                   .Skip((page - 1) * pageSize)
-                                   .Take(pageSize)
-                                   .ToList();
-
-                    return Ok(new
-                    {
-                        TotalRecords = totalRecords,
-                        Results = results
-                    });
+                    return Ok(ConsultaViajes.Buscar(db, filtro ?? new ConsultaViajes.Filtro()));
                 }
-            }
-            catch (DbUpdateException ex)
-            {
-                return InternalServerError(new Exception("Error al acceder a la base de datos durante la busqueda de viajes.", ex));
             }
             catch (Exception ex)
             {
-                return InternalServerError(ex);
+                Trace.TraceError("Viajes: {0}", ex.Message);
+                return Content(HttpStatusCode.InternalServerError, new { error = "No se pudieron consultar los viajes." });
             }
         }
 
         // GET: api/Viajes/{id}
-        // Devuelve un viaje completo para precargar el formulario de edicion.
         public IHttpActionResult Get(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -243,7 +112,6 @@ namespace WebApi_TransporteSanchez.Controllers
                 return BadRequest("No se recibieron datos del viaje.");
             }
 
-            // Validaciones de negocio basicas
             var errores = ValidarViaje(viajeDto);
             if (errores.Any())
             {
@@ -385,7 +253,6 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         // DELETE: api/Viajes/{id}
-        // Eliminacion fisica: la tabla VIAJES no tiene columna de estado para baja logica.
         public IHttpActionResult Delete(int id)
         {
             string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
@@ -426,7 +293,6 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // Validaciones de negocio compartidas entre alta y edicion.
         private List<object> ValidarViaje(ViajeDto v)
         {
             var errores = new List<object>();
@@ -443,7 +309,6 @@ namespace WebApi_TransporteSanchez.Controllers
             if (v.Fecha_Fin < v.Fecha_Inicio)
                 errores.Add(new { PropertyName = "Fecha_Fin", ErrorMessage = "La fecha de fin no puede ser anterior a la fecha de inicio." });
 
-            // Debe tener al menos un tipo de tarifa asociada (fija o por km).
             bool tieneFija = v.TarifaFijaID.HasValue && v.TarifaFijaID.Value > 0;
             bool tieneKm = v.TarifaKmID.HasValue && v.TarifaKmID.Value > 0;
             if (!tieneFija && !tieneKm)

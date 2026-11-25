@@ -440,6 +440,7 @@
     <Compile Include="Controllers\UsuariosController.cs" />
     <Compile Include="Controllers\ViajesController.cs" />
     <Compile Include="Viajes\Ocupacion.cs" />
+    <Compile Include="Viajes\ConsultaViajes.cs" />
     <Compile Include="Controllers\TarifasFijasController.cs" />
     <Compile Include="Controllers\TarifasKmController.cs" />
     <Compile Include="Controllers\RecuperoContrasenaController.cs" />
