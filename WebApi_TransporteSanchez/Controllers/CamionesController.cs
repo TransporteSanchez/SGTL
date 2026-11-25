@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Data.Entity;
 using System.Data.Entity.Infrastructure;
 using System.Data.Entity.Validation;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
 using System.Web.Http;
-
+using WebApi_TransporteSanchez.Security;
 
 namespace WebApi_TransporteSanchez.Controllers
 {
     public class CamionesController : ApiController
     {
-
         public class CamionDTO
         {
             public int Camion_ID { get; set; }
@@ -35,10 +35,25 @@ namespace WebApi_TransporteSanchez.Controllers
             public string Usu_Modi { get; set; }
         }
 
-        // GET: api/Camiones
+        public class EliminarCamionModel
+        {
+            [Required]
+            public string Usu_Modi { get; set; }
+        }
+
+        public sealed class CambioEstadoCamion
+        {
+            [Required]
+            public string EstadoCamion { get; set; }
+
+            [Required]
+            public string EstadoAnterior { get; set; }
+        }
+
         public IHttpActionResult Get()
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            string connectionString =
+                ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
@@ -63,8 +78,9 @@ namespace WebApi_TransporteSanchez.Controllers
                             Fecha_Alta = c.Fecha_Alta,
                             Usu_Alta = c.Usu_Alta,
                             Fecha_Modi = c.Fecha_Modi,
-                            Usu_Modi = c.Usu_Modi,
-                        }).ToList();
+                            Usu_Modi = c.Usu_Modi
+                        })
+                        .ToList();
 
                     if (camiones == null || !camiones.Any())
                     {
@@ -76,7 +92,8 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch (DbUpdateException ex)
             {
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
+                return InternalServerError(
+                    new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (DbEntityValidationException ex)
             {
@@ -86,7 +103,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     foreach (var error in validationResult.ValidationErrors)
                     {
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                        validationErrors.Add(
+                            $"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
                     }
                 }
 
@@ -98,31 +116,38 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-
-        // GET: api/Camiones/Buscar
         [HttpGet]
         [Route("api/Camiones/Buscar")]
-        public IHttpActionResult Buscar(string dominio = null, string fechaDesde = null, string fechaHasta = null, int page = 1, int pageSize = 6)
+        public IHttpActionResult Buscar(
+            string dominio = null,
+            string fechaDesde = null,
+            string fechaHasta = null,
+            int page = 1,
+            int pageSize = 6)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            string connectionString =
+                ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    var query = db.Set<CAMIONES>().Where(c => c.EstadoCamion != "Eliminado");
+                    var query = db.Set<CAMIONES>()
+                        .Where(c => c.EstadoCamion != "Eliminado");
 
                     if (!string.IsNullOrEmpty(dominio))
                     {
                         query = query.Where(c => c.Dominio.Contains(dominio));
                     }
 
-                    if (!string.IsNullOrEmpty(fechaDesde) && DateTime.TryParse(fechaDesde, out DateTime desde))
+                    if (!string.IsNullOrEmpty(fechaDesde) &&
+                        DateTime.TryParse(fechaDesde, out DateTime desde))
                     {
                         query = query.Where(c => c.Fecha_Alta >= desde);
                     }
 
-                    if (!string.IsNullOrEmpty(fechaHasta) && DateTime.TryParse(fechaHasta, out DateTime hasta))
+                    if (!string.IsNullOrEmpty(fechaHasta) &&
+                        DateTime.TryParse(fechaHasta, out DateTime hasta))
                     {
                         hasta = hasta.AddDays(1).AddTicks(-1);
                         query = query.Where(c => c.Fecha_Alta <= hasta);
@@ -151,7 +176,7 @@ namespace WebApi_TransporteSanchez.Controllers
                             Fecha_Alta = c.Fecha_Alta,
                             Usu_Alta = c.Usu_Alta,
                             Fecha_Modi = c.Fecha_Modi,
-                            Usu_Modi = c.Usu_Modi,
+                            Usu_Modi = c.Usu_Modi
                         })
                         .ToList();
 
@@ -164,7 +189,10 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch (DbUpdateException ex)
             {
-                return InternalServerError(new Exception("Error al acceder a la base de datos durante la búsqueda de camiones.", ex));
+                return InternalServerError(
+                    new Exception(
+                        "Error al acceder a la base de datos durante la búsqueda de camiones.",
+                        ex));
             }
             catch (DbEntityValidationException ex)
             {
@@ -174,7 +202,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     foreach (var error in validationResult.ValidationErrors)
                     {
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                        validationErrors.Add(
+                            $"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
                     }
                 }
 
@@ -186,18 +215,19 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-
-        // GET: api/Camiones/{id}
         public IHttpActionResult Get(int id)
         {
             try
             {
-                string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+                string connectionString =
+                    ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
                 using (var db = new SGTLAuditContext(connectionString))
                 {
                     var camion = db.Set<CAMIONES>()
-                        .Where(c => c.Camion_ID == id && c.EstadoCamion != "Eliminado")
+                        .Where(c =>
+                            c.Camion_ID == id &&
+                            c.EstadoCamion != "Eliminado")
                         .FirstOrDefault();
 
                     if (camion == null)
@@ -222,7 +252,7 @@ namespace WebApi_TransporteSanchez.Controllers
                         Fecha_Alta = camion.Fecha_Alta,
                         Usu_Alta = camion.Usu_Alta,
                         Fecha_Modi = camion.Fecha_Modi,
-                        Usu_Modi = camion.Usu_Modi,
+                        Usu_Modi = camion.Usu_Modi
                     };
 
                     return Ok(camionDto);
@@ -230,7 +260,8 @@ namespace WebApi_TransporteSanchez.Controllers
             }
             catch (DbUpdateException ex)
             {
-                return InternalServerError(new Exception("Error al acceder a la base de datos.", ex));
+                return InternalServerError(
+                    new Exception("Error al acceder a la base de datos.", ex));
             }
             catch (DbEntityValidationException ex)
             {
@@ -240,7 +271,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 {
                     foreach (var error in validationResult.ValidationErrors)
                     {
-                        validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                        validationErrors.Add(
+                            $"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
                     }
                 }
 
@@ -252,29 +284,32 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-
-        // GET: api/Camiones/{camionID}/Chofer_Camion
         [HttpGet]
         [Route("api/Camiones/{camionID}/Chofer_Camion")]
         public IHttpActionResult GetChoferesByCamion(int camionID)
         {
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            string connectionString =
+                ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
                 using (var db = new SGTLAuditContext(connectionString))
                 {
-                    var choferes = from cc in db.Set<CHOFER_CAMION>()
-                                   join c in db.Set<CHOFERES>() on cc.ChoferID equals c.Chofer_ID
-                                   join cam in db.Set<CAMIONES>() on cc.CamionID equals cam.Camion_ID
-                                   where cc.CamionID == camionID && cam.EstadoCamion != "Eliminado"
-                                   select new
-                                   {
-                                       c.Chofer_ID,
-                                       c.Nombre,
-                                       c.Apellido,
-                                       c.DNI
-                                   };
+                    var choferes =
+                        from cc in db.Set<CHOFER_CAMION>()
+                        join c in db.Set<CHOFERES>()
+                            on cc.ChoferID equals c.Chofer_ID
+                        join cam in db.Set<CAMIONES>()
+                            on cc.CamionID equals cam.Camion_ID
+                        where cc.CamionID == camionID &&
+                              cam.EstadoCamion != "Eliminado"
+                        select new
+                        {
+                            c.Chofer_ID,
+                            c.Nombre,
+                            c.Apellido,
+                            c.DNI
+                        };
 
                     var choferesList = choferes.ToList();
 
@@ -292,21 +327,77 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
+        private IHttpActionResult ValidarGestion(SGTLAuditContext db)
+        {
+            var usuario = SesionSegura.Usuario(Request);
 
-        // POST: api/Camiones
+            if (usuario == null)
+            {
+                return Unauthorized();
+            }
+
+            if (!string.Equals(
+                (usuario.Rol ?? "").Trim(),
+                "admin",
+                StringComparison.OrdinalIgnoreCase))
+            {
+                var permitido = db.Database.SqlQuery<int>(@"
+                    SELECT CASE WHEN EXISTS (
+                        SELECT 1
+                        FROM dbo.GRUPOS_USUARIOS gu
+                        JOIN dbo.GRUPOS_MENU gm ON gm.GrupoID = gu.GrupoID
+                        JOIN dbo.MENU m ON m.Menu_ID = gm.MenuID
+                        WHERE gu.UsuarioID = @usuario
+                          AND m.Menu_Nombre COLLATE Latin1_General_CI_AI = N'Gestión de camiones'
+                    ) THEN 1 ELSE 0 END;",
+                    new SqlParameter("@usuario", SqlDbType.Int)
+                    {
+                        Value = usuario.Usuario_ID
+                    }).Single();
+
+                if (permitido != 1)
+                {
+                    return Content(HttpStatusCode.Forbidden, new
+                    {
+                        Message = "No tenés permiso para gestionar camiones."
+                    });
+                }
+            }
+
+            db.UsuarioAuditoria = usuario.Nombre_Usuario;
+            return null;
+        }
+
+        [FiltroSesionSegura]
         public IHttpActionResult Post([FromBody] CamionDTO camionDto)
         {
-            if (!ModelState.IsValid)
+            if (camionDto == null || !ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(camionDto.Dominio))
             {
-                return BadRequest(ModelState);
+                return BadRequest("Completá los datos del camión.");
             }
 
             try
             {
-                string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+                string connectionString =
+                    ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
                 using (var db = new SGTLAuditContext(connectionString))
                 {
+                    var acceso = ValidarGestion(db);
+
+                    if (acceso != null)
+                    {
+                        return acceso;
+                    }
+
+                    var usuario = db.UsuarioAuditoria;
+                    usuario = usuario.Length > 20
+                        ? usuario.Substring(0, 20)
+                        : usuario;
+
+                    var ahora = DateTime.UtcNow;
+
                     var camion = new CAMIONES
                     {
                         Camion_ID = camionDto.Camion_ID,
@@ -320,11 +411,11 @@ namespace WebApi_TransporteSanchez.Controllers
                         FechaCompra = camionDto.FechaCompra,
                         FechaITV = camionDto.FechaITV,
                         EquipoFrio = camionDto.EquipoFrio,
-                        EstadoCamion = camionDto.EstadoCamion,
-                        Fecha_Alta = camionDto.Fecha_Alta,
-                        Usu_Alta = camionDto.Usu_Alta,
-                        Fecha_Modi = camionDto.Fecha_Modi,
-                        Usu_Modi = camionDto.Usu_Modi
+                        EstadoCamion = "Activo",
+                        Fecha_Alta = ahora,
+                        Usu_Alta = usuario,
+                        Fecha_Modi = ahora,
+                        Usu_Modi = usuario
                     };
 
                     db.Set<CAMIONES>().Add(camion);
@@ -342,7 +433,8 @@ namespace WebApi_TransporteSanchez.Controllers
                         {
                             foreach (var error in validationResult.ValidationErrors)
                             {
-                                validationErrors.Add($"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
+                                validationErrors.Add(
+                                    $"Property: {error.PropertyName}, Error: {error.ErrorMessage}");
                             }
                         }
 
@@ -360,20 +452,33 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-
-
-        // PUT: api/Camiones/{id}
+        [FiltroSesionSegura]
         public IHttpActionResult Put(int id, [FromBody] CamionDTO camionDto)
         {
-            if (!ModelState.IsValid)
+            if (camionDto == null || !ModelState.IsValid ||
+                string.IsNullOrWhiteSpace(camionDto.Dominio))
             {
-                return BadRequest(ModelState);
+                return BadRequest("Completá los datos del camión.");
             }
 
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
+            string connectionString =
+                ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             using (var db = new SGTLAuditContext(connectionString))
             {
+                var acceso = ValidarGestion(db);
+
+                if (acceso != null)
+                {
+                    return acceso;
+                }
+
+                var usuario = db.UsuarioAuditoria;
+                usuario = usuario.Length > 20
+                    ? usuario.Substring(0, 20)
+                    : usuario;
+
+                var ahora = DateTime.UtcNow;
                 var camion = db.Set<CAMIONES>().Find(id);
 
                 if (camion == null)
@@ -385,7 +490,11 @@ namespace WebApi_TransporteSanchez.Controllers
 
                 if (camion.EstadoCamion == "Eliminado")
                 {
-                    validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "No se puede editar un camión eliminado." });
+                    validationErrors.Add(new
+                    {
+                        PropertyName = "EstadoCamion",
+                        ErrorMessage = "No se puede editar un camión eliminado."
+                    });
                 }
 
                 if (validationErrors.Any())
@@ -403,10 +512,8 @@ namespace WebApi_TransporteSanchez.Controllers
                 camion.FechaCompra = camionDto.FechaCompra;
                 camion.FechaITV = camionDto.FechaITV;
                 camion.EquipoFrio = camionDto.EquipoFrio;
-                camion.Fecha_Modi = camionDto.Fecha_Modi;
-                camion.Usu_Modi = camionDto.Usu_Modi;
-
-                db.Entry(camion).State = System.Data.Entity.EntityState.Modified;
+                camion.Fecha_Modi = ahora;
+                camion.Usu_Modi = usuario;
 
                 try
                 {
@@ -419,7 +526,11 @@ namespace WebApi_TransporteSanchez.Controllers
                     {
                         foreach (var error in validationResult.ValidationErrors)
                         {
-                            validationErrors.Add(new { PropertyName = error.PropertyName, ErrorMessage = error.ErrorMessage });
+                            validationErrors.Add(new
+                            {
+                                PropertyName = error.PropertyName,
+                                ErrorMessage = error.ErrorMessage
+                            });
                         }
                     }
 
@@ -436,86 +547,182 @@ namespace WebApi_TransporteSanchez.Controllers
             }
         }
 
-        // PUT: api/Camiones/Eliminar/{id}
         [HttpPut]
         [Route("api/Camiones/Eliminar/{id}")]
-        public IHttpActionResult EliminarCamion(int id, [FromBody] EliminarCamionModel model)
+        [FiltroSesionSegura]
+        public IHttpActionResult EliminarCamion(
+            int id,
+            [FromBody] EliminarCamionModel model)
         {
-            if (!ModelState.IsValid)
+            if (id <= 0 || model == null || !ModelState.IsValid)
             {
-                return BadRequest(ModelState);
+                return BadRequest(
+                    "Revisá los datos del camión que querés eliminar.");
             }
-
-            string connectionString = ConnectionStringHelper.GetConnectionString("SGTLEntities");
 
             try
             {
-                using (var db = new SGTLAuditContext(connectionString))
+                using (var db = new SGTLAuditContext(
+                    ConnectionStringHelper.GetConnectionString("SGTLEntities")))
                 {
-                    var camion = db.Set<CAMIONES>().Find(id);
+                    var acceso = ValidarGestion(db);
 
-                    if (camion == null)
+                    if (acceso != null)
                     {
-                        return NotFound();
+                        return acceso;
                     }
 
-                    var validationErrors = new List<object>();
-
-                    if (camion.EstadoCamion == "Eliminado")
+                    using (var tx = db.Database.BeginTransaction(
+                        IsolationLevel.Serializable))
                     {
-                        validationErrors.Add(new { PropertyName = "EstadoCamion", ErrorMessage = "El camión ya se encuentra eliminado." });
+                        var existe = db.Database.SqlQuery<int>(
+                            "SELECT Camion_ID FROM dbo.CAMIONES WITH (UPDLOCK, HOLDLOCK) WHERE Camion_ID = @id",
+                            new SqlParameter("@id", SqlDbType.Int)
+                            {
+                                Value = id
+                            }).Any();
+
+                        if (!existe)
+                        {
+                            return NotFound();
+                        }
+
+                        var camion = db.Set<CAMIONES>().Find(id);
+
+                        if (camion.EstadoCamion == "Eliminado")
+                        {
+                            return NotFound();
+                        }
+
+                        if (camion.EstadoCamion != "Inactivo")
+                        {
+                            return Content(HttpStatusCode.Conflict, new
+                            {
+                                Message = "El camión debe estar inactivo para eliminarlo."
+                            });
+                        }
+
+                        camion.EstadoCamion = "Eliminado";
+                        camion.Fecha_Modi = DateTime.UtcNow;
+
+                        var nombre = db.UsuarioAuditoria;
+                        camion.Usu_Modi = nombre.Length > 20
+                            ? nombre.Substring(0, 20)
+                            : nombre;
+
+                        db.Configuration.ValidateOnSaveEnabled = false;
+                        db.SaveChanges();
+                        tx.Commit();
+
+                        return Ok("El camión fue eliminado correctamente.");
                     }
-
-
-                    if (validationErrors.Any())
-                    {
-                        return Content(HttpStatusCode.BadRequest, validationErrors);
-                    }
-
-                    camion.EstadoCamion = "Eliminado";
-                    camion.Fecha_Modi = DateTime.Now;
-                    camion.Usu_Modi = model.Usu_Modi;
-
-                    db.Configuration.ValidateOnSaveEnabled = false;
-                    db.SaveChanges();
-
-                    return Ok("El camión fue eliminado correctamente.");
                 }
             }
-            catch (DbUpdateConcurrencyException ex)
+            catch (DbUpdateConcurrencyException)
             {
                 return Content(HttpStatusCode.Conflict, new
                 {
-                    Message = "La eliminación falló debido a un conflicto de concurrencia.",
-                    Details = ex.Message
+                    Message = "Los datos cambiaron. Volvé a buscar y probá de nuevo."
                 });
             }
-            catch (DbEntityValidationException ex)
+            catch
             {
-                var validationErrors = ex.EntityValidationErrors
-                    .SelectMany(e => e.ValidationErrors)
-                    .Select(e => new { e.PropertyName, e.ErrorMessage })
-                    .ToList();
-
-                return Content(HttpStatusCode.BadRequest, validationErrors);
-            }
-            catch (DbUpdateException ex)
-            {
-                var errorMessage = ex.InnerException?.Message ?? ex.Message;
-                return InternalServerError(new Exception("Error al actualizar la base de datos.", new Exception(errorMessage)));
-            }
-            catch (Exception ex)
-            {
-                return InternalServerError(ex);
+                return InternalServerError();
             }
         }
 
-        public class EliminarCamionModel
+        [HttpPut]
+        [Route("api/Camiones/EstadoCamion/{id:int}")]
+        [FiltroSesionSegura]
+        public IHttpActionResult CambiarEstadoCamion(
+            int id,
+            [FromBody] CambioEstadoCamion entrada)
         {
-            [Required]
-            public string Usu_Modi { get; set; }
+            var estados = new[] { "Activo", "Inactivo" };
+
+            if (id <= 0 || entrada == null || !ModelState.IsValid ||
+                !estados.Contains(entrada.EstadoCamion) ||
+                !estados.Contains(entrada.EstadoAnterior))
+            {
+                return BadRequest("Indicá un estado válido para el camión.");
+            }
+
+            var usuario = SesionSegura.Usuario(Request);
+
+            if (usuario == null)
+            {
+                return Unauthorized();
+            }
+
+            try
+            {
+                using (var db = new SGTLAuditContext(
+                    ConnectionStringHelper.GetConnectionString("SGTLEntities")))
+                {
+                    var acceso = ValidarGestion(db);
+
+                    if (acceso != null)
+                    {
+                        return acceso;
+                    }
+
+                    using (var tx = db.Database.BeginTransaction(
+                        IsolationLevel.Serializable))
+                    {
+                        var existe = db.Database.SqlQuery<int>(
+                            "SELECT Camion_ID FROM dbo.CAMIONES WITH (UPDLOCK, HOLDLOCK) WHERE Camion_ID = @id",
+                            new SqlParameter("@id", SqlDbType.Int)
+                            {
+                                Value = id
+                            }).Any();
+
+                        if (!existe)
+                        {
+                            return NotFound();
+                        }
+
+                        var camion = db.Set<CAMIONES>().Find(id);
+
+                        if (camion.EstadoCamion != entrada.EstadoAnterior)
+                        {
+                            return Content(HttpStatusCode.Conflict, new
+                            {
+                                Message = "El estado cambió. Volvé a buscar y revisá el camión."
+                            });
+                        }
+
+                        camion.EstadoCamion = entrada.EstadoCamion;
+                        camion.Fecha_Modi = DateTime.UtcNow;
+
+                        var nombre = usuario.Nombre_Usuario;
+
+                        camion.Usu_Modi = nombre.Length > 20
+                            ? nombre.Substring(0, 20)
+                            : nombre;
+
+                        db.UsuarioAuditoria = nombre;
+                        db.SaveChanges();
+                        tx.Commit();
+
+                        return Ok(new
+                        {
+                            camion.Camion_ID,
+                            camion.EstadoCamion
+                        });
+                    }
+                }
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Content(HttpStatusCode.Conflict, new
+                {
+                    Message = "Los datos cambiaron. Volvé a buscar y probá de nuevo."
+                });
+            }
+            catch
+            {
+                return InternalServerError();
+            }
         }
-
-
     }
 }
