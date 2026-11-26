@@ -4,6 +4,7 @@
     var COLUMNAS = 7;
     var tamanio = 15;
     var pedido = 0;
+    var proformas = [];
     var orden;
 
     function porId(id) {
@@ -24,7 +25,10 @@
             '<td>' + SGTL.escapar(proforma.UsuarioCreador) + '</td>' +
             '<td class="text-center text-nowrap">' + SGTL.estado(proforma.Estado) + '</td>' +
             '<td class="text-center">' +
-            SGTL.accionesFila([SGTL.botonFila('pdf', { id: proforma.Proforma_ID, texto: 'Descargar PDF' })]) + '</td></tr>';
+            SGTL.accionesFila([
+                SGTL.botonFila('ver', { id: proforma.Proforma_ID }),
+                SGTL.botonFila('pdf', { id: proforma.Proforma_ID, texto: 'Descargar PDF' })
+            ]) + '</td></tr>';
     }
 
     function filtros() {
@@ -54,6 +58,7 @@
         SGTL.tabla.cargando('#filasProformas', COLUMNAS);
         consultar(pagina, tamanio, 'No se pudieron cargar las proformas. Revisá la conexión y probá de nuevo.').then(function (datos) {
             if (numero !== pedido) return;
+            proformas = datos.items;
             if (datos.items.length) SGTL.tabla.llenar('#filasProformas', datos.items.map(fila).join(''));
             else SGTL.tabla.vacia('#filasProformas', COLUMNAS);
             SGTL.tabla.paginacion('#paginacionProformas', {
@@ -115,8 +120,10 @@
     });
     porId('exportarProformas').addEventListener('click', exportar);
     porId('filasProformas').addEventListener('click', function (evento) {
-        var boton = evento.target.closest('[data-accion="pdf"]');
-        if (boton) window.descargarProformaPDF(boton.dataset.id);
+        var boton = evento.target.closest('[data-accion]');
+        if (!boton) return;
+        if (boton.dataset.accion === 'pdf') return window.descargarProformaPDF(boton.dataset.id);
+        SGTLDetalleProforma.abrir(proformas.find(function (proforma) { return String(proforma.Proforma_ID) === boton.dataset.id; }), boton);
     });
     cargarClientes();
     buscar(1);
