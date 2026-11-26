@@ -142,34 +142,11 @@ namespace WebApi_TransporteSanchez.Controllers
             });
         }
 
-        private static readonly string[] SeccionesTableros =
-        {
-            "Tableros de viajes", "Tableros de flota", "Tableros de choferes", "Tableros de facturación"
-        };
-
-        private static bool EsLaMismaSeccion(string guardado, string esperado)
-        {
-            var temasGuardados = PermisosTableros.TemasPara(false, false, new[] { guardado });
-            var temasEsperados = PermisosTableros.TemasPara(false, false, new[] { esperado });
-            return temasGuardados.Length == 1 && temasEsperados.Length == 1 && temasGuardados[0] == temasEsperados[0];
-        }
-
-        private static void AsegurarSeccionesTableros(SGTLAuditContext db)
-        {
-            var existentes = db.Set<MENU>().Select(m => m.Menu_Nombre).ToList();
-            var faltan = SeccionesTableros.Where(nombre => !existentes.Any(actual => EsLaMismaSeccion(actual, nombre))).ToList();
-            if (faltan.Count == 0) return;
-            foreach (var nombre in faltan)
-                db.Set<MENU>().Add(new MENU { Menu_Nombre = nombre, Menu_Principal = 0 });
-            db.SaveChanges();
-        }
-
         [HttpGet, Route("{id:int}/Menus")]
         public IHttpActionResult Menus(int id)
         {
             return Ejecutar(db =>
             {
-                AsegurarSeccionesTableros(db);
                 if (!db.Set<GRUPOS>().Any(g => g.Grupo_ID == id))
                     return NotFound();
 
