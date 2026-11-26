@@ -38,7 +38,7 @@
         let iso = texto(valor);
         if (!iso) return null;
 
-        // Las altas y modificaciones del front existente se guardan como instantes UTC.
+        // Las fechas de auditoría se guardan en UTC y pueden llegar sin zona.
         if (!/(Z|[+-]\d{2}:\d{2})$/i.test(iso)) iso += 'Z';
 
         const fecha = new Date(iso);
@@ -88,6 +88,7 @@
         }
 
         return SGTL.accionesFila([
+            SGTL.botonFila('ver', { id: c.Camion_ID }),
             SGTL.botonFila('editar', { id: c.Camion_ID }),
             SGTL.botonFila(c.EstadoCamion === 'Activo' ? 'inactivar' : 'activar', {
                 id: c.Camion_ID
@@ -152,17 +153,10 @@
         SGTL.tabla.paginacion('#paginacionCamiones', { total: 0 });
 
         try {
-            let respuesta;
-
-            try {
-                respuesta = await pedir(
-                    '', 'GET', undefined,
-                    'No se pudieron cargar los camiones. Probá de nuevo.'
-                );
-            } catch (error) {
-                if (error.xhr?.status !== 404) throw error;
-                respuesta = [];
-            }
+            const respuesta = await pedir(
+                '', 'GET', undefined,
+                'No se pudieron cargar los camiones. Probá de nuevo.'
+            );
 
             if (turno !== consulta) return;
             if (!Array.isArray(respuesta)) throw new Error('Respuesta de camiones inválida.');
@@ -268,9 +262,7 @@
                 SGTL.tabla.vacia(
                     '#cmChoferes',
                     3,
-                    error.xhr?.status === 404
-                        ? 'Todavía no hay choferes asignados.'
-                        : 'No se pudieron cargar los choferes asignados.'
+                    'No se pudieron cargar los choferes asignados.'
                 );
             }
         } catch (error) {
@@ -345,7 +337,7 @@
                 regex: /^\d{4}$/,
                 mensaje: 'Ingresá un año de cuatro números.',
                 validar: valor => Number(valor) < 1 || Number(valor) > new Date().getFullYear()
-                    ? 'El año debe ser válido y no puede ser posterior al actual.'
+                    ? 'El año tiene que ser válido y no puede ser posterior al actual.'
                     : ''
             },
             NumMotor: {
@@ -387,7 +379,6 @@
 
         const actual = {
             id,
-            original: null,
             lista: !id,
             guardando: false
         };
@@ -421,8 +412,6 @@
             );
 
             if (sesion !== actual) return;
-
-            actual.original = c;
 
             CAMPOS.forEach(([clave]) => {
                 if (clave.startsWith('Fecha')) {
@@ -477,17 +466,7 @@
                 : campo(clave).value.trim()
         ]));
 
-        const ahora = new Date().toISOString();
-        const usuario = texto(localStorage.getItem('username')).slice(0, 20);
-
-        Object.assign(datos, {
-            Camion_ID: actual.id,
-            EstadoCamion: actual.original?.EstadoCamion || 'Activo',
-            Fecha_Alta: actual.original?.Fecha_Alta || ahora,
-            Usu_Alta: actual.original?.Usu_Alta || usuario,
-            Fecha_Modi: ahora,
-            Usu_Modi: usuario
-        });
+        datos.Camion_ID = actual.id;
 
         actual.guardando = true;
         el('cmCampos').disabled = true;
@@ -557,13 +536,16 @@
                 if (vigente.EstadoCamion !== 'Inactivo') {
                     const error = new Error('Estado del camión modificado.');
                     error.mensajeUsuario =
-                        'El camión debe estar inactivo. Volvé a buscar para revisar su estado.';
+                        'El camión tiene que estar inactivo. Volvé a buscar para revisar su estado.';
                     throw error;
                 }
 
-                return pedir('/Eliminar/' + c.Camion_ID, 'PUT', {
-                    Usu_Modi: texto(localStorage.getItem('username')).slice(0, 20)
-                }, 'No se pudo eliminar el camión. Probá de nuevo.');
+                return pedir(
+                    '/Eliminar/' + c.Camion_ID,
+                    'PUT',
+                    undefined,
+                    'No se pudo eliminar el camión. Probá de nuevo.'
+                );
             }
         });
 
@@ -605,22 +587,21 @@
             ]).map(csvSeguro))
         );
     }
-    async function inicializarApariencia() {
-        const indicador = el('cargandoApariencia');
 
-        try {
-            const encabezado = window.loadHeader();
-            window.loadFooter();
+    function inicializarApariencia() {
+        el('cargandoApariencia').classList.add('d-none');
+        el('app').classList.remove('d-none');
 
-            const [contenido] = await Promise.all([
-                SGTL.ajax({
-                    url: SGTL.api + '/GestionContenido/1',
-                    type: 'GET'
-                }, 'No se pudo cargar la apariencia de SGTL.'),
-                encabezado,
-                window.loadSidebar()
-            ]);
+        window.loadHeader().catch(() => {
+            SGTL.toastError('No se pudo cargar el encabezado. Recargá la página para volver a intentar.');
+        });
 
+        window.loadFooter();
+
+        return SGTL.ajax({
+            url: SGTL.api + '/GestionContenido/1',
+            type: 'GET'
+        }, 'No se pudo cargar la apariencia de SGTL.').then(contenido => {
             const datos = contenido || {};
             const textoPie = datos.ContenidoPiePagina || window.SGTL_CONTENIDO_DEFAULT.pie;
             const contenedorPie = el('footer-container');
@@ -646,19 +627,16 @@
                     subtree: true
                 });
             }
-
-            indicador.classList.add('d-none');
-            el('app').classList.remove('d-none');
-        } catch {
-            indicador.textContent =
-                'No se pudo cargar la pantalla. Recargá la página para volver a intentar.';
-        }
+        }).catch(() => {
+            window.applyStyles();
+            SGTL.toastError('No se pudo cargar la apariencia. Se muestra la configuración predeterminada.');
+        });
     }
 
     function iniciar() {
         inicializarApariencia();
 
-        if (!gestion) crearDetalle();
+        crearDetalle();
 
         if (gestion) {
             crearEditor();
@@ -708,7 +686,7 @@
 
             if (!c) return;
 
-            if (!gestion && boton.dataset.accion === 'ver') {
+            if (boton.dataset.accion === 'ver') {
                 ver(c.Camion_ID, boton);
             } else if (gestion && boton.dataset.accion === 'editar') {
                 editar(c.Camion_ID);

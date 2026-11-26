@@ -39,10 +39,9 @@
                                 <p class="text-muted mb-0">Registrá y actualizá los datos de la flota.</p>
                             </div>
                             <div class="d-flex gap-2">
-                                <button type="button" id="btnDescargar" class="btn btn-secondary"
-                                    aria-label="Descargar reporte" data-bs-toggle="tooltip" title="Descargar reporte"
-                                    disabled>
-                                    <i class="bi bi-download" aria-hidden="true"></i>
+                                <button type="button" id="btnDescargar" class="btn btn-secondary" aria-label="Exportar"
+                                    data-bs-toggle="tooltip" title="Exportar" disabled>
+                                    <i class="bi bi-download me-1" aria-hidden="true"></i>Exportar
                                 </button>
 
                                 <button type="button" id="btnRegistrar" class="btn btn-success">
@@ -59,7 +58,8 @@
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label for="fFecha" class="form-label">Fecha de alta</label>
-                                    <input id="fFecha" class="form-control" placeholder="DD/MM/AAAA" autocomplete="off">
+                                    <input id="fFecha" class="form-control" placeholder="Desde y hasta"
+                                        autocomplete="off">
                                 </div>
                                 <div class="col-12 col-md-4">
                                     <label for="fEstado" class="form-label">Estado</label>
@@ -69,8 +69,11 @@
                                         <option value="">Todos</option>
                                     </select>
                                 </div>
-                                <div class="col-12 d-flex justify-content-end"><button type="submit"
-                                        class="btn btn-light">Buscar</button></div>
+                                <div class="col-12 d-flex justify-content-end">
+                                    <button type="submit" class="btn btn-light">
+                                        <i class="bi bi-search me-1" aria-hidden="true"></i>Buscar
+                                    </button>
+                                </div>
                             </form>
                             <div class="table-responsive">
                                 <table id="tablaCamiones" class="table table-striped table-hover align-middle mb-0"
