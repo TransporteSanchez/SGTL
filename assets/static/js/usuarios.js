@@ -24,12 +24,14 @@
 
     let acceso;
     let gestionar;
+    let orden;
     let validador;
     let cambiosModal;
 
     let pagina = 1;
     let tamanio = 15;
     let secuencia = 0;
+    let finalizarBusqueda = null;
     let editando = null;
     let abriendo = false;
     let guardando = false;
@@ -65,13 +67,25 @@
 
     async function buscar(destino = 1) {
         const pedido = ++secuencia;
+        const tabla = el('tablaUsuarios');
 
-        SGTL.tabla.cargando('#filasUsuarios', 7);
-        SGTL.tabla.paginacion('#paginacionUsuarios', { total: 0 });
+        tabla.setAttribute('aria-busy', 'true');
+
+        if (!finalizarBusqueda) {
+            finalizarBusqueda = SGTL.procesando(
+                el('filtrosUsuarios').querySelector('button[type="submit"]'),
+                'Buscando…'
+            );
+        }
+
+        if (!cache.size) {
+            SGTL.tabla.cargando('#filasUsuarios', 7);
+            SGTL.tabla.paginacion('#paginacionUsuarios', { total: 0 });
+        }
 
         try {
             const parametros = new URLSearchParams(
-                Object.assign(filtros(), {
+                Object.assign(filtros(), orden.parametros(), {
                     page: destino,
                     pageSize: tamanio
                 })
@@ -101,9 +115,9 @@
             }
 
             SGTL.tabla.llenar('#filasUsuarios', datos.Results.map(u => {
-                const acciones = [
-                    SGTL.botonFila('ver', { id: u.Usuario_ID })
-                ];
+                const acciones = gestionar
+                    ? []
+                    : [SGTL.botonFila('ver', { id: u.Usuario_ID })];
 
                 const esAdmin = String(u.Rol || '')
                     .trim()
@@ -136,17 +150,20 @@
                     }
                 }
 
+                const celdaFecha = '<td class="text-center text-nowrap">' +
+                    SGTL.fecha(u.Fecha_Alta) + '</td>';
+
+                const celdaEstado = '<td class="text-center">' +
+                    SGTL.estado(u.EstadoUsuario) + '</td>';
+
                 return '<tr>' +
                     '<td>' + SGTL.escapar(u.Nombre_Usuario) + '</td>' +
                     '<td>' + SGTL.escapar(u.Nombre) + '</td>' +
                     '<td>' + SGTL.escapar(u.Apellido) + '</td>' +
                     '<td>' + SGTL.escapar(textoRol(u.Rol)) + '</td>' +
-                    '<td class="text-center">' +
-                    SGTL.estado(u.EstadoUsuario) +
-                    '</td>' +
-                    '<td class="text-center text-nowrap">' +
-                    SGTL.fecha(u.Fecha_Alta) +
-                    '</td>' +
+                    (gestionar
+                        ? celdaFecha + celdaEstado
+                        : celdaEstado + celdaFecha) +
                     '<td class="text-center">' +
                     SGTL.accionesFila(acciones) +
                     '</td>' +
@@ -156,6 +173,7 @@
             if (pedido !== secuencia) return;
 
             cache.clear();
+            SGTL.tabla.paginacion('#paginacionUsuarios', { total: 0 });
 
             SGTL.tabla.vacia(
                 '#filasUsuarios',
@@ -166,6 +184,15 @@
             SGTL.toastError(
                 error.mensajeUsuario || 'No se pudieron cargar los usuarios.'
             );
+        } finally {
+            if (pedido === secuencia) {
+                tabla.setAttribute('aria-busy', 'false');
+
+                if (finalizarBusqueda) {
+                    finalizarBusqueda();
+                    finalizarBusqueda = null;
+                }
+            }
         }
     }
 
@@ -493,6 +520,8 @@
         if (!u) return;
 
         if (accion === 'ver') {
+            if (gestionar) return;
+
             await verDetalle(id, boton);
             return;
         }
@@ -557,7 +586,7 @@
 
         try {
             const parametros = new URLSearchParams(
-                Object.assign(filtros(), {
+                Object.assign(filtros(), orden.parametros(), {
                     page: 1,
                     pageSize: 0
                 })
@@ -709,6 +738,7 @@
                     abrirFormulario(null, evento.currentTarget);
                 });
             }
+            orden = SGTL.tabla.habilitarOrden('#tablaUsuarios', () => buscar(1));
             el('filasUsuarios').addEventListener('click', accionFila);
             el('exportarUsuarios').addEventListener('click', exportar);
             el('filtrosUsuarios').addEventListener('submit', evento => {

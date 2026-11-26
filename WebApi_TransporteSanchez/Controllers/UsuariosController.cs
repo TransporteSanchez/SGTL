@@ -141,9 +141,18 @@ namespace WebApi_TransporteSanchez.Controllers
         }
 
         [HttpGet, Route("Buscar")]
-        public IHttpActionResult Buscar(string nombre = null, string apellido = null, string nombreusuario = null,
-            string EstadoUsuario = null, string rol = null, DateTime? desde = null, DateTime? hasta = null,
-            int page = 1, int pageSize = 15)
+        public IHttpActionResult Buscar(
+            string nombre = null,
+            string apellido = null,
+            string nombreusuario = null,
+            string EstadoUsuario = null,
+            string rol = null,
+            DateTime? desde = null,
+            DateTime? hasta = null,
+            int page = 1,
+            int pageSize = 15,
+            string orden = "Nombre_Usuario",
+            string direccion = "asc")
         {
             if (page < 1 || pageSize < 0 || pageSize > 100 || (desde.HasValue && hasta.HasValue && desde.Value.Date > hasta.Value.Date)
                 || (hasta.HasValue && hasta.Value.Date == DateTime.MaxValue.Date))
@@ -170,7 +179,47 @@ namespace WebApi_TransporteSanchez.Controllers
                 if (hasta.HasValue) { var fin = hasta.Value.Date.AddDays(1); q = q.Where(u => u.Fecha_Alta < fin); }
                 var total = q.Count();
                 var pagina = pageSize == 0 ? 1 : Math.Min(page, Math.Max(1, (int)Math.Ceiling((double)total / pageSize)));
-                var ordenada = q.OrderBy(u => u.Nombre_Usuario).ThenBy(u => u.Usuario_ID);
+                var descendente = string.Equals(
+                    direccion,
+                    "desc",
+                    StringComparison.OrdinalIgnoreCase);
+
+                IOrderedQueryable<UsuarioVista> ordenada;
+
+                switch (orden)
+                {
+                    case "Nombre":
+                        ordenada = descendente
+                            ? q.OrderByDescending(u => u.Nombre)
+                            : q.OrderBy(u => u.Nombre);
+                        break;
+
+                    case "Apellido":
+                        ordenada = descendente
+                            ? q.OrderByDescending(u => u.Apellido)
+                            : q.OrderBy(u => u.Apellido);
+                        break;
+
+                    case "Rol":
+                        ordenada = descendente
+                            ? q.OrderByDescending(u => u.Rol)
+                            : q.OrderBy(u => u.Rol);
+                        break;
+
+                    case "Fecha_Alta":
+                        ordenada = descendente
+                            ? q.OrderByDescending(u => u.Fecha_Alta)
+                            : q.OrderBy(u => u.Fecha_Alta);
+                        break;
+
+                    default:
+                        ordenada = descendente
+                            ? q.OrderByDescending(u => u.Nombre_Usuario)
+                            : q.OrderBy(u => u.Nombre_Usuario);
+                        break;
+                }
+
+                ordenada = ordenada.ThenBy(u => u.Usuario_ID);
                 var filas = pageSize == 0 ? ordenada.ToList() : ordenada.Skip((pagina - 1) * pageSize).Take(pageSize).ToList();
                 return Ok(new { TotalRecords = total, Results = filas, Pagina = pagina });
             });
