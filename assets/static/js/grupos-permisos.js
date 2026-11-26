@@ -299,9 +299,13 @@
         });
 
         const opcion = menu => {
-            const nombre = String(menu.Menu_Nombre || '').trim()
+            let nombre = String(menu.Menu_Nombre || '').trim()
                 .replace(/^Listado de\s+/i, 'Listar ')
                 .replace(/^Gesti[oó]n de\s+/i, 'Gestionar ');
+            if (menu.EsTablero) {
+                nombre = nombre.replace(/^Tableros de\s+/i, '');
+                nombre = nombre.charAt(0).toUpperCase() + nombre.slice(1);
+            }
 
             return '<div class="form-check">' +
                 '<input type="checkbox" class="form-check-input" ' +
